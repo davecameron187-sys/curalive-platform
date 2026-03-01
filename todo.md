@@ -47,3 +47,7 @@
 ## Round 10 — Demo Video & Sales Page
 
 - [x] Add MP4 download button for demo video on Sales Demo page and Home page
+
+## Round 11 — Testing Reference Card Webpage
+
+- [x] Add /test-guide webpage version of the testing reference card
