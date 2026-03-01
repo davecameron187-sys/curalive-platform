@@ -37,3 +37,9 @@
 - [ ] #14 AI Event Brief Generator — Operator: paste press release → LLM generates event brief + talking points
 - [ ] #19 AI Press Release Draft — PostEvent: one-click SENS/RNS-style press release from transcript
 - [ ] #25 Automated Follow-Up Email Draft — PostEvent: draft personalised follow-up emails per IR contact
+
+## Round 9 — Market Coverage & White-Label
+
+- [ ] Add Africa/UAE/Mauritius dial-in numbers to OperatorConsole
+- [ ] Build White-Label Configuration panel (logo, brand colours, subdomain preview)
+- [ ] Add RTL layout support for Arabic in EventRoom transcript and CC overlay

@@ -382,6 +382,8 @@ function EventRoomInner({ eventId }: { eventId: string }) {
 
   const ccFontSizeClass = { sm: "text-sm", md: "text-base", lg: "text-xl" }[ccFontSize];
   const currentLang = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0];
+  // RTL layout support for Arabic
+  const isRTL = language === "ar";
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -491,7 +493,8 @@ function EventRoomInner({ eventId }: { eventId: string }) {
             {ccEnabled && latestSegment && (
               <div className={`absolute left-0 right-0 px-4 py-2 flex justify-center ${ccPosition === "bottom" ? "bottom-10" : "top-10"}`}>
                 <div className={`bg-black/85 backdrop-blur-sm text-white px-4 py-2 rounded-lg max-w-[90%] text-center leading-snug font-medium ${ccFontSizeClass}`}
-                  style={{ fontFamily: "'Inter', sans-serif", textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
+                  dir={isRTL ? "rtl" : "ltr"}
+                  style={{ fontFamily: isRTL ? "'Noto Sans Arabic', 'Inter', sans-serif" : "'Inter', sans-serif", textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
                   <span className="text-primary/80 text-[10px] font-bold uppercase tracking-widest block mb-0.5">
                     {latestSegment.speaker}
                   </span>
@@ -706,11 +709,11 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                     </div>
                   )}
                   {transcript.map((seg, i) => (
-                    <div key={seg.id} className="transcript-line-enter">
+                    <div key={seg.id} className="transcript-line-enter" dir={isRTL ? "rtl" : "ltr"}>
                       <div className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${speakerColor[seg.speaker] ?? "text-muted-foreground"}`}>
-                        {seg.speaker} · {seg.timeLabel}
+                        {isRTL ? `${seg.timeLabel} · ${seg.speaker}` : `${seg.speaker} · ${seg.timeLabel}`}
                       </div>
-                      <p className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif", opacity: i === transcript.length - 1 ? 1 : 0.75 }}>
+                      <p className="text-sm leading-relaxed" style={{ fontFamily: isRTL ? "'Noto Sans Arabic', 'Inter', sans-serif" : "'Inter', sans-serif", opacity: i === transcript.length - 1 ? 1 : 0.75 }}>
                         {translateSegment(seg, language)}
                       </p>
                     </div>

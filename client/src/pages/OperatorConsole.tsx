@@ -5,7 +5,8 @@ import {
   Radio, Link2, Copy, CheckCheck, ChevronUp, Trash2,
   Play, Square, Phone, Globe, BarChart3, MessageSquare,
   AlertCircle, CheckCircle, Loader2, Volume2, VolumeX,
-  ExternalLink, Key, Webhook, RefreshCw, Lock, Unlock, Eye, EyeOff
+  ExternalLink, Key, Webhook, RefreshCw, Lock, Unlock, Eye, EyeOff,
+  Palette, Monitor, Smartphone, Save, RotateCcw, ImageIcon
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -29,12 +30,26 @@ const INITIAL_QA: QAItem[] = [
 ];
 
 const DIAL_IN_NUMBERS = [
-  { country: "United States", flag: "🇺🇸", number: "+1 (800) 555-0192", passcode: "847291#" },
-  { country: "United Kingdom", flag: "🇬🇧", number: "+44 800 555 0192", passcode: "847291#" },
-  { country: "South Africa", flag: "🇿🇦", number: "+27 800 555 019", passcode: "847291#" },
-  { country: "Australia", flag: "🇦🇺", number: "+61 800 555 019", passcode: "847291#" },
-  { country: "Germany", flag: "🇩🇪", number: "+49 800 555 0192", passcode: "847291#" },
-  { country: "Singapore", flag: "🇸🇬", number: "+65 800 555 019", passcode: "847291#" },
+  // Core markets
+  { country: "South Africa",   flag: "🇿🇦", number: "+27 800 555 019",   passcode: "847291#", region: "Southern Africa" },
+  { country: "Nigeria",        flag: "🇳🇬", number: "+234 800 555 019",  passcode: "847291#", region: "West Africa" },
+  { country: "Kenya",          flag: "🇰🇪", number: "+254 800 555 019",  passcode: "847291#", region: "East Africa" },
+  { country: "Ghana",          flag: "🇬🇭", number: "+233 800 555 019",  passcode: "847291#", region: "West Africa" },
+  { country: "Mauritius",      flag: "🇲🇺", number: "+230 800 555 019",  passcode: "847291#", region: "Mauritius" },
+  { country: "UAE / Dubai",    flag: "🇦🇪", number: "+971 800 555 019",  passcode: "847291#", region: "Middle East" },
+  { country: "Egypt",          flag: "🇪🇬", number: "+20 800 555 019",   passcode: "847291#", region: "North Africa" },
+  { country: "Ethiopia",       flag: "🇪🇹", number: "+251 800 555 019",  passcode: "847291#", region: "East Africa" },
+  { country: "Morocco",        flag: "🇲🇦", number: "+212 800 555 019",  passcode: "847291#", region: "North Africa" },
+  { country: "Angola",         flag: "🇦🇴", number: "+244 800 555 019",  passcode: "847291#", region: "Southern Africa" },
+  { country: "Mozambique",     flag: "🇲🇿", number: "+258 800 555 019",  passcode: "847291#", region: "Southern Africa" },
+  { country: "Namibia",        flag: "🇳🇦", number: "+264 800 555 019",  passcode: "847291#", region: "Southern Africa" },
+  { country: "Tanzania",       flag: "🇹🇿", number: "+255 800 555 019",  passcode: "847291#", region: "East Africa" },
+  { country: "Zambia",         flag: "🇿🇲", number: "+260 800 555 019",  passcode: "847291#", region: "Southern Africa" },
+  // Global investor hubs
+  { country: "United Kingdom", flag: "🇬🇧", number: "+44 800 555 0192",  passcode: "847291#", region: "Europe" },
+  { country: "United States",  flag: "🇺🇸", number: "+1 (800) 555-0192", passcode: "847291#", region: "Americas" },
+  { country: "China",          flag: "🇨🇳", number: "+86 800 555 019",   passcode: "847291#", region: "Asia" },
+  { country: "India",          flag: "🇮🇳", number: "+91 800 555 019",   passcode: "847291#", region: "Asia" },
 ];
 
 function StatusDot({ status }: { status: BotStatus }) {
@@ -59,7 +74,21 @@ export default function OperatorConsole() {
   const eventId = params.id ?? "q4-earnings-2026";
   const meta = EVENT_META[eventId] ?? EVENT_META["q4-earnings-2026"];
 
-  const [activeTab, setActiveTab] = useState<"connect" | "qa" | "dialin" | "rtmp" | "settings" | "attendees">("connect");
+  const [activeTab, setActiveTab] = useState<"connect" | "qa" | "dialin" | "rtmp" | "settings" | "attendees" | "whitelabel">("connect");
+
+  // White-label config state
+  const [wlConfig, setWlConfig] = useState({
+    brandName: "Chorus.AI",
+    subdomain: "chorus",
+    primaryColor: "#e63946",
+    accentColor: "#ffffff",
+    logoUrl: "",
+    tagline: "The Intelligence Layer for Every Meeting",
+    footerText: "Powered by Chorus.AI",
+    showPoweredBy: true,
+  });
+  const [wlSaved, setWlSaved] = useState(false);
+  const [wlPreviewMode, setWlPreviewMode] = useState<"desktop" | "mobile">("desktop");
 
   // Real attendee list from database
   const { data: attendeeList, isLoading: attendeesLoading, refetch: refetchAttendees } = trpc.registrations.listByEvent.useQuery({ eventId });
@@ -208,6 +237,7 @@ export default function OperatorConsole() {
             { key: "dialin", label: "Dial-In Numbers", icon: Phone },
             { key: "rtmp", label: "RTMP / Stream Key", icon: Link2 },
             { key: "settings", label: "Event Settings", icon: Settings },
+            { key: "whitelabel", label: "White-Label", icon: Palette },
           ].map(({ key, label, icon: Icon, badge }) => (
             <button
               key={key}
@@ -462,24 +492,30 @@ export default function OperatorConsole() {
                   <strong>Africa / Emerging Markets:</strong> Always include PSTN dial-in as a fallback. Chorus.AI routes Twilio audio through the same AI pipeline for transcription and sentiment.
                 </p>
               </div>
-              <div className="space-y-2">
-                {DIAL_IN_NUMBERS.map((d) => (
-                  <div key={d.country} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
-                    <span className="text-2xl">{d.flag}</span>
-                    <div className="flex-1">
-                      <div className="font-semibold text-sm">{d.country}</div>
-                      <div className="text-muted-foreground text-sm font-mono" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{d.number}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground mb-1">Passcode</div>
-                      <div className="font-mono text-sm font-bold">{d.passcode}</div>
-                    </div>
-                    <button onClick={() => handleCopy(`${d.number} Passcode: ${d.passcode}`, d.country)} className="text-muted-foreground hover:text-foreground transition-colors">
-                      {copied === d.country ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    </button>
+              {/* Group by region */}
+              {Array.from(new Set(DIAL_IN_NUMBERS.map(d => d.region))).map(region => (
+                <div key={region}>
+                  <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 mt-4">{region}</div>
+                  <div className="space-y-2">
+                    {DIAL_IN_NUMBERS.filter(d => d.region === region).map((d) => (
+                      <div key={d.country} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
+                        <span className="text-2xl">{d.flag}</span>
+                        <div className="flex-1">
+                          <div className="font-semibold text-sm">{d.country}</div>
+                          <div className="text-muted-foreground text-sm font-mono" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{d.number}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-muted-foreground mb-1">Passcode</div>
+                          <div className="font-mono text-sm font-bold">{d.passcode}</div>
+                        </div>
+                        <button onClick={() => handleCopy(`${d.number} Passcode: ${d.passcode}`, d.country)} className="text-muted-foreground hover:text-foreground transition-colors">
+                          {copied === d.country ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
               <div className="bg-card border border-border rounded-xl p-5">
                 <div className="text-sm font-semibold mb-2">Powered by Twilio Voice</div>
                 <div className="grid grid-cols-2 gap-3 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -735,6 +771,221 @@ export default function OperatorConsole() {
                   <div className="text-center">
                     <div className="text-3xl font-bold text-amber-400">{attendeeList ? attendeeList.length - attendeeList.filter((a: { language: string }) => a.language === "English").length : 0}</div>
                     <div className="text-xs text-muted-foreground mt-1">Other Languages</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* ── White-Label Configuration ── */}
+          {activeTab === "whitelabel" && (
+            <div className="max-w-5xl space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1">White-Label Configuration</h2>
+                  <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    Customise the platform with your brand identity. Changes apply to all attendee-facing pages for this account.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setWlPreviewMode("desktop")} className={`p-2 rounded-lg border transition-colors ${wlPreviewMode === "desktop" ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:text-foreground"}`}>
+                    <Monitor className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setWlPreviewMode("mobile")} className={`p-2 rounded-lg border transition-colors ${wlPreviewMode === "mobile" ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:text-foreground"}`}>
+                    <Smartphone className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                {/* ── Left: Config Form ── */}
+                <div className="space-y-5">
+                  {/* Brand Identity */}
+                  <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                    <div className="font-semibold text-sm border-b border-border pb-3 flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-primary" /> Brand Identity
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Brand Name</label>
+                      <input value={wlConfig.brandName} onChange={(e) => setWlConfig({ ...wlConfig, brandName: e.target.value })}
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50"
+                        style={{ fontFamily: "'Inter', sans-serif" }} placeholder="Investec Live" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Tagline</label>
+                      <input value={wlConfig.tagline} onChange={(e) => setWlConfig({ ...wlConfig, tagline: e.target.value })}
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50"
+                        style={{ fontFamily: "'Inter', sans-serif" }} placeholder="Investor Intelligence, Live." />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Logo URL</label>
+                      <input value={wlConfig.logoUrl} onChange={(e) => setWlConfig({ ...wlConfig, logoUrl: e.target.value })}
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50 font-mono"
+                        style={{ fontFamily: "'JetBrains Mono', monospace" }} placeholder="https://cdn.example.com/logo.svg" />
+                      <p className="text-xs text-muted-foreground mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>SVG or PNG, min 200×60px, transparent background recommended.</p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Footer Text</label>
+                      <input value={wlConfig.footerText} onChange={(e) => setWlConfig({ ...wlConfig, footerText: e.target.value })}
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50"
+                        style={{ fontFamily: "'Inter', sans-serif" }} placeholder="© 2026 Investec Group" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium">Show \"Powered by Chorus.AI\"</div>
+                        <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>Displayed in footer on all attendee pages</div>
+                      </div>
+                      <button onClick={() => setWlConfig({ ...wlConfig, showPoweredBy: !wlConfig.showPoweredBy })}
+                        className={`relative w-11 h-6 rounded-full transition-colors ${wlConfig.showPoweredBy ? "bg-primary" : "bg-muted"}`}>
+                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${wlConfig.showPoweredBy ? "translate-x-5" : "translate-x-0"}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Colour Palette */}
+                  <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                    <div className="font-semibold text-sm border-b border-border pb-3 flex items-center gap-2">
+                      <Palette className="w-4 h-4 text-primary" /> Colour Palette
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Primary Colour</label>
+                        <div className="flex items-center gap-2">
+                          <input type="color" value={wlConfig.primaryColor} onChange={(e) => setWlConfig({ ...wlConfig, primaryColor: e.target.value })}
+                            className="w-10 h-10 rounded-lg border border-border cursor-pointer bg-transparent" />
+                          <input value={wlConfig.primaryColor} onChange={(e) => setWlConfig({ ...wlConfig, primaryColor: e.target.value })}
+                            className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-primary/50"
+                            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Accent Colour</label>
+                        <div className="flex items-center gap-2">
+                          <input type="color" value={wlConfig.accentColor} onChange={(e) => setWlConfig({ ...wlConfig, accentColor: e.target.value })}
+                            className="w-10 h-10 rounded-lg border border-border cursor-pointer bg-transparent" />
+                          <input value={wlConfig.accentColor} onChange={(e) => setWlConfig({ ...wlConfig, accentColor: e.target.value })}
+                            className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-primary/50"
+                            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        { name: "Investec",       primary: "#004B87", accent: "#00A651" },
+                        { name: "Standard Bank",  primary: "#1a1a2e", accent: "#0066cc" },
+                        { name: "Nedbank",        primary: "#007A4D", accent: "#ffffff" },
+                        { name: "Absa",           primary: "#DC143C", accent: "#ffffff" },
+                        { name: "FirstRand",      primary: "#003087", accent: "#FFD700" },
+                        { name: "JSE",            primary: "#1B2A4A", accent: "#E8B84B" },
+                      ].map(preset => (
+                        <button key={preset.name} onClick={() => setWlConfig({ ...wlConfig, primaryColor: preset.primary, accentColor: preset.accent })}
+                          className="flex items-center gap-1.5 border border-border rounded-lg px-2.5 py-1.5 text-xs hover:bg-secondary transition-colors">
+                          <span className="w-3 h-3 rounded-full" style={{ background: preset.primary }} />
+                          {preset.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom URL */}
+                  <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                    <div className="font-semibold text-sm border-b border-border pb-3 flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-primary" /> Custom URL
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Subdomain</label>
+                      <div className="flex items-center gap-0">
+                        <input value={wlConfig.subdomain} onChange={(e) => setWlConfig({ ...wlConfig, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })}
+                          className="flex-1 bg-background border border-border rounded-l-lg px-3 py-2.5 text-sm font-mono outline-none focus:border-primary/50"
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }} placeholder="investec" />
+                        <span className="bg-muted border border-l-0 border-border rounded-r-lg px-3 py-2.5 text-sm text-muted-foreground font-mono" style={{ fontFamily: "'JetBrains Mono', monospace" }}>.chorus.ai</span>
+                      </div>
+                      <p className="text-xs text-emerald-400 mt-1.5 flex items-center gap-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                        <CheckCircle className="w-3 h-3" /> {wlConfig.subdomain || "chorus"}.chorus.ai — available
+                      </p>
+                    </div>
+                    <div className="bg-background/60 border border-border rounded-lg p-3">
+                      <div className="text-xs text-muted-foreground mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Example URLs for this account:</div>
+                      {["event/q4-earnings-2026", "register/investor-day-2026", "post-event/board-briefing"].map(path => (
+                        <div key={path} className="text-xs font-mono text-primary mb-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          https://{wlConfig.subdomain || "chorus"}.chorus.ai/{path}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3">
+                    <button onClick={() => { setWlSaved(true); toast.success("White-label configuration saved!"); setTimeout(() => setWlSaved(false), 3000); }}
+                      className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
+                      {wlSaved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                      {wlSaved ? "Saved!" : "Save Configuration"}
+                    </button>
+                    <button onClick={() => setWlConfig({ brandName: "Chorus.AI", subdomain: "chorus", primaryColor: "#e63946", accentColor: "#ffffff", logoUrl: "", tagline: "The Intelligence Layer for Every Meeting", footerText: "Powered by Chorus.AI", showPoweredBy: true })}
+                      className="flex items-center gap-2 border border-border px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
+                      <RotateCcw className="w-4 h-4" /> Reset
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Right: Live Preview ── */}
+                <div className="space-y-4">
+                  <div className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Live Preview — {wlPreviewMode === "desktop" ? "Desktop" : "Mobile"}</div>
+                  <div className={`border-2 border-border rounded-2xl overflow-hidden bg-zinc-950 transition-all ${wlPreviewMode === "mobile" ? "max-w-[375px] mx-auto" : "w-full"}`}>
+                    {/* Preview Header */}
+                    <div className="border-b border-zinc-800 px-4 h-12 flex items-center justify-between" style={{ background: "#0a0a0a" }}>
+                      <div className="flex items-center gap-2">
+                        {wlConfig.logoUrl ? (
+                          <img src={wlConfig.logoUrl} alt="Logo" className="h-6 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        ) : (
+                          <div className="w-7 h-7 rounded-md flex items-center justify-center text-white text-xs font-bold" style={{ background: wlConfig.primaryColor }}>
+                            {wlConfig.brandName.charAt(0)}
+                          </div>
+                        )}
+                        <span className="font-bold text-sm text-white">{wlConfig.brandName}</span>
+                      </div>
+                      <div className="w-20 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-semibold" style={{ background: wlConfig.primaryColor }}>
+                        Live Event
+                      </div>
+                    </div>
+                    {/* Preview Hero */}
+                    <div className="px-4 py-6 text-center" style={{ background: "linear-gradient(135deg, #0a0a0a 0%, #111 100%)" }}>
+                      <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3 border" style={{ color: wlConfig.primaryColor, borderColor: wlConfig.primaryColor + "40", background: wlConfig.primaryColor + "15" }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: wlConfig.primaryColor }} /> Live Now
+                      </div>
+                      <div className="text-white font-bold text-sm mb-1">{wlConfig.brandName}</div>
+                      <div className="text-zinc-400 text-xs mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>{wlConfig.tagline}</div>
+                      <button className="text-white text-xs font-semibold px-4 py-2 rounded-lg" style={{ background: wlConfig.primaryColor }}>
+                        Enter Event Room
+                      </button>
+                    </div>
+                    {/* Preview Sentiment Bar */}
+                    <div className="px-4 py-3 border-t border-zinc-800" style={{ background: "#0d0d0d" }}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Audience Sentiment</span>
+                        <span className="text-[10px] font-bold" style={{ color: wlConfig.primaryColor }}>84%</span>
+                      </div>
+                      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: "84%", background: wlConfig.primaryColor }} />
+                      </div>
+                    </div>
+                    {/* Preview Footer */}
+                    <div className="px-4 py-2 border-t border-zinc-800 flex items-center justify-between" style={{ background: "#080808" }}>
+                      <span className="text-[10px] text-zinc-600" style={{ fontFamily: "'Inter', sans-serif" }}>{wlConfig.footerText}</span>
+                      {wlConfig.showPoweredBy && (
+                        <span className="text-[10px] text-zinc-600" style={{ fontFamily: "'Inter', sans-serif" }}>Powered by Chorus.AI</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* URL Preview */}
+                  <div className="bg-card border border-border rounded-xl p-4">
+                    <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Your branded URL</div>
+                    <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2">
+                      <Globe className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="text-sm font-mono text-primary" style={{ fontFamily: "'JetBrains Mono', monospace" }}>https://{wlConfig.subdomain || "chorus"}.chorus.ai</span>
+                      <button onClick={() => handleCopy(`https://${wlConfig.subdomain || "chorus"}.chorus.ai`, "url")} className="ml-auto text-muted-foreground hover:text-foreground transition-colors">
+                        {copied === "url" ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
