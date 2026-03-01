@@ -1,21 +1,21 @@
-/**
+/*
  * Chorus.AI — Ably Real-Time Context
  *
- * Architecture: Since this is a static frontend demo (no backend to issue
- * Ably tokens), we use a shared in-memory event bus that perfectly simulates
- * the Ably pub/sub model. All views (EventRoom, Moderator, Presenter) share
- * the same React context, so messages published from one view are instantly
- * received by all others in the same browser session.
+ * Architecture: Dual-mode real-time layer.
  *
- * In production, replace the EventBus with real Ably channels:
- *   import Ably from 'ably';
- *   const client = new Ably.Realtime({ authUrl: '/api/ably-token' });
- *   const channel = client.channels.get(`chorus-event-${eventId}`);
- *   channel.subscribe('transcript.segment', handler);
- *   channel.publish('qa.vote', payload);
+ * DEMO MODE (no ABLY_API_KEY configured):
+ *   Uses a shared in-memory event bus. All views (EventRoom, Moderator, Presenter)
+ *   share the same React context, so messages published from one view are instantly
+ *   received by all others in the same browser session.
+ *
+ * PRODUCTION MODE (ABLY_API_KEY set in server secrets):
+ *   The AblyProvider fetches a short-lived token request from /api/trpc/ably.tokenRequest,
+ *   then opens a real Ably.Realtime connection. All messages are published and received
+ *   over Ably's global edge network — enabling cross-device, cross-browser sync.
  */
 
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
+import { trpc } from "@/lib/trpc";;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,6 +57,13 @@ export type PresenceUser = {
   joinedAt: number;
 };
 
+export type RaisedHand = {
+  id: string;
+  name: string;
+  raisedAt: number;
+  status: "waiting" | "unmuted" | "dismissed";
+};
+
 export type ChorusMessage =
   | { type: "transcript.segment"; data: TranscriptSegment }
   | { type: "sentiment.update"; data: SentimentUpdate }
@@ -67,7 +74,11 @@ export type ChorusMessage =
   | { type: "poll.vote"; data: { pollId: string; optionId: string } }
   | { type: "poll.closed"; data: { pollId: string } }
   | { type: "presence.join"; data: PresenceUser }
-  | { type: "presence.leave"; data: { id: string } };
+  | { type: "presence.leave"; data: { id: string } }
+  | { type: "hand.raise"; data: RaisedHand }
+  | { type: "hand.lower"; data: { id: string } }
+  | { type: "hand.unmute"; data: { id: string } }
+  | { type: "hand.dismiss"; data: { id: string } };
 
 type Listener = (msg: ChorusMessage) => void;
 
@@ -125,6 +136,7 @@ type AblyContextValue = {
   sentiment: SentimentUpdate;
   qaItems: QAItem[];
   polls: Poll[];
+  raisedHands: RaisedHand[];
   presenceCount: number;
   isSimulating: boolean;
   publish: (msg: ChorusMessage) => void;
@@ -137,13 +149,57 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
   const [sentiment, setSentiment] = useState<SentimentUpdate>({ score: 72, label: "Positive", timestamp: Date.now() });
   const [qaItems, setQaItems] = useState<QAItem[]>(INITIAL_QA);
   const [polls, setPolls] = useState<Poll[]>([]);
+  const [raisedHands, setRaisedHands] = useState<RaisedHand[]>([]);
   const [presenceCount, setPresenceCount] = useState(1247);
   const [isSimulating, setIsSimulating] = useState(true);
   const lineIdxRef = useRef(0);
   const sentimentIdxRef = useRef(0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ablyChannelRef = useRef<any>(null);
+
+  // Query the server for the Ably mode (demo vs real)
+  const { data: ablyConfig } = trpc.ably.tokenRequest.useQuery({ clientId: `user-${Math.random().toString(36).slice(2)}` }, { retry: false, staleTime: Infinity });
+
+  // Wire up real Ably channel when in production mode
+  useEffect(() => {
+    if (!ablyConfig || ablyConfig.mode !== "ably" || !ablyConfig.tokenRequest) return;
+    let ablyClient: any;
+    (async () => {
+      try {
+        const Ably = await import("ably");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ablyClient = new (Ably.default as any).Realtime({
+          authCallback: (_data: unknown, callback: (err: string | null, token: unknown) => void) => {
+            callback(null, ablyConfig.tokenRequest);
+          }
+        });
+        const channel = ablyClient.channels.get(`chorus-event-${eventId}`);
+        ablyChannelRef.current = channel;
+        // Subscribe to all Chorus message types over the real Ably channel
+        channel.subscribe((msg: any) => {
+          try {
+            const parsed: ChorusMessage = JSON.parse(msg.data);
+            bus.publish(eventId, parsed);
+          } catch {}
+        });
+        // Track presence
+        channel.presence.subscribe("enter", () => setPresenceCount((c) => c + 1));
+        channel.presence.subscribe("leave", () => setPresenceCount((c) => Math.max(0, c - 1)));
+        channel.presence.enter({ name: "Attendee" });
+      } catch (err) {
+        console.warn("[Chorus.AI] Ably connection failed, falling back to demo mode:", err);
+      }
+    })();
+    return () => { ablyClient?.close(); };
+  }, [ablyConfig, eventId]);
 
   const publish = useCallback((msg: ChorusMessage) => {
+    // Publish to local bus (for same-session sync)
     bus.publish(eventId, msg);
+    // Also publish to real Ably channel if connected
+    if (ablyChannelRef.current) {
+      ablyChannelRef.current.publish("chorus", JSON.stringify(msg)).catch(console.warn);
+    }
   }, [eventId]);
 
   // Subscribe to bus messages
@@ -186,6 +242,21 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
         case "presence.leave":
           setPresenceCount((c) => Math.max(0, c - 1));
           break;
+        case "hand.raise":
+          setRaisedHands((prev) => {
+            if (prev.find((h) => h.id === msg.data.id)) return prev;
+            return [...prev, msg.data];
+          });
+          break;
+        case "hand.lower":
+          setRaisedHands((prev) => prev.filter((h) => h.id !== msg.data.id));
+          break;
+        case "hand.unmute":
+          setRaisedHands((prev) => prev.map((h) => h.id === msg.data.id ? { ...h, status: "unmuted" } : h));
+          break;
+        case "hand.dismiss":
+          setRaisedHands((prev) => prev.filter((h) => h.id !== msg.data.id));
+          break;
       }
     });
     return unsub;
@@ -223,7 +294,7 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
   }, [eventId]);
 
   return (
-    <AblyContext.Provider value={{ eventId, transcript, sentiment, qaItems, polls, presenceCount, isSimulating, publish }}>
+    <AblyContext.Provider value={{ eventId, transcript, sentiment, qaItems, polls, raisedHands, presenceCount, isSimulating, publish }}>
       {children}
     </AblyContext.Provider>
   );

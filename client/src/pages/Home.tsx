@@ -40,6 +40,8 @@ function PlatformIcon({ platform }: { platform: string }) {
 }
 
 export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
   const [, navigate] = useLocation();
 
   return (

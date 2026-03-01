@@ -3,16 +3,16 @@ import { useParams, useLocation } from "wouter";
 import {
   Zap, ArrowLeft, CheckCircle, XCircle, Clock, ChevronUp,
   Send, Plus, Trash2, Play, Square, Users, MessageSquare,
-  BarChart3, Mic, AlertTriangle, Radio
+  BarChart3, Mic, AlertTriangle, Radio, Hand, MicOff
 } from "lucide-react";
-import { AblyProvider, useAbly, type QAItem, type Poll } from "@/contexts/AblyContext";
+import { AblyProvider, useAbly, type QAItem, type Poll, type RaisedHand } from "@/contexts/AblyContext";
 
 // ─── Inner component (needs AblyProvider) ────────────────────────────────────
 
 function ModeratorInner({ eventId }: { eventId: string }) {
   const [, navigate] = useLocation();
-  const { transcript, sentiment, qaItems, polls, presenceCount, publish } = useAbly();
-  const [activeTab, setActiveTab] = useState<"qa" | "polls" | "transcript">("qa");
+  const { transcript, sentiment, qaItems, polls, raisedHands, presenceCount, publish } = useAbly();
+  const [activeTab, setActiveTab] = useState<"qa" | "polls" | "transcript" | "hands">("qa");
   const [newPollQ, setNewPollQ] = useState("");
   const [newPollOpts, setNewPollOpts] = useState(["", ""]);
   const [showPollForm, setShowPollForm] = useState(false);
@@ -122,13 +122,14 @@ function ModeratorInner({ eventId }: { eventId: string }) {
           <div className="shrink-0 flex border-b border-border bg-card/40">
             {[
               { key: "qa", label: "Q&A Queue", icon: MessageSquare, badge: pendingQA.length },
+              { key: "hands", label: "Raised Hands", icon: Hand, badge: raisedHands.filter((h) => h.status === "waiting").length },
               { key: "polls", label: "Polls", icon: BarChart3, badge: polls.filter((p) => p.status === "live").length },
               { key: "transcript", label: "Live Transcript", icon: Mic, badge: 0 },
             ].map(({ key, label, icon: Icon, badge }) => (
               <button key={key} onClick={() => setActiveTab(key as typeof activeTab)}
                 className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === key ? "text-primary border-primary" : "text-muted-foreground border-transparent hover:text-foreground"}`}>
                 <Icon className="w-4 h-4" /> {label}
-                {badge > 0 && <span className="w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">{badge}</span>}
+                {badge > 0 && <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">{badge}</span>}
               </button>
             ))}
           </div>
@@ -178,6 +179,62 @@ function ModeratorInner({ eventId }: { eventId: string }) {
                   <MessageSquare className="w-8 h-8 mb-2 opacity-30" />
                   No questions in queue yet
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Raised Hands Tab ── */}
+          {activeTab === "hands" && (
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {raisedHands.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-sm">
+                  <Hand className="w-8 h-8 mb-2 opacity-30" />
+                  No hands raised yet
+                </div>
+              ) : (
+                raisedHands.map((hand) => (
+                  <div key={hand.id} className={`bg-card border rounded-xl p-4 flex items-center justify-between gap-4 ${
+                    hand.status === "unmuted" ? "border-emerald-500/40 bg-emerald-500/5" : "border-border"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        hand.status === "unmuted" ? "bg-emerald-500/20" : "bg-amber-500/20"
+                      }`}>
+                        <Hand className={`w-4 h-4 ${hand.status === "unmuted" ? "text-emerald-400" : "text-amber-400"}`} />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-sm">{hand.name}</div>
+                        <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
+                          {hand.status === "unmuted" ? "Currently unmuted — speaking" : "Waiting to speak"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {hand.status === "waiting" && (
+                        <button
+                          onClick={() => publish({ type: "hand.unmute", data: { id: hand.id } })}
+                          className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
+                        >
+                          <Mic className="w-3 h-3" /> Unmute
+                        </button>
+                      )}
+                      {hand.status === "unmuted" && (
+                        <button
+                          onClick={() => publish({ type: "hand.dismiss", data: { id: hand.id } })}
+                          className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors"
+                        >
+                          <MicOff className="w-3 h-3" /> Mute & Dismiss
+                        </button>
+                      )}
+                      <button
+                        onClick={() => publish({ type: "hand.dismiss", data: { id: hand.id } })}
+                        className="flex items-center gap-1.5 border border-border text-muted-foreground text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
+                      >
+                        <XCircle className="w-3 h-3" /> Dismiss
+                      </button>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           )}

@@ -3,9 +3,9 @@ import { useLocation, useParams } from "wouter";
 import {
   Zap, ArrowLeft, Users, Clock, Settings,
   ChevronUp, Send, Globe, BarChart3, MessageSquare,
-  FileText, Radio, Mic
+  FileText, Radio, Mic, Hand, MicOff
 } from "lucide-react";
-import { AblyProvider, useAbly, type QAItem } from "@/contexts/AblyContext";
+import { AblyProvider, useAbly, type QAItem, type RaisedHand } from "@/contexts/AblyContext";
 
 // ─── Event Metadata ───────────────────────────────────────────────────────────
 
@@ -53,13 +53,16 @@ function SentimentGauge({ value }: { value: number }) {
 function EventRoomInner({ eventId }: { eventId: string }) {
   const [, navigate] = useLocation();
   const meta = EVENT_META[eventId] ?? EVENT_META["q4-earnings-2026"];
-  const { transcript, sentiment, qaItems, polls, presenceCount, publish } = useAbly();
+  const { transcript, sentiment, qaItems, polls, raisedHands, presenceCount, publish } = useAbly();
 
   const [activeTab, setActiveTab] = useState<"transcript" | "qa" | "polls" | "analytics">("transcript");
   const [newQuestion, setNewQuestion] = useState("");
   const [language, setLanguage] = useState("English");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [handRaised, setHandRaised] = useState(false);
+  const [myHandId] = useState(() => `hand-${Date.now()}`);
+  const [unmutedNotice, setUnmutedNotice] = useState(false);
   const transcriptRef = useRef<HTMLDivElement>(null);
 
   // Elapsed time
@@ -102,6 +105,24 @@ function EventRoomInner({ eventId }: { eventId: string }) {
   const handlePollVote = useCallback((pollId: string, optionId: string) => {
     publish({ type: "poll.vote", data: { pollId, optionId } });
   }, [publish]);
+
+  const handleRaiseHand = useCallback(() => {
+    if (handRaised) {
+      publish({ type: "hand.lower", data: { id: myHandId } });
+      setHandRaised(false);
+      setUnmutedNotice(false);
+    } else {
+      const hand: RaisedHand = { id: myHandId, name: "You (Attendee)", raisedAt: Date.now(), status: "waiting" };
+      publish({ type: "hand.raise", data: hand });
+      setHandRaised(true);
+    }
+  }, [handRaised, myHandId, publish]);
+
+  // Watch for unmute signal from moderator
+  useEffect(() => {
+    const myHand = raisedHands.find((h) => h.id === myHandId);
+    if (myHand?.status === "unmuted") setUnmutedNotice(true);
+  }, [raisedHands, myHandId]);
 
   const speakerColor: Record<string, string> = {
     "Operator": "text-muted-foreground",
@@ -183,7 +204,33 @@ function EventRoomInner({ eventId }: { eventId: string }) {
             <div className="absolute bottom-3 right-3 text-xs font-mono text-white/60 bg-black/50 px-2 py-1 rounded">
               {formatTime(elapsedSeconds)}
             </div>
+            {/* Raise Hand button */}
+            <button
+              onClick={handleRaiseHand}
+              className={`absolute top-3 right-3 flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${
+                handRaised
+                  ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
+                  : "bg-black/50 border-white/20 text-white/70 hover:bg-white/10"
+              }`}
+            >
+              <Hand className="w-3.5 h-3.5" />
+              {handRaised ? "Hand Raised" : "Raise Hand"}
+            </button>
           </div>
+
+          {/* Unmuted by moderator banner */}
+          {unmutedNotice && (
+            <div className="shrink-0 bg-emerald-500/10 border-b border-emerald-500/30 px-4 py-2.5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mic className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-semibold text-emerald-400">You have been unmuted by the moderator</span>
+                <span className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>You may now speak verbally on the call.</span>
+              </div>
+              <button onClick={() => { setUnmutedNotice(false); handleRaiseHand(); }} className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border px-2.5 py-1 rounded-lg hover:bg-secondary transition-colors">
+                <MicOff className="w-3 h-3" /> Lower Hand
+              </button>
+            </div>
+          )}
 
           {/* Live Poll Banner (if any polls are live) */}
           {livePolls.length > 0 && (

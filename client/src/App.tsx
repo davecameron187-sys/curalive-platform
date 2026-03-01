@@ -14,8 +14,8 @@ import PartnerAPI from "./pages/PartnerAPI";
 import EmbedWidget from "./pages/EmbedWidget";
 import Moderator from "./pages/Moderator";
 import Presenter from "./pages/Presenter";
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path="/" component={Home} />

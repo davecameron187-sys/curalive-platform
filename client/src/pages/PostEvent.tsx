@@ -3,7 +3,7 @@ import { useLocation, useParams } from "wouter";
 import {
   Zap, ArrowLeft, Download, Play, FileText, BarChart3,
   MessageSquare, Clock, Users, Globe, CheckCircle,
-  TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp
+  TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Mail
 } from "lucide-react";
 
 const SUMMARY = `Chorus Call delivered a strong Q4 2025, with revenue of $47.2 million representing 28% year-over-year growth. CEO James Mitchell highlighted the accelerating adoption of the Chorus.AI intelligence platform, which drove a 40% improvement in engagement metrics across the enterprise client base.
@@ -153,9 +153,17 @@ export default function PostEvent() {
                   </div>
                   <span className="font-semibold">Chorus.AI Executive Summary</span>
                 </div>
-                <button onClick={() => handleDownload("summary")} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
-                  <Download className="w-3 h-3" /> Download PDF
-                </button>
+                <div className="flex gap-2">
+                  <a
+                    href={`mailto:?subject=${encodeURIComponent("Q4 2025 Earnings Call — Chorus.AI Executive Summary")}&body=${encodeURIComponent("Dear IR Contacts,\n\nPlease find below the AI-generated executive summary for the Q4 2025 Earnings Call, produced by Chorus.AI.\n\n" + SUMMARY + "\n\nKey Metrics:\n• Q4 Revenue: $47.2M (+28% YoY)\n• Gross Margin: 72%\n• 2026 Revenue Guidance: $195–210M\n• Cash & Equivalents: $124M\n\nFull replay and transcript available at your Chorus.AI portal.\n\nBest regards,\nInvestor Relations — Chorus Call Inc.")}`}
+                    className="flex items-center gap-1.5 text-xs bg-primary/10 border border-primary/20 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+                  >
+                    <Mail className="w-3 h-3" /> Email to IR Contacts
+                  </a>
+                  <button onClick={() => handleDownload("summary")} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
+                    <Download className="w-3 h-3" /> Download PDF
+                  </button>
+                </div>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line" style={{ fontFamily: "'Inter', sans-serif" }}>{SUMMARY}</p>
             </div>
