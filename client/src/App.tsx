@@ -6,12 +6,24 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import EventRoom from "./pages/EventRoom";
+import OperatorConsole from "./pages/OperatorConsole";
+import Registration from "./pages/Registration";
+import PostEvent from "./pages/PostEvent";
+import IntegrationHub from "./pages/IntegrationHub";
+import PartnerAPI from "./pages/PartnerAPI";
+import EmbedWidget from "./pages/EmbedWidget";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/event/:id" component={EventRoom} />
+      <Route path="/operator/:id" component={OperatorConsole} />
+      <Route path="/register/:id" component={Registration} />
+      <Route path="/post-event/:id" component={PostEvent} />
+      <Route path="/integrations" component={IntegrationHub} />
+      <Route path="/partner-api" component={PartnerAPI} />
+      <Route path="/embed/:id" component={EmbedWidget} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
