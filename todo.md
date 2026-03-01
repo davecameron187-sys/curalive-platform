@@ -43,3 +43,7 @@
 - [ ] Add Africa/UAE/Mauritius dial-in numbers to OperatorConsole
 - [ ] Build White-Label Configuration panel (logo, brand colours, subdomain preview)
 - [ ] Add RTL layout support for Arabic in EventRoom transcript and CC overlay
+
+## Round 10 — Demo Video & Sales Page
+
+- [x] Add MP4 download button for demo video on Sales Demo page and Home page

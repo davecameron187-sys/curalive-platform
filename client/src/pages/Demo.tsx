@@ -3,7 +3,7 @@ import {
   Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight,
   Play, Settings, Code2, Package, FileText, Radio, MonitorPlay,
   CheckCircle2, ExternalLink, Users, Clock, Shield, TrendingUp,
-  PhoneCall, Mail, Calendar
+  PhoneCall, Mail, Calendar, Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -176,16 +176,23 @@ export default function Demo() {
                 <source src={DEMO_VIDEO_URL} type="video/mp4" />
               </video>
             </div>
-            <div className="mt-4 flex items-center justify-center gap-4 text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-              <span>55 seconds</span>
-              <span>·</span>
-              <span>1280×720 HD</span>
-              <span>·</span>
-              <span>Professional AI voiceover</span>
-              <span>·</span>
-              <a href={DEMO_VIDEO_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
-                Download MP4 <ExternalLink className="w-3 h-3" />
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a
+                href={DEMO_VIDEO_URL}
+                download="Chorus_AI_Demo.mp4"
+                className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                <Download className="w-4 h-4" /> Download MP4
               </a>
+              <div className="flex items-center gap-3 text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <span>55 seconds</span>
+                <span>·</span>
+                <span>1280×720 HD</span>
+                <span>·</span>
+                <span>26.8 MB</span>
+                <span>·</span>
+                <span>Professional AI voiceover</span>
+              </div>
             </div>
           </div>
         </div>
