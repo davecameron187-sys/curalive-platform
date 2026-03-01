@@ -51,10 +51,7 @@ export default function Home() {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
-            </div>
-            <span className="text-lg font-bold tracking-tight">Chorus<span className="text-primary">.AI</span></span>
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-9 w-auto object-contain" />
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#events" className="hover:text-foreground transition-colors">Events</a>
@@ -266,10 +263,7 @@ export default function Home() {
       <footer className="border-t border-border py-8">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-              <Zap className="w-3 h-3 text-primary-foreground" />
-            </div>
-            <span className="text-sm font-semibold">Chorus<span className="text-primary">.AI</span></span>
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-6 w-auto object-contain" />
           </div>
           <div className="flex items-center gap-6 text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
             <button onClick={() => navigate("/integrations")} className="hover:text-foreground transition-colors">Integration Hub</button>

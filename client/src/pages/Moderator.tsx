@@ -93,10 +93,7 @@ function ModeratorInner({ eventId }: { eventId: string }) {
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="w-px h-5 bg-border" />
-        <div className="w-6 h-6 rounded bg-primary flex items-center justify-center shrink-0">
-          <Zap className="w-3 h-3 text-primary-foreground" strokeWidth={2.5} />
-        </div>
-        <span className="font-bold text-sm">Chorus<span className="text-primary">.AI</span></span>
+        <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-6 w-auto object-contain" />
         <div className="w-px h-5 bg-border" />
         <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full">
           <Radio className="w-3 h-3" /> Moderator
