@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay, Activity } from "lucide-react";
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-hero-bg-bFr44AaNNWKkv4uMRbTXe8.webp";
+const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus_ai_demo_v5_7a9fdeb3.mp4";
 
 const DEMO_EVENTS = [
   { id: "q4-earnings-2026", title: "Q4 2025 Earnings Call", company: "Chorus Call Inc.", platform: "Zoom", status: "live", attendees: 1247, duration: "42:18" },
@@ -74,23 +75,39 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
         <div className="container relative z-10 py-24">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-6">
-              <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — Chorus Call Inc.
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-6">
+                <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — Chorus Call Inc.
+              </div>
+              <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight mb-6">
+                The Intelligence Layer<br /><span className="text-primary">for Every Meeting</span>
+              </h1>
+              <p className="text-lg text-muted-foreground leading-relaxed mb-10" style={{ fontFamily: "'Inter', sans-serif" }}>
+                Chorus.AI sits on top of Zoom, Microsoft Teams, Webex, and any RTMP source — delivering real-time transcription, sentiment analysis, smart Q&A, and AI summaries to every investor event, earnings call, and board briefing.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <button onClick={() => navigate("/event/q4-earnings-2026")} className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity">
+                  Enter Live Event Room <ArrowRight className="w-4 h-4" />
+                </button>
+                <button onClick={() => navigate("/demo")} className="flex items-center gap-2 border border-primary/40 text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary/10 transition-colors">
+                  <Play className="w-4 h-4" /> Watch Demo
+                </button>
+              </div>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight mb-6">
-              The Intelligence Layer<br /><span className="text-primary">for Every Meeting</span>
-            </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed mb-10" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Chorus.AI sits on top of Zoom, Microsoft Teams, Webex, and any RTMP source — delivering real-time transcription, sentiment analysis, smart Q&A, and AI summaries to every investor event, earnings call, and board briefing.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <button onClick={() => navigate("/event/q4-earnings-2026")} className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity">
-                Enter Live Event Room <ArrowRight className="w-4 h-4" />
-              </button>
-              <button onClick={() => navigate("/register/q4-earnings-2026")} className="flex items-center gap-2 border border-border text-foreground px-6 py-3 rounded-lg font-semibold hover:bg-secondary transition-colors">
-                Register as Attendee
-              </button>
+            {/* Demo Video */}
+            <div className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl shadow-primary/10">
+              <video
+                src={DEMO_VIDEO_URL}
+                controls
+                playsInline
+                className="w-full aspect-video object-cover bg-black"
+                poster={HERO_IMAGE}
+              />
+              <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
+                Chorus.AI Demo — 55s
+              </div>
             </div>
           </div>
         </div>

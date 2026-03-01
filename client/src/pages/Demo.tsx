@@ -163,7 +163,7 @@ export default function Demo() {
             <div className="mb-8 text-center">
               <h2 className="text-3xl font-bold mb-3">Platform Demo Video</h2>
               <p className="text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-                55-second overview of all 10 platform modules — generated with Runway Gen-4.5 AI visuals and professional voiceover.
+                55-second overview of all 10 platform modules — cinematic visuals with professional voiceover narration.
               </p>
             </div>
             <div className="relative rounded-2xl overflow-hidden border border-border bg-black shadow-2xl">
