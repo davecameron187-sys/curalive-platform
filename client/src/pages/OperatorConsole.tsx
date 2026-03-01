@@ -1,70 +1,104 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import {
-  Zap, ArrowLeft, Mic, MicOff, Users, Clock, Settings,
-  Radio, Link2, Copy, CheckCheck, ChevronUp, Trash2,
+  ArrowLeft, Mic, MicOff, Users, Clock, Settings,
+  Radio, Link2, Copy, CheckCheck, Trash2,
   Play, Square, Phone, Globe, BarChart3, MessageSquare,
   AlertCircle, CheckCircle, Loader2, Volume2, VolumeX,
-  ExternalLink, Key, Webhook, RefreshCw, Lock, Unlock, Eye, EyeOff,
-  Palette, Monitor, Smartphone, Save, RotateCcw, ImageIcon
+  ExternalLink, Key, Webhook, RefreshCw, Lock, Unlock,
+  Palette, Monitor, Smartphone, Save, ImageIcon,
+  Activity, Wifi, WifiOff, Shield, Zap, ChevronRight,
+  Eye, EyeOff, Bell, BellOff, TrendingUp, Signal,
+  Layers, Terminal, Database, Hash, Check, X, MoreVertical,
+  Headphones, Video, VideoOff, Maximize2, AlertTriangle,
+  FileText, Download, RotateCcw, Info
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
-const EVENT_META: Record<string, { title: string; company: string; platform: string }> = {
-  "q4-earnings-2026": { title: "Q4 2025 Earnings Call", company: "Chorus Call Inc.", platform: "Zoom" },
-  "investor-day-2026": { title: "Annual Investor Day", company: "Chorus Call Inc.", platform: "Microsoft Teams" },
-  "board-briefing": { title: "Board Strategy Briefing", company: "Chorus Call Inc.", platform: "Webex" },
+const EVENT_META: Record<string, { title: string; company: string; platform: string; date: string; time: string }> = {
+  "q4-earnings-2026": { title: "Q4 2025 Earnings Call", company: "Chorus Call Inc.", platform: "Zoom", date: "1 Mar 2026", time: "10:00 SAST" },
+  "investor-day-2026": { title: "Annual Investor Day", company: "Chorus Call Inc.", platform: "Microsoft Teams", date: "15 Mar 2026", time: "09:00 SAST" },
+  "board-briefing": { title: "Board Strategy Briefing", company: "Chorus Call Inc.", platform: "Webex", date: "28 Feb 2026", time: "14:00 SAST" },
 };
 
 type BotStatus = "disconnected" | "connecting" | "live" | "ended";
-type QAItem = { id: number; question: string; author: string; votes: number; approved: boolean; dismissed: boolean; answered: boolean };
+type Tab = "overview" | "connect" | "qa" | "dialin" | "rtmp" | "settings" | "attendees" | "whitelabel";
+
+type QAItem = { id: number; question: string; author: string; firm: string; votes: number; approved: boolean; dismissed: boolean; answered: boolean; flagged?: boolean };
 
 const INITIAL_QA: QAItem[] = [
-  { id: 1, question: "Can you provide more detail on the Chorus.AI revenue contribution in Q4?", author: "Goldman Sachs", votes: 47, approved: true, dismissed: false, answered: false },
-  { id: 2, question: "What is the timeline for the native Microsoft Teams integration?", author: "JP Morgan", votes: 31, approved: true, dismissed: false, answered: false },
-  { id: 3, question: "How does the Recall.ai partnership affect your gross margin profile?", author: "Morgan Stanley", votes: 28, approved: false, dismissed: false, answered: false },
-  { id: 4, question: "Can you elaborate on the 40% engagement increase metric?", author: "Barclays", votes: 19, approved: true, dismissed: false, answered: true },
-  { id: 5, question: "What is the competitive moat against Zoom and Teams building similar features?", author: "UBS", votes: 15, approved: false, dismissed: false, answered: false },
-  { id: 6, question: "What is your cash runway and expected burn rate for 2026?", author: "Anonymous", votes: 3, approved: false, dismissed: false, answered: false },
+  { id: 1, question: "Can you provide more detail on the Chorus.AI revenue contribution in Q4?", author: "Sarah Chen", firm: "Goldman Sachs", votes: 47, approved: true, dismissed: false, answered: false },
+  { id: 2, question: "What is the timeline for the native Microsoft Teams integration?", author: "James Okafor", firm: "JP Morgan", votes: 31, approved: true, dismissed: false, answered: false },
+  { id: 3, question: "How does the Recall.ai partnership affect your gross margin profile?", author: "Priya Naidoo", firm: "Morgan Stanley", votes: 28, approved: false, dismissed: false, answered: false },
+  { id: 4, question: "Can you elaborate on the 40% engagement increase metric?", author: "Tom Barker", firm: "Barclays", votes: 19, approved: true, dismissed: false, answered: true },
+  { id: 5, question: "What is the competitive moat against Zoom and Teams building similar features?", author: "Lena Fischer", firm: "UBS", votes: 15, approved: false, dismissed: false, answered: false },
+  { id: 6, question: "What is your cash runway and expected burn rate for 2026?", author: "Anonymous", firm: "", votes: 3, approved: false, dismissed: false, answered: false, flagged: true },
 ];
 
 const DIAL_IN_NUMBERS = [
-  // Core markets
-  { country: "South Africa",   flag: "🇿🇦", number: "+27 800 555 019",   passcode: "847291#", region: "Southern Africa" },
-  { country: "Nigeria",        flag: "🇳🇬", number: "+234 800 555 019",  passcode: "847291#", region: "West Africa" },
-  { country: "Kenya",          flag: "🇰🇪", number: "+254 800 555 019",  passcode: "847291#", region: "East Africa" },
-  { country: "Ghana",          flag: "🇬🇭", number: "+233 800 555 019",  passcode: "847291#", region: "West Africa" },
-  { country: "Mauritius",      flag: "🇲🇺", number: "+230 800 555 019",  passcode: "847291#", region: "Mauritius" },
-  { country: "UAE / Dubai",    flag: "🇦🇪", number: "+971 800 555 019",  passcode: "847291#", region: "Middle East" },
-  { country: "Egypt",          flag: "🇪🇬", number: "+20 800 555 019",   passcode: "847291#", region: "North Africa" },
-  { country: "Ethiopia",       flag: "🇪🇹", number: "+251 800 555 019",  passcode: "847291#", region: "East Africa" },
-  { country: "Morocco",        flag: "🇲🇦", number: "+212 800 555 019",  passcode: "847291#", region: "North Africa" },
-  { country: "Angola",         flag: "🇦🇴", number: "+244 800 555 019",  passcode: "847291#", region: "Southern Africa" },
-  { country: "Mozambique",     flag: "🇲🇿", number: "+258 800 555 019",  passcode: "847291#", region: "Southern Africa" },
-  { country: "Namibia",        flag: "🇳🇦", number: "+264 800 555 019",  passcode: "847291#", region: "Southern Africa" },
-  { country: "Tanzania",       flag: "🇹🇿", number: "+255 800 555 019",  passcode: "847291#", region: "East Africa" },
-  { country: "Zambia",         flag: "🇿🇲", number: "+260 800 555 019",  passcode: "847291#", region: "Southern Africa" },
-  // Global investor hubs
-  { country: "United Kingdom", flag: "🇬🇧", number: "+44 800 555 0192",  passcode: "847291#", region: "Europe" },
-  { country: "United States",  flag: "🇺🇸", number: "+1 (800) 555-0192", passcode: "847291#", region: "Americas" },
-  { country: "China",          flag: "🇨🇳", number: "+86 800 555 019",   passcode: "847291#", region: "Asia" },
-  { country: "India",          flag: "🇮🇳", number: "+91 800 555 019",   passcode: "847291#", region: "Asia" },
+  { country: "South Africa", flag: "🇿🇦", number: "+27 800 555 019", passcode: "847291#", region: "Southern Africa" },
+  { country: "Nigeria", flag: "🇳🇬", number: "+234 800 555 019", passcode: "847291#", region: "West Africa" },
+  { country: "Kenya", flag: "🇰🇪", number: "+254 800 555 019", passcode: "847291#", region: "East Africa" },
+  { country: "Ghana", flag: "🇬🇭", number: "+233 800 555 019", passcode: "847291#", region: "West Africa" },
+  { country: "Mauritius", flag: "🇲🇺", number: "+230 800 555 019", passcode: "847291#", region: "Mauritius" },
+  { country: "UAE / Dubai", flag: "🇦🇪", number: "+971 800 555 019", passcode: "847291#", region: "Middle East" },
+  { country: "Egypt", flag: "🇪🇬", number: "+20 800 555 019", passcode: "847291#", region: "North Africa" },
+  { country: "United Kingdom", flag: "🇬🇧", number: "+44 800 555 0192", passcode: "847291#", region: "Europe" },
+  { country: "United States", flag: "🇺🇸", number: "+1 (800) 555-0192", passcode: "847291#", region: "Americas" },
+  { country: "China", flag: "🇨🇳", number: "+86 800 555 019", passcode: "847291#", region: "Asia" },
+  { country: "India", flag: "🇮🇳", number: "+91 800 555 019", passcode: "847291#", region: "Asia" },
+  { country: "Morocco", flag: "🇲🇦", number: "+212 800 555 019", passcode: "847291#", region: "North Africa" },
 ];
 
-function StatusDot({ status }: { status: BotStatus }) {
-  const map = {
-    disconnected: { color: "bg-muted-foreground", label: "Disconnected" },
-    connecting: { color: "bg-amber-400 animate-pulse", label: "Connecting…" },
-    live: { color: "bg-emerald-400", label: "Live" },
-    ended: { color: "bg-muted-foreground", label: "Ended" },
-  };
-  const { color, label } = map[status];
+const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
+  { id: "overview", label: "Overview", icon: Activity },
+  { id: "connect", label: "Connect Webcast", icon: Wifi },
+  { id: "qa", label: "Q&A Queue", icon: MessageSquare, badge: 3 },
+  { id: "attendees", label: "Attendees", icon: Users },
+  { id: "dialin", label: "Dial-In Numbers", icon: Phone },
+  { id: "rtmp", label: "RTMP / Stream Key", icon: Video },
+  { id: "settings", label: "Event Settings", icon: Settings },
+  { id: "whitelabel", label: "White-Label", icon: Palette },
+];
+
+function LiveDot({ pulse = true }: { pulse?: boolean }) {
   return (
-    <span className="flex items-center gap-1.5 text-xs font-semibold">
-      <span className={`inline-block w-2 h-2 rounded-full ${color}`} />
-      {label}
+    <span className="relative flex h-2 w-2">
+      {pulse && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />}
+      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
     </span>
+  );
+}
+
+function StatusPill({ status }: { status: BotStatus }) {
+  const map = {
+    disconnected: { bg: "bg-slate-800", text: "text-slate-400", dot: "bg-slate-500", label: "Disconnected" },
+    connecting: { bg: "bg-amber-950/60", text: "text-amber-400", dot: "bg-amber-400 animate-pulse", label: "Connecting…" },
+    live: { bg: "bg-emerald-950/60", text: "text-emerald-400", dot: "bg-emerald-400", label: "LIVE" },
+    ended: { bg: "bg-slate-800", text: "text-slate-400", dot: "bg-slate-500", label: "Ended" },
+  };
+  const s = map[status];
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${s.bg} ${s.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+      {s.label}
+    </span>
+  );
+}
+
+function MetricCard({ label, value, sub, accent = false, icon: Icon }: { label: string; value: string | number; sub?: string; accent?: boolean; icon: React.ElementType }) {
+  return (
+    <div className={`rounded-xl border p-4 flex items-start gap-3 ${accent ? "bg-primary/5 border-primary/20" : "bg-[#0f1629] border-white/8"}`}>
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${accent ? "bg-primary/15" : "bg-white/5"}`}>
+        <Icon className={`w-4 h-4 ${accent ? "text-primary" : "text-slate-400"}`} />
+      </div>
+      <div className="min-w-0">
+        <div className={`text-xl font-bold leading-none mb-0.5 ${accent ? "text-primary" : "text-white"}`}>{value}</div>
+        <div className="text-[11px] text-slate-500 font-medium">{label}</div>
+        {sub && <div className="text-[10px] text-slate-600 mt-0.5">{sub}</div>}
+      </div>
+    </div>
   );
 }
 
@@ -74,75 +108,53 @@ export default function OperatorConsole() {
   const eventId = params.id ?? "q4-earnings-2026";
   const meta = EVENT_META[eventId] ?? EVENT_META["q4-earnings-2026"];
 
-  const [activeTab, setActiveTab] = useState<"connect" | "qa" | "dialin" | "rtmp" | "settings" | "attendees" | "whitelabel">("connect");
-
-  // White-label config state
-  const [wlConfig, setWlConfig] = useState({
-    brandName: "Chorus.AI",
-    subdomain: "chorus",
-    primaryColor: "#e63946",
-    accentColor: "#ffffff",
-    logoUrl: "",
-    tagline: "The Intelligence Layer for Every Meeting",
-    footerText: "Powered by Chorus.AI",
-    showPoweredBy: true,
-  });
-  const [wlSaved, setWlSaved] = useState(false);
-  const [wlPreviewMode, setWlPreviewMode] = useState<"desktop" | "mobile">("desktop");
-
-  // Real attendee list from database
-  const { data: attendeeList, isLoading: attendeesLoading, refetch: refetchAttendees } = trpc.registrations.listByEvent.useQuery({ eventId });
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [botStatus, setBotStatus] = useState<BotStatus>("disconnected");
   const [meetingUrl, setMeetingUrl] = useState("");
   const [qaItems, setQaItems] = useState<QAItem[]>(INITIAL_QA);
-  const [attendees] = useState(1247);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
   const [eventStarted, setEventStarted] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [accessCodeInput, setAccessCodeInput] = useState("");
   const [showAccessCode, setShowAccessCode] = useState(false);
+  const [silenceAlert, setSilenceAlert] = useState<{ seconds: number } | null>(null);
+  const [audioLevel] = useState(72);
+  const [sentimentScore] = useState(78);
+  const lastActivityRef = useRef<number>(Date.now());
 
-  // Access code management
+  // White-label config
+  const [wlConfig, setWlConfig] = useState({
+    brandName: "Chorus.AI",
+    subdomain: "chorus",
+    primaryColor: "#e63946",
+    logoUrl: "",
+    tagline: "The Intelligence Layer for Every Meeting",
+    showPoweredBy: true,
+  });
+
+  const { data: attendeeList, isLoading: attendeesLoading, refetch: refetchAttendees } = trpc.registrations.listByEvent.useQuery({ eventId });
   const { data: accessData, refetch: refetchAccess } = trpc.events.verifyAccess.useQuery({ eventId });
   const setAccessCodeMutation = trpc.events.setAccessCode.useMutation({
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success(data.message ?? "Access code updated!");
-        refetchAccess();
-        setAccessCodeInput("");
-      } else {
-        toast.error(data.error ?? "Failed to update access code");
-      }
+    onSuccess: (data: { success: boolean; message?: string; error?: string }) => {
+      if (data.success) { toast.success("Access code updated!"); refetchAccess(); setAccessCodeInput(""); }
+      else toast.error(data.error ?? "Failed");
     },
-    onError: () => toast.error("Failed to update access code"),
   });
+
   const rtmpKey = "evt_q4_2026_xK9mNpQ3";
   const rtmpUrl = `rtmp://ingest.chorus.ai/live/${rtmpKey}`;
   const webhookUrl = `https://chorus.ai/api/webhooks/recall`;
 
-  // ── Feature #15: Silence / Anomaly Detector ───────────────────────────────────
-  const [silenceAlert, setSilenceAlert] = useState<{ seconds: number; dismissedAt: number | null } | null>(null);
-  const lastActivityRef = useRef<number>(Date.now());
-  // Simulate transcript activity ticks when bot is live
+  // Silence detector
   useEffect(() => {
     if (botStatus !== "live") { setSilenceAlert(null); return; }
-    // Simulate activity: reset every 15-45s randomly
     const activityInterval = setInterval(() => {
-      const roll = Math.random();
-      if (roll > 0.3) lastActivityRef.current = Date.now(); // 70% chance of activity
+      if (Math.random() > 0.3) lastActivityRef.current = Date.now();
     }, 5000);
-    // Check for silence every second
     const silenceCheck = setInterval(() => {
       const silenceSec = Math.floor((Date.now() - lastActivityRef.current) / 1000);
-      if (silenceSec >= 10) {
-        setSilenceAlert((prev) => {
-          if (prev?.dismissedAt) return prev; // already dismissed
-          return { seconds: silenceSec, dismissedAt: null };
-        });
-      } else {
-        setSilenceAlert(null);
-      }
+      setSilenceAlert(silenceSec >= 10 ? { seconds: silenceSec } : null);
     }, 1000);
     return () => { clearInterval(activityInterval); clearInterval(silenceCheck); };
   }, [botStatus]);
@@ -173,250 +185,364 @@ export default function OperatorConsole() {
     setTimeout(() => {
       setBotStatus("live");
       setEventStarted(true);
-      toast.success("Bot joined! Live transcription active.");
+      toast.success("Bot joined — live transcription active.");
     }, 3000);
   };
 
   const handleDisconnect = () => {
     setBotStatus("ended");
+    setEventStarted(false);
     toast.info("Bot disconnected. Generating AI summary…");
   };
-
-  const handleStartEvent = () => {
-    setEventStarted(true);
-    toast.success("Event started — attendees can now join.");
-  };
-
-  const approveQ = (id: number) => setQaItems((items) => items.map((q) => q.id === id ? { ...q, approved: true } : q));
-  const dismissQ = (id: number) => setQaItems((items) => items.map((q) => q.id === id ? { ...q, dismissed: true } : q));
-  const answerQ = (id: number) => setQaItems((items) => items.map((q) => q.id === id ? { ...q, answered: true } : q));
 
   const pendingQ = qaItems.filter((q) => !q.approved && !q.dismissed && !q.answered);
   const approvedQ = qaItems.filter((q) => q.approved && !q.answered);
   const answeredQ = qaItems.filter((q) => q.answered);
 
+  const approveQ = (id: number) => setQaItems((items) => items.map((q) => q.id === id ? { ...q, approved: true } : q));
+  const dismissQ = (id: number) => setQaItems((items) => items.map((q) => q.id === id ? { ...q, dismissed: true } : q));
+  const answerQ = (id: number) => setQaItems((items) => items.map((q) => q.id === id ? { ...q, answered: true } : q));
+
   return (
-    <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-md px-6 h-14 flex items-center gap-4">
-        <button onClick={() => navigate("/")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm">
-          <ArrowLeft className="w-4 h-4" /> Events
+    <div className="min-h-screen bg-[#06080f] text-white flex flex-col" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+
+      {/* ── Top Command Bar ── */}
+      <header className="h-12 border-b border-white/8 bg-[#06080f]/95 backdrop-blur-md flex items-center px-4 gap-4 flex-shrink-0 sticky top-0 z-30">
+        <button onClick={() => navigate("/")} className="flex items-center gap-1.5 text-slate-500 hover:text-white transition-colors text-xs font-medium">
+          <ArrowLeft className="w-3.5 h-3.5" /> Events
         </button>
-        <div className="w-px h-5 bg-border" />
-        <div className="flex items-center gap-2">
-          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-6 w-auto object-contain" />
-          <span className="text-muted-foreground text-sm">/ Operator Console</span>
-        </div>
-        <div className="flex-1" />
-        <div className="flex items-center gap-4">
-          <StatusDot status={botStatus} />
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Users className="w-3.5 h-3.5" /> {attendees.toLocaleString()}
+        <span className="text-white/20">|</span>
+
+        {/* Event identity */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-5 h-5 rounded bg-primary/20 flex items-center justify-center flex-shrink-0">
+            <Radio className="w-3 h-3 text-primary" />
           </div>
-          {eventStarted && (
-            <div className="flex items-center gap-1.5 text-xs font-mono text-primary">
-              <Clock className="w-3.5 h-3.5" /> {formatTime(elapsedSeconds)}
+          <span className="text-sm font-semibold text-white truncate">{meta.title}</span>
+          <span className="text-slate-600 text-xs hidden sm:block">{meta.company}</span>
+          <span className="text-slate-700 text-xs hidden md:block">·</span>
+          <span className="text-slate-600 text-xs hidden md:block">{meta.date} · {meta.time}</span>
+        </div>
+
+        {/* Status cluster */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {botStatus === "live" && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+              <Clock className="w-3 h-3" />
+              {formatTime(elapsedSeconds)}
             </div>
           )}
-          <button onClick={() => navigate(`/event/${eventId}`)} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
+          <StatusPill status={botStatus} />
+          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <Users className="w-3.5 h-3.5" />
+            <span className="font-semibold text-white">{attendeeList?.length ?? 1247}</span>
+          </div>
+          <button onClick={() => navigate(`/event/${eventId}`)} className="flex items-center gap-1.5 text-xs font-semibold bg-white/8 hover:bg-white/12 border border-white/10 px-2.5 py-1.5 rounded-lg transition-colors">
             <ExternalLink className="w-3 h-3" /> Event Room
           </button>
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-56px)]">
-        {/* Sidebar Nav */}
-        <nav className="w-56 shrink-0 border-r border-border bg-card/40 p-3 flex flex-col gap-1">
-          {[
-            { key: "connect", label: "Connect Webcast", icon: Radio },
-            { key: "qa", label: "Q&A Moderation", icon: MessageSquare, badge: pendingQ.length },
-            { key: "attendees", label: "Attendees", icon: Users, badge: attendeeList?.length || 0 },
-            { key: "dialin", label: "Dial-In Numbers", icon: Phone },
-            { key: "rtmp", label: "RTMP / Stream Key", icon: Link2 },
-            { key: "settings", label: "Event Settings", icon: Settings },
-            { key: "whitelabel", label: "White-Label", icon: Palette },
-          ].map(({ key, label, icon: Icon, badge }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key as typeof activeTab)}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${activeTab === key ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span className="flex-1">{label}</span>
-              {badge ? <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">{badge}</span> : null}
-            </button>
-          ))}
+      {/* ── Silence Alert Banner ── */}
+      {silenceAlert && (
+        <div className="bg-amber-950/80 border-b border-amber-500/30 px-4 py-2 flex items-center gap-3 text-sm">
+          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <span className="text-amber-300 font-semibold">Audio silence detected — {silenceAlert.seconds}s with no transcript activity.</span>
+          <button onClick={() => setSilenceAlert(null)} className="ml-auto text-amber-500 hover:text-amber-300 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
-          <div className="mt-auto pt-3 border-t border-border space-y-2">
-            {!eventStarted ? (
-              <button onClick={handleStartEvent} className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground px-3 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
-                <Play className="w-4 h-4" /> Start Event
+      <div className="flex flex-1 min-h-0">
+
+        {/* ── Sidebar ── */}
+        <nav className="w-52 flex-shrink-0 border-r border-white/8 bg-[#080c18] flex flex-col">
+          <div className="flex-1 py-3 space-y-0.5 px-2">
+            {NAV_ITEMS.map(({ id, label, icon: Icon, badge }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                  activeTab === id
+                    ? "bg-primary/15 text-primary border border-primary/20"
+                    : "text-slate-500 hover:text-slate-200 hover:bg-white/5"
+                }`}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 truncate">{label}</span>
+                {badge !== undefined && (
+                  <span className="text-[10px] font-bold bg-primary text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{badge}</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Sidebar footer — quick actions */}
+          <div className="border-t border-white/8 p-3 space-y-2">
+            {botStatus === "disconnected" || botStatus === "ended" ? (
+              <button
+                onClick={() => setActiveTab("connect")}
+                className="w-full flex items-center justify-center gap-2 bg-primary text-white text-xs font-bold py-2 rounded-lg hover:opacity-90 transition-opacity"
+              >
+                <Wifi className="w-3.5 h-3.5" /> Connect Bot
+              </button>
+            ) : botStatus === "connecting" ? (
+              <button disabled className="w-full flex items-center justify-center gap-2 bg-amber-600/30 text-amber-400 text-xs font-bold py-2 rounded-lg cursor-not-allowed">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Connecting…
               </button>
             ) : (
-              <button onClick={() => { setEventStarted(false); setBotStatus("ended"); }} className="w-full flex items-center justify-center gap-2 bg-destructive/10 text-destructive border border-destructive/20 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-destructive/20 transition-colors">
-                <Square className="w-4 h-4" /> End Event
+              <button
+                onClick={handleDisconnect}
+                className="w-full flex items-center justify-center gap-2 bg-red-950/60 text-red-400 border border-red-500/20 text-xs font-bold py-2 rounded-lg hover:bg-red-950 transition-colors"
+              >
+                <Square className="w-3.5 h-3.5" /> End Event
               </button>
             )}
+            <button
+              onClick={() => { setIsMuted(!isMuted); toast.info(isMuted ? "Audio monitoring on" : "Audio monitoring muted"); }}
+              className={`w-full flex items-center justify-center gap-2 text-xs font-medium py-1.5 rounded-lg border transition-colors ${
+                isMuted ? "border-red-500/30 text-red-400 bg-red-950/30" : "border-white/10 text-slate-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              {isMuted ? <><VolumeX className="w-3.5 h-3.5" /> Muted</> : <><Volume2 className="w-3.5 h-3.5" /> Monitor On</>}
+            </button>
           </div>
         </nav>
 
-        {/* Main Panel */}
-        <main className="flex-1 overflow-y-auto p-6">
-          {/* ── Feature #15: Silence / Anomaly Alert Banner ── */}
-          {silenceAlert && !silenceAlert.dismissedAt && (
-            <div className="mb-4 flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
-              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-amber-400">Audio Silence Detected</p>
-                <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  No transcript activity for {silenceAlert.seconds}s — the bot may have dropped or the speaker is muted.
-                </p>
-              </div>
-              <button
-                onClick={() => setSilenceAlert((a) => a ? { ...a, dismissedAt: Date.now() } : null)}
-                className="text-xs font-semibold text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition-colors"
-              >
-                Dismiss
-              </button>
-              <button
-                onClick={() => { lastActivityRef.current = Date.now(); setSilenceAlert(null); toast.success("Bot reconnection triggered."); }}
-                className="text-xs font-semibold text-white bg-amber-500 px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors"
-              >
-                Reconnect Bot
-              </button>
-            </div>
-          )}
-           {/* ── Connect Webcast ── */}
-          {activeTab === "connect" && (
-            <div className="max-w-2xl space-y-6">
+        {/* ── Main Content ── */}
+        <main className="flex-1 min-w-0 overflow-y-auto">
+
+          {/* ── OVERVIEW ── */}
+          {activeTab === "overview" && (
+            <div className="p-6 space-y-6 max-w-5xl">
               <div>
-                <h2 className="text-2xl font-bold mb-1">Connect Webcast</h2>
-                <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  Paste the meeting URL from Zoom, Teams, Webex, or Google Meet. Chorus.AI will dispatch a bot to join as a silent participant and begin live transcription.
+                <h2 className="text-xl font-bold text-white mb-1">Event Overview</h2>
+                <p className="text-slate-500 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Real-time health and status for <span className="text-slate-300 font-medium">{meta.title}</span>.
                 </p>
               </div>
 
-              {/* Status Card */}
-              <div className={`border rounded-xl p-5 ${botStatus === "live" ? "border-emerald-500/30 bg-emerald-500/5" : botStatus === "connecting" ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-card"}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Radio className={`w-5 h-5 ${botStatus === "live" ? "text-emerald-400" : botStatus === "connecting" ? "text-amber-400" : "text-muted-foreground"}`} />
-                    <span className="font-semibold">Recall.ai Universal Connector</span>
-                  </div>
-                  <StatusDot status={botStatus} />
-                </div>
+              {/* Metric cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <MetricCard icon={Users} label="Live Attendees" value={attendeeList?.length ?? 1247} sub="Registered & joined" accent />
+                <MetricCard icon={MessageSquare} label="Q&A Pending" value={pendingQ.length} sub={`${approvedQ.length} approved`} />
+                <MetricCard icon={TrendingUp} label="Sentiment Score" value={`${sentimentScore}%`} sub="Positive tone" />
+                <MetricCard icon={Clock} label="Duration" value={eventStarted ? formatTime(elapsedSeconds) : "—"} sub={eventStarted ? "Elapsed" : "Not started"} />
+              </div>
 
-                {botStatus === "disconnected" || botStatus === "ended" ? (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>Meeting URL</label>
-                      <input
-                        type="url"
-                        value={meetingUrl}
-                        onChange={(e) => setMeetingUrl(e.target.value)}
-                        placeholder="https://zoom.us/j/123456789 or https://teams.microsoft.com/l/meetup-join/..."
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50 placeholder:text-muted-foreground"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      />
+              {/* Signal health */}
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Signal Health</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: "Bot Connection", value: botStatus === "live" ? "Connected" : "Offline", ok: botStatus === "live", icon: Wifi },
+                    { label: "Audio Feed", value: botStatus === "live" ? `${audioLevel}% level` : "No signal", ok: botStatus === "live" && !isMuted, icon: Mic },
+                    { label: "Transcription", value: botStatus === "live" ? "Active" : "Idle", ok: botStatus === "live", icon: FileText },
+                    { label: "AI Analysis", value: botStatus === "live" ? "Running" : "Standby", ok: botStatus === "live", icon: Activity },
+                  ].map(({ label, value, ok, icon: Icon }) => (
+                    <div key={label} className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${ok ? "bg-emerald-950/60" : "bg-white/5"}`}>
+                        <Icon className={`w-4 h-4 ${ok ? "text-emerald-400" : "text-slate-600"}`} />
+                      </div>
+                      <div>
+                        <div className={`text-xs font-semibold ${ok ? "text-emerald-400" : "text-slate-500"}`}>{value}</div>
+                        <div className="text-[10px] text-slate-600">{label}</div>
+                      </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-                      {["Zoom", "Teams", "Webex", "Google Meet", "Slack Huddles", "GoTo Meeting"].map((p) => (
-                        <span key={p} className="bg-secondary px-2 py-0.5 rounded">{p}</span>
-                      ))}
-                    </div>
-                    <button onClick={handleConnect} className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-                      <Zap className="w-4 h-4" /> Connect AI Bot
-                    </button>
-                  </div>
-                ) : botStatus === "connecting" ? (
-                  <div className="flex items-center gap-3 text-amber-400">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span className="text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Bot dispatched — joining meeting…</span>
-                  </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Q&A preview */}
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Top Pending Questions</div>
+                  <button onClick={() => setActiveTab("qa")} className="text-xs text-primary hover:opacity-80 transition-opacity font-semibold">
+                    Manage Q&A →
+                  </button>
+                </div>
+                {pendingQ.length === 0 ? (
+                  <div className="text-sm text-slate-600 py-4 text-center">No pending questions</div>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-emerald-400 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                      <CheckCircle className="w-4 h-4" />
-                      Bot is live — real-time transcription active
-                    </div>
-                    <div className="bg-background/60 border border-border rounded-lg p-3 text-xs font-mono text-muted-foreground break-all">
-                      {meetingUrl || "https://zoom.us/j/123456789"}
-                    </div>
-                    <button onClick={handleDisconnect} className="w-full border border-destructive/30 text-destructive py-2.5 rounded-lg font-semibold text-sm hover:bg-destructive/10 transition-colors flex items-center justify-center gap-2">
-                      <MicOff className="w-4 h-4" /> Disconnect Bot
-                    </button>
+                  <div className="space-y-2">
+                    {pendingQ.slice(0, 3).map((q) => (
+                      <div key={q.id} className="flex items-start gap-3 bg-white/[0.03] rounded-lg px-4 py-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-slate-300 leading-snug truncate">{q.question}</p>
+                          <p className="text-[11px] text-slate-600 mt-0.5">{q.author} · {q.firm} · {q.votes} votes</p>
+                        </div>
+                        <div className="flex gap-1.5 flex-shrink-0">
+                          <button onClick={() => approveQ(q.id)} className="text-emerald-400 hover:bg-emerald-950/60 p-1.5 rounded transition-colors" title="Approve">
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => dismissQ(q.id)} className="text-red-400 hover:bg-red-950/60 p-1.5 rounded transition-colors" title="Dismiss">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
 
-              {/* Webhook Info */}
-              <div className="border border-border rounded-xl p-5 bg-card space-y-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Webhook className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-semibold text-sm">Webhook Endpoint</span>
+              {/* Platform info */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
+                  <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Event Details</div>
+                  <div className="space-y-2 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    {[
+                      ["Platform", meta.platform],
+                      ["Date", meta.date],
+                      ["Time", meta.time],
+                      ["Event ID", eventId],
+                    ].map(([k, v]) => (
+                      <div key={k} className="flex justify-between">
+                        <span className="text-slate-500">{k}</span>
+                        <span className="text-slate-300 font-medium font-mono text-xs">{v}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  Recall.ai posts real-time transcript events to this URL. Responds 200 within 5s.
+                <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
+                  <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Quick Actions</div>
+                  <div className="space-y-2">
+                    {[
+                      { label: "Open Event Room", action: () => navigate(`/event/${eventId}`), icon: ExternalLink },
+                      { label: "Open Moderator Console", action: () => navigate(`/moderator/${eventId}`), icon: Radio },
+                      { label: "Open Presenter View", action: () => navigate(`/presenter/${eventId}`), icon: Monitor },
+                      { label: "View Post-Event Report", action: () => navigate(`/post-event/${eventId}`), icon: FileText },
+                    ].map(({ label, action, icon: Icon }) => (
+                      <button key={label} onClick={action} className="w-full flex items-center gap-2.5 text-sm text-slate-400 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg transition-all text-left">
+                        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                        {label}
+                        <ChevronRight className="w-3.5 h-3.5 ml-auto" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── CONNECT WEBCAST ── */}
+          {activeTab === "connect" && (
+            <div className="p-6 max-w-2xl space-y-5">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1">Connect Webcast</h2>
+                <p className="text-slate-500 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Paste the meeting URL. Chorus.AI dispatches a silent bot that joins as a participant and begins live transcription.
                 </p>
-                <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2">
-                  <span className="flex-1 text-xs font-mono text-muted-foreground">{webhookUrl}</span>
-                  <button onClick={() => handleCopy(webhookUrl, "webhook")} className="text-muted-foreground hover:text-foreground transition-colors">
+              </div>
+
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wifi className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm font-semibold">Recall.ai Universal Connector</span>
+                  </div>
+                  <StatusPill status={botStatus} />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">Meeting URL</label>
+                  <input
+                    type="url"
+                    value={meetingUrl}
+                    onChange={(e) => setMeetingUrl(e.target.value)}
+                    placeholder="https://zoom.us/j/123456789 or https://teams.microsoft.com/…"
+                    disabled={botStatus === "live" || botStatus === "connecting"}
+                    className="w-full bg-[#06080f] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-primary/50 disabled:opacity-50 font-mono"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {["Zoom", "Teams", "Webex", "Google Meet", "Slack Huddles", "GoTo Meeting"].map((p) => (
+                    <span key={p} className="text-[10px] font-semibold bg-white/5 border border-white/10 text-slate-400 px-2 py-1 rounded">{p}</span>
+                  ))}
+                </div>
+
+                {botStatus === "disconnected" || botStatus === "ended" ? (
+                  <button onClick={handleConnect} className="w-full flex items-center justify-center gap-2 bg-primary text-white font-bold py-2.5 rounded-lg hover:opacity-90 transition-opacity">
+                    <Zap className="w-4 h-4" /> Connect AI Bot
+                  </button>
+                ) : botStatus === "connecting" ? (
+                  <button disabled className="w-full flex items-center justify-center gap-2 bg-amber-600/20 text-amber-400 font-bold py-2.5 rounded-lg cursor-not-allowed">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Joining meeting…
+                  </button>
+                ) : (
+                  <button onClick={handleDisconnect} className="w-full flex items-center justify-center gap-2 bg-red-950/50 border border-red-500/20 text-red-400 font-bold py-2.5 rounded-lg hover:bg-red-950 transition-colors">
+                    <Square className="w-4 h-4" /> Disconnect Bot
+                  </button>
+                )}
+              </div>
+
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5 space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Webhook className="w-4 h-4 text-slate-400" />
+                  <span className="text-sm font-semibold">Webhook Endpoint</span>
+                </div>
+                <p className="text-xs text-slate-500" style={{ fontFamily: "'Inter', sans-serif" }}>Recall.ai posts real-time transcript events to this URL. Must respond 200 within 5s.</p>
+                <div className="flex items-center gap-2 bg-[#06080f] border border-white/10 rounded-lg px-3 py-2">
+                  <span className="flex-1 font-mono text-xs text-slate-400">{webhookUrl}</span>
+                  <button onClick={() => handleCopy(webhookUrl, "webhook")} className="text-slate-500 hover:text-white transition-colors">
                     {copied === "webhook" ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <div className="grid grid-cols-2 gap-2">
                   {["bot.joining_call", "bot.in_call_recording", "transcript.data", "bot.call_ended"].map((e) => (
-                    <div key={e} className="bg-secondary/50 px-2 py-1 rounded font-mono text-muted-foreground">{e}</div>
+                    <div key={e} className="text-[11px] font-mono text-slate-500 bg-white/[0.03] rounded px-2.5 py-1.5">{e}</div>
                   ))}
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── Q&A Moderation ── */}
+          {/* ── Q&A QUEUE ── */}
           {activeTab === "qa" && (
-            <div className="max-w-3xl space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-1">Q&A Moderation</h2>
-                <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  Review, approve, dismiss, and mark questions as answered. Approved questions are visible to all attendees.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 text-center">
-                {[
-                  { label: "Pending Review", value: pendingQ.length, color: "text-amber-400" },
-                  { label: "Approved", value: approvedQ.length, color: "text-emerald-400" },
-                  { label: "Answered", value: answeredQ.length, color: "text-muted-foreground" },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="bg-card border border-border rounded-xl p-4">
-                    <div className={`text-3xl font-bold ${color}`}>{value}</div>
-                    <div className="text-xs text-muted-foreground mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>{label}</div>
-                  </div>
-                ))}
+            <div className="p-6 space-y-5 max-w-3xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-white mb-1">Q&A Queue</h2>
+                  <p className="text-slate-500 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    Review, approve, or dismiss questions before they appear in the moderator queue.
+                  </p>
+                </div>
+                <div className="flex gap-2 text-xs font-semibold">
+                  <span className="bg-amber-950/60 text-amber-400 px-2.5 py-1 rounded-full">{pendingQ.length} pending</span>
+                  <span className="bg-emerald-950/60 text-emerald-400 px-2.5 py-1 rounded-full">{approvedQ.length} approved</span>
+                  <span className="bg-slate-800 text-slate-400 px-2.5 py-1 rounded-full">{answeredQ.length} answered</span>
+                </div>
               </div>
 
               {/* Pending */}
               {pendingQ.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertCircle className="w-4 h-4 text-amber-400" />
-                    <span className="font-semibold text-sm">Pending Review ({pendingQ.length})</span>
-                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-2">Pending Review</div>
                   <div className="space-y-2">
                     {pendingQ.map((q) => (
-                      <div key={q.id} className="bg-card border border-amber-500/20 rounded-xl p-4">
+                      <div key={q.id} className={`bg-[#0f1629] border rounded-xl px-4 py-3.5 ${q.flagged ? "border-red-500/30" : "border-white/8"}`}>
                         <div className="flex items-start gap-3">
-                          <div className="flex-1">
-                            <p className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{q.question}</p>
-                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                              <span>{q.author}</span>
-                              <span className="flex items-center gap-1"><ChevronUp className="w-3 h-3" />{q.votes} votes</span>
+                          <div className="flex-1 min-w-0">
+                            {q.flagged && (
+                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-red-400 mb-1.5">
+                                <AlertTriangle className="w-3 h-3" /> Flagged — potentially price-sensitive
+                              </div>
+                            )}
+                            <p className="text-sm text-slate-200 leading-snug mb-1.5">{q.question}</p>
+                            <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                              <span className="font-semibold text-slate-400">{q.author}</span>
+                              {q.firm && <span>{q.firm}</span>}
+                              <span>↑ {q.votes} votes</span>
                             </div>
                           </div>
-                          <div className="flex gap-2 shrink-0">
-                            <button onClick={() => approveQ(q.id)} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-emerald-500/20 transition-colors">Approve</button>
-                            <button onClick={() => dismissQ(q.id)} className="bg-destructive/10 text-destructive border border-destructive/20 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-destructive/20 transition-colors">Dismiss</button>
+                          <div className="flex gap-1.5 flex-shrink-0">
+                            <button onClick={() => approveQ(q.id)} className="flex items-center gap-1 text-xs font-semibold text-emerald-400 bg-emerald-950/50 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg hover:bg-emerald-950 transition-colors">
+                              <Check className="w-3 h-3" /> Approve
+                            </button>
+                            <button onClick={() => dismissQ(q.id)} className="flex items-center gap-1 text-xs font-semibold text-red-400 bg-red-950/50 border border-red-500/20 px-2.5 py-1.5 rounded-lg hover:bg-red-950 transition-colors">
+                              <X className="w-3 h-3" /> Dismiss
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -428,23 +554,18 @@ export default function OperatorConsole() {
               {/* Approved */}
               {approvedQ.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
-                    <span className="font-semibold text-sm">Approved — Visible to Attendees ({approvedQ.length})</span>
-                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 mb-2">Approved — In Moderator Queue</div>
                   <div className="space-y-2">
                     {approvedQ.map((q) => (
-                      <div key={q.id} className="bg-card border border-emerald-500/20 rounded-xl p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="flex-1">
-                            <p className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{q.question}</p>
-                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                              <span>{q.author}</span>
-                              <span className="flex items-center gap-1"><ChevronUp className="w-3 h-3" />{q.votes} votes</span>
-                            </div>
-                          </div>
-                          <button onClick={() => answerQ(q.id)} className="bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-primary/20 transition-colors shrink-0">Mark Answered</button>
+                      <div key={q.id} className="bg-emerald-950/10 border border-emerald-500/15 rounded-xl px-4 py-3 flex items-start gap-3">
+                        <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-slate-300 leading-snug">{q.question}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">{q.author} · {q.firm}</p>
                         </div>
+                        <button onClick={() => answerQ(q.id)} className="text-xs font-semibold text-slate-400 hover:text-white border border-white/10 px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0">
+                          Mark Answered
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -454,18 +575,13 @@ export default function OperatorConsole() {
               {/* Answered */}
               {answeredQ.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-semibold text-sm text-muted-foreground">Answered ({answeredQ.length})</span>
-                  </div>
-                  <div className="space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">Answered</div>
+                  <div className="space-y-1.5">
                     {answeredQ.map((q) => (
-                      <div key={q.id} className="bg-card/50 border border-border rounded-xl p-4 opacity-60">
-                        <p className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{q.question}</p>
-                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                          <span>{q.author}</span>
-                          <span className="text-emerald-400 font-semibold">✓ Answered</span>
-                        </div>
+                      <div key={q.id} className="bg-white/[0.02] border border-white/5 rounded-lg px-4 py-2.5 flex items-center gap-3">
+                        <Hash className="w-3.5 h-3.5 text-slate-700 flex-shrink-0" />
+                        <p className="text-xs text-slate-600 flex-1 truncate">{q.question}</p>
+                        <span className="text-[10px] text-slate-700 flex-shrink-0">{q.author}</span>
                       </div>
                     ))}
                   </div>
@@ -474,520 +590,297 @@ export default function OperatorConsole() {
             </div>
           )}
 
-          {/* ── Dial-In Numbers ── */}
-          {activeTab === "dialin" && (
-            <div className="max-w-2xl space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-1">Dial-In Numbers</h2>
-                <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  PSTN dial-in via Twilio Voice — essential for emerging markets where mobile data costs make browser-based audio unreliable.
-                </p>
-              </div>
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
-                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-300" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  <strong>Africa / Emerging Markets:</strong> Always include PSTN dial-in as a fallback. Chorus.AI routes Twilio audio through the same AI pipeline for transcription and sentiment.
-                </p>
-              </div>
-              {/* Group by region */}
-              {Array.from(new Set(DIAL_IN_NUMBERS.map(d => d.region))).map(region => (
-                <div key={region}>
-                  <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 mt-4">{region}</div>
-                  <div className="space-y-2">
-                    {DIAL_IN_NUMBERS.filter(d => d.region === region).map((d) => (
-                      <div key={d.country} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
-                        <span className="text-2xl">{d.flag}</span>
-                        <div className="flex-1">
-                          <div className="font-semibold text-sm">{d.country}</div>
-                          <div className="text-muted-foreground text-sm font-mono" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{d.number}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-muted-foreground mb-1">Passcode</div>
-                          <div className="font-mono text-sm font-bold">{d.passcode}</div>
-                        </div>
-                        <button onClick={() => handleCopy(`${d.number} Passcode: ${d.passcode}`, d.country)} className="text-muted-foreground hover:text-foreground transition-colors">
-                          {copied === d.country ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              <div className="bg-card border border-border rounded-xl p-5">
-                <div className="text-sm font-semibold mb-2">Powered by Twilio Voice</div>
-                <div className="grid grid-cols-2 gap-3 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  <div className="text-muted-foreground">Cost per minute</div><div className="font-semibold">~$0.0085 / min</div>
-                  <div className="text-muted-foreground">90-min event cost</div><div className="font-semibold">~$0.50 / caller</div>
-                  <div className="text-muted-foreground">Transcription</div><div className="font-semibold text-emerald-400">✓ Included via Whisper</div>
-                  <div className="text-muted-foreground">Countries covered</div><div className="font-semibold">180+</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── RTMP / Stream Key ── */}
-          {activeTab === "rtmp" && (
-            <div className="max-w-2xl space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-1">RTMP Ingest</h2>
-                <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  For professional studio productions using OBS, vMix, Wirecast, or hardware encoders. Push your stream to Chorus.AI and we handle transcription, sentiment, and Q&A.
-                </p>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div>
-                  <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">RTMP Ingest URL</label>
-                  <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2.5">
-                    <span className="flex-1 text-sm font-mono text-muted-foreground">{rtmpUrl}</span>
-                    <button onClick={() => handleCopy(rtmpUrl, "rtmp")} className="text-muted-foreground hover:text-foreground transition-colors">
-                      {copied === "rtmp" ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Stream Key</label>
-                  <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2.5">
-                    <Key className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="flex-1 text-sm font-mono">{rtmpKey}</span>
-                    <button onClick={() => handleCopy(rtmpKey, "key")} className="text-muted-foreground hover:text-foreground transition-colors">
-                      {copied === "key" ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                    <button onClick={() => toast.info("Stream key regenerated")} className="text-muted-foreground hover:text-foreground transition-colors">
-                      <RefreshCw className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-5">
-                <div className="font-semibold text-sm mb-3">OBS Studio Setup</div>
-                <div className="space-y-2 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {[
-                    ["Service", "Custom…"],
-                    ["Server", "rtmp://ingest.chorus.ai/live"],
-                    ["Stream Key", rtmpKey],
-                    ["Audio Bitrate", "128 kbps (mono recommended)"],
-                    ["Video Bitrate", "2500–4000 kbps"],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex justify-between border-b border-border pb-2">
-                      <span className="text-muted-foreground">{label}</span>
-                      <span className="font-mono text-xs">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-5">
-                <div className="font-semibold text-sm mb-2">Supported Encoders</div>
-                <div className="flex flex-wrap gap-2">
-                  {["OBS Studio", "vMix", "Wirecast", "Livestream Studio", "XSplit", "Hardware Encoders (Teradek, LiveU)"].map((e) => (
-                    <span key={e} className="bg-secondary text-secondary-foreground text-xs px-2.5 py-1 rounded-full">{e}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Event Settings ── */}
-          {activeTab === "settings" && (
-            <div className="max-w-2xl space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-1">Event Settings</h2>
-                <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Configure AI features, languages, and access controls for this event.</p>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div className="font-semibold text-sm border-b border-border pb-3">AI Features</div>
-                {[
-                  { label: "Live Transcription", desc: "Real-time speech-to-text via Whisper", enabled: true },
-                  { label: "Sentiment Analysis", desc: "AI monitors tone every 30 seconds", enabled: true },
-                  { label: "Auto-Translation", desc: "Participants choose their language", enabled: true },
-                  { label: "Smart Q&A Prioritization", desc: "AI ranks questions by relevance", enabled: true },
-                  { label: "Executive Summary", desc: "AI summary generated after event ends", enabled: true },
-                  { label: "Live Chat", desc: "Real-time chat between attendees", enabled: false },
-                ].map(({ label, desc, enabled }) => (
-                  <div key={label} className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-medium">{label}</div>
-                      <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>{desc}</div>
-                    </div>
-                    <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${enabled ? "bg-primary" : "bg-muted"}`} onClick={() => toast.info("Toggle saved")}>
-                      <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-5" : "translate-x-0.5"}`} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-                <div className="font-semibold text-sm border-b border-border pb-3">Transcription Languages</div>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { label: "English",    region: "Pan-Africa · UAE" },
-                    { label: "French",     region: "West Africa · Mauritius" },
-                    { label: "Arabic",     region: "North Africa · UAE" },
-                    { label: "Portuguese", region: "Angola · Mozambique" },
-                    { label: "Swahili",    region: "East Africa" },
-                    { label: "Zulu",       region: "South Africa" },
-                    { label: "Afrikaans",  region: "South Africa · Namibia" },
-                    { label: "Hausa",      region: "Nigeria · West Africa" },
-                    { label: "Amharic",    region: "Ethiopia" },
-                    { label: "Mandarin",   region: "China · Pan-Africa" },
-                    { label: "Hindi",      region: "Mauritius · UAE" },
-                    { label: "Creole",     region: "Mauritius" },
-                  ].map(({ label, region }) => (
-                    <span key={label} title={region} className="bg-primary/10 text-primary border border-primary/20 text-xs px-2.5 py-1 rounded-full cursor-pointer hover:bg-primary/20 transition-colors">{label}</span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div className="font-semibold text-sm border-b border-border pb-3 flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 text-primary" /> Access & Security
-                </div>
-
-                {/* Current access code status */}
-                <div className="flex items-center justify-between bg-background/60 border border-border rounded-lg px-4 py-3">
-                  <div>
-                    <div className="text-sm font-medium">Event Access Code</div>
-                    <div className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                      {accessData?.requiresCode
-                        ? <span className="text-amber-400 flex items-center gap-1"><Lock className="w-3 h-3" /> Protected — attendees must enter a code to register</span>
-                        : <span className="text-emerald-400 flex items-center gap-1"><Unlock className="w-3 h-3" /> Open — no access code required</span>
-                      }
-                    </div>
-                  </div>
-                  {accessData?.requiresCode && (
-                    <button
-                      onClick={() => setAccessCodeMutation.mutate({ eventId, accessCode: null })}
-                      className="text-xs text-red-400 border border-red-500/20 bg-red-500/10 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors"
-                    >
-                      Remove Code
-                    </button>
-                  )}
-                </div>
-
-                {/* Set / update access code */}
-                <div>
-                  <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Set New Access Code</label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <input
-                        type={showAccessCode ? "text" : "password"}
-                        value={accessCodeInput}
-                        onChange={(e) => setAccessCodeInput(e.target.value)}
-                        placeholder="e.g. BOARD2026"
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50 font-mono pr-10"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      />
-                      <button onClick={() => setShowAccessCode(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                        {showAccessCode ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setAccessCodeMutation.mutate({ eventId, accessCode: accessCodeInput })}
-                      disabled={!accessCodeInput || setAccessCodeMutation.isPending}
-                      className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
-                    >
-                      {setAccessCodeMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Key className="w-3.5 h-3.5" />} Set Code
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>Attendees will be required to enter this code on the Registration page.</p>
-                </div>
-
-                <div className="space-y-2 text-sm border-t border-border pt-3" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {[
-                    ["Registration Required", "Yes — email + name"],
-                    ["Q&A Moderation", "Operator approval required"],
-                    ["Recording", "Enabled — stored 90 days"],
-                    ["Replay Access", "Registered attendees only"],
-                    ["Data Retention", "Ephemeral processing — no disk storage"],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex justify-between border-b border-border pb-2">
-                      <span className="text-muted-foreground">{label}</span>
-                      <span className="font-medium">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-          {/* ── Attendees ── */}
+          {/* ── ATTENDEES ── */}
           {activeTab === "attendees" && (
-            <div className="max-w-3xl space-y-6">
+            <div className="p-6 max-w-3xl space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold mb-1">Registered Attendees</h2>
-                  <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>All attendees who have registered for this event.</p>
+                  <h2 className="text-xl font-bold text-white mb-1">Attendees</h2>
+                  <p className="text-slate-500 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Registered participants from the database.</p>
                 </div>
-                <button onClick={() => refetchAttendees()} className="flex items-center gap-1.5 text-xs border border-border px-3 py-2 rounded-lg hover:bg-secondary transition-colors">
+                <button onClick={() => refetchAttendees()} className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors">
                   <RefreshCw className="w-3.5 h-3.5" /> Refresh
                 </button>
               </div>
 
               {attendeesLoading ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <div className="flex items-center gap-2 text-slate-500 py-8 justify-center">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading attendees…
                 </div>
               ) : !attendeeList || attendeeList.length === 0 ? (
-                <div className="bg-card border border-border rounded-xl p-12 text-center">
-                  <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                  <div className="font-semibold mb-1">No registrations yet</div>
-                  <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>Attendees who register via the Registration page will appear here.</p>
+                <div className="bg-[#0f1629] border border-white/8 rounded-xl p-10 text-center">
+                  <Users className="w-8 h-8 text-slate-700 mx-auto mb-3" />
+                  <p className="text-slate-500 text-sm">No registered attendees yet.</p>
+                  <p className="text-slate-600 text-xs mt-1">Share the event link to start collecting registrations.</p>
                 </div>
               ) : (
-                <div className="bg-card border border-border rounded-xl overflow-hidden">
-                  <div className="grid grid-cols-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground px-5 py-3 border-b border-border bg-background/40">
-                    <span>Name</span>
-                    <span>Email</span>
-                    <span>Language</span>
-                    <span>Registered</span>
+                <div className="bg-[#0f1629] border border-white/8 rounded-xl overflow-hidden">
+                  <div className="grid grid-cols-4 px-4 py-2 border-b border-white/8 text-[10px] font-bold uppercase tracking-widest text-slate-600">
+                    <span>Name</span><span>Company</span><span>Email</span><span>Joined</span>
                   </div>
-                  {attendeeList.map((a: { id: number; name: string; email: string; language: string; createdAt: Date }) => (
-                    <div key={a.id} className="grid grid-cols-4 text-sm px-5 py-3.5 border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                      <span className="font-medium truncate">{a.name}</span>
-                      <span className="text-muted-foreground truncate" style={{ fontFamily: "'Inter', sans-serif" }}>{a.email}</span>
-                      <span className="text-muted-foreground">{a.language}</span>
-                      <span className="text-muted-foreground text-xs">{new Date(a.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  ))}
+                  <div className="divide-y divide-white/5">
+                    {attendeeList.map((a: { id: number; name: string; company?: string | null; email: string; joinedAt?: string | Date | null }) => (
+                      <div key={a.id} className="grid grid-cols-4 px-4 py-3 text-sm hover:bg-white/[0.02] transition-colors">
+                        <span className="text-slate-300 font-medium truncate">{a.name}</span>
+                        <span className="text-slate-500 truncate">{a.company ?? "—"}</span>
+                        <span className="text-slate-500 font-mono text-xs truncate">{a.email}</span>
+                        <span className="text-slate-600 text-xs">{a.joinedAt ? new Date(a.joinedAt).toLocaleTimeString() : "—"}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
+            </div>
+          )}
 
-              <div className="bg-card border border-border rounded-xl p-5">
-                <div className="font-semibold text-sm mb-3">Registration Summary</div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">{attendeeList?.length ?? 0}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Total Registered</div>
+          {/* ── DIAL-IN ── */}
+          {activeTab === "dialin" && (
+            <div className="p-6 max-w-3xl space-y-5">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1">Dial-In Numbers</h2>
+                <p className="text-slate-500 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  PSTN dial-in via Twilio Voice. All numbers share passcode <span className="font-mono text-slate-300">847291#</span>.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {DIAL_IN_NUMBERS.map((d) => (
+                  <div key={d.country} className="bg-[#0f1629] border border-white/8 rounded-xl px-4 py-3 flex items-center gap-3">
+                    <span className="text-xl flex-shrink-0">{d.flag}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-slate-200">{d.country}</div>
+                      <div className="font-mono text-xs text-slate-400">{d.number}</div>
+                    </div>
+                    <button onClick={() => handleCopy(`${d.number} Passcode: ${d.passcode}`, d.country)} className="text-slate-600 hover:text-white transition-colors flex-shrink-0">
+                      {copied === d.country ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    </button>
                   </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-emerald-400">{attendeeList?.filter((a: { language: string }) => a.language === "English").length ?? 0}</div>
-                    <div className="text-xs text-muted-foreground mt-1">English</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-amber-400">{attendeeList ? attendeeList.length - attendeeList.filter((a: { language: string }) => a.language === "English").length : 0}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Other Languages</div>
-                  </div>
-                </div>
+                ))}
+              </div>
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-4 grid grid-cols-2 gap-3 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <div className="text-slate-500">Cost per minute</div><div className="text-slate-300 font-semibold">~$0.0085 / min</div>
+                <div className="text-slate-500">90-min event cost</div><div className="text-slate-300 font-semibold">~$0.50 / caller</div>
+                <div className="text-slate-500">Transcription</div><div className="text-emerald-400 font-semibold">✓ Included via Whisper</div>
+                <div className="text-slate-500">Countries covered</div><div className="text-slate-300 font-semibold">180+</div>
               </div>
             </div>
           )}
-          {/* ── White-Label Configuration ── */}
-          {activeTab === "whitelabel" && (
-            <div className="max-w-5xl space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold mb-1">White-Label Configuration</h2>
-                  <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    Customise the platform with your brand identity. Changes apply to all attendee-facing pages for this account.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setWlPreviewMode("desktop")} className={`p-2 rounded-lg border transition-colors ${wlPreviewMode === "desktop" ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:text-foreground"}`}>
-                    <Monitor className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => setWlPreviewMode("mobile")} className={`p-2 rounded-lg border transition-colors ${wlPreviewMode === "mobile" ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:text-foreground"}`}>
-                    <Smartphone className="w-4 h-4" />
-                  </button>
-                </div>
+
+          {/* ── RTMP ── */}
+          {activeTab === "rtmp" && (
+            <div className="p-6 max-w-2xl space-y-5">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1">RTMP Ingest</h2>
+                <p className="text-slate-500 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  For professional studio productions using OBS, vMix, Wirecast, or hardware encoders.
+                </p>
               </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                {/* ── Left: Config Form ── */}
-                <div className="space-y-5">
-                  {/* Brand Identity */}
-                  <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                    <div className="font-semibold text-sm border-b border-border pb-3 flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4 text-primary" /> Brand Identity
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Brand Name</label>
-                      <input value={wlConfig.brandName} onChange={(e) => setWlConfig({ ...wlConfig, brandName: e.target.value })}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50"
-                        style={{ fontFamily: "'Inter', sans-serif" }} placeholder="Investec Live" />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Tagline</label>
-                      <input value={wlConfig.tagline} onChange={(e) => setWlConfig({ ...wlConfig, tagline: e.target.value })}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50"
-                        style={{ fontFamily: "'Inter', sans-serif" }} placeholder="Investor Intelligence, Live." />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Logo URL</label>
-                      <input value={wlConfig.logoUrl} onChange={(e) => setWlConfig({ ...wlConfig, logoUrl: e.target.value })}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50 font-mono"
-                        style={{ fontFamily: "'JetBrains Mono', monospace" }} placeholder="https://cdn.example.com/logo.svg" />
-                      <p className="text-xs text-muted-foreground mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>SVG or PNG, min 200×60px, transparent background recommended.</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Footer Text</label>
-                      <input value={wlConfig.footerText} onChange={(e) => setWlConfig({ ...wlConfig, footerText: e.target.value })}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50"
-                        style={{ fontFamily: "'Inter', sans-serif" }} placeholder="© 2026 Investec Group" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-medium">Show \"Powered by Chorus.AI\"</div>
-                        <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>Displayed in footer on all attendee pages</div>
-                      </div>
-                      <button onClick={() => setWlConfig({ ...wlConfig, showPoweredBy: !wlConfig.showPoweredBy })}
-                        className={`relative w-11 h-6 rounded-full transition-colors ${wlConfig.showPoweredBy ? "bg-primary" : "bg-muted"}`}>
-                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${wlConfig.showPoweredBy ? "translate-x-5" : "translate-x-0"}`} />
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5 space-y-4">
+                {[
+                  { label: "RTMP Ingest URL", value: rtmpUrl, key: "rtmp" },
+                  { label: "Stream Key", value: rtmpKey, key: "key" },
+                ].map(({ label, value, key }) => (
+                  <div key={key}>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">{label}</label>
+                    <div className="flex items-center gap-2 bg-[#06080f] border border-white/10 rounded-lg px-3 py-2.5">
+                      <span className="flex-1 font-mono text-xs text-slate-400 truncate">{value}</span>
+                      <button onClick={() => handleCopy(value, key)} className="text-slate-500 hover:text-white transition-colors flex-shrink-0">
+                        {copied === key ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
-                    </div>
-                  </div>
-
-                  {/* Colour Palette */}
-                  <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                    <div className="font-semibold text-sm border-b border-border pb-3 flex items-center gap-2">
-                      <Palette className="w-4 h-4 text-primary" /> Colour Palette
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Primary Colour</label>
-                        <div className="flex items-center gap-2">
-                          <input type="color" value={wlConfig.primaryColor} onChange={(e) => setWlConfig({ ...wlConfig, primaryColor: e.target.value })}
-                            className="w-10 h-10 rounded-lg border border-border cursor-pointer bg-transparent" />
-                          <input value={wlConfig.primaryColor} onChange={(e) => setWlConfig({ ...wlConfig, primaryColor: e.target.value })}
-                            className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-primary/50"
-                            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Accent Colour</label>
-                        <div className="flex items-center gap-2">
-                          <input type="color" value={wlConfig.accentColor} onChange={(e) => setWlConfig({ ...wlConfig, accentColor: e.target.value })}
-                            className="w-10 h-10 rounded-lg border border-border cursor-pointer bg-transparent" />
-                          <input value={wlConfig.accentColor} onChange={(e) => setWlConfig({ ...wlConfig, accentColor: e.target.value })}
-                            className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-primary/50"
-                            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {[
-                        { name: "Investec",       primary: "#004B87", accent: "#00A651" },
-                        { name: "Standard Bank",  primary: "#1a1a2e", accent: "#0066cc" },
-                        { name: "Nedbank",        primary: "#007A4D", accent: "#ffffff" },
-                        { name: "Absa",           primary: "#DC143C", accent: "#ffffff" },
-                        { name: "FirstRand",      primary: "#003087", accent: "#FFD700" },
-                        { name: "JSE",            primary: "#1B2A4A", accent: "#E8B84B" },
-                      ].map(preset => (
-                        <button key={preset.name} onClick={() => setWlConfig({ ...wlConfig, primaryColor: preset.primary, accentColor: preset.accent })}
-                          className="flex items-center gap-1.5 border border-border rounded-lg px-2.5 py-1.5 text-xs hover:bg-secondary transition-colors">
-                          <span className="w-3 h-3 rounded-full" style={{ background: preset.primary }} />
-                          {preset.name}
+                      {key === "key" && (
+                        <button onClick={() => toast.info("Stream key regenerated")} className="text-slate-500 hover:text-white transition-colors flex-shrink-0">
+                          <RefreshCw className="w-3.5 h-3.5" />
                         </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Custom URL */}
-                  <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                    <div className="font-semibold text-sm border-b border-border pb-3 flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-primary" /> Custom URL
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Subdomain</label>
-                      <div className="flex items-center gap-0">
-                        <input value={wlConfig.subdomain} onChange={(e) => setWlConfig({ ...wlConfig, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })}
-                          className="flex-1 bg-background border border-border rounded-l-lg px-3 py-2.5 text-sm font-mono outline-none focus:border-primary/50"
-                          style={{ fontFamily: "'JetBrains Mono', monospace" }} placeholder="investec" />
-                        <span className="bg-muted border border-l-0 border-border rounded-r-lg px-3 py-2.5 text-sm text-muted-foreground font-mono" style={{ fontFamily: "'JetBrains Mono', monospace" }}>.chorus.ai</span>
-                      </div>
-                      <p className="text-xs text-emerald-400 mt-1.5 flex items-center gap-1" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        <CheckCircle className="w-3 h-3" /> {wlConfig.subdomain || "chorus"}.chorus.ai — available
-                      </p>
-                    </div>
-                    <div className="bg-background/60 border border-border rounded-lg p-3">
-                      <div className="text-xs text-muted-foreground mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Example URLs for this account:</div>
-                      {["event/q4-earnings-2026", "register/investor-day-2026", "post-event/board-briefing"].map(path => (
-                        <div key={path} className="text-xs font-mono text-primary mb-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                          https://{wlConfig.subdomain || "chorus"}.chorus.ai/{path}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3">
-                    <button onClick={() => { setWlSaved(true); toast.success("White-label configuration saved!"); setTimeout(() => setWlSaved(false), 3000); }}
-                      className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
-                      {wlSaved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                      {wlSaved ? "Saved!" : "Save Configuration"}
-                    </button>
-                    <button onClick={() => setWlConfig({ brandName: "Chorus.AI", subdomain: "chorus", primaryColor: "#e63946", accentColor: "#ffffff", logoUrl: "", tagline: "The Intelligence Layer for Every Meeting", footerText: "Powered by Chorus.AI", showPoweredBy: true })}
-                      className="flex items-center gap-2 border border-border px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
-                      <RotateCcw className="w-4 h-4" /> Reset
-                    </button>
-                  </div>
-                </div>
-
-                {/* ── Right: Live Preview ── */}
-                <div className="space-y-4">
-                  <div className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Live Preview — {wlPreviewMode === "desktop" ? "Desktop" : "Mobile"}</div>
-                  <div className={`border-2 border-border rounded-2xl overflow-hidden bg-zinc-950 transition-all ${wlPreviewMode === "mobile" ? "max-w-[375px] mx-auto" : "w-full"}`}>
-                    {/* Preview Header */}
-                    <div className="border-b border-zinc-800 px-4 h-12 flex items-center justify-between" style={{ background: "#0a0a0a" }}>
-                      <div className="flex items-center gap-2">
-                        {wlConfig.logoUrl ? (
-                          <img src={wlConfig.logoUrl} alt="Logo" className="h-6 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                        ) : (
-                          <div className="w-7 h-7 rounded-md flex items-center justify-center text-white text-xs font-bold" style={{ background: wlConfig.primaryColor }}>
-                            {wlConfig.brandName.charAt(0)}
-                          </div>
-                        )}
-                        <span className="font-bold text-sm text-white">{wlConfig.brandName}</span>
-                      </div>
-                      <div className="w-20 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-semibold" style={{ background: wlConfig.primaryColor }}>
-                        Live Event
-                      </div>
-                    </div>
-                    {/* Preview Hero */}
-                    <div className="px-4 py-6 text-center" style={{ background: "linear-gradient(135deg, #0a0a0a 0%, #111 100%)" }}>
-                      <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3 border" style={{ color: wlConfig.primaryColor, borderColor: wlConfig.primaryColor + "40", background: wlConfig.primaryColor + "15" }}>
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: wlConfig.primaryColor }} /> Live Now
-                      </div>
-                      <div className="text-white font-bold text-sm mb-1">{wlConfig.brandName}</div>
-                      <div className="text-zinc-400 text-xs mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>{wlConfig.tagline}</div>
-                      <button className="text-white text-xs font-semibold px-4 py-2 rounded-lg" style={{ background: wlConfig.primaryColor }}>
-                        Enter Event Room
-                      </button>
-                    </div>
-                    {/* Preview Sentiment Bar */}
-                    <div className="px-4 py-3 border-t border-zinc-800" style={{ background: "#0d0d0d" }}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Audience Sentiment</span>
-                        <span className="text-[10px] font-bold" style={{ color: wlConfig.primaryColor }}>84%</span>
-                      </div>
-                      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: "84%", background: wlConfig.primaryColor }} />
-                      </div>
-                    </div>
-                    {/* Preview Footer */}
-                    <div className="px-4 py-2 border-t border-zinc-800 flex items-center justify-between" style={{ background: "#080808" }}>
-                      <span className="text-[10px] text-zinc-600" style={{ fontFamily: "'Inter', sans-serif" }}>{wlConfig.footerText}</span>
-                      {wlConfig.showPoweredBy && (
-                        <span className="text-[10px] text-zinc-600" style={{ fontFamily: "'Inter', sans-serif" }}>Powered by Chorus.AI</span>
                       )}
                     </div>
                   </div>
-                  {/* URL Preview */}
-                  <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Your branded URL</div>
-                    <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2">
-                      <Globe className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span className="text-sm font-mono text-primary" style={{ fontFamily: "'JetBrains Mono', monospace" }}>https://{wlConfig.subdomain || "chorus"}.chorus.ai</span>
-                      <button onClick={() => handleCopy(`https://${wlConfig.subdomain || "chorus"}.chorus.ai`, "url")} className="ml-auto text-muted-foreground hover:text-foreground transition-colors">
-                        {copied === "url" ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
+                ))}
+              </div>
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">OBS Studio Setup</div>
+                <div className="space-y-2 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  {[["Service", "Custom…"], ["Server", "rtmp://ingest.chorus.ai/live"], ["Stream Key", rtmpKey], ["Audio Bitrate", "128 kbps (mono)"], ["Video Bitrate", "2500–4000 kbps"]].map(([k, v]) => (
+                    <div key={k} className="flex justify-between border-b border-white/5 pb-2">
+                      <span className="text-slate-500">{k}</span>
+                      <span className="font-mono text-xs text-slate-300">{v}</span>
                     </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Supported Encoders</div>
+                <div className="flex flex-wrap gap-2">
+                  {["OBS Studio", "vMix", "Wirecast", "Livestream Studio", "XSplit", "Teradek", "LiveU"].map((e) => (
+                    <span key={e} className="bg-white/5 border border-white/10 text-slate-400 text-xs px-2.5 py-1 rounded-full">{e}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── SETTINGS ── */}
+          {activeTab === "settings" && (
+            <div className="p-6 max-w-2xl space-y-5">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1">Event Settings</h2>
+                <p className="text-slate-500 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Configure AI features, languages, and access controls.</p>
+              </div>
+
+              {/* AI Toggles */}
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5 space-y-3">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-500 border-b border-white/8 pb-3 mb-1">AI Features</div>
+                {[
+                  { label: "Live Transcription", desc: "Real-time speech-to-text via Whisper", on: true },
+                  { label: "Sentiment Analysis", desc: "AI monitors tone every 30 seconds", on: true },
+                  { label: "Auto-Translation", desc: "Participants choose their language", on: true },
+                  { label: "Smart Q&A Prioritization", desc: "AI ranks questions by relevance", on: true },
+                  { label: "Executive Summary", desc: "AI summary generated after event ends", on: true },
+                  { label: "Live Chat", desc: "Real-time chat between attendees", on: false },
+                ].map(({ label, desc, on }) => (
+                  <div key={label} className="flex items-center justify-between py-1">
+                    <div>
+                      <div className="text-sm font-medium text-slate-300">{label}</div>
+                      <div className="text-xs text-slate-600" style={{ fontFamily: "'Inter', sans-serif" }}>{desc}</div>
+                    </div>
+                    <button
+                      onClick={() => toast.info(`${label} ${on ? "disabled" : "enabled"}`)}
+                      className={`w-10 h-5 rounded-full relative transition-colors flex-shrink-0 ${on ? "bg-primary" : "bg-white/10"}`}
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${on ? "translate-x-5" : "translate-x-0.5"}`} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Languages */}
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Transcription Languages</div>
+                <div className="flex flex-wrap gap-2">
+                  {["English", "French", "Arabic", "Portuguese", "Swahili", "Zulu", "Afrikaans", "Hausa", "Amharic", "Mandarin", "Hindi", "Creole"].map((lang) => (
+                    <span key={lang} className="bg-primary/10 text-primary border border-primary/20 text-xs px-2.5 py-1 rounded-full cursor-pointer hover:bg-primary/20 transition-colors">{lang}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Access Code */}
+              <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5 space-y-3">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-500 border-b border-white/8 pb-3 flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5" /> Access & Security
+                </div>
+                <div className="flex items-center justify-between bg-white/[0.03] border border-white/8 rounded-lg px-4 py-3">
+                  <div>
+                    <div className="text-sm font-medium text-slate-300">Event Access Code</div>
+                    <div className="text-xs mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      {accessData?.requiresCode
+                        ? <span className="text-amber-400 flex items-center gap-1"><Lock className="w-3 h-3" /> Protected</span>
+                        : <span className="text-emerald-400 flex items-center gap-1"><Unlock className="w-3 h-3" /> Open — no code required</span>}
+                    </div>
+                  </div>
+                  {accessData?.requiresCode && (
+                    <button onClick={() => setAccessCodeMutation.mutate({ eventId, accessCode: null })} className="text-xs text-red-400 border border-red-500/20 bg-red-950/30 px-3 py-1.5 rounded-lg hover:bg-red-950/60 transition-colors">
+                      Remove Code
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showAccessCode ? "text" : "password"}
+                      value={accessCodeInput}
+                      onChange={(e) => setAccessCodeInput(e.target.value)}
+                      placeholder="Set new access code…"
+                      className="w-full bg-[#06080f] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-primary/50 pr-9"
+                    />
+                    <button onClick={() => setShowAccessCode(!showAccessCode)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-300 transition-colors">
+                      {showAccessCode ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => { if (accessCodeInput.trim()) setAccessCodeMutation.mutate({ eventId, accessCode: accessCodeInput.trim() }); }}
+                    disabled={!accessCodeInput.trim() || setAccessCodeMutation.isPending}
+                    className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-40 transition-opacity"
+                  >
+                    {setAccessCodeMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── WHITE-LABEL ── */}
+          {activeTab === "whitelabel" && (
+            <div className="p-6 max-w-3xl space-y-5">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1">White-Label Configuration</h2>
+                <p className="text-slate-500 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Customise the platform branding for this client deployment.</p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-5">
+                <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5 space-y-4">
+                  <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Brand Settings</div>
+                  {[
+                    { label: "Brand Name", key: "brandName", placeholder: "Chorus.AI" },
+                    { label: "Subdomain", key: "subdomain", placeholder: "chorus" },
+                    { label: "Tagline", key: "tagline", placeholder: "The Intelligence Layer…" },
+                  ].map(({ label, key, placeholder }) => (
+                    <div key={key}>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">{label}</label>
+                      <input
+                        type="text"
+                        value={String((wlConfig as Record<string, unknown>)[key] ?? "")}
+                        onChange={(e) => setWlConfig((c) => ({ ...c, [key]: e.target.value }))}
+                        placeholder={placeholder}
+                        className="w-full bg-[#06080f] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-primary/50"
+                      />
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">Primary Colour</label>
+                      <div className="flex items-center gap-2 bg-[#06080f] border border-white/10 rounded-lg px-3 py-2">
+                        <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: wlConfig.primaryColor }} />
+                        <input type="text" value={wlConfig.primaryColor} onChange={(e) => setWlConfig((c) => ({ ...c, primaryColor: e.target.value }))} className="flex-1 bg-transparent text-xs font-mono text-slate-300 focus:outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">Logo URL</label>
+                      <input type="text" value={wlConfig.logoUrl} onChange={(e) => setWlConfig((c) => ({ ...c, logoUrl: e.target.value }))} placeholder="https://…" className="w-full bg-[#06080f] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-primary/50" />
+                    </div>
+                  </div>
+                  <button onClick={() => toast.success("White-label config saved!")} className="w-full flex items-center justify-center gap-2 bg-primary text-white font-bold py-2.5 rounded-lg hover:opacity-90 transition-opacity text-sm">
+                    <Save className="w-4 h-4" /> Save Configuration
+                  </button>
+                </div>
+
+                {/* Preview */}
+                <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
+                  <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Live Preview</div>
+                  <div className="rounded-lg overflow-hidden border border-white/10">
+                    <div className="h-8 flex items-center px-3 gap-2" style={{ backgroundColor: wlConfig.primaryColor + "22", borderBottom: `1px solid ${wlConfig.primaryColor}33` }}>
+                      <div className="w-4 h-4 rounded" style={{ backgroundColor: wlConfig.primaryColor }} />
+                      <span className="text-xs font-bold" style={{ color: wlConfig.primaryColor }}>{wlConfig.brandName}</span>
+                    </div>
+                    <div className="bg-[#06080f] p-4">
+                      <div className="text-sm font-bold text-white mb-1">{meta.title}</div>
+                      <div className="text-xs text-slate-500">{wlConfig.tagline}</div>
+                      <div className="mt-3 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                        <div className="h-full rounded-full w-2/3" style={{ backgroundColor: wlConfig.primaryColor }} />
+                      </div>
+                      {wlConfig.showPoweredBy && (
+                        <div className="text-[10px] text-slate-700 mt-3 text-right">Powered by Chorus.AI</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-600">Subdomain: <span className="font-mono text-slate-400">{wlConfig.subdomain}.chorus.ai</span></span>
+                    <button onClick={() => setWlConfig((c) => ({ ...c, showPoweredBy: !c.showPoweredBy }))} className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors">
+                      {wlConfig.showPoweredBy ? "Hide" : "Show"} branding
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           )}
+
         </main>
       </div>
     </div>

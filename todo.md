@@ -56,3 +56,7 @@
 
 - [x] Build /tech-handover webpage with full handover brief
 - [x] Wire route and nav link, deploy permanently
+
+## Round 13 — Operator Console Redesign
+
+- [x] Rebuild Operator Console with production-grade broadcast ops centre UI
