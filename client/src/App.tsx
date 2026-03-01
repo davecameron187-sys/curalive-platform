@@ -17,6 +17,7 @@ import Presenter from "./pages/Presenter";
 import SyncTest from "./pages/SyncTest";
 import Demo from "./pages/Demo";
 import TestGuide from "./pages/TestGuide";
+import TechHandover from "./pages/TechHandover";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/sync-test" component={SyncTest} />
       <Route path="/demo" component={Demo} />
       <Route path="/test-guide" component={TestGuide} />
+      <Route path="/tech-handover" component={TechHandover} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

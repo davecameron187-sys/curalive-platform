@@ -51,3 +51,8 @@
 ## Round 11 — Testing Reference Card Webpage
 
 - [x] Add /test-guide webpage version of the testing reference card
+
+## Round 12 — Technical Manager Handover Page
+
+- [x] Build /tech-handover webpage with full handover brief
+- [x] Wire route and nav link, deploy permanently

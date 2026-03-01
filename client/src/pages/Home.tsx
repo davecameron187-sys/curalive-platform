@@ -61,6 +61,7 @@ export default function Home() {
             <button onClick={() => navigate("/partner-api")} className="hover:text-foreground transition-colors">Partner API</button>
             <button onClick={() => navigate("/demo")} className="text-primary font-semibold hover:opacity-80 transition-opacity">Sales Demo</button>
             <button onClick={() => navigate("/test-guide")} className="hover:text-foreground transition-colors">Team Guide</button>
+            <button onClick={() => navigate("/tech-handover")} className="hover:text-foreground transition-colors">Tech Handover</button>
           </nav>
           <button onClick={() => navigate("/event/q4-earnings-2026")} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
             <Play className="w-3.5 h-3.5" /> Launch Demo
