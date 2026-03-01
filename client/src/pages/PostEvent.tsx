@@ -4,7 +4,7 @@ import {
   Zap, ArrowLeft, Download, Play, FileText, BarChart3,
   MessageSquare, Clock, Users, Globe, CheckCircle,
   TrendingUp, Minus, ChevronDown, ChevronUp, Mail,
-  Sparkles, Loader2, AlertCircle, RefreshCw
+  Sparkles, Loader2, AlertCircle, RefreshCw, Send, UserPlus, Trash2, X
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -63,6 +63,41 @@ export default function PostEvent() {
   const [expandedTranscript, setExpandedTranscript] = useState(false);
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
   const [summaryGenerated, setSummaryGenerated] = useState(false);
+  const [showIRPanel, setShowIRPanel] = useState(false);
+  const [newContact, setNewContact] = useState({ name: "", email: "", company: "", role: "" });
+  const [additionalEmails, setAdditionalEmails] = useState("");
+
+  // IR Contacts queries
+  const { data: irContactsList, refetch: refetchContacts } = trpc.irContacts.list.useQuery();
+  const addContactMutation = trpc.irContacts.add.useMutation({
+    onSuccess: () => { toast.success("Contact added!"); setNewContact({ name: "", email: "", company: "", role: "" }); refetchContacts(); },
+    onError: () => toast.error("Failed to add contact"),
+  });
+  const removeContactMutation = trpc.irContacts.remove.useMutation({
+    onSuccess: () => { toast.success("Contact removed"); refetchContacts(); },
+    onError: () => toast.error("Failed to remove contact"),
+  });
+  const sendSummaryMutation = trpc.irContacts.sendSummary.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(`Summary sent to ${data.sentCount} recipient${data.sentCount === 1 ? "" : "s"}!`);
+        setShowIRPanel(false);
+      } else {
+        toast.error(data.error ?? "Failed to send summary");
+      }
+    },
+    onError: () => toast.error("Failed to send summary"),
+  });
+
+  const handleSendToIR = () => {
+    if (!aiSummary) return;
+    const extras = additionalEmails.split(",").map(e => e.trim()).filter(e => e.includes("@"));
+    sendSummaryMutation.mutate({
+      eventTitle: "Q4 2025 Earnings Call — Chorus Call Inc.",
+      summary: aiSummary,
+      additionalEmails: extras,
+    });
+  };
 
   const generateSummary = trpc.events.generateSummary.useMutation({
     onSuccess: (data) => {
@@ -284,12 +319,12 @@ export default function PostEvent() {
                     <button onClick={handleGenerateSummary} disabled={generateSummary.isPending} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors disabled:opacity-50">
                       <RefreshCw className="w-3 h-3" /> Regenerate
                     </button>
-                    <a
-                      href={`mailto:?subject=${encodeURIComponent("Q4 2025 Earnings Call — Chorus.AI Executive Summary")}&body=${encodeURIComponent("Dear IR Contacts,\n\n" + aiSummary.executiveSummary + "\n\nKey Financial Highlights:\n" + aiSummary.financialHighlights.map(h => "• " + h).join("\n") + "\n\nProduced by Chorus.AI — Chorus Call Inc.")}`}
+                    <button
+                      onClick={() => setShowIRPanel(true)}
                       className="flex items-center gap-1.5 text-xs bg-primary/10 border border-primary/20 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
                     >
-                      <Mail className="w-3 h-3" /> Email to IR Contacts
-                    </a>
+                      <Send className="w-3 h-3" /> Send to IR Contacts
+                    </button>
                     <button onClick={handleDownloadPDF} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
                       <Download className="w-3 h-3" /> Download
                     </button>
@@ -346,6 +381,79 @@ export default function PostEvent() {
                     </ul>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* IR Contacts Panel */}
+            {showIRPanel && aiSummary && (
+              <div className="bg-card border border-primary/30 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <Send className="w-4 h-4 text-primary" />
+                    <span className="font-semibold">Send Summary to IR Contacts</span>
+                  </div>
+                  <button onClick={() => setShowIRPanel(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+                </div>
+
+                {/* Contact list */}
+                <div className="mb-5">
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Saved IR Contacts ({irContactsList?.length ?? 0})</div>
+                  {(!irContactsList || irContactsList.length === 0) ? (
+                    <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>No contacts yet. Add contacts below or use the additional emails field.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {irContactsList.map((c) => (
+                        <div key={c.id} className="flex items-center justify-between bg-background/60 border border-border rounded-lg px-3 py-2">
+                          <div>
+                            <div className="text-sm font-medium">{c.name}</div>
+                            <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>{c.email}{c.company ? ` · ${c.company}` : ""}</div>
+                          </div>
+                          <button onClick={() => removeContactMutation.mutate({ id: c.id })} className="text-muted-foreground hover:text-red-400 transition-colors">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Add new contact */}
+                <div className="mb-5 bg-background/40 border border-border rounded-xl p-4">
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5"><UserPlus className="w-3 h-3" /> Add Contact</div>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <input value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})}
+                      placeholder="Full Name *" className="bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary/50" style={{ fontFamily: "'Inter', sans-serif" }} />
+                    <input value={newContact.email} onChange={e => setNewContact({...newContact, email: e.target.value})}
+                      placeholder="Email Address *" type="email" className="bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary/50" style={{ fontFamily: "'Inter', sans-serif" }} />
+                    <input value={newContact.company} onChange={e => setNewContact({...newContact, company: e.target.value})}
+                      placeholder="Company" className="bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary/50" style={{ fontFamily: "'Inter', sans-serif" }} />
+                    <input value={newContact.role} onChange={e => setNewContact({...newContact, role: e.target.value})}
+                      placeholder="Role (e.g. Portfolio Manager)" className="bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary/50" style={{ fontFamily: "'Inter', sans-serif" }} />
+                  </div>
+                  <button
+                    onClick={() => addContactMutation.mutate({ name: newContact.name, email: newContact.email, company: newContact.company || undefined, role: newContact.role || undefined })}
+                    disabled={!newContact.name || !newContact.email || addContactMutation.isPending}
+                    className="flex items-center gap-1.5 text-xs bg-secondary border border-border px-3 py-1.5 rounded-lg hover:bg-card transition-colors disabled:opacity-50"
+                  >
+                    {addContactMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />} Add Contact
+                  </button>
+                </div>
+
+                {/* Additional one-off emails */}
+                <div className="mb-5">
+                  <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">Additional Recipients (comma-separated)</label>
+                  <input value={additionalEmails} onChange={e => setAdditionalEmails(e.target.value)}
+                    placeholder="ceo@example.com, ir@example.com"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50" style={{ fontFamily: "'Inter', sans-serif" }} />
+                </div>
+
+                <button
+                  onClick={handleSendToIR}
+                  disabled={sendSummaryMutation.isPending}
+                  className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {sendSummaryMutation.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</> : <><Send className="w-4 h-4" /> Send Summary Now</>}
+                </button>
               </div>
             )}
 

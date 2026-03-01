@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { Zap, Calendar, Clock, Users, Globe, ArrowRight, CheckCircle } from "lucide-react";
+import { Zap, Calendar, Clock, Users, Globe, ArrowRight, CheckCircle, Lock } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 const EVENT_META: Record<string, { title: string; company: string; platform: string; date: string; time: string; description: string }> = {
   "q4-earnings-2026": {
@@ -37,15 +39,51 @@ export default function Registration() {
   const eventId = params.id ?? "q4-earnings-2026";
   const meta = EVENT_META[eventId] ?? EVENT_META["q4-earnings-2026"];
 
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", company: "", title: "", language: "English", dialIn: false });
+  const [form, setForm] = useState({
+    firstName: "", lastName: "", email: "", company: "",
+    title: "", language: "English", dialIn: false, accessCode: "",
+  });
   const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [registrationId, setRegistrationId] = useState<number | null>(null);
+
+  // Check if event requires access code
+  const { data: accessCheck } = trpc.events.verifyAccess.useQuery({ eventId });
+  const requiresCode = accessCheck?.requiresCode ?? false;
+
+  const registerMutation = trpc.registrations.register.useMutation({
+    onSuccess: (data) => {
+      if (!data.success) {
+        if (data.error === "Invalid access code") {
+          toast.error("Invalid access code. Please check and try again.");
+        } else {
+          toast.error(data.error ?? "Registration failed. Please try again.");
+        }
+        return;
+      }
+      setRegistrationId(data.registrationId ?? null);
+      setSubmitted(true);
+      if (data.alreadyRegistered) {
+        toast.info("You are already registered for this event.");
+      }
+    },
+    onError: () => {
+      toast.error("Registration failed. Please try again.");
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.firstName || !form.lastName || !form.email || !form.company) return;
-    setLoading(true);
-    setTimeout(() => { setLoading(false); setSubmitted(true); }, 1500);
+    registerMutation.mutate({
+      eventId,
+      name: `${form.firstName} ${form.lastName}`.trim(),
+      email: form.email,
+      company: form.company,
+      jobTitle: form.title || undefined,
+      language: form.language,
+      dialIn: form.dialIn,
+      accessCode: form.accessCode || undefined,
+    });
   };
 
   if (submitted) {
@@ -66,6 +104,7 @@ export default function Registration() {
             <div className="flex justify-between"><span className="text-muted-foreground">Event</span><span className="font-semibold">{meta.title}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span>{meta.date}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Time</span><span>{meta.time}</span></div>
+            {registrationId && <div className="flex justify-between"><span className="text-muted-foreground">Registration ID</span><span className="font-mono text-xs text-primary">#{registrationId}</span></div>}
             {form.dialIn && <div className="flex justify-between"><span className="text-muted-foreground">Dial-In</span><span className="text-primary">Included in confirmation email</span></div>}
           </div>
           <button onClick={() => navigate(`/event/${eventId}`)} className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
@@ -87,6 +126,11 @@ export default function Registration() {
           <span className="font-bold text-sm">Chorus<span className="text-primary">.AI</span></span>
         </div>
         <span className="text-muted-foreground text-sm">/ Registration</span>
+        {requiresCode && (
+          <span className="ml-auto flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
+            <Lock className="w-3 h-3" /> Access Code Required
+          </span>
+        )}
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-12 grid md:grid-cols-2 gap-12">
@@ -170,6 +214,22 @@ export default function Registration() {
                   {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
                 </select>
               </div>
+
+              {/* Access Code field — only shown if event requires it */}
+              {requiresCode && (
+                <div>
+                  <label className="text-xs text-amber-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                    <Lock className="w-3 h-3" /> Access Code *
+                  </label>
+                  <input required value={form.accessCode} onChange={(e) => setForm({ ...form, accessCode: e.target.value })}
+                    className="w-full bg-background border border-amber-500/30 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-amber-500/60 font-mono"
+                    style={{ fontFamily: "'Inter', sans-serif" }} placeholder="Enter your access code" />
+                  <p className="text-xs text-muted-foreground mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    This event requires an access code. Contact the event organiser if you don't have one.
+                  </p>
+                </div>
+              )}
+
               <div className="flex items-center gap-3">
                 <input type="checkbox" id="dialin" checked={form.dialIn} onChange={(e) => setForm({ ...form, dialIn: e.target.checked })}
                   className="w-4 h-4 rounded border-border accent-primary" />
@@ -177,9 +237,9 @@ export default function Registration() {
                   Send me dial-in phone numbers (PSTN fallback)
                 </label>
               </div>
-              <button type="submit" disabled={loading}
+              <button type="submit" disabled={registerMutation.isPending}
                 className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center gap-2 mt-2">
-                {loading ? (
+                {registerMutation.isPending ? (
                   <><span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> Registering…</>
                 ) : (
                   <>Register Now <ArrowRight className="w-4 h-4" /></>

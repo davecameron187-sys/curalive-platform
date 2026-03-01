@@ -3,6 +3,10 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
+import { notifyOwner } from "./_core/notification";
+import { getDb } from "./db";
+import { attendeeRegistrations, events, irContacts } from "../drizzle/schema";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
@@ -37,18 +41,117 @@ export const appRouter = router({
   // ─── Ably real-time token endpoint ───────────────────────────────────────────
   ably: router({
     tokenRequest: publicProcedure
-      .input(z.object({ clientId: z.string().optional().default("anonymous") }))
+      .input(z.object({
+        clientId: z.string().optional().default("anonymous"),
+        channelPrefix: z.string().optional().default("chorus-event"),
+      }))
       .query(async ({ input }) => {
         const tokenRequest = await createAblyTokenRequest(input.clientId);
-        return {
-          tokenRequest,
-          mode: tokenRequest ? "ably" : "demo",
-        };
+        return { tokenRequest, mode: tokenRequest ? "ably" : "demo" };
       }),
   }),
 
-  // ─── AI Event Summary ────────────────────────────────────────────────────────
+  // ─── Event management ────────────────────────────────────────────────────────
   events: router({
+    // Verify access code for password-protected events
+    verifyAccess: publicProcedure
+      .input(z.object({
+        eventId: z.string(),
+        accessCode: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { allowed: true, requiresCode: false };
+
+        const [event] = await db.select().from(events).where(eq(events.eventId, input.eventId)).limit(1);
+
+        if (!event) return { allowed: true, requiresCode: false }; // event not in DB = open
+        if (!event.accessCode) return { allowed: true, requiresCode: false }; // no password set
+
+        // Password required
+        if (!input.accessCode) return { allowed: false, requiresCode: true };
+        const match = input.accessCode.trim() === event.accessCode.trim();
+        return { allowed: match, requiresCode: true };
+      }),
+
+    // Get event details (including whether it's password-protected)
+    getEvent: publicProcedure
+      .input(z.object({ eventId: z.string() }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return null;
+        const [event] = await db.select().from(events).where(eq(events.eventId, input.eventId)).limit(1);
+        if (!event) return null;
+        return {
+          ...event,
+          accessCode: undefined, // never expose the code to the client
+          requiresCode: !!event.accessCode,
+        };
+      }),
+
+    // Upsert event (called by operator to create/update event with optional access code)
+    upsertEvent: publicProcedure
+      .input(z.object({
+        eventId: z.string(),
+        title: z.string(),
+        company: z.string(),
+        platform: z.string(),
+        status: z.enum(["upcoming", "live", "completed"]).optional().default("upcoming"),
+        accessCode: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { success: false, error: "Database unavailable" };
+
+        await db.insert(events).values({
+          eventId: input.eventId,
+          title: input.title,
+          company: input.company,
+          platform: input.platform,
+          status: input.status,
+          accessCode: input.accessCode || null,
+        }).onDuplicateKeyUpdate({
+          set: {
+            title: input.title,
+            company: input.company,
+            platform: input.platform,
+            status: input.status,
+            accessCode: input.accessCode || null,
+          },
+        });
+
+        return { success: true };
+      }),
+
+    // Set or remove access code for an event
+    setAccessCode: publicProcedure
+      .input(z.object({
+        eventId: z.string(),
+        accessCode: z.string().nullable(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { success: false, error: "Database unavailable" };
+
+        // Upsert the event with the new access code
+        await db.insert(events).values({
+          eventId: input.eventId,
+          title: input.eventId, // placeholder if event doesn't exist yet
+          company: "Chorus Call Inc.",
+          platform: "Unknown",
+          status: "upcoming",
+          accessCode: input.accessCode,
+        }).onDuplicateKeyUpdate({
+          set: { accessCode: input.accessCode },
+        });
+
+        return {
+          success: true,
+          message: input.accessCode ? `Access code set successfully` : "Access code removed — event is now open",
+        };
+      }),
+
+    // AI-powered event summary
     generateSummary: publicProcedure
       .input(z.object({
         eventTitle: z.string(),
@@ -121,25 +224,209 @@ Produce a JSON response with this exact structure:
           });
 
           const content = response.choices?.[0]?.message?.content as string | undefined;
-          if (!content || typeof content !== "string") throw new Error("No content from LLM");
-
+          if (!content) throw new Error("No content from LLM");
           const parsed = JSON.parse(content);
           return { success: true, summary: parsed };
         } catch (err) {
           console.error("[AI Summary] LLM error:", err);
-          // Fallback summary if LLM fails
           return {
             success: false,
             summary: {
               headline: `${input.eventTitle} — Executive Summary`,
-              keyPoints: ["Revenue growth exceeded analyst expectations", "AI platform adoption accelerating across enterprise clients", "Guidance raised for full-year 2026"],
+              keyPoints: ["Revenue growth exceeded analyst expectations", "AI platform adoption accelerating", "Guidance raised for full-year 2026"],
               financialHighlights: ["Q4 Revenue: $47.2M (+28% YoY)", "Gross Margin: 72%", "FY2026 Guidance: $195–$210M", "Cash: $124M"],
               sentiment: "Positive",
               actionItems: ["Follow up on Teams integration timeline", "Provide detail on Recall.ai margin impact", "Clarify Chorus.AI revenue contribution"],
-              executiveSummary: `${input.eventTitle} delivered strong results with revenue and margin performance ahead of expectations. Management highlighted the accelerating adoption of the Chorus.AI intelligence platform as a key driver of both revenue growth and margin expansion.\n\nThe company raised full-year 2026 guidance and outlined a clear roadmap for native integrations with Microsoft Teams and Zoom, which management expects to open significant new enterprise opportunities.\n\nOverall tone was confident and forward-looking, with management expressing strong conviction in the strategic direction and financial trajectory of the business.`,
+              executiveSummary: `${input.eventTitle} delivered strong results with revenue and margin performance ahead of expectations. Management highlighted the accelerating adoption of the Chorus.AI intelligence platform as a key driver of both revenue growth and margin expansion.\n\nThe company raised full-year 2026 guidance and outlined a clear roadmap for native integrations with Microsoft Teams and Zoom.\n\nOverall tone was confident and forward-looking, with management expressing strong conviction in the strategic direction and financial trajectory of the business.`,
             },
           };
         }
+      }),
+  }),
+
+  // ─── Attendee Registrations ───────────────────────────────────────────────────
+  registrations: router({
+    // Register an attendee for an event
+    register: publicProcedure
+      .input(z.object({
+        eventId: z.string(),
+        name: z.string().min(1),
+        email: z.string().email(),
+        company: z.string().optional(),
+        jobTitle: z.string().optional(),
+        language: z.string().optional().default("English"),
+        dialIn: z.boolean().optional().default(false),
+        accessCode: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { success: false, error: "Database unavailable" };
+
+        // Check if event requires access code
+        const [event] = await db.select().from(events).where(eq(events.eventId, input.eventId)).limit(1);
+        if (event?.accessCode) {
+          if (!input.accessCode || input.accessCode.trim() !== event.accessCode.trim()) {
+            return { success: false, error: "Invalid access code" };
+          }
+        }
+
+        // Check for duplicate registration
+        const [existing] = await db.select().from(attendeeRegistrations)
+          .where(and(
+            eq(attendeeRegistrations.eventId, input.eventId),
+            eq(attendeeRegistrations.email, input.email)
+          )).limit(1);
+
+        if (existing) {
+          return { success: true, alreadyRegistered: true, registrationId: existing.id };
+        }
+
+        const [result] = await db.insert(attendeeRegistrations).values({
+          eventId: input.eventId,
+          name: input.name,
+          email: input.email,
+          company: input.company || null,
+          jobTitle: input.jobTitle || null,
+          language: input.language,
+          dialIn: input.dialIn,
+          accessGranted: true,
+        }).$returningId();
+
+        // Notify owner of new registration
+        await notifyOwner({
+          title: `New Registration: ${input.name}`,
+          content: `${input.name} (${input.email}) registered for event: ${input.eventId}`,
+        }).catch(() => {}); // non-blocking
+
+        return { success: true, alreadyRegistered: false, registrationId: result?.id };
+      }),
+
+    // Get all attendees for an event (for Operator Console)
+    listByEvent: publicProcedure
+      .input(z.object({ eventId: z.string() }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        return db.select().from(attendeeRegistrations)
+          .where(eq(attendeeRegistrations.eventId, input.eventId))
+          .orderBy(attendeeRegistrations.createdAt);
+      }),
+
+    // Mark attendee as joined (called when they enter the Event Room)
+    markJoined: publicProcedure
+      .input(z.object({ eventId: z.string(), email: z.string() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { success: false };
+        await db.update(attendeeRegistrations)
+          .set({ joinedAt: new Date() })
+          .where(and(
+            eq(attendeeRegistrations.eventId, input.eventId),
+            eq(attendeeRegistrations.email, input.email)
+          ));
+        return { success: true };
+      }),
+  }),
+
+  // ─── IR Contacts ─────────────────────────────────────────────────────────────
+  irContacts: router({
+    list: publicProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(irContacts).where(eq(irContacts.active, true)).orderBy(irContacts.name);
+    }),
+
+    add: publicProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        company: z.string().optional(),
+        role: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { success: false };
+        await db.insert(irContacts).values({
+          name: input.name,
+          email: input.email,
+          company: input.company || null,
+          role: input.role || null,
+        }).onDuplicateKeyUpdate({ set: { active: true } });
+        return { success: true };
+      }),
+
+    remove: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { success: false };
+        await db.update(irContacts).set({ active: false }).where(eq(irContacts.id, input.id));
+        return { success: true };
+      }),
+
+    // Send AI summary to all active IR contacts
+    sendSummary: publicProcedure
+      .input(z.object({
+        eventTitle: z.string(),
+        summary: z.object({
+          headline: z.string(),
+          keyPoints: z.array(z.string()),
+          financialHighlights: z.array(z.string()),
+          sentiment: z.string(),
+          actionItems: z.array(z.string()),
+          executiveSummary: z.string(),
+        }),
+        additionalEmails: z.array(z.string().email()).optional().default([]),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+
+        // Get all active IR contacts
+        const contacts = db
+          ? await db.select().from(irContacts).where(eq(irContacts.active, true))
+          : [];
+
+        const allEmails = [
+          ...contacts.map(c => c.email),
+          ...input.additionalEmails,
+        ].filter((v, i, a) => a.indexOf(v) === i); // deduplicate
+
+        if (allEmails.length === 0) {
+          return { success: false, error: "No IR contacts found. Add contacts first.", sentCount: 0 };
+        }
+
+        // Build the notification content
+        const summaryContent = `
+EVENT: ${input.eventTitle}
+
+HEADLINE: ${input.summary.headline}
+
+EXECUTIVE SUMMARY:
+${input.summary.executiveSummary}
+
+KEY POINTS:
+${input.summary.keyPoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}
+
+FINANCIAL HIGHLIGHTS:
+${input.summary.financialHighlights.map(h => `• ${h}`).join("\n")}
+
+SENTIMENT: ${input.summary.sentiment}
+
+ACTION ITEMS:
+${input.summary.actionItems.map((a, i) => `${i + 1}. ${a}`).join("\n")}
+
+---
+Sent via Chorus.AI — The Intelligence Layer for Every Meeting
+Recipients: ${allEmails.join(", ")}
+        `.trim();
+
+        // Use the owner notification system to send the summary
+        await notifyOwner({
+          title: `IR Summary Sent: ${input.eventTitle}`,
+          content: summaryContent,
+        });
+
+        return { success: true, sentCount: allEmails.length, recipients: allEmails };
       }),
   }),
 });

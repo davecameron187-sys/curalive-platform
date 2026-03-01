@@ -5,8 +5,9 @@ import {
   Radio, Link2, Copy, CheckCheck, ChevronUp, Trash2,
   Play, Square, Phone, Globe, BarChart3, MessageSquare,
   AlertCircle, CheckCircle, Loader2, Volume2, VolumeX,
-  ExternalLink, Key, Webhook, RefreshCw
+  ExternalLink, Key, Webhook, RefreshCw, Lock, Unlock, Eye, EyeOff
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 const EVENT_META: Record<string, { title: string; company: string; platform: string }> = {
@@ -58,7 +59,10 @@ export default function OperatorConsole() {
   const eventId = params.id ?? "q4-earnings-2026";
   const meta = EVENT_META[eventId] ?? EVENT_META["q4-earnings-2026"];
 
-  const [activeTab, setActiveTab] = useState<"connect" | "qa" | "dialin" | "rtmp" | "settings">("connect");
+  const [activeTab, setActiveTab] = useState<"connect" | "qa" | "dialin" | "rtmp" | "settings" | "attendees">("connect");
+
+  // Real attendee list from database
+  const { data: attendeeList, isLoading: attendeesLoading, refetch: refetchAttendees } = trpc.registrations.listByEvent.useQuery({ eventId });
   const [botStatus, setBotStatus] = useState<BotStatus>("disconnected");
   const [meetingUrl, setMeetingUrl] = useState("");
   const [qaItems, setQaItems] = useState<QAItem[]>(INITIAL_QA);
@@ -67,6 +71,23 @@ export default function OperatorConsole() {
   const [copied, setCopied] = useState<string | null>(null);
   const [eventStarted, setEventStarted] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [accessCodeInput, setAccessCodeInput] = useState("");
+  const [showAccessCode, setShowAccessCode] = useState(false);
+
+  // Access code management
+  const { data: accessData, refetch: refetchAccess } = trpc.events.verifyAccess.useQuery({ eventId });
+  const setAccessCodeMutation = trpc.events.setAccessCode.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message ?? "Access code updated!");
+        refetchAccess();
+        setAccessCodeInput("");
+      } else {
+        toast.error(data.error ?? "Failed to update access code");
+      }
+    },
+    onError: () => toast.error("Failed to update access code"),
+  });
   const rtmpKey = "evt_q4_2026_xK9mNpQ3";
   const rtmpUrl = `rtmp://ingest.chorus.ai/live/${rtmpKey}`;
   const webhookUrl = `https://chorus.ai/api/webhooks/recall`;
@@ -157,6 +178,7 @@ export default function OperatorConsole() {
           {[
             { key: "connect", label: "Connect Webcast", icon: Radio },
             { key: "qa", label: "Q&A Moderation", icon: MessageSquare, badge: pendingQ.length },
+            { key: "attendees", label: "Attendees", icon: Users, badge: attendeeList?.length || 0 },
             { key: "dialin", label: "Dial-In Numbers", icon: Phone },
             { key: "rtmp", label: "RTMP / Stream Key", icon: Link2 },
             { key: "settings", label: "Event Settings", icon: Settings },
@@ -524,9 +546,61 @@ export default function OperatorConsole() {
                 </div>
               </div>
 
-              <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-                <div className="font-semibold text-sm border-b border-border pb-3">Access & Security</div>
-                <div className="space-y-2 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                <div className="font-semibold text-sm border-b border-border pb-3 flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5 text-primary" /> Access & Security
+                </div>
+
+                {/* Current access code status */}
+                <div className="flex items-center justify-between bg-background/60 border border-border rounded-lg px-4 py-3">
+                  <div>
+                    <div className="text-sm font-medium">Event Access Code</div>
+                    <div className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      {accessData?.requiresCode
+                        ? <span className="text-amber-400 flex items-center gap-1"><Lock className="w-3 h-3" /> Protected — attendees must enter a code to register</span>
+                        : <span className="text-emerald-400 flex items-center gap-1"><Unlock className="w-3 h-3" /> Open — no access code required</span>
+                      }
+                    </div>
+                  </div>
+                  {accessData?.requiresCode && (
+                    <button
+                      onClick={() => setAccessCodeMutation.mutate({ eventId, accessCode: null })}
+                      className="text-xs text-red-400 border border-red-500/20 bg-red-500/10 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors"
+                    >
+                      Remove Code
+                    </button>
+                  )}
+                </div>
+
+                {/* Set / update access code */}
+                <div>
+                  <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Set New Access Code</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={showAccessCode ? "text" : "password"}
+                        value={accessCodeInput}
+                        onChange={(e) => setAccessCodeInput(e.target.value)}
+                        placeholder="e.g. BOARD2026"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50 font-mono pr-10"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      />
+                      <button onClick={() => setShowAccessCode(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        {showAccessCode ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setAccessCodeMutation.mutate({ eventId, accessCode: accessCodeInput })}
+                      disabled={!accessCodeInput || setAccessCodeMutation.isPending}
+                      className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                    >
+                      {setAccessCodeMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Key className="w-3.5 h-3.5" />} Set Code
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>Attendees will be required to enter this code on the Registration page.</p>
+                </div>
+
+                <div className="space-y-2 text-sm border-t border-border pt-3" style={{ fontFamily: "'Inter', sans-serif" }}>
                   {[
                     ["Registration Required", "Yes — email + name"],
                     ["Q&A Moderation", "Operator approval required"],
@@ -539,6 +613,67 @@ export default function OperatorConsole() {
                       <span className="font-medium">{value}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {/* ── Attendees ── */}
+          {activeTab === "attendees" && (
+            <div className="max-w-3xl space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1">Registered Attendees</h2>
+                  <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>All attendees who have registered for this event.</p>
+                </div>
+                <button onClick={() => refetchAttendees()} className="flex items-center gap-1.5 text-xs border border-border px-3 py-2 rounded-lg hover:bg-secondary transition-colors">
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                </button>
+              </div>
+
+              {attendeesLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : !attendeeList || attendeeList.length === 0 ? (
+                <div className="bg-card border border-border rounded-xl p-12 text-center">
+                  <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                  <div className="font-semibold mb-1">No registrations yet</div>
+                  <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>Attendees who register via the Registration page will appear here.</p>
+                </div>
+              ) : (
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="grid grid-cols-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground px-5 py-3 border-b border-border bg-background/40">
+                    <span>Name</span>
+                    <span>Email</span>
+                    <span>Language</span>
+                    <span>Registered</span>
+                  </div>
+                  {attendeeList.map((a: { id: number; name: string; email: string; language: string; createdAt: Date }) => (
+                    <div key={a.id} className="grid grid-cols-4 text-sm px-5 py-3.5 border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                      <span className="font-medium truncate">{a.name}</span>
+                      <span className="text-muted-foreground truncate" style={{ fontFamily: "'Inter', sans-serif" }}>{a.email}</span>
+                      <span className="text-muted-foreground">{a.language}</span>
+                      <span className="text-muted-foreground text-xs">{new Date(a.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="bg-card border border-border rounded-xl p-5">
+                <div className="font-semibold text-sm mb-3">Registration Summary</div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-primary">{attendeeList?.length ?? 0}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Total Registered</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-emerald-400">{attendeeList?.filter((a: { language: string }) => a.language === "English").length ?? 0}</div>
+                    <div className="text-xs text-muted-foreground mt-1">English</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-amber-400">{attendeeList ? attendeeList.length - attendeeList.filter((a: { language: string }) => a.language === "English").length : 0}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Other Languages</div>
+                  </div>
                 </div>
               </div>
             </div>

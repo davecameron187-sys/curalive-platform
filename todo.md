@@ -10,3 +10,10 @@
 - [x] AI-Generated Event Summary (LLM) on Post-Event page
 - [x] Live Audience Poll Overlay in Event Room attendee view
 - [x] Download Transcript as PDF on Post-Event page
+
+## Round 6 — Database, Email & Security
+
+- [ ] Attendee registration persisted to database (name, email, company, event, joined_at)
+- [ ] Operator Console shows real attendee list from database
+- [ ] Send AI Summary to IR Contacts (server-side email via notification API)
+- [ ] Event password protection (access code on Registration + server-side validation)
