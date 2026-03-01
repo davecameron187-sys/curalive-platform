@@ -3,8 +3,11 @@ import { useLocation, useParams } from "wouter";
 import {
   Zap, ArrowLeft, Download, Play, FileText, BarChart3,
   MessageSquare, Clock, Users, Globe, CheckCircle,
-  TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Mail
+  TrendingUp, Minus, ChevronDown, ChevronUp, Mail,
+  Sparkles, Loader2, AlertCircle, RefreshCw
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 const SUMMARY = `Chorus Call delivered a strong Q4 2025, with revenue of $47.2 million representing 28% year-over-year growth. CEO James Mitchell highlighted the accelerating adoption of the Chorus.AI intelligence platform, which drove a 40% improvement in engagement metrics across the enterprise client base.
 
@@ -44,16 +47,108 @@ const speakerColor: Record<string, string> = {
   "Sarah Chen (CFO)": "text-emerald-400",
 };
 
+type AISummary = {
+  headline: string;
+  keyPoints: string[];
+  financialHighlights: string[];
+  sentiment: string;
+  actionItems: string[];
+  executiveSummary: string;
+};
+
 export default function PostEvent() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<"summary" | "transcript" | "analytics">("summary");
   const [expandedTranscript, setExpandedTranscript] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
+  const [summaryGenerated, setSummaryGenerated] = useState(false);
 
-  const handleDownload = (type: string) => {
-    setDownloading(true);
-    setTimeout(() => { setDownloading(false); }, 1500);
+  const generateSummary = trpc.events.generateSummary.useMutation({
+    onSuccess: (data) => {
+      setAiSummary(data.summary as AISummary);
+      setSummaryGenerated(true);
+      if (!data.success) {
+        toast.warning("Using fallback summary — LLM temporarily unavailable");
+      } else {
+        toast.success("AI Summary generated successfully!");
+      }
+    },
+    onError: () => {
+      toast.error("Failed to generate AI summary. Please try again.");
+    },
+  });
+
+  const handleGenerateSummary = () => {
+    generateSummary.mutate({
+      eventTitle: "Q4 2025 Earnings Call — Chorus Call Inc.",
+      transcript: TRANSCRIPT.map(t => ({ speaker: t.speaker, text: t.text, timeLabel: t.time })),
+      qaItems: [
+        { question: "Can you provide more detail on the Chorus.AI revenue contribution in Q4?", author: "Goldman Sachs", status: "answered" },
+        { question: "What is the timeline for the native Microsoft Teams integration?", author: "JP Morgan", status: "answered" },
+        { question: "How does the Recall.ai partnership affect your gross margin profile?", author: "Morgan Stanley", status: "approved" },
+      ],
+    });
+  };
+
+  const handleDownloadPDF = () => {
+    const summary = aiSummary;
+    if (!summary) return;
+
+    const content = [
+      "CHORUS.AI — POST-EVENT EXECUTIVE SUMMARY",
+      "=========================================",
+      "",
+      "Q4 2025 Earnings Call — Chorus Call Inc.",
+      `Generated: ${new Date().toLocaleString()}`,
+      "",
+      "HEADLINE",
+      "--------",
+      summary.headline,
+      "",
+      "KEY POINTS",
+      "----------",
+      ...summary.keyPoints.map(p => `• ${p}`),
+      "",
+      "FINANCIAL HIGHLIGHTS",
+      "--------------------",
+      ...summary.financialHighlights.map(h => `• ${h}`),
+      "",
+      `OVERALL SENTIMENT: ${summary.sentiment}`,
+      "",
+      "ACTION ITEMS",
+      "------------",
+      ...summary.actionItems.map(a => `• ${a}`),
+      "",
+      "EXECUTIVE SUMMARY",
+      "-----------------",
+      summary.executiveSummary,
+      "",
+      "---",
+      "Produced by Chorus.AI — Chorus Call Inc.",
+    ].join("\n");
+
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chorus-ai-summary-q4-2025.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Summary downloaded!");
+  };
+
+  const handleDownloadTranscript = () => {
+    const lines = TRANSCRIPT.map(t => `[${t.time}] ${t.speaker}: ${t.text}`).join("\n\n");
+    const content = `CHORUS.AI — FULL TRANSCRIPT\nQ4 2025 Earnings Call — Chorus Call Inc.\nGenerated: ${new Date().toLocaleString()}\n\n${'='.repeat(60)}\n\n${lines}\n\n${'='.repeat(60)}\nTranscribed by Whisper AI · Speaker-diarized by Recall.ai\nProduced by Chorus.AI — Chorus Call Inc.`;
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chorus-ai-transcript-q4-2025.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Transcript downloaded!");
   };
 
   const maxSentiment = Math.max(...SENTIMENT_TIMELINE.map((s) => s.score));
@@ -115,10 +210,10 @@ export default function PostEvent() {
               <span className="text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>Replay available for 90 days</span>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => handleDownload("video")} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
+              <button onClick={() => toast.info("Video download coming soon")} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
                 <Download className="w-3 h-3" /> Video (MP4)
               </button>
-              <button onClick={() => handleDownload("audio")} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
+              <button onClick={() => toast.info("Audio download coming soon")} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
                 <Download className="w-3 h-3" /> Audio (MP3)
               </button>
             </div>
@@ -145,29 +240,116 @@ export default function PostEvent() {
         {/* ── AI Summary ── */}
         {activeTab === "summary" && (
           <div className="space-y-6">
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Zap className="w-3.5 h-3.5 text-primary" />
-                  </div>
-                  <span className="font-semibold">Chorus.AI Executive Summary</span>
+            {/* AI Generate Button */}
+            {!summaryGenerated && (
+              <div className="bg-card border border-primary/20 rounded-2xl p-8 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="w-7 h-7 text-primary" />
                 </div>
-                <div className="flex gap-2">
-                  <a
-                    href={`mailto:?subject=${encodeURIComponent("Q4 2025 Earnings Call — Chorus.AI Executive Summary")}&body=${encodeURIComponent("Dear IR Contacts,\n\nPlease find below the AI-generated executive summary for the Q4 2025 Earnings Call, produced by Chorus.AI.\n\n" + SUMMARY + "\n\nKey Metrics:\n• Q4 Revenue: $47.2M (+28% YoY)\n• Gross Margin: 72%\n• 2026 Revenue Guidance: $195–210M\n• Cash & Equivalents: $124M\n\nFull replay and transcript available at your Chorus.AI portal.\n\nBest regards,\nInvestor Relations — Chorus Call Inc.")}`}
-                    className="flex items-center gap-1.5 text-xs bg-primary/10 border border-primary/20 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
-                  >
-                    <Mail className="w-3 h-3" /> Email to IR Contacts
-                  </a>
-                  <button onClick={() => handleDownload("summary")} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
-                    <Download className="w-3 h-3" /> Download PDF
-                  </button>
+                <h3 className="font-bold text-lg mb-2">Generate AI Executive Summary</h3>
+                <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Chorus.AI will analyse the full transcript and Q&A to produce a structured executive summary, financial highlights, and action items — ready for your IR contacts.
+                </p>
+                <button
+                  onClick={handleGenerateSummary}
+                  disabled={generateSummary.isPending}
+                  className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 mx-auto"
+                >
+                  {generateSummary.isPending ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Analysing transcript...</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4" /> Generate AI Summary</>
+                  )}
+                </button>
+                {generateSummary.isError && (
+                  <div className="flex items-center gap-2 text-red-400 text-sm mt-4 justify-center">
+                    <AlertCircle className="w-4 h-4" /> Failed to generate. <button onClick={handleGenerateSummary} className="underline">Try again</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Generated Summary */}
+            {summaryGenerated && aiSummary && (
+              <div className="bg-card border border-border rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <span className="font-semibold">Chorus.AI Executive Summary</span>
+                    <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">AI Generated</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleGenerateSummary} disabled={generateSummary.isPending} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors disabled:opacity-50">
+                      <RefreshCw className="w-3 h-3" /> Regenerate
+                    </button>
+                    <a
+                      href={`mailto:?subject=${encodeURIComponent("Q4 2025 Earnings Call — Chorus.AI Executive Summary")}&body=${encodeURIComponent("Dear IR Contacts,\n\n" + aiSummary.executiveSummary + "\n\nKey Financial Highlights:\n" + aiSummary.financialHighlights.map(h => "• " + h).join("\n") + "\n\nProduced by Chorus.AI — Chorus Call Inc.")}`}
+                      className="flex items-center gap-1.5 text-xs bg-primary/10 border border-primary/20 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+                    >
+                      <Mail className="w-3 h-3" /> Email to IR Contacts
+                    </a>
+                    <button onClick={handleDownloadPDF} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
+                      <Download className="w-3 h-3" /> Download
+                    </button>
+                  </div>
+                </div>
+
+                {/* Headline */}
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-5">
+                  <p className="font-semibold text-sm text-primary">{aiSummary.headline}</p>
+                </div>
+
+                {/* Key Points + Financial Highlights */}
+                <div className="grid md:grid-cols-2 gap-4 mb-5">
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Key Points</div>
+                    <ul className="space-y-1.5">
+                      {aiSummary.keyPoints.map((p, i) => (
+                        <li key={i} className="flex gap-2 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                          <span className="text-primary mt-0.5">•</span> {p}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Financial Highlights</div>
+                    <ul className="space-y-1.5">
+                      {aiSummary.financialHighlights.map((h, i) => (
+                        <li key={i} className="flex gap-2 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                          <TrendingUp className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" /> {h}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Executive Summary */}
+                <div className="mb-5">
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Executive Summary</div>
+                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line" style={{ fontFamily: "'Inter', sans-serif" }}>{aiSummary.executiveSummary}</p>
+                </div>
+
+                {/* Sentiment + Action Items */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-background/60 border border-border rounded-xl p-4">
+                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Overall Sentiment</div>
+                    <div className="text-lg font-bold text-emerald-400">{aiSummary.sentiment}</div>
+                  </div>
+                  <div className="bg-background/60 border border-border rounded-xl p-4">
+                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Action Items</div>
+                    <ul className="space-y-1">
+                      {aiSummary.actionItems.map((a, i) => (
+                        <li key={i} className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>• {a}</li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
-              <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line" style={{ fontFamily: "'Inter', sans-serif" }}>{SUMMARY}</p>
-            </div>
+            )}
 
+            {/* Static fallback cards always shown */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-card border border-border rounded-xl p-5">
                 <div className="font-semibold text-sm mb-3">Key Topics Detected</div>
@@ -206,7 +388,7 @@ export default function PostEvent() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>Auto-transcribed by Whisper AI · Speaker-diarized by Recall.ai</p>
-              <button onClick={() => handleDownload("transcript")} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
+              <button onClick={handleDownloadTranscript} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
                 <Download className="w-3 h-3" /> Download TXT
               </button>
             </div>

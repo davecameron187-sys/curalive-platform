@@ -144,8 +144,104 @@ function EventRoomInner({ eventId }: { eventId: string }) {
   const visibleQA = qaItems.filter((q) => q.status !== "rejected").sort((a, b) => b.votes - a.votes);
   const livePolls = polls.filter((p) => p.status === "live");
 
+  // Poll overlay state — shows full-screen when a new poll is pushed
+  const [activePollOverlay, setActivePollOverlay] = useState<typeof livePolls[0] | null>(null);
+  const [votedPolls, setVotedPolls] = useState<Set<string>>(new Set());
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const prevPollCount = useRef(0);
+
+  // Auto-show overlay when a new live poll arrives
+  useEffect(() => {
+    if (livePolls.length > prevPollCount.current) {
+      const newest = livePolls[livePolls.length - 1];
+      if (newest && !votedPolls.has(newest.id)) {
+        setActivePollOverlay(newest);
+        setSelectedOption(null);
+      }
+    }
+    prevPollCount.current = livePolls.length;
+  }, [livePolls, votedPolls]);
+
+  const handlePollOverlayVote = useCallback(() => {
+    if (!activePollOverlay || !selectedOption) return;
+    publish({ type: "poll.vote", data: { pollId: activePollOverlay.id, optionId: selectedOption } });
+    setVotedPolls((prev) => new Set(Array.from(prev).concat(activePollOverlay.id)));
+    setActivePollOverlay(null);
+  }, [activePollOverlay, selectedOption, publish]);
+
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+
+      {/* ── Full-Screen Poll Overlay ── */}
+      {activePollOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-card border border-primary/30 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest text-primary mb-0.5">Live Poll</div>
+                <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>From the Moderator</div>
+              </div>
+              <div className="ml-auto flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full">
+                <span className="live-badge-dot w-1.5 h-1.5 rounded-full bg-red-400 inline-block" /> Live
+              </div>
+            </div>
+
+            {/* Question */}
+            <p className="text-lg font-semibold mb-6 leading-snug">{activePollOverlay.question}</p>
+
+            {/* Options */}
+            <div className="space-y-3 mb-6">
+              {activePollOverlay.options.map((opt, i) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setSelectedOption(opt.id)}
+                  className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
+                    selectedOption === opt.id
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-primary/40 hover:bg-primary/5"
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                      selectedOption === opt.id ? "border-primary" : "border-muted-foreground"
+                    }`}
+                  >
+                    {selectedOption === opt.id && (
+                      <span className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </span>
+                  <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{opt.label}</span>
+                  <span className="ml-auto text-xs font-bold" style={{ color: POLL_COLORS[i % POLL_COLORS.length] }}>
+                    {String.fromCharCode(65 + i)}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setActivePollOverlay(null)}
+                className="flex-1 border border-border text-muted-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-secondary transition-colors"
+              >
+                Skip
+              </button>
+              <button
+                onClick={handlePollOverlayVote}
+                disabled={!selectedOption}
+                className="flex-1 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40"
+              >
+                Submit Vote
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="shrink-0 border-b border-border bg-card/60 backdrop-blur-md px-4 h-14 flex items-center gap-3">
         <button onClick={() => navigate("/")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm">
