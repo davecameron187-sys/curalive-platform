@@ -1,5 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 import {
   Zap, ArrowLeft, CheckCircle, XCircle, Clock, ChevronUp,
   Send, Plus, Trash2, Play, Square, Users, MessageSquare,
@@ -290,13 +301,58 @@ function ModeratorInner({ eventId }: { eventId: string }) {
               )}
               {polls.map((poll) => {
                 const totalVotes = poll.options.reduce((a, b) => a + b.votes, 0);
+                const CHART_COLORS = [
+                  "rgba(239,68,68,0.85)",
+                  "rgba(59,130,246,0.85)",
+                  "rgba(16,185,129,0.85)",
+                  "rgba(245,158,11,0.85)",
+                  "rgba(139,92,246,0.85)",
+                ];
+                const chartData = {
+                  labels: poll.options.map((o) => o.label),
+                  datasets: [{
+                    label: "Votes",
+                    data: poll.options.map((o) => o.votes),
+                    backgroundColor: poll.options.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+                    borderRadius: 6,
+                    borderSkipped: false,
+                  }],
+                };
+                const chartOptions = {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  animation: { duration: 600, easing: "easeInOutQuart" as const },
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label: (ctx: { parsed: { y: number | null } }) => {
+                          const votes = ctx.parsed.y ?? 0;
+                          const pct = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+                          return ` ${votes} votes (${pct}%)`;
+                        },
+                      },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      grid: { color: "rgba(255,255,255,0.05)" },
+                      ticks: { color: "#94a3b8", font: { size: 11 } },
+                    },
+                    y: {
+                      beginAtZero: true,
+                      grid: { color: "rgba(255,255,255,0.05)" },
+                      ticks: { color: "#94a3b8", font: { size: 11 }, stepSize: 1 },
+                    },
+                  },
+                };
                 return (
                   <div key={poll.id} className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <div className="font-semibold text-sm mb-1">{poll.question}</div>
                         <div className={`text-xs font-semibold ${poll.status === "live" ? "text-emerald-400" : "text-muted-foreground"}`}>
-                          {poll.status === "live" ? "● Live" : "Closed"} · {totalVotes} votes
+                          {poll.status === "live" ? "● Live" : "Closed"} · {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
                         </div>
                       </div>
                       {poll.status === "live" && (
@@ -305,18 +361,21 @@ function ModeratorInner({ eventId }: { eventId: string }) {
                         </button>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      {poll.options.map((opt) => {
+                    {/* Animated Chart.js bar chart */}
+                    <div style={{ height: "180px" }} className="mb-3">
+                      <Bar data={chartData} options={chartOptions} />
+                    </div>
+                    {/* Percentage breakdown below chart */}
+                    <div className="space-y-1 pt-2 border-t border-border">
+                      {poll.options.map((opt, i) => {
                         const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
                         return (
-                          <div key={opt.id}>
-                            <div className="flex justify-between text-xs mb-1" style={{ fontFamily: "'Inter', sans-serif" }}>
-                              <span>{opt.label}</span>
-                              <span className="font-semibold">{pct}% ({opt.votes})</span>
-                            </div>
-                            <div className="h-2 bg-border rounded-full overflow-hidden">
-                              <div className="h-full bg-primary rounded-full sentiment-bar-fill" style={{ width: `${pct}%` }} />
-                            </div>
+                          <div key={opt.id} className="flex justify-between text-xs" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            <span className="flex items-center gap-1.5">
+                              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                              {opt.label}
+                            </span>
+                            <span className="font-semibold text-foreground">{pct}% <span className="text-muted-foreground">({opt.votes})</span></span>
                           </div>
                         );
                       })}

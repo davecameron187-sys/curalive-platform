@@ -3,7 +3,7 @@ import { useLocation, useParams } from "wouter";
 import {
   Zap, ArrowLeft, Users, Clock, Settings,
   ChevronUp, Send, Globe, BarChart3, MessageSquare,
-  FileText, Radio, Mic, Hand, MicOff
+  FileText, Radio, Mic, Hand, MicOff, Share2, Check
 } from "lucide-react";
 import { AblyProvider, useAbly, type QAItem, type RaisedHand } from "@/contexts/AblyContext";
 
@@ -63,7 +63,16 @@ function EventRoomInner({ eventId }: { eventId: string }) {
   const [handRaised, setHandRaised] = useState(false);
   const [myHandId] = useState(() => `hand-${Date.now()}`);
   const [unmutedNotice, setUnmutedNotice] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const transcriptRef = useRef<HTMLDivElement>(null);
+
+  const handleShareLink = useCallback(() => {
+    const shareUrl = `${window.location.origin}/register/${eventId}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    });
+  }, [eventId]);
 
   // Elapsed time
   useEffect(() => {
@@ -177,6 +186,17 @@ function EventRoomInner({ eventId }: { eventId: string }) {
           </button>
           <button onClick={() => navigate(`/operator/${eventId}`)} className="flex items-center gap-1 text-xs text-muted-foreground border border-border px-2.5 py-1.5 rounded-lg hover:bg-secondary transition-colors">
             <Settings className="w-3 h-3" /> Operator
+          </button>
+          <button
+            onClick={handleShareLink}
+            className={`flex items-center gap-1 text-xs font-semibold border px-2.5 py-1.5 rounded-lg transition-all ${
+              shareCopied
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                : "text-primary border-primary/30 bg-primary/10 hover:bg-primary/20"
+            }`}
+          >
+            {shareCopied ? <Check className="w-3 h-3" /> : <Share2 className="w-3 h-3" />}
+            {shareCopied ? "Copied!" : "Share"}
           </button>
         </div>
       </header>

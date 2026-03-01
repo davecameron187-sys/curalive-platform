@@ -139,6 +139,7 @@ type AblyContextValue = {
   raisedHands: RaisedHand[];
   presenceCount: number;
   isSimulating: boolean;
+  mode: "demo" | "ably";
   publish: (msg: ChorusMessage) => void;
 };
 
@@ -293,8 +294,10 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
     return () => clearInterval(timer);
   }, [eventId]);
 
+  const mode: "demo" | "ably" = ablyConfig?.mode === "ably" ? "ably" : "demo";
+
   return (
-    <AblyContext.Provider value={{ eventId, transcript, sentiment, qaItems, polls, raisedHands, presenceCount, isSimulating, publish }}>
+    <AblyContext.Provider value={{ eventId, transcript, sentiment, qaItems, polls, raisedHands, presenceCount, isSimulating, mode, publish }}>
       {children}
     </AblyContext.Provider>
   );

@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay } from "lucide-react";
+import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay, Activity } from "lucide-react";
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-hero-bg-bFr44AaNNWKkv4uMRbTXe8.webp";
 
@@ -25,6 +25,7 @@ const PLATFORM_PAGES = [
   { icon: FileText, label: "Post-Event Report", desc: "AI summary, full transcript, replay, analytics", path: "/post-event/q4-earnings-2026", color: "text-emerald-400" },
   { icon: Code2, label: "Integration Hub", desc: "Recall.ai, Zoom RTMS, Teams Bot, RTMP, PSTN", path: "/integrations", color: "text-blue-400" },
   { icon: Package, label: "Partner API & Widget", desc: "Webhook events, REST API, embeddable widget", path: "/partner-api", color: "text-violet-400" },
+  { icon: Activity, label: "Cross-Device Sync Test", desc: "Live Ably ping/pong — open on two devices to verify real-time sync", path: "/sync-test", color: "text-cyan-400" },
 ];
 
 function StatusBadge({ status }: { status: string }) {
