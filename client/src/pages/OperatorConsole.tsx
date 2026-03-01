@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import {
   Zap, ArrowLeft, Mic, MicOff, Users, Clock, Settings,
@@ -91,6 +91,32 @@ export default function OperatorConsole() {
   const rtmpKey = "evt_q4_2026_xK9mNpQ3";
   const rtmpUrl = `rtmp://ingest.chorus.ai/live/${rtmpKey}`;
   const webhookUrl = `https://chorus.ai/api/webhooks/recall`;
+
+  // ── Feature #15: Silence / Anomaly Detector ───────────────────────────────────
+  const [silenceAlert, setSilenceAlert] = useState<{ seconds: number; dismissedAt: number | null } | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+  // Simulate transcript activity ticks when bot is live
+  useEffect(() => {
+    if (botStatus !== "live") { setSilenceAlert(null); return; }
+    // Simulate activity: reset every 15-45s randomly
+    const activityInterval = setInterval(() => {
+      const roll = Math.random();
+      if (roll > 0.3) lastActivityRef.current = Date.now(); // 70% chance of activity
+    }, 5000);
+    // Check for silence every second
+    const silenceCheck = setInterval(() => {
+      const silenceSec = Math.floor((Date.now() - lastActivityRef.current) / 1000);
+      if (silenceSec >= 10) {
+        setSilenceAlert((prev) => {
+          if (prev?.dismissedAt) return prev; // already dismissed
+          return { seconds: silenceSec, dismissedAt: null };
+        });
+      } else {
+        setSilenceAlert(null);
+      }
+    }, 1000);
+    return () => { clearInterval(activityInterval); clearInterval(silenceCheck); };
+  }, [botStatus]);
 
   useEffect(() => {
     if (!eventStarted) return;
@@ -209,8 +235,31 @@ export default function OperatorConsole() {
 
         {/* Main Panel */}
         <main className="flex-1 overflow-y-auto p-6">
-
-          {/* ── Connect Webcast ── */}
+          {/* ── Feature #15: Silence / Anomaly Alert Banner ── */}
+          {silenceAlert && !silenceAlert.dismissedAt && (
+            <div className="mb-4 flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-400">Audio Silence Detected</p>
+                <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  No transcript activity for {silenceAlert.seconds}s — the bot may have dropped or the speaker is muted.
+                </p>
+              </div>
+              <button
+                onClick={() => setSilenceAlert((a) => a ? { ...a, dismissedAt: Date.now() } : null)}
+                className="text-xs font-semibold text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition-colors"
+              >
+                Dismiss
+              </button>
+              <button
+                onClick={() => { lastActivityRef.current = Date.now(); setSilenceAlert(null); toast.success("Bot reconnection triggered."); }}
+                className="text-xs font-semibold text-white bg-amber-500 px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors"
+              >
+                Reconnect Bot
+              </button>
+            </div>
+          )}
+           {/* ── Connect Webcast ── */}
           {activeTab === "connect" && (
             <div className="max-w-2xl space-y-6">
               <div>
@@ -540,8 +589,21 @@ export default function OperatorConsole() {
               <div className="bg-card border border-border rounded-xl p-5 space-y-3">
                 <div className="font-semibold text-sm border-b border-border pb-3">Transcription Languages</div>
                 <div className="flex flex-wrap gap-2">
-                  {["English", "Spanish", "French", "German", "Japanese", "Mandarin", "Portuguese", "Arabic"].map((lang) => (
-                    <span key={lang} className="bg-primary/10 text-primary border border-primary/20 text-xs px-2.5 py-1 rounded-full cursor-pointer hover:bg-primary/20 transition-colors">{lang}</span>
+                  {[
+                    { label: "English",    region: "Pan-Africa · UAE" },
+                    { label: "French",     region: "West Africa · Mauritius" },
+                    { label: "Arabic",     region: "North Africa · UAE" },
+                    { label: "Portuguese", region: "Angola · Mozambique" },
+                    { label: "Swahili",    region: "East Africa" },
+                    { label: "Zulu",       region: "South Africa" },
+                    { label: "Afrikaans",  region: "South Africa · Namibia" },
+                    { label: "Hausa",      region: "Nigeria · West Africa" },
+                    { label: "Amharic",    region: "Ethiopia" },
+                    { label: "Mandarin",   region: "China · Pan-Africa" },
+                    { label: "Hindi",      region: "Mauritius · UAE" },
+                    { label: "Creole",     region: "Mauritius" },
+                  ].map(({ label, region }) => (
+                    <span key={label} title={region} className="bg-primary/10 text-primary border border-primary/20 text-xs px-2.5 py-1 rounded-full cursor-pointer hover:bg-primary/20 transition-colors">{label}</span>
                   ))}
                 </div>
               </div>

@@ -51,6 +51,26 @@ function PresenterInner({ eventId }: { eventId: string }) {
   const approvedQA = qaItems.filter((q) => q.status === "approved").sort((a, b) => b.votes - a.votes);
   const latestSegment = transcript[transcript.length - 1];
 
+  // ── Feature #10: Speaking-Pace Coach ────────────────────────────────────────────
+  // Compute WPM from the last 3 transcript segments
+  const wpm = (() => {
+    const recent = transcript.slice(-3);
+    if (recent.length < 2) return null;
+    const totalWords = recent.reduce((sum, s) => sum + s.text.split(/\s+/).length, 0);
+    const first = recent[0].timestamp;
+    const last = recent[recent.length - 1].timestamp;
+    const durationMin = Math.max((last - first) / 60, 0.1);
+    return Math.round(totalWords / durationMin);
+  })();
+  const paceLabel = wpm === null ? null : wpm < 100 ? "Too Slow" : wpm > 160 ? "Too Fast" : "Optimal";
+  const paceColor = paceLabel === "Optimal" ? "#10b981" : paceLabel === "Too Fast" ? "#ef4444" : "#f59e0b";
+
+  // ── Feature #13: Sentiment history for presenter ───────────────────────────────
+  const [sentimentHistory, setSentimentHistory] = useState<number[]>([72]);
+  useEffect(() => {
+    setSentimentHistory((prev) => [...prev.slice(-12), sentiment.score]);
+  }, [sentiment.score]);
+
   const bg = isDark ? "#080b12" : "#f8fafc";
   const fg = isDark ? "#f1f5f9" : "#0f172a";
   const cardBg = isDark ? "#111827" : "#ffffff";
@@ -117,6 +137,30 @@ function PresenterInner({ eventId }: { eventId: string }) {
         <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}>
           <BarChart3 style={{ width: "14px", height: "14px", color: sentimentColor }} />
           <span style={{ fontWeight: 700, color: sentimentColor }}>{sentiment.score} · {sentiment.label}</span>
+        </div>
+        {/* Feature #10: Speaking-Pace Coach */}
+        {wpm !== null && paceLabel && (
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", background: `${paceColor}18`, border: `1px solid ${paceColor}40`, borderRadius: "8px", padding: "4px 10px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: paceColor }}>⚡ {wpm} WPM</span>
+            <span style={{ fontSize: "10px", fontWeight: 600, color: paceColor, textTransform: "uppercase", letterSpacing: "0.08em" }}>{paceLabel}</span>
+          </div>
+        )}
+        {/* Feature #13: Audience Sentiment Feed */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ fontSize: "10px", fontWeight: 600, color: mutedFg, textTransform: "uppercase", letterSpacing: "0.08em" }}>Audience</span>
+          <svg width="48" height="20" viewBox="0 0 48 20">
+            {sentimentHistory.slice(-8).map((v, i, arr) => {
+              const x1 = (i / (arr.length - 1)) * 44 + 2;
+              const y1 = 18 - (v / 100) * 16;
+              const x2 = ((i + 1) / (arr.length - 1)) * 44 + 2;
+              const y2 = 18 - (arr[i + 1] / 100) * 16;
+              return i < arr.length - 1 ? (
+                <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={sentimentColor} strokeWidth="1.5" strokeLinecap="round" />
+              ) : null;
+            })}
+            <circle cx={44 + 2} cy={18 - (sentimentHistory[sentimentHistory.length - 1] / 100) * 16} r="2.5" fill={sentimentColor} />
+          </svg>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: sentimentColor }}>{sentiment.score}</span>
         </div>
         <div style={{ flex: 1 }} />
         <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#ef4444", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>

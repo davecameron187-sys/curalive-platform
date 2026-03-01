@@ -31,7 +31,21 @@ const EVENT_META: Record<string, { title: string; company: string; platform: str
   },
 };
 
-const LANGUAGES = ["English", "Spanish", "French", "German", "Japanese", "Mandarin", "Portuguese", "Arabic"];
+// 12 languages — Africa · Mauritius · UAE market coverage
+const LANGUAGES = [
+  { code: "en",  label: "English",     nativeLabel: "English",         region: "Pan-Africa · UAE" },
+  { code: "fr",  label: "French",      nativeLabel: "Français",         region: "West & Central Africa · Mauritius" },
+  { code: "ar",  label: "Arabic",      nativeLabel: "العربية",          region: "North Africa · UAE" },
+  { code: "pt",  label: "Portuguese",  nativeLabel: "Português",        region: "Angola · Mozambique" },
+  { code: "sw",  label: "Swahili",     nativeLabel: "Kiswahili",        region: "East Africa" },
+  { code: "zu",  label: "Zulu",        nativeLabel: "isiZulu",          region: "South Africa" },
+  { code: "af",  label: "Afrikaans",   nativeLabel: "Afrikaans",        region: "South Africa · Namibia" },
+  { code: "ha",  label: "Hausa",       nativeLabel: "Hausa",            region: "Nigeria · West Africa" },
+  { code: "am",  label: "Amharic",     nativeLabel: "አማርኛ",            region: "Ethiopia" },
+  { code: "zh",  label: "Mandarin",    nativeLabel: "中文",             region: "China · Pan-Africa" },
+  { code: "hi",  label: "Hindi",       nativeLabel: "हिन्दी",          region: "Mauritius · South Africa · UAE" },
+  { code: "mfe", label: "Creole",      nativeLabel: "Kreol Morisyen",   region: "Mauritius" },
+];
 
 export default function Registration() {
   const params = useParams<{ id: string }>();
@@ -43,6 +57,7 @@ export default function Registration() {
     firstName: "", lastName: "", email: "", company: "",
     title: "", language: "English", dialIn: false, accessCode: "",
   });
+  const selectedLang = LANGUAGES.find((l) => l.label === form.language) ?? LANGUAGES[0];
   const [submitted, setSubmitted] = useState(false);
   const [registrationId, setRegistrationId] = useState<number | null>(null);
 
@@ -98,7 +113,7 @@ export default function Registration() {
             A confirmation has been sent to <strong className="text-foreground">{form.email}</strong>
           </p>
           <p className="text-muted-foreground text-sm mb-8" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Your preferred language is <strong className="text-foreground">{form.language}</strong>. Transcripts will be translated automatically.
+            Your preferred language is <strong className="text-foreground">{selectedLang?.nativeLabel ?? form.language} ({form.language})</strong>. Transcripts will be translated automatically.
           </p>
           <div className="bg-card border border-border rounded-xl p-5 text-left mb-6 space-y-2 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
             <div className="flex justify-between"><span className="text-muted-foreground">Event</span><span className="font-semibold">{meta.title}</span></div>
@@ -148,7 +163,7 @@ export default function Registration() {
               { icon: Calendar, label: meta.date },
               { icon: Clock, label: meta.time },
               { icon: Users, label: "Open to registered investors and analysts" },
-              { icon: Globe, label: "Available in 8 languages via Chorus.AI translation" },
+              { icon: Globe, label: "Available in 12 languages via Chorus.AI translation" },
             ].map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center gap-3 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
                 <Icon className="w-4 h-4 text-primary shrink-0" />
@@ -211,7 +226,11 @@ export default function Registration() {
                 <select value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}
                   className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary/50"
                   style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
+                  {LANGUAGES.map((l) => (
+                    <option key={l.code} value={l.label}>
+                      {l.label} — {l.nativeLabel} ({l.region})
+                    </option>
+                  ))}
                 </select>
               </div>
 

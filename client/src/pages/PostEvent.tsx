@@ -225,7 +225,7 @@ export default function PostEvent() {
             { icon: Clock, label: "Duration", value: "18:32", sub: "minutes" },
             { icon: Users, label: "Attendees", value: "1,247", sub: "registered" },
             { icon: MessageSquare, label: "Questions", value: "24", sub: "submitted" },
-            { icon: Globe, label: "Languages", value: "6", sub: "active" },
+            { icon: Globe, label: "Languages", value: "12", sub: "active" },
           ].map(({ icon: Icon, label, value, sub }) => (
             <div key={label} className="bg-card border border-border rounded-xl p-4 text-center">
               <Icon className="w-4 h-4 text-primary mx-auto mb-2" />
@@ -647,7 +647,7 @@ export default function PostEvent() {
                     ["Q&A Submitted", "24"],
                     ["Q&A Answered", "8"],
                     ["Dial-In Callers", "43"],
-                    ["Languages Used", "6"],
+                    ["Languages Used", "12"],
                     ["Avg. Sentiment", `${avgSentiment} / 100`],
                   ].map(([label, value]) => (
                     <div key={label} className="flex justify-between border-b border-border pb-1.5">

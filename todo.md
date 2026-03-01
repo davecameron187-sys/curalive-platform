@@ -25,3 +25,15 @@
 - [ ] Q&A moderation upgrades: category tags, analyst/retail labels, priority scoring
 - [ ] Multi-language transcript selector (EN, FR, PT, SW) in Event Room
 - [ ] Enhanced AI post-event summary: financial highlights extraction + branded PDF export
+
+## Round 8 — Top Quick Win AI Features
+
+- [ ] #1 Live Rolling Summary — EventRoom: rolling 2–3 sentence "what you missed" summary updating every 60s
+- [ ] #10 Speaking-Pace Coach — Presenter: WPM detector with colour-coded pace indicator
+- [ ] #13 Audience Sentiment Feed — Presenter: live sentiment score shown in teleprompter
+- [ ] #15 Silence/Anomaly Detector — Operator: alert when audio gap > 10s detected
+- [ ] #5 AI Q&A Auto-Triage — Moderator: server LLM pass to auto-classify questions (approved/duplicate/off-topic)
+- [ ] #6 Toxicity/Compliance Filter — Moderator: flag abusive/price-sensitive questions before queue
+- [ ] #14 AI Event Brief Generator — Operator: paste press release → LLM generates event brief + talking points
+- [ ] #19 AI Press Release Draft — PostEvent: one-click SENS/RNS-style press release from transcript
+- [ ] #25 Automated Follow-Up Email Draft — PostEvent: draft personalised follow-up emails per IR contact
