@@ -3,8 +3,9 @@ import { useLocation, useParams } from "wouter";
 import {
   Zap, ArrowLeft, Download, Play, FileText, BarChart3,
   MessageSquare, Clock, Users, Globe, CheckCircle,
-  TrendingUp, Minus, ChevronDown, ChevronUp, Mail,
-  Sparkles, Loader2, AlertCircle, RefreshCw, Send, UserPlus, Trash2, X
+  TrendingUp, Minus, ChevronDown, ChevronUp,
+  Sparkles, Loader2, AlertCircle, RefreshCw, Send, UserPlus, Trash2, X,
+  AlertTriangle, Shield, TrendingDown
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -54,6 +55,10 @@ type AISummary = {
   sentiment: string;
   actionItems: string[];
   executiveSummary: string;
+  // IR/Bastion-specific sections
+  forwardLookingStatements?: string[];
+  regulatoryHighlights?: string[];
+  riskFactors?: string[];
 };
 
 export default function PostEvent() {
@@ -367,7 +372,7 @@ export default function PostEvent() {
                 </div>
 
                 {/* Sentiment + Action Items */}
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-4 mb-5">
                   <div className="bg-background/60 border border-border rounded-xl p-4">
                     <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Overall Sentiment</div>
                     <div className="text-lg font-bold text-emerald-400">{aiSummary.sentiment}</div>
@@ -381,6 +386,73 @@ export default function PostEvent() {
                     </ul>
                   </div>
                 </div>
+
+                {/* ── IR/Bastion Sections ── */}
+                {(aiSummary.forwardLookingStatements?.length || aiSummary.regulatoryHighlights?.length || aiSummary.riskFactors?.length) && (
+                  <div className="border-t border-border pt-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Shield className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">IR Compliance Sections</span>
+                      <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider">JSE / IFRS</span>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {/* Forward-Looking Statements */}
+                      {aiSummary.forwardLookingStatements && aiSummary.forwardLookingStatements.length > 0 && (
+                        <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+                          <div className="flex items-center gap-1.5 mb-3">
+                            <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-blue-400">Forward-Looking Statements</div>
+                          </div>
+                          <ul className="space-y-2">
+                            {aiSummary.forwardLookingStatements.map((s, i) => (
+                              <li key={i} className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                <span className="text-blue-400 mr-1">›</span>{s}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Regulatory Highlights */}
+                      {aiSummary.regulatoryHighlights && aiSummary.regulatoryHighlights.length > 0 && (
+                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+                          <div className="flex items-center gap-1.5 mb-3">
+                            <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Regulatory Highlights</div>
+                          </div>
+                          <ul className="space-y-2">
+                            {aiSummary.regulatoryHighlights.map((r, i) => (
+                              <li key={i} className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                <span className="text-emerald-400 mr-1">✓</span>{r}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Risk Factors */}
+                      {aiSummary.riskFactors && aiSummary.riskFactors.length > 0 && (
+                        <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+                          <div className="flex items-center gap-1.5 mb-3">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Risk Factors</div>
+                          </div>
+                          <ul className="space-y-2">
+                            {aiSummary.riskFactors.map((r, i) => (
+                              <li key={i} className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                <span className="text-amber-400 mr-1">⚠</span>{r}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground mt-3 italic" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      AI-generated compliance sections are for reference only. Please review with your legal and IR team before distribution.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

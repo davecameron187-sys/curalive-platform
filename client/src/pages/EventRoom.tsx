@@ -3,7 +3,9 @@ import { useLocation, useParams } from "wouter";
 import {
   Zap, ArrowLeft, Users, Clock, Settings,
   ChevronUp, Send, Globe, BarChart3, MessageSquare,
-  FileText, Radio, Mic, Hand, MicOff, Share2, Check
+  FileText, Radio, Mic, Hand, MicOff, Share2, Check,
+  Subtitles, TrendingUp, Tag, Sparkles, AlertTriangle,
+  ChevronDown
 } from "lucide-react";
 import { AblyProvider, useAbly, type QAItem, type RaisedHand } from "@/contexts/AblyContext";
 
@@ -15,9 +17,87 @@ const EVENT_META: Record<string, { title: string; company: string; platform: str
   "board-briefing": { title: "Board Strategy Briefing", company: "Chorus Call Inc.", platform: "Webex" },
 };
 
-const LANGUAGES = ["English", "Spanish", "French", "German", "Japanese", "Mandarin", "Portuguese", "Arabic"];
+// ─── Language configuration (South African market focus) ─────────────────────
+
+const LANGUAGES = [
+  { code: "en", label: "English", flag: "🇿🇦" },
+  { code: "af", label: "Afrikaans", flag: "🇿🇦" },
+  { code: "zu", label: "isiZulu", flag: "🇿🇦" },
+  { code: "xh", label: "isiXhosa", flag: "🇿🇦" },
+  { code: "es", label: "Spanish", flag: "🇪🇸" },
+  { code: "fr", label: "French", flag: "🇫🇷" },
+  { code: "de", label: "German", flag: "🇩🇪" },
+  { code: "pt", label: "Portuguese", flag: "🇵🇹" },
+  { code: "ar", label: "Arabic", flag: "🇸🇦" },
+  { code: "zh", label: "Mandarin", flag: "🇨🇳" },
+];
 
 const POLL_COLORS = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"];
+
+// ─── Q&A category tags ────────────────────────────────────────────────────────
+
+type QACategory = "Financial" | "Strategy" | "Technology" | "Regulatory" | "Guidance" | "Other";
+
+const QA_CATEGORY_COLORS: Record<QACategory, string> = {
+  Financial: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+  Strategy: "text-blue-400 bg-blue-500/10 border-blue-500/30",
+  Technology: "text-violet-400 bg-violet-500/10 border-violet-500/30",
+  Regulatory: "text-amber-400 bg-amber-500/10 border-amber-500/30",
+  Guidance: "text-primary bg-primary/10 border-primary/30",
+  Other: "text-muted-foreground bg-secondary border-border",
+};
+
+function categoriseQuestion(question: string): QACategory {
+  const q = question.toLowerCase();
+  if (/revenue|margin|ebitda|cash|capex|cost|profit|earnings|financial|dividend/.test(q)) return "Financial";
+  if (/guidance|forecast|outlook|2026|target|expect/.test(q)) return "Guidance";
+  if (/regulat|compliance|jse|sec|audit|governance/.test(q)) return "Regulatory";
+  if (/ai|tech|platform|integrat|recall|zoom|teams|ably|software/.test(q)) return "Technology";
+  if (/strateg|partner|acqui|expand|market|competi/.test(q)) return "Strategy";
+  return "Other";
+}
+
+function aiPriorityScore(q: QAItem): number {
+  // Weighted score: votes (50%) + recency (20%) + category weight (30%)
+  const voteScore = Math.min(q.votes / 50, 1) * 50;
+  const ageMs = Date.now() - q.submittedAt;
+  const recencyScore = Math.max(0, 1 - ageMs / 300000) * 20; // 5 min window
+  const cat = categoriseQuestion(q.question);
+  const catWeight: Record<QACategory, number> = { Financial: 30, Guidance: 28, Regulatory: 25, Strategy: 20, Technology: 15, Other: 10 };
+  return voteScore + recencyScore + catWeight[cat];
+}
+
+// ─── Simulated translated transcript lines ────────────────────────────────────
+
+const TRANSLATIONS: Record<string, Record<string, string>> = {
+  "seg-0": {
+    af: "Goeie môre en welkom by die Chorus Call K4 2025 Verdiensteoproep. Alle deelnemers sal in luister-modus wees.",
+    zu: "Sawubona futhi wamukelekile ku-Chorus Call Q4 2025 Earnings Call. Bonke abahlanganyeli bazoba ngezindlebe kuphela.",
+    xh: "Molweni kwaye wamkelekile ku-Chorus Call Q4 2025 Earnings Call.",
+    es: "Buenos días y bienvenidos a la llamada de resultados del Q4 2025 de Chorus Call.",
+    fr: "Bonjour et bienvenue à l'appel de résultats du T4 2025 de Chorus Call.",
+    de: "Guten Morgen und willkommen beim Chorus Call Q4 2025 Ergebnisaufruf.",
+    pt: "Bom dia e bem-vindos à chamada de resultados do Q4 2025 da Chorus Call.",
+    ar: "صباح الخير ومرحباً بكم في مكالمة نتائج الربع الرابع 2025 لـ Chorus Call.",
+    zh: "早上好，欢迎参加Chorus Call 2025年第四季度业绩电话会议。",
+  },
+  "seg-1": {
+    af: "Dankie, Operateur. Goeie môre almal. Ek is verheug om te deel dat K4 'n uitsonderlike kwartaal vir Chorus Call was.",
+    zu: "Ngiyabonga, Operator. Sawubona nonke. Ngijabule ukwabelana ukuthi uQ4 ubuyikukhulu isikhathi ku-Chorus Call.",
+    xh: "Enkosi, Operator. Molweni nonke. Ndivuya ukwabelana ukuba uQ4 ibiyinxalenye ebalulekileyo ku-Chorus Call.",
+    es: "Gracias, Operador. Buenos días a todos. Me complace compartir que el Q4 ha sido un trimestre excepcional para Chorus Call.",
+    fr: "Merci, Opérateur. Bonjour à tous. Je suis ravi de partager que le T4 a été un trimestre exceptionnel pour Chorus Call.",
+    de: "Danke, Operator. Guten Morgen alle. Ich freue mich zu teilen, dass Q4 ein außergewöhnliches Quartal für Chorus Call war.",
+    pt: "Obrigado, Operador. Bom dia a todos. Estou satisfeito em compartilhar que o Q4 foi um trimestre excepcional para a Chorus Call.",
+    ar: "شكراً، المشغل. صباح الخير للجميع. يسعدني مشاركة أن الربع الرابع كان ربعاً استثنائياً لـ Chorus Call.",
+    zh: "谢谢，运营商。大家早上好。我很高兴分享第四季度对Chorus Call来说是一个出色的季度。",
+  },
+};
+
+function translateSegment(seg: { id: string; text: string }, langCode: string): string {
+  if (langCode === "en") return seg.text;
+  return TRANSLATIONS[seg.id]?.[langCode] ?? `[${langCode.toUpperCase()}] ${seg.text}`;
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -26,24 +106,77 @@ function PlatformBadge({ platform }: { platform: string }) {
   return <span className={`text-[10px] font-bold text-white px-2 py-1 rounded ${colors[platform] ?? "bg-slate-600"}`}>{platform}</span>;
 }
 
-function SentimentGauge({ value }: { value: number }) {
-  const color = value >= 75 ? "#10b981" : value >= 50 ? "#f59e0b" : "#ef4444";
-  const label = value >= 75 ? "Positive" : value >= 50 ? "Neutral" : "Negative";
+// Enhanced Sentiment Panel with breakdown bars and trend sparkline
+function EnhancedSentimentPanel({ score, history }: { score: number; history: number[] }) {
+  const color = score >= 75 ? "#10b981" : score >= 50 ? "#f59e0b" : "#ef4444";
+  const label = score >= 75 ? "Positive" : score >= 50 ? "Neutral" : "Negative";
+
+  // Derive breakdown from score
+  const positiveShare = Math.round(score * 0.9);
+  const negativeShare = Math.round((100 - score) * 0.7);
+  const neutralShare = 100 - positiveShare - negativeShare;
+
+  // Sparkline path
+  const sparkW = 160;
+  const sparkH = 36;
+  const pts = history.slice(-12);
+  const min = Math.min(...pts, 0);
+  const max = Math.max(...pts, 100);
+  const range = max - min || 1;
+  const sparkPath = pts.map((v, i) => {
+    const x = (i / (pts.length - 1)) * sparkW;
+    const y = sparkH - ((v - min) / range) * sparkH;
+    return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative w-24 h-24">
+    <div className="flex flex-col items-center gap-3 w-full">
+      {/* Score ring */}
+      <div className="relative w-20 h-20">
         <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
           <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
           <circle cx="50" cy="50" r="40" fill="none" stroke={color} strokeWidth="10"
-            strokeDasharray={`${(value / 100) * 251.2} 251.2`} strokeLinecap="round"
+            strokeDasharray={`${(score / 100) * 251.2} 251.2`} strokeLinecap="round"
             style={{ transition: "stroke-dasharray 1.2s cubic-bezier(0.4, 0, 0.2, 1)" }} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl font-bold" style={{ color }}>{value}</span>
-          <span className="text-[9px] text-muted-foreground uppercase tracking-wide">/ 100</span>
+          <span className="text-lg font-bold" style={{ color }}>{score}</span>
+          <span className="text-[8px] text-muted-foreground uppercase tracking-wide">/ 100</span>
         </div>
       </div>
       <span className="text-xs font-semibold" style={{ color }}>{label}</span>
+
+      {/* Breakdown bars */}
+      <div className="w-full space-y-1.5">
+        {[
+          { label: "Positive", pct: positiveShare, color: "#10b981" },
+          { label: "Neutral", pct: Math.max(0, neutralShare), color: "#f59e0b" },
+          { label: "Negative", pct: negativeShare, color: "#ef4444" },
+        ].map(({ label: l, pct, color: c }) => (
+          <div key={l}>
+            <div className="flex justify-between text-[9px] mb-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <span className="text-muted-foreground">{l}</span>
+              <span style={{ color: c }} className="font-semibold">{pct}%</span>
+            </div>
+            <div className="h-1.5 bg-border rounded-full overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: c, transition: "width 1s ease" }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Trend sparkline */}
+      {pts.length > 1 && (
+        <div className="w-full">
+          <div className="flex items-center gap-1 mb-1">
+            <TrendingUp className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[9px] text-muted-foreground uppercase tracking-wider">Trend</span>
+          </div>
+          <svg width={sparkW} height={sparkH} className="w-full" viewBox={`0 0 ${sparkW} ${sparkH}`}>
+            <path d={sparkPath} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      )}
     </div>
   );
 }
@@ -57,7 +190,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
 
   const [activeTab, setActiveTab] = useState<"transcript" | "qa" | "polls" | "analytics">("transcript");
   const [newQuestion, setNewQuestion] = useState("");
-  const [language, setLanguage] = useState("English");
+  const [language, setLanguage] = useState("en");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [autoScroll, setAutoScroll] = useState(true);
   const [handRaised, setHandRaised] = useState(false);
@@ -66,19 +199,36 @@ function EventRoomInner({ eventId }: { eventId: string }) {
   const [shareCopied, setShareCopied] = useState(false);
   const transcriptRef = useRef<HTMLDivElement>(null);
 
-  const handleShareLink = useCallback(() => {
-    const shareUrl = `${window.location.origin}/register/${eventId}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setShareCopied(true);
-      setTimeout(() => setShareCopied(false), 2500);
-    });
-  }, [eventId]);
+  // ── Feature 1: Closed Captions ──────────────────────────────────────────────
+  const [ccEnabled, setCcEnabled] = useState(false);
+  const [ccFontSize, setCcFontSize] = useState<"sm" | "md" | "lg">("md");
+  const [ccPosition, setCcPosition] = useState<"bottom" | "top">("bottom");
+  const [ccSettingsOpen, setCcSettingsOpen] = useState(false);
+  const latestSegment = transcript[transcript.length - 1];
 
-  // Elapsed time
+  // ── Feature 2: Sentiment history for sparkline ──────────────────────────────
+  const [sentimentHistory, setSentimentHistory] = useState<number[]>([72]);
   useEffect(() => {
-    const t = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
-    return () => clearInterval(t);
-  }, []);
+    setSentimentHistory((prev) => [...prev.slice(-24), sentiment.score]);
+  }, [sentiment.score]);
+
+  // ── Feature 3: Q&A sort mode ────────────────────────────────────────────────
+  const [qaSortMode, setQaSortMode] = useState<"ai" | "votes" | "recent">("ai");
+  const [qaFilter, setQaFilter] = useState<QACategory | "All">("All");
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState<string | null>(null);
+
+  // Detect potential duplicates when user types
+  useEffect(() => {
+    if (newQuestion.trim().length < 20) { setShowDuplicateWarning(null); return; }
+    const words = newQuestion.toLowerCase().split(/\s+/).filter((w) => w.length > 4);
+    const similar = qaItems.find((q) => {
+      if (q.status === "rejected") return false;
+      const qWords = q.question.toLowerCase().split(/\s+/).filter((w) => w.length > 4);
+      const overlap = words.filter((w) => qWords.includes(w)).length;
+      return overlap >= 3;
+    });
+    setShowDuplicateWarning(similar ? similar.question : null);
+  }, [newQuestion, qaItems]);
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -109,6 +259,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
     };
     publish({ type: "qa.submitted", data: newItem });
     setNewQuestion("");
+    setShowDuplicateWarning(null);
   }, [newQuestion, publish]);
 
   const handlePollVote = useCallback((pollId: string, optionId: string) => {
@@ -127,11 +278,25 @@ function EventRoomInner({ eventId }: { eventId: string }) {
     }
   }, [handRaised, myHandId, publish]);
 
+  const handleShareLink = useCallback(() => {
+    const shareUrl = `${window.location.origin}/register/${eventId}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    });
+  }, [eventId]);
+
   // Watch for unmute signal from moderator
   useEffect(() => {
     const myHand = raisedHands.find((h) => h.id === myHandId);
     if (myHand?.status === "unmuted") setUnmutedNotice(true);
   }, [raisedHands, myHandId]);
+
+  // Elapsed time
+  useEffect(() => {
+    const t = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const speakerColor: Record<string, string> = {
     "Operator": "text-muted-foreground",
@@ -141,7 +306,16 @@ function EventRoomInner({ eventId }: { eventId: string }) {
     "Board Chair": "text-amber-400",
   };
 
-  const visibleQA = qaItems.filter((q) => q.status !== "rejected").sort((a, b) => b.votes - a.votes);
+  // Sorted/filtered Q&A
+  const visibleQA = qaItems
+    .filter((q) => q.status !== "rejected")
+    .filter((q) => qaFilter === "All" || categoriseQuestion(q.question) === qaFilter)
+    .sort((a, b) => {
+      if (qaSortMode === "ai") return aiPriorityScore(b) - aiPriorityScore(a);
+      if (qaSortMode === "votes") return b.votes - a.votes;
+      return b.submittedAt - a.submittedAt;
+    });
+
   const livePolls = polls.filter((p) => p.status === "live");
 
   // Poll overlay state — shows full-screen when a new poll is pushed
@@ -169,6 +343,9 @@ function EventRoomInner({ eventId }: { eventId: string }) {
     setActivePollOverlay(null);
   }, [activePollOverlay, selectedOption, publish]);
 
+  const ccFontSizeClass = { sm: "text-sm", md: "text-base", lg: "text-xl" }[ccFontSize];
+  const currentLang = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0];
+
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
 
@@ -176,7 +353,6 @@ function EventRoomInner({ eventId }: { eventId: string }) {
       {activePollOverlay && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="bg-card border border-primary/30 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
-            {/* Header */}
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-primary" />
@@ -189,54 +365,22 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                 <span className="live-badge-dot w-1.5 h-1.5 rounded-full bg-red-400 inline-block" /> Live
               </div>
             </div>
-
-            {/* Question */}
             <p className="text-lg font-semibold mb-6 leading-snug">{activePollOverlay.question}</p>
-
-            {/* Options */}
             <div className="space-y-3 mb-6">
               {activePollOverlay.options.map((opt, i) => (
-                <button
-                  key={opt.id}
-                  onClick={() => setSelectedOption(opt.id)}
-                  className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
-                    selectedOption === opt.id
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border hover:border-primary/40 hover:bg-primary/5"
-                  }`}
-                >
-                  <span
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                      selectedOption === opt.id ? "border-primary" : "border-muted-foreground"
-                    }`}
-                  >
-                    {selectedOption === opt.id && (
-                      <span className="w-2 h-2 rounded-full bg-primary" />
-                    )}
+                <button key={opt.id} onClick={() => setSelectedOption(opt.id)}
+                  className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${selectedOption === opt.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/40 hover:bg-primary/5"}`}>
+                  <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${selectedOption === opt.id ? "border-primary" : "border-muted-foreground"}`}>
+                    {selectedOption === opt.id && <span className="w-2 h-2 rounded-full bg-primary" />}
                   </span>
                   <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{opt.label}</span>
-                  <span className="ml-auto text-xs font-bold" style={{ color: POLL_COLORS[i % POLL_COLORS.length] }}>
-                    {String.fromCharCode(65 + i)}
-                  </span>
+                  <span className="ml-auto text-xs font-bold" style={{ color: POLL_COLORS[i % POLL_COLORS.length] }}>{String.fromCharCode(65 + i)}</span>
                 </button>
               ))}
             </div>
-
-            {/* Actions */}
             <div className="flex gap-3">
-              <button
-                onClick={() => setActivePollOverlay(null)}
-                className="flex-1 border border-border text-muted-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-secondary transition-colors"
-              >
-                Skip
-              </button>
-              <button
-                onClick={handlePollOverlayVote}
-                disabled={!selectedOption}
-                className="flex-1 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40"
-              >
-                Submit Vote
-              </button>
+              <button onClick={() => setActivePollOverlay(null)} className="flex-1 border border-border text-muted-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-secondary transition-colors">Skip</button>
+              <button onClick={handlePollOverlayVote} disabled={!selectedOption} className="flex-1 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40">Submit Vote</button>
             </div>
           </div>
         </div>
@@ -272,7 +416,6 @@ function EventRoomInner({ eventId }: { eventId: string }) {
             <span className="font-mono">{formatTime(elapsedSeconds)}</span>
           </div>
         </div>
-        {/* Operator / Moderator / Presenter links */}
         <div className="hidden md:flex items-center gap-1 ml-2">
           <button onClick={() => navigate(`/moderator/${eventId}`)} className="flex items-center gap-1 text-xs text-muted-foreground border border-border px-2.5 py-1.5 rounded-lg hover:bg-secondary transition-colors">
             <Radio className="w-3 h-3" /> Mod
@@ -283,14 +426,8 @@ function EventRoomInner({ eventId }: { eventId: string }) {
           <button onClick={() => navigate(`/operator/${eventId}`)} className="flex items-center gap-1 text-xs text-muted-foreground border border-border px-2.5 py-1.5 rounded-lg hover:bg-secondary transition-colors">
             <Settings className="w-3 h-3" /> Operator
           </button>
-          <button
-            onClick={handleShareLink}
-            className={`flex items-center gap-1 text-xs font-semibold border px-2.5 py-1.5 rounded-lg transition-all ${
-              shareCopied
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                : "text-primary border-primary/30 bg-primary/10 hover:bg-primary/20"
-            }`}
-          >
+          <button onClick={handleShareLink}
+            className={`flex items-center gap-1 text-xs font-semibold border px-2.5 py-1.5 rounded-lg transition-all ${shareCopied ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "text-primary border-primary/30 bg-primary/10 hover:bg-primary/20"}`}>
             {shareCopied ? <Check className="w-3 h-3" /> : <Share2 className="w-3 h-3" />}
             {shareCopied ? "Copied!" : "Share"}
           </button>
@@ -299,9 +436,10 @@ function EventRoomInner({ eventId }: { eventId: string }) {
 
       {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Video Player (left) */}
+        {/* Video Player + Tabs (left) */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Video */}
+
+          {/* ── Video Player ── */}
           <div className="shrink-0 bg-black/80 relative" style={{ aspectRatio: "16/9", maxHeight: "45vh" }}>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
@@ -311,6 +449,67 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                 <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>Live stream via {meta.platform}</p>
               </div>
             </div>
+
+            {/* ── Feature 1: Closed Captions Overlay ── */}
+            {ccEnabled && latestSegment && (
+              <div className={`absolute left-0 right-0 px-4 py-2 flex justify-center ${ccPosition === "bottom" ? "bottom-10" : "top-10"}`}>
+                <div className={`bg-black/85 backdrop-blur-sm text-white px-4 py-2 rounded-lg max-w-[90%] text-center leading-snug font-medium ${ccFontSizeClass}`}
+                  style={{ fontFamily: "'Inter', sans-serif", textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
+                  <span className="text-primary/80 text-[10px] font-bold uppercase tracking-widest block mb-0.5">
+                    {latestSegment.speaker}
+                  </span>
+                  {translateSegment(latestSegment, language)}
+                </div>
+              </div>
+            )}
+
+            {/* CC toggle button */}
+            <div className="absolute top-3 left-3 flex items-center gap-1.5">
+              <button
+                onClick={() => setCcEnabled((v) => !v)}
+                title="Toggle Closed Captions"
+                className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-full border transition-all ${ccEnabled ? "bg-primary/20 border-primary/50 text-primary" : "bg-black/50 border-white/20 text-white/70 hover:bg-white/10"}`}>
+                <Subtitles className="w-3.5 h-3.5" />
+                CC
+              </button>
+              {ccEnabled && (
+                <button
+                  onClick={() => setCcSettingsOpen((v) => !v)}
+                  className="flex items-center gap-1 text-[10px] font-semibold bg-black/60 border border-white/20 text-white/70 px-2 py-1.5 rounded-full hover:bg-white/10 transition-colors">
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* CC Settings dropdown */}
+            {ccEnabled && ccSettingsOpen && (
+              <div className="absolute top-12 left-3 bg-card border border-border rounded-xl p-3 shadow-xl z-20 min-w-[180px]">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">CC Settings</div>
+                <div className="mb-2">
+                  <div className="text-[10px] text-muted-foreground mb-1">Font Size</div>
+                  <div className="flex gap-1">
+                    {(["sm", "md", "lg"] as const).map((s) => (
+                      <button key={s} onClick={() => setCcFontSize(s)}
+                        className={`flex-1 text-[10px] font-semibold py-1 rounded border transition-colors ${ccFontSize === s ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-secondary"}`}>
+                        {s.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-muted-foreground mb-1">Position</div>
+                  <div className="flex gap-1">
+                    {(["bottom", "top"] as const).map((p) => (
+                      <button key={p} onClick={() => setCcPosition(p)}
+                        className={`flex-1 text-[10px] font-semibold py-1 rounded border transition-colors capitalize ${ccPosition === p ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-secondary"}`}>
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="absolute bottom-3 left-3 flex items-center gap-2">
               <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm text-red-400 text-xs font-bold px-2.5 py-1 rounded-full border border-red-500/30">
                 <span className="live-badge-dot w-1.5 h-1.5 rounded-full bg-red-400 inline-block" /> Live
@@ -320,15 +519,8 @@ function EventRoomInner({ eventId }: { eventId: string }) {
             <div className="absolute bottom-3 right-3 text-xs font-mono text-white/60 bg-black/50 px-2 py-1 rounded">
               {formatTime(elapsedSeconds)}
             </div>
-            {/* Raise Hand button */}
-            <button
-              onClick={handleRaiseHand}
-              className={`absolute top-3 right-3 flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${
-                handRaised
-                  ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
-                  : "bg-black/50 border-white/20 text-white/70 hover:bg-white/10"
-              }`}
-            >
+            <button onClick={handleRaiseHand}
+              className={`absolute top-3 right-3 flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${handRaised ? "bg-amber-500/20 border-amber-500/50 text-amber-300" : "bg-black/50 border-white/20 text-white/70 hover:bg-white/10"}`}>
               <Hand className="w-3.5 h-3.5" />
               {handRaised ? "Hand Raised" : "Raise Hand"}
             </button>
@@ -348,7 +540,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
             </div>
           )}
 
-          {/* Live Poll Banner (if any polls are live) */}
+          {/* Live Poll Banner */}
           {livePolls.length > 0 && (
             <div className="shrink-0 border-b border-border bg-primary/5 px-4 py-3">
               <div className="flex items-center gap-2 mb-2">
@@ -398,21 +590,55 @@ function EventRoomInner({ eventId }: { eventId: string }) {
 
           {/* Tab Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            {/* ── Transcript ── */}
+
+            {/* ── Transcript Tab ── */}
             {activeTab === "transcript" && (
               <>
-                <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-border">
+                {/* Feature 5: Language selector toolbar */}
+                <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-border gap-2">
                   <div className="flex items-center gap-2">
-                    <Globe className="w-3.5 h-3.5 text-muted-foreground" />
-                    <select value={language} onChange={(e) => setLanguage(e.target.value)}
-                      className="bg-transparent text-xs text-muted-foreground outline-none cursor-pointer">
-                      {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
-                    </select>
+                    <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <div className="relative">
+                      <select
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value)}
+                        className="bg-transparent text-xs text-muted-foreground outline-none cursor-pointer pr-4 appearance-none"
+                        data-testid="language-selector">
+                        {LANGUAGES.map((l) => (
+                          <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {language !== "en" && (
+                      <span className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider">
+                        AI Translated
+                      </span>
+                    )}
                   </div>
-                  <button onClick={() => setAutoScroll((v) => !v)} className={`text-xs px-2 py-1 rounded border transition-colors ${autoScroll ? "border-primary/30 text-primary bg-primary/10" : "border-border text-muted-foreground"}`}>
-                    {autoScroll ? "Auto-scroll ON" : "Auto-scroll OFF"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* CC quick-toggle in transcript toolbar */}
+                    <button
+                      onClick={() => setCcEnabled((v) => !v)}
+                      className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded border transition-colors ${ccEnabled ? "border-primary/30 text-primary bg-primary/10" : "border-border text-muted-foreground hover:bg-secondary"}`}>
+                      <Subtitles className="w-3 h-3" /> CC {ccEnabled ? "ON" : "OFF"}
+                    </button>
+                    <button onClick={() => setAutoScroll((v) => !v)}
+                      className={`text-xs px-2 py-1 rounded border transition-colors ${autoScroll ? "border-primary/30 text-primary bg-primary/10" : "border-border text-muted-foreground"}`}>
+                      {autoScroll ? "Auto-scroll ON" : "Auto-scroll OFF"}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Language info bar */}
+                {language !== "en" && (
+                  <div className="shrink-0 bg-primary/5 border-b border-primary/20 px-4 py-1.5 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-primary" />
+                    <span className="text-[10px] text-primary font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      Transcript translated to {currentLang.label} in real-time by Chorus.AI · Powered by OpenAI
+                    </span>
+                  </div>
+                )}
+
                 <div ref={transcriptRef} className="flex-1 overflow-y-auto p-4 space-y-3">
                   {transcript.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
@@ -425,7 +651,9 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                       <div className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${speakerColor[seg.speaker] ?? "text-muted-foreground"}`}>
                         {seg.speaker} · {seg.timeLabel}
                       </div>
-                      <p className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif", opacity: i === transcript.length - 1 ? 1 : 0.75 }}>{seg.text}</p>
+                      <p className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif", opacity: i === transcript.length - 1 ? 1 : 0.75 }}>
+                        {translateSegment(seg, language)}
+                      </p>
                     </div>
                   ))}
                   {transcript.length > 0 && (
@@ -439,9 +667,33 @@ function EventRoomInner({ eventId }: { eventId: string }) {
               </>
             )}
 
-            {/* ── Q&A ── */}
+            {/* ── Q&A Tab ── */}
             {activeTab === "qa" && (
               <div className="flex-1 overflow-hidden flex flex-col">
+                {/* Feature 3: Q&A toolbar with AI sort + category filter */}
+                <div className="shrink-0 border-b border-border px-3 py-2 flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sort:</span>
+                    {(["ai", "votes", "recent"] as const).map((mode) => (
+                      <button key={mode} onClick={() => setQaSortMode(mode)}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded border transition-colors ${qaSortMode === mode ? "border-primary/30 text-primary bg-primary/10" : "border-border text-muted-foreground hover:bg-secondary"}`}>
+                        {mode === "ai" ? "AI Priority" : mode === "votes" ? "Votes" : "Recent"}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1 ml-auto">
+                    <Tag className="w-3 h-3 text-muted-foreground" />
+                    <select value={qaFilter} onChange={(e) => setQaFilter(e.target.value as QACategory | "All")}
+                      className="bg-transparent text-[10px] text-muted-foreground outline-none cursor-pointer">
+                      <option value="All">All Topics</option>
+                      {(Object.keys(QA_CATEGORY_COLORS) as QACategory[]).map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                   {visibleQA.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
@@ -449,38 +701,66 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                       No questions yet. Be the first!
                     </div>
                   )}
-                  {visibleQA.map((q) => (
-                    <div key={q.id} className="flex gap-3 bg-card border border-border rounded-xl p-3">
-                      <button onClick={() => handleVote(q.id, q.votes)} className="flex flex-col items-center gap-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors">
-                        <ChevronUp className="w-4 h-4" />
-                        <span className="text-xs font-bold">{q.votes}</span>
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{q.question}</p>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                          <span>{q.author}</span>
-                          {q.status === "approved" && <span className="text-emerald-400 font-semibold">● Approved</span>}
-                          {q.status === "answered" && <span className="text-muted-foreground font-semibold">✓ Answered</span>}
-                          {q.status === "pending" && <span className="text-amber-400 font-semibold">○ Pending</span>}
+                  {visibleQA.map((q, idx) => {
+                    const cat = categoriseQuestion(q.question);
+                    const priority = aiPriorityScore(q);
+                    const isTopPick = qaSortMode === "ai" && idx === 0 && priority > 40;
+                    return (
+                      <div key={q.id} className={`flex gap-3 bg-card border rounded-xl p-3 transition-all ${isTopPick ? "border-primary/40 bg-primary/5" : "border-border"}`}>
+                        <button onClick={() => handleVote(q.id, q.votes)} className="flex flex-col items-center gap-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors">
+                          <ChevronUp className="w-4 h-4" />
+                          <span className="text-xs font-bold">{q.votes}</span>
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            {isTopPick && (
+                              <span className="flex items-center gap-1 text-[9px] font-bold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                <Sparkles className="w-2.5 h-2.5" /> AI Top Pick
+                              </span>
+                            )}
+                            <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${QA_CATEGORY_COLORS[cat]}`}>
+                              {cat}
+                            </span>
+                          </div>
+                          <p className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{q.question}</p>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                            <span>{q.author}</span>
+                            {q.status === "approved" && <span className="text-emerald-400 font-semibold">● Approved</span>}
+                            {q.status === "answered" && <span className="text-muted-foreground font-semibold">✓ Answered</span>}
+                            {q.status === "pending" && <span className="text-amber-400 font-semibold">○ Pending</span>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-                <div className="shrink-0 border-t border-border p-3 flex gap-2">
-                  <input value={newQuestion} onChange={(e) => setNewQuestion(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSubmitQuestion()}
-                    placeholder="Ask a question…"
-                    className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary/50"
-                    style={{ fontFamily: "'Inter', sans-serif" }} />
-                  <button onClick={handleSubmitQuestion} className="bg-primary text-primary-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-opacity">
-                    <Send className="w-4 h-4" />
-                  </button>
+
+                {/* Question input with duplicate detection */}
+                <div className="shrink-0 border-t border-border p-3 space-y-2">
+                  {showDuplicateWarning && (
+                    <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="text-[10px] text-amber-300" style={{ fontFamily: "'Inter', sans-serif" }}>
+                        <span className="font-bold">Similar question exists:</span> "{showDuplicateWarning.slice(0, 60)}…" — consider upvoting it instead.
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input value={newQuestion} onChange={(e) => setNewQuestion(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSubmitQuestion()}
+                      placeholder="Ask a question…"
+                      data-testid="qa-input"
+                      className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary/50"
+                      style={{ fontFamily: "'Inter', sans-serif" }} />
+                    <button onClick={handleSubmitQuestion} className="bg-primary text-primary-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-opacity">
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* ── Polls ── */}
+            {/* ── Polls Tab ── */}
             {activeTab === "polls" && (
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {polls.length === 0 && (
@@ -532,7 +812,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
               </div>
             )}
 
-            {/* ── Analytics ── */}
+            {/* ── Analytics Tab ── */}
             {activeTab === "analytics" && (
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -556,16 +836,40 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                     ))}
                   </div>
                 </div>
+                {/* Q&A category breakdown */}
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Q&A by Category</div>
+                  <div className="space-y-2">
+                    {(Object.keys(QA_CATEGORY_COLORS) as QACategory[]).map((cat) => {
+                      const count = qaItems.filter((q) => categoriseQuestion(q.question) === cat).length;
+                      const pct = qaItems.length > 0 ? Math.round((count / qaItems.length) * 100) : 0;
+                      return (
+                        <div key={cat}>
+                          <div className="flex justify-between text-[10px] mb-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            <span className="text-muted-foreground">{cat}</span>
+                            <span className="font-semibold">{count} ({pct}%)</span>
+                          </div>
+                          <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-primary/60" style={{ width: `${pct}%`, transition: "width 0.8s ease" }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Sidebar: Sentiment */}
-        <div className="w-48 shrink-0 border-l border-border bg-card/30 flex-col items-center p-4 gap-6 hidden lg:flex">
+        {/* ── Right Sidebar: Enhanced Sentiment ── */}
+        <div className="w-52 shrink-0 border-l border-border bg-card/30 flex-col items-center p-4 gap-4 hidden lg:flex overflow-y-auto">
           <div className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Live Sentiment</div>
-          <SentimentGauge value={sentiment.score} />
-          <div className="w-full space-y-2 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}>
+
+          {/* Feature 2: Enhanced sentiment panel */}
+          <EnhancedSentimentPanel score={sentiment.score} history={sentimentHistory} />
+
+          <div className="w-full border-t border-border pt-3 space-y-2 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}>
             <div className="flex justify-between border-b border-border pb-1.5">
               <span className="text-muted-foreground">Attendees</span>
               <span className="font-semibold">{presenceCount.toLocaleString()}</span>
@@ -577,6 +881,10 @@ function EventRoomInner({ eventId }: { eventId: string }) {
             <div className="flex justify-between border-b border-border pb-1.5">
               <span className="text-muted-foreground">Polls</span>
               <span className="font-semibold">{livePolls.length}</span>
+            </div>
+            <div className="flex justify-between border-b border-border pb-1.5">
+              <span className="text-muted-foreground">Language</span>
+              <span className="font-semibold">{currentLang.flag} {currentLang.code.toUpperCase()}</span>
             </div>
           </div>
           <div className="w-full">

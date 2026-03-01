@@ -176,7 +176,7 @@ export const appRouter = router({
           .map(q => `Q (${q.author}): ${q.question}`)
           .join("\n");
 
-        const prompt = `You are an expert financial communications analyst. Analyze the following earnings call transcript and produce a structured executive summary for investor relations purposes.
+        const prompt = `You are an expert financial communications analyst specialising in JSE-listed company investor relations. Analyze the following earnings call transcript and produce a structured executive summary for investor relations purposes, including regulatory compliance sections required for JSE-listed entities.
 
 EVENT: ${input.eventTitle}
 
@@ -192,13 +192,16 @@ Produce a JSON response with this exact structure:
   "financialHighlights": ["Up to 4 specific financial metrics mentioned (revenue, margins, guidance, etc.)"],
   "sentiment": "Overall tone of the call: Positive / Neutral / Cautious",
   "actionItems": ["Up to 3 follow-up items or commitments made during the call"],
-  "executiveSummary": "2-3 paragraph narrative summary suitable for an investor relations report"
+  "executiveSummary": "2-3 paragraph narrative summary suitable for an investor relations report",
+  "forwardLookingStatements": ["Up to 4 forward-looking statements or guidance items mentioned"],
+  "regulatoryHighlights": ["Up to 3 items relevant to regulatory compliance, governance, or JSE Listings Requirements"],
+  "riskFactors": ["Up to 3 risk factors or cautionary statements mentioned by management"]
 }`;
 
         try {
           const response = await invokeLLM({
             messages: [
-              { role: "system", content: "You are a financial communications expert. Always respond with valid JSON only." },
+              { role: "system", content: "You are a financial communications expert specialising in JSE-listed company investor relations. Always respond with valid JSON only." },
               { role: "user", content: prompt },
             ],
             response_format: {
@@ -215,8 +218,11 @@ Produce a JSON response with this exact structure:
                     sentiment: { type: "string" },
                     actionItems: { type: "array", items: { type: "string" } },
                     executiveSummary: { type: "string" },
+                    forwardLookingStatements: { type: "array", items: { type: "string" } },
+                    regulatoryHighlights: { type: "array", items: { type: "string" } },
+                    riskFactors: { type: "array", items: { type: "string" } },
                   },
-                  required: ["headline", "keyPoints", "financialHighlights", "sentiment", "actionItems", "executiveSummary"],
+                  required: ["headline", "keyPoints", "financialHighlights", "sentiment", "actionItems", "executiveSummary", "forwardLookingStatements", "regulatoryHighlights", "riskFactors"],
                   additionalProperties: false,
                 },
               },
@@ -238,6 +244,9 @@ Produce a JSON response with this exact structure:
               sentiment: "Positive",
               actionItems: ["Follow up on Teams integration timeline", "Provide detail on Recall.ai margin impact", "Clarify Chorus.AI revenue contribution"],
               executiveSummary: `${input.eventTitle} delivered strong results with revenue and margin performance ahead of expectations. Management highlighted the accelerating adoption of the Chorus.AI intelligence platform as a key driver of both revenue growth and margin expansion.\n\nThe company raised full-year 2026 guidance and outlined a clear roadmap for native integrations with Microsoft Teams and Zoom.\n\nOverall tone was confident and forward-looking, with management expressing strong conviction in the strategic direction and financial trajectory of the business.`,
+              forwardLookingStatements: ["FY2026 revenue guidance of $195–$210M", "Adjusted EBITDA margins of 18–22% expected for FY2026", "Native Teams and Zoom integrations to open new enterprise opportunities", "Recall.ai partnership enables rapid multi-platform deployment"],
+              regulatoryHighlights: ["Forward-looking guidance provided in line with JSE Listings Requirements para 3.4", "No material changes to share capital or borrowing powers disclosed", "All financial metrics presented on an IFRS-compliant basis"],
+              riskFactors: ["Integration timelines subject to third-party platform API availability", "Gross margin profile may be affected by Recall.ai partnership terms", "Revenue guidance assumes continued enterprise adoption of AI features"],
             },
           };
         }
@@ -375,6 +384,9 @@ Produce a JSON response with this exact structure:
           sentiment: z.string(),
           actionItems: z.array(z.string()),
           executiveSummary: z.string(),
+          forwardLookingStatements: z.array(z.string()).optional().default([]),
+          regulatoryHighlights: z.array(z.string()).optional().default([]),
+          riskFactors: z.array(z.string()).optional().default([]),
         }),
         additionalEmails: z.array(z.string().email()).optional().default([]),
       }))

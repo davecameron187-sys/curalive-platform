@@ -17,3 +17,11 @@
 - [ ] Operator Console shows real attendee list from database
 - [ ] Send AI Summary to IR Contacts (server-side email via notification API)
 - [ ] Event password protection (access code on Registration + server-side validation)
+
+## Round 7 — Intelligent Webcast Features (Bastion Partnership)
+
+- [ ] Live closed captions overlay on Event Room video player (toggle CC button)
+- [ ] Enhanced live sentiment panel with sparkline trend chart and keyword highlights
+- [ ] Q&A moderation upgrades: category tags, analyst/retail labels, priority scoring
+- [ ] Multi-language transcript selector (EN, FR, PT, SW) in Event Room
+- [ ] Enhanced AI post-event summary: financial highlights extraction + branded PDF export
