@@ -161,6 +161,22 @@
   transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Bounce animation for teleprompter typing dots */
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Fade-in for presenter segments */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.presenter-segment-enter {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;

@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText } from "lucide-react";
+import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay } from "lucide-react";
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-hero-bg-bFr44AaNNWKkv4uMRbTXe8.webp";
 
@@ -19,7 +19,9 @@ const FEATURES = [
 ];
 
 const PLATFORM_PAGES = [
-  { icon: Settings, label: "Operator Console", desc: "Host controls, Q&A moderation, RTMP key, dial-in numbers", path: "/operator/q4-earnings-2026", color: "text-amber-400" },
+  { icon: Radio, label: "Moderator Console", desc: "Approve/reject Q&A, push polls, monitor sentiment live", path: "/moderator/q4-earnings-2026", color: "text-amber-400" },
+  { icon: MonitorPlay, label: "Presenter Teleprompter", desc: "Large-text live transcript + approved Q&A for speakers", path: "/presenter/q4-earnings-2026", color: "text-red-400" },
+  { icon: Settings, label: "Operator Console", desc: "Host controls, RTMP key, dial-in numbers, stream setup", path: "/operator/q4-earnings-2026", color: "text-slate-400" },
   { icon: FileText, label: "Post-Event Report", desc: "AI summary, full transcript, replay, analytics", path: "/post-event/q4-earnings-2026", color: "text-emerald-400" },
   { icon: Code2, label: "Integration Hub", desc: "Recall.ai, Zoom RTMS, Teams Bot, RTMP, PSTN", path: "/integrations", color: "text-blue-400" },
   { icon: Package, label: "Partner API & Widget", desc: "Webhook events, REST API, embeddable widget", path: "/partner-api", color: "text-violet-400" },
@@ -136,16 +138,19 @@ export default function Home() {
                   <button onClick={() => navigate(`/event/${event.id}`)} className="flex-1 flex items-center justify-center gap-1.5 bg-primary/10 text-primary border border-primary/20 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-primary/20 transition-colors">
                     <Play className="w-3 h-3" /> Event Room
                   </button>
-                  <button onClick={() => navigate(`/operator/${event.id}`)} className="flex items-center justify-center gap-1.5 border border-border px-3 py-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                    <Settings className="w-3 h-3" />
+                  <button onClick={() => navigate(`/moderator/${event.id}`)} title="Moderator" className="flex items-center justify-center gap-1.5 border border-border px-3 py-2 rounded-lg text-xs font-semibold text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30 transition-colors">
+                    <Radio className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => navigate(`/presenter/${event.id}`)} title="Presenter" className="flex items-center justify-center gap-1.5 border border-border px-3 py-2 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors">
+                    <MonitorPlay className="w-3 h-3" />
                   </button>
                   {event.status === "completed" && (
-                    <button onClick={() => navigate(`/post-event/${event.id}`)} className="flex items-center justify-center gap-1.5 border border-border px-3 py-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                    <button onClick={() => navigate(`/post-event/${event.id}`)} title="Post-Event Report" className="flex items-center justify-center gap-1.5 border border-border px-3 py-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                       <FileText className="w-3 h-3" />
                     </button>
                   )}
                   {event.status !== "completed" && (
-                    <button onClick={() => navigate(`/register/${event.id}`)} className="flex items-center justify-center gap-1.5 border border-border px-3 py-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                    <button onClick={() => navigate(`/register/${event.id}`)} title="Register" className="flex items-center justify-center gap-1.5 border border-border px-3 py-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                       <ArrowRight className="w-3 h-3" />
                     </button>
                   )}
