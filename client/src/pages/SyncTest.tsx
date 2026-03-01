@@ -46,9 +46,9 @@ function SyncTestInner() {
     const DEMO_MESSAGES = [
       "Hello from another device! 👋",
       "Real-time sync is working!",
-      "Ably delivers this in <100ms",
+      "Chorus Call delivers this in <100ms",
       "Open this page on your phone to test",
-      "All three views stay in sync via Ably",
+      "All three views stay in sync via Chorus Call",
     ];
     let i = 0;
     const interval = setInterval(() => {
@@ -134,7 +134,7 @@ function SyncTestInner() {
           }`}
         >
           {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-          {isConnected ? (mode === "ably" ? "Ably Connected" : "Demo Mode") : "Connecting…"}
+          {isConnected ? (mode === "ably" ? "Connected" : "Demo Mode") : "Connecting…"}
         </div>
       </header>
 
@@ -146,7 +146,7 @@ function SyncTestInner() {
             <div>
               <p className="text-sm font-semibold">Test real-time sync across devices</p>
               <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                Open this URL on another device or browser tab — messages appear instantly via Ably.
+                Open this URL on another device or browser tab — messages appear instantly via Chorus Call.
               </p>
             </div>
             <button
@@ -257,11 +257,11 @@ function SyncTestInner() {
           <div className="bg-card border border-border rounded-xl p-4">
             <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Connection Mode</div>
             <div className={`text-sm font-bold ${mode === "ably" ? "text-emerald-400" : "text-amber-400"}`}>
-              {mode === "ably" ? "🟢 Ably Production" : "🟡 In-Memory Demo"}
+              {mode === "ably" ? "🟢 Chorus Call Live" : "🟡 Demo Mode"}
             </div>
             <div className="text-xs text-muted-foreground mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
               {mode === "ably"
-                ? "Real cross-device sync via Ably WebSocket"
+                ? "Real cross-device sync via Chorus Call WebSocket"
                 : "Simulated — upgrade to see real sync"}
             </div>
           </div>
@@ -271,7 +271,7 @@ function SyncTestInner() {
             <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Devices Online</div>
             <div className="text-3xl font-bold text-primary">{presenceCount}</div>
             <div className="text-xs text-muted-foreground mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Ably presence channel
+              Chorus Call presence channel
             </div>
           </div>
 
@@ -297,9 +297,9 @@ function SyncTestInner() {
             <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">How It Works</div>
             <div className="space-y-2 text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
               {[
-                "1. Browser requests token from /api/trpc/ably.tokenRequest",
-                "2. Server signs token with ABLY_API_KEY (never exposed to browser)",
-                "3. Ably SDK connects via WebSocket using the token",
+                "1. Browser requests token from /api/trpc/realtime.tokenRequest",
+                "2. Server signs token with platform key (never exposed to browser)",
+                "3. SDK connects via WebSocket using the token",
                 "4. Messages publish to chorus-event-{eventId} channel",
                 "5. All subscribers receive the message in <100ms",
               ].map((step) => (

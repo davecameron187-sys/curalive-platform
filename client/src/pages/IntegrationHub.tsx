@@ -36,7 +36,7 @@ app.post('/api/webhooks/recall', (req, res) => {
   const { event, data } = req.body;
   if (event === 'transcript.data') {
     const { words, speaker } = data;
-    // Push to Ably broadcast
+    // Push to Chorus Call real-time broadcast
   }
   res.sendStatus(200); // Must respond within 5s
 });`,

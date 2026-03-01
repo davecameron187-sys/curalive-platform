@@ -15,7 +15,7 @@ const FEATURES = [
   { icon: MessageSquare, label: "Smart Q&A", desc: "Attendees submit, upvote, and categorize questions — moderated by the operator." },
   { icon: Globe, label: "Auto-Translation", desc: "Participants choose their language; transcripts translate instantly into 8 languages." },
   { icon: Video, label: "Platform Neutral", desc: "Works with Zoom RTMS, Microsoft Teams Bot, Webex, RTMP, and PSTN dial-in." },
-  { icon: Zap, label: "Ably Real-Time", desc: "Sub-100ms message delivery via Ably's global edge network — zero polling." },
+  { icon: Zap, label: "Real-Time Delivery", desc: "Sub-100ms message delivery via Chorus Call's proprietary edge network — zero polling." },
 ];
 
 const PLATFORM_PAGES = [
@@ -25,7 +25,7 @@ const PLATFORM_PAGES = [
   { icon: FileText, label: "Post-Event Report", desc: "AI summary, full transcript, replay, analytics", path: "/post-event/q4-earnings-2026", color: "text-emerald-400" },
   { icon: Code2, label: "Integration Hub", desc: "Recall.ai, Zoom RTMS, Teams Bot, RTMP, PSTN", path: "/integrations", color: "text-blue-400" },
   { icon: Package, label: "Partner API & Widget", desc: "Webhook events, REST API, embeddable widget", path: "/partner-api", color: "text-violet-400" },
-  { icon: Activity, label: "Cross-Device Sync Test", desc: "Live Ably ping/pong — open on two devices to verify real-time sync", path: "/sync-test", color: "text-cyan-400" },
+  { icon: Activity, label: "Cross-Device Sync Test", desc: "Live real-time sync — open on two devices to verify instant cross-device delivery", path: "/sync-test", color: "text-cyan-400" },
 ];
 
 function StatusBadge({ status }: { status: string }) {
@@ -210,43 +210,44 @@ export default function Home() {
                 View Integration Hub <ArrowRight className="w-4 h-4" />
               </button>
             </div>
-            <div className="bg-card border border-border rounded-2xl p-8 text-center">
-              <div className="text-6xl font-bold text-primary mb-2">~$0.98</div>
-              <div className="text-muted-foreground text-sm mb-8" style={{ fontFamily: "'Inter', sans-serif" }}>Total cost per 90-minute event</div>
-              <div className="space-y-3 text-left">
+            <div className="bg-card border border-border rounded-2xl p-8">
+              <h3 className="font-bold text-lg mb-4">Platform Advantages</h3>
+              <div className="space-y-3" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {[
-                  ["Recall.ai (Recording)", "$0.50"],
-                  ["Whisper (Transcription)", "$0.15"],
-                  ["Ably (Real-Time Messaging)", "$0.05"],
-                  ["Cloud Compute", "$0.28"],
-                ].map(([label, cost]) => (
-                  <div key={label} className="flex justify-between text-sm border-b border-border pb-2">
-                    <span className="text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>{label}</span>
-                    <span className="font-semibold">{cost}</span>
+                  "Platform-neutral — no vendor lock-in for your clients",
+                  "Fully white-label — your brand, your domain",
+                  "12 languages including Arabic RTL",
+                  "JSE/IFRS compliance flagging built-in",
+                  "18-country PSTN dial-in coverage",
+                  "Partner API for IR portal integration",
+                ].map((point) => (
+                  <div key={point} className="flex items-start gap-3">
+                    <span className="text-primary mt-0.5">✓</span>
+                    <span className="text-sm text-muted-foreground">{point}</span>
                   </div>
                 ))}
               </div>
-              <div className="mt-6 bg-primary/10 border border-primary/20 rounded-lg p-4">
-                <div className="text-xs text-muted-foreground mb-1" style={{ fontFamily: "'Inter', sans-serif" }}>Premium Gross Margin</div>
-                <div className="text-2xl font-bold text-primary">&gt; 99%</div>
+              <div className="mt-6 text-center bg-primary/10 border border-primary/20 rounded-lg p-4">
+                <div className="text-xs text-muted-foreground mb-1">Powered by</div>
+                <div className="text-lg font-bold text-primary">Chorus Call</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Ably Real-Time */}
+      {/* Real-Time Performance */}
       <section className="py-24 border-t border-border bg-card/20">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Powered by Ably Real-Time</h2>
+            <h2 className="text-3xl font-bold mb-4">Powered by Chorus Call</h2>
             <p className="text-muted-foreground leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Traditional HTTP polling generates 60,000 unnecessary database reads per hour for a 50-person event. Chorus.AI replaces this with Ably WebSocket push — reducing DB reads to zero.
+              Traditional HTTP polling generates 60,000 unnecessary database reads per hour for a 50-person event. Chorus.AI replaces this with proprietary WebSocket push — reducing DB reads to zero.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { stat: "<100ms", label: "Message delivery latency", desc: "Ably's global edge network" },
+              { stat: "<100ms", label: "Message delivery latency", desc: "Chorus Call proprietary edge network" },
               { stat: "7", label: "Real-time channels", desc: "slides, qa, transcript, polls, voting, presence, chat" },
               { stat: "0", label: "Polling requests", desc: "Pure WebSocket push model" },
             ].map(({ stat, label, desc }) => (

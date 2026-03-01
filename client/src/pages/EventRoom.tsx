@@ -947,7 +947,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
             </div>
           </div>
           <div className="w-full">
-            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Ably Channels</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Real-Time Channels</div>
             <div className="space-y-1">
               {["transcript", "sentiment", "qa", "polls", "presence"].map((ch) => (
                 <div key={ch} className="flex items-center gap-1.5 text-[10px]" style={{ fontFamily: "'Inter', sans-serif" }}>

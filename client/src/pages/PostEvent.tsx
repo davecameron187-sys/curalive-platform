@@ -14,7 +14,7 @@ const SUMMARY = `Chorus Call delivered a strong Q4 2025, with revenue of $47.2 m
 
 CFO Sarah Chen reported gross margin expansion to 72%, driven by AI infrastructure efficiencies. The company ended the quarter with $124 million in cash and equivalents. Full-year 2026 guidance was set at $195–$210 million in revenue with adjusted EBITDA margins of 18–22%.
 
-Key strategic themes: native Zoom RTMS and Microsoft Teams integrations, the Recall.ai partnership enabling rapid multi-platform deployment, and the Ably real-time infrastructure underpinning the live intelligence layer.`;
+Key strategic themes: native Zoom RTMS and Microsoft Teams integrations, the Recall.ai partnership enabling rapid multi-platform deployment, and the Chorus Call proprietary real-time infrastructure underpinning the live intelligence layer.`;
 
 const TRANSCRIPT = [
   { speaker: "Operator", time: "00:00:05", text: "Good morning and welcome to the Chorus Call Q4 2025 Earnings Call. All participants will be in listen-only mode." },
@@ -26,7 +26,7 @@ const TRANSCRIPT = [
   { speaker: "Sarah Chen (CFO)", time: "00:09:05", text: "We're guiding to full-year 2026 revenue of $195 to $210 million, with adjusted EBITDA margins of 18 to 22 percent." },
   { speaker: "Operator", time: "00:10:30", text: "We will now open the line for questions. Please press star one to join the queue." },
   { speaker: "James Mitchell (CEO)", time: "00:12:15", text: "The Chorus.AI platform represents a fundamental shift in how we deliver value to our clients. We're not just a conferencing provider anymore." },
-  { speaker: "Sarah Chen (CFO)", time: "00:14:00", text: "Capital expenditure for the year was $8.3 million, primarily invested in our AI infrastructure and the Ably real-time messaging integration." },
+  { speaker: "Sarah Chen (CFO)", time: "00:14:00", text: "Capital expenditure for the year was $8.3 million, primarily invested in our AI infrastructure and the Chorus Call real-time messaging platform." },
   { speaker: "James Mitchell (CEO)", time: "00:16:45", text: "Our partnership with Recall.ai has been transformative. It allows us to deploy the Chorus.AI intelligence layer on any platform within days, not months." },
   { speaker: "Sarah Chen (CFO)", time: "00:18:20", text: "We ended the quarter with $124 million in cash and equivalents, providing significant runway to execute on our strategic roadmap." },
 ];

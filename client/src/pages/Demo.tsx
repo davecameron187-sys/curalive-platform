@@ -76,7 +76,7 @@ const FEATURES = [
   { icon: BarChart3, label: "Sentiment Analysis", desc: "AI monitors tone and audience reaction in real-time throughout the event" },
   { icon: MessageSquare, label: "Smart Q&A", desc: "Attendees submit, upvote, categorize — moderated and AI-prioritised" },
   { icon: Video, label: "Platform Neutral", desc: "Zoom RTMS, Microsoft Teams Bot, Webex, RTMP, PSTN dial-in — all supported" },
-  { icon: Zap, label: "Ably Real-Time", desc: "Sub-100ms message delivery via Ably's global edge network — zero polling" },
+  { icon: Zap, label: "Real-Time Delivery", desc: "Sub-100ms message delivery via Chorus Call's proprietary edge network — zero polling" },
   { icon: Shield, label: "White-Label Ready", desc: "Your brand, your domain, your colours — full white-label configuration" },
   { icon: TrendingUp, label: "JSE/IFRS Compliance", desc: "Post-event AI summary flags regulatory items and generates press-ready output" },
 ];
@@ -197,7 +197,7 @@ export default function Demo() {
           <div className="mb-10 text-center">
             <h2 className="text-3xl font-bold mb-3">Live Platform Modules</h2>
             <p className="text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Click any module to enter the live demo environment. All data is real-time via Ably.
+              Click any module to enter the live demo environment. All data is real-time, powered by Chorus Call.
             </p>
             <div className="mt-3 inline-flex items-center gap-2 text-xs text-emerald-400 font-semibold">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -291,7 +291,7 @@ export default function Demo() {
                   "Fully white-label — client's brand, domain, and colour scheme",
                   "12 languages including Arabic RTL — Africa, Mauritius, UAE markets",
                   "JSE/IFRS compliance flagging in post-event AI summary",
-                  "Sub-100ms real-time delivery via Ably global edge network",
+                  "Sub-100ms real-time delivery via Chorus Call proprietary edge network",
                   "AI Q&A moderation with toxicity filter — zero manual triage",
                   "18-country PSTN dial-in — essential for emerging markets",
                   "Partner API + embeddable widget for IR portal integration",
