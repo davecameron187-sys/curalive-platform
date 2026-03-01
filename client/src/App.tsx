@@ -15,6 +15,7 @@ import EmbedWidget from "./pages/EmbedWidget";
 import Moderator from "./pages/Moderator";
 import Presenter from "./pages/Presenter";
 import SyncTest from "./pages/SyncTest";
+import Demo from "./pages/Demo";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/partner-api" component={PartnerAPI} />
       <Route path="/embed/:id" component={EmbedWidget} />
       <Route path="/sync-test" component={SyncTest} />
+      <Route path="/demo" component={Demo} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
