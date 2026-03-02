@@ -81,13 +81,13 @@ export default function PostEvent() {
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
   const [summaryGenerated, setSummaryGenerated] = useState(false);
   const [showIRPanel, setShowIRPanel] = useState(false);
-  const [newContact, setNewContact] = useState({ name: "", email: "", company: "", role: "" });
+  const [newContact, setNewContact] = useState({ name: "", email: "", company: "", role: "", phoneNumber: "" });
   const [additionalEmails, setAdditionalEmails] = useState("");
 
   // IR Contacts queries
   const { data: irContactsList, refetch: refetchContacts } = trpc.irContacts.list.useQuery();
   const addContactMutation = trpc.irContacts.add.useMutation({
-    onSuccess: () => { toast.success("Contact added!"); setNewContact({ name: "", email: "", company: "", role: "" }); refetchContacts(); },
+    onSuccess: () => { toast.success("Contact added!"); setNewContact({ name: "", email: "", company: "", role: "", phoneNumber: "" }); refetchContacts(); },
     onError: () => toast.error("Failed to add contact"),
   });
   const removeContactMutation = trpc.irContacts.remove.useMutation({
@@ -512,9 +512,11 @@ export default function PostEvent() {
                       placeholder="Company" className="bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary/50" style={{ fontFamily: "'Inter', sans-serif" }} />
                     <input value={newContact.role} onChange={e => setNewContact({...newContact, role: e.target.value})}
                       placeholder="Role (e.g. Portfolio Manager)" className="bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary/50" style={{ fontFamily: "'Inter', sans-serif" }} />
+                    <input value={newContact.phoneNumber} onChange={e => setNewContact({...newContact, phoneNumber: e.target.value})}
+                      placeholder="Phone (for dial-out, e.g. +27 11 555 0100)" className="col-span-2 bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary/50" style={{ fontFamily: "'Inter', sans-serif" }} />
                   </div>
                   <button
-                    onClick={() => addContactMutation.mutate({ name: newContact.name, email: newContact.email, company: newContact.company || undefined, role: newContact.role || undefined })}
+                    onClick={() => addContactMutation.mutate({ name: newContact.name, email: newContact.email, company: newContact.company || undefined, role: newContact.role || undefined, phoneNumber: newContact.phoneNumber || undefined })}
                     disabled={!newContact.name || !newContact.email || addContactMutation.isPending}
                     className="flex items-center gap-1.5 text-xs bg-secondary border border-border px-3 py-1.5 rounded-lg hover:bg-card transition-colors disabled:opacity-50"
                   >

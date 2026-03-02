@@ -2532,6 +2532,35 @@ export default function OCC() {
           });
         };
 
+        // Load IR Contacts
+        const irContactsQuery = trpc.irContacts.getForDial.useQuery(undefined, { enabled: showMultiDialModal });
+        const loadIRContacts = () => {
+          const contacts = irContactsQuery.data ?? [];
+          if (contacts.length === 0) {
+            setCsvImportMsg({ imported: 0, skipped: 0, errors: ["No IR contacts with phone numbers found. Add phone numbers in the IR Contacts page."] });
+            return;
+          }
+          const existingPhones = new Set(dialEntries.map(e => e.phone.replace(/\s/g, "")));
+          let loaded = 0; let skipped = 0;
+          const newEntries: DialEntry[] = [];
+          contacts.forEach(c => {
+            const phone = (c.phoneNumber ?? "").trim();
+            if (!phone || existingPhones.has(phone.replace(/\s/g, ""))) { skipped++; return; }
+            newEntries.push({
+              id: Math.random().toString(36).slice(2),
+              name: c.name,
+              company: c.company ?? "",
+              phone,
+              role: "participant",
+              status: "pending",
+            });
+            existingPhones.add(phone.replace(/\s/g, ""));
+            loaded++;
+          });
+          setDialEntries(prev => [...prev, ...newEntries]);
+          setCsvImportMsg({ imported: loaded, skipped, errors: skipped > 0 ? [`${skipped} contact(s) already in queue — skipped`] : [] });
+        };
+
         // CSV import
         const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
           const file = e.target.files?.[0];
@@ -2603,6 +2632,16 @@ export default function OCC() {
                 <div className="flex items-center gap-2">
                   {/* Hidden file input */}
                   <input ref={csvFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvImport} />
+                  {/* Load IR Contacts */}
+                  <button
+                    onClick={loadIRContacts}
+                    disabled={irContactsQuery.isLoading}
+                    title="Load IR contacts with phone numbers into the dial queue"
+                    className="flex items-center gap-1 px-2 py-1 bg-violet-800/40 hover:bg-violet-700/60 disabled:opacity-40 text-violet-300 rounded text-[10px] transition-colors"
+                  >
+                    <Users className="w-3 h-3" />
+                    {irContactsQuery.isLoading ? "Loading…" : `IR Contacts${irContactsQuery.data && irContactsQuery.data.length > 0 ? ` (${irContactsQuery.data.length})` : ""}`}
+                  </button>
                   <button
                     onClick={() => csvFileRef.current?.click()}
                     title="Import participants from a CSV file"

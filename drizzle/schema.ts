@@ -65,6 +65,7 @@ export const irContacts = mysqlTable("ir_contacts", {
   email: varchar("email", { length: 320 }).notNull().unique(),
   company: varchar("company", { length: 255 }),
   role: varchar("role", { length: 128 }),
+  phoneNumber: varchar("phoneNumber", { length: 32 }),
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

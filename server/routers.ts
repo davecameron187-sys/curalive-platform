@@ -396,12 +396,23 @@ Produce a JSON response with this exact structure:
       return db.select().from(irContacts).where(eq(irContacts.active, true)).orderBy(irContacts.name);
     }),
 
+    // Returns active IR contacts that have a phone number — for the Multi-Dial queue
+    getForDial: publicProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      const contacts = await db.select().from(irContacts)
+        .where(eq(irContacts.active, true))
+        .orderBy(irContacts.name);
+      return contacts.filter(c => c.phoneNumber && c.phoneNumber.trim().length > 0);
+    }),
+
     add: publicProcedure
       .input(z.object({
         name: z.string().min(1),
         email: z.string().email(),
         company: z.string().optional(),
         role: z.string().optional(),
+        phoneNumber: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -411,7 +422,8 @@ Produce a JSON response with this exact structure:
           email: input.email,
           company: input.company || null,
           role: input.role || null,
-        }).onDuplicateKeyUpdate({ set: { active: true } });
+          phoneNumber: input.phoneNumber || null,
+        }).onDuplicateKeyUpdate({ set: { active: true, phoneNumber: input.phoneNumber || null } });
         return { success: true };
       }),
 

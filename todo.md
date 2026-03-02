@@ -186,3 +186,10 @@
 - [ ] Show import summary toast: N imported, M skipped (invalid)
 - [ ] Add downloadable CSV template link in the modal
 - [ ] Show per-row validation errors inline
+
+## Round 29 — Load IR Contacts into Multi-Dial Queue
+- [ ] Add getIRContacts tRPC query (by conferenceId → look up eventId → fetch irContacts)
+- [ ] Add "Load IR Contacts" button to Multi-Dial modal header
+- [ ] Fetch IR contacts on button click, map to DialEntry format (name, company, phone, role=participant)
+- [ ] Skip contacts already in the queue (deduplicate by phone)
+- [ ] Show summary: N loaded, M already in queue
