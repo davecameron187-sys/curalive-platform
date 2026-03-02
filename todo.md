@@ -113,3 +113,9 @@
 - [x] Add "Simulate Incoming Call" button to Conference Bar
 - [x] Route Lounge Pick through Caller Control popup
 - [x] Add participant count limit warning badge at 90% capacity
+
+## Round 18 — OCC Enhancement Round 3
+
+- [x] AudioContext beep alert when new Needs Operator caller appears
+- [x] Dial-Out quick-launch button in Conference Bar (compact modal)
+- [x] Access Codes panel behind top bar launcher icon

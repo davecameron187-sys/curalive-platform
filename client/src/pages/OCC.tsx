@@ -205,6 +205,36 @@ export default function OCC() {
   // Lounge alert
   const [loungeAlert, setLoungeAlert] = useState(true);
 
+  // Dial-out quick-launch modal
+  const [showDialOutModal, setShowDialOutModal] = useState(false);
+  const [quickDialName, setQuickDialName] = useState("");
+  const [quickDialPhone, setQuickDialPhone] = useState("");
+  const [quickDialRole, setQuickDialRole] = useState<"moderator" | "participant">("participant");
+
+  // Access Codes modal
+  const [showAccessCodesModal, setShowAccessCodesModal] = useState(false);
+
+  // Audio beep helper
+  const playBeep = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } catch { /* AudioContext not available */ }
+  }, []);
+
+  // Track previous Needs Operator count to detect new arrivals
+  const prevNeedsOperatorCount = useRef(0);
+
   // Caller control popup state
   const [callerControlData, setCallerControlData] = useState<{
     participantId: number;
@@ -513,6 +543,15 @@ export default function OCC() {
     try { await pickOpReqMut.mutateAsync({ requestId: reqId, conferenceId: activeCCPConferenceId ?? 0 }); } catch { }
   };
 
+  // Watch for new Needs Operator participants and play beep
+  useEffect(() => {
+    const count = localParticipants.filter(p => p.state === "waiting_operator").length;
+    if (count > prevNeedsOperatorCount.current) {
+      playBeep();
+    }
+    prevNeedsOperatorCount.current = count;
+  }, [localParticipants, playBeep]);
+
   // Simulate an incoming caller (demo feature for Board presentation)
   const doSimulateIncomingCall = () => {
     if (!activeCCPConferenceId || !activeConf) return;
@@ -549,6 +588,41 @@ export default function OCC() {
       updatedAt: new Date(),
     };
     setLocalParticipants(prev => [...prev, newP]);
+  };
+
+  // Quick dial-out from modal
+  const doQuickDialOut = async () => {
+    if (!quickDialPhone.trim() || !activeCCPConferenceId) return;
+    const newP = {
+      id: Date.now(),
+      conferenceId: activeCCPConferenceId,
+      lineNumber: localParticipants.filter(p => p.conferenceId === activeCCPConferenceId).length + 1,
+      role: quickDialRole,
+      name: quickDialName || null,
+      company: null,
+      location: "Dial-Out",
+      phoneNumber: quickDialPhone,
+      dialInNumber: null,
+      voiceServer: "VS-01",
+      state: "connected" as const,
+      isSpeaking: false,
+      isWebParticipant: false,
+      requestToSpeak: false,
+      requestToSpeakPosition: null,
+      subconferenceId: null,
+      isMonitored: false,
+      monitoringOperatorId: null,
+      connectedAt: new Date(),
+      disconnectedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setLocalParticipants(prev => [...prev, newP]);
+    setShowDialOutModal(false);
+    setQuickDialName("");
+    setQuickDialPhone("");
+    setQuickDialRole("participant");
+    try { await dialOutMut.mutateAsync({ conferenceId: activeCCPConferenceId, name: quickDialName || undefined, phoneNumber: quickDialPhone, role: quickDialRole }); } catch { }
   };
 
   const doSendChat = async () => {
@@ -697,7 +771,7 @@ export default function OCC() {
             { icon: Users, label: "Lounge", count: loungeEntries.length, color: loungeEntries.length > 0 ? "text-amber-400" : "text-slate-400", onClick: () => setShowLounge(v => !v) },
             { icon: LayoutGrid, label: "Overview", count: runningConfs.length, color: "text-blue-400", onClick: () => setShowOverview(v => !v) },
             { icon: Activity, label: "CCP", count: null, color: showCCP ? "text-emerald-400" : "text-slate-400", onClick: () => setShowCCP(v => !v) },
-            { icon: List, label: "Access Codes", count: null, color: "text-slate-400", onClick: () => setShowAccessCodes(v => !v) },
+            { icon: List, label: "Access Codes", count: null, color: showAccessCodesModal ? "text-blue-400" : "text-slate-400", onClick: () => setShowAccessCodesModal(v => !v) },
           ].map(({ icon: Icon, label, count, color, onClick }) => (
             <button
               key={label}
@@ -1060,6 +1134,14 @@ export default function OCC() {
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-blue-900/40 hover:bg-blue-800/60 text-blue-400 border border-blue-800/40 transition-colors"
                   >
                     <PhoneIncoming className="w-3.5 h-3.5" /> Simulate Call
+                  </button>
+                  {/* Dial-Out quick-launch */}
+                  <button
+                    onClick={() => setShowDialOutModal(true)}
+                    title="Dial out to a participant"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border border-emerald-800/40 transition-colors"
+                  >
+                    <Phone className="w-3.5 h-3.5" /> Dial Out
                   </button>
                   {/* Capacity warning */}
                   {(() => {
@@ -1575,6 +1657,138 @@ export default function OCC() {
             </div>
             <div className="px-4 py-2 text-[10px] text-slate-600 border-t border-slate-800 rounded-b-xl">
               Caller is on hold while this dialog is open. Routing will connect them immediately.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Dial-Out Quick-Launch Modal ──────────────────────────────────────── */}
+      {showDialOutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#111827] border border-slate-600 rounded-xl shadow-2xl w-[380px] max-w-full mx-4">
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0f172a] border-b border-slate-700 rounded-t-xl">
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-semibold text-slate-200">Dial Out</span>
+                {activeConf && <span className="text-xs text-slate-500">— {activeConf.subject}</span>}
+              </div>
+              <button onClick={() => setShowDialOutModal(false)} className="text-slate-500 hover:text-slate-300">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="block text-[11px] text-slate-500 mb-1">Name (optional)</label>
+                <input
+                  value={quickDialName}
+                  onChange={e => setQuickDialName(e.target.value)}
+                  placeholder="Enter participant name"
+                  className="w-full bg-[#0a0d14] border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-slate-500 mb-1">Phone Number *</label>
+                <input
+                  value={quickDialPhone}
+                  onChange={e => setQuickDialPhone(e.target.value)}
+                  placeholder="+27 11 555 0100"
+                  className="w-full bg-[#0a0d14] border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                  onKeyDown={e => e.key === "Enter" && doQuickDialOut()}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-slate-500 mb-1">Route as</label>
+                <div className="flex gap-2">
+                  {(["participant", "moderator"] as const).map(role => (
+                    <button
+                      key={role}
+                      onClick={() => setQuickDialRole(role)}
+                      className={`flex-1 py-2 rounded text-xs font-semibold border transition-colors ${
+                        quickDialRole === role
+                          ? role === "moderator" ? "bg-amber-700/60 text-amber-300 border-amber-600" : "bg-blue-700/60 text-blue-300 border-blue-600"
+                          : "bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500"
+                      }`}
+                    >
+                      {role === "moderator" ? "★ Moderator" : "Participant"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={doQuickDialOut}
+                  disabled={!quickDialPhone.trim()}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-sm font-semibold transition-colors"
+                >
+                  <Phone className="w-4 h-4" /> Dial Now
+                </button>
+                <button
+                  onClick={() => setShowDialOutModal(false)}
+                  className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Access Codes Modal ────────────────────────────────────────────────── */}
+      {showAccessCodesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#111827] border border-slate-600 rounded-xl shadow-2xl w-[420px] max-w-full mx-4">
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0f172a] border-b border-slate-700 rounded-t-xl">
+              <div className="flex items-center gap-2">
+                <List className="w-4 h-4 text-blue-400" />
+                <span className="text-sm font-semibold text-slate-200">Access Codes</span>
+                {activeConf && <span className="text-xs text-slate-500">— {activeConf.subject}</span>}
+              </div>
+              <button onClick={() => setShowAccessCodesModal(false)} className="text-slate-500 hover:text-slate-300">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {activeConf ? (
+              <div className="p-4 space-y-3">
+                {[
+                  { label: "Moderator Code", value: activeConf.moderatorCode, color: "text-amber-400", icon: "★" },
+                  { label: "Participant Code", value: activeConf.participantCode, color: "text-blue-400", icon: "·" },
+                  { label: "Security Code", value: activeConf.securityCode ?? "Not set", color: activeConf.securityCode ? "text-emerald-400" : "text-slate-500", icon: "🔒" },
+                  { label: "Dial-In Number", value: activeConf.dialInNumber ?? "Not set", color: "text-slate-200", icon: "📞" },
+                ].map(({ label, value, color, icon }) => (
+                  <div key={label} className="flex items-center justify-between bg-[#0a0d14] border border-slate-800 rounded-lg px-4 py-3">
+                    <div>
+                      <div className="text-[10px] text-slate-500 mb-0.5">{label}</div>
+                      <div className={`font-mono text-lg font-bold tracking-widest ${color}`}>
+                        {icon} {value}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(value ?? ""); }}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                ))}
+                <div className="pt-1 text-[10px] text-slate-600 text-center">
+                  Call-ID: {activeConf.callId} · {activeConf.reseller}
+                </div>
+              </div>
+            ) : (
+              <div className="p-8 text-center text-slate-500">
+                <List className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Open a Conference Control Panel first to view access codes.</p>
+              </div>
+            )}
+            <div className="px-4 py-2 border-t border-slate-800 rounded-b-xl flex justify-end">
+              <button
+                onClick={() => setShowAccessCodesModal(false)}
+                className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
