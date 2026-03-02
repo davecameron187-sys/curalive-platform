@@ -7,8 +7,10 @@ import {
   UserCheck, UserX, Circle, CheckCircle2, AlertCircle, ExternalLink,
   Copy, Play, Pause, StopCircle, Eye, EyeOff, Building2, Phone,
   Mail, Briefcase, MoreVertical, Trash2, ArrowRight, Lock, Unlock,
-  RefreshCw, Globe, Zap
+  RefreshCw, Globe, Zap, Send, FileText, Sparkles
 } from "lucide-react";
+import { CommitmentSignalPanel } from "@/components/CommitmentSignalPanel";
+import { BriefingPackPanel } from "@/components/BriefingPackPanel";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type MeetingStatus = "scheduled" | "waiting_room_open" | "in_progress" | "completed" | "cancelled";
@@ -198,6 +200,41 @@ function AddInvestorModal({ roadshowId, meetingId, onClose, onAdded }: { roadsho
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Send Invite Button ─────────────────────────────────────────────────────
+function SendInviteButton({ investorId, investorName, inviteSentAt }: {
+  investorId: number;
+  investorName: string;
+  inviteSentAt?: Date | string | null;
+}) {
+  const sendInvite = trpc.liveVideo.sendInviteEmail.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(`Invite sent to ${investorName}`);
+      } else {
+        toast.error(result.error ?? "Failed to send invite");
+      }
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const alreadySent = !!inviteSentAt;
+
+  return (
+    <button
+      onClick={() => sendInvite.mutate({ investorId, origin: window.location.origin })}
+      disabled={sendInvite.isPending}
+      title={alreadySent ? `Re-send invite (last sent: ${new Date(inviteSentAt!).toLocaleDateString()})` : "Send invite email"}
+      className={`p-1.5 rounded transition-colors ${
+        alreadySent
+          ? "text-emerald-500 hover:bg-emerald-900/20"
+          : "text-indigo-400 hover:bg-indigo-900/20"
+      }`}
+    >
+      {sendInvite.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+    </button>
   );
 }
 
@@ -411,6 +448,9 @@ function MeetingCard({ meeting, investors, roadshowId, onRefetch }: {
                             <UserX className="w-3.5 h-3.5" />
                           </button>
                         )}
+                        {investor.email && (
+                          <SendInviteButton investorId={investor.id} investorName={investor.name} inviteSentAt={investor.inviteSentAt} />
+                        )}
                         <button
                           onClick={() => { if (confirm(`Remove ${investor.name}?`)) removeInvestor.mutate({ investorId: investor.id }); }}
                           className="p-1.5 text-slate-600 hover:text-red-400 rounded transition-colors"
@@ -423,6 +463,26 @@ function MeetingCard({ meeting, investors, roadshowId, onRefetch }: {
                 })}
               </div>
             )}
+          </div>
+
+          {/* AI Intelligence Panels */}
+          <div className="space-y-3 pt-2 border-t border-slate-800">
+            {meetingInvestors.length > 0 && (
+              <BriefingPackPanel
+                investorId={meetingInvestors[0].id}
+                meetingDbId={meeting.id}
+                roadshowId={roadshowId}
+                investorName={meetingInvestors[0].name}
+                institution={meetingInvestors[0].institution}
+              />
+            )}
+            <CommitmentSignalPanel
+              meetingDbId={meeting.id}
+              roadshowId={roadshowId}
+              investorId={meetingInvestors[0]?.id}
+              investorName={meetingInvestors[0]?.name}
+              institution={meetingInvestors[0]?.institution}
+            />
           </div>
         </div>
       )}
@@ -445,6 +505,7 @@ export default function RoadshowDetail() {
   const [, navigate] = useLocation();
   const [showAddMeeting, setShowAddMeeting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<"schedule" | "report">("schedule");
 
   const { data, isLoading, refetch } = trpc.liveVideo.getRoadshow.useQuery(
     { roadshowId: roadshowId! },
@@ -525,6 +586,12 @@ export default function RoadshowDetail() {
               </button>
             )}
             <button
+              onClick={() => navigate(`/live-video/roadshow/${roadshowId}/order-book`)}
+              className="flex items-center gap-1.5 bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+            >
+              <Sparkles className="w-3 h-3" /> Order Book
+            </button>
+            <button
               onClick={() => setShowAddMeeting(true)}
               className="flex items-center gap-1.5 bg-blue-700 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
             >
@@ -587,7 +654,36 @@ export default function RoadshowDetail() {
           </div>
         </div>
 
+        {/* View Toggle */}
+        <div className="border-b border-slate-800">
+          <div className="container">
+            <div className="flex gap-0">
+              <button
+                onClick={() => setActiveView("schedule")}
+                className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                  activeView === "schedule"
+                    ? "border-blue-500 text-white"
+                    : "border-transparent text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                Schedule
+              </button>
+              <button
+                onClick={() => setActiveView("report")}
+                className={`flex items-center gap-1.5 px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                  activeView === "report"
+                    ? "border-indigo-500 text-white"
+                    : "border-transparent text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Post-Meeting Report
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div className="container py-6">
+          {activeView === "schedule" && (<>
           {/* Date Tabs */}
           {dates.length > 1 && (
             <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
@@ -661,6 +757,23 @@ export default function RoadshowDetail() {
             <div className="mt-8 bg-slate-900 border border-slate-800 rounded-xl p-4">
               <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Operator Notes</h4>
               <p className="text-sm text-slate-300 leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{roadshow.notes}</p>
+            </div>
+          )}
+          </>)}
+
+          {activeView === "report" && (
+            <div className="py-16 text-center">
+              <Sparkles className="w-10 h-10 text-indigo-500 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-white mb-2">Order Book & Debrief Report</h3>
+              <p className="text-slate-400 text-sm max-w-md mx-auto mb-6" style={{ fontFamily: "'Inter', sans-serif" }}>
+                View the live order book of commitment signals, investor interest levels, and generate a board-ready AI debrief report for this roadshow.
+              </p>
+              <button
+                onClick={() => navigate(`/live-video/roadshow/${roadshowId}/order-book`)}
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-semibold transition-colors mx-auto"
+              >
+                <Sparkles className="w-4 h-4" /> Open Order Book & Report
+              </button>
             </div>
           )}
         </div>

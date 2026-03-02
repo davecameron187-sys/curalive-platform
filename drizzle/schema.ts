@@ -462,3 +462,80 @@ export const liveRoadshowInvestors = mysqlTable("live_roadshow_investors", {
 
 export type LiveRoadshowInvestor = typeof liveRoadshowInvestors.$inferSelect;
 export type InsertLiveRoadshowInvestor = typeof liveRoadshowInvestors.$inferInsert;
+
+/**
+ * Live Meeting Summaries — AI-generated post-meeting summaries.
+ */
+export const liveMeetingSummaries = mysqlTable("live_meeting_summaries", {
+  id: int("id").autoincrement().primaryKey(),
+  meetingDbId: int("meetingDbId").notNull(),
+  roadshowId: varchar("roadshowId", { length: 128 }).notNull(),
+  summary: text("summary").notNull(),
+  keyTopics: text("keyTopics"),
+  actionItems: text("actionItems"),
+  sentiment: mysqlEnum("sentiment", ["positive", "neutral", "negative"]).default("neutral"),
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type LiveMeetingSummary = typeof liveMeetingSummaries.$inferSelect;
+export type InsertLiveMeetingSummary = typeof liveMeetingSummaries.$inferInsert;
+
+/**
+ * Slide Thumbnails — S3 URLs for per-page PDF thumbnail images.
+ */
+export const slideThumbnails = mysqlTable("slide_thumbnails", {
+  id: int("id").autoincrement().primaryKey(),
+  meetingDbId: int("meetingDbId").notNull(),
+  slideIndex: int("slideIndex").notNull(),
+  thumbnailUrl: varchar("thumbnailUrl", { length: 1024 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SlideThumbnail = typeof slideThumbnails.$inferSelect;
+export type InsertSlideThumbnail = typeof slideThumbnails.$inferInsert;
+
+/**
+ * Commitment Signals — AI-detected soft commitment language from meeting transcripts.
+ */
+export const commitmentSignals = mysqlTable("commitment_signals", {
+  id: int("id").autoincrement().primaryKey(),
+  meetingDbId: int("meetingDbId").notNull(),
+  roadshowId: varchar("roadshowId", { length: 128 }).notNull(),
+  investorId: int("investorId"), // references liveRoadshowInvestors.id (nullable if unknown)
+  investorName: varchar("investorName", { length: 255 }),
+  institution: varchar("institution", { length: 255 }),
+  quote: text("quote").notNull(), // the detected phrase
+  signalType: mysqlEnum("signalType", [
+    "soft_commit",
+    "interest",
+    "objection",
+    "question",
+    "pricing_discussion",
+    "size_discussion",
+  ]).notNull(),
+  confidenceScore: int("confidenceScore").default(0).notNull(), // 0-100
+  indicatedAmount: varchar("indicatedAmount", { length: 64 }), // e.g. "$5m", "10% of deal"
+  detectedAt: timestamp("detectedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CommitmentSignal = typeof commitmentSignals.$inferSelect;
+export type InsertCommitmentSignal = typeof commitmentSignals.$inferInsert;
+
+/**
+ * Investor Briefing Packs — AI-generated pre-meeting briefing notes for presenters.
+ */
+export const investorBriefingPacks = mysqlTable("investor_briefing_packs", {
+  id: int("id").autoincrement().primaryKey(),
+  investorId: int("investorId").notNull(),
+  meetingDbId: int("meetingDbId").notNull(),
+  roadshowId: varchar("roadshowId", { length: 128 }).notNull(),
+  // AI-generated content
+  investorProfile: text("investorProfile"), // AUM, mandate, geography focus
+  recentActivity: text("recentActivity"), // recent portfolio changes, known positions
+  suggestedTalkingPoints: text("suggestedTalkingPoints"), // JSON array
+  knownConcerns: text("knownConcerns"), // JSON array of likely objections
+  previousInteractions: text("previousInteractions"), // notes from prior meetings
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type InvestorBriefingPack = typeof investorBriefingPacks.$inferSelect;
+export type InsertInvestorBriefingPack = typeof investorBriefingPacks.$inferInsert;

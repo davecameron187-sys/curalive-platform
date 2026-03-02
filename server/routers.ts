@@ -11,6 +11,7 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { occRouter } from "./routers/occ";
 import { liveVideoRouter } from "./routers/liveVideo";
+import { roadshowAIRouter } from "./routers/roadshowAI";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -34,6 +35,7 @@ export const appRouter = router({
   system: systemRouter,
   occ: occRouter,
   liveVideo: liveVideoRouter,
+  roadshowAI: roadshowAIRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

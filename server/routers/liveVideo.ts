@@ -5,7 +5,12 @@ import {
   liveRoadshows,
   liveRoadshowMeetings,
   liveRoadshowInvestors,
+  liveMeetingSummaries,
+  slideThumbnails,
 } from "../../drizzle/schema";
+import { sendEmail } from "../_core/email";
+import { invokeLLM } from "../_core/llm";
+import { storagePut } from "../storage";
 import { eq } from "drizzle-orm";
 
 // ─── Ably publish helper ──────────────────────────────────────────────────────
@@ -434,5 +439,235 @@ export const liveVideoRouter = router({
       const signString = [keyName, ttl, nonce, clientId, timestamp, capability, ""].join("\n");
       const mac = createHmac("sha256", keySecret).update(signString).digest("base64");
       return { tokenRequest: { keyName, ttl, nonce, clientId, timestamp, capability, mac } };
+    }),
+
+  // ── Operator: send invite email to an investor ────────────────────────────
+  sendInviteEmail: operatorProcedure
+    .input(z.object({
+      investorId: z.number(),
+      origin: z.string().url(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const [investor] = await db
+        .select()
+        .from(liveRoadshowInvestors)
+        .where(eq(liveRoadshowInvestors.id, input.investorId));
+      if (!investor) throw new Error("Investor not found");
+      if (!investor.email) throw new Error("Investor has no email address");
+      if (!investor.inviteToken) throw new Error("Investor has no invite token — please re-save the investor");
+
+      // Fetch roadshow title for the email
+      const [roadshow] = await db
+        .select()
+        .from(liveRoadshows)
+        .where(eq(liveRoadshows.roadshowId, investor.roadshowId));
+
+      // Fetch meeting details
+      const [meeting] = await db
+        .select()
+        .from(liveRoadshowMeetings)
+        .where(eq(liveRoadshowMeetings.id, investor.meetingId));
+
+      const inviteUrl = `${input.origin}/live-video/join/${investor.inviteToken}`;
+      const eventTitle = roadshow?.title ?? "Roadshow Meeting";
+      const issuer = roadshow?.issuer ?? "";
+      const meetingDate = meeting?.meetingDate ?? "";
+      const startTime = meeting?.startTime ?? "";
+      const endTime = meeting?.endTime ?? "";
+
+      const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Meeting Invitation — ${eventTitle}</title></head>
+<body style="margin:0;padding:0;background:#0a0d14;font-family:'Inter',Arial,sans-serif;color:#e2e8f0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0d14;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;border:1px solid #1e293b;">
+        <tr>
+          <td style="background:linear-gradient(135deg,#1e1b4b,#0f172a);padding:32px 40px;">
+            <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#818cf8;">Meeting Invitation</p>
+            <h1 style="margin:0;font-size:24px;font-weight:700;color:#f1f5f9;line-height:1.3;">${eventTitle}</h1>
+            <p style="margin:8px 0 0;font-size:14px;color:#94a3b8;">${issuer}${meetingDate ? ` · ${meetingDate}` : ""}${startTime ? ` · ${startTime}${endTime ? `–${endTime}` : ""}` : ""}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 40px;">
+            <p style="margin:0 0 16px;font-size:15px;color:#94a3b8;">Dear ${investor.name},</p>
+            <p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">You have been invited to a private meeting. Please use the link below to access your personal waiting room and join when admitted by the operator.</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+              <tr><td align="center">
+                <a href="${inviteUrl}" style="display:inline-block;background:#6366f1;color:#ffffff;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none;">Join Waiting Room</a>
+              </td></tr>
+            </table>
+            <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Or copy this link into your browser:</p>
+            <p style="margin:0 0 24px;font-size:12px;color:#6366f1;word-break:break-all;font-family:monospace;">${inviteUrl}</p>
+            <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">Please keep this link private. If you have any questions, contact your account manager.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#0f172a;padding:20px 40px;border-top:1px solid #1e293b;">
+            <p style="margin:0;font-size:12px;color:#475569;text-align:center;">Chorus.AI · Powered by Chorus Call Inc.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+      const result = await sendEmail({
+        to: investor.email,
+        subject: `Meeting Invitation: ${eventTitle}${meetingDate ? ` — ${meetingDate}` : ""}`,
+        html,
+      });
+
+      if (result.success) {
+        // Mark invite as sent
+        await db
+          .update(liveRoadshowInvestors)
+          .set({ inviteSentAt: new Date() })
+          .where(eq(liveRoadshowInvestors.id, input.investorId));
+      }
+
+      return result;
+    }),
+
+  // ── Operator: generate AI post-meeting summary ────────────────────────────
+  generateMeetingSummary: operatorProcedure
+    .input(z.object({
+      meetingDbId: z.number(),
+      roadshowId: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const [meeting] = await db
+        .select()
+        .from(liveRoadshowMeetings)
+        .where(eq(liveRoadshowMeetings.id, input.meetingDbId));
+      if (!meeting) throw new Error("Meeting not found");
+
+      const investors = await db
+        .select()
+        .from(liveRoadshowInvestors)
+        .where(eq(liveRoadshowInvestors.meetingId, input.meetingDbId));
+
+      const [roadshow] = await db
+        .select()
+        .from(liveRoadshows)
+        .where(eq(liveRoadshows.roadshowId, input.roadshowId));
+
+      const investorList = investors
+        .map((i) => `${i.name} (${i.institution}${i.jobTitle ? `, ${i.jobTitle}` : ""}) — status: ${i.waitingRoomStatus}`)
+        .join("\n");
+
+      const context = [
+        `Roadshow: ${roadshow?.title ?? "Unknown"} — ${roadshow?.issuer ?? ""}`,
+        `Meeting Date: ${meeting.meetingDate} ${meeting.startTime}–${meeting.endTime}`,
+        `Platform: ${meeting.platform}`,
+        `Status: ${meeting.status}`,
+        meeting.slideDeckName ? `Slide Deck: ${meeting.slideDeckName} (${meeting.totalSlides} slides)` : "",
+        meeting.operatorNotes ? `Operator Notes:\n${meeting.operatorNotes}` : "",
+        investorList ? `Participants:\n${investorList}` : "",
+      ].filter(Boolean).join("\n");
+
+      const llmResponse = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert capital markets analyst. Generate a concise, professional post-meeting summary for an investor roadshow meeting. Return JSON only.",
+          },
+          {
+            role: "user",
+            content: `Generate a post-meeting summary for this meeting:\n\n${context}\n\nReturn JSON with these fields:\n- summary (string, 2-3 paragraphs, professional tone)\n- keyTopics (array of strings, max 6)\n- actionItems (array of strings, max 5)\n- sentiment ("positive", "neutral", or "negative")`,
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "meeting_summary",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                summary: { type: "string" },
+                keyTopics: { type: "array", items: { type: "string" } },
+                actionItems: { type: "array", items: { type: "string" } },
+                sentiment: { type: "string", enum: ["positive", "neutral", "negative"] },
+              },
+              required: ["summary", "keyTopics", "actionItems", "sentiment"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+
+      const content = llmResponse?.choices?.[0]?.message?.content;
+      if (!content) throw new Error("LLM returned no content");
+      const parsed = JSON.parse(typeof content === "string" ? content : JSON.stringify(content));
+
+      // Upsert summary
+      const existing = await db
+        .select()
+        .from(liveMeetingSummaries)
+        .where(eq(liveMeetingSummaries.meetingDbId, input.meetingDbId));
+
+      if (existing.length > 0) {
+        await db
+          .update(liveMeetingSummaries)
+          .set({
+            summary: parsed.summary,
+            keyTopics: JSON.stringify(parsed.keyTopics),
+            actionItems: JSON.stringify(parsed.actionItems),
+            sentiment: parsed.sentiment,
+            generatedAt: new Date(),
+          })
+          .where(eq(liveMeetingSummaries.meetingDbId, input.meetingDbId));
+      } else {
+        await db.insert(liveMeetingSummaries).values({
+          meetingDbId: input.meetingDbId,
+          roadshowId: input.roadshowId,
+          summary: parsed.summary,
+          keyTopics: JSON.stringify(parsed.keyTopics),
+          actionItems: JSON.stringify(parsed.actionItems),
+          sentiment: parsed.sentiment,
+        });
+      }
+
+      return parsed;
+    }),
+
+  // ── Operator: get meeting summary ─────────────────────────────────────────
+  getMeetingSummary: protectedProcedure
+    .input(z.object({ meetingDbId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const [summary] = await db
+        .select()
+        .from(liveMeetingSummaries)
+        .where(eq(liveMeetingSummaries.meetingDbId, input.meetingDbId));
+      if (!summary) return null;
+      return {
+        ...summary,
+        keyTopics: summary.keyTopics ? JSON.parse(summary.keyTopics) : [],
+        actionItems: summary.actionItems ? JSON.parse(summary.actionItems) : [],
+      };
+    }),
+
+  // ── Server: generate slide thumbnails from uploaded PDF ───────────────────
+  getSlideThumbnails: protectedProcedure
+    .input(z.object({ meetingDbId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const thumbs = await db
+        .select()
+        .from(slideThumbnails)
+        .where(eq(slideThumbnails.meetingDbId, input.meetingDbId));
+      return thumbs.sort((a, b) => a.slideIndex - b.slideIndex);
     }),
 });
