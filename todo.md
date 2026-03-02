@@ -60,3 +60,8 @@
 ## Round 13 — Operator Console Redesign
 
 - [x] Rebuild Operator Console with production-grade broadcast ops centre UI
+
+## Round 14 — CONTEX SUMMIT Windows Operator Console Web Replication
+
+- [x] Build /summit-console page replicating the CONTEX SUMMIT Windows Operator Console UI
+- [x] Wire route and nav link, deploy permanently
