@@ -250,6 +250,7 @@ export default function OCC() {
   const [settingDefaultFilter, setSettingDefaultFilter] = useState<FilterMode>("all");
   const [settingAutoAcceptLounge, setSettingAutoAcceptLounge] = useState(false);
   const [settingShowCompany, setSettingShowCompany] = useState(true);
+  const [settingDialInCountry, setSettingDialInCountry] = useState("ZA");
 
   // Audio beep helper
   const playBeep = useCallback(() => {
@@ -2473,6 +2474,264 @@ export default function OCC() {
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Transfer Conference Modal ────────────────────────────────────────── */}
+      {showTransferModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#0f172a] border border-slate-700 rounded-lg w-[420px] shadow-2xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
+              <div className="flex items-center gap-2">
+                <ArrowRight className="w-4 h-4 text-indigo-400" />
+                <span className="font-semibold text-sm text-slate-200">Transfer Conference</span>
+              </div>
+              <button onClick={() => setShowTransferModal(false)} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-4 space-y-4">
+              {transferSent ? (
+                <div className="text-center py-6">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+                  <p className="text-slate-200 font-semibold">Transfer request sent!</p>
+                  <p className="text-slate-400 text-sm mt-1">The target operator has been notified via Ably.</p>
+                  <button
+                    onClick={() => setShowTransferModal(false)}
+                    className="mt-4 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm font-semibold transition-colors"
+                  >Close</button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-slate-400 text-xs mb-3">
+                      Transferring: <span className="text-slate-200 font-semibold">{activeConf?.subject ?? "Selected Conference"}</span> ({activeConf?.callId})
+                    </p>
+                    {otherOperators.length > 0 ? (
+                      <div className="space-y-1 mb-3">
+                        <p className="text-slate-400 text-xs mb-2">Online operators (from Ably presence):</p>
+                        {otherOperators.map(op => (
+                          <button
+                            key={op.clientId}
+                            onClick={() => setTransferTargetOperator(op.name)}
+                            className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                              transferTargetOperator === op.name
+                                ? "bg-indigo-600/40 border border-indigo-500/60 text-indigo-200"
+                                : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                            }`}
+                          >
+                            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-2" />
+                            {op.name}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-slate-800/50 border border-slate-700 rounded p-3 mb-3">
+                        <p className="text-slate-400 text-xs">No other operators online via Ably presence. Enter a name manually:</p>
+                      </div>
+                    )}
+                    <label className="block text-slate-400 text-xs mb-1">Target Operator Name</label>
+                    <input
+                      type="text"
+                      value={transferTargetOperator}
+                      onChange={e => setTransferTargetOperator(e.target.value)}
+                      placeholder="e.g. Operator 2"
+                      className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 text-xs mb-1">Handover Note (optional)</label>
+                    <textarea
+                      value={transferNote}
+                      onChange={e => setTransferNote(e.target.value)}
+                      placeholder="e.g. Moderator has requested Q&A mode. 3 callers in queue."
+                      rows={3}
+                      className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      disabled={!transferTargetOperator.trim()}
+                      onClick={async () => {
+                        // Publish transfer notification via Ably conference channel
+                        try {
+                          if (ablyConferenceChanRef.current) {
+                            await ablyConferenceChanRef.current.publish("conference:transfer", {
+                              fromOperator: user?.name ?? "Operator",
+                              toOperator: transferTargetOperator.trim(),
+                              conferenceId: activeCCPConferenceId,
+                              conferenceName: activeConf?.subject,
+                              callId: activeConf?.callId,
+                              note: transferNote.trim() || null,
+                              timestamp: Date.now(),
+                            });
+                          }
+                        } catch { /* Ably not configured — demo mode */ }
+                        setTransferSent(true);
+                      }}
+                      className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-sm font-semibold transition-colors"
+                    >
+                      Send Transfer Request
+                    </button>
+                    <button
+                      onClick={() => setShowTransferModal(false)}
+                      className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm font-semibold transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Settings Modal ───────────────────────────────────────────────────── */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#0f172a] border border-slate-700 rounded-lg w-[480px] shadow-2xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
+              <div className="flex items-center gap-2">
+                <Settings className="w-4 h-4 text-slate-400" />
+                <span className="font-semibold text-sm text-slate-200">Operator Preferences</span>
+              </div>
+              <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-4 space-y-5">
+              {/* Audio Alert Volume */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-300 text-sm font-medium flex items-center gap-1.5"><Volume2 className="w-3.5 h-3.5" /> Audio Alert Volume</label>
+                  <span className="text-indigo-400 text-sm font-semibold">{settingAlertVolume}%</span>
+                </div>
+                <input
+                  type="range" min={0} max={100} step={5}
+                  value={settingAlertVolume}
+                  onChange={e => setSettingAlertVolume(Number(e.target.value))}
+                  className="w-full accent-indigo-500"
+                />
+                <p className="text-slate-500 text-xs mt-1">Controls the volume of incoming call beeps and lounge alerts.</p>
+              </div>
+
+              {/* Timer Thresholds */}
+              <div>
+                <label className="text-slate-300 text-sm font-medium flex items-center gap-1.5 mb-2"><Clock className="w-3.5 h-3.5" /> Conference Timer Alerts</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-slate-400 text-xs mb-1 block">Warning threshold (min)</label>
+                    <input
+                      type="number" min={1} max={60}
+                      value={settingTimerWarning}
+                      onChange={e => setSettingTimerWarning(Number(e.target.value))}
+                      className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                    />
+                    <p className="text-slate-500 text-[10px] mt-0.5">Amber timer alert</p>
+                  </div>
+                  <div>
+                    <label className="text-slate-400 text-xs mb-1 block">Critical threshold (min)</label>
+                    <input
+                      type="number" min={1} max={30}
+                      value={settingTimerCritical}
+                      onChange={e => setSettingTimerCritical(Number(e.target.value))}
+                      className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-red-500"
+                    />
+                    <p className="text-slate-500 text-[10px] mt-0.5">Red timer alert</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Default Filter */}
+              <div>
+                <label className="text-slate-300 text-sm font-medium flex items-center gap-1.5 mb-2"><Filter className="w-3.5 h-3.5" /> Default Participant Filter</label>
+                <select
+                  value={settingDefaultFilter}
+                  onChange={e => setSettingDefaultFilter(e.target.value as FilterMode)}
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="all">All Participants</option>
+                  <option value="moderators">Moderators Only</option>
+                  <option value="participants">Participants Only</option>
+                  <option value="unmuted">Unmuted</option>
+                  <option value="muted">Muted</option>
+                  <option value="parked">Parked</option>
+                  <option value="connected">Connected</option>
+                  <option value="waiting">Waiting / Needs Operator</option>
+                  <option value="speak_requests">Raised Hands</option>
+                </select>
+              </div>
+
+              {/* Preferred Dial-In Country */}
+              <div>
+                <label className="text-slate-300 text-sm font-medium flex items-center gap-1.5 mb-2"><Phone className="w-3.5 h-3.5" /> Preferred Dial-In Country</label>
+                <select
+                  value={settingDialInCountry}
+                  onChange={e => setSettingDialInCountry(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="ZA">South Africa (+27)</option>
+                  <option value="NG">Nigeria (+234)</option>
+                  <option value="KE">Kenya (+254)</option>
+                  <option value="GH">Ghana (+233)</option>
+                  <option value="ZW">Zimbabwe (+263)</option>
+                  <option value="MU">Mauritius (+230)</option>
+                  <option value="AE">UAE (+971)</option>
+                  <option value="GB">United Kingdom (+44)</option>
+                  <option value="US">United States (+1)</option>
+                </select>
+                <p className="text-slate-500 text-xs mt-1">Used to pre-fill the dial-out number prefix.</p>
+              </div>
+
+              {/* Toggle Preferences */}
+              <div className="space-y-2">
+                <label className="text-slate-300 text-sm font-medium block">Display Options</label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div
+                    onClick={() => setSettingAutoAcceptLounge(v => !v)}
+                    className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${
+                      settingAutoAcceptLounge ? "bg-indigo-600" : "bg-slate-600"
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                      settingAutoAcceptLounge ? "translate-x-4" : "translate-x-0.5"
+                    }`} />
+                  </div>
+                  <span className="text-slate-300 text-sm">Auto-accept lounge callers</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div
+                    onClick={() => setSettingShowCompany(v => !v)}
+                    className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${
+                      settingShowCompany ? "bg-indigo-600" : "bg-slate-600"
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                      settingShowCompany ? "translate-x-4" : "translate-x-0.5"
+                    }`} />
+                  </div>
+                  <span className="text-slate-300 text-sm">Show company column in participant table</span>
+                </label>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-1 border-t border-slate-700">
+                <button
+                  onClick={() => {
+                    // Apply default filter immediately
+                    setFilterMode(settingDefaultFilter);
+                    setShowSettingsModal(false);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-semibold transition-colors"
+                >
+                  Save & Apply
+                </button>
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

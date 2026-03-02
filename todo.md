@@ -161,3 +161,8 @@
 - [x] Wire Resend transactional email to irContacts.sendSummary
 - [x] Wire Resend confirmation email to registrations.register
 - [ ] Configure custom domain demo.choruscall.ai
+
+## Round 25 — OCC Features + Email Domain
+- [ ] Transfer Conference button in CCP header with Ably notification to target operator
+- [ ] OCC Settings panel modal (audio alert volume, default filter, timer thresholds, dial-in country)
+- [ ] Resend domain verification + update FROM address to noreply@choruscall.ai
