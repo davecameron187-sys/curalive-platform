@@ -19,6 +19,7 @@ import Demo from "./pages/Demo";
 import TestGuide from "./pages/TestGuide";
 import TechHandover from "./pages/TechHandover";
 import SummitConsole from "./pages/SummitConsole";
+import OCC from "./pages/OCC";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/test-guide" component={TestGuide} />
       <Route path="/tech-handover" component={TechHandover} />
       <Route path="/summit-console" component={SummitConsole} />
+      <Route path="/occ" component={OCC} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

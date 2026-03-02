@@ -8,6 +8,7 @@ import { getDb } from "./db";
 import { attendeeRegistrations, events, irContacts } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { occRouter } from "./routers/occ";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -29,6 +30,7 @@ async function createAblyTokenRequest(clientId: string) {
 
 export const appRouter = router({
   system: systemRouter,
+  occ: occRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

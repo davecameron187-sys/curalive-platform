@@ -65,3 +65,38 @@
 
 - [x] Build /summit-console page replicating the CONTEX SUMMIT Windows Operator Console UI
 - [x] Wire route and nav link, deploy permanently
+
+## Round 15 — VIER-Style OCC Phase 1 Build
+
+### Schema & Backend
+- [x] Extend DB schema: occ_conferences, occ_participants, occ_lounge, occ_operator_requests, occ_operator_sessions, occ_chat_messages, occ_audio_files, occ_participant_history
+- [x] Run pnpm db:push to migrate schema
+- [x] Build tRPC router: occ.getConferences, occ.getConference, occ.getParticipants, occ.updateParticipantState, occ.dialOut, occ.getLounge, occ.pickFromLounge, occ.getOperatorRequests, occ.pickOperatorRequest, occ.setOperatorState, occ.sendChat, occ.getChatHistory, occ.getParticipantHistory, occ.recordConference, occ.lockConference, occ.terminateConference
+
+### Frontend — OCC Shell
+- [x] Build /occ page with top menu bar, operator state machine (Present/Break/Absent), window launcher icons
+- [x] Operator state: green dot (Present & Ready), orange (In Call), red (Absent), coffee cup (Break)
+- [x] Window launcher icons: Operator Requests, Lounge, Conference Overview, Conference Control Panel, Access Codes, Settings
+
+### Frontend — Conference Overview
+- [x] Multi-tab table: Running, Pending, Planned, Connected, Alarms, Events
+- [x] Columns: Op.support, Call-ID, Subject, Start, #Part, @Part, ModeratorCode, Part.Code, Security code, State icons
+- [x] Click row to open Conference Control Panel for that conference
+
+### Frontend — Conference Control Panel
+- [x] Conference bar: Record, Lock, Menu (mute all / terminate / waiting music / participant limit), info area (name, duration, access codes)
+- [x] Filter bar: 11 filter toggle buttons with live counts
+- [x] Action bar: Mute, Unmute, Park, Connect, Disconnect, Subconference, Pick, Pick & Call
+- [x] Participant table: 14 columns, real-time state via Ably, speaking row highlight, state change dropdown
+- [x] Feature bar: Monitoring (placeholder), Connection, History, Audio Files, Chat tabs
+
+### Frontend — Supporting Panels
+- [x] Lounge panel: participant queue table, Pick button, Lounge alert toggle
+- [x] Operator Requests panel: DTMF help request queue, Pick button
+- [x] Caller Control popup: appears on incoming call, label fields, Moderator/Participant routing, Hold/Drop/Back
+
+### Integration
+- [x] Ably real-time: subscribe to occ:conference:{id} channel for participant state changes
+- [x] Ably presence: show which operators have which conference panels open
+- [x] Seed realistic demo data for JSE earnings call scenario
+- [ ] Write vitest tests for all OCC tRPC procedures
