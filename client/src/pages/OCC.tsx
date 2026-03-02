@@ -2719,126 +2719,280 @@ export default function OCC() {
                   </div>
 
                   {/* ── SMS Notification ─────────────────────────────── */}
-                  <div className="pt-2 border-t border-emerald-800/30 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[11px] font-semibold text-slate-200">SMS Notification</p>
-                        <p className="text-[10px] text-slate-500">Send a text message to participants before the call</p>
-                      </div>
-                      <button
-                        onClick={() => setSchedSmsEnabled(v => !v)}
-                        className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ml-3 ${
-                          schedSmsEnabled ? "bg-blue-600" : "bg-slate-600"
-                        }`}
-                      >
-                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                          schedSmsEnabled ? "translate-x-5" : "translate-x-0.5"
-                        }`} />
-                      </button>
-                    </div>
-                    {schedSmsEnabled && (
-                      <div className="space-y-1.5">
-                        <label className="block text-[10px] text-slate-400 uppercase tracking-wider">Message Template</label>
-                        <textarea
-                          value={schedSmsMessage}
-                          onChange={e => setSchedSmsMessage(e.target.value)}
-                          rows={3}
-                          maxLength={160}
-                          className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 resize-none"
-                        />
+                  {(() => {
+                    const SMS_TEMPLATES = [
+                      { label: "Standard Invite", text: "Dear {{name}}, you are invited to join the {{conference}} conference call on {{date}} at {{time}}. Our operator will call you on {{phone}}." },
+                      { label: "Earnings Call", text: "Dear {{name}}, please be advised that Chorus Call will connect you to the {{conference}} earnings call at {{time}} on {{date}}. Ensure your line is available." },
+                      { label: "Reminder", text: "Reminder: {{name}}, the {{conference}} conference call starts in 15 minutes. Our operator will dial {{phone}} shortly." },
+                      { label: "Board Briefing", text: "Dear {{name}} ({{company}}), you are scheduled to join the {{conference}} board briefing at {{time}}. An operator will call you directly." },
+                    ];
+                    const SMS_TAGS = [
+                      { tag: "{{name}}", label: "Name" },
+                      { tag: "{{company}}", label: "Company" },
+                      { tag: "{{phone}}", label: "Phone" },
+                      { tag: "{{conference}}", label: "Conference" },
+                      { tag: "{{date}}", label: "Date" },
+                      { tag: "{{time}}", label: "Time" },
+                      { tag: "{{operator}}", label: "Operator" },
+                    ];
+                    const smsSegments = Math.ceil(schedSmsMessage.length / 160) || 1;
+                    const smsPreviewParticipant = schedDialOutParticipants[0];
+                    const smsPreview = schedSmsMessage
+                      .replace(/\{\{name\}\}/g, smsPreviewParticipant?.name || "John Smith")
+                      .replace(/\{\{company\}\}/g, smsPreviewParticipant?.company || "Acme Corp")
+                      .replace(/\{\{phone\}\}/g, smsPreviewParticipant?.phone || "+27 11 000 0000")
+                      .replace(/\{\{conference\}\}/g, schedSubject || "Q4 Earnings Call")
+                      .replace(/\{\{date\}\}/g, schedDate || "2026-03-15")
+                      .replace(/\{\{time\}\}/g, schedTime || "10:00")
+                      .replace(/\{\{operator\}\}/g, "Operator");
+                    const insertSmsTag = (tag: string) => {
+                      const ta = document.getElementById("sms-template-textarea") as HTMLTextAreaElement | null;
+                      if (!ta) { setSchedSmsMessage(prev => prev + tag); return; }
+                      const start = ta.selectionStart;
+                      const end = ta.selectionEnd;
+                      const newVal = schedSmsMessage.slice(0, start) + tag + schedSmsMessage.slice(end);
+                      setSchedSmsMessage(newVal);
+                      setTimeout(() => { ta.focus(); ta.setSelectionRange(start + tag.length, start + tag.length); }, 0);
+                    };
+                    return (
+                      <div className="pt-2 border-t border-emerald-800/30 space-y-2">
                         <div className="flex items-center justify-between">
-                          <p className="text-[10px] text-slate-500">Sent to all participants with a phone number</p>
-                          <span className={`text-[10px] font-mono ${
-                            schedSmsMessage.length > 140 ? "text-amber-400" : "text-slate-500"
-                          }`}>{schedSmsMessage.length}/160</span>
+                          <div>
+                            <p className="text-[11px] font-semibold text-slate-200">SMS Notification</p>
+                            <p className="text-[10px] text-slate-500">Send a personalised text to participants before the call</p>
+                          </div>
+                          <button
+                            onClick={() => setSchedSmsEnabled(v => !v)}
+                            className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ml-3 ${
+                              schedSmsEnabled ? "bg-blue-600" : "bg-slate-600"
+                            }`}
+                          >
+                            <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                              schedSmsEnabled ? "translate-x-5" : "translate-x-0.5"
+                            }`} />
+                          </button>
                         </div>
+                        {schedSmsEnabled && (
+                          <div className="space-y-2">
+                            {/* Template selector */}
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Load Template</label>
+                              <select
+                                onChange={e => { if (e.target.value) setSchedSmsMessage(e.target.value); e.target.value = ""; }}
+                                className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500"
+                              >
+                                <option value="">— Select a template —</option>
+                                {SMS_TEMPLATES.map(t => (
+                                  <option key={t.label} value={t.text}>{t.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                            {/* Merge tags toolbar */}
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Insert Merge Tag</label>
+                              <div className="flex flex-wrap gap-1">
+                                {SMS_TAGS.map(({ tag, label }) => (
+                                  <button
+                                    key={tag}
+                                    type="button"
+                                    onClick={() => insertSmsTag(tag)}
+                                    className="px-1.5 py-0.5 bg-blue-900/50 border border-blue-700/50 text-blue-300 rounded text-[10px] hover:bg-blue-800/60 transition-colors"
+                                  >
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            {/* Message editor */}
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Message</label>
+                              <textarea
+                                id="sms-template-textarea"
+                                value={schedSmsMessage}
+                                onChange={e => setSchedSmsMessage(e.target.value)}
+                                rows={4}
+                                className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 resize-none font-mono"
+                                placeholder="Type your message or load a template above…"
+                              />
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-[10px] text-slate-500">
+                                  {smsSegments > 1 ? <span className="text-amber-400">{smsSegments} segments</span> : "1 segment"} · sent to {schedDialOutParticipants.filter(p => p.phone).length} participant{schedDialOutParticipants.filter(p => p.phone).length !== 1 ? "s" : ""}
+                                </span>
+                                <span className={`text-[10px] font-mono ${
+                                  schedSmsMessage.length > 320 ? "text-red-400" : schedSmsMessage.length > 160 ? "text-amber-400" : "text-slate-500"
+                                }`}>{schedSmsMessage.length} chars</span>
+                              </div>
+                            </div>
+                            {/* Live preview */}
+                            <div className="bg-slate-900 border border-slate-700 rounded p-2">
+                              <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Preview — {smsPreviewParticipant?.name || "First Participant"}</p>
+                              <p className="text-[11px] text-slate-300 leading-relaxed whitespace-pre-wrap">{smsPreview}</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()}
 
                   {/* ── Voice Message ─────────────────────────────────── */}
-                  <div className="pt-2 border-t border-emerald-800/30 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[11px] font-semibold text-slate-200">Voice Message</p>
-                        <p className="text-[10px] text-slate-500">Play a message when participants answer the call</p>
-                      </div>
-                      <button
-                        onClick={() => setSchedVoiceEnabled(v => !v)}
-                        className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ml-3 ${
-                          schedVoiceEnabled ? "bg-violet-600" : "bg-slate-600"
-                        }`}
-                      >
-                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                          schedVoiceEnabled ? "translate-x-5" : "translate-x-0.5"
-                        }`} />
-                      </button>
-                    </div>
-                    {schedVoiceEnabled && (
-                      <div className="space-y-2">
-                        {/* Mode toggle */}
-                        <div className="flex rounded overflow-hidden border border-slate-600">
+                  {(() => {
+                    const VOICE_TEMPLATES = [
+                      { label: "Standard Greeting", text: "Good day, {{name}}. You are about to be connected to the {{conference}} conference call hosted by Chorus Call. Please hold while we connect you." },
+                      { label: "Earnings Call", text: "Hello {{name}} from {{company}}. Welcome to the {{conference}} earnings call. This call is being recorded. Please hold while we connect you to the conference." },
+                      { label: "Board Briefing", text: "Good day, {{name}}. You are being connected to the {{conference}} board briefing. This is a confidential call. Please hold." },
+                      { label: "Reminder Prompt", text: "Hello {{name}}, this is a reminder that the {{conference}} conference call is starting now. Please hold while we connect you." },
+                    ];
+                    const VOICE_TAGS = [
+                      { tag: "{{name}}", label: "Name" },
+                      { tag: "{{company}}", label: "Company" },
+                      { tag: "{{conference}}", label: "Conference" },
+                      { tag: "{{date}}", label: "Date" },
+                      { tag: "{{time}}", label: "Time" },
+                    ];
+                    const voiceWords = schedVoiceTtsText.trim().split(/\s+/).filter(Boolean).length;
+                    const voiceEstSecs = Math.round(voiceWords / 2.5);
+                    const voicePreviewParticipant = schedDialOutParticipants[0];
+                    const voicePreview = schedVoiceTtsText
+                      .replace(/\{\{name\}\}/g, voicePreviewParticipant?.name || "John Smith")
+                      .replace(/\{\{company\}\}/g, voicePreviewParticipant?.company || "Acme Corp")
+                      .replace(/\{\{conference\}\}/g, schedSubject || "Q4 Earnings Call")
+                      .replace(/\{\{date\}\}/g, schedDate || "2026-03-15")
+                      .replace(/\{\{time\}\}/g, schedTime || "10:00");
+                    const insertVoiceTag = (tag: string) => {
+                      const ta = document.getElementById("voice-tts-textarea") as HTMLTextAreaElement | null;
+                      if (!ta) { setSchedVoiceTtsText(prev => prev + tag); return; }
+                      const start = ta.selectionStart;
+                      const end = ta.selectionEnd;
+                      const newVal = schedVoiceTtsText.slice(0, start) + tag + schedVoiceTtsText.slice(end);
+                      setSchedVoiceTtsText(newVal);
+                      setTimeout(() => { ta.focus(); ta.setSelectionRange(start + tag.length, start + tag.length); }, 0);
+                    };
+                    return (
+                      <div className="pt-2 border-t border-emerald-800/30 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-[11px] font-semibold text-slate-200">Voice Message</p>
+                            <p className="text-[10px] text-slate-500">Play a personalised message when participants answer</p>
+                          </div>
                           <button
-                            onClick={() => setSchedVoiceMode("tts")}
-                            className={`flex-1 py-1.5 text-[11px] font-semibold transition-colors ${
-                              schedVoiceMode === "tts" ? "bg-violet-700 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                            onClick={() => setSchedVoiceEnabled(v => !v)}
+                            className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ml-3 ${
+                              schedVoiceEnabled ? "bg-violet-600" : "bg-slate-600"
                             }`}
                           >
-                            🔤 Text-to-Speech
-                          </button>
-                          <button
-                            onClick={() => setSchedVoiceMode("upload")}
-                            className={`flex-1 py-1.5 text-[11px] font-semibold transition-colors ${
-                              schedVoiceMode === "upload" ? "bg-violet-700 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-                            }`}
-                          >
-                            🎙️ Upload Audio
+                            <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                              schedVoiceEnabled ? "translate-x-5" : "translate-x-0.5"
+                            }`} />
                           </button>
                         </div>
-
-                        {schedVoiceMode === "tts" ? (
-                          <div className="space-y-1.5">
-                            <label className="block text-[10px] text-slate-400 uppercase tracking-wider">Message Script</label>
-                            <textarea
-                              value={schedVoiceTtsText}
-                              onChange={e => setSchedVoiceTtsText(e.target.value)}
-                              rows={3}
-                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none"
-                              placeholder="Enter the message to be read to participants when they answer..."
-                            />
-                            <p className="text-[10px] text-slate-500">This text will be converted to speech and played when participants answer</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-1.5">
-                            <label className="block text-[10px] text-slate-400 uppercase tracking-wider">Audio File (MP3 / WAV, max 5MB)</label>
-                            <label className="flex items-center gap-2 cursor-pointer bg-slate-800 border border-slate-600 hover:border-violet-500 rounded px-3 py-2 transition-colors">
-                              <Upload className="w-3.5 h-3.5 text-slate-400" />
-                              <span className="text-xs text-slate-400">
-                                {schedVoiceFile ? schedVoiceFile.name : "Choose audio file…"}
-                              </span>
-                              <input
-                                type="file"
-                                accept="audio/mp3,audio/mpeg,audio/wav"
-                                className="hidden"
-                                onChange={e => {
-                                  const f = e.target.files?.[0];
-                                  if (!f) return;
-                                  if (f.size > 5 * 1024 * 1024) { toast.error("Audio file must be under 5MB"); return; }
-                                  setSchedVoiceFile(f);
-                                }}
-                              />
-                            </label>
-                            {schedVoiceFile && (
-                              <div className="flex items-center gap-2">
-                                <audio controls src={URL.createObjectURL(schedVoiceFile)} className="h-7 w-full" />
-                                <button onClick={() => setSchedVoiceFile(null)} className="text-slate-500 hover:text-red-400 flex-shrink-0"><X className="w-3.5 h-3.5" /></button>
+                        {schedVoiceEnabled && (
+                          <div className="space-y-2">
+                            <div className="flex rounded overflow-hidden border border-slate-600">
+                              <button
+                                onClick={() => setSchedVoiceMode("tts")}
+                                className={`flex-1 py-1.5 text-[11px] font-semibold transition-colors ${
+                                  schedVoiceMode === "tts" ? "bg-violet-700 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                                }`}
+                              >
+                                Text-to-Speech
+                              </button>
+                              <button
+                                onClick={() => setSchedVoiceMode("upload")}
+                                className={`flex-1 py-1.5 text-[11px] font-semibold transition-colors ${
+                                  schedVoiceMode === "upload" ? "bg-violet-700 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                                }`}
+                              >
+                                Upload Audio
+                              </button>
+                            </div>
+                            {schedVoiceMode === "tts" ? (
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Load Script Template</label>
+                                  <select
+                                    onChange={e => { if (e.target.value) setSchedVoiceTtsText(e.target.value); e.target.value = ""; }}
+                                    className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-violet-500"
+                                  >
+                                    <option value="">Select a script template</option>
+                                    {VOICE_TEMPLATES.map(t => (
+                                      <option key={t.label} value={t.text}>{t.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Insert Merge Tag</label>
+                                  <div className="flex flex-wrap gap-1">
+                                    {VOICE_TAGS.map(({ tag, label }) => (
+                                      <button
+                                        key={tag}
+                                        type="button"
+                                        onClick={() => insertVoiceTag(tag)}
+                                        className="px-1.5 py-0.5 bg-violet-900/50 border border-violet-700/50 text-violet-300 rounded text-[10px] hover:bg-violet-800/60 transition-colors"
+                                      >
+                                        {label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Script</label>
+                                  <textarea
+                                    id="voice-tts-textarea"
+                                    value={schedVoiceTtsText}
+                                    onChange={e => setSchedVoiceTtsText(e.target.value)}
+                                    rows={4}
+                                    className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500 resize-none font-mono"
+                                    placeholder="Type your script or load a template above..."
+                                  />
+                                  <div className="flex items-center justify-between mt-1">
+                                    <span className="text-[10px] text-slate-500">{voiceWords} words</span>
+                                    <span className="text-[10px] text-slate-500">approx {voiceEstSecs}s at normal pace</span>
+                                  </div>
+                                </div>
+                                {schedVoiceTtsText.trim() && (
+                                  <div className="bg-slate-900 border border-slate-700 rounded p-2">
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Preview - {voicePreviewParticipant?.name || "First Participant"}</p>
+                                    <p className="text-[11px] text-slate-300 leading-relaxed italic">&ldquo;{voicePreview}&rdquo;</p>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5">
+                                <label className="block text-[10px] text-slate-400 uppercase tracking-wider">Audio File (MP3 / WAV, max 5MB)</label>
+                                <label className="flex items-center gap-2 cursor-pointer bg-slate-800 border border-slate-600 hover:border-violet-500 rounded px-3 py-2 transition-colors">
+                                  <Upload className="w-3.5 h-3.5 text-slate-400" />
+                                  <span className="text-xs text-slate-400">
+                                    {schedVoiceFile ? schedVoiceFile.name : "Choose audio file..."}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="audio/mp3,audio/mpeg,audio/wav"
+                                    className="hidden"
+                                    onChange={e => {
+                                      const f = e.target.files?.[0];
+                                      if (!f) return;
+                                      if (f.size > 5 * 1024 * 1024) { toast.error("Audio file must be under 5MB"); return; }
+                                      setSchedVoiceFile(f);
+                                    }}
+                                  />
+                                </label>
+                                {schedVoiceFile && (
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <audio controls src={URL.createObjectURL(schedVoiceFile)} className="h-7 w-full" />
+                                      <button onClick={() => setSchedVoiceFile(null)} className="text-slate-500 hover:text-red-400 flex-shrink-0"><X className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500">{(schedVoiceFile.size / 1024).toFixed(0)} KB - {schedVoiceFile.type}</p>
+                                  </div>
+                                )}
+                                <p className="text-[10px] text-slate-500">Note: merge tags are not available for uploaded audio files.</p>
                               </div>
                             )}
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()}
 
                 </div>
               )}
