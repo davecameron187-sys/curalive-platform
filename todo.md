@@ -119,3 +119,9 @@
 - [x] AudioContext beep alert when new Needs Operator caller appears
 - [x] Dial-Out quick-launch button in Conference Bar (compact modal)
 - [x] Access Codes panel behind top bar launcher icon
+
+## Round 19 — OCC Enhancement Round 4
+
+- [x] Mute All except Moderator button in Conference Bar
+- [x] Participant search bar in CCP (real-time filter by name/phone/company)
+- [x] Conference timer alert: amber at 15 min remaining, red at 5 min remaining

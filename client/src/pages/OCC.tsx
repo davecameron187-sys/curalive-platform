@@ -189,6 +189,7 @@ export default function OCC() {
   // CCP state
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<number[]>([]);
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
+  const [participantSearch, setParticipantSearch] = useState("");
   const [featureTab, setFeatureTab] = useState<FeatureTab>("monitoring");
   const [historyParticipantId, setHistoryParticipantId] = useState<number | null>(null);
 
@@ -405,6 +406,18 @@ export default function OCC() {
   };
 
   const filteredParticipants = participants.filter(p => {
+    // Search filter
+    if (participantSearch.trim()) {
+      const q = participantSearch.toLowerCase();
+      const matchesSearch = (
+        (p.name ?? "").toLowerCase().includes(q) ||
+        (p.company ?? "").toLowerCase().includes(q) ||
+        (p.phoneNumber ?? "").toLowerCase().includes(q) ||
+        (p.location ?? "").toLowerCase().includes(q)
+      );
+      if (!matchesSearch) return false;
+    }
+    // Mode filter
     switch (filterMode) {
       case "moderators": return p.role === "moderator" || p.role === "host";
       case "participants": return p.role === "participant";
@@ -461,6 +474,20 @@ export default function OCC() {
     setLocalParticipants(prev =>
       prev.map(p =>
         (p.state === "connected" || p.state === "speaking") && p.conferenceId === activeCCPConferenceId
+          ? { ...p, state: "muted" as const, isSpeaking: false }
+          : p
+      )
+    );
+    try { await muteAllMut.mutateAsync({ conferenceId: activeCCPConferenceId }); } catch { }
+  };
+
+  const doMuteParticipantsOnly = async () => {
+    if (!activeCCPConferenceId) return;
+    setLocalParticipants(prev =>
+      prev.map(p =>
+        (p.state === "connected" || p.state === "speaking") &&
+        p.conferenceId === activeCCPConferenceId &&
+        p.role === "participant"
           ? { ...p, state: "muted" as const, isSpeaking: false }
           : p
       )
@@ -1109,6 +1136,14 @@ export default function OCC() {
                   >
                     {activeConf.isLocked ? <><Lock className="w-3.5 h-3.5" /> Locked</> : <><Unlock className="w-3.5 h-3.5" /> Unlocked</>}
                   </button>
+                  {/* Mute Participants Only */}
+                  <button
+                    onClick={doMuteParticipantsOnly}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-amber-900/30 hover:bg-amber-800/50 text-amber-400 border border-amber-800/30 transition-colors"
+                    title="Mute all participants (moderators stay unmuted)"
+                  >
+                    <MicOff className="w-3.5 h-3.5" /> Mute Parts
+                  </button>
                   {/* Mute All */}
                   <button
                     onClick={doMuteAll}
@@ -1164,8 +1199,44 @@ export default function OCC() {
                     <span className="font-mono">{activeConf.dialInNumber}</span>
                     <span>Mod: <span className="text-slate-200 font-mono">{activeConf.moderatorCode}</span></span>
                     <span>Part: <span className="text-slate-200 font-mono">{activeConf.participantCode}</span></span>
-                    <span className="text-emerald-400 font-mono font-medium">{formatDuration(activeConf.actualStart)}</span>
+                    {/* Timer with alert colouring */}
+                    {(() => {
+                      const ms = activeConf.actualStart ? Date.now() - new Date(activeConf.actualStart).getTime() : 0;
+                      const totalMs = 90 * 60 * 1000; // 90-min default booking
+                      const remainingMs = totalMs - ms;
+                      const remainingMin = Math.floor(remainingMs / 60000);
+                      const timerColor = remainingMin <= 5 ? "text-red-400 animate-pulse" : remainingMin <= 15 ? "text-amber-400" : "text-emerald-400";
+                      const timerTitle = remainingMin <= 0 ? "Over time!" : remainingMin <= 5 ? `${remainingMin}m remaining — ending soon!` : remainingMin <= 15 ? `${remainingMin}m remaining` : "";
+                      return (
+                        <span className={`font-mono font-medium ${timerColor}`} title={timerTitle}>
+                          {formatDuration(activeConf.actualStart)}
+                          {remainingMin <= 15 && remainingMin > 0 && (
+                            <span className="ml-1 text-[10px]">({remainingMin}m left)</span>
+                          )}
+                          {remainingMin <= 0 && <span className="ml-1 text-[10px]">OVER</span>}
+                        </span>
+                      );
+                    })()}
                   </div>
+                </div>
+
+                {/* Search Bar */}
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0a0d14] border-b border-slate-800 shrink-0">
+                  <Search className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <input
+                    value={participantSearch}
+                    onChange={e => setParticipantSearch(e.target.value)}
+                    placeholder="Search by name, company, phone, location…"
+                    className="flex-1 bg-transparent text-xs text-slate-300 placeholder-slate-600 focus:outline-none"
+                  />
+                  {participantSearch && (
+                    <button onClick={() => setParticipantSearch("")} className="text-slate-500 hover:text-slate-300">
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                  {participantSearch && (
+                    <span className="text-[10px] text-slate-500">{filteredParticipants.length} result{filteredParticipants.length !== 1 ? "s" : ""}</span>
+                  )}
                 </div>
 
                 {/* Filter Bar */}
