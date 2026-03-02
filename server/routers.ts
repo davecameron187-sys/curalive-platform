@@ -1,11 +1,11 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, adminProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import { sendEmail, buildIRSummaryEmail, buildRegistrationConfirmationEmail } from "./_core/email";
-import { getDb } from "./db";
+import { getDb, listUsers, updateUserRole } from "./db";
 import { attendeeRegistrations, events, irContacts } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
@@ -32,6 +32,32 @@ async function createAblyTokenRequest(clientId: string) {
 export const appRouter = router({
   system: systemRouter,
   occ: occRouter,
+  admin: router({
+    listUsers: adminProcedure.query(async () => {
+      const allUsers = await listUsers();
+      return allUsers.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        lastSignedIn: u.lastSignedIn,
+        loginMethod: u.loginMethod,
+      }));
+    }),
+    updateUserRole: adminProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        role: z.enum(["user", "admin", "operator"]),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Prevent admin from demoting themselves
+        if (ctx.user.id === input.userId && input.role !== "admin") {
+          throw new Error("You cannot change your own role.");
+        }
+        await updateUserRole(input.userId, input.role);
+        return { success: true };
+      }),
+  }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

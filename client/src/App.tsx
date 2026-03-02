@@ -20,6 +20,7 @@ import TestGuide from "./pages/TestGuide";
 import TechHandover from "./pages/TechHandover";
 import SummitConsole from "./pages/SummitConsole";
 import OCC from "./pages/OCC";
+import AdminUsers from "./pages/AdminUsers";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/tech-handover" component={TechHandover} />
       <Route path="/summit-console" component={SummitConsole} />
       <Route path="/occ" component={OCC} />
+      <Route path="/admin/users" component={AdminUsers} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
