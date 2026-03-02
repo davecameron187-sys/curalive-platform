@@ -49,7 +49,7 @@ const SERVICE_TYPES = [
     icon: TrendingUp,
     title: "Capital Raising 1:1 Meetings",
     desc: "Back-to-back investor roadshow meetings. Each slot gets its own video link. Investors held in a private waiting room until the host is ready.",
-    detail: "$250–$300 per meeting · 6–8 meetings/day typical",
+    detail: "Private waiting room · Back-to-back scheduling · AI briefing packs",
     accent: "emerald",
   },
   {
@@ -468,7 +468,7 @@ export default function LiveVideoMeetings() {
                 <div>
                   <h3 className="font-semibold text-white mb-1">Example: Aggreko Capital Raise</h3>
                   <p className="text-sm text-slate-400 mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    A real-world example from the document: BofA Securities and Barclays arranged a 3-day roadshow for Aggreko plc with 7 meetings per day across Blackstone, Bain Capital, M&G, RLAM/Schroders, CSAM, Ares Management, and Carlyle Group.
+                    A real-world example: BofA Securities and Barclays arranged a 3-day roadshow for Aggreko plc across Blackstone, Bain Capital, M&G, RLAM/Schroders, CSAM, Ares Management, and Carlyle Group.
                   </p>
                   <button
                     onClick={() => setShowNewModal(true)}
