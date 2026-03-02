@@ -22,7 +22,7 @@ import {
 type OperatorState = "absent" | "present" | "in_call" | "break";
 type ParticipantState = "free" | "incoming" | "connected" | "muted" | "parked" | "speaking" | "waiting_operator" | "web_participant" | "dropped";
 type FilterMode = "all" | "moderators" | "participants" | "unmuted" | "muted" | "parked" | "connected" | "waiting" | "web" | "speak_requests";
-type FeatureTab = "monitoring" | "connection" | "history" | "audio" | "chat";
+type FeatureTab = "monitoring" | "connection" | "history" | "audio" | "chat" | "notes";
 type OverviewTab = "running" | "pending" | "planned" | "completed" | "alarms";
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
@@ -192,6 +192,22 @@ export default function OCC() {
   const [participantSearch, setParticipantSearch] = useState("");
   const [featureTab, setFeatureTab] = useState<FeatureTab>("monitoring");
   const [historyParticipantId, setHistoryParticipantId] = useState<number | null>(null);
+
+  // Operator notes (per-conference)
+  const [operatorNotes, setOperatorNotes] = useState<Record<number, string>>({});
+  const notesSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [notesSaved, setNotesSaved] = useState(false);
+
+  // Schedule new conference modal
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [schedSubject, setSchedSubject] = useState("");
+  const [schedReseller, setSchedReseller] = useState("Chorus Call Inc.");
+  const [schedDate, setSchedDate] = useState("");
+  const [schedTime, setSchedTime] = useState("");
+  const [schedModCode, setSchedModCode] = useState("");
+  const [schedPartCode, setSchedPartCode] = useState("");
+  const [schedLimit, setSchedLimit] = useState("500");
+  const [schedDialIn, setSchedDialIn] = useState("+27 11 535 0000");
 
   // Dial-out form
   const [dialName, setDialName] = useState("");
@@ -479,6 +495,47 @@ export default function OCC() {
       )
     );
     try { await muteAllMut.mutateAsync({ conferenceId: activeCCPConferenceId }); } catch { }
+  };
+
+  // Notes auto-save with debounce
+  const handleNotesChange = (confId: number, value: string) => {
+    setOperatorNotes(prev => ({ ...prev, [confId]: value }));
+    setNotesSaved(false);
+    if (notesSaveTimerRef.current) clearTimeout(notesSaveTimerRef.current);
+    notesSaveTimerRef.current = setTimeout(() => {
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 2000);
+    }, 1200);
+  };
+
+  // Schedule new conference
+  const doScheduleConference = () => {
+    if (!schedSubject.trim() || !schedDate || !schedTime) return;
+    const scheduledStart = new Date(`${schedDate}T${schedTime}`);
+    const newConf = {
+      id: Date.now(),
+      callId: `CC-${Math.floor(1000 + Math.random() * 9000)}`,
+      subject: schedSubject,
+      reseller: schedReseller,
+      dialInNumber: schedDialIn,
+      moderatorCode: schedModCode || String(Math.floor(1000 + Math.random() * 9000)),
+      participantCode: schedPartCode || String(Math.floor(1000 + Math.random() * 9000)),
+      securityCode: null,
+      status: "pending" as const,
+      isRecording: false,
+      isLocked: false,
+      scheduledStart,
+      actualStart: null,
+      endedAt: null,
+      participantLimit: parseInt(schedLimit) || 500,
+      participantLimitEnabled: false,
+      webAccessCode: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setLocalConferences(prev => [...prev, newConf]);
+    setShowScheduleModal(false);
+    setSchedSubject(""); setSchedDate(""); setSchedTime(""); setSchedModCode(""); setSchedPartCode("");
   };
 
   const doMuteParticipantsOnly = async () => {
@@ -987,6 +1044,12 @@ export default function OCC() {
                 <span className="font-semibold text-sm">Conference Overview</span>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowScheduleModal(true)}
+                  className="flex items-center gap-1 px-2 py-1 bg-blue-700/30 hover:bg-blue-700/50 text-blue-400 border border-blue-700/30 rounded text-xs font-medium transition-colors"
+                >
+                  <Plus className="w-3 h-3" /> Schedule
+                </button>
                 <button className="text-slate-400 hover:text-slate-200"><RefreshCw className="w-3.5 h-3.5" /></button>
                 <button onClick={() => setShowOverview(false)} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
               </div>
@@ -1310,6 +1373,7 @@ export default function OCC() {
                         <th className="text-left px-2 py-2">VS</th>
                         <th className="text-left px-2 py-2">Connected</th>
                         <th className="text-left px-2 py-2">State</th>
+                        <th className="px-2 py-2 w-6" title="Raise Hand">✋</th>
                         <th className="text-left px-2 py-2">Actions</th>
                       </tr>
                     </thead>
@@ -1358,6 +1422,18 @@ export default function OCC() {
                                 {stateLabel(p.state)}
                               </span>
                             </td>
+                            {/* Raise Hand */}
+                            <td className="px-2 py-1.5 text-center">
+                              {p.requestToSpeak ? (
+                                <button
+                                  title={`Lower hand (position ${p.requestToSpeakPosition})`}
+                                  onClick={() => setLocalParticipants(prev => prev.map(x => x.id === p.id ? { ...x, requestToSpeak: false, requestToSpeakPosition: null } : x))}
+                                  className="text-amber-400 hover:text-amber-300 text-sm leading-none"
+                                >✋<span className="ml-0.5 text-[9px] font-bold">{p.requestToSpeakPosition}</span></button>
+                              ) : (
+                                <span className="text-slate-700 text-sm">—</span>
+                              )}
+                            </td>
                             <td className="px-2 py-1.5">
                               <div className="flex gap-1">
                                 {p.state === "muted" && (
@@ -1404,6 +1480,7 @@ export default function OCC() {
                       { key: "history", label: "History", icon: History },
                       { key: "audio", label: "Audio Files", icon: Music },
                       { key: "chat", label: "Chat", icon: MessageSquare },
+                      { key: "notes", label: "Notes", icon: List },
                     ] as const).map(({ key, label, icon: Icon }) => (
                       <button
                         key={key}
@@ -1553,6 +1630,21 @@ export default function OCC() {
                     )}
 
                     {/* Chat */}
+                    {featureTab === "notes" && activeCCPConferenceId && (
+                      <div className="flex flex-col gap-2" style={{ height: "160px" }}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-slate-400 font-medium">Operator notes — {activeConf?.subject ?? "Conference"}</span>
+                          {notesSaved && <span className="text-[10px] text-emerald-400">✓ Saved</span>}
+                        </div>
+                        <textarea
+                          value={operatorNotes[activeCCPConferenceId] ?? ""}
+                          onChange={e => handleNotesChange(activeCCPConferenceId, e.target.value)}
+                          placeholder="Type running notes here… e.g. 'CEO confirmed guidance at 14:32', 'Analyst from Barclays asked about capex'"
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 resize-none"
+                        />
+                        <div className="text-[10px] text-slate-600">Notes are saved locally and will appear in the Post-Event Report.</div>
+                      </div>
+                    )}
                     {featureTab === "chat" && (
                       <div className="flex flex-col gap-2" style={{ height: "160px" }}>
                         <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
@@ -1859,6 +1951,117 @@ export default function OCC() {
                 className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm transition-colors"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Schedule New Conference Modal ─────────────────────────────────── */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#111827] border border-slate-600 rounded-xl shadow-2xl w-[520px] max-w-full mx-4">
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0f172a] border-b border-slate-700 rounded-t-xl">
+              <div className="flex items-center gap-2">
+                <Plus className="w-4 h-4 text-blue-400" />
+                <span className="text-sm font-semibold text-slate-200">Schedule New Conference</span>
+              </div>
+              <button onClick={() => setShowScheduleModal(false)} className="text-slate-500 hover:text-slate-300">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Subject <span className="text-red-400">*</span></label>
+                <input
+                  value={schedSubject}
+                  onChange={e => setSchedSubject(e.target.value)}
+                  placeholder="e.g. Q1 2026 Earnings Call"
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Date <span className="text-red-400">*</span></label>
+                  <input
+                    type="date"
+                    value={schedDate}
+                    onChange={e => setSchedDate(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Time <span className="text-red-400">*</span></label>
+                  <input
+                    type="time"
+                    value={schedTime}
+                    onChange={e => setSchedTime(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Moderator Code</label>
+                  <input
+                    value={schedModCode}
+                    onChange={e => setSchedModCode(e.target.value)}
+                    placeholder="Auto-generated if blank"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Participant Code</label>
+                  <input
+                    value={schedPartCode}
+                    onChange={e => setSchedPartCode(e.target.value)}
+                    placeholder="Auto-generated if blank"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Dial-In Number</label>
+                  <input
+                    value={schedDialIn}
+                    onChange={e => setSchedDialIn(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Participant Limit</label>
+                  <input
+                    type="number"
+                    value={schedLimit}
+                    onChange={e => setSchedLimit(e.target.value)}
+                    min="1" max="5000"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Reseller / Client</label>
+                <input
+                  value={schedReseller}
+                  onChange={e => setSchedReseller(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 px-4 py-3 border-t border-slate-800 rounded-b-xl">
+              <button
+                onClick={doScheduleConference}
+                disabled={!schedSubject.trim() || !schedDate || !schedTime}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-700 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-sm font-semibold transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Schedule Conference
+              </button>
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm font-semibold transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </div>

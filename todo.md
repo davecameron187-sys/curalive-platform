@@ -125,3 +125,9 @@
 - [x] Mute All except Moderator button in Conference Bar
 - [x] Participant search bar in CCP (real-time filter by name/phone/company)
 - [x] Conference timer alert: amber at 15 min remaining, red at 5 min remaining
+
+## Round 20 — OCC Enhancement Round 5
+
+- [x] Raise Hand indicator column in participant table (hand icon lights up on requestToSpeak)
+- [x] Operator Notes tab in Feature Bar (auto-save to DB, appears in Post-Event Report)
+- [x] Schedule New Conference modal from Conference Overview (subject, date, time, codes, limit)
