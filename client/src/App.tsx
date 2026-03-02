@@ -25,6 +25,8 @@ import EventPass from "./pages/EventPass";
 import LiveVideoMeetings from "./pages/LiveVideoMeetings";
 import RoadshowDetail from "./pages/RoadshowDetail";
 import HybridConference from "./pages/HybridConference";
+import InvestorWaitingRoom from "./pages/InvestorWaitingRoom";
+import SlidePresenter from "./pages/SlidePresenter";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -50,6 +52,8 @@ function Router() {
       <Route path="/live-video" component={LiveVideoMeetings} />
       <Route path="/live-video/roadshow/:roadshowId" component={RoadshowDetail} />
       <Route path="/live-video/conference" component={HybridConference} />
+      <Route path="/live-video/join/:token" component={InvestorWaitingRoom} />
+      <Route path="/live-video/roadshow/:roadshowId/present/:meetingId" component={SlidePresenter} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

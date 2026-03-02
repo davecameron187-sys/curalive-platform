@@ -50,6 +50,13 @@
       "when": 1772448224948,
       "tag": "0006_workable_gravity",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1772449201383,
+      "tag": "0007_familiar_white_tiger",
+      "breakpoints": true
     }
   ]
 }

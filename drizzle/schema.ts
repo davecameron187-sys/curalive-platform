@@ -417,6 +417,12 @@ export const liveRoadshowMeetings = mysqlTable("live_roadshow_meetings", {
   ]).default("scheduled").notNull(),
   // Operator notes for this slot
   operatorNotes: text("operatorNotes"),
+  // Slide deck — S3 URL of uploaded PDF/PPTX
+  slideDeckUrl: varchar("slideDeckUrl", { length: 1024 }),
+  slideDeckName: varchar("slideDeckName", { length: 255 }),
+  // Current slide index shown to presenter/attendees (0-based)
+  currentSlideIndex: int("currentSlideIndex").default(0).notNull(),
+  totalSlides: int("totalSlides").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

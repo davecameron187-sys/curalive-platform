@@ -210,6 +210,7 @@ function MeetingCard({ meeting, investors, roadshowId, onRefetch }: {
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showAddInvestor, setShowAddInvestor] = useState(false);
+  const [, navigate] = useLocation();
 
   const statusCfg = MEETING_STATUS_CONFIG[meeting.status as MeetingStatus] || MEETING_STATUS_CONFIG.scheduled;
   const platBadge = PLATFORM_BADGES[meeting.platform as Platform] || { label: meeting.platform, color: "bg-slate-600" };
@@ -323,6 +324,12 @@ function MeetingCard({ meeting, investors, roadshowId, onRefetch }: {
                 <Copy className="w-3 h-3" /> Copy Link
               </button>
             )}
+            <button
+              onClick={() => navigate(`/live-video/roadshow/${roadshowId}/present/${meeting.id}`)}
+              className="flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+            >
+              <Eye className="w-3 h-3" /> Slide Presenter
+            </button>
           </div>
 
           {/* Video Link Details */}
