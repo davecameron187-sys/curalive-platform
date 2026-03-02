@@ -103,7 +103,13 @@
 
 ## Round 16 — OCC Enhancements
 
-- [ ] Add OCC nav link to Home page header
-- [ ] Wire Lounge panel to Ably occ:lounge:{conferenceId} real-time channel
-- [ ] Wire Operator Requests panel to Ably occ:requests:{conferenceId} real-time channel
-- [ ] Build Caller Control popup modal (name/company label fields, Moderator/Participant/Drop routing)
+- [x] Add OCC nav link to Home page header
+- [x] Wire Lounge panel to Ably occ:lounge:{conferenceId} real-time channel
+- [x] Wire Operator Requests panel to Ably occ:requests:{conferenceId} real-time channel
+- [x] Build Caller Control popup modal (name/company label fields, Moderator/Participant/Drop routing)
+
+## Round 17 — OCC Enhancement Round 2
+
+- [x] Add "Simulate Incoming Call" button to Conference Bar
+- [x] Route Lounge Pick through Caller Control popup
+- [x] Add participant count limit warning badge at 90% capacity

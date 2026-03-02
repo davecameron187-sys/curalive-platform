@@ -8,11 +8,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  Phone, PhoneOff, PhoneIncoming, Mic, MicOff, PauseCircle, PlayCircle,
+  Headphones, Phone, PhoneOff, PhoneIncoming, AlertTriangle, Mic, MicOff, PauseCircle, PlayCircle,
   Lock, Unlock, Radio, Users, MessageSquare, History, Music, Wifi,
   WifiOff, Settings, LogOut, Coffee, AlertCircle, CheckCircle2,
   ChevronDown, ChevronUp, X, Plus, RefreshCw, Volume2, VolumeX,
-  ArrowRight, UserCheck, UserX, Headphones, Activity, Clock,
+  ArrowRight, UserCheck, UserX, Activity, Clock,
   List, LayoutGrid, Bell, BellOff, Send, Search, Filter,
   Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical
 } from "lucide-react";
@@ -215,6 +215,7 @@ export default function OCC() {
     waitingSeconds: number;
     conferenceId: number;
     conferenceName: string;
+    loungeId?: number; // set when opened from Lounge panel
   } | null>(null);
   const [callerName, setCallerName] = useState("");
   const [callerCompany, setCallerCompany] = useState("");
@@ -484,6 +485,24 @@ export default function OCC() {
     } catch { }
   };
 
+  // Open Caller Control from a Lounge entry instead of routing directly
+  const doPickLoungeViaCallerControl = (entry: typeof DEMO_LOUNGE[0]) => {
+    setCallerControlData({
+      participantId: entry.id * -1, // negative ID signals lounge origin
+      phone: entry.phoneNumber,
+      name: entry.name ?? "",
+      company: entry.company ?? "",
+      dialIn: entry.dialInNumber ?? "",
+      waitingSeconds: Math.floor((Date.now() - new Date(entry.arrivedAt).getTime()) / 1000),
+      conferenceId: entry.conferenceId,
+      conferenceName: activeConf?.subject ?? "Conference",
+      loungeId: entry.id,
+    });
+    setCallerName(entry.name ?? "");
+    setCallerCompany(entry.company ?? "");
+    setCallerRole("participant");
+  };
+
   const doPickLounge = async (loungeId: number) => {
     setLocalLounge(prev => prev.filter(l => l.id !== loungeId));
     try { await pickLoungeMut.mutateAsync({ loungeId, conferenceId: activeCCPConferenceId ?? 0 }); } catch { }
@@ -492,6 +511,44 @@ export default function OCC() {
   const doPickOpRequest = async (reqId: number) => {
     setLocalOpRequests(prev => prev.filter(r => r.id !== reqId));
     try { await pickOpReqMut.mutateAsync({ requestId: reqId, conferenceId: activeCCPConferenceId ?? 0 }); } catch { }
+  };
+
+  // Simulate an incoming caller (demo feature for Board presentation)
+  const doSimulateIncomingCall = () => {
+    if (!activeCCPConferenceId || !activeConf) return;
+    const demoCallers = [
+      { phone: "+44 20 7946 0801", name: "Oliver Thompson", company: "Barclays Investment Bank", location: "London" },
+      { phone: "+1 646 555 0234", name: "Sarah Mitchell", company: "JPMorgan Asset Management", location: "New York" },
+      { phone: "+27 11 555 0999", name: null, company: null, location: "Unknown" },
+      { phone: "+49 30 555 0177", name: "Klaus Weber", company: "Deutsche Bank", location: "Frankfurt" },
+      { phone: "+852 2555 0144", name: "Li Wei", company: "HSBC Asset Management", location: "Hong Kong" },
+    ];
+    const caller = demoCallers[Math.floor(Math.random() * demoCallers.length)];
+    const newP = {
+      id: Date.now(),
+      conferenceId: activeCCPConferenceId,
+      lineNumber: localParticipants.filter(p => p.conferenceId === activeCCPConferenceId).length + 1,
+      role: "participant" as const,
+      name: caller.name,
+      company: caller.company,
+      location: caller.location,
+      phoneNumber: caller.phone,
+      dialInNumber: "+27 11 535 0000",
+      voiceServer: "VS-0" + (Math.floor(Math.random() * 5) + 1),
+      state: "waiting_operator" as const,
+      isSpeaking: false,
+      isWebParticipant: false,
+      requestToSpeak: false,
+      requestToSpeakPosition: null,
+      subconferenceId: null,
+      isMonitored: false,
+      monitoringOperatorId: null,
+      connectedAt: new Date(),
+      disconnectedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setLocalParticipants(prev => [...prev, newP]);
   };
 
   const doSendChat = async () => {
@@ -541,21 +598,63 @@ export default function OCC() {
 
   const doCallerRoute = async (action: "moderator" | "participant" | "hold" | "drop") => {
     if (!callerControlData) return;
-    const { participantId } = callerControlData;
+    const { participantId, conferenceId } = callerControlData;
+    const isLoungeEntry = participantId < 0;
+    const loungeId = isLoungeEntry ? (callerControlData as any).loungeId as number : null;
+
     if (action === "drop") {
-      setLocalParticipants(prev => prev.map(p => p.id === participantId ? { ...p, state: "dropped" as const } : p));
-      try { await updateStateMut.mutateAsync({ participantId, conferenceId: callerControlData.conferenceId, state: "dropped" }); } catch {}
+      if (isLoungeEntry && loungeId) {
+        // Drop from lounge — just remove
+        doPickLounge(loungeId);
+      } else {
+        setLocalParticipants(prev => prev.map(p => p.id === participantId ? { ...p, state: "dropped" as const } : p));
+        try { await updateStateMut.mutateAsync({ participantId, conferenceId, state: "dropped" }); } catch {}
+      }
     } else if (action === "hold") {
-      setLocalParticipants(prev => prev.map(p => p.id === participantId ? { ...p, state: "parked" as const } : p));
-      try { await updateStateMut.mutateAsync({ participantId, conferenceId: callerControlData.conferenceId, state: "parked" }); } catch {}
+      if (isLoungeEntry) {
+        // Keep in lounge — just close popup
+      } else {
+        setLocalParticipants(prev => prev.map(p => p.id === participantId ? { ...p, state: "parked" as const } : p));
+        try { await updateStateMut.mutateAsync({ participantId, conferenceId, state: "parked" }); } catch {}
+      }
     } else {
-      // Route as moderator or participant — update name/company and set connected
-      setLocalParticipants(prev => prev.map(p =>
-        p.id === participantId
-          ? { ...p, name: callerName || p.name, company: callerCompany || p.company, role: action, state: "connected" as const }
-          : p
-      ));
-      try { await updateStateMut.mutateAsync({ participantId, conferenceId: callerControlData.conferenceId, state: "connected" }); } catch {}
+      if (isLoungeEntry && loungeId) {
+        // Route from lounge: remove from lounge, add as participant
+        doPickLounge(loungeId);
+        const newP = {
+          id: Date.now(),
+          conferenceId,
+          lineNumber: localParticipants.filter(p => p.conferenceId === conferenceId).length + 1,
+          role: action,
+          name: callerName || callerControlData.name || null,
+          company: callerCompany || callerControlData.company || null,
+          location: "Lounge",
+          phoneNumber: callerControlData.phone,
+          dialInNumber: callerControlData.dialIn || null,
+          voiceServer: "VS-01",
+          state: "connected" as const,
+          isSpeaking: false,
+          isWebParticipant: false,
+          requestToSpeak: false,
+          requestToSpeakPosition: null,
+          subconferenceId: null,
+          isMonitored: false,
+          monitoringOperatorId: null,
+          connectedAt: new Date(),
+          disconnectedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        setLocalParticipants(prev => [...prev, newP]);
+      } else {
+        // Route existing participant
+        setLocalParticipants(prev => prev.map(p =>
+          p.id === participantId
+            ? { ...p, name: callerName || p.name, company: callerCompany || p.company, role: action, state: "connected" as const }
+            : p
+        ));
+        try { await updateStateMut.mutateAsync({ participantId, conferenceId, state: "connected" }); } catch {}
+      }
     }
     setCallerControlData(null);
   };
@@ -757,7 +856,7 @@ export default function OCC() {
                       <td className="px-3 py-2">
                         <div className="flex gap-1">
                           <button
-                            onClick={() => doPickLounge(entry.id)}
+                            onClick={() => doPickLoungeViaCallerControl(entry)}
                             className="flex items-center gap-1 px-2 py-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs transition-colors"
                           >
                             <UserCheck className="w-3 h-3" /> Pick
@@ -954,6 +1053,30 @@ export default function OCC() {
                   >
                     <PhoneOff className="w-3.5 h-3.5" /> Terminate
                   </button>
+                  {/* Simulate Incoming Call */}
+                  <button
+                    onClick={doSimulateIncomingCall}
+                    title="Simulate an incoming caller for demo purposes"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-blue-900/40 hover:bg-blue-800/60 text-blue-400 border border-blue-800/40 transition-colors"
+                  >
+                    <PhoneIncoming className="w-3.5 h-3.5" /> Simulate Call
+                  </button>
+                  {/* Capacity warning */}
+                  {(() => {
+                    const limit = activeConf.participantLimitEnabled ? (activeConf.participantLimit ?? 500) : 500;
+                    const pct = (counts.connected / limit) * 100;
+                    if (pct < 80) return null;
+                    return (
+                      <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium border ${
+                        pct >= 95
+                          ? "bg-red-900/40 text-red-400 border-red-800/40"
+                          : "bg-amber-900/40 text-amber-400 border-amber-800/40"
+                      }`}>
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        {counts.connected}/{limit} ({Math.round(pct)}%)
+                      </div>
+                    );
+                  })()}
                   {/* Info */}
                   <div className="ml-auto flex items-center gap-4 text-xs text-slate-400">
                     <span className="font-mono">{activeConf.dialInNumber}</span>
