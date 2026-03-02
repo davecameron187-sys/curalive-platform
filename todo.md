@@ -200,3 +200,10 @@
 - [ ] Speaker Green Room: sub-conference creation, speaker CCP panel, Transfer All to Main
 - [ ] Event Pass page at /event-pass/:eventId (branded, public, no Diamond Pass)
 - [ ] Event Pass embeddable widget snippet for choruscall.co.za WordPress
+
+## Round 32 — Dial-Out Notifications & Voice Message
+- [ ] Add Auto-Dial on Start toggle (off by default) to Dial-Out conference form
+- [ ] Add Send SMS Notification option with customisable message template
+- [ ] Add Voice Message option: audio file upload or TTS text entry
+- [ ] Add backend sendSmsNotification tRPC procedure
+- [ ] Add voiceMessage storage and retrieval tRPC procedure
