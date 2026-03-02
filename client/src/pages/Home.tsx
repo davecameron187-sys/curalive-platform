@@ -58,8 +58,10 @@ export default function Home() {
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#events" className="hover:text-foreground transition-colors">Events</a>
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
+            <button onClick={() => navigate("/live-video")} className="hover:text-foreground transition-colors">Live Video</button>
             <button onClick={() => navigate("/integrations")} className="hover:text-foreground transition-colors">Integrations</button>
             <button onClick={() => navigate("/partner-api")} className="hover:text-foreground transition-colors">Partner API</button>
+            <button onClick={() => navigate("/book-demo")} className="text-emerald-400 font-semibold hover:opacity-80 transition-opacity">Book Demo</button>
             <button onClick={() => navigate("/demo")} className="text-primary font-semibold hover:opacity-80 transition-opacity">Sales Demo</button>
             <button onClick={() => navigate("/test-guide")} className="hover:text-foreground transition-colors">Team Guide</button>
             <button onClick={() => navigate("/tech-handover")} className="hover:text-foreground transition-colors">Tech Handover</button>
