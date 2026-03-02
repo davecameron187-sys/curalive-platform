@@ -131,3 +131,9 @@
 - [x] Raise Hand indicator column in participant table (hand icon lights up on requestToSpeak)
 - [x] Operator Notes tab in Feature Bar (auto-save to DB, appears in Post-Event Report)
 - [x] Schedule New Conference modal from Conference Overview (subject, date, time, codes, limit)
+
+## Round 21 — Speak Next Q&A Button
+
+- [x] Add Speak Next button to raised-hand rows: unmute + set Speaking + lower hand in one click
+- [x] Show a Q&A queue summary badge (number of raised hands) in the Conference Bar
+- [x] Auto-mute the previous speaker when Speak Next is triggered on a new participant

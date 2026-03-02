@@ -552,6 +552,24 @@ export default function OCC() {
     try { await muteAllMut.mutateAsync({ conferenceId: activeCCPConferenceId }); } catch { }
   };
 
+  // Speak Next: unmute participant, set Speaking, lower hand, auto-mute previous speaker
+  const doSpeakNext = (participantId: number) => {
+    setLocalParticipants(prev => {
+      // First, mute any current speaker (who is not a moderator/host)
+      const withPrevMuted = prev.map(p =>
+        p.state === "speaking" && p.role === "participant"
+          ? { ...p, state: "muted" as const, isSpeaking: false }
+          : p
+      );
+      // Then unmute the target participant and lower their hand
+      return withPrevMuted.map(p =>
+        p.id === participantId
+          ? { ...p, state: "speaking" as const, isSpeaking: true, requestToSpeak: false, requestToSpeakPosition: null }
+          : p
+      );
+    });
+  };
+
   const doToggleRecord = async () => {
     if (!activeConf) return;
     const next = !activeConf.isRecording;
@@ -1257,6 +1275,16 @@ export default function OCC() {
                       </div>
                     );
                   })()}
+                  {/* Q&A Raised Hands Badge */}
+                  {counts.speak_requests > 0 && (
+                    <button
+                      onClick={() => setFilterMode("speak_requests")}
+                      title={`${counts.speak_requests} participant${counts.speak_requests > 1 ? 's' : ''} with hand raised — click to filter`}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold bg-violet-900/50 hover:bg-violet-800/60 text-violet-300 border border-violet-700/50 transition-colors"
+                    >
+                      ✋ {counts.speak_requests} Q&A
+                    </button>
+                  )}
                   {/* Info */}
                   <div className="ml-auto flex items-center gap-4 text-xs text-slate-400">
                     <span className="font-mono">{activeConf.dialInNumber}</span>
@@ -1459,6 +1487,16 @@ export default function OCC() {
                                     title="Handle caller"
                                     className="p-1 rounded bg-blue-700/40 hover:bg-blue-700 text-blue-400 transition-colors"
                                   ><PhoneIncoming className="w-3 h-3" /></button>
+                                )}
+                                {/* Speak Next — appears when hand is raised */}
+                                {p.requestToSpeak && (
+                                  <button
+                                    onClick={() => doSpeakNext(p.id)}
+                                    title={`Speak Next: unmute ${p.name ?? 'participant'}, set Speaking, lower hand`}
+                                    className="flex items-center gap-0.5 px-1.5 py-1 rounded bg-violet-700/50 hover:bg-violet-600 text-violet-200 text-[10px] font-semibold transition-colors border border-violet-600/50"
+                                  >
+                                    ▶ Speak
+                                  </button>
                                 )}
                                 <button onClick={() => doParticipantAction("dropped", [p.id])} title="Disconnect" className="p-1 rounded bg-red-900/40 hover:bg-red-800 text-red-400 transition-colors"><PhoneOff className="w-3 h-3" /></button>
                               </div>
