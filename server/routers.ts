@@ -573,6 +573,64 @@ Recipients: ${allEmails.join(", ")}
         return { success: sentCount > 0, sentCount, failedCount, recipients: allEmails };
       }),
   }),
+
+  // ─── Book Demo ───────────────────────────────────────────────────────────────
+  bookDemo: router({
+    submit: publicProcedure
+      .input(z.object({
+        name: z.string().min(2).max(100),
+        company: z.string().min(2).max(150),
+        role: z.string().min(2).max(100),
+        email: z.string().email(),
+        phone: z.string().optional(),
+        serviceInterest: z.enum(["capital_raising", "earnings_call", "research", "hybrid_conference", "all"]).default("all"),
+        preferredDate: z.string().optional(),
+        message: z.string().max(1000).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        // Notify the owner via platform notification
+        const notified = await notifyOwner({
+          title: `New Demo Request: ${input.name} @ ${input.company}`,
+          content: [
+            `Name: ${input.name}`,
+            `Company: ${input.company}`,
+            `Role: ${input.role}`,
+            `Email: ${input.email}`,
+            input.phone ? `Phone: ${input.phone}` : null,
+            `Service Interest: ${input.serviceInterest.replace(/_/g, " ")}`,
+            input.preferredDate ? `Preferred Date: ${input.preferredDate}` : null,
+            input.message ? `Message: ${input.message}` : null,
+          ].filter(Boolean).join("\n"),
+        }).catch(() => false);
+
+        // Also send a confirmation email to the prospect
+        await sendEmail({
+          to: input.email,
+          subject: "Your Chorus.AI Demo Request — We'll be in touch shortly",
+          html: `
+            <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #f8fafc; padding: 40px; border-radius: 12px;">
+              <div style="margin-bottom: 32px;">
+                <span style="font-size: 24px; font-weight: 700;">Chorus<span style="color: #ef4444;">.AI</span></span>
+              </div>
+              <h1 style="font-size: 22px; font-weight: 700; margin-bottom: 16px;">Thank you, ${input.name}.</h1>
+              <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
+                We've received your demo request and our team will be in touch within one business day to schedule a personalised walkthrough of the Chorus.AI platform.
+              </p>
+              <div style="background: #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                <p style="font-size: 13px; color: #64748b; margin: 0 0 8px;">YOUR REQUEST SUMMARY</p>
+                <p style="margin: 4px 0;"><strong>Company:</strong> ${input.company}</p>
+                <p style="margin: 4px 0;"><strong>Role:</strong> ${input.role}</p>
+                <p style="margin: 4px 0;"><strong>Service Interest:</strong> ${input.serviceInterest.replace(/_/g, " ")}</p>
+                ${input.preferredDate ? `<p style="margin: 4px 0;"><strong>Preferred Date:</strong> ${input.preferredDate}</p>` : ""}
+              </div>
+              <p style="color: #94a3b8; font-size: 13px;">In the meantime, explore the live platform at <a href="https://chorusai-mdu4k2ib.manus.space" style="color: #ef4444;">chorusai-mdu4k2ib.manus.space</a></p>
+            </div>
+          `,
+        }).catch(() => {});
+
+        return { success: true, notified };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

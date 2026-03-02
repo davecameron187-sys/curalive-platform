@@ -28,6 +28,7 @@ import HybridConference from "./pages/HybridConference";
 import InvestorWaitingRoom from "./pages/InvestorWaitingRoom";
 import SlidePresenter from "./pages/SlidePresenter";
 import RoadshowOrderBook from "./pages/RoadshowOrderBook";
+import BookDemo from "./pages/BookDemo";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/live-video/join/:token" component={InvestorWaitingRoom} />
       <Route path="/live-video/roadshow/:roadshowId/present/:meetingId" component={SlidePresenter} />
       <Route path="/live-video/roadshow/:id/order-book" component={RoadshowOrderBook} />
+      <Route path="/book-demo" component={BookDemo} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
