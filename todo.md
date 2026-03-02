@@ -219,3 +219,13 @@
 - [ ] Build /live-video/analytics — Analytics & Engagement Dashboard
 - [ ] Add routes to App.tsx for all new pages
 - [ ] Write vitest for webcastRouter procedures
+
+## Round 43 — Create Event Wizard, Vertical Templates & Ably Real-Time
+- [ ] Build CreateEventWizard page (6-step: type → branding → agenda → speakers → registration → publish)
+- [ ] Add createEvent tRPC mutation with all wizard fields (branding, agenda, speakers, registration config)
+- [ ] Build vertical-specific registration templates: Healthcare CME, Financial Services, Government
+- [ ] Update WebcastRegister to auto-apply vertical template based on event.industryVertical
+- [ ] Wire Ably real-time into WebcastStudio (Q&A, polls, chat via AblyProvider/useAbly)
+- [ ] Add webcast Ably channel namespace (webcast:{slug}) to AblyContext
+- [ ] Add routes for /live-video/webcast/create and vertical template previews
+- [ ] Run all tests and confirm 0 TS errors

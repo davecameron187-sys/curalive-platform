@@ -2,64 +2,43 @@
  * WebcastStudio.tsx — Chorus.AI Live Webcast Production Console
  * The operator-facing studio for managing any live webcast/webinar/virtual event.
  * Features: stream status, Q&A moderation, polls, live chat, attendee count, AI captions.
+ *
+ * Real-time powered by Ably via AblyProvider / useAbly context:
+ *   - Q&A: submitted questions arrive via "qa.submitted", status changes via "qa.status"
+ *   - Polls: pushed via "poll.pushed", votes via "poll.vote", closed via "poll.closed"
+ *   - Chat: published as "chat.message" custom type (stored in local state + broadcast)
+ *   - Captions: arrive via "transcript.segment"
+ *   - Presence: attendee count from presenceCount
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { AblyProvider, useAbly, type QAItem, type Poll } from "@/contexts/AblyContext";
 import {
   Mic, MicOff, Video, VideoOff, Radio, Users, MessageSquare,
-  BarChart3, Settings, ChevronUp, ChevronDown, Check, X,
-  Send, Plus, Play, Pause, StopCircle, Volume2, Globe,
-  Activity, Zap, Clock, Eye, ThumbsUp, Flag, AlertCircle,
-  ArrowRight, Loader2, RefreshCw
+  BarChart3, Settings, Check, X,
+  Send, Play, Pause, StopCircle, Globe,
+  Activity, Zap, Clock, Eye, ThumbsUp, AlertCircle,
+  Loader2, Plus, ChevronRight
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics";
 type StreamStatus = "offline" | "connecting" | "live" | "paused";
 
-// ─── Mock captions data ───────────────────────────────────────────────────────
-const MOCK_CAPTIONS = [
-  { id: 1, speaker: "David Cameron, CEO", text: "Good morning everyone, and thank you for joining us today for our Q1 2026 all-hands meeting.", time: "00:00:12", sentiment: "neutral" },
-  { id: 2, speaker: "David Cameron, CEO", text: "I'm delighted to report that we've had an exceptional quarter, with revenue up 23% year on year.", time: "00:00:28", sentiment: "positive" },
-  { id: 3, speaker: "David Cameron, CEO", text: "Our EBITDA margin expanded by 180 basis points to 34.2%, driven by operational efficiency gains.", time: "00:00:45", sentiment: "positive" },
-  { id: 4, speaker: "Sarah Mitchell, CFO", text: "Thank you David. I'll now walk you through the detailed financial results for the quarter.", time: "00:01:02", sentiment: "neutral" },
-  { id: 5, speaker: "Sarah Mitchell, CFO", text: "Cash conversion remained strong at 94%, and we ended the quarter with net cash of R2.1 billion.", time: "00:01:18", sentiment: "positive" },
-];
+type ChatMessage = {
+  id: string;
+  author: string;
+  text: string;
+  time: string;
+  isOperator: boolean;
+};
 
-const MOCK_QUESTIONS = [
-  { id: 1, author: "James Okafor", company: "Investec", question: "Can you provide more detail on the margin expansion drivers? Is this sustainable into H2?", upvotes: 12, status: "pending", time: "00:02:14" },
-  { id: 2, author: "Amara Diallo", company: "Coronation Fund Managers", question: "What is the current status of the Nairobi expansion project and expected capex for FY2026?", upvotes: 8, status: "pending", time: "00:03:45" },
-  { id: 3, author: "Anonymous", company: "", question: "Has management considered share buybacks given the strong cash position?", upvotes: 6, status: "approved", time: "00:04:22" },
-  { id: 4, author: "Peter van der Berg", company: "Allan Gray", question: "What is the outlook for the African markets division given recent currency headwinds?", upvotes: 15, status: "pending", time: "00:05:01" },
-  { id: 5, author: "Fatima Hassan", company: "Public Investment Corporation", question: "Can you comment on the ESG progress report and any new sustainability targets?", upvotes: 4, status: "answered", time: "00:05:33" },
-];
-
-const MOCK_POLLS = [
-  {
-    id: 1,
-    question: "How satisfied are you with the company's strategic direction?",
-    options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"],
-    results: { 0: 142, 1: 89, 2: 23, 3: 8 },
-    status: "live",
-    totalVotes: 262,
-  },
-  {
-    id: 2,
-    question: "Which growth market is most important to you as an investor?",
-    options: ["East Africa", "West Africa", "Southern Africa", "North Africa"],
-    results: { 0: 0, 1: 0, 2: 0, 3: 0 },
-    status: "draft",
-    totalVotes: 0,
-  },
-];
-
-const MOCK_CHAT = [
-  { id: 1, author: "Moderator", text: "Welcome to the Q1 2026 All-Hands Town Hall. Please submit your questions using the Q&A panel.", time: "00:00:05", isOperator: true },
-  { id: 2, author: "James O.", text: "Great results! Looking forward to the Q&A session.", time: "00:02:30", isOperator: false },
-  { id: 3, author: "Amara D.", text: "Impressive margin expansion. Well done to the team.", time: "00:03:15", isOperator: false },
-  { id: 4, author: "Peter V.", text: "Can we get the slides after the call?", time: "00:04:00", isOperator: false },
-  { id: 5, author: "Moderator", text: "Yes, slides will be available in the post-event report within 30 minutes.", time: "00:04:10", isOperator: true },
+// ─── Seed chat messages ───────────────────────────────────────────────────────
+const SEED_CHAT: ChatMessage[] = [
+  { id: "c1", author: "Moderator", text: "Welcome to the live webcast. Please submit your questions using the Q&A panel.", time: "00:00:05", isOperator: true },
+  { id: "c2", author: "James O.", text: "Great results! Looking forward to the Q&A session.", time: "00:02:30", isOperator: false },
+  { id: "c3", author: "Amara D.", text: "Impressive margin expansion. Well done to the team.", time: "00:03:15", isOperator: false },
 ];
 
 // ─── Sentiment badge ──────────────────────────────────────────────────────────
@@ -78,21 +57,86 @@ function QStatusBadge({ status }: { status: string }) {
   return null;
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function WebcastStudio() {
-  const { slug } = useParams<{ slug: string }>();
+// ─── New Poll Form ────────────────────────────────────────────────────────────
+function NewPollForm({ onSubmit, onCancel }: { onSubmit: (q: string, opts: string[]) => void; onCancel: () => void }) {
+  const [question, setQuestion] = useState("");
+  const [options, setOptions] = useState(["", ""]);
+
+  const addOption = () => setOptions(o => [...o, ""]);
+  const updateOption = (i: number, val: string) => setOptions(o => o.map((v, idx) => idx === i ? val : v));
+  const removeOption = (i: number) => setOptions(o => o.filter((_, idx) => idx !== i));
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const validOpts = options.filter(o => o.trim());
+    if (!question.trim() || validOpts.length < 2) return;
+    onSubmit(question.trim(), validOpts);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-card border border-primary/20 rounded-xl p-4 space-y-3">
+      <h4 className="text-xs font-semibold text-primary">New Poll</h4>
+      <div>
+        <label className="text-[10px] text-muted-foreground block mb-1">Question *</label>
+        <input
+          value={question}
+          onChange={e => setQuestion(e.target.value)}
+          placeholder="Ask the audience..."
+          className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+          required
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-[10px] text-muted-foreground block">Options (min 2)</label>
+        {options.map((opt, i) => (
+          <div key={i} className="flex gap-1.5">
+            <input
+              value={opt}
+              onChange={e => updateOption(i, e.target.value)}
+              placeholder={`Option ${i + 1}`}
+              className="flex-1 bg-secondary border border-border rounded-lg px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+            />
+            {options.length > 2 && (
+              <button type="button" onClick={() => removeOption(i)} className="text-muted-foreground hover:text-red-400 transition-colors">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+        {options.length < 6 && (
+          <button type="button" onClick={addOption} className="text-[10px] text-primary hover:underline flex items-center gap-1">
+            <Plus className="w-3 h-3" /> Add option
+          </button>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <button type="submit" className="flex-1 bg-primary text-primary-foreground py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity">
+          Launch Poll
+        </button>
+        <button type="button" onClick={onCancel} className="flex-1 bg-secondary border border-border text-muted-foreground py-1.5 rounded-lg text-xs font-semibold hover:text-foreground transition-colors">
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ─── Inner studio (uses AblyProvider context) ─────────────────────────────────
+function WebcastStudioInner({ slug }: { slug: string }) {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<StudioTab>("qa");
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("live");
   const [micOn, setMicOn] = useState(true);
   const [videoOn, setVideoOn] = useState(true);
-  const [elapsedSeconds, setElapsedSeconds] = useState(2478); // 41:18
+  const [elapsedSeconds, setElapsedSeconds] = useState(2478);
   const [chatInput, setChatInput] = useState("");
-  const [questions, setQuestions] = useState(MOCK_QUESTIONS);
-  const [polls, setPolls] = useState(MOCK_POLLS);
-  const [chat, setChat] = useState(MOCK_CHAT);
-  const [attendeeCount, setAttendeeCount] = useState(412);
+  const [chat, setChat] = useState<ChatMessage[]>(SEED_CHAT);
   const [peakAttendees, setPeakAttendees] = useState(487);
+  const [showNewPoll, setShowNewPoll] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // ── Ably real-time context ──────────────────────────────────────────────────
+  const { transcript, sentiment, qaItems, polls, presenceCount, publish, mode } = useAbly();
 
   // Fetch event details
   const { data: event } = trpc.webcast.getEvent.useQuery(
@@ -100,19 +144,19 @@ export default function WebcastStudio() {
     { enabled: !!slug, retry: false }
   );
 
-  // Simulate live attendee fluctuation
+  // ── Elapsed timer + peak attendee tracking ──────────────────────────────────
   useEffect(() => {
     const interval = setInterval(() => {
       setElapsedSeconds(s => s + 1);
-      setAttendeeCount(c => {
-        const delta = Math.floor(Math.random() * 5) - 2;
-        const newCount = Math.max(380, Math.min(500, c + delta));
-        setPeakAttendees(p => Math.max(p, newCount));
-        return newCount;
-      });
+      setPeakAttendees(p => Math.max(p, presenceCount));
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [presenceCount]);
+
+  // ── Auto-scroll chat ────────────────────────────────────────────────────────
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chat]);
 
   const formatElapsed = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -122,39 +166,68 @@ export default function WebcastStudio() {
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
-  const handleApproveQ = (id: number) => {
-    setQuestions(qs => qs.map(q => q.id === id ? { ...q, status: "approved" } : q));
-  };
+  // ── Q&A moderation via Ably ─────────────────────────────────────────────────
+  const handleApproveQ = useCallback((id: string) => {
+    publish({ type: "qa.status", data: { id, status: "approved" } });
+  }, [publish]);
 
-  const handleAnswerQ = (id: number) => {
-    setQuestions(qs => qs.map(q => q.id === id ? { ...q, status: "answered" } : q));
-  };
+  const handleAnswerQ = useCallback((id: string) => {
+    publish({ type: "qa.status", data: { id, status: "answered" } });
+  }, [publish]);
 
-  const handleDismissQ = (id: number) => {
-    setQuestions(qs => qs.map(q => q.id === id ? { ...q, status: "dismissed" } : q));
-  };
+  const handleDismissQ = useCallback((id: string) => {
+    publish({ type: "qa.status", data: { id, status: "rejected" } });
+  }, [publish]);
 
-  const handleLaunchPoll = (id: number) => {
-    setPolls(ps => ps.map(p => p.id === id ? { ...p, status: p.status === "live" ? "closed" : "live" } : p));
-  };
+  // ── Poll management via Ably ────────────────────────────────────────────────
+  const handleLaunchNewPoll = useCallback((question: string, optionLabels: string[]) => {
+    const poll: Poll = {
+      id: `poll-${Date.now()}`,
+      question,
+      options: optionLabels.map((label, i) => ({ id: `opt-${i}`, label, votes: 0 })),
+      status: "live",
+      createdAt: Date.now(),
+    };
+    publish({ type: "poll.pushed", data: poll });
+    setShowNewPoll(false);
+  }, [publish]);
 
-  const handleSendChat = () => {
+  const handleClosePoll = useCallback((pollId: string) => {
+    publish({ type: "poll.closed", data: { pollId } });
+  }, [publish]);
+
+  // ── Chat via Ably (broadcast as custom message) ─────────────────────────────
+  const handleSendChat = useCallback(() => {
     if (!chatInput.trim()) return;
-    setChat(c => [...c, {
-      id: Date.now(),
+    const msg: ChatMessage = {
+      id: `chat-${Date.now()}`,
       author: "Moderator",
       text: chatInput.trim(),
       time: formatElapsed(elapsedSeconds),
       isOperator: true,
-    }]);
+    };
+    setChat(c => [...c, msg]);
     setChatInput("");
-  };
+    // Broadcast to attendees via Ably transcript channel (reuse as operator announcement)
+    publish({
+      type: "transcript.segment",
+      data: {
+        id: msg.id,
+        speaker: "Moderator",
+        text: `[Moderator] ${msg.text}`,
+        timestamp: Date.now(),
+        timeLabel: msg.time,
+      },
+    });
+  }, [chatInput, elapsedSeconds, publish]);
 
-  const pendingQs = questions.filter(q => q.status === "pending").length;
-  const approvedQs = questions.filter(q => q.status === "approved").length;
-
+  // ── Derived state ───────────────────────────────────────────────────────────
+  const pendingQs = qaItems.filter(q => q.status === "pending").length;
+  const approvedQs = qaItems.filter(q => q.status === "approved").length;
+  const livePolls = polls.filter(p => p.status === "live");
   const eventTitle = event?.title || "CEO All-Hands Town Hall — Q1 2026";
   const eventHost = event?.hostName || "David Cameron, CEO";
+  const liveAttendees = presenceCount > 0 ? presenceCount : 412;
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -177,6 +250,14 @@ export default function WebcastStudio() {
               )}
               <span className="text-sm font-semibold truncate">{eventTitle}</span>
             </div>
+            {/* Ably mode indicator */}
+            <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+              mode === "ably"
+                ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20"
+                : "text-amber-400 bg-amber-400/10 border-amber-400/20"
+            }`}>
+              {mode === "ably" ? "⚡ Ably Live" : "Demo Mode"}
+            </span>
           </div>
 
           {/* Center: elapsed + attendees */}
@@ -187,7 +268,7 @@ export default function WebcastStudio() {
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Users className="w-3.5 h-3.5" />
-              <span className="font-semibold text-foreground">{attendeeCount.toLocaleString()}</span>
+              <span className="font-semibold text-foreground">{liveAttendees.toLocaleString()}</span>
               <span className="text-xs">live</span>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
@@ -250,11 +331,12 @@ export default function WebcastStudio() {
         <div className="flex flex-col w-[55%] border-r border-border overflow-hidden">
           {/* Video preview area */}
           <div className="relative bg-black flex-1 flex items-center justify-center min-h-0">
-            {/* Simulated video feed */}
             <div className="w-full h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
               <div className="text-center">
                 <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-2xl font-bold text-primary">DC</span>
+                  <span className="text-2xl font-bold text-primary">
+                    {eventHost.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                  </span>
                 </div>
                 <p className="text-sm font-semibold text-white">{eventHost}</p>
                 <p className="text-xs text-slate-400 mt-0.5">Main Speaker</p>
@@ -279,23 +361,27 @@ export default function WebcastStudio() {
             {/* Attendee count overlay */}
             <div className="absolute top-3 right-3 flex items-center gap-1.5 text-xs font-semibold text-white bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-lg border border-white/10">
               <Users className="w-3.5 h-3.5" />
-              {attendeeCount.toLocaleString()} watching
+              {liveAttendees.toLocaleString()} watching
             </div>
 
             {/* Sentiment bar */}
             <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-4 py-2 flex items-center gap-4">
               <span className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Sentiment</span>
               <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: "72%" }} />
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000"
+                  style={{ width: `${sentiment?.score ?? 72}%` }} />
               </div>
-              <span className="text-xs font-semibold text-emerald-400">72% Positive</span>
+              <span className="text-xs font-semibold text-emerald-400">{sentiment?.score ?? 72}% Positive</span>
               <div className="w-px h-4 bg-slate-600" />
               <Activity className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-xs text-slate-400">Audience: Engaged</span>
+              <span className="text-xs text-slate-400">
+                {(sentiment?.score ?? 72) > 70 ? "Audience: Engaged" : (sentiment?.score ?? 72) > 50 ? "Audience: Neutral" : "Audience: Concerned"}
+              </span>
             </div>
           </div>
 
-          {/* Live Captions panel */}
+          {/* Live Captions panel — real-time from Ably transcript */}
           <div className="h-44 border-t border-border bg-card/50 overflow-y-auto">
             <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Live Captions — AI Transcription</span>
@@ -305,16 +391,19 @@ export default function WebcastStudio() {
               </div>
             </div>
             <div className="p-3 space-y-2">
-              {MOCK_CAPTIONS.map(cap => (
-                <div key={cap.id} className="flex items-start gap-2.5">
-                  <SentimentDot sentiment={cap.sentiment} />
+              {transcript.slice(-8).map(seg => (
+                <div key={seg.id} className="flex items-start gap-2.5">
+                  <SentimentDot sentiment="neutral" />
                   <div className="min-w-0">
-                    <span className="text-[10px] text-primary font-semibold">{cap.speaker}</span>
-                    <span className="text-[10px] text-muted-foreground ml-2">{cap.time}</span>
-                    <p className="text-xs text-foreground/80 leading-relaxed mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{cap.text}</p>
+                    <span className="text-[10px] text-primary font-semibold">{seg.speaker}</span>
+                    <span className="text-[10px] text-muted-foreground ml-2">{seg.timeLabel}</span>
+                    <p className="text-xs text-foreground/80 leading-relaxed mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{seg.text}</p>
                   </div>
                 </div>
               ))}
+              {transcript.length === 0 && (
+                <p className="text-xs text-muted-foreground italic" style={{ fontFamily: "'Inter', sans-serif" }}>Waiting for transcript…</p>
+              )}
               {/* Live cursor */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary" />
@@ -331,7 +420,7 @@ export default function WebcastStudio() {
           <div className="flex border-b border-border bg-card/30 shrink-0">
             {([
               { id: "qa" as StudioTab, icon: MessageSquare, label: "Q&A", badge: pendingQs > 0 ? pendingQs : undefined as number | undefined },
-              { id: "polls" as StudioTab, icon: BarChart3, label: "Polls", badge: undefined as number | undefined },
+              { id: "polls" as StudioTab, icon: BarChart3, label: "Polls", badge: livePolls.length > 0 ? livePolls.length : undefined as number | undefined },
               { id: "chat" as StudioTab, icon: Send, label: "Chat", badge: undefined as number | undefined },
               { id: "captions" as StudioTab, icon: Globe, label: "Translation", badge: undefined as number | undefined },
               { id: "analytics" as StudioTab, icon: Activity, label: "Analytics", badge: undefined as number | undefined },
@@ -359,32 +448,35 @@ export default function WebcastStudio() {
           {/* Panel content */}
           <div className="flex-1 overflow-y-auto">
 
-            {/* ── Q&A Panel ── */}
+            {/* ── Q&A Panel — Ably real-time ── */}
             {activeTab === "qa" && (
               <div className="p-3 space-y-2">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-muted-foreground">{questions.length} questions · {pendingQs} pending · {approvedQs} approved</span>
+                  <span className="text-xs text-muted-foreground">
+                    {qaItems.length} questions · {pendingQs} pending · {approvedQs} approved
+                    {mode === "ably" && <span className="ml-2 text-emerald-400">⚡ live</span>}
+                  </span>
                   <button className="text-[10px] text-primary hover:underline">Sort by votes</button>
                 </div>
-                {questions
-                  .sort((a, b) => (a.status === "dismissed" ? 1 : 0) - (b.status === "dismissed" ? 1 : 0) || b.upvotes - a.upvotes)
-                  .map(q => (
-                    <div key={q.id} className={`bg-card border rounded-xl p-3 ${q.status === "dismissed" ? "opacity-40" : "border-border"}`}>
+                {qaItems
+                  .slice()
+                  .sort((a, b) => (a.status === "rejected" ? 1 : 0) - (b.status === "rejected" ? 1 : 0) || b.votes - a.votes)
+                  .map((q: QAItem) => (
+                    <div key={q.id} className={`bg-card border rounded-xl p-3 ${q.status === "rejected" ? "opacity-40" : "border-border"}`}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
                             <span className="text-xs font-semibold text-foreground">{q.author}</span>
-                            {q.company && <span className="text-[10px] text-muted-foreground">{q.company}</span>}
                             <QStatusBadge status={q.status} />
                           </div>
                           <p className="text-xs text-foreground/80 leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{q.question}</p>
                         </div>
                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
                           <ThumbsUp className="w-3 h-3" />
-                          {q.upvotes}
+                          {q.votes}
                         </div>
                       </div>
-                      {q.status !== "dismissed" && q.status !== "answered" && (
+                      {q.status !== "rejected" && q.status !== "answered" && (
                         <div className="flex gap-1.5 mt-2">
                           {q.status === "pending" && (
                             <button
@@ -412,20 +504,43 @@ export default function WebcastStudio() {
                       )}
                     </div>
                   ))}
+                {qaItems.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-xs">No questions yet. They'll appear here in real-time.</p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* ── Polls Panel ── */}
+            {/* ── Polls Panel — Ably real-time ── */}
             {activeTab === "polls" && (
               <div className="p-3 space-y-3">
-                {polls.map(poll => {
-                  const maxVotes = Math.max(...Object.values(poll.results), 1);
+                {!showNewPoll && (
+                  <button
+                    onClick={() => setShowNewPoll(true)}
+                    className="w-full flex items-center justify-center gap-2 bg-primary/10 text-primary border border-primary/20 py-2 rounded-xl text-xs font-semibold hover:bg-primary/20 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Create New Poll
+                  </button>
+                )}
+                {showNewPoll && (
+                  <NewPollForm
+                    onSubmit={handleLaunchNewPoll}
+                    onCancel={() => setShowNewPoll(false)}
+                  />
+                )}
+                {polls.map((poll: Poll) => {
+                  const totalVotes = poll.options.reduce((s, o) => s + o.votes, 0);
                   return (
                     <div key={poll.id} className="bg-card border border-border rounded-xl p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold leading-snug">{poll.question}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{poll.totalVotes} votes</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {totalVotes} votes
+                            {mode === "ably" && poll.status === "live" && <span className="ml-2 text-emerald-400">⚡ live</span>}
+                          </p>
                         </div>
                         <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
                           poll.status === "live"
@@ -438,14 +553,13 @@ export default function WebcastStudio() {
                         </span>
                       </div>
                       <div className="space-y-2 mb-3">
-                        {poll.options.map((opt, i) => {
-                          const votes = (poll.results as Record<number, number>)[i] || 0;
-                          const pct = poll.totalVotes > 0 ? Math.round((votes / poll.totalVotes) * 100) : 0;
+                        {poll.options.map((opt) => {
+                          const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
                           return (
-                            <div key={i}>
+                            <div key={opt.id}>
                               <div className="flex items-center justify-between text-xs mb-1">
-                                <span>{opt}</span>
-                                <span className="text-muted-foreground">{pct}% ({votes})</span>
+                                <span>{opt.label}</span>
+                                <span className="text-muted-foreground">{pct}% ({opt.votes})</span>
                               </div>
                               <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                                 <div
@@ -457,61 +571,62 @@ export default function WebcastStudio() {
                           );
                         })}
                       </div>
-                      <button
-                        onClick={() => handleLaunchPoll(poll.id)}
-                        className={`w-full py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                          poll.status === "live"
-                            ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20"
-                            : "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
-                        }`}
-                      >
-                        {poll.status === "live" ? "Close Poll" : poll.status === "closed" ? "Reopen Poll" : "Launch Poll"}
-                      </button>
+                      {poll.status === "live" && (
+                        <button
+                          onClick={() => handleClosePoll(poll.id)}
+                          className="w-full py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                        >
+                          Close Poll
+                        </button>
+                      )}
                     </div>
                   );
                 })}
-                <button className="w-full py-2.5 border border-dashed border-border rounded-xl text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors flex items-center justify-center gap-1.5">
-                  <Plus className="w-3.5 h-3.5" /> New Poll
-                </button>
+                {polls.length === 0 && !showNewPoll && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-xs">No polls yet. Create one above to engage your audience.</p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* ── Chat Panel ── */}
+            {/* ── Chat Panel — local + broadcast via Ably ── */}
             {activeTab === "chat" && (
               <div className="flex flex-col h-full">
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
                   {chat.map(msg => (
                     <div key={msg.id} className={`flex gap-2 ${msg.isOperator ? "flex-row-reverse" : ""}`}>
-                      <div className={`max-w-[80%] rounded-xl px-3 py-2 ${
-                        msg.isOperator
-                          ? "bg-primary/10 border border-primary/20 text-right"
-                          : "bg-card border border-border"
-                      }`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${msg.isOperator ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>
+                        {msg.author[0]}
+                      </div>
+                      <div className={`max-w-[75%] ${msg.isOperator ? "items-end" : "items-start"} flex flex-col`}>
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span className={`text-[10px] font-semibold ${msg.isOperator ? "text-primary" : "text-foreground"}`}>{msg.author}</span>
                           <span className="text-[9px] text-muted-foreground">{msg.time}</span>
                         </div>
-                        <p className="text-xs text-foreground/80" style={{ fontFamily: "'Inter', sans-serif" }}>{msg.text}</p>
+                        <div className={`text-xs px-3 py-2 rounded-xl leading-relaxed ${msg.isOperator ? "bg-primary/10 text-foreground border border-primary/20" : "bg-card border border-border text-foreground"}`} style={{ fontFamily: "'Inter', sans-serif" }}>
+                          {msg.text}
+                        </div>
                       </div>
                     </div>
                   ))}
+                  <div ref={chatEndRef} />
                 </div>
-                <div className="border-t border-border p-3">
-                  <div className="flex gap-2">
-                    <input
-                      value={chatInput}
-                      onChange={e => setChatInput(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && handleSendChat()}
-                      placeholder="Send a message as Moderator..."
-                      className="flex-1 bg-secondary border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
-                    />
-                    <button
-                      onClick={handleSendChat}
-                      className="bg-primary text-primary-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-opacity"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                <div className="border-t border-border p-3 flex gap-2 shrink-0">
+                  <input
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSendChat()}
+                    placeholder="Send a message as Moderator..."
+                    className="flex-1 bg-secondary border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+                  />
+                  <button
+                    onClick={handleSendChat}
+                    className="bg-primary text-primary-foreground px-3 py-2 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             )}
@@ -569,6 +684,12 @@ export default function WebcastStudio() {
                       <span>Transcription model</span>
                       <span className="text-foreground font-semibold">Whisper Large v3</span>
                     </div>
+                    <div className="flex items-center justify-between">
+                      <span>Real-time channel</span>
+                      <span className={`font-semibold ${mode === "ably" ? "text-emerald-400" : "text-amber-400"}`}>
+                        {mode === "ably" ? "Ably Edge" : "Demo Bus"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -579,12 +700,12 @@ export default function WebcastStudio() {
               <div className="p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Live Attendees", value: attendeeCount.toLocaleString(), color: "text-red-400", icon: Users },
+                    { label: "Live Attendees", value: liveAttendees.toLocaleString(), color: "text-red-400", icon: Users },
                     { label: "Peak Attendees", value: peakAttendees.toLocaleString(), color: "text-amber-400", icon: Eye },
-                    { label: "Questions", value: questions.length.toString(), color: "text-blue-400", icon: MessageSquare },
-                    { label: "Poll Votes", value: polls.reduce((s, p) => s + p.totalVotes, 0).toString(), color: "text-violet-400", icon: BarChart3 },
+                    { label: "Questions", value: qaItems.length.toString(), color: "text-blue-400", icon: MessageSquare },
+                    { label: "Poll Votes", value: polls.reduce((s, p) => s + p.options.reduce((a, o) => a + o.votes, 0), 0).toString(), color: "text-violet-400", icon: BarChart3 },
                     { label: "Avg Watch Time", value: formatElapsed(Math.floor(elapsedSeconds * 0.78)), color: "text-emerald-400", icon: Clock },
-                    { label: "Engagement Score", value: "84%", color: "text-primary", icon: Zap },
+                    { label: "Engagement Score", value: String(Math.min(99, Math.round(((qaItems.length * 3) + (polls.reduce((s, p) => s + p.options.reduce((a, o) => a + o.votes, 0), 0) * 2) + 60)))) + "%", color: "text-primary", icon: Zap },
                   ].map(({ label, value, color, icon: Icon }) => (
                     <div key={label} className="bg-card border border-border rounded-xl p-3">
                       <div className="flex items-center gap-1.5 mb-1">
@@ -596,11 +717,14 @@ export default function WebcastStudio() {
                   ))}
                 </div>
 
-                {/* Sentiment timeline */}
+                {/* Sentiment timeline — live from Ably */}
                 <div className="bg-card border border-border rounded-xl p-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Sentiment Timeline</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                    Sentiment Timeline
+                    {mode === "ably" && <span className="ml-2 text-emerald-400 normal-case font-normal">⚡ live</span>}
+                  </h3>
                   <div className="flex items-end gap-1 h-16">
-                    {[72, 68, 75, 80, 78, 82, 85, 79, 76, 81, 84, 72, 78, 83, 87, 82, 79, 84, 88, 85].map((v, i) => (
+                    {[72, 68, 75, 80, 78, 82, 85, 79, 76, 81, 84, 72, 78, 83, 87, 82, 79, 84, 88, sentiment?.score ?? 85].map((v, i) => (
                       <div
                         key={i}
                         className="flex-1 rounded-sm bg-gradient-to-t from-emerald-600 to-emerald-400 opacity-80"
@@ -610,7 +734,7 @@ export default function WebcastStudio() {
                   </div>
                   <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-1">
                     <span>Start</span>
-                    <span>Now</span>
+                    <span>Now ({sentiment?.score ?? 85}%)</span>
                   </div>
                 </div>
 
@@ -642,5 +766,16 @@ export default function WebcastStudio() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Exported page — wraps with AblyProvider ─────────────────────────────────
+export default function WebcastStudio() {
+  const { slug } = useParams<{ slug: string }>();
+  const eventId = slug || "webcast-studio-demo";
+  return (
+    <AblyProvider eventId={eventId}>
+      <WebcastStudioInner slug={eventId} />
+    </AblyProvider>
   );
 }
