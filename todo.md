@@ -177,3 +177,12 @@
 - [ ] Wire modal to batchDialOut procedure with real-time Ably status updates
 - [ ] Add "Multi-Party Dial-Out" button to CCP header
 - [ ] Write vitest for batchDialOut procedure
+
+## Round 28 — CSV Import for Multi-Party Dial-Out
+- [ ] Add CSV file input (hidden) and "Import CSV" button to Multi-Dial modal header
+- [ ] Parse CSV with columns: name, company, phone, role (header row required)
+- [ ] Validate each row: phone required, role must be moderator/participant (default participant)
+- [ ] Append parsed rows to dialEntries staged list (skip duplicates by phone)
+- [ ] Show import summary toast: N imported, M skipped (invalid)
+- [ ] Add downloadable CSV template link in the modal
+- [ ] Show per-row validation errors inline

@@ -259,6 +259,8 @@ export default function OCC() {
   const [dialEntries, setDialEntries] = useState<DialEntry[]>([]);
   const [dialForm, setDialForm] = useState({ name: "", company: "", phone: "", role: "participant" as "moderator" | "participant" });
   const [dialAllStatus, setDialAllStatus] = useState<"idle" | "dialling" | "done">("idle");
+  const [csvImportMsg, setCsvImportMsg] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
+  const csvFileRef = useRef<HTMLInputElement>(null);
 
   // Audio beep helper
   const playBeep = useCallback(() => {
@@ -2529,6 +2531,65 @@ export default function OCC() {
             entries: dialEntries.map(e => ({ name: e.name || undefined, company: e.company || undefined, phoneNumber: e.phone, role: e.role })),
           });
         };
+
+        // CSV import
+        const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const text = ev.target?.result as string;
+            const lines = text.split(/\r?\n/).filter(l => l.trim());
+            if (lines.length < 2) {
+              setCsvImportMsg({ imported: 0, skipped: 0, errors: ["CSV must have a header row and at least one data row."] });
+              return;
+            }
+            // Parse header: name, company, phone, role (case-insensitive, any order)
+            const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/["']/g, ""));
+            const nameIdx = headers.findIndex(h => h === "name");
+            const companyIdx = headers.findIndex(h => h === "company");
+            const phoneIdx = headers.findIndex(h => ["phone", "phone number", "phonenumber", "telephone", "number"].includes(h));
+            const roleIdx = headers.findIndex(h => h === "role");
+            if (phoneIdx === -1) {
+              setCsvImportMsg({ imported: 0, skipped: 0, errors: ["CSV must have a 'phone' column."] });
+              if (csvFileRef.current) csvFileRef.current.value = "";
+              return;
+            }
+            const existingPhones = new Set(dialEntries.map(e => e.phone.replace(/\s/g, "")));
+            let imported = 0; let skipped = 0; const errors: string[] = [];
+            const newEntries: DialEntry[] = [];
+            lines.slice(1).forEach((line, idx) => {
+              const cols = line.split(",").map(c => c.trim().replace(/^["']|["']$/g, ""));
+              const phone = phoneIdx >= 0 ? (cols[phoneIdx] ?? "").trim() : "";
+              if (!phone) { skipped++; errors.push(`Row ${idx + 2}: missing phone number`); return; }
+              if (existingPhones.has(phone.replace(/\s/g, ""))) { skipped++; errors.push(`Row ${idx + 2}: duplicate phone ${phone}`); return; }
+              const rawRole = roleIdx >= 0 ? (cols[roleIdx] ?? "").toLowerCase().trim() : "";
+              const role: "moderator" | "participant" = rawRole === "moderator" ? "moderator" : "participant";
+              newEntries.push({
+                id: Math.random().toString(36).slice(2),
+                name: nameIdx >= 0 ? (cols[nameIdx] ?? "") : "",
+                company: companyIdx >= 0 ? (cols[companyIdx] ?? "") : "",
+                phone,
+                role,
+                status: "pending",
+              });
+              existingPhones.add(phone.replace(/\s/g, ""));
+              imported++;
+            });
+            setDialEntries(prev => [...prev, ...newEntries]);
+            setCsvImportMsg({ imported, skipped, errors });
+            if (csvFileRef.current) csvFileRef.current.value = "";
+          };
+          reader.readAsText(file);
+        };
+
+        const downloadTemplate = () => {
+          const csv = "name,company,phone,role\nJohn Smith,Acme Corp,+27 11 555 0100,participant\nJane Doe,Beta Ltd,+27 11 555 0200,moderator";
+          const blob = new Blob([csv], { type: "text/csv" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a"); a.href = url; a.download = "dial_out_template.csv"; a.click();
+          URL.revokeObjectURL(url);
+        };
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
             <div className="bg-[#0f172a] border border-slate-700 rounded-lg w-[560px] shadow-2xl flex flex-col max-h-[80vh]">
@@ -2539,7 +2600,25 @@ export default function OCC() {
                   <span className="font-semibold text-sm text-slate-200">Multi-Party Dial-Out</span>
                   {activeCCPConferenceId && <span className="text-xs text-slate-500 ml-1">Conference #{activeCCPConferenceId}</span>}
                 </div>
-                <button onClick={() => { setShowMultiDialModal(false); setDialEntries([]); setDialAllStatus("idle"); }} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
+                <div className="flex items-center gap-2">
+                  {/* Hidden file input */}
+                  <input ref={csvFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvImport} />
+                  <button
+                    onClick={() => csvFileRef.current?.click()}
+                    title="Import participants from a CSV file"
+                    className="flex items-center gap-1 px-2 py-1 bg-emerald-800/40 hover:bg-emerald-700/60 text-emerald-300 rounded text-[10px] transition-colors"
+                  >
+                    <FileText className="w-3 h-3" /> Import CSV
+                  </button>
+                  <button
+                    onClick={downloadTemplate}
+                    title="Download CSV template"
+                    className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/70 text-slate-400 rounded text-[10px] transition-colors"
+                  >
+                    Template
+                  </button>
+                  <button onClick={() => { setShowMultiDialModal(false); setDialEntries([]); setDialAllStatus("idle"); setCsvImportMsg(null); }} className="text-slate-400 hover:text-slate-200 ml-1"><X className="w-4 h-4" /></button>
+                </div>
               </div>
 
               {/* Add entry form */}
@@ -2584,6 +2663,27 @@ export default function OCC() {
                   </button>
                 </div>
               </div>
+
+              {/* CSV import result message */}
+              {csvImportMsg && (
+                <div className={`mx-4 mt-2 mb-1 px-3 py-2 rounded text-xs flex-shrink-0 ${
+                  csvImportMsg.errors.length > 0 ? "bg-amber-900/30 border border-amber-700/40 text-amber-300" : "bg-emerald-900/30 border border-emerald-700/40 text-emerald-300"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span>
+                      {csvImportMsg.imported > 0 && <span className="font-semibold">{csvImportMsg.imported} imported</span>}
+                      {csvImportMsg.skipped > 0 && <span className="ml-2 text-amber-400">{csvImportMsg.skipped} skipped</span>}
+                    </span>
+                    <button onClick={() => setCsvImportMsg(null)} className="text-slate-500 hover:text-slate-300"><X className="w-3 h-3" /></button>
+                  </div>
+                  {csvImportMsg.errors.length > 0 && (
+                    <ul className="mt-1 space-y-0.5 text-[10px] text-amber-400/80 list-disc list-inside">
+                      {csvImportMsg.errors.slice(0, 5).map((err, i) => <li key={i}>{err}</li>)}
+                      {csvImportMsg.errors.length > 5 && <li>…and {csvImportMsg.errors.length - 5} more</li>}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               {/* Staged list */}
               <div className="flex-1 overflow-y-auto px-4 py-2 min-h-[80px]">
