@@ -45,6 +45,13 @@ export const adminProcedure = t.procedure.use(
 );
 
 /**
+ * DEMO_ROADSHOW_ID — the publicly accessible demo roadshow. Procedures that accept a
+ * `roadshowId` input use `demoAwarePublicProcedure` so the demo is always accessible
+ * without login, while all other roadshows remain protected.
+ */
+export const DEMO_ROADSHOW_ID = "aggreko-series-b-2026";
+
+/**
  * operatorProcedure — requires the caller to be logged in AND have role 'operator' or 'admin'.
  * Use this for all OCC mutations that modify conference or participant state.
  */

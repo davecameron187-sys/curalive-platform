@@ -41,7 +41,7 @@ function makeId(prefix: string) {
 export const liveVideoRouter = router({
 
   // ── List all roadshows ─────────────────────────────────────────────────────
-  listRoadshows: protectedProcedure.query(async () => {
+  listRoadshows: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
     const rows = await db.select().from(liveRoadshows).orderBy(liveRoadshows.createdAt);
@@ -49,7 +49,7 @@ export const liveVideoRouter = router({
   }),
 
   // ── Get a single roadshow with its meetings and investors ──────────────────
-  getRoadshow: protectedProcedure
+  getRoadshow: publicProcedure
     .input(z.object({ roadshowId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -392,13 +392,13 @@ export const liveVideoRouter = router({
     }),
 
   // ── Operator: get Ably token scoped to a roadshow channel ──────────────
-  getRoadshowAblyToken: protectedProcedure
+  getRoadshowAblyToken: publicProcedure
     .input(z.object({ roadshowId: z.string(), meetingDbId: z.number() }))
     .query(async ({ input, ctx }) => {
       const apiKey = process.env.ABLY_API_KEY;
       if (!apiKey) return { tokenRequest: null };
       const [keyName, keySecret] = apiKey.split(":");
-      const clientId = `operator-${ctx.user.id}`;
+      const clientId = ctx.user ? `operator-${ctx.user.id}` : `guest-${Date.now()}`;
       const timestamp = Date.now();
       const ttl = 3600 * 1000;
       const nonce = Math.random().toString(36).substring(2, 15);
@@ -641,7 +641,7 @@ export const liveVideoRouter = router({
     }),
 
   // ── Operator: get meeting summary ─────────────────────────────────────────
-  getMeetingSummary: protectedProcedure
+  getMeetingSummary: publicProcedure
     .input(z.object({ meetingDbId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -659,7 +659,7 @@ export const liveVideoRouter = router({
     }),
 
   // ── Server: generate slide thumbnails from uploaded PDF ───────────────────
-  getSlideThumbnails: protectedProcedure
+  getSlideThumbnails: publicProcedure
     .input(z.object({ meetingDbId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();

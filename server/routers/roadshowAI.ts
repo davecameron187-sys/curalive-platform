@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, operatorProcedure, protectedProcedure } from "../_core/trpc";
+import { router, operatorProcedure, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   commitmentSignals,
@@ -138,7 +138,7 @@ Return JSON with:
     }),
 
   // ── Get all signals for a meeting ─────────────────────────────────────────
-  getMeetingSignals: protectedProcedure
+  getMeetingSignals: publicProcedure
     .input(z.object({ meetingDbId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -150,7 +150,7 @@ Return JSON with:
     }),
 
   // ── Get all signals for a roadshow (order book view) ─────────────────────
-  getRoadshowSignals: protectedProcedure
+  getRoadshowSignals: publicProcedure
     .input(z.object({ roadshowId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -295,7 +295,7 @@ Return JSON with:
     }),
 
   // ── Get briefing pack for an investor+meeting ─────────────────────────────
-  getBriefingPack: protectedProcedure
+  getBriefingPack: publicProcedure
     .input(z.object({ investorId: z.number(), meetingDbId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -460,7 +460,7 @@ Return JSON with:
     }),
 
   // ── Get order book summary for a roadshow ────────────────────────────────
-  getOrderBook: protectedProcedure
+  getOrderBook: publicProcedure
     .input(z.object({ roadshowId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -696,7 +696,7 @@ Return JSON with:
     }),
 
   // ── Get sentiment timeline for a roadshow (for heatmap) ──────────────────
-  getSentimentTimeline: protectedProcedure
+  getSentimentTimeline: publicProcedure
     .input(z.object({ roadshowId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -746,7 +746,7 @@ Return JSON with:
     }),
 
   // ── Dashboard summary cards for the Live Video hub ────────────────────────
-  getRoadshowSummaryCards: protectedProcedure
+  getRoadshowSummaryCards: publicProcedure
     .input(z.object({ roadshowIds: z.array(z.string()) }))
     .query(async ({ input }) => {
       const db = await getDb();
