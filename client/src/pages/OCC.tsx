@@ -5,6 +5,7 @@
  * Feature Bar (Monitoring/Connection/History/Audio/Chat), Lounge, Operator Requests, Caller Control
  */
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
@@ -167,6 +168,7 @@ const DEMO_HISTORY: any[] = [
 
 export default function OCC() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
 
   // Operator state
   const [operatorState, setOperatorState] = useState<OperatorState>("present");
@@ -233,6 +235,21 @@ export default function OCC() {
 
   // Access Codes modal
   const [showAccessCodesModal, setShowAccessCodesModal] = useState(false);
+
+  // Transfer Conference modal
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferTargetOperator, setTransferTargetOperator] = useState("");
+  const [transferNote, setTransferNote] = useState("");
+  const [transferSent, setTransferSent] = useState(false);
+
+  // Settings modal
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingAlertVolume, setSettingAlertVolume] = useState(70);
+  const [settingTimerWarning, setSettingTimerWarning] = useState(15);
+  const [settingTimerCritical, setSettingTimerCritical] = useState(5);
+  const [settingDefaultFilter, setSettingDefaultFilter] = useState<FilterMode>("all");
+  const [settingAutoAcceptLounge, setSettingAutoAcceptLounge] = useState(false);
+  const [settingShowCompany, setSettingShowCompany] = useState(true);
 
   // Audio beep helper
   const playBeep = useCallback(() => {
@@ -1327,6 +1344,22 @@ export default function OCC() {
                 {!activeCCPConferenceId && (
                   <span className="text-xs text-slate-500 italic">Select a conference from the Overview</span>
                 )}
+                {activeCCPConferenceId && (
+                  <button
+                    onClick={() => { setTransferSent(false); setTransferTargetOperator(''); setTransferNote(''); setShowTransferModal(true); }}
+                    title="Transfer this conference to another operator"
+                    className="flex items-center gap-1 px-2 py-1 bg-indigo-800/40 hover:bg-indigo-700/60 text-indigo-300 rounded text-[10px] transition-colors"
+                  >
+                    <ArrowRight className="w-3 h-3" /> Transfer
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowSettingsModal(true)}
+                  title="Operator preferences"
+                  className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/70 text-slate-300 rounded text-[10px] transition-colors"
+                >
+                  <Settings className="w-3 h-3" /> Settings
+                </button>
                 {splitViewEnabled && secondaryCCPConferenceId && (
                   <button
                     onClick={() => { setSplitViewEnabled(false); setSecondaryCCPConferenceId(null); }}
@@ -1398,43 +1431,36 @@ export default function OCC() {
                   >
                     <PhoneOff className="w-3.5 h-3.5" /> Terminate
                   </button>
-                  {/* Export Post-Event Report */}
+                  {/* Export → Post-Event Report */}
                   <button
                     onClick={() => {
                       const conf = activeConf;
                       if (!conf) return;
                       const parts = participants;
                       const notes = operatorNotes[activeCCPConferenceId!] ?? '';
-                      const lines: string[] = [];
-                      lines.push(`POST-EVENT REPORT — ${conf.subject}`);
-                      lines.push(`Conference ID: ${conf.callId}`);
-                      lines.push(`Date: ${conf.scheduledStart ? new Date(conf.scheduledStart).toLocaleDateString() : 'N/A'}`);
-                      lines.push(`Duration: ${conf.actualStart ? formatDuration(conf.actualStart) : 'N/A'}`);
-                      lines.push(`Total Participants: ${parts.length}`);
-                      lines.push(`Moderator Code: ${conf.moderatorCode} | Participant Code: ${conf.participantCode}`);
-                      lines.push('');
-                      lines.push('PARTICIPANT LIST');
-                      lines.push('Role,Name,Company,Phone,Location,Connect Time,State');
-                      parts.forEach(p => {
-                        lines.push(`${p.role},${p.name ?? ''},${p.company ?? ''},${p.phoneNumber ?? ''},${p.location ?? ''},${p.connectTime ? new Date(p.connectTime).toLocaleTimeString() : ''},${p.state}`);
-                      });
-                      if (notes.trim()) {
-                        lines.push('');
-                        lines.push('OPERATOR NOTES');
-                        lines.push(notes);
-                      }
-                      const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `post-event-${conf.callId}-${new Date().toISOString().slice(0,10)}.txt`;
-                      a.click();
-                      URL.revokeObjectURL(url);
+                      // Persist OCC data to sessionStorage so PostEvent page can read it
+                      const exportPayload = {
+                        conferenceId: conf.id,
+                        subject: conf.subject,
+                        callId: conf.callId,
+                        exportedAt: new Date().toISOString(),
+                        participants: parts.map(p => ({
+                          name: p.name ?? null,
+                          company: p.company ?? null,
+                          role: p.role,
+                          state: p.state,
+                          phone: p.phoneNumber ?? null,
+                          connectTime: p.connectTime ? new Date(p.connectTime).toLocaleTimeString() : null,
+                        })),
+                        notes,
+                      };
+                      try { sessionStorage.setItem('occ_export_data', JSON.stringify(exportPayload)); } catch {}
+                      navigate(`/post-event/${conf.id}`);
                     }}
-                    title="Export post-event report with participant list and operator notes"
+                    title="Open post-event report with participant list and operator notes"
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-emerald-900/30 hover:bg-emerald-800/50 text-emerald-400 border border-emerald-800/30 transition-colors"
                   >
-                    <FileText className="w-3.5 h-3.5" /> Export
+                    <FileText className="w-3.5 h-3.5" /> Post-Event
                   </button>
                   {/* Simulate Incoming Call */}
                   <button

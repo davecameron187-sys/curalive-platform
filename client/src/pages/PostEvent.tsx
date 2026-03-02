@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import {
   Zap, ArrowLeft, Download, Play, FileText, BarChart3,
@@ -64,7 +64,19 @@ type AISummary = {
 export default function PostEvent() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<"summary" | "transcript" | "analytics">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "transcript" | "analytics" | "operator">("summary");
+
+  // Read OCC export data from sessionStorage (set by OCC Export button)
+  const [occData, setOccData] = useState<{ conferenceId: number; subject: string; callId: string; participants: Array<{ name: string | null; company: string | null; role: string; state: string; phone: string | null; connectTime: string | null }>; notes: string; exportedAt: string } | null>(null);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('occ_export_data');
+      if (raw) {
+        setOccData(JSON.parse(raw));
+        setActiveTab('operator');
+      }
+    } catch {}
+  }, []);
   const [expandedTranscript, setExpandedTranscript] = useState(false);
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
   const [summaryGenerated, setSummaryGenerated] = useState(false);
@@ -263,13 +275,15 @@ export default function PostEvent() {
             { key: "summary", label: "AI Summary", icon: FileText },
             { key: "transcript", label: "Full Transcript", icon: MessageSquare },
             { key: "analytics", label: "Analytics", icon: BarChart3 },
-          ].map(({ key, label, icon: Icon }) => (
+            ...(occData ? [{ key: "operator", label: "Operator Report", icon: Users }] : []),
+  ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key as typeof activeTab)}
               className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === key ? "text-primary border-primary" : "text-muted-foreground border-transparent hover:text-foreground"}`}
             >
               <Icon className="w-4 h-4" /> {label}
+              {key === 'operator' && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full font-bold">OCC</span>}
             </button>
           ))}
         </div>
@@ -674,6 +688,124 @@ export default function PostEvent() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── Operator Report (from OCC Export) ── */}
+        {activeTab === "operator" && occData && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="bg-card border border-emerald-500/30 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="font-bold">{occData.subject}</div>
+                    <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>Call ID: {occData.callId} · Exported: {new Date(occData.exportedAt).toLocaleString()}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const lines = [
+                      `CHORUS.AI — OPERATOR REPORT`,
+                      `Conference: ${occData.subject} (${occData.callId})`,
+                      `Exported: ${new Date(occData.exportedAt).toLocaleString()}`,
+                      ``,
+                      `PARTICIPANTS (${occData.participants.length})`,
+                      `${'='.repeat(60)}`,
+                      ...occData.participants.map((p, i) => `${i + 1}. ${p.name ?? 'Unknown'} | ${p.company ?? '—'} | ${p.role.toUpperCase()} | ${p.state} | ${p.phone ?? '—'} | Joined: ${p.connectTime ?? '—'}`),
+                      ``,
+                      `OPERATOR NOTES`,
+                      `${'='.repeat(60)}`,
+                      occData.notes || '(no notes)',
+                    ].join('\n');
+                    const blob = new Blob([lines], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `occ-report-${occData.callId}.txt`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success('Operator report downloaded!');
+                  }}
+                  className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
+                >
+                  <Download className="w-3 h-3" /> Download TXT
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-background/60 border border-border rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-primary">{occData.participants.length}</div>
+                  <div className="text-xs text-muted-foreground">Total Participants</div>
+                </div>
+                <div className="bg-background/60 border border-border rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-amber-400">{occData.participants.filter(p => p.role === 'moderator').length}</div>
+                  <div className="text-xs text-muted-foreground">Moderators</div>
+                </div>
+                <div className="bg-background/60 border border-border rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-blue-400">{occData.participants.filter(p => p.role === 'participant').length}</div>
+                  <div className="text-xs text-muted-foreground">Participants</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Participant table */}
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-border font-semibold text-sm flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" /> Full Participant List
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-background/60 border-b border-border">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs text-muted-foreground font-medium">#</th>
+                      <th className="px-4 py-2.5 text-left text-xs text-muted-foreground font-medium">Name</th>
+                      <th className="px-4 py-2.5 text-left text-xs text-muted-foreground font-medium">Company</th>
+                      <th className="px-4 py-2.5 text-left text-xs text-muted-foreground font-medium">Role</th>
+                      <th className="px-4 py-2.5 text-left text-xs text-muted-foreground font-medium">State</th>
+                      <th className="px-4 py-2.5 text-left text-xs text-muted-foreground font-medium">Phone</th>
+                      <th className="px-4 py-2.5 text-left text-xs text-muted-foreground font-medium">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {occData.participants.map((p, i) => (
+                      <tr key={i} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                        <td className="px-4 py-2.5 text-muted-foreground">{i + 1}</td>
+                        <td className="px-4 py-2.5 font-medium">{p.name ?? <span className="text-muted-foreground italic">Unknown</span>}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground">{p.company ?? '—'}</td>
+                        <td className="px-4 py-2.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                            p.role === 'moderator' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'
+                          }`}>{p.role}</span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${
+                            p.state === 'speaking' ? 'bg-emerald-500/20 text-emerald-400' :
+                            p.state === 'muted' ? 'bg-slate-600/40 text-slate-400' :
+                            p.state === 'connected' ? 'bg-blue-500/20 text-blue-400' :
+                            'bg-slate-700 text-slate-400'
+                          }`}>{p.state}</span>
+                        </td>
+                        <td className="px-4 py-2.5 text-muted-foreground font-mono text-xs">{p.phone ?? '—'}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground text-xs">{p.connectTime ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Operator Notes */}
+            {occData.notes && (
+              <div className="bg-card border border-border rounded-2xl p-6">
+                <div className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" /> Operator Notes
+                </div>
+                <pre className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{occData.notes}</pre>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -147,3 +147,17 @@
 - [x] Conference extension — +15 min button in Conference Bar resets timer and end time
 - [x] Post-event export — operator notes + full participant list exported to Post-Event Report page
 - [x] Multi-conference view — operator can open 2 CCPs side by side simultaneously
+
+## Round 23 — OCC Enhancement Round 6
+
+- [ ] Wire Export button to navigate to Post-Event Report page with participant list + notes pre-populated
+- [ ] Transfer Conference button in CCP header — Ably notification to target operator with Accept button
+- [ ] Settings panel modal — audio alert volume, default filter, timer thresholds, preferred dial-in country
+
+## Round 24 — Production Hardening
+- [x] Protect all OCC tRPC mutations with protectedProcedure + operator/admin role guard
+- [x] Add operatorProcedure middleware to server/_core/trpc.ts
+- [x] Migrate all OCC publicProcedure mutations to operatorProcedure
+- [x] Wire Resend transactional email to irContacts.sendSummary
+- [x] Wire Resend confirmation email to registrations.register
+- [ ] Configure custom domain demo.choruscall.ai

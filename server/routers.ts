@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
+import { sendEmail, buildIRSummaryEmail, buildRegistrationConfirmationEmail } from "./_core/email";
 import { getDb } from "./db";
 import { attendeeRegistrations, events, irContacts } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
@@ -309,6 +310,28 @@ Produce a JSON response with this exact structure:
           content: `${input.name} (${input.email}) registered for event: ${input.eventId}`,
         }).catch(() => {}); // non-blocking
 
+        // Send confirmation email to attendee
+        const nameParts = input.name.trim().split(" ");
+        const firstName = nameParts[0] ?? input.name;
+        const lastName = nameParts.slice(1).join(" ") || "";
+        const eventTitle = event?.title ?? input.eventId;
+        // events table doesn't store scheduledDate/dialIn — use sensible defaults
+        const eventDate = "Please check your calendar invite for the date and time";
+
+        const confirmationHtml = buildRegistrationConfirmationEmail({
+          firstName,
+          lastName,
+          eventTitle,
+          company: event?.company ?? "Chorus Call Inc.",
+          eventDate,
+        });
+
+        await sendEmail({
+          to: input.email,
+          subject: `Registration Confirmed: ${eventTitle}`,
+          html: confirmationHtml,
+        }).catch(() => {}); // non-blocking — don't fail registration if email fails
+
         return { success: true, alreadyRegistered: false, registrationId: result?.id };
       }),
 
@@ -434,13 +457,54 @@ Sent via Chorus.AI — The Intelligence Layer for Every Meeting
 Recipients: ${allEmails.join(", ")}
         `.trim();
 
-        // Use the owner notification system to send the summary
+        // Send individual emails to each IR contact via Resend
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" });
+        const emailResults: { email: string; success: boolean; error?: string }[] = [];
+
+        for (const contact of contacts) {
+          const html = buildIRSummaryEmail({
+            contactName: contact.name,
+            eventTitle: input.eventTitle,
+            company: contact.company ?? "Chorus Call Inc.",
+            summary: summaryContent,
+            date: dateStr,
+          });
+          const result = await sendEmail({
+            to: contact.email,
+            subject: `Post-Event Summary: ${input.eventTitle}`,
+            html,
+          });
+          emailResults.push({ email: contact.email, success: result.success, error: result.error });
+        }
+
+        // Also send to additional ad-hoc emails
+        for (const email of input.additionalEmails) {
+          const html = buildIRSummaryEmail({
+            contactName: "IR Contact",
+            eventTitle: input.eventTitle,
+            company: "Chorus Call Inc.",
+            summary: summaryContent,
+            date: dateStr,
+          });
+          const result = await sendEmail({
+            to: email,
+            subject: `Post-Event Summary: ${input.eventTitle}`,
+            html,
+          });
+          emailResults.push({ email, success: result.success, error: result.error });
+        }
+
+        const sentCount = emailResults.filter(r => r.success).length;
+        const failedCount = emailResults.filter(r => !r.success).length;
+
+        // Notify owner via platform notification
         await notifyOwner({
           title: `IR Summary Sent: ${input.eventTitle}`,
-          content: summaryContent,
-        });
+          content: `Sent to ${sentCount} recipients. ${failedCount > 0 ? `${failedCount} failed.` : ""} Recipients: ${allEmails.join(", ")}`,
+        }).catch(() => {});
 
-        return { success: true, sentCount: allEmails.length, recipients: allEmails };
+        return { success: sentCount > 0, sentCount, failedCount, recipients: allEmails };
       }),
   }),
 });

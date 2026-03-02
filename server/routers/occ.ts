@@ -3,7 +3,7 @@
  * Handles all conference management, participant actions, lounge, chat, and operator state.
  */
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure, protectedProcedure, operatorProcedure, adminProcedure } from "../_core/trpc";
 import {
   getOccConferences,
   getOccConferenceById,
@@ -62,7 +62,7 @@ async function publishAblyEvent(channel: string, event: string, data: unknown) {
 export const occRouter = router({
   // ── Conference queries ────────────────────────────────────────────────────
 
-  getConferences: publicProcedure
+  getConferences: protectedProcedure
     .input(z.object({
       status: z.enum(["pending", "running", "completed", "alarm"]).optional(),
     }).optional())
@@ -70,13 +70,13 @@ export const occRouter = router({
       return getOccConferences(input?.status);
     }),
 
-  getConference: publicProcedure
+  getConference: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       return getOccConferenceById(input.id);
     }),
 
-  getConferenceByEventId: publicProcedure
+  getConferenceByEventId: protectedProcedure
     .input(z.object({ eventId: z.string() }))
     .query(async ({ input }) => {
       return getOccConferenceByEventId(input.eventId);
@@ -84,7 +84,7 @@ export const occRouter = router({
 
   // ── Conference actions ────────────────────────────────────────────────────
 
-  toggleRecording: publicProcedure
+  toggleRecording: operatorProcedure
     .input(z.object({ conferenceId: z.number(), isRecording: z.boolean() }))
     .mutation(async ({ input }) => {
       const conf = await updateOccConference(input.conferenceId, { isRecording: input.isRecording });
@@ -96,7 +96,7 @@ export const occRouter = router({
       return conf;
     }),
 
-  toggleLock: publicProcedure
+  toggleLock: operatorProcedure
     .input(z.object({ conferenceId: z.number(), isLocked: z.boolean() }))
     .mutation(async ({ input }) => {
       const conf = await updateOccConference(input.conferenceId, { isLocked: input.isLocked });
@@ -108,7 +108,7 @@ export const occRouter = router({
       return conf;
     }),
 
-  muteAll: publicProcedure
+  muteAll: operatorProcedure
     .input(z.object({ conferenceId: z.number() }))
     .mutation(async ({ input }) => {
       // Get all participants and mute connected/speaking ones
@@ -122,7 +122,7 @@ export const occRouter = router({
       return { success: true };
     }),
 
-  terminateConference: publicProcedure
+  terminateConference: operatorProcedure
     .input(z.object({ conferenceId: z.number() }))
     .mutation(async ({ input }) => {
       await updateOccConference(input.conferenceId, { status: "completed", endedAt: new Date() });
@@ -132,7 +132,7 @@ export const occRouter = router({
 
   // ── Participant queries ───────────────────────────────────────────────────
 
-  getParticipants: publicProcedure
+  getParticipants: protectedProcedure
     .input(z.object({ conferenceId: z.number() }))
     .query(async ({ input }) => {
       return getOccParticipants(input.conferenceId);
@@ -140,7 +140,7 @@ export const occRouter = router({
 
   // ── Participant actions ───────────────────────────────────────────────────
 
-  updateParticipantState: publicProcedure
+  updateParticipantState: operatorProcedure
     .input(z.object({
       participantId: z.number(),
       conferenceId: z.number(),
@@ -178,7 +178,7 @@ export const occRouter = router({
       return participant;
     }),
 
-  toggleRequestToSpeak: publicProcedure
+  toggleRequestToSpeak: operatorProcedure
     .input(z.object({
       participantId: z.number(),
       conferenceId: z.number(),
@@ -194,7 +194,7 @@ export const occRouter = router({
       return { success: true };
     }),
 
-  dialOut: publicProcedure
+  dialOut: operatorProcedure
     .input(z.object({
       conferenceId: z.number(),
       name: z.string().optional(),
@@ -227,13 +227,13 @@ export const occRouter = router({
 
   // ── Lounge ────────────────────────────────────────────────────────────────
 
-  getLounge: publicProcedure
+  getLounge: protectedProcedure
     .input(z.object({ conferenceId: z.number() }))
     .query(async ({ input }) => {
       return getOccLoungeEntries(input.conferenceId);
     }),
 
-  pickFromLounge: publicProcedure
+  pickFromLounge: operatorProcedure
     .input(z.object({
       loungeId: z.number(),
       conferenceId: z.number(),
@@ -251,13 +251,13 @@ export const occRouter = router({
 
   // ── Operator Requests ─────────────────────────────────────────────────────
 
-  getOperatorRequests: publicProcedure
+  getOperatorRequests: protectedProcedure
     .input(z.object({ conferenceId: z.number() }))
     .query(async ({ input }) => {
       return getOccOperatorRequests(input.conferenceId);
     }),
 
-  pickOperatorRequest: publicProcedure
+  pickOperatorRequest: operatorProcedure
     .input(z.object({
       requestId: z.number(),
       conferenceId: z.number(),
@@ -297,13 +297,13 @@ export const occRouter = router({
 
   // ── Chat ──────────────────────────────────────────────────────────────────
 
-  getChatMessages: publicProcedure
+  getChatMessages: protectedProcedure
     .input(z.object({ conferenceId: z.number() }))
     .query(async ({ input }) => {
       return getOccChatMessages(input.conferenceId);
     }),
 
-  sendChatMessage: publicProcedure
+  sendChatMessage: operatorProcedure
     .input(z.object({
       conferenceId: z.number(),
       senderName: z.string(),
@@ -330,7 +330,7 @@ export const occRouter = router({
 
   // ── Audio Files ───────────────────────────────────────────────────────────
 
-  getAudioFiles: publicProcedure
+  getAudioFiles: protectedProcedure
     .input(z.object({ conferenceId: z.number() }))
     .query(async ({ input }) => {
       return getOccAudioFiles(input.conferenceId);
@@ -338,7 +338,7 @@ export const occRouter = router({
 
   // ── Participant History ───────────────────────────────────────────────────
 
-  getParticipantHistory: publicProcedure
+  getParticipantHistory: protectedProcedure
     .input(z.object({ participantId: z.number() }))
     .query(async ({ input }) => {
       return getOccParticipantHistory(input.participantId);
@@ -346,7 +346,7 @@ export const occRouter = router({
 
   // ── Access Code Log ───────────────────────────────────────────────────────
 
-  getAccessCodeLog: publicProcedure
+  getAccessCodeLog: protectedProcedure
     .input(z.object({ conferenceId: z.number() }))
     .query(async ({ input }) => {
       return getOccAccessCodeLog(input.conferenceId);
@@ -354,7 +354,7 @@ export const occRouter = router({
 
   // ── Seed demo data ────────────────────────────────────────────────────────
 
-  seedDemoData: publicProcedure
+  seedDemoData: adminProcedure
     .input(z.object({ force: z.boolean().optional().default(false) }))
     .mutation(async ({ input }) => {
       const db = await getDb();

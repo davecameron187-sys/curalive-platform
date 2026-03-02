@@ -43,3 +43,28 @@ export const adminProcedure = t.procedure.use(
     });
   }),
 );
+
+/**
+ * operatorProcedure — requires the caller to be logged in AND have role 'operator' or 'admin'.
+ * Use this for all OCC mutations that modify conference or participant state.
+ */
+export const operatorProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+
+    if (ctx.user.role !== 'operator' && ctx.user.role !== 'admin') {
+      throw new TRPCError({ code: "FORBIDDEN", message: 'Operator or admin role required (10003)' });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  }),
+);
