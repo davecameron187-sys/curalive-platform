@@ -14,7 +14,7 @@ import {
   ChevronDown, ChevronUp, X, Plus, RefreshCw, Volume2, VolumeX,
   ArrowRight, UserCheck, UserX, Activity, Clock,
   List, LayoutGrid, Bell, BellOff, Send, Search, Filter,
-  Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical
+  Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical, FileText
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@ import {
 type OperatorState = "absent" | "present" | "in_call" | "break";
 type ParticipantState = "free" | "incoming" | "connected" | "muted" | "parked" | "speaking" | "waiting_operator" | "web_participant" | "dropped";
 type FilterMode = "all" | "moderators" | "participants" | "unmuted" | "muted" | "parked" | "connected" | "waiting" | "web" | "speak_requests";
-type FeatureTab = "monitoring" | "connection" | "history" | "audio" | "chat" | "notes";
+type FeatureTab = "monitoring" | "connection" | "history" | "audio" | "chat" | "notes" | "qa_queue";
 type OverviewTab = "running" | "pending" | "planned" | "completed" | "alarms";
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
@@ -182,6 +182,9 @@ export default function OCC() {
 
   // Active conference in CCP
   const [activeCCPConferenceId, setActiveCCPConferenceId] = useState<number | null>(null);
+  // Split-view: second CCP slot
+  const [splitViewEnabled, setSplitViewEnabled] = useState(false);
+  const [secondaryCCPConferenceId, setSecondaryCCPConferenceId] = useState<number | null>(null);
 
   // Conference overview tab
   const [overviewTab, setOverviewTab] = useState<OverviewTab>("running");
@@ -273,6 +276,8 @@ export default function OCC() {
   const ablyClientRef = useRef<any>(null);
   const ablyLoungeChanRef = useRef<any>(null);
   const ablyRequestsChanRef = useRef<any>(null);
+  const ablyConferenceChanRef = useRef<any>(null);
+  const [otherOperators, setOtherOperators] = useState<{ clientId: string; name: string; conferenceId: number }[]>([]);
 
   useEffect(() => {
     if (!activeCCPConferenceId) return;
@@ -315,6 +320,73 @@ export default function OCC() {
             }
           } catch {}
         });
+
+        // Conference participant state sync channel
+        const confChan = client.channels.get(`occ:conference:${activeCCPConferenceId}`);
+        ablyConferenceChanRef.current = confChan;
+        confChan.subscribe((msg: any) => {
+          if (cancelled) return;
+          try {
+            const payload = JSON.parse(msg.data);
+            if (msg.name === "participant.state") {
+              // Another operator changed a participant state — sync it locally
+              setLocalParticipants(prev => prev.map(p =>
+                p.id === payload.participantId
+                  ? { ...p, state: payload.state, isSpeaking: payload.state === 'speaking', requestToSpeak: payload.requestToSpeak ?? p.requestToSpeak }
+                  : p
+              ));
+            } else if (msg.name === "participant.join") {
+              // New participant joined from another operator's dial-out
+              setLocalParticipants(prev => {
+                if (prev.find(p => p.id === payload.id)) return prev;
+                return [...prev, payload];
+              });
+            } else if (msg.name === "participant.drop") {
+              setLocalParticipants(prev => prev.map(p =>
+                p.id === payload.participantId ? { ...p, state: 'dropped' as const } : p
+              ));
+            } else if (msg.name === "conference.mute_all") {
+              setLocalParticipants(prev => prev.map(p =>
+                p.role === 'participant' ? { ...p, state: 'muted' as const } : p
+              ));
+            } else if (msg.name === "conference.extend") {
+              // Conference duration extended — update local conference end time
+              setLocalConferences(prev => prev.map(c =>
+                c.id === activeCCPConferenceId
+                  ? { ...c, scheduledEnd: payload.newEndTime ? new Date(payload.newEndTime) : c.scheduledEnd }
+                  : c
+              ));
+            }
+          } catch {}
+        });
+
+        // Presence — track which operators have this conference open
+        try {
+          await confChan.presence.enter(JSON.stringify({ name: 'Operator', conferenceId: activeCCPConferenceId }));
+          const members = await confChan.presence.get();
+          if (!cancelled) {
+            setOtherOperators(members
+              .filter((m: any) => m.clientId !== client.auth?.clientId)
+              .map((m: any) => {
+                try { return { clientId: m.clientId, ...JSON.parse(m.data) }; }
+                catch { return { clientId: m.clientId, name: 'Operator', conferenceId: activeCCPConferenceId }; }
+              })
+            );
+          }
+          confChan.presence.subscribe((member: any) => {
+            if (cancelled) return;
+            confChan.presence.get().then((all: any[]) => {
+              setOtherOperators(all
+                .filter((m: any) => m.clientId !== client.auth?.clientId)
+                .map((m: any) => {
+                  try { return { clientId: m.clientId, ...JSON.parse(m.data) }; }
+                  catch { return { clientId: m.clientId, name: 'Operator', conferenceId: activeCCPConferenceId }; }
+                })
+              );
+            }).catch(() => {});
+          });
+        } catch { /* presence not available in demo mode */ }
+
       } catch {
         // Ably not configured — demo mode already has data, no action needed
       }
@@ -323,6 +395,8 @@ export default function OCC() {
       cancelled = true;
       ablyLoungeChanRef.current?.unsubscribe();
       ablyRequestsChanRef.current?.unsubscribe();
+      try { ablyConferenceChanRef.current?.presence.leave(); } catch {}
+      ablyConferenceChanRef.current?.unsubscribe();
     };
   }, [activeCCPConferenceId]);
 
@@ -846,6 +920,65 @@ export default function OCC() {
     : overviewTab === "completed" ? completedConfs
     : conferences;
 
+  // ── Auth guard ────────────────────────────────────────────────────────────
+  const { loading: authLoading, isAuthenticated } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center animate-pulse">
+            <Headphones className="w-5 h-5 text-white" />
+          </div>
+          <p className="text-slate-400 text-sm">Loading Chorus.OCC…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
+        <div className="bg-[#111827] border border-slate-700 rounded-xl p-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
+          <div className="w-14 h-14 rounded-xl bg-blue-600/20 border border-blue-600/40 flex items-center justify-center">
+            <Headphones className="w-7 h-7 text-blue-400" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-white mb-2">Chorus.OCC</h1>
+            <p className="text-slate-400 text-sm leading-relaxed">Operator Call Centre access requires authentication. Please sign in with your Chorus Call operator account.</p>
+          </div>
+          <a
+            href={`/api/oauth/login?returnTo=${encodeURIComponent('/occ')}`}
+            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+          >
+            <LogOut className="w-4 h-4 rotate-180" />
+            Sign in to access OCC
+          </a>
+          <a href="/" className="text-xs text-slate-500 hover:text-slate-400 transition-colors">← Back to Chorus.AI</a>
+        </div>
+      </div>
+    );
+  }
+
+  // Operator role check — admin and operator roles can access OCC
+  const userRole = (user as any)?.role;
+  if (userRole && userRole !== 'admin' && userRole !== 'operator') {
+    return (
+      <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
+        <div className="bg-[#111827] border border-red-800/40 rounded-xl p-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
+          <div className="w-14 h-14 rounded-xl bg-red-600/20 border border-red-600/40 flex items-center justify-center">
+            <AlertCircle className="w-7 h-7 text-red-400" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-white mb-2">Access Denied</h1>
+            <p className="text-slate-400 text-sm leading-relaxed">Your account does not have operator access to Chorus.OCC. Contact your Chorus Call administrator to request access.</p>
+          </div>
+          <a href="/" className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">← Back to Chorus.AI</a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0d14] text-slate-200 flex flex-col" style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px" }}>
 
@@ -1149,12 +1282,23 @@ export default function OCC() {
                           }`}>{conf.status}</span>
                         </td>
                         <td className="px-3 py-2">
-                          <button
-                            onClick={e => { e.stopPropagation(); openCCP(conf.id); }}
-                            className="flex items-center gap-1 px-2 py-1 bg-blue-700 hover:bg-blue-600 text-white rounded text-[10px] transition-colors"
-                          >
-                            <Activity className="w-3 h-3" /> Open CCP
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={e => { e.stopPropagation(); openCCP(conf.id); }}
+                              className="flex items-center gap-1 px-2 py-1 bg-blue-700 hover:bg-blue-600 text-white rounded text-[10px] transition-colors"
+                            >
+                              <Activity className="w-3 h-3" /> Open CCP
+                            </button>
+                            {activeCCPConferenceId && activeCCPConferenceId !== conf.id && (
+                              <button
+                                onClick={e => { e.stopPropagation(); setSecondaryCCPConferenceId(conf.id); setSplitViewEnabled(true); setShowCCP(true); }}
+                                title="Open this conference in split view alongside the current CCP"
+                                className="flex items-center gap-1 px-2 py-1 bg-violet-700 hover:bg-violet-600 text-white rounded text-[10px] transition-colors"
+                              >
+                                <LayoutGrid className="w-3 h-3" /> Split
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1167,7 +1311,9 @@ export default function OCC() {
 
         {/* ── Conference Control Panel ─────────────────────────────────────────── */}
         {showCCP && (
-          <div className="bg-[#111827] border border-slate-700 rounded-lg overflow-hidden flex flex-col">
+          <div className={`flex gap-3 ${splitViewEnabled && secondaryCCPConferenceId ? 'flex-row' : 'flex-col'}`}>
+          {/* Primary CCP */}
+          <div className={`bg-[#111827] border border-slate-700 rounded-lg overflow-hidden flex flex-col ${splitViewEnabled && secondaryCCPConferenceId ? 'flex-1 min-w-0' : ''}`}>
             {/* CCP Header */}
             <div className="flex items-center justify-between px-3 py-2 bg-[#0f172a] border-b border-slate-700 shrink-0">
               <div className="flex items-center gap-3">
@@ -1180,6 +1326,15 @@ export default function OCC() {
               <div className="flex items-center gap-2">
                 {!activeCCPConferenceId && (
                   <span className="text-xs text-slate-500 italic">Select a conference from the Overview</span>
+                )}
+                {splitViewEnabled && secondaryCCPConferenceId && (
+                  <button
+                    onClick={() => { setSplitViewEnabled(false); setSecondaryCCPConferenceId(null); }}
+                    title="Exit split view"
+                    className="flex items-center gap-1 px-2 py-1 bg-violet-800/40 hover:bg-violet-700/60 text-violet-300 rounded text-[10px] transition-colors"
+                  >
+                    <Minimize2 className="w-3 h-3" /> Exit Split
+                  </button>
                 )}
                 <button onClick={() => setShowCCP(false)} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
               </div>
@@ -1243,6 +1398,44 @@ export default function OCC() {
                   >
                     <PhoneOff className="w-3.5 h-3.5" /> Terminate
                   </button>
+                  {/* Export Post-Event Report */}
+                  <button
+                    onClick={() => {
+                      const conf = activeConf;
+                      if (!conf) return;
+                      const parts = participants;
+                      const notes = operatorNotes[activeCCPConferenceId!] ?? '';
+                      const lines: string[] = [];
+                      lines.push(`POST-EVENT REPORT — ${conf.subject}`);
+                      lines.push(`Conference ID: ${conf.callId}`);
+                      lines.push(`Date: ${conf.scheduledStart ? new Date(conf.scheduledStart).toLocaleDateString() : 'N/A'}`);
+                      lines.push(`Duration: ${conf.actualStart ? formatDuration(conf.actualStart) : 'N/A'}`);
+                      lines.push(`Total Participants: ${parts.length}`);
+                      lines.push(`Moderator Code: ${conf.moderatorCode} | Participant Code: ${conf.participantCode}`);
+                      lines.push('');
+                      lines.push('PARTICIPANT LIST');
+                      lines.push('Role,Name,Company,Phone,Location,Connect Time,State');
+                      parts.forEach(p => {
+                        lines.push(`${p.role},${p.name ?? ''},${p.company ?? ''},${p.phoneNumber ?? ''},${p.location ?? ''},${p.connectTime ? new Date(p.connectTime).toLocaleTimeString() : ''},${p.state}`);
+                      });
+                      if (notes.trim()) {
+                        lines.push('');
+                        lines.push('OPERATOR NOTES');
+                        lines.push(notes);
+                      }
+                      const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `post-event-${conf.callId}-${new Date().toISOString().slice(0,10)}.txt`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    title="Export post-event report with participant list and operator notes"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-emerald-900/30 hover:bg-emerald-800/50 text-emerald-400 border border-emerald-800/30 transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Export
+                  </button>
                   {/* Simulate Incoming Call */}
                   <button
                     onClick={doSimulateIncomingCall}
@@ -1275,6 +1468,25 @@ export default function OCC() {
                       </div>
                     );
                   })()}
+                  {/* +15 min extension button */}
+                  <button
+                    onClick={() => {
+                      setLocalConferences(prev => prev.map(c =>
+                        c.id === activeCCPConferenceId
+                          ? { ...c, scheduledEnd: c.scheduledEnd ? new Date(c.scheduledEnd.getTime() + 15 * 60000) : new Date(Date.now() + 15 * 60000) }
+                          : c
+                      ));
+                      // Broadcast extension via Ably
+                      try {
+                        const newEnd = localConferences.find(c => c.id === activeCCPConferenceId)?.scheduledEnd;
+                        ablyConferenceChanRef.current?.publish('conference.extend', JSON.stringify({ newEndTime: newEnd ? new Date(newEnd.getTime() + 15 * 60000).toISOString() : null }));
+                      } catch {}
+                    }}
+                    title="Extend conference by 15 minutes"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-slate-700/60 hover:bg-slate-600/80 text-slate-300 border border-slate-600/40 transition-colors"
+                  >
+                    <Clock className="w-3.5 h-3.5" /> +15 min
+                  </button>
                   {/* Q&A Raised Hands Badge */}
                   {counts.speak_requests > 0 && (
                     <button
@@ -1519,6 +1731,7 @@ export default function OCC() {
                       { key: "audio", label: "Audio Files", icon: Music },
                       { key: "chat", label: "Chat", icon: MessageSquare },
                       { key: "notes", label: "Notes", icon: List },
+                      { key: "qa_queue", label: "Q&A Queue", icon: MessageSquare },
                     ] as const).map(({ key, label, icon: Icon }) => (
                       <button
                         key={key}
@@ -1683,6 +1896,52 @@ export default function OCC() {
                         <div className="text-[10px] text-slate-600">Notes are saved locally and will appear in the Post-Event Report.</div>
                       </div>
                     )}
+                    {featureTab === "qa_queue" && (
+                      <div className="flex flex-col gap-2" style={{ height: "160px" }}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-slate-400 font-medium">Q&A Queue — {participants.filter(p => p.requestToSpeak).length} raised hand{participants.filter(p => p.requestToSpeak).length !== 1 ? 's' : ''}</span>
+                          {participants.filter(p => p.requestToSpeak).length > 0 && (
+                            <button
+                              onClick={() => setLocalParticipants(prev => prev.map(p => ({ ...p, requestToSpeak: false, requestToSpeakPosition: null })))}
+                              className="text-[10px] text-slate-500 hover:text-red-400 transition-colors"
+                            >Lower All Hands</button>
+                          )}
+                        </div>
+                        <div className="flex-1 overflow-y-auto space-y-1">
+                          {participants
+                            .filter(p => p.requestToSpeak)
+                            .sort((a, b) => (a.requestToSpeakPosition ?? 99) - (b.requestToSpeakPosition ?? 99))
+                            .map((p, idx) => (
+                              <div key={p.id} className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded px-2.5 py-1.5">
+                                <span className="text-amber-400 font-bold text-xs w-4">{idx + 1}</span>
+                                <span className="text-amber-300 text-xs">✋</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-semibold text-slate-200 truncate">{p.name ?? 'Unknown'}</div>
+                                  <div className="text-[10px] text-slate-500 truncate">{p.company ?? ''} {p.location ? `· ${p.location}` : ''}</div>
+                                </div>
+                                <div className="text-[10px] text-slate-500 shrink-0">{p.phoneNumber ?? ''}</div>
+                                <button
+                                  onClick={() => doSpeakNext(p.id)}
+                                  className="flex items-center gap-1 px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white rounded text-[10px] font-semibold transition-colors shrink-0"
+                                >
+                                  ▶ Speak
+                                </button>
+                                <button
+                                  onClick={() => setLocalParticipants(prev => prev.map(lp => lp.id === p.id ? { ...lp, requestToSpeak: false, requestToSpeakPosition: null } : lp))}
+                                  className="text-slate-600 hover:text-red-400 transition-colors"
+                                  title="Lower hand"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))
+                          }
+                          {participants.filter(p => p.requestToSpeak).length === 0 && (
+                            <div className="flex items-center justify-center h-16 text-xs text-slate-600">No raised hands — queue is empty</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     {featureTab === "chat" && (
                       <div className="flex flex-col gap-2" style={{ height: "160px" }}>
                         <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
@@ -1731,6 +1990,93 @@ export default function OCC() {
                 </div>
               </>
             )}
+          </div>
+          {/* Secondary CCP — split view */}
+          {splitViewEnabled && secondaryCCPConferenceId && (() => {
+            const secConf = conferences.find(c => c.id === secondaryCCPConferenceId) ?? null;
+            const secParts = secondaryCCPConferenceId === 2
+              ? (localParticipants.length > 0 ? localParticipants.slice(0, 5) : [])
+              : [];
+            return (
+              <div className="bg-[#111827] border border-violet-700/50 rounded-lg overflow-hidden flex flex-col flex-1 min-w-0">
+                <div className="flex items-center justify-between px-3 py-2 bg-[#0f172a] border-b border-violet-700/50 shrink-0">
+                  <div className="flex items-center gap-3">
+                    <LayoutGrid className="w-4 h-4 text-violet-400" />
+                    <span className="font-semibold text-sm text-violet-300">Split CCP</span>
+                    {secConf && (
+                      <span className="text-slate-400 text-xs">— {secConf.subject} ({secConf.callId})</span>
+                    )}
+                  </div>
+                  <button onClick={() => { setSplitViewEnabled(false); setSecondaryCCPConferenceId(null); }} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
+                </div>
+                {!secConf ? (
+                  <div className="px-4 py-12 text-center text-slate-500 text-sm">
+                    <LayoutGrid className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                    <p>No secondary conference found.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col flex-1 overflow-auto">
+                    {/* Conference Bar */}
+                    <div className="flex items-center gap-2 px-3 py-2 bg-[#0d1526] border-b border-slate-700 flex-wrap shrink-0">
+                      <span className="text-xs text-slate-400 font-medium">{secConf.subject}</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                        secConf.status === 'running' ? 'bg-emerald-500/20 text-emerald-400' :
+                        secConf.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-slate-500/20 text-slate-400'
+                      }`}>{secConf.status}</span>
+                      <span className="text-xs text-slate-500 ml-auto">Mod: {secConf.moderatorCode} | Part: {secConf.participantCode}</span>
+                    </div>
+                    {/* Participant table */}
+                    <div className="overflow-auto flex-1">
+                      <table className="w-full text-xs">
+                        <thead className="sticky top-0 bg-[#0d1526] border-b border-slate-700">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-slate-400 font-medium">Role</th>
+                            <th className="px-3 py-2 text-left text-slate-400 font-medium">Name</th>
+                            <th className="px-3 py-2 text-left text-slate-400 font-medium">Company</th>
+                            <th className="px-3 py-2 text-left text-slate-400 font-medium">State</th>
+                            <th className="px-3 py-2 text-left text-slate-400 font-medium">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {secParts.length === 0 ? (
+                            <tr><td colSpan={5} className="px-3 py-8 text-center text-slate-600">No participants yet</td></tr>
+                          ) : secParts.map(p => (
+                            <tr key={p.id} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                              <td className="px-3 py-2">
+                                {p.role === 'moderator' ? <span className="text-amber-400">&#9733;</span> : <span className="text-slate-500">&#9679;</span>}
+                              </td>
+                              <td className="px-3 py-2 text-slate-200">{p.name ?? 'Unknown'}</td>
+                              <td className="px-3 py-2 text-slate-400">{p.company ?? '—'}</td>
+                              <td className="px-3 py-2">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                  p.state === 'speaking' ? 'bg-emerald-500/20 text-emerald-400' :
+                                  p.state === 'muted' ? 'bg-slate-600/40 text-slate-400' :
+                                  p.state === 'connected' ? 'bg-blue-500/20 text-blue-400' :
+                                  'bg-slate-700 text-slate-400'
+                                }`}>{p.state}</span>
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => setLocalParticipants(prev => prev.map(x => x.id === p.id ? { ...x, state: x.state === 'muted' ? 'connected' as const : 'muted' as const } : x))}
+                                    className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+                                    title={p.state === 'muted' ? 'Unmute' : 'Mute'}
+                                  >
+                                    {p.state === 'muted' ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           </div>
         )}
 

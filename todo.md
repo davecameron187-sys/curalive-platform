@@ -137,3 +137,13 @@
 - [x] Add Speak Next button to raised-hand rows: unmute + set Speaking + lower hand in one click
 - [x] Show a Q&A queue summary badge (number of raised hands) in the Conference Bar
 - [x] Auto-mute the previous speaker when Speak Next is triggered on a new participant
+
+## Round 22 — OCC Major Feature Build
+
+- [x] OAuth login protection for /occ — redirect to login if not authenticated
+- [x] Operator role guard — only users with role='operator' or 'admin' can access /occ
+- [x] Q&A Queue panel — new Feature Bar tab with sorted raised-hand list and Speak Next buttons
+- [x] Ably real-time participant state sync — occ:conference:{id} channel broadcasts state changes to all operator screens
+- [x] Conference extension — +15 min button in Conference Bar resets timer and end time
+- [x] Post-event export — operator notes + full participant list exported to Post-Event Report page
+- [x] Multi-conference view — operator can open 2 CCPs side by side simultaneously
