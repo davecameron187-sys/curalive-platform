@@ -27,6 +27,7 @@ const PLATFORM_PAGES = [
   { icon: Code2, label: "Integration Hub", desc: "Recall.ai, Zoom RTMS, Teams Bot, RTMP, PSTN", path: "/integrations", color: "text-blue-400" },
   { icon: Package, label: "Partner API & Widget", desc: "Webhook events, REST API, embeddable widget", path: "/partner-api", color: "text-violet-400" },
   { icon: Activity, label: "Cross-Device Sync Test", desc: "Live real-time sync — open on two devices to verify instant cross-device delivery", path: "/sync-test", color: "text-cyan-400" },
+  { icon: Video, label: "Live Video Meetings", desc: "Capital raising 1:1 roadshows, research presentations, earnings calls & hybrid conferences", path: "/live-video", color: "text-blue-400" },
 ];
 
 function StatusBadge({ status }: { status: string }) {

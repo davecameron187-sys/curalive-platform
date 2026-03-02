@@ -22,6 +22,9 @@ import SummitConsole from "./pages/SummitConsole";
 import OCC from "./pages/OCC";
 import AdminUsers from "./pages/AdminUsers";
 import EventPass from "./pages/EventPass";
+import LiveVideoMeetings from "./pages/LiveVideoMeetings";
+import RoadshowDetail from "./pages/RoadshowDetail";
+import HybridConference from "./pages/HybridConference";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -44,6 +47,9 @@ function Router() {
       <Route path="/summit-console" component={SummitConsole} />
       <Route path="/occ" component={OCC} />
       <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/live-video" component={LiveVideoMeetings} />
+      <Route path="/live-video/roadshow/:roadshowId" component={RoadshowDetail} />
+      <Route path="/live-video/conference" component={HybridConference} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

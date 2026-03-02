@@ -10,6 +10,7 @@ import { attendeeRegistrations, events, irContacts } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { occRouter } from "./routers/occ";
+import { liveVideoRouter } from "./routers/liveVideo";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -32,6 +33,7 @@ async function createAblyTokenRequest(clientId: string) {
 export const appRouter = router({
   system: systemRouter,
   occ: occRouter,
+  liveVideo: liveVideoRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

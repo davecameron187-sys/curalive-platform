@@ -352,3 +352,107 @@ export const occGreenRooms = mysqlTable("occ_green_rooms", {
 
 export type OccGreenRoom = typeof occGreenRooms.$inferSelect;
 export type InsertOccGreenRoom = typeof occGreenRooms.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Live Video Meetings — Capital Markets & Private Equity service module
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Roadshows — a named series of back-to-back 1:1 or group video meetings
+ * for capital-raising transactions, research presentations, or hybrid conferences.
+ */
+export const liveRoadshows = mysqlTable("live_roadshows", {
+  id: int("id").autoincrement().primaryKey(),
+  roadshowId: varchar("roadshowId", { length: 128 }).notNull().unique(), // e.g. "aggreko-sep-2026"
+  title: varchar("title", { length: 255 }).notNull(),
+  issuer: varchar("issuer", { length: 255 }).notNull(), // company raising capital
+  bank: varchar("bank", { length: 255 }), // e.g. "BofA Securities"
+  serviceType: mysqlEnum("serviceType", [
+    "capital_raising_1x1",
+    "research_presentation",
+    "earnings_call",
+    "hybrid_conference",
+  ]).default("capital_raising_1x1").notNull(),
+  platform: mysqlEnum("platform", ["zoom", "teams", "webex", "mixed"]).default("zoom").notNull(),
+  status: mysqlEnum("status", ["draft", "active", "completed", "cancelled"]).default("draft").notNull(),
+  // Dates
+  startDate: varchar("startDate", { length: 32 }), // ISO date string
+  endDate: varchar("endDate", { length: 32 }),
+  timezone: varchar("timezone", { length: 64 }).default("Europe/London").notNull(),
+  // Branding / white-label
+  brandingEnabled: boolean("brandingEnabled").default(true).notNull(),
+  customLogoUrl: varchar("customLogoUrl", { length: 512 }),
+  // Operator notes
+  notes: text("notes"),
+  createdByUserId: int("createdByUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LiveRoadshow = typeof liveRoadshows.$inferSelect;
+export type InsertLiveRoadshow = typeof liveRoadshows.$inferInsert;
+
+/**
+ * Roadshow Meetings — individual meeting slots within a roadshow.
+ * Each slot has its own video link, timeslot, and investor assignment.
+ */
+export const liveRoadshowMeetings = mysqlTable("live_roadshow_meetings", {
+  id: int("id").autoincrement().primaryKey(),
+  roadshowId: varchar("roadshowId", { length: 128 }).notNull(),
+  meetingDate: varchar("meetingDate", { length: 32 }).notNull(), // ISO date
+  startTime: varchar("startTime", { length: 8 }).notNull(), // "HH:MM"
+  endTime: varchar("endTime", { length: 8 }).notNull(),
+  timezone: varchar("timezone", { length: 64 }).default("Europe/London").notNull(),
+  meetingType: mysqlEnum("meetingType", ["1x1", "group", "large_group"]).default("1x1").notNull(),
+  platform: mysqlEnum("platform", ["zoom", "teams", "webex", "mixed"]).default("zoom").notNull(),
+  videoLink: varchar("videoLink", { length: 512 }), // the Zoom/Teams join URL
+  meetingId: varchar("meetingId", { length: 128 }), // platform meeting ID
+  passcode: varchar("passcode", { length: 64 }),
+  status: mysqlEnum("status", [
+    "scheduled",
+    "waiting_room_open",
+    "in_progress",
+    "completed",
+    "cancelled",
+  ]).default("scheduled").notNull(),
+  // Operator notes for this slot
+  operatorNotes: text("operatorNotes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LiveRoadshowMeeting = typeof liveRoadshowMeetings.$inferSelect;
+export type InsertLiveRoadshowMeeting = typeof liveRoadshowMeetings.$inferInsert;
+
+/**
+ * Roadshow Investors — investors (buy-side) assigned to specific meeting slots.
+ * One investor can be assigned to multiple slots across a roadshow.
+ */
+export const liveRoadshowInvestors = mysqlTable("live_roadshow_investors", {
+  id: int("id").autoincrement().primaryKey(),
+  roadshowId: varchar("roadshowId", { length: 128 }).notNull(),
+  meetingId: int("meetingId").notNull(), // references liveRoadshowMeetings.id
+  name: varchar("name", { length: 255 }).notNull(),
+  institution: varchar("institution", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 32 }),
+  jobTitle: varchar("jobTitle", { length: 255 }),
+  // Waiting room state
+  waitingRoomStatus: mysqlEnum("waitingRoomStatus", [
+    "not_arrived",
+    "in_waiting_room",
+    "admitted",
+    "completed",
+    "no_show",
+  ]).default("not_arrived").notNull(),
+  arrivedAt: timestamp("arrivedAt"),
+  admittedAt: timestamp("admittedAt"),
+  // Invite
+  inviteSentAt: timestamp("inviteSentAt"),
+  inviteToken: varchar("inviteToken", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LiveRoadshowInvestor = typeof liveRoadshowInvestors.$inferSelect;
+export type InsertLiveRoadshowInvestor = typeof liveRoadshowInvestors.$inferInsert;
