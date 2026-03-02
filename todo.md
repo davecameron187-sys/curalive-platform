@@ -193,3 +193,10 @@
 - [ ] Fetch IR contacts on button click, map to DialEntry format (name, company, phone, role=participant)
 - [ ] Skip contacts already in the queue (deduplicate by phone)
 - [ ] Show summary: N loaded, M already in queue
+
+## Round 30 — Edit IR Contact, Dial-Out History, Speaker Green Room, Event Pass
+- [ ] Edit IR Contact inline editing in PostEvent IR Contacts panel
+- [ ] Dial-out history schema (occ_dial_out_history table), tRPC procedures, PostEvent display
+- [ ] Speaker Green Room: sub-conference creation, speaker CCP panel, Transfer All to Main
+- [ ] Event Pass page at /event-pass/:eventId (branded, public, no Diamond Pass)
+- [ ] Event Pass embeddable widget snippet for choruscall.co.za WordPress

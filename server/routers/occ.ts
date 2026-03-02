@@ -33,7 +33,10 @@ import {
   occLounge,
   occOperatorRequests,
   occParticipantHistory,
+  occDialOutHistory,
+  occGreenRooms,
 } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -629,6 +632,7 @@ export const occRouter = router({
   multiDialOut: operatorProcedure
     .input(z.object({
       conferenceId: z.number(),
+      operatorName: z.string().optional(),
       entries: z.array(z.object({
         name: z.string().optional(),
         company: z.string().optional(),
@@ -670,6 +674,152 @@ export const occRouter = router({
       }
 
       const successCount = results.filter((r) => r.success).length;
+      // Persist dial-out history
+      const db2 = await getDb();
+      if (db2) {
+        await db2.insert(occDialOutHistory).values({
+          conferenceId: input.conferenceId,
+          operatorName: input.operatorName ?? "Operator",
+          dialEntries: JSON.stringify(results.map((r, i) => ({ ...input.entries[i], status: r.success ? "connected" : "failed" }))),
+          successCount,
+          failCount: results.length - successCount,
+          totalCount: results.length,
+          initiatedAt: new Date(),
+        });
+      }
       return { success: successCount > 0, results, successCount, failCount: results.length - successCount };
+    }),
+
+  // ── Dial-Out History ─────────────────────────────────────────────────────
+
+  getDialOutHistory: protectedProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(occDialOutHistory)
+        .where(eq(occDialOutHistory.conferenceId, input.conferenceId))
+        .orderBy(occDialOutHistory.initiatedAt);
+    }),
+
+  // ── Green Room (Speaker Sub-Conference) ───────────────────────────────────
+
+  getGreenRoom: protectedProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const rows = await db.select().from(occGreenRooms)
+        .where(eq(occGreenRooms.conferenceId, input.conferenceId))
+        .limit(1);
+      return rows[0] ?? null;
+    }),
+
+  createGreenRoom: operatorProcedure
+    .input(z.object({
+      conferenceId: z.number(),
+      name: z.string().default("Speaker Green Room"),
+      dialInNumber: z.string().optional(),
+      accessCode: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+      // Check if one already exists
+      const existing = await db.select().from(occGreenRooms)
+        .where(eq(occGreenRooms.conferenceId, input.conferenceId)).limit(1);
+      if (existing.length > 0) {
+        // Reopen it
+        await db.update(occGreenRooms)
+          .set({ isOpen: true, isActive: true })
+          .where(eq(occGreenRooms.conferenceId, input.conferenceId));
+        await publishAblyEvent(`occ:conference:${input.conferenceId}`, "greenroom:opened", { conferenceId: input.conferenceId });
+        return { success: true, greenRoom: existing[0] };
+      }
+      await db.insert(occGreenRooms).values({
+        conferenceId: input.conferenceId,
+        name: input.name,
+        dialInNumber: input.dialInNumber ?? null,
+        accessCode: input.accessCode ?? null,
+        isActive: true,
+        isOpen: true,
+      });
+      const rows = await db.select().from(occGreenRooms)
+        .where(eq(occGreenRooms.conferenceId, input.conferenceId)).limit(1);
+      await publishAblyEvent(`occ:conference:${input.conferenceId}`, "greenroom:opened", { conferenceId: input.conferenceId });
+      return { success: true, greenRoom: rows[0] };
+    }),
+
+  closeGreenRoom: operatorProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+      await db.update(occGreenRooms)
+        .set({ isOpen: false, isActive: false })
+        .where(eq(occGreenRooms.conferenceId, input.conferenceId));
+      await publishAblyEvent(`occ:conference:${input.conferenceId}`, "greenroom:closed", {});
+      return { success: true };
+    }),
+
+  // Green room uses subconferenceId = -1 as a sentinel value to mark green room participants
+  addToGreenRoom: operatorProcedure
+    .input(z.object({
+      conferenceId: z.number(),
+      name: z.string(),
+      phoneNumber: z.string(),
+      company: z.string().optional(),
+      role: z.enum(["moderator", "participant", "host"]).default("participant"),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+      const existing = await getOccParticipants(input.conferenceId);
+      const nextLine = (existing.length > 0 ? Math.max(...existing.map(p => p.lineNumber)) : 0) + 1;
+      await db.insert(occParticipants).values({
+        conferenceId: input.conferenceId,
+        lineNumber: nextLine,
+        role: input.role,
+        name: input.name,
+        company: input.company ?? null,
+        phoneNumber: input.phoneNumber,
+        state: "incoming",
+        connectedAt: new Date(),
+        subconferenceId: -1, // -1 = green room sentinel
+      });
+      await publishAblyEvent(
+        `occ:conference:${input.conferenceId}`,
+        "greenroom:participant_added",
+        { name: input.name, phoneNumber: input.phoneNumber, role: input.role }
+      );
+      return { success: true };
+    }),
+
+  transferGreenRoomToMain: operatorProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, transferredCount: 0 };
+      // Get all green room participants (subconferenceId = -1)
+      const participants = await getOccParticipants(input.conferenceId);
+      const greenRoomParticipants = participants.filter(p => p.subconferenceId === -1);
+      // Move them to main conference (clear subconferenceId)
+      let transferredCount = 0;
+      for (const p of greenRoomParticipants) {
+        await db.update(occParticipants)
+          .set({ subconferenceId: null, state: "connected" })
+          .where(eq(occParticipants.id, p.id));
+        transferredCount++;
+      }
+      // Mark green room as transferred
+      await db.update(occGreenRooms)
+        .set({ transferredAt: new Date(), isOpen: false, isActive: false })
+        .where(eq(occGreenRooms.conferenceId, input.conferenceId));
+      await publishAblyEvent(
+        `occ:conference:${input.conferenceId}`,
+        "greenroom:transferred_to_main",
+        { transferredCount }
+      );
+      return { success: true, transferredCount };
     }),
 });

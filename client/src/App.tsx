@@ -21,6 +21,7 @@ import TechHandover from "./pages/TechHandover";
 import SummitConsole from "./pages/SummitConsole";
 import OCC from "./pages/OCC";
 import AdminUsers from "./pages/AdminUsers";
+import EventPass from "./pages/EventPass";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/presenter/:id" component={Presenter} />
       <Route path="/operator/:id" component={OperatorConsole} />
       <Route path="/register/:id" component={Registration} />
+      <Route path="/event-pass/:id" component={EventPass} />
       <Route path="/post-event/:id" component={PostEvent} />
       <Route path="/integrations" component={IntegrationHub} />
       <Route path="/partner-api" component={PartnerAPI} />

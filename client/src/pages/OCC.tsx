@@ -260,8 +260,10 @@ export default function OCC() {
   const [dialForm, setDialForm] = useState({ name: "", company: "", phone: "", role: "participant" as "moderator" | "participant" });
   const [dialAllStatus, setDialAllStatus] = useState<"idle" | "dialling" | "done">("idle");
   const [csvImportMsg, setCsvImportMsg] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
-  const csvFileRef = useRef<HTMLInputElement>(null);
-
+   const csvFileRef = useRef<HTMLInputElement>(null);
+  // Green Room (Speaker Sub-Conference)
+  const [showGreenRoomPanel, setShowGreenRoomPanel] = useState(false);
+  const [greenRoomDialForm, setGreenRoomDialForm] = useState({ name: "", phone: "", company: "", role: "participant" as "moderator" | "participant" | "host" });
   // Audio beep helper
   const playBeep = useCallback(() => {
     try {
@@ -503,6 +505,15 @@ export default function OCC() {
   const pickLoungeMut = trpc.occ.pickFromLounge.useMutation();
   const pickOpReqMut = trpc.occ.pickOperatorRequest.useMutation();
   const sendChatMut = trpc.occ.sendChatMessage.useMutation();
+  // Green Room
+  const greenRoomQuery = trpc.occ.getGreenRoom.useQuery(
+    { conferenceId: activeCCPConferenceId ?? 0 },
+    { enabled: !!activeCCPConferenceId && showGreenRoomPanel, refetchInterval: showGreenRoomPanel ? 5000 : false }
+  );
+  const createGreenRoomMut = trpc.occ.createGreenRoom.useMutation({ onSuccess: () => greenRoomQuery.refetch() });
+  const closeGreenRoomMut = trpc.occ.closeGreenRoom.useMutation({ onSuccess: () => greenRoomQuery.refetch() });
+  const addToGreenRoomMut = trpc.occ.addToGreenRoom.useMutation({ onSuccess: () => { participantsQuery.refetch(); greenRoomQuery.refetch(); } });
+  const transferGreenRoomMut = trpc.occ.transferGreenRoomToMain.useMutation({ onSuccess: () => { participantsQuery.refetch(); greenRoomQuery.refetch(); } });
 
   // Scroll chat to bottom
   useEffect(() => {
@@ -1363,6 +1374,13 @@ export default function OCC() {
                       className="flex items-center gap-1 px-2 py-1 bg-blue-800/40 hover:bg-blue-700/60 text-blue-300 rounded text-[10px] transition-colors"
                     >
                       <PhoneForwarded className="w-3 h-3" /> Multi-Dial
+                    </button>
+                    <button
+                      onClick={() => setShowGreenRoomPanel(true)}
+                      title="Open Speaker Green Room — pre-event sub-conference for speakers"
+                      className="flex items-center gap-1 px-2 py-1 bg-emerald-800/40 hover:bg-emerald-700/60 text-emerald-300 rounded text-[10px] transition-colors"
+                    >
+                      <Users className="w-3 h-3" /> Green Room
                     </button>
                     <button
                       onClick={() => { setTransferSent(false); setTransferTargetOperator(''); setTransferNote(''); setShowTransferModal(true); }}
@@ -2795,6 +2813,176 @@ export default function OCC() {
           </div>
         );
       })()}
+
+      {/* ── Speaker Green Room Panel ─────────────────────────────────────────── */}
+      {showGreenRoomPanel && activeCCPConferenceId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#0f172a] border border-emerald-700/50 rounded-lg w-[520px] max-h-[85vh] flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span className="font-semibold text-sm text-emerald-300">Speaker Green Room</span>
+                <span className="text-xs text-slate-500">Pre-event sub-conference</span>
+              </div>
+              <button onClick={() => setShowGreenRoomPanel(false)} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Green Room Status */}
+              {!greenRoomQuery.data ? (
+                <div className="text-center py-6">
+                  <div className="text-slate-400 text-sm mb-4">No Green Room active for this conference.</div>
+                  <button
+                    onClick={() => createGreenRoomMut.mutate({ conferenceId: activeCCPConferenceId })}
+                    disabled={createGreenRoomMut.isPending}
+                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-sm font-semibold disabled:opacity-50"
+                  >
+                    {createGreenRoomMut.isPending ? "Opening..." : "Open Green Room"}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Room Info */}
+                  <div className="bg-slate-800/60 rounded-lg p-3 flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-semibold text-emerald-300">{greenRoomQuery.data.name}</div>
+                      {greenRoomQuery.data.dialInNumber && (
+                        <div className="text-xs text-slate-400 mt-0.5">Dial-in: {greenRoomQuery.data.dialInNumber}</div>
+                      )}
+                      {greenRoomQuery.data.accessCode && (
+                        <div className="text-xs text-slate-400">Code: {greenRoomQuery.data.accessCode}</div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded font-semibold ${greenRoomQuery.data.isOpen ? 'bg-emerald-900/60 text-emerald-400' : 'bg-slate-700 text-slate-400'}`}>
+                        {greenRoomQuery.data.isOpen ? 'OPEN' : 'CLOSED'}
+                      </span>
+                      {greenRoomQuery.data.isOpen && (
+                        <button
+                          onClick={() => closeGreenRoomMut.mutate({ conferenceId: activeCCPConferenceId })}
+                          disabled={closeGreenRoomMut.isPending}
+                          className="text-xs px-2 py-1 bg-red-900/40 hover:bg-red-800/60 text-red-400 rounded disabled:opacity-50"
+                        >
+                          Close Room
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Speaker List */}
+                  {(() => {
+                    const greenRoomParticipants = (participantsQuery.data ?? []).filter(p => p.subconferenceId === -1);
+                    return (
+                      <div>
+                        <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">Speakers in Green Room ({greenRoomParticipants.length})</div>
+                        {greenRoomParticipants.length === 0 ? (
+                          <div className="text-xs text-slate-500 italic py-2">No speakers added yet. Use the form below to dial in speakers.</div>
+                        ) : (
+                          <div className="space-y-1">
+                            {greenRoomParticipants.map(p => (
+                              <div key={p.id} className="flex items-center justify-between bg-slate-800/50 rounded px-3 py-2">
+                                <div>
+                                  <span className="text-sm text-slate-200">{p.name ?? p.phoneNumber}</span>
+                                  {p.company && <span className="text-xs text-slate-500 ml-2">{p.company}</span>}
+                                </div>
+                                <span className={`text-xs px-1.5 py-0.5 rounded font-semibold ${
+                                  p.state === 'connected' || p.state === 'speaking' ? 'bg-emerald-900/60 text-emerald-400' :
+                                  p.state === 'muted' ? 'bg-amber-900/60 text-amber-400' :
+                                  'bg-slate-700 text-slate-400'
+                                }`}>{p.state}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Add Speaker Form */}
+                  {greenRoomQuery.data.isOpen && (
+                    <div className="border border-slate-700 rounded-lg p-3">
+                      <div className="text-xs text-slate-400 uppercase tracking-wider mb-3">Add Speaker to Green Room</div>
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <input
+                          type="text"
+                          placeholder="Name"
+                          value={greenRoomDialForm.name}
+                          onChange={e => setGreenRoomDialForm(f => ({ ...f, name: e.target.value }))}
+                          className="bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Company"
+                          value={greenRoomDialForm.company}
+                          onChange={e => setGreenRoomDialForm(f => ({ ...f, company: e.target.value }))}
+                          className="bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                        />
+                        <input
+                          type="tel"
+                          placeholder="Phone number *"
+                          value={greenRoomDialForm.phone}
+                          onChange={e => setGreenRoomDialForm(f => ({ ...f, phone: e.target.value }))}
+                          className="bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                        />
+                        <select
+                          value={greenRoomDialForm.role}
+                          onChange={e => setGreenRoomDialForm(f => ({ ...f, role: e.target.value as any }))}
+                          className="bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                        >
+                          <option value="participant">Speaker</option>
+                          <option value="moderator">Moderator</option>
+                          <option value="host">Host</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!greenRoomDialForm.phone.trim()) return;
+                          addToGreenRoomMut.mutate({
+                            conferenceId: activeCCPConferenceId,
+                            name: greenRoomDialForm.name,
+                            phoneNumber: greenRoomDialForm.phone,
+                            company: greenRoomDialForm.company || undefined,
+                            role: greenRoomDialForm.role as any,
+                          }, { onSuccess: () => setGreenRoomDialForm({ name: "", phone: "", company: "", role: "participant" }) });
+                        }}
+                        disabled={!greenRoomDialForm.phone.trim() || addToGreenRoomMut.isPending}
+                        className="w-full py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs font-semibold disabled:opacity-50"
+                      >
+                        {addToGreenRoomMut.isPending ? "Dialling..." : "Dial into Green Room"}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Footer — Transfer All to Main */}
+            {greenRoomQuery.data?.isOpen && (
+              <div className="px-4 py-3 border-t border-slate-700 bg-slate-900/50">
+                <div className="text-xs text-slate-400 mb-2">When speakers are ready, transfer them all to the main conference.</div>
+                <button
+                  onClick={() => {
+                    if (window.confirm("Transfer all Green Room speakers to the main conference?")) {
+                      transferGreenRoomMut.mutate({ conferenceId: activeCCPConferenceId }, {
+                        onSuccess: (data) => {
+                          alert(`${data.transferredCount} speaker(s) transferred to the main conference.`);
+                          setShowGreenRoomPanel(false);
+                        }
+                      });
+                    }
+                  }}
+                  disabled={transferGreenRoomMut.isPending}
+                  className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <PhoneForwarded className="w-4 h-4" />
+                  {transferGreenRoomMut.isPending ? "Transferring..." : "Transfer All to Main Conference"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Transfer Conference Modal ────────────────────────────────────────── */}
       {showTransferModal && (

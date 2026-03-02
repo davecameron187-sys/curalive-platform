@@ -427,6 +427,28 @@ Produce a JSON response with this exact structure:
         return { success: true };
       }),
 
+    update: publicProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1),
+        email: z.string().email(),
+        company: z.string().optional(),
+        role: z.string().optional(),
+        phoneNumber: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { success: false };
+        await db.update(irContacts).set({
+          name: input.name,
+          email: input.email,
+          company: input.company || null,
+          role: input.role || null,
+          phoneNumber: input.phoneNumber || null,
+        }).where(eq(irContacts.id, input.id));
+        return { success: true };
+      }),
+
     remove: publicProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {

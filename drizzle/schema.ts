@@ -311,3 +311,44 @@ export const occAccessCodeLog = mysqlTable("occ_access_code_log", {
 
 export type OccAccessCodeLog = typeof occAccessCodeLog.$inferSelect;
 export type InsertOccAccessCodeLog = typeof occAccessCodeLog.$inferInsert;
+
+/**
+ * OCC Dial-Out History — records every multi-party dial-out session.
+ * Each row is one session; entries are stored as JSON in the dialEntries column.
+ */
+export const occDialOutHistory = mysqlTable("occ_dial_out_history", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: int("conferenceId").notNull(),
+  operatorId: int("operatorId"),
+  operatorName: varchar("operatorName", { length: 255 }),
+  // JSON array of { name, company, phone, role, status }
+  dialEntries: text("dialEntries").notNull(),
+  successCount: int("successCount").default(0).notNull(),
+  failCount: int("failCount").default(0).notNull(),
+  totalCount: int("totalCount").default(0).notNull(),
+  initiatedAt: timestamp("initiatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type OccDialOutHistory = typeof occDialOutHistory.$inferSelect;
+export type InsertOccDialOutHistory = typeof occDialOutHistory.$inferInsert;
+
+/**
+ * OCC Green Room — speaker sub-conference for pre-event preparation.
+ * Linked to a main conference; speakers join here before being transferred.
+ */
+export const occGreenRooms = mysqlTable("occ_green_rooms", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: int("conferenceId").notNull().unique(), // parent conference
+  name: varchar("name", { length: 255 }).default("Speaker Green Room").notNull(),
+  dialInNumber: varchar("dialInNumber", { length: 32 }),
+  accessCode: varchar("accessCode", { length: 32 }),
+  isActive: boolean("isActive").default(false).notNull(),
+  isOpen: boolean("isOpen").default(false).notNull(), // visible in OCC
+  transferredAt: timestamp("transferredAt"), // when Transfer All was triggered
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OccGreenRoom = typeof occGreenRooms.$inferSelect;
+export type InsertOccGreenRoom = typeof occGreenRooms.$inferInsert;
