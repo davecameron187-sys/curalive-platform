@@ -166,3 +166,14 @@
 - [ ] Transfer Conference button in CCP header with Ably notification to target operator
 - [ ] OCC Settings panel modal (audio alert volume, default filter, timer thresholds, dial-in country)
 - [ ] Resend domain verification + update FROM address to noreply@choruscall.ai
+
+## Round 27 — Multi-Party Dial-Out
+- [ ] Add batchDialOut tRPC procedure to OCC router (operatorProcedure)
+- [ ] Add dialOutEntry schema type (name, phone, company, role)
+- [ ] Build Multi-Party Dial-Out modal in OCC.tsx
+- [ ] Support manual row entry (add/remove rows dynamically)
+- [ ] Support CSV paste/import for bulk contact loading
+- [ ] Show per-call status badge (Pending / Dialling / Connected / Failed) during batch
+- [ ] Wire modal to batchDialOut procedure with real-time Ably status updates
+- [ ] Add "Multi-Party Dial-Out" button to CCP header
+- [ ] Write vitest for batchDialOut procedure

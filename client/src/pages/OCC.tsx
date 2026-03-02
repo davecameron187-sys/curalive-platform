@@ -15,7 +15,8 @@ import {
   ChevronDown, ChevronUp, X, Plus, RefreshCw, Volume2, VolumeX,
   ArrowRight, UserCheck, UserX, Activity, Clock,
   List, LayoutGrid, Bell, BellOff, Send, Search, Filter,
-  Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical, FileText
+  Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical, FileText,
+  PhoneForwarded, Trash2
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -251,6 +252,13 @@ export default function OCC() {
   const [settingAutoAcceptLounge, setSettingAutoAcceptLounge] = useState(false);
   const [settingShowCompany, setSettingShowCompany] = useState(true);
   const [settingDialInCountry, setSettingDialInCountry] = useState("ZA");
+
+  // Multi-Party Dial-Out modal
+  const [showMultiDialModal, setShowMultiDialModal] = useState(false);
+  type DialEntry = { id: string; name: string; company: string; phone: string; role: "moderator" | "participant"; status: "pending" | "dialling" | "connected" | "failed" };
+  const [dialEntries, setDialEntries] = useState<DialEntry[]>([]);
+  const [dialForm, setDialForm] = useState({ name: "", company: "", phone: "", role: "participant" as "moderator" | "participant" });
+  const [dialAllStatus, setDialAllStatus] = useState<"idle" | "dialling" | "done">("idle");
 
   // Audio beep helper
   const playBeep = useCallback(() => {
@@ -1346,13 +1354,22 @@ export default function OCC() {
                   <span className="text-xs text-slate-500 italic">Select a conference from the Overview</span>
                 )}
                 {activeCCPConferenceId && (
-                  <button
-                    onClick={() => { setTransferSent(false); setTransferTargetOperator(''); setTransferNote(''); setShowTransferModal(true); }}
-                    title="Transfer this conference to another operator"
-                    className="flex items-center gap-1 px-2 py-1 bg-indigo-800/40 hover:bg-indigo-700/60 text-indigo-300 rounded text-[10px] transition-colors"
-                  >
-                    <ArrowRight className="w-3 h-3" /> Transfer
-                  </button>
+                  <>
+                    <button
+                      onClick={() => { setDialEntries([]); setDialAllStatus("idle"); setDialForm({ name: "", company: "", phone: "", role: "participant" }); setShowMultiDialModal(true); }}
+                      title="Dial multiple participants into this conference"
+                      className="flex items-center gap-1 px-2 py-1 bg-blue-800/40 hover:bg-blue-700/60 text-blue-300 rounded text-[10px] transition-colors"
+                    >
+                      <PhoneForwarded className="w-3 h-3" /> Multi-Dial
+                    </button>
+                    <button
+                      onClick={() => { setTransferSent(false); setTransferTargetOperator(''); setTransferNote(''); setShowTransferModal(true); }}
+                      title="Transfer this conference to another operator"
+                      className="flex items-center gap-1 px-2 py-1 bg-indigo-800/40 hover:bg-indigo-700/60 text-indigo-300 rounded text-[10px] transition-colors"
+                    >
+                      <ArrowRight className="w-3 h-3" /> Transfer
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => setShowSettingsModal(true)}
@@ -2478,6 +2495,167 @@ export default function OCC() {
           </div>
         </div>
       )}
+
+      {/* ── Multi-Party Dial-Out Modal ─────────────────────────────────────── */}
+      {showMultiDialModal && (() => {
+        const multiDialOutMutation = trpc.occ.multiDialOut.useMutation({
+          onSuccess: (data) => {
+            if (data.success) {
+              setDialEntries(prev => prev.map(e => ({ ...e, status: "connected" as const })));
+              setDialAllStatus("done");
+              if (activeCCPConferenceId) participantsQuery.refetch();
+            }
+          },
+        });
+        const addEntry = () => {
+          if (!dialForm.phone.trim()) return;
+          setDialEntries(prev => [...prev, {
+            id: Math.random().toString(36).slice(2),
+            name: dialForm.name,
+            company: dialForm.company,
+            phone: dialForm.phone,
+            role: dialForm.role,
+            status: "pending",
+          }]);
+          setDialForm({ name: "", company: "", phone: "", role: "participant" });
+        };
+        const removeEntry = (id: string) => setDialEntries(prev => prev.filter(e => e.id !== id));
+        const dialAll = () => {
+          if (!activeCCPConferenceId || dialEntries.length === 0) return;
+          setDialAllStatus("dialling");
+          setDialEntries(prev => prev.map(e => ({ ...e, status: "dialling" as const })));
+          multiDialOutMutation.mutate({
+            conferenceId: activeCCPConferenceId,
+            entries: dialEntries.map(e => ({ name: e.name || undefined, company: e.company || undefined, phoneNumber: e.phone, role: e.role })),
+          });
+        };
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+            <div className="bg-[#0f172a] border border-slate-700 rounded-lg w-[560px] shadow-2xl flex flex-col max-h-[80vh]">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <PhoneForwarded className="w-4 h-4 text-blue-400" />
+                  <span className="font-semibold text-sm text-slate-200">Multi-Party Dial-Out</span>
+                  {activeCCPConferenceId && <span className="text-xs text-slate-500 ml-1">Conference #{activeCCPConferenceId}</span>}
+                </div>
+                <button onClick={() => { setShowMultiDialModal(false); setDialEntries([]); setDialAllStatus("idle"); }} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
+              </div>
+
+              {/* Add entry form */}
+              <div className="px-4 pt-3 pb-2 border-b border-slate-800 flex-shrink-0">
+                <p className="text-xs text-slate-500 mb-2">Add participants one at a time, then click <span className="text-blue-400 font-semibold">Dial All</span> to connect them simultaneously.</p>
+                <div className="grid grid-cols-12 gap-2">
+                  <input
+                    className="col-span-3 bg-slate-800 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-blue-500"
+                    placeholder="Name (optional)"
+                    value={dialForm.name}
+                    onChange={e => setDialForm(f => ({ ...f, name: e.target.value }))}
+                    onKeyDown={e => e.key === "Enter" && addEntry()}
+                  />
+                  <input
+                    className="col-span-3 bg-slate-800 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-blue-500"
+                    placeholder="Company (optional)"
+                    value={dialForm.company}
+                    onChange={e => setDialForm(f => ({ ...f, company: e.target.value }))}
+                    onKeyDown={e => e.key === "Enter" && addEntry()}
+                  />
+                  <input
+                    className="col-span-3 bg-slate-800 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-blue-500"
+                    placeholder="Phone number *"
+                    value={dialForm.phone}
+                    onChange={e => setDialForm(f => ({ ...f, phone: e.target.value }))}
+                    onKeyDown={e => e.key === "Enter" && addEntry()}
+                  />
+                  <select
+                    className="col-span-2 bg-slate-800 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-blue-500"
+                    value={dialForm.role}
+                    onChange={e => setDialForm(f => ({ ...f, role: e.target.value as "moderator" | "participant" }))}
+                  >
+                    <option value="participant">Participant</option>
+                    <option value="moderator">Moderator</option>
+                  </select>
+                  <button
+                    onClick={addEntry}
+                    disabled={!dialForm.phone.trim()}
+                    className="col-span-1 flex items-center justify-center bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded text-xs font-semibold"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Staged list */}
+              <div className="flex-1 overflow-y-auto px-4 py-2 min-h-[80px]">
+                {dialEntries.length === 0 ? (
+                  <div className="flex items-center justify-center h-16 text-xs text-slate-600">No participants added yet — fill in the form above and click +</div>
+                ) : (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-slate-500 border-b border-slate-800">
+                        <th className="text-left py-1 font-medium">Name</th>
+                        <th className="text-left py-1 font-medium">Company</th>
+                        <th className="text-left py-1 font-medium">Phone</th>
+                        <th className="text-left py-1 font-medium">Role</th>
+                        <th className="text-left py-1 font-medium">Status</th>
+                        <th className="py-1"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dialEntries.map(entry => (
+                        <tr key={entry.id} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                          <td className="py-1.5 text-slate-300">{entry.name || <span className="text-slate-600">—</span>}</td>
+                          <td className="py-1.5 text-slate-400">{entry.company || <span className="text-slate-600">—</span>}</td>
+                          <td className="py-1.5 text-slate-300 font-mono">{entry.phone}</td>
+                          <td className="py-1.5">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                              entry.role === "moderator" ? "bg-amber-900/40 text-amber-400" : "bg-slate-700 text-slate-400"
+                            }`}>{entry.role}</span>
+                          </td>
+                          <td className="py-1.5">
+                            {entry.status === "pending" && <span className="text-slate-500">Pending</span>}
+                            {entry.status === "dialling" && <span className="text-blue-400 animate-pulse">Dialling…</span>}
+                            {entry.status === "connected" && <span className="text-emerald-400">✓ Connected</span>}
+                            {entry.status === "failed" && <span className="text-red-400">✗ Failed</span>}
+                          </td>
+                          <td className="py-1.5">
+                            {entry.status === "pending" && (
+                              <button onClick={() => removeEntry(entry.id)} className="text-slate-600 hover:text-red-400">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-700 flex-shrink-0">
+                <span className="text-xs text-slate-500">{dialEntries.length} participant{dialEntries.length !== 1 ? "s" : ""} queued</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setDialEntries([]); setDialAllStatus("idle"); }}
+                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 border border-slate-700 rounded"
+                  >
+                    Clear All
+                  </button>
+                  <button
+                    onClick={dialAll}
+                    disabled={dialEntries.length === 0 || !activeCCPConferenceId || dialAllStatus === "dialling"}
+                    className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded"
+                  >
+                    <Phone className="w-3 h-3" />
+                    {dialAllStatus === "dialling" ? "Dialling…" : dialAllStatus === "done" ? "Done" : `Dial All (${dialEntries.length})`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Transfer Conference Modal ────────────────────────────────────────── */}
       {showTransferModal && (

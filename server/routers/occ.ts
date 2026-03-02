@@ -623,4 +623,53 @@ export const occRouter = router({
 
       return { success: true, message: "Demo data seeded successfully", conferenceId: liveConf.id };
     }),
+
+  // ── Multi-Party Dial-Out ─────────────────────────────────────────────────
+
+  multiDialOut: operatorProcedure
+    .input(z.object({
+      conferenceId: z.number(),
+      entries: z.array(z.object({
+        name: z.string().optional(),
+        company: z.string().optional(),
+        phoneNumber: z.string().min(1),
+        role: z.enum(["moderator", "participant"]).default("participant"),
+      })).min(1).max(50),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, results: [], error: "Database unavailable" };
+
+      const existing = await getOccParticipants(input.conferenceId);
+      let nextLine = existing.length > 0 ? Math.max(...existing.map((p) => p.lineNumber)) : 0;
+
+      const results: { phoneNumber: string; name?: string; success: boolean; error?: string }[] = [];
+
+      for (const entry of input.entries) {
+        try {
+          nextLine += 1;
+          await db.insert(occParticipants).values({
+            conferenceId: input.conferenceId,
+            lineNumber: nextLine,
+            role: entry.role,
+            name: entry.name ?? null,
+            company: entry.company ?? null,
+            phoneNumber: entry.phoneNumber,
+            state: "incoming",
+            connectedAt: new Date(),
+          });
+          await publishAblyEvent(
+            `occ:conference:${input.conferenceId}`,
+            "participant:added",
+            { name: entry.name, phoneNumber: entry.phoneNumber, role: entry.role, company: entry.company }
+          );
+          results.push({ phoneNumber: entry.phoneNumber, name: entry.name, success: true });
+        } catch (err) {
+          results.push({ phoneNumber: entry.phoneNumber, name: entry.name, success: false, error: String(err) });
+        }
+      }
+
+      const successCount = results.filter((r) => r.success).length;
+      return { success: successCount > 0, results, successCount, failCount: results.length - successCount };
+    }),
 });
