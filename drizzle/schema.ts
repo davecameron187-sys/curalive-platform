@@ -559,3 +559,139 @@ export const eventBranding = mysqlTable("event_branding", {
   createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 });
+
+// ─── Webcasting Platform ──────────────────────────────────────────────────────
+/**
+ * webcast_events — All webcast/webinar/virtual event types across all verticals.
+ */
+export const webcastEvents = mysqlTable("webcast_events", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 128 }).notNull().unique(),
+  title: varchar("title", { length: 300 }).notNull(),
+  description: text("description"),
+  eventType: mysqlEnum("event_type", [
+    "webinar",
+    "webcast",
+    "virtual_event",
+    "hybrid_event",
+    "on_demand",
+    "simulive",
+    "audio_conference",
+    "capital_markets",
+  ]).notNull().default("webinar"),
+  industryVertical: mysqlEnum("industry_vertical", [
+    "financial_services",
+    "corporate_communications",
+    "healthcare",
+    "technology",
+    "professional_services",
+    "government",
+    "education",
+    "media_entertainment",
+    "general",
+  ]).notNull().default("general"),
+  status: mysqlEnum("webcast_status", [
+    "draft",
+    "scheduled",
+    "live",
+    "ended",
+    "on_demand",
+    "cancelled",
+  ]).notNull().default("draft"),
+  startTime: bigint("start_time", { mode: "number" }),
+  endTime: bigint("end_time", { mode: "number" }),
+  timezone: varchar("timezone", { length: 64 }).default("UTC"),
+  maxAttendees: int("max_attendees").default(1000),
+  registrationCount: int("registration_count").default(0),
+  peakAttendees: int("peak_attendees").default(0),
+  streamUrl: varchar("stream_url", { length: 500 }),
+  rtmpKey: varchar("rtmp_key", { length: 256 }),
+  recordingUrl: varchar("recording_url", { length: 500 }),
+  registrationEnabled: boolean("registration_enabled").default(true),
+  chatEnabled: boolean("chat_enabled").default(true),
+  qaEnabled: boolean("qa_enabled").default(true),
+  pollsEnabled: boolean("polls_enabled").default(true),
+  recordingEnabled: boolean("recording_enabled").default(true),
+  logoUrl: varchar("logo_url", { length: 500 }),
+  primaryColor: varchar("primary_color", { length: 20 }).default("#3b82f6"),
+  hostName: varchar("host_name", { length: 200 }),
+  hostOrganization: varchar("host_organization", { length: 200 }),
+  tags: varchar("tags", { length: 500 }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type WebcastEvent = typeof webcastEvents.$inferSelect;
+export type InsertWebcastEvent = typeof webcastEvents.$inferInsert;
+
+/**
+ * webcast_registrations — Attendee registrations for webcast events.
+ */
+export const webcastRegistrations = mysqlTable("webcast_registrations", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("event_id").notNull(),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  company: varchar("company", { length: 200 }),
+  jobTitle: varchar("job_title", { length: 200 }),
+  phone: varchar("phone", { length: 50 }),
+  country: varchar("country", { length: 100 }),
+  customFields: text("custom_fields"),
+  attended: boolean("attended").default(false),
+  joinedAt: bigint("joined_at", { mode: "number" }),
+  leftAt: bigint("left_at", { mode: "number" }),
+  watchTimeSeconds: int("watch_time_seconds").default(0),
+  engagementScore: int("engagement_score").default(0),
+  registrationSource: varchar("registration_source", { length: 100 }).default("direct"),
+  utmSource: varchar("utm_source", { length: 100 }),
+  registeredAt: bigint("registered_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type WebcastRegistration = typeof webcastRegistrations.$inferSelect;
+export type InsertWebcastRegistration = typeof webcastRegistrations.$inferInsert;
+
+/**
+ * webcast_qa — Q&A questions submitted during webcast events.
+ */
+export const webcastQa = mysqlTable("webcast_qa", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("event_id").notNull(),
+  attendeeName: varchar("attendee_name", { length: 200 }).notNull(),
+  attendeeEmail: varchar("attendee_email", { length: 255 }),
+  attendeeCompany: varchar("attendee_company", { length: 200 }),
+  question: text("question").notNull(),
+  status: mysqlEnum("qa_status", [
+    "pending",
+    "approved",
+    "answered",
+    "dismissed",
+    "flagged",
+  ]).notNull().default("pending"),
+  upvotes: int("upvotes").default(0),
+  answer: text("answer"),
+  answeredBy: varchar("answered_by", { length: 200 }),
+  answeredAt: bigint("answered_at", { mode: "number" }),
+  category: varchar("category", { length: 100 }),
+  isAnonymous: boolean("is_anonymous").default(false),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type WebcastQa = typeof webcastQa.$inferSelect;
+export type InsertWebcastQa = typeof webcastQa.$inferInsert;
+
+/**
+ * webcast_polls — Interactive polls for webcast events.
+ */
+export const webcastPolls = mysqlTable("webcast_polls", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("event_id").notNull(),
+  question: varchar("question", { length: 500 }).notNull(),
+  options: text("options").notNull(),
+  results: text("results"),
+  status: mysqlEnum("poll_status", ["draft", "live", "closed"]).notNull().default("draft"),
+  allowMultiple: boolean("allow_multiple").default(false),
+  showResultsToAttendees: boolean("show_results_to_attendees").default(true),
+  totalVotes: int("total_votes").default(0),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  closedAt: bigint("closed_at", { mode: "number" }),
+});
+export type WebcastPoll = typeof webcastPolls.$inferSelect;
+export type InsertWebcastPoll = typeof webcastPolls.$inferInsert;

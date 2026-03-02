@@ -207,3 +207,15 @@
 - [ ] Add Voice Message option: audio file upload or TTS text entry
 - [ ] Add backend sendSmsNotification tRPC procedure
 - [ ] Add voiceMessage storage and retrieval tRPC procedure
+
+## Round 42 — Webcasting Platform Expansion
+- [ ] Add webcast_events, webcast_registrations, webcast_qa, webcast_polls tables to schema
+- [ ] Run pnpm db:push for new schema
+- [ ] Add webcasting tRPC router (webcastRouter.ts) with CRUD for events, registrations, Q&A, polls
+- [ ] Redesign /live-video hub page into full webcasting platform hub (8 event types, industry verticals)
+- [ ] Build /live-video/webcast/:id — Webcast Studio (production console, green room, scenes, engagement)
+- [ ] Build /live-video/webcast/:id/register — Event Registration & Landing Page
+- [ ] Build /live-video/on-demand — On-Demand Media Hub (video library, search, filter)
+- [ ] Build /live-video/analytics — Analytics & Engagement Dashboard
+- [ ] Add routes to App.tsx for all new pages
+- [ ] Write vitest for webcastRouter procedures

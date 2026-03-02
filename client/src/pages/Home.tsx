@@ -28,6 +28,7 @@ const PLATFORM_PAGES = [
   { icon: Package, label: "Partner API & Widget", desc: "Webhook events, REST API, embeddable widget", path: "/partner-api", color: "text-violet-400" },
   { icon: Activity, label: "Cross-Device Sync Test", desc: "Live real-time sync — open on two devices to verify instant cross-device delivery", path: "/sync-test", color: "text-cyan-400" },
   { icon: Video, label: "Live Video Meetings", desc: "Capital raising 1:1 roadshows, research presentations, earnings calls & hybrid conferences", path: "/live-video", color: "text-blue-400" },
+  { icon: Radio, label: "Webcasting Platform", desc: "Webinars, webcasts, virtual events, hybrid events, on-demand — across 8 industry verticals", path: "/live-video/webcasting", color: "text-amber-400" },
 ];
 
 function StatusBadge({ status }: { status: string }) {
@@ -59,6 +60,7 @@ export default function Home() {
             <a href="#events" className="hover:text-foreground transition-colors">Events</a>
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <button onClick={() => navigate("/live-video")} className="hover:text-foreground transition-colors">Live Video</button>
+            <button onClick={() => navigate("/live-video/webcasting")} className="hover:text-foreground transition-colors">Webcasting</button>
             <button onClick={() => navigate("/integrations")} className="hover:text-foreground transition-colors">Integrations</button>
             <button onClick={() => navigate("/partner-api")} className="hover:text-foreground transition-colors">Partner API</button>
             <button onClick={() => navigate("/book-demo")} className="text-emerald-400 font-semibold hover:opacity-80 transition-opacity">Book Demo</button>

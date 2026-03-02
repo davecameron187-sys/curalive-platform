@@ -29,6 +29,11 @@ import InvestorWaitingRoom from "./pages/InvestorWaitingRoom";
 import SlidePresenter from "./pages/SlidePresenter";
 import RoadshowOrderBook from "./pages/RoadshowOrderBook";
 import BookDemo from "./pages/BookDemo";
+import WebcastingHub from "./pages/WebcastingHub";
+import WebcastStudio from "./pages/WebcastStudio";
+import WebcastRegister from "./pages/WebcastRegister";
+import OnDemandLibrary from "./pages/OnDemandLibrary";
+import WebcastAnalytics from "./pages/WebcastAnalytics";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -58,6 +63,11 @@ function Router() {
       <Route path="/live-video/roadshow/:roadshowId/present/:meetingId" component={SlidePresenter} />
       <Route path="/live-video/roadshow/:id/order-book" component={RoadshowOrderBook} />
       <Route path="/book-demo" component={BookDemo} />
+      <Route path="/live-video/webcasting" component={WebcastingHub} />
+      <Route path="/live-video/webcast/:slug" component={WebcastStudio} />
+      <Route path="/live-video/webcast/:slug/register" component={WebcastRegister} />
+      <Route path="/live-video/on-demand" component={OnDemandLibrary} />
+      <Route path="/live-video/analytics" component={WebcastAnalytics} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
