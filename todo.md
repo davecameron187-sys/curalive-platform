@@ -100,3 +100,10 @@
 - [x] Ably presence: show which operators have which conference panels open
 - [x] Seed realistic demo data for JSE earnings call scenario
 - [ ] Write vitest tests for all OCC tRPC procedures
+
+## Round 16 — OCC Enhancements
+
+- [ ] Add OCC nav link to Home page header
+- [ ] Wire Lounge panel to Ably occ:lounge:{conferenceId} real-time channel
+- [ ] Wire Operator Requests panel to Ably occ:requests:{conferenceId} real-time channel
+- [ ] Build Caller Control popup modal (name/company label fields, Moderator/Participant/Drop routing)

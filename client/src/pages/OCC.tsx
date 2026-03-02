@@ -205,8 +205,78 @@ export default function OCC() {
   // Lounge alert
   const [loungeAlert, setLoungeAlert] = useState(true);
 
-  // Caller control
-  const [callerControlData, setCallerControlData] = useState<{ phone: string; name: string } | null>(null);
+  // Caller control popup state
+  const [callerControlData, setCallerControlData] = useState<{
+    participantId: number;
+    phone: string;
+    name: string;
+    company: string;
+    dialIn: string;
+    waitingSeconds: number;
+    conferenceId: number;
+    conferenceName: string;
+  } | null>(null);
+  const [callerName, setCallerName] = useState("");
+  const [callerCompany, setCallerCompany] = useState("");
+  const [callerRole, setCallerRole] = useState<"moderator" | "participant">("participant");
+
+  // Ably real-time for Lounge and Operator Requests
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ablyClientRef = useRef<any>(null);
+  const ablyLoungeChanRef = useRef<any>(null);
+  const ablyRequestsChanRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!activeCCPConferenceId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const Ably = await import("ably");
+        // Re-use existing client or create a new one
+        if (!ablyClientRef.current) {
+          ablyClientRef.current = new (Ably.default as any).Realtime({ key: undefined, authUrl: "/api/trpc/ably.tokenRequest" });
+        }
+        const client = ablyClientRef.current;
+
+        // Lounge channel
+        const loungeChan = client.channels.get(`occ:lounge:${activeCCPConferenceId}`);
+        ablyLoungeChanRef.current = loungeChan;
+        loungeChan.subscribe((msg: any) => {
+          if (cancelled) return;
+          try {
+            const payload = JSON.parse(msg.data);
+            if (msg.name === "lounge.enter") {
+              setLocalLounge(prev => [...prev.filter(l => l.id !== payload.id), payload]);
+            } else if (msg.name === "lounge.pick" || msg.name === "lounge.leave") {
+              setLocalLounge(prev => prev.filter(l => l.id !== payload.id));
+            }
+          } catch {}
+        });
+
+        // Operator Requests channel
+        const reqChan = client.channels.get(`occ:requests:${activeCCPConferenceId}`);
+        ablyRequestsChanRef.current = reqChan;
+        reqChan.subscribe((msg: any) => {
+          if (cancelled) return;
+          try {
+            const payload = JSON.parse(msg.data);
+            if (msg.name === "request.new") {
+              setLocalOpRequests(prev => [...prev.filter(r => r.id !== payload.id), payload]);
+            } else if (msg.name === "request.pick" || msg.name === "request.clear") {
+              setLocalOpRequests(prev => prev.filter(r => r.id !== payload.id));
+            }
+          } catch {}
+        });
+      } catch {
+        // Ably not configured — demo mode already has data, no action needed
+      }
+    })();
+    return () => {
+      cancelled = true;
+      ablyLoungeChanRef.current?.unsubscribe();
+      ablyRequestsChanRef.current?.unsubscribe();
+    };
+  }, [activeCCPConferenceId]);
 
   // Local state (demo mode — mirrors DB state locally for instant feedback)
   const [localConferences, setLocalConferences] = useState(DEMO_CONFERENCES);
@@ -449,6 +519,45 @@ export default function OCC() {
         recipientType: chatRecipient,
       });
     } catch { }
+  };
+
+  // ── Caller Control helpers ──────────────────────────────────────────────────
+
+  const openCallerControl = (p: typeof DEMO_PARTICIPANTS[0]) => {
+    setCallerControlData({
+      participantId: p.id,
+      phone: p.phoneNumber ?? "Unknown",
+      name: p.name ?? "",
+      company: p.company ?? "",
+      dialIn: p.dialInNumber ?? "",
+      waitingSeconds: Math.floor((Date.now() - new Date(p.connectedAt).getTime()) / 1000),
+      conferenceId: p.conferenceId,
+      conferenceName: activeConf?.subject ?? "Conference",
+    });
+    setCallerName(p.name ?? "");
+    setCallerCompany(p.company ?? "");
+    setCallerRole("participant");
+  };
+
+  const doCallerRoute = async (action: "moderator" | "participant" | "hold" | "drop") => {
+    if (!callerControlData) return;
+    const { participantId } = callerControlData;
+    if (action === "drop") {
+      setLocalParticipants(prev => prev.map(p => p.id === participantId ? { ...p, state: "dropped" as const } : p));
+      try { await updateStateMut.mutateAsync({ participantId, conferenceId: callerControlData.conferenceId, state: "dropped" }); } catch {}
+    } else if (action === "hold") {
+      setLocalParticipants(prev => prev.map(p => p.id === participantId ? { ...p, state: "parked" as const } : p));
+      try { await updateStateMut.mutateAsync({ participantId, conferenceId: callerControlData.conferenceId, state: "parked" }); } catch {}
+    } else {
+      // Route as moderator or participant — update name/company and set connected
+      setLocalParticipants(prev => prev.map(p =>
+        p.id === participantId
+          ? { ...p, name: callerName || p.name, company: callerCompany || p.company, role: action, state: "connected" as const }
+          : p
+      ));
+      try { await updateStateMut.mutateAsync({ participantId, conferenceId: callerControlData.conferenceId, state: "connected" }); } catch {}
+    }
+    setCallerControlData(null);
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -992,6 +1101,13 @@ export default function OCC() {
                                   title="History"
                                   className="p-1 rounded bg-slate-700/40 hover:bg-slate-700 text-slate-400 transition-colors"
                                 ><History className="w-3 h-3" /></button>
+                                {p.state === "waiting_operator" && (
+                                  <button
+                                    onClick={() => openCallerControl(p)}
+                                    title="Handle caller"
+                                    className="p-1 rounded bg-blue-700/40 hover:bg-blue-700 text-blue-400 transition-colors"
+                                  ><PhoneIncoming className="w-3 h-3" /></button>
+                                )}
                                 <button onClick={() => doParticipantAction("dropped", [p.id])} title="Disconnect" className="p-1 rounded bg-red-900/40 hover:bg-red-800 text-red-400 transition-colors"><PhoneOff className="w-3 h-3" /></button>
                               </div>
                             </td>
@@ -1221,6 +1337,125 @@ export default function OCC() {
           </div>
         )}
       </div>
+
+      {/* ── Caller Control Popup ──────────────────────────────────────────────── */}
+      {callerControlData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#111827] border border-slate-600 rounded-xl shadow-2xl w-[480px] max-w-full mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0f172a] border-b border-slate-700 rounded-t-xl">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="font-semibold text-sm text-slate-100">Caller Control</span>
+                <span className="text-xs text-slate-400">— Incoming caller requires routing</span>
+              </div>
+              <button onClick={() => setCallerControlData(null)} className="text-slate-400 hover:text-slate-200">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Caller info */}
+            <div className="px-4 pt-4 pb-2">
+              <div className="grid grid-cols-2 gap-3 bg-[#0d1526] rounded-lg p-3 mb-4 text-xs">
+                <div>
+                  <div className="text-slate-500 mb-0.5">Phone Number</div>
+                  <div className="font-mono text-slate-100 font-medium">{callerControlData.phone}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500 mb-0.5">Dial-In Used</div>
+                  <div className="font-mono text-slate-400">{callerControlData.dialIn || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500 mb-0.5">Conference</div>
+                  <div className="text-slate-200">{callerControlData.conferenceName}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500 mb-0.5">Waiting</div>
+                  <div className="text-amber-400 font-medium">
+                    {Math.floor(callerControlData.waitingSeconds / 60)}m {callerControlData.waitingSeconds % 60}s
+                  </div>
+                </div>
+              </div>
+
+              {/* Label fields */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Name</label>
+                  <input
+                    value={callerName}
+                    onChange={e => setCallerName(e.target.value)}
+                    placeholder="Enter caller name"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Company</label>
+                  <input
+                    value={callerCompany}
+                    onChange={e => setCallerCompany(e.target.value)}
+                    placeholder="Enter company"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Role selector */}
+              <div className="mb-4">
+                <label className="block text-xs text-slate-400 mb-1.5">Route as</label>
+                <div className="flex gap-2">
+                  {(["participant", "moderator"] as const).map(role => (
+                    <button
+                      key={role}
+                      onClick={() => setCallerRole(role)}
+                      className={`flex-1 py-2 rounded text-xs font-semibold capitalize border transition-colors ${
+                        callerRole === role
+                          ? role === "moderator"
+                            ? "bg-amber-600 border-amber-500 text-white"
+                            : "bg-blue-600 border-blue-500 text-white"
+                          : "bg-slate-800 border-slate-600 text-slate-400 hover:border-slate-500"
+                      }`}
+                    >
+                      {role === "moderator" ? "★ Moderator" : "Participant"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => doCallerRoute(callerRole)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-sm font-semibold transition-colors"
+                >
+                  <UserCheck className="w-4 h-4" />
+                  Route to Conference
+                </button>
+                <button
+                  onClick={() => doCallerRoute("hold")}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-700/60 hover:bg-purple-700 text-purple-300 rounded text-sm font-semibold border border-purple-700/40 transition-colors"
+                >
+                  <PauseCircle className="w-4 h-4" /> Hold
+                </button>
+                <button
+                  onClick={() => doCallerRoute("drop")}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-900/50 hover:bg-red-800 text-red-400 rounded text-sm font-semibold border border-red-800/40 transition-colors"
+                >
+                  <PhoneOff className="w-4 h-4" /> Drop
+                </button>
+                <button
+                  onClick={() => setCallerControlData(null)}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm font-semibold transition-colors"
+                >
+                  Back
+                </button>
+              </div>
+            </div>
+            <div className="px-4 py-2 text-[10px] text-slate-600 border-t border-slate-800 rounded-b-xl">
+              Caller is on hold while this dialog is open. Routing will connect them immediately.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Status Bar ───────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-3 py-1 bg-[#0a0d14] border-t border-slate-800 text-[10px] text-slate-500 shrink-0">
