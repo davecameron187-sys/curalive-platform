@@ -527,4 +527,221 @@ Return JSON with:
         totalMeetings: meetings.length,
       };
     }),
+
+  // ── Draft follow-up email for a completed meeting ─────────────────────────
+  draftFollowUpEmail: operatorProcedure
+    .input(z.object({
+      meetingDbId: z.number(),
+      roadshowId: z.string(),
+      investorId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const [investor] = await db.select().from(liveRoadshowInvestors).where(eq(liveRoadshowInvestors.id, input.investorId));
+      if (!investor) throw new Error("Investor not found");
+
+      const [meeting] = await db.select().from(liveRoadshowMeetings).where(eq(liveRoadshowMeetings.id, input.meetingDbId));
+      const [roadshow] = await db.select().from(liveRoadshows).where(eq(liveRoadshows.roadshowId, input.roadshowId));
+
+      const signals = await db.select().from(commitmentSignals).where(
+        and(eq(commitmentSignals.meetingDbId, input.meetingDbId), eq(commitmentSignals.investorId, input.investorId))
+      );
+
+      const [briefing] = await db.select().from(investorBriefingPacks).where(
+        and(eq(investorBriefingPacks.investorId, input.investorId), eq(investorBriefingPacks.meetingDbId, input.meetingDbId))
+      );
+
+      const signalSummary = signals.length > 0
+        ? signals.map(s => `- ${s.signalType.replace(/_/g, ' ')}: "${s.quote}"${s.indicatedAmount ? ` (${s.indicatedAmount})` : ''}`).join('\n')
+        : 'No specific commitment signals detected.';
+
+      const llmResponse = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: `You are a senior investor relations professional drafting a post-meeting follow-up email. 
+Write in a professional, warm, and concise tone appropriate for institutional investor communications. 
+Return JSON only.`,
+          },
+          {
+            role: "user",
+            content: `Draft a follow-up email after a 1:1 roadshow meeting.
+
+Meeting details:
+- Investor: ${investor.name}, ${investor.jobTitle ?? 'Portfolio Manager'} at ${investor.institution}
+- Roadshow: ${roadshow?.title ?? 'Capital Raise Roadshow'}
+- Issuer: ${roadshow?.issuer ?? ''}
+- Deal Type: ${roadshow?.serviceType ?? 'Capital Raise'}
+- Meeting Date: ${meeting?.meetingDate ?? ''}
+
+Commitment signals detected during the meeting:
+${signalSummary}
+
+${briefing ? `Pre-meeting briefing notes: ${briefing.suggestedTalkingPoints}` : ''}
+
+Return JSON with:
+- subject: email subject line
+- greeting: opening line (e.g. "Dear [Name],")
+- body: 3-4 paragraph email body (plain text, no markdown)
+- callToAction: specific next step proposed in the closing paragraph
+- signOff: professional sign-off`,
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "follow_up_email",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                subject: { type: "string" },
+                greeting: { type: "string" },
+                body: { type: "string" },
+                callToAction: { type: "string" },
+                signOff: { type: "string" },
+              },
+              required: ["subject", "greeting", "body", "callToAction", "signOff"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+
+      const content = llmResponse?.choices?.[0]?.message?.content;
+      if (!content) throw new Error("LLM returned no content");
+      const parsed = JSON.parse(typeof content === "string" ? content : JSON.stringify(content));
+
+      return {
+        ...parsed,
+        investorName: investor.name,
+        investorEmail: investor.email,
+        institution: investor.institution,
+      };
+    }),
+
+  // ── Score investor fit for a deal ─────────────────────────────────────────
+  scoreInvestorFit: operatorProcedure
+    .input(z.object({
+      roadshowId: z.string(),
+      investorName: z.string(),
+      institution: z.string(),
+      jobTitle: z.string().optional(),
+      email: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const [roadshow] = await db.select().from(liveRoadshows).where(eq(liveRoadshows.roadshowId, input.roadshowId));
+
+      const llmResponse = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: `You are a capital markets specialist who scores investor fit for deals. 
+Analyse the investor profile against the deal parameters and return a fit score with reasoning. 
+Return JSON only. Be specific and realistic — this helps operators prioritise meeting slots.`,
+          },
+          {
+            role: "user",
+            content: `Score the fit of this investor for this deal:
+
+Deal:
+- Title: ${roadshow?.title ?? 'Capital Raise'}
+- Issuer: ${roadshow?.issuer ?? ''}
+- Service Type: ${roadshow?.serviceType ?? 'Capital Raise'}
+
+Investor:
+- Name: ${input.investorName}
+- Institution: ${input.institution}
+- Job Title: ${input.jobTitle ?? 'Not specified'}
+
+Return JSON with:
+- fitScore: integer 0-100 (100 = perfect fit)
+- fitTier: one of "strong", "moderate", "weak"
+- rationale: 2-3 sentences explaining the score
+- keyStrengths: array of 2-3 reasons this investor is a good fit (or empty if weak)
+- keyRisks: array of 1-2 reasons this investor may not participate (or empty if strong)
+- recommendedSlotLength: "15min", "30min", or "45min" based on likely engagement depth`,
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "investor_fit_score",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                fitScore: { type: "integer" },
+                fitTier: { type: "string", enum: ["strong", "moderate", "weak"] },
+                rationale: { type: "string" },
+                keyStrengths: { type: "array", items: { type: "string" } },
+                keyRisks: { type: "array", items: { type: "string" } },
+                recommendedSlotLength: { type: "string", enum: ["15min", "30min", "45min"] },
+              },
+              required: ["fitScore", "fitTier", "rationale", "keyStrengths", "keyRisks", "recommendedSlotLength"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+
+      const content = llmResponse?.choices?.[0]?.message?.content;
+      if (!content) throw new Error("LLM returned no content");
+      return JSON.parse(typeof content === "string" ? content : JSON.stringify(content));
+    }),
+
+  // ── Get sentiment timeline for a roadshow (for heatmap) ──────────────────
+  getSentimentTimeline: protectedProcedure
+    .input(z.object({ roadshowId: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      const signals = await db
+        .select()
+        .from(commitmentSignals)
+        .where(eq(commitmentSignals.roadshowId, input.roadshowId));
+
+      const meetings = await db
+        .select()
+        .from(liveRoadshowMeetings)
+        .where(eq(liveRoadshowMeetings.roadshowId, input.roadshowId));
+
+      // Build per-meeting sentiment score
+      return meetings.map(m => {
+        const mSignals = signals.filter(s => s.meetingDbId === m.id);
+        const positiveScore = mSignals.filter(s => ["soft_commit", "interest"].includes(s.signalType)).length * 25;
+        const negativeScore = mSignals.filter(s => s.signalType === "objection").length * 20;
+        const neutralScore = mSignals.filter(s => ["question", "pricing_discussion", "size_discussion"].includes(s.signalType)).length * 10;
+        const rawScore = Math.min(100, Math.max(0, 50 + positiveScore - negativeScore + neutralScore));
+
+        const softCommits = mSignals.filter(s => s.signalType === "soft_commit");
+        const interests = mSignals.filter(s => s.signalType === "interest");
+        const objections = mSignals.filter(s => s.signalType === "objection");
+
+        return {
+          meetingId: m.id,
+          meetingDate: m.meetingDate,
+          startTime: m.startTime,
+          investorName: null,
+          institution: null,
+          status: m.status,
+          sentimentScore: rawScore,
+          sentimentLabel: rawScore >= 70 ? "positive" : rawScore >= 40 ? "neutral" : "negative",
+          signalCount: mSignals.length,
+          softCommitCount: softCommits.length,
+          interestCount: interests.length,
+          objectionCount: objections.length,
+          topSignal: softCommits[0]?.quote ?? interests[0]?.quote ?? objections[0]?.quote ?? null,
+        };
+      }).sort((a, b) => {
+        if (a.meetingDate !== b.meetingDate) return a.meetingDate.localeCompare(b.meetingDate);
+        return (a.startTime ?? "").localeCompare(b.startTime ?? "");
+      });
+    }),
 });

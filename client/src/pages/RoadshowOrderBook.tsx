@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   TrendingUp, Zap, AlertTriangle, BarChart3, DollarSign, MessageSquare,
   Loader2, FileText, ChevronLeft, RefreshCw, Building2, CheckCircle2,
-  Circle, XCircle, Sparkles, Download
+  Circle, XCircle, Sparkles, Download, Activity
 } from "lucide-react";
 
 type SignalType = "soft_commit" | "interest" | "objection" | "question" | "pricing_discussion" | "size_discussion";
@@ -28,7 +28,12 @@ const OUTLOOK_CONFIG = {
 export default function RoadshowOrderBook() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<"orderbook" | "report">("orderbook");
+  const [activeTab, setActiveTab] = useState<"orderbook" | "heatmap" | "report">("orderbook");
+
+  const { data: sentimentTimeline = [] } = trpc.roadshowAI.getSentimentTimeline.useQuery(
+    { roadshowId: id! },
+    { enabled: !!id, refetchInterval: 30000 }
+  );
   const [report, setReport] = useState<any>(null);
 
   const { data: orderBook, isLoading, refetch } = trpc.roadshowAI.getOrderBook.useQuery(
@@ -115,6 +120,7 @@ export default function RoadshowOrderBook() {
         <div className="flex gap-1 mb-6 bg-slate-900 border border-slate-800 rounded-xl p-1 w-fit">
           {[
             { id: "orderbook", label: "Order Book", icon: BarChart3 },
+            { id: "heatmap", label: "Sentiment Heatmap", icon: Activity },
             { id: "report", label: "Debrief Report", icon: FileText },
           ].map(({ id: tabId, label, icon: Icon }) => (
             <button
@@ -195,6 +201,107 @@ export default function RoadshowOrderBook() {
                     </div>
                   </div>
                 ))}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Sentiment Heatmap Tab */}
+        {activeTab === "heatmap" && (
+          <div className="space-y-4">
+            {sentimentTimeline.length === 0 ? (
+              <div className="text-center py-20">
+                <Activity className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-white mb-2">No Meeting Data Yet</h3>
+                <p className="text-slate-400 text-sm max-w-md mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Sentiment data will appear here once meetings have been analysed. Use the Commitment Signal Detector in each meeting card to capture transcript signals.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                  Sentiment arc across {sentimentTimeline.length} meeting{sentimentTimeline.length !== 1 ? "s" : ""} — scored from commitment signals
+                </div>
+
+                {/* Visual bar chart */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-4">
+                  <div className="text-xs font-semibold text-slate-400 mb-4 uppercase tracking-wider">Meeting Sentiment Scores</div>
+                  <div className="flex items-end gap-2 h-40">
+                    {sentimentTimeline.map((m: any, i: number) => {
+                      const barColor = m.sentimentLabel === "positive" ? "bg-emerald-500" : m.sentimentLabel === "neutral" ? "bg-amber-500" : "bg-red-500";
+                      const barHeight = `${Math.max(8, m.sentimentScore)}%`;
+                      return (
+                        <div key={i} className="flex flex-col items-center gap-1 flex-1 min-w-0">
+                          <div className="text-[9px] text-slate-500 font-bold">{m.sentimentScore}</div>
+                          <div
+                            className={`w-full rounded-t-sm ${barColor} opacity-80 transition-all`}
+                            style={{ height: barHeight }}
+                            title={`${m.investorName ?? 'Unknown'} — ${m.sentimentScore}/100`}
+                          />
+                          <div className="text-[8px] text-slate-600 truncate w-full text-center">
+                            {m.startTime ?? m.meetingDate}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-800">
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-emerald-500" /><span className="text-[10px] text-slate-400">Positive (≥70)</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-amber-500" /><span className="text-[10px] text-slate-400">Neutral (40–69)</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-red-500" /><span className="text-[10px] text-slate-400">Negative (&lt;40)</span></div>
+                  </div>
+                </div>
+
+                {/* Meeting-by-meeting breakdown */}
+                {sentimentTimeline.map((m: any, i: number) => {
+                  const sentColor = m.sentimentLabel === "positive" ? "text-emerald-400 bg-emerald-900/20 border-emerald-700/40"
+                    : m.sentimentLabel === "neutral" ? "text-amber-400 bg-amber-900/20 border-amber-700/40"
+                    : "text-red-400 bg-red-900/20 border-red-700/40";
+                  return (
+                    <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400">
+                            {i + 1}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-white text-sm">{m.investorName ?? 'Unassigned Meeting'}</div>
+                            <div className="text-xs text-slate-500" style={{ fontFamily: "'Inter', sans-serif" }}>
+                              {m.meetingDate} {m.startTime ? `· ${m.startTime}` : ''} · {m.status.replace(/_/g, ' ')}
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`flex items-center gap-2 border rounded-xl px-3 py-1.5 ${sentColor}`}>
+                          <span className="text-lg font-bold">{m.sentimentScore}</span>
+                          <span className="text-[10px] opacity-70">/100</span>
+                          <span className="text-[10px] font-semibold uppercase opacity-80">{m.sentimentLabel}</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        <div className="text-center bg-emerald-900/10 border border-emerald-800/30 rounded-lg py-2">
+                          <div className="text-lg font-bold text-emerald-400">{m.softCommitCount + m.interestCount}</div>
+                          <div className="text-[9px] text-slate-500 uppercase tracking-wider">Positive Signals</div>
+                        </div>
+                        <div className="text-center bg-red-900/10 border border-red-800/30 rounded-lg py-2">
+                          <div className="text-lg font-bold text-red-400">{m.objectionCount}</div>
+                          <div className="text-[9px] text-slate-500 uppercase tracking-wider">Objections</div>
+                        </div>
+                        <div className="text-center bg-slate-800 border border-slate-700 rounded-lg py-2">
+                          <div className="text-lg font-bold text-white">{m.signalCount}</div>
+                          <div className="text-[9px] text-slate-500 uppercase tracking-wider">Total Signals</div>
+                        </div>
+                      </div>
+
+                      {m.topSignal && (
+                        <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+                          <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Top Signal</div>
+                          <p className="text-xs text-slate-300 italic" style={{ fontFamily: "'Inter', sans-serif" }}>"{m.topSignal.slice(0, 120)}{m.topSignal.length > 120 ? '…' : ''}"</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </>
             )}
           </div>
