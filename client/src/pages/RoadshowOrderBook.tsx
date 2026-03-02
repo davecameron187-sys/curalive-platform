@@ -34,6 +34,31 @@ export default function RoadshowOrderBook() {
     { roadshowId: id! },
     { enabled: !!id, refetchInterval: 30000 }
   );
+
+  const exportToCsv = () => {
+    if (!orderBook || orderBook.orderBook.length === 0) {
+      toast.error("No investor data to export");
+      return;
+    }
+    const headers = ["Institution", "Investor Name", "Signal Strength", "Soft Commits", "Interest", "Objections", "Total Signals", "Indicated Amounts", "Max Confidence %", "Top Quote"];
+    const dataRows = orderBook.orderBook.map((entry: any) => {
+      const softCount = entry.signals.filter((s: any) => s.signalType === "soft_commit").length;
+      const intCount = entry.signals.filter((s: any) => s.signalType === "interest").length;
+      const objCount = entry.signals.filter((s: any) => s.signalType === "objection").length;
+      const topQ = (entry.signals[0]?.quote ?? "").replace(/"/g, "'");
+      const strength = entry.hasSoftCommit ? "strong" : intCount > 0 ? "moderate" : "weak";
+      return [entry.institution ?? "", entry.investorName ?? "", strength, String(softCount), String(intCount), String(objCount), String(entry.signals.length), entry.indicatedAmounts.join("; "), String(entry.highestConfidence), topQ];
+    });
+    const csv = [headers, ...dataRows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `roadshow-crm-${id}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CRM export downloaded");
+  };
   const [report, setReport] = useState<any>(null);
 
   const { data: orderBook, isLoading, refetch } = trpc.roadshowAI.getOrderBook.useQuery(
@@ -83,6 +108,12 @@ export default function RoadshowOrderBook() {
               className="flex items-center gap-1.5 text-slate-400 hover:text-white border border-slate-700 px-3 py-1.5 rounded-lg text-xs transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" /> Refresh
+            </button>
+            <button
+              onClick={exportToCsv}
+              className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" /> Export CRM CSV
             </button>
             <button
               onClick={() => generateReport.mutate({ roadshowId: id! })}

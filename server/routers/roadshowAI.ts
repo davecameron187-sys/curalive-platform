@@ -744,4 +744,55 @@ Return JSON with:
         return (a.startTime ?? "").localeCompare(b.startTime ?? "");
       });
     }),
+
+  // ── Dashboard summary cards for the Live Video hub ────────────────────────
+  getRoadshowSummaryCards: protectedProcedure
+    .input(z.object({ roadshowIds: z.array(z.string()) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db || input.roadshowIds.length === 0) return [];
+      const results = [];
+      for (const rid of input.roadshowIds) {
+        const roadshowRows = await db.select().from(liveRoadshows).where(eq(liveRoadshows.roadshowId, rid)).limit(1);
+        if (!roadshowRows[0]) continue;
+        const rs = roadshowRows[0];
+        const meetings = await db.select().from(liveRoadshowMeetings).where(eq(liveRoadshowMeetings.roadshowId, rid));
+        const signals = await db.select().from(commitmentSignals).where(eq(commitmentSignals.roadshowId, rid));
+        const softCommits = signals.filter(s => s.signalType === "soft_commit");
+        const posSignals = signals.filter(s => s.signalType === "soft_commit" || s.signalType === "interest").length;
+        const negSignals = signals.filter(s => s.signalType === "objection").length;
+        const sentimentScore = signals.length > 0
+          ? Math.round(Math.min(100, Math.max(0, 50 + (posSignals - negSignals * 0.5) / signals.length * 50)))
+          : null;
+        const inProgressMeeting = meetings.find(m => m.status === "in_progress");
+        const nextMeeting = meetings
+          .filter(m => m.status === "scheduled" || m.status === "waiting_room_open")
+          .sort((a, b) => {
+            const da = `${a.meetingDate}T${a.startTime ?? "00:00"}`;
+            const db2 = `${b.meetingDate}T${b.startTime ?? "00:00"}`;
+            return da.localeCompare(db2);
+          })[0];
+        results.push({
+          id: rid,
+          title: rs.title,
+          issuer: rs.issuer,
+          status: rs.status,
+          totalMeetings: meetings.length,
+          completedMeetings: meetings.filter(m => m.status === "completed").length,
+          softCommitCount: softCommits.length,
+          totalSignals: signals.length,
+          sentimentScore,
+          sentimentLabel: sentimentScore === null ? null : sentimentScore >= 70 ? "positive" : sentimentScore >= 40 ? "neutral" : "negative",
+          inProgressMeeting: inProgressMeeting ? {
+            startTime: inProgressMeeting.startTime,
+            meetingDate: inProgressMeeting.meetingDate,
+          } : null,
+          nextMeeting: nextMeeting ? {
+            startTime: nextMeeting.startTime,
+            meetingDate: nextMeeting.meetingDate,
+          } : null,
+        });
+      }
+      return results;
+    }),
 });

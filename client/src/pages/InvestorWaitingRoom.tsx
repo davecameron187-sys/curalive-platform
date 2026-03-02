@@ -23,7 +23,7 @@ type CheckInResult = {
     totalSlides: number;
     slideDeckUrl?: string | null;
   } | null;
-  roadshow: { title: string; issuer: string } | null;
+  roadshow: { title: string; issuer: string; roadshowId?: string } | null;
 };
 
 // ─── Status display helpers ───────────────────────────────────────────────────
@@ -162,6 +162,19 @@ export default function InvestorWaitingRoom() {
     { inviteToken: token ?? "" },
     { enabled: !!token && !!checkInData }
   );
+  // White-label branding
+  const roadshowIdForBranding = checkInData?.roadshow?.roadshowId ?? "";
+  const { data: branding } = trpc.branding.getBranding.useQuery(
+    { roadshowId: roadshowIdForBranding },
+    { enabled: !!roadshowIdForBranding }
+  );
+  const brandStyle = branding ? {
+    backgroundColor: branding.backgroundColor ?? "#0f172a",
+    color: branding.textColor ?? "#f8fafc",
+    fontFamily: `'${branding.fontFamily ?? "Space Grotesk"}', sans-serif`,
+    "--primary": branding.primaryColor ?? "#3b82f6",
+    "--accent": branding.accentColor ?? "#10b981",
+  } as React.CSSProperties : {};
 
   // Auto check-in on mount
   useEffect(() => {
@@ -270,17 +283,24 @@ export default function InvestorWaitingRoom() {
   const isAdmitted = status === "admitted";
 
   return (
-    <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+    <div className="min-h-screen" style={{ ...brandStyle, fontFamily: branding?.fontFamily ? `'${branding.fontFamily}', sans-serif` : "'Space Grotesk', sans-serif", backgroundColor: branding?.backgroundColor ?? "var(--background)", color: branding?.textColor ?? "var(--foreground)" }}>
       {/* Header */}
-      <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-10">
+      <header className="border-b sticky top-0 z-10 backdrop-blur-md" style={{ borderColor: branding ? `${branding.primaryColor}30` : undefined, backgroundColor: branding ? `${branding.backgroundColor}CC` : "var(--background)" }}>
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-              <Video className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-sm">Chorus.AI</span>
+            {branding?.logoUrl ? (
+              <img src={branding.logoUrl} alt={branding.clientName} className="h-7 object-contain" />
+            ) : (
+              <>
+                <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ backgroundColor: branding?.primaryColor ?? "var(--primary)" }}>
+                  <Video className="w-4 h-4" style={{ color: branding?.backgroundColor ?? "white" }} />
+                </div>
+                <span className="font-bold text-sm">{branding?.clientName ?? "Chorus.AI"}</span>
+              </>
+            )}
+            {branding?.tagline && <span className="text-xs opacity-50 hidden sm:block">{branding.tagline}</span>}
           </div>
-          <div className="text-xs text-muted-foreground">Investor Waiting Room</div>
+          <div className="text-xs opacity-50">Investor Waiting Room</div>
         </div>
       </header>
 

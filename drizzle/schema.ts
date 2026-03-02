@@ -539,3 +539,23 @@ export const investorBriefingPacks = mysqlTable("investor_briefing_packs", {
 });
 export type InvestorBriefingPack = typeof investorBriefingPacks.$inferSelect;
 export type InsertInvestorBriefingPack = typeof investorBriefingPacks.$inferInsert;
+
+// ─── White-Label Event Branding ───────────────────────────────────────────────
+export const eventBranding = mysqlTable("event_branding", {
+  id: int("id").autoincrement().primaryKey(),
+  roadshowId: varchar("roadshow_id", { length: 100 }).notNull().unique(),
+  clientName: varchar("client_name", { length: 200 }).notNull(),
+  logoUrl: varchar("logo_url", { length: 500 }),
+  primaryColor: varchar("primary_color", { length: 20 }).default("#3b82f6"),
+  accentColor: varchar("accent_color", { length: 20 }).default("#10b981"),
+  backgroundColor: varchar("background_color", { length: 20 }).default("#0f172a"),
+  textColor: varchar("text_color", { length: 20 }).default("#f8fafc"),
+  fontFamily: varchar("font_family", { length: 100 }).default("Space Grotesk"),
+  tagline: varchar("tagline", { length: 300 }),
+  footerText: varchar("footer_text", { length: 500 }),
+  faviconUrl: varchar("favicon_url", { length: 500 }),
+  showChorusWatermark: boolean("show_chorus_watermark").default(true),
+  customCss: text("custom_css"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});

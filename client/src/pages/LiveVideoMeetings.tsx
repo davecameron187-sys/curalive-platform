@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useMemo } from "react";
 import {
   Video, Users, TrendingUp, Mic, Calendar, Clock, Building2,
   Plus, ArrowRight, Play, CheckCircle2, Circle, AlertCircle,
   BarChart3, Globe, Briefcase, FileText, ChevronRight, Zap,
-  X, Loader2
+  X, Loader2, Activity
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -240,6 +241,13 @@ export default function LiveVideoMeetings() {
 
   const { data: roadshows = [], isLoading, refetch } = trpc.liveVideo.listRoadshows.useQuery();
 
+  const roadshowIds = useMemo(() => roadshows.map(r => r.roadshowId), [roadshows]);
+  const { data: summaryCards = [] } = trpc.roadshowAI.getRoadshowSummaryCards.useQuery(
+    { roadshowIds },
+    { enabled: roadshowIds.length > 0, refetchInterval: 30000 }
+  );
+  const summaryMap = useMemo(() => Object.fromEntries(summaryCards.map(c => [c.id, c])), [summaryCards]);
+
   const filtered = filterType === "all" ? roadshows : roadshows.filter(r => r.serviceType === filterType);
 
   const stats = {
@@ -392,6 +400,50 @@ export default function LiveVideoMeetings() {
                         {rs.startDate ? ` · ${rs.startDate}${rs.endDate && rs.endDate !== rs.startDate ? ` – ${rs.endDate}` : ""}` : ""}
                       </p>
                     </div>
+                    {/* AI Summary Mini-Card */}
+                    {summaryMap[rs.roadshowId] && (
+                      <div className="flex items-center gap-3 flex-shrink-0 border-l border-slate-800 pl-4">
+                        {/* Meetings progress */}
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-white">
+                            {summaryMap[rs.roadshowId].completedMeetings}/{summaryMap[rs.roadshowId].totalMeetings}
+                          </div>
+                          <div className="text-[9px] text-slate-500 uppercase tracking-wider">Meetings</div>
+                        </div>
+                        {/* Soft commits */}
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-emerald-400">{summaryMap[rs.roadshowId].softCommitCount}</div>
+                          <div className="text-[9px] text-slate-500 uppercase tracking-wider">Commits</div>
+                        </div>
+                        {/* Sentiment */}
+                        {summaryMap[rs.roadshowId].sentimentScore !== null && (
+                          <div className="text-center">
+                            <div className={`text-sm font-bold ${
+                              summaryMap[rs.roadshowId].sentimentLabel === "positive" ? "text-emerald-400"
+                              : summaryMap[rs.roadshowId].sentimentLabel === "neutral" ? "text-amber-400"
+                              : "text-red-400"
+                            }`}>
+                              {summaryMap[rs.roadshowId].sentimentScore}
+                            </div>
+                            <div className="text-[9px] text-slate-500 uppercase tracking-wider">Sentiment</div>
+                          </div>
+                        )}
+                        {/* In-progress indicator */}
+                        {summaryMap[rs.roadshowId].inProgressMeeting && (
+                          <div className="flex items-center gap-1 text-[10px] font-semibold text-red-400 bg-red-900/20 border border-red-700/30 px-2 py-1 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                            Live
+                          </div>
+                        )}
+                        {/* Next meeting */}
+                        {!summaryMap[rs.roadshowId].inProgressMeeting && summaryMap[rs.roadshowId].nextMeeting && (
+                          <div className="text-center">
+                            <div className="text-[10px] font-semibold text-slate-300">{summaryMap[rs.roadshowId].nextMeeting!.startTime ?? "—"}</div>
+                            <div className="text-[9px] text-slate-500 uppercase tracking-wider">Next</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={e => { e.stopPropagation(); navigate(`/live-video/roadshow/${rs.roadshowId}`); }}

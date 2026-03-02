@@ -8,10 +8,12 @@ import {
   Copy, Play, Pause, StopCircle, Eye, EyeOff, Building2, Phone,
   Mail, Briefcase, MoreVertical, Trash2, ArrowRight, Lock, Unlock,
   RefreshCw, Globe, Zap, Send, FileText, Sparkles
-} from "lucide-react";
+, Palette} from "lucide-react";
 import { CommitmentSignalPanel } from "@/components/CommitmentSignalPanel";
 import { BriefingPackPanel } from "@/components/BriefingPackPanel";
 import { FollowUpEmailDrafter } from "@/components/FollowUpEmailDrafter";
+import BrandingEditor from "@/components/BrandingEditor";
+import { LiveTranscriptFeed } from "@/components/LiveTranscriptFeed";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type MeetingStatus = "scheduled" | "waiting_room_open" | "in_progress" | "completed" | "cancelled";
@@ -526,6 +528,13 @@ function MeetingCard({ meeting, investors, roadshowId, onRefetch }: {
                 institution={meetingInvestors[0].institution}
               />
             )}
+            <LiveTranscriptFeed
+              meetingDbId={meeting.id}
+              roadshowId={roadshowId}
+              investorId={meetingInvestors[0]?.id}
+              investorName={meetingInvestors[0]?.name}
+              institution={meetingInvestors[0]?.institution}
+            />
             <CommitmentSignalPanel
               meetingDbId={meeting.id}
               roadshowId={roadshowId}
@@ -566,6 +575,7 @@ export default function RoadshowDetail() {
   const [showAddMeeting, setShowAddMeeting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<"schedule" | "report">("schedule");
+  const [showBrandingEditor, setShowBrandingEditor] = useState(false);
 
   const { data, isLoading, refetch } = trpc.liveVideo.getRoadshow.useQuery(
     { roadshowId: roadshowId! },
@@ -645,6 +655,12 @@ export default function RoadshowDetail() {
                 <StopCircle className="w-3 h-3" /> Complete
               </button>
             )}
+            <button
+              onClick={() => setShowBrandingEditor(true)}
+              className="flex items-center gap-1.5 bg-violet-700 hover:bg-violet-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+            >
+              <Palette className="w-3 h-3" /> Branding
+            </button>
             <button
               onClick={() => navigate(`/live-video/roadshow/${roadshowId}/order-book`)}
               className="flex items-center gap-1.5 bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
@@ -839,6 +855,13 @@ export default function RoadshowDetail() {
         </div>
       </div>
 
+      {showBrandingEditor && roadshow && (
+        <BrandingEditor
+          roadshowId={roadshow.roadshowId}
+          roadshowTitle={roadshow.title}
+          onClose={() => setShowBrandingEditor(false)}
+        />
+      )}
       {showAddMeeting && (
         <AddMeetingModal
           roadshowId={roadshowId!}
