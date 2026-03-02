@@ -65,11 +65,11 @@ function Router() {
       <Route path="/live-video/roadshow/:id/order-book" component={RoadshowOrderBook} />
       <Route path="/book-demo" component={BookDemo} />
       <Route path="/live-video/webcasting" component={WebcastingHub} />
+      <Route path="/live-video/webcast/create" component={CreateEventWizard} />
       <Route path="/live-video/webcast/:slug" component={WebcastStudio} />
       <Route path="/live-video/webcast/:slug/register" component={WebcastRegister} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
-      <Route path="/live-video/webcast/create" component={CreateEventWizard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

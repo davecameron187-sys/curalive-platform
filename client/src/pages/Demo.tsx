@@ -247,6 +247,11 @@ export default function Demo() {
               { label: "📊 Post-Event Intelligence Report", url: `${APP_BASE}/post-event/q4-earnings-2026` },
               { label: "🔗 Integration Hub", url: `${APP_BASE}/integrations` },
               { label: "📦 Partner API & Widget", url: `${APP_BASE}/partner-api` },
+              { label: "🎛️ Operator Console (OCC)", url: `${APP_BASE}/occ` },
+              { label: "📡 Live Video Meetings Hub", url: `${APP_BASE}/live-video` },
+              { label: "🎥 Webcasting Platform Hub", url: `${APP_BASE}/live-video/webcasting` },
+              { label: "🏢 Hybrid Conference Demo", url: `${APP_BASE}/live-video/conference` },
+              { label: "📅 Book a Live Demo", url: `${APP_BASE}/book-demo` },
               { label: "🎬 This Sales Demo Page", url: `${APP_BASE}/demo` },
             ].map(({ label, url }) => (
               <div key={url} className="flex items-center justify-between bg-card border border-border rounded-lg px-4 py-3">

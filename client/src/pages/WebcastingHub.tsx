@@ -254,7 +254,7 @@ export default function WebcastingHub() {
               <Play className="w-3.5 h-3.5" /> On Demand
             </button>
           </nav>
-          <button className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
+          <button onClick={() => navigate("/live-video/webcast/create")} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
             <Plus className="w-3.5 h-3.5" /> New Event
           </button>
         </div>
