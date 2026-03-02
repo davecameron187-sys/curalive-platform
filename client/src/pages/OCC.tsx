@@ -16,8 +16,9 @@ import {
   ArrowRight, UserCheck, UserX, Activity, Clock,
   List, LayoutGrid, Bell, BellOff, Send, Search, Filter,
   Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical, FileText,
-  PhoneForwarded, Trash2
+  PhoneForwarded, Trash2, Upload
 } from "lucide-react";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -214,6 +215,12 @@ export default function OCC() {
   const [schedPartCode, setSchedPartCode] = useState("");
   const [schedLimit, setSchedLimit] = useState("500");
   const [schedDialIn, setSchedDialIn] = useState("+27 11 535 0000");
+  // Dial-Out Conference type
+  const [schedConferenceType, setSchedConferenceType] = useState<"dial-in" | "dial-out">("dial-in");
+  type DialOutParticipant = { id: string; name: string; phone: string; company: string; role: "moderator" | "participant" | "host" };
+  const [schedDialOutParticipants, setSchedDialOutParticipants] = useState<DialOutParticipant[]>([]);
+  const [schedDialOutForm, setSchedDialOutForm] = useState({ name: "", phone: "", company: "", role: "participant" as "moderator" | "participant" | "host" });
+  const [schedDialOutCsvError, setSchedDialOutCsvError] = useState<string[]>([]);
 
   // Dial-out form
   const [dialName, setDialName] = useState("");
@@ -645,10 +652,19 @@ export default function OCC() {
       webAccessCode: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      conferenceType: schedConferenceType,
+      dialOutParticipants: schedConferenceType === "dial-out" ? [...schedDialOutParticipants] : [],
     };
     setLocalConferences(prev => [...prev, newConf]);
+    if (schedConferenceType === "dial-out" && schedDialOutParticipants.length > 0) {
+      toast.success(`Dial-Out Conference scheduled with ${schedDialOutParticipants.length} participant${schedDialOutParticipants.length !== 1 ? "s" : ""}`);
+    } else {
+      toast.success("Conference scheduled");
+    }
     setShowScheduleModal(false);
     setSchedSubject(""); setSchedDate(""); setSchedTime(""); setSchedModCode(""); setSchedPartCode("");
+    setSchedConferenceType("dial-in"); setSchedDialOutParticipants([]); setSchedDialOutCsvError([]);
+    setSchedDialOutForm({ name: "", phone: "", company: "", role: "participant" });
   };
 
   const doMuteParticipantsOnly = async () => {
@@ -2418,7 +2434,38 @@ export default function OCC() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-3 overflow-y-auto max-h-[70vh]">
+              {/* Conference Type Toggle */}
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Conference Type</label>
+                <div className="flex rounded overflow-hidden border border-slate-600">
+                  <button
+                    onClick={() => setSchedConferenceType("dial-in")}
+                    className={`flex-1 py-2 text-xs font-semibold transition-colors ${
+                      schedConferenceType === "dial-in"
+                        ? "bg-blue-700 text-white"
+                        : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                    }`}
+                  >
+                    📞 Dial-In
+                  </button>
+                  <button
+                    onClick={() => setSchedConferenceType("dial-out")}
+                    className={`flex-1 py-2 text-xs font-semibold transition-colors ${
+                      schedConferenceType === "dial-out"
+                        ? "bg-emerald-700 text-white"
+                        : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                    }`}
+                  >
+                    📲 Dial-Out
+                  </button>
+                </div>
+                {schedConferenceType === "dial-out" && (
+                  <p className="text-[10px] text-emerald-400 mt-1">The system will dial out to all participants when the conference starts.</p>
+                )}
+              </div>
+
+              {/* Subject */}
               <div>
                 <label className="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Subject <span className="text-red-400">*</span></label>
                 <input
@@ -2496,6 +2543,155 @@ export default function OCC() {
                   className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
                 />
               </div>
+
+              {/* ── Dial-Out Participant Panel ──────────────────────────────── */}
+              {schedConferenceType === "dial-out" && (
+                <div className="border border-emerald-800/50 rounded-lg bg-emerald-950/20 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">Dial-Out Participants ({schedDialOutParticipants.length})</span>
+                    {/* CSV Import */}
+                    <label className="flex items-center gap-1 cursor-pointer bg-emerald-800/40 hover:bg-emerald-700/50 text-emerald-300 text-[10px] font-semibold px-2 py-1 rounded transition-colors">
+                      <Upload className="w-3 h-3" />
+                      Import CSV
+                      <input
+                        type="file"
+                        accept=".csv,text/csv"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = ev => {
+                            const text = ev.target?.result as string;
+                            const lines = text.split(/\r?\n/).filter(l => l.trim());
+                            if (!lines.length) return;
+                            // detect header
+                            const firstLower = lines[0].toLowerCase();
+                            const hasHeader = firstLower.includes("name") || firstLower.includes("phone");
+                            const dataLines = hasHeader ? lines.slice(1) : lines;
+                            const headers = hasHeader
+                              ? lines[0].split(",").map(h => h.trim().toLowerCase().replace(/["']/g, ""))
+                              : ["name", "phone", "company", "role"];
+                            const nameIdx = headers.indexOf("name");
+                            const phoneIdx = headers.indexOf("phone");
+                            const companyIdx = headers.indexOf("company");
+                            const roleIdx = headers.indexOf("role");
+                            const errors: string[] = [];
+                            const imported: typeof schedDialOutParticipants = [];
+                            dataLines.forEach((line, i) => {
+                              const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+                              const name = nameIdx >= 0 ? cols[nameIdx] : cols[0];
+                              const phone = phoneIdx >= 0 ? cols[phoneIdx] : cols[1];
+                              const company = companyIdx >= 0 ? cols[companyIdx] : (cols[2] || "");
+                              const roleRaw = roleIdx >= 0 ? cols[roleIdx] : (cols[3] || "participant");
+                              const role = (["moderator", "participant", "host"].includes(roleRaw?.toLowerCase()) ? roleRaw.toLowerCase() : "participant") as "moderator" | "participant" | "host";
+                              if (!phone?.trim()) { errors.push(`Row ${i + 1}: phone required`); return; }
+                              const isDup = schedDialOutParticipants.some(p => p.phone === phone.trim()) || imported.some(p => p.phone === phone.trim());
+                              if (isDup) { errors.push(`Row ${i + 1}: duplicate phone ${phone}`); return; }
+                              imported.push({ id: `csv-${Date.now()}-${i}`, name: name?.trim() || "Unknown", phone: phone.trim(), company: company?.trim() || "", role });
+                            });
+                            setSchedDialOutParticipants(prev => [...prev, ...imported]);
+                            setSchedDialOutCsvError(errors);
+                          };
+                          reader.readAsText(file);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* CSV errors */}
+                  {schedDialOutCsvError.length > 0 && (
+                    <div className="bg-red-950/40 border border-red-800/40 rounded p-2">
+                      <p className="text-[10px] text-red-400 font-semibold mb-1">Import issues ({schedDialOutCsvError.length}):</p>
+                      {schedDialOutCsvError.slice(0, 4).map((e, i) => <p key={i} className="text-[10px] text-red-300">{e}</p>)}
+                      {schedDialOutCsvError.length > 4 && <p className="text-[10px] text-red-400">…and {schedDialOutCsvError.length - 4} more</p>}
+                    </div>
+                  )}
+
+                  {/* Manual add form */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={schedDialOutForm.name}
+                      onChange={e => setSchedDialOutForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="Name"
+                      className="bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                    />
+                    <input
+                      value={schedDialOutForm.phone}
+                      onChange={e => setSchedDialOutForm(f => ({ ...f, phone: e.target.value }))}
+                      placeholder="Phone *"
+                      className="bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                    />
+                    <input
+                      value={schedDialOutForm.company}
+                      onChange={e => setSchedDialOutForm(f => ({ ...f, company: e.target.value }))}
+                      placeholder="Company"
+                      className="bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                    />
+                    <select
+                      value={schedDialOutForm.role}
+                      onChange={e => setSchedDialOutForm(f => ({ ...f, role: e.target.value as "moderator" | "participant" | "host" }))}
+                      className="bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="participant">Participant</option>
+                      <option value="moderator">Moderator</option>
+                      <option value="host">Host</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (!schedDialOutForm.phone.trim()) return;
+                      const isDup = schedDialOutParticipants.some(p => p.phone === schedDialOutForm.phone.trim());
+                      if (isDup) { toast.error("Duplicate phone number"); return; }
+                      setSchedDialOutParticipants(prev => [...prev, { id: `manual-${Date.now()}`, name: schedDialOutForm.name.trim() || "Unknown", phone: schedDialOutForm.phone.trim(), company: schedDialOutForm.company.trim(), role: schedDialOutForm.role }]);
+                      setSchedDialOutForm({ name: "", phone: "", company: "", role: "participant" });
+                    }}
+                    disabled={!schedDialOutForm.phone.trim()}
+                    className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-emerald-800/60 hover:bg-emerald-700/70 disabled:opacity-40 disabled:cursor-not-allowed text-emerald-200 rounded text-xs font-semibold transition-colors"
+                  >
+                    <UserPlus className="w-3 h-3" /> Add Participant
+                  </button>
+
+                  {/* Staged participant list */}
+                  {schedDialOutParticipants.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto space-y-1">
+                      {schedDialOutParticipants.map(p => (
+                        <div key={p.id} className="flex items-center justify-between bg-slate-800/60 rounded px-2 py-1.5">
+                          <div className="min-w-0 flex-1">
+                            <span className="text-xs text-slate-200 font-medium truncate block">{p.name}</span>
+                            <span className="text-[10px] text-slate-400">{p.phone}{p.company ? ` · ${p.company}` : ""}</span>
+                          </div>
+                          <div className="flex items-center gap-2 ml-2">
+                            <span className={`text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded ${
+                              p.role === "moderator" ? "bg-amber-900/50 text-amber-300" :
+                              p.role === "host" ? "bg-blue-900/50 text-blue-300" :
+                              "bg-slate-700 text-slate-400"
+                            }`}>{p.role}</span>
+                            <button onClick={() => setSchedDialOutParticipants(prev => prev.filter(x => x.id !== p.id))} className="text-slate-500 hover:text-red-400 transition-colors">
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Template download */}
+                  <button
+                    onClick={() => {
+                      const csv = "name,phone,company,role\nJohn Smith,+27115550001,Acme Corp,participant\nJane Doe,+27115550002,Acme Corp,moderator";
+                      const blob = new Blob([csv], { type: "text/csv" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a"); a.href = url; a.download = "dial-out-participants-template.csv"; a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="text-[10px] text-slate-500 hover:text-slate-300 underline transition-colors"
+                  >
+                    Download CSV template
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex gap-2 px-4 py-3 border-t border-slate-800 rounded-b-xl">
               <button
