@@ -363,3 +363,11 @@
 - [x] Add speaking-pace coach to Presenter teleprompter: WPM detector with colour-coded pace indicator
 - [x] Wire multi-language transcript selector to actual LLM translation (aiRouter.translateSegment procedure added)
 - [x] Write vitest for AI triage and sentiment scoring procedures (73 tests passing)
+
+## Round 58 — Collapsible AI Summary Panel in Attendee Event Room
+
+- [x] Find the AttendeeEventRoom page and understand its layout
+- [x] Add collapsible "What You Missed" AI Summary panel using rollingSummary from AblyContext
+- [x] Show pulsing indicator badge when a new summary arrives while panel is collapsed
+- [x] Smooth expand/collapse animation with chevron toggle
+- [x] Panel persists open/closed state across re-renders (useState)

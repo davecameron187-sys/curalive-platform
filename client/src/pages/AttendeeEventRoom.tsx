@@ -14,9 +14,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useLocation, useSearch } from "wouter";
 import {
   Zap, Globe, MessageSquare, BarChart3, FileText,
-  Send, ChevronUp, Loader2, AlertCircle, CheckCircle2,
+  Send, ChevronUp, ChevronDown, Loader2, AlertCircle, CheckCircle2,
   Play, Pause, Volume2, VolumeX, Maximize2, Clock,
-  Users, Subtitles, ArrowLeft, Radio
+  Users, Subtitles, ArrowLeft, Radio, Sparkles
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { AblyProvider, useAbly, type QAItem } from "@/contexts/AblyContext";
@@ -109,7 +109,19 @@ function AttendeeRoomInner({
   recordingUrl: string | null | undefined;
 }) {
   const [, navigate] = useLocation();
-  const { transcript, qaItems, polls, presenceCount, publish } = useAbly();
+  const { transcript, qaItems, polls, presenceCount, publish, rollingSummary } = useAbly();
+  const [summaryOpen, setSummaryOpen] = useState(true);
+  const [summaryPulse, setSummaryPulse] = useState(false);
+  const prevSummaryRef = useRef<string | null>(null);
+
+  // Pulse indicator when a new summary arrives while panel is collapsed
+  useEffect(() => {
+    if (!rollingSummary) return;
+    if (rollingSummary.text !== prevSummaryRef.current) {
+      prevSummaryRef.current = rollingSummary.text;
+      if (!summaryOpen) setSummaryPulse(true);
+    }
+  }, [rollingSummary, summaryOpen]);
   const [activeTab, setActiveTab] = useState<"transcript" | "qa" | "polls">("transcript");
   const [language, setLanguage] = useState("en");
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -295,6 +307,56 @@ function AttendeeRoomInner({
               <span>Registered as {attendeeName}</span>
             </div>
           </div>
+
+          {/* ── Collapsible AI Summary Panel ── */}
+          {rollingSummary && (
+            <div className="shrink-0 border-b border-border bg-[#0d1020]">
+              <button
+                onClick={() => {
+                  setSummaryOpen((v) => !v);
+                  setSummaryPulse(false);
+                }}
+                className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/5 transition-colors group"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                    {summaryPulse && !summaryOpen && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+                    )}
+                  </div>
+                  <span className="text-xs font-semibold text-violet-300 uppercase tracking-wider">AI Summary</span>
+                  <span className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>What you missed</span>
+                  {summaryPulse && !summaryOpen && (
+                    <span className="text-[10px] font-semibold text-violet-400 bg-violet-500/15 border border-violet-500/25 px-1.5 py-0.5 rounded-full">New</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    Updated {new Date(rollingSummary.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                  {summaryOpen
+                    ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  }
+                </div>
+              </button>
+              {summaryOpen && (
+                <div className="px-4 pb-3 pt-0">
+                  <div
+                    className="text-sm leading-relaxed text-slate-300 bg-violet-500/5 border border-violet-500/15 rounded-lg px-4 py-3"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {rollingSummary.text}
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    <span>AI-generated from live transcript · {rollingSummary.segmentCount} segments analysed</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Transcript area (desktop) */}
           <div className="hidden lg:flex flex-col flex-1 overflow-hidden">
