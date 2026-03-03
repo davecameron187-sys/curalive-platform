@@ -15,6 +15,7 @@ import { roadshowAIRouter } from "./routers/roadshowAI";
 import { brandingRouter } from "./routers/branding";
 import { webcastRouter } from "./routers/webcastRouter";
 import { recallRouter } from "./routers/recallRouter";
+import { muxRouter } from "./routers/muxRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -42,6 +43,7 @@ export const appRouter = router({
   branding: brandingRouter,
   webcast: webcastRouter,
   recall: recallRouter,
+  mux: muxRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

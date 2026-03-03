@@ -732,3 +732,39 @@ export const recallBots = mysqlTable("recall_bots", {
 export type RecallBot = typeof recallBots.$inferSelect;
 export type InsertRecallBot = typeof recallBots.$inferInsert;
 
+/**
+ * mux_streams — Tracks Mux Live Stream instances for RTMP ingest.
+ * Each row represents one Mux live stream (one RTMP ingest endpoint + one HLS playback URL).
+ * Operators use the stream key in OBS/vMix; attendees watch via the playback URL.
+ */
+export const muxStreams = mysqlTable("mux_streams", {
+  id: int("id").autoincrement().primaryKey(),
+  // Links to a webcast event or live roadshow meeting
+  eventId: int("event_id"),
+  meetingId: int("meeting_id"),
+  // Mux-assigned stream ID (e.g. "abc123xyz")
+  muxStreamId: varchar("mux_stream_id", { length: 100 }).notNull().unique(),
+  // Mux-assigned playback ID for HLS delivery
+  muxPlaybackId: varchar("mux_playback_id", { length: 100 }),
+  // RTMP stream key (secret — operators paste this into OBS/vMix)
+  streamKey: varchar("stream_key", { length: 200 }).notNull(),
+  // RTMP ingest URL (always rtmps://global-live.mux.com:443/app)
+  rtmpUrl: varchar("rtmp_url", { length: 300 }).default("rtmps://global-live.mux.com:443/app"),
+  // Stream status: idle | active | disconnected | disabled
+  status: varchar("status", { length: 50 }).notNull().default("idle"),
+  // Human-readable label for this stream
+  label: varchar("label", { length: 200 }),
+  // Whether this stream is publicly accessible (vs. signed/gated)
+  isPublic: boolean("is_public").default(true),
+  // Whether recording is enabled for this stream
+  recordingEnabled: boolean("recording_enabled").default(true),
+  // Mux asset ID created when recording is complete
+  muxAssetId: varchar("mux_asset_id", { length: 100 }),
+  // Timestamps
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  startedAt: bigint("started_at", { mode: "number" }),
+  endedAt: bigint("ended_at", { mode: "number" }),
+});
+export type MuxStream = typeof muxStreams.$inferSelect;
+export type InsertMuxStream = typeof muxStreams.$inferInsert;

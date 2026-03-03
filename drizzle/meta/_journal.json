@@ -92,6 +92,13 @@
       "when": 1772535968387,
       "tag": "0012_striped_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1772537746795,
+      "tag": "0013_sticky_vindicator",
+      "breakpoints": true
     }
   ]
 }

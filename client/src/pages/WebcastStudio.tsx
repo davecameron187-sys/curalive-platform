@@ -12,6 +12,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import RecallBotPanel from "@/components/RecallBotPanel";
+import MuxStreamPanel from "@/components/MuxStreamPanel";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { AblyProvider, useAbly, type QAItem, type Poll } from "@/contexts/AblyContext";
@@ -24,7 +25,7 @@ import {
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics" | "bot";
+type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics" | "bot" | "stream";
 type StreamStatus = "offline" | "connecting" | "live" | "paused";
 
 type ChatMessage = {
@@ -426,6 +427,7 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               { id: "captions" as StudioTab, icon: Globe, label: "Translation", badge: undefined as number | undefined },
               { id: "analytics" as StudioTab, icon: Activity, label: "Analytics", badge: undefined as number | undefined },
               { id: "bot" as StudioTab, icon: BotIcon, label: "Bot", badge: undefined as number | undefined },
+              { id: "stream" as StudioTab, icon: Radio, label: "Stream", badge: undefined as number | undefined },
             ]).map(({ id, icon: Icon, label, badge }) => (
               <button
                 key={id}
@@ -768,6 +770,16 @@ function WebcastStudioInner({ slug }: { slug: string }) {
             {activeTab === "bot" && (
               <div className="p-4">
                 <RecallBotPanel eventId={event?.id} />
+              </div>
+            )}
+
+            {/* ── Mux RTMP Stream Panel ── */}
+            {activeTab === "stream" && (
+              <div className="p-4">
+                <MuxStreamPanel
+                  eventId={event?.id}
+                  eventLabel={event?.title ?? slug}
+                />
               </div>
             )}
 

@@ -104,33 +104,46 @@ const subscribeToTranscript = async (callId: string) => {
   },
   {
     id: "rtmp",
-    name: "RTMP Ingest",
-    badge: "Universal",
-    badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    name: "Mux RTMP Ingest",
+    badge: "Live",
+    badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     status: "active",
     complexity: "Low",
-    costPer90: "~$0.10",
+    costPer90: "~$1.20 (Mux)",
     platforms: ["OBS Studio", "vMix", "Wirecast", "Teradek", "LiveU", "Any RTMP encoder"],
     realTimeAudio: true,
     realTimeTranscript: false,
-    description: "Professional studio encoder path. Run Node Media Server alongside Express. Extract audio with ffmpeg, feed 5-second WAV chunks to Whisper. ~5–8s transcript lag.",
-    setup: "1 week",
-    code: `# ffmpeg audio extraction from RTMP stream
-ffmpeg -i rtmp://0.0.0.0:1935/live/STREAM_KEY \\
-  -vn -acodec pcm_s16le -ar 16000 -ac 1 \\
-  -f segment -segment_time 5 \\
-  /tmp/audio_chunks/chunk_%03d.wav
+    description: "Production-grade RTMP ingest via Mux. Create a stream in the Webcast Studio \u2192 copy the RTMP URL and stream key \u2192 paste into OBS/vMix \u2192 click Start Streaming. HLS playback URL is auto-generated and shown in the Event Room. Add MUX_TOKEN_ID and MUX_TOKEN_SECRET to platform secrets to activate.",
+    setup: "15 minutes",
+    code: `// 1. Add secrets to the platform:
+//    MUX_TOKEN_ID=your_mux_token_id
+//    MUX_TOKEN_SECRET=your_mux_token_secret
+//    (Get these from dashboard.mux.com → Settings → API Access Tokens)
 
-# RTMP ingest URL format for partners:
-# rtmp://ingest.chorus.ai/live/{eventStreamKey}
-
-# Node Media Server config (server/rtmp.ts):
-const nms = new NodeMediaServer({
-  rtmp: { port: 1935, chunk_size: 60000 },
-  http: { port: 8000, allow_origin: '*' },
+// 2. Create a stream via the Webcast Studio → Stream tab
+//    or via tRPC:
+const stream = await trpc.mux.createStream.mutate({
+  label: 'Q4 Earnings Call',
+  eventId: 123,
+  recordingEnabled: true,
+  isPublic: true,
 });
-nms.run();`,
-    webhookEvents: [],
+
+// 3. OBS Studio setup:
+//    Settings → Stream → Service: Custom
+//    Server: rtmps://global-live.mux.com:443/app
+//    Stream Key: <stream.streamKey>
+//    Click Start Streaming
+
+// 4. vMix setup:
+//    Add Input → Stream → RTMP
+//    URL: rtmps://global-live.mux.com:443/app/<stream.streamKey>
+//    Click Stream
+
+// 5. HLS playback URL for attendees:
+//    https://stream.mux.com/<stream.muxPlaybackId>.m3u8
+//    (auto-shown in the Event Room player when stream is active)`,
+    webhookEvents: ["video.live_stream.active", "video.live_stream.idle", "video.live_stream.disconnected"],
   },
   {
     id: "pstn",

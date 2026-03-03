@@ -8,6 +8,8 @@ import {
   ChevronDown
 } from "lucide-react";
 import { AblyProvider, useAbly, type QAItem, type RaisedHand } from "@/contexts/AblyContext";
+import { trpc } from "@/lib/trpc";
+import MuxPlayer from "@mux/mux-player-react";
 
 // ─── Event Metadata ───────────────────────────────────────────────────────────
 
@@ -187,7 +189,46 @@ function EnhancedSentimentPanel({ score, history }: { score: number; history: nu
   );
 }
 
-// ─── Inner Component (uses AblyContext) ───────────────────────────────────────
+// ─── Mux HLS Video Player ────────────────────────────────────────────────
+
+function MuxVideoPlayer({ eventId, platform }: { eventId: string; platform: string }) {
+  const { data: streams } = trpc.mux.listStreams.useQuery(
+    { eventId: undefined, meetingId: undefined },
+    { refetchInterval: 10000 }
+  );
+
+  // Find the first active or idle stream
+  const activeStream = streams?.find((s) => s.status === "active" || s.status === "idle");
+
+  if (activeStream?.muxPlaybackId) {
+    return (
+      <div className="absolute inset-0 bg-black">
+        <MuxPlayer
+          playbackId={activeStream.muxPlaybackId}
+          streamType="live"
+          autoPlay
+          muted
+          style={{ width: "100%", height: "100%" }}
+        />
+      </div>
+    );
+  }
+
+  // Fallback placeholder when no stream is configured
+  return (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center mx-auto mb-3">
+          <Zap className="w-7 h-7 text-primary" />
+        </div>
+        <p className="text-sm text-muted-foreground">Live stream via {platform}</p>
+        <p className="text-xs text-muted-foreground/60 mt-1">Waiting for encoder connection…</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Inner Component (uses AblyContext) ────────────────────────────────────────────────
 
 function EventRoomInner({ eventId }: { eventId: string }) {
   const [, navigate] = useLocation();
@@ -477,14 +518,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
 
           {/* ── Video Player ── */}
           <div className="shrink-0 bg-black/80 relative" style={{ aspectRatio: "16/9", maxHeight: "45vh" }}>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center mx-auto mb-3">
-                  <Zap className="w-7 h-7 text-primary" />
-                </div>
-                <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>Live stream via {meta.platform}</p>
-              </div>
-            </div>
+            <MuxVideoPlayer eventId={eventId} platform={meta.platform} />
 
             {/* ── Feature 1: Closed Captions Overlay ── */}
             {ccEnabled && latestSegment && (
