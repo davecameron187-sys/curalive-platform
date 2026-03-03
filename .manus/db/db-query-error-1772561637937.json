@@ -1,0 +1,8 @@
+{
+  "query": "SELECT id, slug, title, eventDate FROM webcast_events LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2h457xAgLtxN22J.8d91d5a5e05f --database Mdu4k2iB9LVRNHXWAQDZg3 --execute SELECT id, slug, title, eventDate FROM webcast_events LIMIT 20;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'eventdate' in 'field list'"
+  ]
+}

@@ -1,5 +1,7 @@
 import { useLocation } from "wouter";
-import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay, Activity } from "lucide-react";
+import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay, Activity, LogIn, LogOut, User } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-hero-bg-bFr44AaNNWKkv4uMRbTXe8.webp";
 const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus_ai_demo_v5_7a9fdeb3.mp4";
@@ -45,8 +47,8 @@ function PlatformIcon({ platform }: { platform: string }) {
 
 export default function Home() {
   // The userAuth hooks provides authentication state
-  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
   const [, navigate] = useLocation();
+  const { user, isAuthenticated, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -69,9 +71,25 @@ export default function Home() {
             <button onClick={() => navigate("/tech-handover")} className="hover:text-foreground transition-colors">Tech Handover</button>
             <button onClick={() => navigate("/occ")} className="flex items-center gap-1.5 hover:text-foreground transition-colors"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>OCC</button>
           </nav>
-          <button onClick={() => navigate("/event/q4-earnings-2026")} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
-            <Play className="w-3.5 h-3.5" /> Launch Demo
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate("/event/q4-earnings-2026")} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
+              <Play className="w-3.5 h-3.5" /> Launch Demo
+            </button>
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <User className="w-3 h-3" />{user?.name?.split(' ')[0]}
+                </span>
+                <button onClick={() => logout()} className="flex items-center gap-1.5 border border-border text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg text-xs font-semibold hover:bg-secondary transition-colors">
+                  <LogOut className="w-3 h-3" /> Sign Out
+                </button>
+              </div>
+            ) : (
+              <a href={getLoginUrl()} className="flex items-center gap-1.5 border border-primary/40 text-primary px-3 py-2 rounded-lg text-xs font-semibold hover:bg-primary/10 transition-colors">
+                <LogIn className="w-3 h-3" /> Login
+              </a>
+            )}
+          </div>
         </div>
       </header>
 

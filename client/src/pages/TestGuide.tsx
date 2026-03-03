@@ -1,3 +1,7 @@
+/**
+ * TestGuide.tsx — Chorus.AI Internal Testing Reference Card
+ * Updated: March 2026 — v6 — includes full webcasting workflow and Recall.ai bot testing
+ */
 import { ExternalLink, CheckCircle2, Copy, Check } from "lucide-react";
 import { useState } from "react";
 
@@ -23,10 +27,251 @@ interface Section {
 }
 
 const SECTIONS: Section[] = [
+  // ─── QUICK START ──────────────────────────────────────────────────────────
+  {
+    id: "quickstart",
+    number: "0",
+    title: "Quick Start — Login & Setup",
+    role: "All Roles",
+    roleColor: "text-slate-400",
+    dotColor: "bg-amber-400",
+    badgeBg: "bg-amber-400/15",
+    badgeText: "text-amber-400",
+    steps: [
+      {
+        step: 1,
+        action: "Log in to the platform",
+        url: `${BASE_URL}`,
+        note: "Click the 'Login' button in the top-right corner of the homepage. Use your Manus account (the same account used to manage this project). The platform owner (David Cameron) is automatically granted admin + operator access.",
+      },
+      {
+        step: 2,
+        action: "Verify your role in the Admin panel",
+        url: `${BASE_URL}/admin/users`,
+        note: "After logging in, open the Admin Users page. You should see your account listed with role 'admin'. This confirms you have full operator access to create events, manage the studio, and access all protected features.",
+      },
+      {
+        step: 3,
+        action: "Browse the Platform Links reference",
+        url: `${BASE_URL}/platform-links`,
+        note: "This page lists all 35+ URLs on the platform, organised by section. Use the search bar to find any page quickly. Bookmark this page — it is your navigation map for the entire platform.",
+      },
+    ],
+  },
+
+  // ─── WEBCASTING WORKFLOW ──────────────────────────────────────────────────
+  {
+    id: "webcast_create",
+    number: "1",
+    title: "Webcasting — Create a New Event",
+    role: "Operator",
+    roleColor: "text-emerald-400",
+    dotColor: "bg-emerald-400",
+    badgeBg: "bg-emerald-400/15",
+    badgeText: "text-emerald-400",
+    steps: [
+      {
+        step: 1,
+        action: "Open the Webcasting Hub",
+        url: `${BASE_URL}/live-video/webcasting`,
+        note: "This is the main portal for all webcast events. You will see 8 demo events pre-loaded across different event types and industry verticals. The 'New Event' button is in the top-right corner.",
+      },
+      {
+        step: 2,
+        action: "Create a new event using the wizard",
+        url: `${BASE_URL}/live-video/webcast/create`,
+        note: "Step 1: Choose event type (try 'Webcast' or 'Capital Markets'). Step 2: Enter a title, description, date, time, and timezone. Step 3: Set branding (logo URL, primary colour). Step 4: Add agenda items and speakers. Step 5: Configure registration fields. Step 6: Click Publish. You must be logged in for this step.",
+      },
+      {
+        step: 3,
+        action: "Confirm the event appears in the Webcasting Hub",
+        url: `${BASE_URL}/live-video/webcasting`,
+        note: "After publishing, your new event should appear in the event list. Click the Studio button to open the Webcast Studio for that event.",
+      },
+    ],
+  },
+
+  {
+    id: "webcast_studio",
+    number: "2",
+    title: "Webcasting — Operator Studio Console",
+    role: "Operator",
+    roleColor: "text-emerald-400",
+    dotColor: "bg-emerald-400",
+    badgeBg: "bg-emerald-400/15",
+    badgeText: "text-emerald-400",
+    steps: [
+      {
+        step: 1,
+        action: "Open the Webcast Studio for a demo event",
+        url: `${BASE_URL}/live-video/webcast/q4-2025-earnings-webcast`,
+        note: "The studio has 7 tabs: Q&A, Polls, Chat, Translation, Analytics, Bot, Stream, and Reminders. This is the operator's control centre during a live event.",
+      },
+      {
+        step: 2,
+        action: "Test the Q&A moderation tab",
+        note: "The Q&A tab shows incoming questions. Click 'Approve' to move a question to the approved queue, or 'Reject' to remove it. Approved questions are visible to attendees in real time via Ably.",
+      },
+      {
+        step: 3,
+        action: "Create and launch a live poll",
+        note: "Go to the Polls tab. Click 'New Poll', enter a question and 2–4 answer options, then click 'Launch Poll'. The poll will appear in the attendee event room immediately.",
+      },
+      {
+        step: 4,
+        action: "Test the Stream tab — publish a recording",
+        note: "In the Stream tab, scroll to the 'Publish Recording' section. Paste a publicly accessible MP4 URL (e.g. from YouTube or Vimeo) or a Mux Playback ID. Click 'Publish Recording'. This transitions the event to 'On Demand' status.",
+      },
+      {
+        step: 5,
+        action: "Check the Reminders tab",
+        note: "The Reminders tab shows how many registrants have received 24-hour and 1-hour reminder emails. Use 'Send to Pending' to send reminders to anyone who hasn't received one yet.",
+      },
+      {
+        step: 6,
+        action: "Deploy a Recall.ai bot (if testing Teams/Zoom integration)",
+        note: "Go to the Bot tab. Enter a Teams or Zoom meeting URL and click 'Deploy Bot'. The bot will join the meeting, start recording, and stream the transcript back to this panel in real time via Ably. See Section 9 for the full bot testing workflow.",
+      },
+    ],
+  },
+
+  {
+    id: "webcast_register",
+    number: "3",
+    title: "Webcasting — Attendee Registration",
+    role: "Attendee",
+    roleColor: "text-blue-400",
+    dotColor: "bg-blue-400",
+    badgeBg: "bg-blue-400/15",
+    badgeText: "text-blue-400",
+    steps: [
+      {
+        step: 1,
+        action: "Open the registration page for a demo event",
+        url: `${BASE_URL}/live-video/webcast/q4-2025-earnings-webcast/register`,
+        note: "This is the public-facing registration landing page. It shows event details, speakers, and the registration form. The page template adapts based on the event's industry vertical (Financial Services, Healthcare CME, Government, etc.).",
+      },
+      {
+        step: 2,
+        action: "Register as an attendee",
+        note: "Fill in your name, email address, and company. Click 'Register'. You will receive a confirmation email with a personal join link and a calendar invite (.ics file). Check your inbox — the email comes from the Resend API.",
+      },
+      {
+        step: 3,
+        action: "Check the confirmation email",
+        note: "The email contains: (1) event details, (2) a personal join link with your unique token, and (3) a .ics calendar invite. Click the join link to go directly to your personal attendee room.",
+      },
+      {
+        step: 4,
+        action: "Verify the registration appears in the Studio",
+        url: `${BASE_URL}/live-video/webcast/q4-2025-earnings-webcast`,
+        note: "In the Webcast Studio, the Analytics tab should show the new registration. The Reminders tab should show the updated registered count.",
+      },
+    ],
+  },
+
+  {
+    id: "webcast_attend",
+    number: "4",
+    title: "Webcasting — Attendee Event Room",
+    role: "Attendee",
+    roleColor: "text-blue-400",
+    dotColor: "bg-blue-400",
+    badgeBg: "bg-blue-400/15",
+    badgeText: "text-blue-400",
+    steps: [
+      {
+        step: 1,
+        action: "Enter the attendee event room via your personal join link",
+        note: "Use the link from your confirmation email (format: /live-video/webcast/:slug/attend?token=...). This is the token-gated attendee room — each attendee has a unique URL.",
+      },
+      {
+        step: 2,
+        action: "Test the live transcript feed",
+        note: "The transcript panel on the right side shows real-time transcription delivered via Ably. If a Recall.ai bot is active in a connected meeting, transcripts will appear here within 1–2 seconds of being spoken.",
+      },
+      {
+        step: 3,
+        action: "Submit a question via the Q&A panel",
+        note: "Type a question and click Submit. The question will appear in the Webcast Studio Q&A tab for the operator to approve or reject. Test upvoting an existing question.",
+      },
+      {
+        step: 4,
+        action: "Respond to a live poll",
+        note: "If the operator has launched a poll in the Studio, it will appear as an overlay in the event room. Select an answer and submit. The results update in real time.",
+      },
+      {
+        step: 5,
+        action: "Test the language selector",
+        note: "Use the language dropdown (top right) to switch between 12 languages. The transcript display language changes immediately. Supported: English, Afrikaans, Zulu, Xhosa, French, Portuguese, Arabic, Swahili, German, Spanish, Mandarin, Hindi.",
+      },
+    ],
+  },
+
+  {
+    id: "webcast_ondemand",
+    number: "5",
+    title: "Webcasting — On-Demand Recording Access",
+    role: "Attendee",
+    roleColor: "text-blue-400",
+    dotColor: "bg-blue-400",
+    badgeBg: "bg-blue-400/15",
+    badgeText: "text-blue-400",
+    steps: [
+      {
+        step: 1,
+        action: "Access the on-demand watch page via your personal watch link",
+        note: "After the operator publishes a recording in the Studio Stream tab, the event transitions to 'On Demand'. Your personal watch link (format: /live-video/webcast/:slug/watch?token=...) will show the recording player.",
+      },
+      {
+        step: 2,
+        action: "Test the on-demand watch page directly",
+        url: `${BASE_URL}/live-video/webcast/q4-2025-earnings-webcast/watch`,
+        note: "Without a token, the page shows a 'Request Access' prompt. With a valid token, it shows the video player, event metadata, and a share link. Test both states.",
+      },
+      {
+        step: 3,
+        action: "Browse the On-Demand Library",
+        url: `${BASE_URL}/live-video/on-demand`,
+        note: "This is the searchable library of all on-demand recordings. Filter by event type, industry vertical, or CPD/CME certification status.",
+      },
+    ],
+  },
+
+  {
+    id: "webcast_report",
+    number: "6",
+    title: "Webcasting — Post-Event Report",
+    role: "Operator",
+    roleColor: "text-emerald-400",
+    dotColor: "bg-violet-400",
+    badgeBg: "bg-violet-400/15",
+    badgeText: "text-violet-400",
+    steps: [
+      {
+        step: 1,
+        action: "Open the post-event report for a demo event",
+        url: `${BASE_URL}/live-video/webcast/q4-2025-earnings-webcast/report`,
+        note: "The report shows: attendance statistics (registered, joined, peak), poll results with vote counts, the full Q&A log (approved and rejected), an AI-generated event summary, and the recording link.",
+      },
+      {
+        step: 2,
+        action: "Review the AI summary",
+        note: "The AI summary is generated by the LLM from the event transcript and Q&A data. It includes key themes, notable questions, and a brief overview of the event.",
+      },
+      {
+        step: 3,
+        action: "Check the poll results",
+        note: "Each poll shows the question, all answer options, vote counts, and percentage breakdown. Results are final once the event ends.",
+      },
+    ],
+  },
+
+  // ─── CLASSIC EVENT ROOM WORKFLOW ─────────────────────────────────────────
   {
     id: "start",
-    number: "1",
-    title: "Start Here — Home & Sales Demo",
+    number: "7",
+    title: "Classic Event Room — Home & Sales Demo",
     role: "All Roles",
     roleColor: "text-slate-400",
     dotColor: "bg-slate-400",
@@ -37,7 +282,7 @@ const SECTIONS: Section[] = [
         step: 1,
         action: "Open the main platform homepage",
         url: `${BASE_URL}`,
-        note: "Review the hero section, watch the embedded 55-second demo video, and click \"Download MP4\" to save a copy.",
+        note: "Review the hero section, watch the embedded 55-second demo video, and explore the platform module cards. The homepage is the public-facing landing page.",
       },
       {
         step: 2,
@@ -47,49 +292,17 @@ const SECTIONS: Section[] = [
       },
       {
         step: 3,
-        action: "Register as an event attendee",
-        url: `${BASE_URL}/register/q4-earnings-2026`,
-        note: "Fill in your name and email. You will be directed to the attendee event room.",
-      },
-    ],
-  },
-  {
-    id: "attendee",
-    number: "2",
-    title: "Attendee — Live Event Room",
-    role: "Attendee",
-    roleColor: "text-blue-400",
-    dotColor: "bg-blue-400",
-    badgeBg: "bg-blue-400/15",
-    badgeText: "text-blue-400",
-    steps: [
-      {
-        step: 1,
-        action: "Enter the live event room",
+        action: "Enter the classic live event room",
         url: `${BASE_URL}/event/q4-earnings-2026`,
-        note: "You will see the live transcript feed, rolling AI summary, and sentiment indicator updating in real time.",
-      },
-      {
-        step: 2,
-        action: "Submit a question via the Q&A panel",
-        note: "Type a question in the Q&A input field and click Submit. Test upvoting another question. Check that it appears in the queue.",
-      },
-      {
-        step: 3,
-        action: "Change the display language",
-        note: "Use the language selector (top right) to switch between English, Afrikaans, Zulu, French, Arabic, and 7 other languages.",
-      },
-      {
-        step: 4,
-        action: "Test the dial-in number display",
-        note: "Click \"Dial In\" to view the 18-country dial-in numbers. Verify South Africa, Nigeria, UAE, and Mauritius are listed.",
+        note: "The classic event room shows a simulated live stream with real-time transcript, sentiment analysis, and Q&A. This is the original demo room — separate from the new webcasting platform.",
       },
     ],
   },
+
   {
     id: "moderator",
-    number: "3",
-    title: "Moderator Console",
+    number: "8",
+    title: "Classic Event Room — Moderator Console",
     role: "Moderator",
     roleColor: "text-amber-400",
     dotColor: "bg-amber-400",
@@ -105,12 +318,12 @@ const SECTIONS: Section[] = [
       {
         step: 2,
         action: "Approve and reject questions",
-        note: "Click Approve on a question to move it to the \"Approved\" queue. Click Reject to remove it. Test the toxicity filter.",
+        note: "Click Approve on a question to move it to the 'Approved' queue. Click Reject to remove it. Test the toxicity filter.",
       },
       {
         step: 3,
         action: "Launch a live poll",
-        note: "Click \"New Poll\", enter a question and 3 options, and click Launch. Verify the poll appears in the attendee event room simultaneously.",
+        note: "Click 'New Poll', enter a question and 3 options, and click Launch. Verify the poll appears in the attendee event room simultaneously.",
       },
       {
         step: 4,
@@ -119,38 +332,62 @@ const SECTIONS: Section[] = [
       },
     ],
   },
+
+  // ─── RECALL.AI BOT TESTING ────────────────────────────────────────────────
   {
-    id: "presenter",
-    number: "4",
-    title: "Presenter Teleprompter",
-    role: "Presenter",
-    roleColor: "text-red-400",
-    dotColor: "bg-red-400",
-    badgeBg: "bg-red-400/15",
-    badgeText: "text-red-400",
+    id: "recall_bot",
+    number: "9",
+    title: "Recall.ai Bot — Teams/Zoom Transcription",
+    role: "Operator",
+    roleColor: "text-emerald-400",
+    dotColor: "bg-primary",
+    badgeBg: "bg-primary/15",
+    badgeText: "text-primary",
     steps: [
       {
         step: 1,
-        action: "Open the presenter view",
-        url: `${BASE_URL}/presenter/q4-earnings-2026`,
-        note: "Designed for a second screen or tablet. Shows the live transcript in large text with pace coaching and filler-word alerts.",
+        action: "Start a Microsoft Teams or Zoom meeting",
+        note: "Create a new Teams meeting from your Microsoft 365 account, or start a Zoom meeting. Copy the meeting join URL (e.g. https://teams.microsoft.com/meet/... or https://zoom.us/j/...).",
       },
       {
         step: 2,
-        action: "Check the pace coaching indicator",
-        note: "Verify the words-per-minute indicator is visible. Check that the \"Too Fast / On Track / Too Slow\" indicator updates in real time.",
+        action: "Open the Webcast Studio Bot tab",
+        url: `${BASE_URL}/live-video/webcast/q4-2025-earnings-webcast`,
+        note: "In the Webcast Studio, click the 'Bot' tab. You will see the Recall.ai bot deployment panel.",
       },
       {
         step: 3,
-        action: "View the approved Q&A feed",
-        note: "Questions approved by the moderator should appear in the lower panel within 2 seconds.",
+        action: "Deploy the bot to your meeting",
+        note: "Paste your meeting URL into the 'Meeting URL' field and click 'Deploy Bot'. The bot will appear in your meeting as a participant named 'Chorus.AI Bot'. You may need to admit it from the waiting room.",
+      },
+      {
+        step: 4,
+        action: "Admit the bot from the waiting room",
+        note: "In Teams: click 'Admit' when the bot appears in the lobby. In Zoom: click 'Admit' in the Participants panel. The bot status in the Studio will change from 'In Waiting Room' to 'Recording'.",
+      },
+      {
+        step: 5,
+        action: "Speak clearly for 30–60 seconds",
+        note: "Say something like: 'This is a test of the Chorus.AI transcription service. We are testing the real-time transcript delivery via the Recall.ai bot integration.' Speak clearly and at a normal pace.",
+      },
+      {
+        step: 6,
+        action: "Verify real-time transcript appears in the Bot panel",
+        note: "Within 1–3 seconds of speaking, your words should appear in the transcript panel in the Studio Bot tab. Each segment shows the speaker name and timestamp. A green 'Live' badge confirms the Ably connection is active.",
+      },
+      {
+        step: 7,
+        action: "End the meeting and check the post-call transcript",
+        note: "End the Teams/Zoom meeting. After 1–2 minutes, the bot status will change to 'Done'. The full diarized transcript (with speaker names and word-level timestamps) is available via the 'Get Transcript' button in the Bot panel.",
       },
     ],
   },
+
+  // ─── OCC OPERATOR CONSOLE ────────────────────────────────────────────────
   {
-    id: "operator",
-    number: "5",
-    title: "Operator Console",
+    id: "occ",
+    number: "10",
+    title: "OCC — Operator Conference Console",
     role: "Operator",
     roleColor: "text-emerald-400",
     dotColor: "bg-emerald-400",
@@ -159,31 +396,33 @@ const SECTIONS: Section[] = [
     steps: [
       {
         step: 1,
-        action: "Open the operator console",
-        url: `${BASE_URL}/operator/q4-earnings-2026`,
-        note: "Review all platform connection options: Zoom, Teams, Webex, RTMP, and PSTN.",
+        action: "Open the OCC (Operator Conference Console)",
+        url: `${BASE_URL}/occ`,
+        note: "The OCC is the traditional telephony operator console — modelled on the VIER/Contex platform. It requires login with operator or admin role. You will see the Conference Overview with running, pending, and planned conferences.",
       },
       {
         step: 2,
-        action: "Review the RTMP stream key and platform connections",
-        note: "Verify Zoom, Teams, Webex, and RTMP connection options are visible and configurable.",
+        action: "Open a Conference Control Panel",
+        note: "Click any conference row in the Conference Overview to open its Control Panel. You will see the participant list with real-time state, the conference bar (Record, Lock, Mute All), and the feature tabs (Q&A, Chat, History, Audio Files).",
       },
       {
         step: 3,
-        action: "Test the silence detector alert",
-        note: "Verify the silence detection threshold is configurable and the alert notification displays correctly.",
+        action: "Test participant management",
+        note: "Click a participant row to select them. Use the action bar to Mute, Unmute, Park, or Disconnect. Test the 'Speak Next' button on a raised-hand participant.",
       },
       {
         step: 4,
-        action: "Confirm 18-country dial-in numbers",
-        note: "Scroll through the dial-in panel. Confirm SA, Nigeria, Kenya, UAE, and Mauritius are listed.",
+        action: "Test the Dial-Out feature",
+        note: "Click the Dial-Out button in the Conference Bar. Enter a name, company, and phone number. Click Dial. The participant will appear in the list with 'Dialling' status.",
       },
     ],
   },
+
+  // ─── POST-EVENT INTELLIGENCE ─────────────────────────────────────────────
   {
     id: "postevent",
-    number: "6",
-    title: "Post-Event Report",
+    number: "11",
+    title: "Classic Post-Event Intelligence Report",
     role: "Post-Event",
     roleColor: "text-violet-400",
     dotColor: "bg-violet-400",
@@ -192,54 +431,24 @@ const SECTIONS: Section[] = [
     steps: [
       {
         step: 1,
-        action: "Open the post-event report",
-        url: `${BASE_URL}/post-event/q4-earnings-2026`,
+        action: "Open the classic post-event report",
+        url: `${BASE_URL}/post-event/board-briefing`,
         note: "Review the AI executive summary, financial highlights, and key themes sections.",
       },
       {
         step: 2,
         action: "Download the full transcript",
-        note: "Click \"Download Transcript\". Verify the PDF downloads correctly with all content.",
+        note: "Click 'Download Transcript'. Verify the PDF downloads correctly with all content.",
       },
       {
         step: 3,
         action: "Generate the press release",
-        note: "Click \"Generate Press Release\". Verify the SENS/RNS-style draft is produced within 10 seconds.",
+        note: "Click 'Generate Press Release'. Verify the SENS/RNS-style draft is produced within 10 seconds.",
       },
       {
         step: 4,
         action: "Check JSE/IFRS compliance section",
         note: "Verify the regulatory flags and compliance disclaimer are visible at the bottom of the report.",
-      },
-    ],
-  },
-  {
-    id: "whitelabel",
-    number: "7",
-    title: "White-Label & Integrations",
-    role: "All Roles",
-    roleColor: "text-slate-400",
-    dotColor: "bg-slate-400",
-    badgeBg: "bg-slate-400/15",
-    badgeText: "text-slate-400",
-    steps: [
-      {
-        step: 1,
-        action: "Open the white-label configuration",
-        url: `${BASE_URL}/white-label`,
-        note: "Upload a test logo, change the brand colour, and preview the live result in real time.",
-      },
-      {
-        step: 2,
-        action: "Open the Integration Hub",
-        url: `${BASE_URL}/integrations`,
-        note: "Review the platform comparison table. Verify Zoom, Teams, Webex, RTMP, and PSTN are listed.",
-      },
-      {
-        step: 3,
-        action: "Open the Partner API page",
-        url: `${BASE_URL}/partner-api`,
-        note: "Review the webhook events, REST API endpoints, and embeddable widget documentation.",
       },
     ],
   },
@@ -363,18 +572,18 @@ export default function TestGuide() {
   const [filter, setFilter] = useState<string>("all");
 
   const roles = [
-    { id: "all", label: "All Roles", color: "text-slate-300" },
+    { id: "all", label: "All Sections", color: "text-slate-300" },
+    { id: "All Roles", label: "Setup", color: "text-amber-400" },
+    { id: "Operator", label: "Operator", color: "text-emerald-400" },
     { id: "Attendee", label: "Attendee", color: "text-blue-400" },
     { id: "Moderator", label: "Moderator", color: "text-amber-400" },
-    { id: "Presenter", label: "Presenter", color: "text-red-400" },
-    { id: "Operator", label: "Operator", color: "text-emerald-400" },
     { id: "Post-Event", label: "Post-Event", color: "text-violet-400" },
   ];
 
   const filtered =
     filter === "all"
       ? SECTIONS
-      : SECTIONS.filter((s) => s.role === filter || s.role === "All Roles");
+      : SECTIONS.filter((s) => s.role === filter);
 
   return (
     <div
@@ -389,13 +598,13 @@ export default function TestGuide() {
               ← Chorus.AI
             </a>
             <span className="text-slate-700">/</span>
-            <span className="text-sm font-semibold text-white">Team Testing Guide</span>
+            <span className="text-sm font-semibold text-white">In-House Testing Guide</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-1 rounded">
               Internal Use Only
             </span>
-            <span className="text-[10px] text-slate-600 font-mono">v5 · March 2026</span>
+            <span className="text-[10px] text-slate-600 font-mono">v6 · March 2026</span>
           </div>
         </div>
       </header>
@@ -404,25 +613,46 @@ export default function TestGuide() {
         {/* Page title */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Platform Testing Reference Card
+            In-House Testing Guide
           </h1>
           <p className="text-slate-400 text-sm max-w-2xl" style={{ fontFamily: "'Inter', sans-serif" }}>
             Step-by-step instructions for testing every module of the Chorus.AI platform.
-            Tick off each step as you complete it. Assign one person per role for best results.
-            Estimated time: <strong className="text-slate-300">45 minutes</strong>.
+            Tick off each step as you complete it. Start with Section 0 (Login & Setup) before anything else.
+            Estimated time: <strong className="text-slate-300">60–90 minutes</strong> for the full platform.
           </p>
         </div>
 
         {/* Base URL bar */}
-        <div className="flex items-center justify-between bg-[#0f1629] border border-[#1e3a5f] border-l-4 border-l-amber-400 rounded-lg px-5 py-3 mb-6">
+        <div className="flex items-center justify-between bg-[#0f1629] border border-[#1e3a5f] border-l-4 border-l-amber-400 rounded-lg px-5 py-3 mb-4">
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Base URL</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Platform URL</div>
             <div className="font-mono text-sm text-sky-400 font-bold">{BASE_URL}</div>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-500" style={{ fontFamily: "'Inter', sans-serif" }}>All links below are relative to this address</span>
             <CopyButton text={BASE_URL} />
           </div>
+        </div>
+
+        {/* Quick links bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+          {[
+            { label: "Platform Links", url: `${BASE_URL}/platform-links`, color: "text-sky-400" },
+            { label: "Webcasting Hub", url: `${BASE_URL}/live-video/webcasting`, color: "text-emerald-400" },
+            { label: "Create Event", url: `${BASE_URL}/live-video/webcast/create`, color: "text-primary" },
+            { label: "Admin Users", url: `${BASE_URL}/admin/users`, color: "text-amber-400" },
+          ].map(({ label, url, color }) => (
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-white/[0.03] border border-white/8 rounded-lg px-3 py-2 hover:border-white/20 transition-colors"
+            >
+              <ExternalLink className={`w-3 h-3 flex-shrink-0 ${color}`} />
+              <span className={`text-xs font-semibold ${color}`}>{label}</span>
+            </a>
+          ))}
         </div>
 
         {/* Role filter */}
@@ -443,13 +673,13 @@ export default function TestGuide() {
           ))}
         </div>
 
-        {/* Team assignment tip */}
-        <div className="bg-white/[0.03] border border-white/8 rounded-lg px-5 py-3 mb-8 flex items-start gap-3">
-          <div className="text-amber-400 text-lg flex-shrink-0 mt-0.5">💡</div>
+        {/* Important note */}
+        <div className="bg-amber-950/30 border border-amber-500/20 rounded-lg px-5 py-3 mb-8 flex items-start gap-3">
+          <div className="text-amber-400 text-lg flex-shrink-0 mt-0.5">⚠️</div>
           <div style={{ fontFamily: "'Inter', sans-serif" }}>
-            <p className="text-sm font-semibold text-slate-200 mb-1">Recommended team assignment for your first test session</p>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Assign one person per role: <span className="text-blue-400 font-medium">Attendee</span>, <span className="text-amber-400 font-medium">Moderator</span>, <span className="text-red-400 font-medium">Presenter</span>, <span className="text-emerald-400 font-medium">Operator</span>, and <span className="text-violet-400 font-medium">Post-Event</span>. Run all roles simultaneously to verify real-time sync between the Moderator Console, Presenter Teleprompter, and Event Room. The full test session takes approximately 45 minutes.
+            <p className="text-sm font-semibold text-amber-200 mb-1">Before you start: Login required for operator features</p>
+            <p className="text-xs text-amber-400/70 leading-relaxed">
+              Creating events, managing the Webcast Studio, deploying bots, and accessing the OCC all require you to be logged in with an operator or admin role. The platform owner (David Cameron) is automatically set to admin. Other team members must be promoted to 'operator' role via the <a href={`${BASE_URL}/admin/users`} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">Admin Users page</a> before they can access operator features.
             </p>
           </div>
         </div>
@@ -467,10 +697,10 @@ export default function TestGuide() {
             Chorus Call — Confidential · Internal Use Only · Do Not Distribute
           </p>
           <a
-            href="/demo"
+            href="/platform-links"
             className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors"
           >
-            View Sales Demo Page →
+            View All Platform Links →
           </a>
         </div>
       </div>

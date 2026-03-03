@@ -287,3 +287,11 @@
 - [x] Fix createRecallBot payload: use realtime_endpoints[] + recallai_streaming transcription provider
 - [x] Fix transcript.data webhook handler: match actual Recall.ai payload shape (data.data.words + data.data.participant)
 - [x] Add Ably real-time subscription to RecallBotPanel for instant transcript updates (no more polling)
+
+## Round 53 — In-House Testing Preparation
+
+- [x] Add Login button to Home page header (shows user name when logged in, login link when not)
+- [x] Add login guard + helpful error message to CreateEventWizard when user is not logged in
+- [x] Update TestGuide to cover full webcasting workflow (create event → studio → register → attend → report)
+- [x] Add "Quick Start" section to TestGuide with the 3 most important URLs for in-house testing
+- [x] Add Recall.ai bot testing section to TestGuide

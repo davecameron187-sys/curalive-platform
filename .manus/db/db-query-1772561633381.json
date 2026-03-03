@@ -1,0 +1,234 @@
+{
+  "query": "DESCRIBE webcast_events;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2h457xAgLtxN22J.8d91d5a5e05f --database Mdu4k2iB9LVRNHXWAQDZg3 --execute DESCRIBE webcast_events;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "slug",
+      "Type": "varchar(128)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "title",
+      "Type": "varchar(300)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "description",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "event_type",
+      "Type": "enum('webinar','webcast','virtual_event','hybrid_event','on_demand','simulive','audio_conference','capital_markets')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "webinar",
+      "Extra": ""
+    },
+    {
+      "Field": "industry_vertical",
+      "Type": "enum('financial_services','corporate_communications','healthcare','technology','professional_services','government','education','media_entertainment','general')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "general",
+      "Extra": ""
+    },
+    {
+      "Field": "webcast_status",
+      "Type": "enum('draft','scheduled','live','ended','on_demand','cancelled')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "draft",
+      "Extra": ""
+    },
+    {
+      "Field": "start_time",
+      "Type": "bigint",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "end_time",
+      "Type": "bigint",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "timezone",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "UTC",
+      "Extra": ""
+    },
+    {
+      "Field": "max_attendees",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1000",
+      "Extra": ""
+    },
+    {
+      "Field": "registration_count",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "peak_attendees",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "stream_url",
+      "Type": "varchar(500)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "rtmp_key",
+      "Type": "varchar(256)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "recording_url",
+      "Type": "varchar(500)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "registration_enabled",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "chat_enabled",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "qa_enabled",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "polls_enabled",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "recording_enabled",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "logo_url",
+      "Type": "varchar(500)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "primary_color",
+      "Type": "varchar(20)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "#3b82f6",
+      "Extra": ""
+    },
+    {
+      "Field": "host_name",
+      "Type": "varchar(200)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "host_organization",
+      "Type": "varchar(200)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "tags",
+      "Type": "varchar(500)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "bigint",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "updated_at",
+      "Type": "bigint",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\nslug\tvarchar(128)\tNO\tUNI\tNULL\t\ntitle\tvarchar(300)\tNO\t\tNULL\t\ndescription\ttext\tYES\t\tNULL\t\nevent_type\tenum('webinar','webcast','virtual_event','hybrid_event','on_demand','simulive','audio_conference','capital_markets')\tNO\t\twebinar\t\nindustry_vertical\tenum('financial_services','corporate_communications','healthcare','technology','professional_services','government','education','media_entertainment','general')\tNO\t\tgeneral\t\nwebcast_status\tenum('draft','scheduled','live','ended','on_demand','cancelled')\tNO\t\tdraft\t\nstart_time\tbigint\tYES\t\tNULL\t\nend_time\tbigint\tYES\t\tNULL\t\ntimezone\tvarchar(64)\tYES\t\tUTC\t\nmax_attendees\tint\tYES\t\t1000\t\nregistration_count\tint\tYES\t\t0\t\npeak_attendees\tint\tYES\t\t0\t\nstream_url\tvarchar(500)\tYES\t\tNULL\t\nrtmp_key\tvarchar(256)\tYES\t\tNULL\t\nrecording_url\tvarchar(500)\tYES\t\tNULL\t\nregistration_enabled\ttinyint(1)\tYES\t\t1\t\nchat_enabled\ttinyint(1)\tYES\t\t1\t\nqa_enabled\ttinyint(1)\tYES\t\t1\t\npolls_enabled\ttinyint(1)\tYES\t\t1\t\nrecording_enabled\ttinyint(1)\tYES\t\t1\t\nlogo_url\tvarchar(500)\tYES\t\tNULL\t\nprimary_color\tvarchar(20)\tYES\t\t#3b82f6\t\nhost_name\tvarchar(200)\tYES\t\tNULL\t\nhost_organization\tvarchar(200)\tYES\t\tNULL\t\ntags\tvarchar(500)\tYES\t\tNULL\t\ncreated_at\tbigint\tNO\t\tNULL\t\nupdated_at\tbigint\tNO\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 357
+}

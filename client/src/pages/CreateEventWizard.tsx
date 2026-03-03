@@ -6,6 +6,8 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 import {
   Video, Mic, Globe, Users, Calendar, Clock, ChevronRight,
   ChevronLeft, Check, Plus, Trash2, Upload, Palette, FileText,
@@ -634,6 +636,7 @@ function StepReview({ state }: { state: WizardState }) {
 // ─── Main Wizard Component ────────────────────────────────────────────────────
 export default function CreateEventWizard() {
   const [, navigate] = useLocation();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [state, setState] = useState<WizardState>(DEFAULT_STATE);
   const [submitting, setSubmitting] = useState(false);
@@ -680,6 +683,31 @@ export default function CreateEventWizard() {
   };
 
   const slug = slugify(state.title);
+
+  // Auth guard — show login prompt if not authenticated
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+        <div className="max-w-sm w-full text-center">
+          <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Login Required</h1>
+          <p className="text-muted-foreground text-sm mb-6" style={{ fontFamily: "'Inter', sans-serif" }}>
+            You need to be logged in with an operator or admin role to create events. The platform owner is automatically granted admin access.
+          </p>
+          <div className="flex flex-col gap-3">
+            <a href={getLoginUrl()} className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity">
+              Login to Continue
+            </a>
+            <button onClick={() => navigate('/live-video/webcasting')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              ← Back to Webcasting Hub
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (published) {
     return (

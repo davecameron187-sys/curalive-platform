@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, slug, title FROM webcast_events LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2h457xAgLtxN22J.8d91d5a5e05f --database Mdu4k2iB9LVRNHXWAQDZg3 --execute SELECT id, slug, title FROM webcast_events LIMIT 20;",
+  "rows": [
+    {
+      "id": "1",
+      "slug": "q4-2025-earnings-webcast",
+      "title": "Q4 2025 Earnings Results Webcast"
+    },
+    {
+      "id": "2",
+      "slug": "africa-capital-markets-summit-2026",
+      "title": "Africa Capital Markets Summit 2026"
+    },
+    {
+      "id": "3",
+      "slug": "product-launch-webinar-march-2026",
+      "title": "Chorus.AI Platform Launch — What's New in 2026"
+    },
+    {
+      "id": "4",
+      "slug": "ceo-town-hall-q1-2026",
+      "title": "CEO All-Hands Town Hall — Q1 2026"
+    },
+    {
+      "id": "5",
+      "slug": "medical-education-cme-series-2026",
+      "title": "CME Webinar Series: Advances in Oncology 2026"
+    },
+    {
+      "id": "6",
+      "slug": "agm-annual-general-meeting-2026",
+      "title": "Annual General Meeting 2026"
+    },
+    {
+      "id": "7",
+      "slug": "government-budget-briefing-2026",
+      "title": "National Budget Briefing — Public Webcast 2026"
+    },
+    {
+      "id": "8",
+      "slug": "partner-enablement-training-q1",
+      "title": "Partner Enablement Training — Q1 2026"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tslug\ttitle\n1\tq4-2025-earnings-webcast\tQ4 2025 Earnings Results Webcast\n2\tafrica-capital-markets-summit-2026\tAfrica Capital Markets Summit 2026\n3\tproduct-launch-webinar-march-2026\tChorus.AI Platform Launch — What's New in 2026\n4\tceo-town-hall-q1-2026\tCEO All-Hands Town Hall — Q1 2026\n5\tmedical-education-cme-series-2026\tCME Webinar Series: Advances in Oncology 2026\n6\tagm-annual-general-meeting-2026\tAnnual General Meeting 2026\n7\tgovernment-budget-briefing-2026\tNational Budget Briefing — Public Webcast 2026\n8\tpartner-enablement-training-q1\tPartner Enablement Training — Q1 2026\n",
+  "stderr": "",
+  "execution_time_ms": 380
+}
