@@ -42,24 +42,41 @@ async function recallFetch(path: string, options: RequestInit = {}) {
 async function createRecallBot(params: {
   meetingUrl: string;
   botName: string;
-  webhookUrl: string;
+  realtimeWebhookUrl: string;
+  statusWebhookUrl: string;
   recordingEnabled: boolean;
+  ablyChannel: string;
 }) {
   return recallFetch("/bot/", {
     method: "POST",
     body: JSON.stringify({
       meeting_url: params.meetingUrl,
       bot_name: params.botName,
-      transcription_options: {
-        provider: "assembly_ai",
-        assembly_ai: {
-          word_boost: ["Chorus", "Recall", "earnings", "investor", "dividend", "revenue"],
+      // Use Recall.ai's built-in streaming transcription provider
+      recording_config: {
+        transcript: {
+          provider: {
+            recallai_streaming: {},
+          },
         },
+        // Optionally record video+audio for post-event replay
+        ...(params.recordingEnabled ? { video: { format: "mp4" } } : {}),
+        // Real-time endpoint: receives transcript.data events per-bot
+        realtime_endpoints: [
+          {
+            type: "webhook",
+            url: params.realtimeWebhookUrl,
+            events: ["transcript.data"],
+          },
+        ],
       },
-      recording_config: params.recordingEnabled
-        ? { transcript: true, video: false }
-        : undefined,
-      webhook_url: params.webhookUrl,
+      // Status change webhooks are configured at the Recall dashboard level,
+      // but we also pass a per-bot webhook_url as a fallback
+      webhook_url: params.statusWebhookUrl,
+      // Store our Ably channel in metadata so webhook handlers can look it up
+      metadata: {
+        ablyChannel: params.ablyChannel,
+      },
       automatic_leave: {
         waiting_room_timeout: 1200, // 20 min wait before auto-leave
         noone_joined_timeout: 600,  // 10 min if no one joins
@@ -106,8 +123,10 @@ export const recallRouter = router({
       const bot = await createRecallBot({
         meetingUrl: input.meetingUrl,
         botName: input.botName,
-        webhookUrl,
+        realtimeWebhookUrl: webhookUrl,
+        statusWebhookUrl: webhookUrl,
         recordingEnabled: input.enableRecording,
+        ablyChannel,
       });
 
       // Persist in database

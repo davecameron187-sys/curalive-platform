@@ -76,9 +76,14 @@ function verifyRecallSignature(rawBody: string, signature: string | undefined): 
 // ─── Webhook event processors ────────────────────────────────────────────────
 
 async function handleBotStatusChange(payload: {
-  bot: { id: string; status_code: string };
+  // Recall.ai wraps everything under data.data and data.bot
+  data: {
+    data: { code: string; sub_code: string | null; updated_at: string };
+    bot: { id: string; metadata?: Record<string, string> };
+  };
 }) {
-  const { id: recallBotId, status_code: status } = payload.bot;
+  const recallBotId = payload.data.bot.id;
+  const status = payload.data.data.code;
   const db = await getDb();
   if (!db) return;
 
@@ -110,16 +115,31 @@ async function handleBotStatusChange(payload: {
 }
 
 async function handleTranscriptData(payload: {
-  bot: { id: string };
+  // Recall.ai transcript.data payload shape (recallai_streaming provider):
+  // { event: "transcript.data", data: { data: { words: [...], participant: {...} }, bot: { id, metadata } } }
   data: {
-    transcript: Array<{
-      speaker: string;
-      words: Array<{ text: string; start_time: number; end_time: number }>;
-      is_final: boolean;
-    }>;
+    data: {
+      words: Array<{
+        text: string;
+        start_timestamp: { relative: number };
+        end_timestamp: { relative: number };
+      }>;
+      participant: {
+        id: number;
+        name: string;
+        is_host: boolean;
+        email: string | null;
+      };
+    };
+    bot: { id: string; metadata?: Record<string, string> };
   };
 }) {
-  const recallBotId = payload.bot.id;
+  const recallBotId = payload.data.bot.id;
+  const words = payload.data.data.words;
+  const participant = payload.data.data.participant;
+
+  if (!words || words.length === 0) return;
+
   const db = await getDb();
   if (!db) return;
 
@@ -131,39 +151,36 @@ async function handleTranscriptData(payload: {
 
   if (!bot) return;
 
-  // Process each transcript segment
-  for (const segment of payload.data.transcript) {
-    if (!segment.is_final) continue; // only persist final segments
+  // Build a single segment from the word batch
+  const text = words.map((w) => w.text).join(" ").trim();
+  if (!text) return;
 
-    const text = segment.words.map((w) => w.text).join(" ").trim();
-    if (!text) continue;
+  const startTime = words[0]?.start_timestamp?.relative ?? 0;
+  const timeLabel = formatTime(startTime);
+  const speaker = participant?.name || "Speaker";
 
-    const startTime = segment.words[0]?.start_time ?? 0;
-    const timeLabel = formatTime(startTime);
+  const transcriptSegment = {
+    id: `${recallBotId}-${startTime}`,
+    speaker,
+    text,
+    timestamp: Date.now(),
+    timeLabel,
+  };
 
-    const transcriptSegment = {
-      id: `${recallBotId}-${startTime}`,
-      speaker: segment.speaker || "Speaker",
-      text,
-      timestamp: Date.now(),
-      timeLabel,
-    };
+  // Append to DB transcript log
+  const existing = bot.transcriptJson ? JSON.parse(bot.transcriptJson) : [];
+  existing.push(transcriptSegment);
+  await db
+    .update(recallBots)
+    .set({ transcriptJson: JSON.stringify(existing) })
+    .where(eq(recallBots.recallBotId, recallBotId));
 
-    // Append to DB transcript log
-    const existing = bot.transcriptJson ? JSON.parse(bot.transcriptJson) : [];
-    existing.push(transcriptSegment);
-    await db
-      .update(recallBots)
-      .set({ transcriptJson: JSON.stringify(existing) })
-      .where(eq(recallBots.recallBotId, recallBotId));
-
-    // Publish to Ably in real time
-    if (bot.ablyChannel) {
-      await ablyPublish(bot.ablyChannel, "chorus", JSON.stringify({
-        type: "transcript.segment",
-        data: transcriptSegment,
-      }));
-    }
+  // Publish to Ably in real time
+  if (bot.ablyChannel) {
+    await ablyPublish(bot.ablyChannel, "chorus", JSON.stringify({
+      type: "transcript.segment",
+      data: transcriptSegment,
+    }));
   }
 }
 

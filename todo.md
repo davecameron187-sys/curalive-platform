@@ -282,3 +282,8 @@
 - [x] Build PlatformLinks page at /platform-links with all 35 URLs, search/filter, copy-to-clipboard, section grouping
 - [x] Register route in App.tsx
 - [x] Add link to PlatformLinks from TechHandover and TestGuide pages
+
+## Round 51 — Recall.ai Integration Fixes
+- [x] Fix createRecallBot payload: use realtime_endpoints[] + recallai_streaming transcription provider
+- [x] Fix transcript.data webhook handler: match actual Recall.ai payload shape (data.data.words + data.data.participant)
+- [x] Add Ably real-time subscription to RecallBotPanel for instant transcript updates (no more polling)

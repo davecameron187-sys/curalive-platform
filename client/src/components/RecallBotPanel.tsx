@@ -12,9 +12,9 @@
  *   meetingId — numeric DB meeting ID (for roadshow meetings)
  *   compact   — if true, renders a collapsed card suitable for sidebars
  */
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import { Bot, Play, Square, RefreshCw, Mic, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { Bot, Play, Square, RefreshCw, Mic, AlertCircle, CheckCircle2, Clock, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -51,12 +51,73 @@ export default function RecallBotPanel({ eventId, meetingId, compact = false }: 
   const [meetingUrl, setMeetingUrl] = useState("");
   const [botName, setBotName] = useState("Chorus.AI");
   const [activeBotId, setActiveBotId] = useState<string | null>(null);
+  const [ablyChannel, setAblyChannel] = useState<string | null>(null);
+  // Real-time transcript segments received via Ably (supplements the polled data)
+  const [realtimeSegments, setRealtimeSegments] = useState<Array<{ id: string; speaker: string; text: string; timeLabel: string; timestamp: number }>>([]);
+  const ablyClientRef = useRef<any>(null);
+
+  // Ably token request for real-time subscription
+  const ablyConfig = trpc.ably.tokenRequest.useQuery(
+    { clientId: `recall-panel-${eventId ?? meetingId ?? "x"}` },
+    { enabled: Boolean(ablyChannel), retry: false, staleTime: Infinity }
+  );
+
+  // Subscribe to the bot's dedicated Ably channel for real-time transcript segments
+  useEffect(() => {
+    if (!ablyChannel || !ablyConfig.data || ablyConfig.data.mode !== "ably" || !ablyConfig.data.tokenRequest) return;
+    let client: any;
+    (async () => {
+      try {
+        const Ably = await import("ably");
+        client = new (Ably.default as any).Realtime({
+          authCallback: (_data: unknown, callback: (err: string | null, token: unknown) => void) => {
+            callback(null, ablyConfig.data!.tokenRequest);
+          },
+        });
+        const ch = client.channels.get(ablyChannel);
+        ch.subscribe((msg: any) => {
+          try {
+            const parsed = JSON.parse(msg.data);
+            if (parsed.type === "transcript.segment" && parsed.data) {
+              setRealtimeSegments((prev) => {
+                // Deduplicate by segment id
+                if (prev.find((s) => s.id === parsed.data.id)) return prev;
+                return [...prev, parsed.data];
+              });
+            } else if (parsed.type === "bot.status") {
+              // Trigger a status refetch when we get a status change event
+              botStatus.refetch();
+            }
+          } catch {}
+        });
+        ablyClientRef.current = client;
+      } catch (err) {
+        console.warn("[RecallBotPanel] Ably connection failed:", err);
+      }
+    })();
+    return () => {
+      client?.close();
+      ablyClientRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ablyChannel, ablyConfig.data]);
+
+  // Clean up Ably when bot is stopped
+  useEffect(() => {
+    if (!activeBotId) {
+      ablyClientRef.current?.close();
+      ablyClientRef.current = null;
+      setRealtimeSegments([]);
+      setAblyChannel(null);
+    }
+  }, [activeBotId]);
 
   const isConfigured = trpc.recall.isConfigured.useQuery();
 
   const deployBot = trpc.recall.deployBot.useMutation({
     onSuccess: (data) => {
       setActiveBotId(data.botId);
+      setAblyChannel(data.ablyChannel); // subscribe to real-time transcript channel
       toast.success("Bot deployed", { description: data.message });
     },
     onError: (err) => {
@@ -78,9 +139,25 @@ export default function RecallBotPanel({ eventId, meetingId, compact = false }: 
     { recallBotId: activeBotId! },
     {
       enabled: Boolean(activeBotId),
-      refetchInterval: 5000, // poll every 5s
+      // Reduce polling to 15s when Ably is connected (real-time handles transcript updates)
+      // Keep 5s polling as fallback when Ably is not available
+      refetchInterval: ablyChannel && ablyConfig.data?.mode === "ably" ? 15000 : 5000,
     }
   );
+
+  // Merge polled transcript segments with real-time Ably segments (deduplicated)
+  // getBotStatus returns `segments` (parsed from transcriptJson)
+  const allSegments = (() => {
+    const polled: Array<{ id: string; speaker: string; text: string; timeLabel: string; timestamp: number }> =
+      (botStatus.data as any)?.segments ?? [];
+    const merged = [...polled];
+    for (const seg of realtimeSegments) {
+      if (!merged.find((s) => s.id === seg.id)) merged.push(seg);
+    }
+    return merged.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
+  })();
+
+  const isAblyLive = Boolean(ablyChannel && ablyConfig.data?.mode === "ably");
 
   const handleDeploy = () => {
     if (!meetingUrl.trim()) {
@@ -129,7 +206,12 @@ export default function RecallBotPanel({ eventId, meetingId, compact = false }: 
           <p className="text-xs text-muted-foreground">Live meeting transcription</p>
         </div>
         {activeBotId && botStatus.data && (
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            {isAblyLive && (
+              <span className="flex items-center gap-1 text-xs text-emerald-400 font-semibold">
+                <Zap className="w-3 h-3" /> Live
+              </span>
+            )}
             <StatusBadge status={botStatus.data.status} />
           </div>
         )}
@@ -173,10 +255,10 @@ export default function RecallBotPanel({ eventId, meetingId, compact = false }: 
       ) : (
         /* Active bot status */
         <div className="space-y-3">
-          {/* Transcript preview */}
-          {botStatus.data?.transcriptSegments && botStatus.data.transcriptSegments.length > 0 && (
+          {/* Transcript preview — uses merged polled + real-time Ably segments */}
+          {allSegments.length > 0 && (
             <div className="bg-background rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
-              {botStatus.data.transcriptSegments.slice(-8).map((seg: { id: string; timeLabel: string; speaker: string; text: string }) => (
+              {allSegments.slice(-8).map((seg) => (
                 <div key={seg.id} className="text-xs">
                   <span className="text-muted-foreground font-mono">[{seg.timeLabel}]</span>{" "}
                   <span className="text-primary font-semibold">{seg.speaker}:</span>{" "}
@@ -186,7 +268,7 @@ export default function RecallBotPanel({ eventId, meetingId, compact = false }: 
             </div>
           )}
 
-          {botStatus.data?.transcriptSegments?.length === 0 && (
+          {allSegments.length === 0 && (
             <div className="bg-background rounded-lg p-3 text-center text-xs text-muted-foreground">
               <Mic className="w-4 h-4 mx-auto mb-1 opacity-40" />
               Waiting for speech…
@@ -196,7 +278,7 @@ export default function RecallBotPanel({ eventId, meetingId, compact = false }: 
           {/* Stats row */}
           {!compact && botStatus.data && (
             <div className="flex gap-3 text-xs text-muted-foreground">
-              <span>{botStatus.data.transcriptSegments?.length ?? 0} segments</span>
+              <span>{allSegments.length} segments</span>
               {botStatus.data.recordingUrl && (
                 <a href={botStatus.data.recordingUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   View Recording
