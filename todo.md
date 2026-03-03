@@ -314,3 +314,15 @@
 - [ ] Add /billing page showing current plan, invoice history, manage subscription button
 - [ ] Wire billing nav link to Home page header and WebcastingHub
 - [ ] Write vitest for checkout session creation
+
+## Round 55 — Operator Profile Customisation
+
+- [x] Extend users table: add jobTitle, organisation, bio, avatarUrl, phone, linkedinUrl, timezone columns
+- [x] Run pnpm db:push to apply schema migration
+- [x] Add getProfile and updateProfile tRPC procedures (protectedProcedure)
+- [x] Add avatar upload endpoint using storagePut (S3)
+- [x] Build /profile page with avatar upload, name, title, org, bio, phone, LinkedIn, timezone fields
+- [x] Add Profile link to Home header user menu (next to Sign Out)
+- [x] Show avatar + name in OCC header when profile is set
+- [x] Show operator name/title in WebcastStudio header
+- [x] Write vitest for updateProfile procedure

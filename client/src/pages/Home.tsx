@@ -77,9 +77,12 @@ export default function Home() {
             </button>
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
-                <span className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground">
+                <button onClick={() => navigate("/profile")} className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <User className="w-3 h-3" />{user?.name?.split(' ')[0]}
-                </span>
+                </button>
+                <button onClick={() => navigate("/profile")} className="flex items-center gap-1.5 border border-border text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg text-xs font-semibold hover:bg-secondary transition-colors">
+                  <User className="w-3 h-3" /> Profile
+                </button>
                 <button onClick={() => logout()} className="flex items-center gap-1.5 border border-border text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg text-xs font-semibold hover:bg-secondary transition-colors">
                   <LogOut className="w-3 h-3" /> Sign Out
                 </button>

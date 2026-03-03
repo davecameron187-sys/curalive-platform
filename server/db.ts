@@ -101,4 +101,34 @@ export async function updateUserRole(userId: number, role: "user" | "admin" | "o
   await db.update(users).set({ role }).where(eq(users.id, userId));
 }
 
+export async function getUserById(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateUserProfile(
+  userId: number,
+  profile: {
+    name?: string | null;
+    jobTitle?: string | null;
+    organisation?: string | null;
+    bio?: string | null;
+    avatarUrl?: string | null;
+    phone?: string | null;
+    linkedinUrl?: string | null;
+    timezone?: string | null;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Filter out undefined keys so we only update what was provided
+  const updateSet = Object.fromEntries(
+    Object.entries(profile).filter(([, v]) => v !== undefined)
+  );
+  if (Object.keys(updateSet).length === 0) return;
+  await db.update(users).set(updateSet).where(eq(users.id, userId));
+}
+
 // TODO: add feature queries here as your schema grows.

@@ -41,6 +41,7 @@ import WebcastReport from "./pages/WebcastReport";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PlatformLinks from "./pages/PlatformLinks";
+import Profile from "./pages/Profile";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/legal/terms" component={TermsOfService} />
       <Route path="/legal/privacy" component={PrivacyPolicy} />
       <Route path="/platform-links" component={PlatformLinks} />
+      <Route path="/profile" component={Profile} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
       <Route path="/404" component={NotFound} />

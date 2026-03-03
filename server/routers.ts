@@ -5,7 +5,8 @@ import { publicProcedure, adminProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import { sendEmail, buildIRSummaryEmail, buildRegistrationConfirmationEmail } from "./_core/email";
-import { getDb, listUsers, updateUserRole } from "./db";
+import { getDb, listUsers, updateUserRole, getUserById, updateUserProfile } from "./db";
+import { storagePut } from "./storage";
 import { attendeeRegistrations, events, irContacts } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
@@ -100,6 +101,59 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+  }),
+
+  // ─── Operator profile management ──────────────────────────────────────────────
+  profile: router({
+    get: publicProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) return null;
+      const user = await getUserById(ctx.user.id);
+      if (!user) return null;
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        jobTitle: user.jobTitle,
+        organisation: user.organisation,
+        bio: user.bio,
+        avatarUrl: user.avatarUrl,
+        phone: user.phone,
+        linkedinUrl: user.linkedinUrl,
+        timezone: user.timezone,
+      };
+    }),
+
+    update: publicProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255).optional(),
+        jobTitle: z.string().max(255).nullable().optional(),
+        organisation: z.string().max(255).nullable().optional(),
+        bio: z.string().max(1000).nullable().optional(),
+        phone: z.string().max(64).nullable().optional(),
+        linkedinUrl: z.string().url().max(512).nullable().optional().or(z.literal('')).transform(v => v === '' ? null : v),
+        timezone: z.string().max(64).nullable().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Login required");
+        await updateUserProfile(ctx.user.id, input);
+        return { success: true };
+      }),
+
+    uploadAvatar: publicProcedure
+      .input(z.object({
+        base64: z.string().max(5 * 1024 * 1024), // 5 MB limit
+        mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Login required");
+        const buffer = Buffer.from(input.base64, "base64");
+        const ext = input.mimeType.split("/")[1];
+        const key = `avatars/user-${ctx.user.id}-${Date.now()}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        await updateUserProfile(ctx.user.id, { avatarUrl: url });
+        return { avatarUrl: url };
+      }),
   }),
 
   // ─── Ably real-time token endpoint ───────────────────────────────────────────
