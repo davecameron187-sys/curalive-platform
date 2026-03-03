@@ -163,13 +163,35 @@ function CopyButton({ url }: { url: string }) {
   );
 }
 
-function LinkRow({ link }: { link: LinkEntry }) {
+/** Highlight matching text segments within a string */
+function Highlight({ text, query, className = "" }: { text: string; query: string; className?: string }) {
+  if (!query.trim()) return <span className={className}>{text}</span>;
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const parts = text.split(regex);
+  return (
+    <span className={className}>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-primary/25 text-primary rounded px-0.5">{part}</mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </span>
+  );
+}
+
+function LinkRow({ link, query = "" }: { link: LinkEntry; query?: string }) {
   const isTemplate = link.url.includes("{");
+  // Determine which fields matched so we can show a match indicator
+  const q = query.trim().toLowerCase();
+  const urlMatched = q && link.url.toLowerCase().includes(q);
+  const descMatched = q && link.description.toLowerCase().includes(q);
   return (
     <div className="flex items-start gap-3 py-3 border-b border-border/50 last:border-0 group">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
-          <span className="text-sm font-medium text-foreground">{link.label}</span>
+          <Highlight text={link.label} query={query} className="text-sm font-medium text-foreground" />
           {link.isNew && (
             <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded">New</span>
           )}
@@ -179,9 +201,14 @@ function LinkRow({ link }: { link: LinkEntry }) {
           {link.isInternal && (
             <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-slate-400/10 border border-slate-400/20 px-1.5 py-0.5 rounded">Internal</span>
           )}
+          {urlMatched && !descMatched && (
+            <span className="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded">URL match</span>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground mb-1.5">{link.description}</p>
-        <code className="text-[11px] text-primary/80 font-mono break-all">{link.url}</code>
+        <Highlight text={link.description} query={descMatched ? query : ""} className="text-xs text-muted-foreground mb-1.5 block" />
+        <code className="text-[11px] font-mono break-all block">
+          <Highlight text={link.url} query={query} className="text-primary/80" />
+        </code>
       </div>
       <div className="flex items-center gap-1 shrink-0 pt-0.5">
         <CopyButton url={link.url} />
@@ -201,7 +228,7 @@ function LinkRow({ link }: { link: LinkEntry }) {
   );
 }
 
-function SectionCard({ section, defaultOpen = true }: { section: Section; defaultOpen?: boolean }) {
+function SectionCard({ section, defaultOpen = true, query = "" }: { section: Section; defaultOpen?: boolean; query?: string }) {
   const [open, setOpen] = useState(defaultOpen);
   const Icon = section.icon;
   return (
@@ -220,7 +247,7 @@ function SectionCard({ section, defaultOpen = true }: { section: Section; defaul
       {open && (
         <div className="px-5 pb-2">
           {section.links.map(link => (
-            <LinkRow key={link.url} link={link} />
+            <LinkRow key={link.url} link={link} query={query} />
           ))}
         </div>
       )}
@@ -356,7 +383,7 @@ export default function PlatformLinks() {
         ) : (
           <div className="space-y-4">
             {filteredSections.map((section, i) => (
-              <SectionCard key={section.id} section={section} defaultOpen={i < 3 || !!search} />
+              <SectionCard key={section.id} section={section} defaultOpen={i < 3 || !!search} query={search} />
             ))}
           </div>
         )}
