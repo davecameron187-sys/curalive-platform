@@ -295,3 +295,22 @@
 - [x] Update TestGuide to cover full webcasting workflow (create event → studio → register → attend → report)
 - [x] Add "Quick Start" section to TestGuide with the 3 most important URLs for in-house testing
 - [x] Add Recall.ai bot testing section to TestGuide
+
+## Round 54 — Team Role Management, E2E Test Event & Stripe Billing
+
+### Team Role Management
+- [x] Add "Request Operator Access" button to WebcastingHub for users with role=user
+- [x] Add tRPC mutation requestOperatorAccess that emails owner via notifyOwner
+- [x] Improve AdminUsers page: show pending requests, add one-click promote button
+- [x] Add role badge to Home page header (shows "Admin" or "Operator" badge next to user name)
+
+### Stripe Billing
+- [ ] Add Stripe integration via webdev_add_feature
+- [ ] Add stripe_customer_id to users table schema, run db:push
+- [ ] Create products.ts with 3 subscription plans (Starter, Professional, Enterprise)
+- [ ] Build /pricing page with plan comparison table and checkout buttons
+- [ ] Add createCheckoutSession tRPC procedure (operatorProcedure)
+- [ ] Add stripeWebhook handler at /api/stripe/webhook
+- [ ] Add /billing page showing current plan, invoice history, manage subscription button
+- [ ] Wire billing nav link to Home page header and WebcastingHub
+- [ ] Write vitest for checkout session creation

@@ -70,6 +70,29 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+  // ─── Self-service operator access request ──────────────────────────────────
+  team: router({
+    requestOperatorAccess: publicProcedure
+      .input(z.object({ reason: z.string().max(500).optional() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Login required");
+        if (ctx.user.role === 'operator' || ctx.user.role === 'admin') {
+          return { success: true, alreadyOperator: true };
+        }
+        await notifyOwner({
+          title: `Operator Access Request — ${ctx.user.name ?? ctx.user.email ?? 'Unknown user'}`,
+          content: [
+            `User: ${ctx.user.name ?? 'N/A'} (ID: ${ctx.user.id})`,
+            `Email: ${ctx.user.email ?? 'N/A'}`,
+            `Current role: ${ctx.user.role}`,
+            input.reason ? `Reason: ${input.reason}` : '',
+            '',
+            'To promote this user, visit: /admin/users',
+          ].filter(Boolean).join('\n'),
+        });
+        return { success: true, alreadyOperator: false };
+      }),
+  }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

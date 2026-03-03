@@ -1,12 +1,13 @@
 /**
  * AdminUsers — User Role Management
  * Admin-only page to view all users and promote/demote roles (user / operator / admin)
+ * Includes quick-promote buttons and a banner for users with role=user who need operator access
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
-import { Shield, Users, ChevronDown, RefreshCw, AlertCircle, CheckCircle2, Lock } from "lucide-react";
+import { Shield, Users, RefreshCw, AlertCircle, Lock, UserCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 const ROLE_COLORS: Record<string, string> = {
@@ -42,6 +43,11 @@ export default function AdminUsers() {
     },
   });
 
+  const quickPromote = (userId: number, role: "operator" | "admin") => {
+    setUpdatingId(userId);
+    updateRole.mutate({ userId, role });
+  };
+
   // Auth guard
   if (authLoading) {
     return (
@@ -76,6 +82,9 @@ export default function AdminUsers() {
     );
   }
 
+  // Users who need operator access (role=user, not the current admin)
+  const pendingUsers = (userList ?? []).filter(u => u.role === "user" && u.id !== user.id);
+
   return (
     <div className="min-h-screen bg-[#080c14] text-slate-200" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
       {/* Header */}
@@ -105,13 +114,43 @@ export default function AdminUsers() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Quick Promote Banner — users who need operator access */}
+        {pendingUsers.length > 0 && (
+          <div className="mb-6 bg-indigo-900/20 border border-indigo-700/40 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <UserCheck className="w-4 h-4 text-indigo-400" />
+              <span className="text-indigo-300 text-sm font-semibold">
+                {pendingUsers.length} team member{pendingUsers.length > 1 ? "s" : ""} with basic access — promote to Operator to grant platform access
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {pendingUsers.map(u => (
+                <div key={u.id} className="flex items-center gap-2 bg-[#0f172a] border border-slate-700 rounded-lg px-3 py-2">
+                  <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">
+                    {(u.name ?? u.email ?? "?")[0].toUpperCase()}
+                  </div>
+                  <span className="text-slate-300 text-xs font-medium">{u.name ?? u.email ?? `User #${u.id}`}</span>
+                  <button
+                    disabled={updatingId === u.id}
+                    onClick={() => quickPromote(u.id, "operator")}
+                    className="flex items-center gap-1 bg-indigo-700 hover:bg-indigo-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded transition-colors disabled:opacity-50"
+                  >
+                    <Zap className="w-2.5 h-2.5" />
+                    {updatingId === u.id ? "…" : "Make Operator"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Role Guide */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
             { role: "user", icon: Users, desc: "Default role. Can register for events and view event rooms." },
-            { role: "operator", icon: Shield, desc: "Can access the OCC, manage conferences, and use all operator tools." },
-            { role: "admin", icon: Shield, desc: "Full access including User Management and seed data tools." },
+            { role: "operator", icon: Shield, desc: "Can access the OCC, create events, manage webcasts, and use all operator tools." },
+            { role: "admin", icon: Shield, desc: "Full access including User Management, seed data tools, and all operator capabilities." },
           ].map(({ role, icon: Icon, desc }) => (
             <div key={role} className="bg-[#0f172a] border border-slate-800 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -208,8 +247,8 @@ export default function AdminUsers() {
         <div className="mt-6 bg-amber-900/20 border border-amber-800/30 rounded-lg px-4 py-3 flex items-start gap-3">
           <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
           <div>
-            <p className="text-amber-300 text-xs font-semibold mb-0.5">Role changes take effect on next login</p>
-            <p className="text-amber-400/70 text-xs">Users with the <strong>operator</strong> role can access the OCC and all conference management tools. The <strong>admin</strong> role additionally grants access to this User Management page and the seed data tool.</p>
+            <p className="text-amber-300 text-xs font-semibold mb-0.5">Role changes take effect immediately</p>
+            <p className="text-amber-400/70 text-xs">Users with the <strong>operator</strong> role can access the OCC, create and manage events, and use all conference management tools. The <strong>admin</strong> role additionally grants access to this User Management page. When a team member logs in for the first time, they appear here with role=user — use the quick-promote banner above to grant them operator access.</p>
           </div>
         </div>
       </div>

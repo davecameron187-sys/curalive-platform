@@ -5,12 +5,15 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
+import { toast } from "sonner";
 import {
   Video, Users, TrendingUp, Mic, Calendar,
   Plus, ArrowRight, Play, BarChart3, Globe, Briefcase,
   ChevronRight, Zap, Activity, Radio, MonitorPlay, BookOpen,
   Heart, Landmark, GraduationCap, Tv, Megaphone, FileText,
-  Settings, Eye, Star, CheckCircle2
+  Settings, Eye, Star, CheckCircle2, LogIn, UserCheck
 } from "lucide-react";
 
 // ─── Event Type Definitions ───────────────────────────────────────────────────
@@ -206,6 +209,7 @@ function formatDate(ts: number | null | undefined) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function WebcastingHub() {
   const [, navigate] = useLocation();
+  const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<"all" | "live" | "scheduled" | "on_demand" | "ended">("all");
   const [selectedVertical, setSelectedVertical] = useState<string>("all");
 
@@ -221,6 +225,19 @@ export default function WebcastingHub() {
   const scheduledCount = webcastEvents.filter(e => e.status === "scheduled").length;
   const onDemandCount = webcastEvents.filter(e => e.status === "on_demand" || e.status === "ended").length;
   const totalRegistrations = webcastEvents.reduce((sum, e) => sum + (e.registrationCount || 0), 0);
+
+  const requestAccess = trpc.team.requestOperatorAccess.useMutation({
+    onSuccess: (data) => {
+      if (data.alreadyOperator) {
+        toast.success("You already have operator access!");
+      } else {
+        toast.success("Access request sent to admin. You will be notified when your role is updated.");
+      }
+    },
+    onError: () => toast.error("Failed to send request. Please try again."),
+  });
+
+  const isOperatorOrAdmin = user?.role === 'operator' || user?.role === 'admin';
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -254,9 +271,27 @@ export default function WebcastingHub() {
               <Play className="w-3.5 h-3.5" /> On Demand
             </button>
           </nav>
-          <button onClick={() => navigate("/live-video/webcast/create")} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
-            <Plus className="w-3.5 h-3.5" /> New Event
-          </button>
+          <div className="flex items-center gap-2">
+            {!isAuthenticated ? (
+              <a href={getLoginUrl()} className="flex items-center gap-1.5 border border-primary/40 text-primary px-3 py-2 rounded-lg text-xs font-semibold hover:bg-primary/10 transition-colors">
+                <LogIn className="w-3 h-3" /> Login
+              </a>
+            ) : !isOperatorOrAdmin ? (
+              <button
+                onClick={() => requestAccess.mutate({})}
+                disabled={requestAccess.isPending}
+                className="flex items-center gap-1.5 border border-indigo-500/40 text-indigo-400 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
+              >
+                <UserCheck className="w-3 h-3" />
+                {requestAccess.isPending ? "Requesting…" : "Request Operator Access"}
+              </button>
+            ) : null}
+            {isOperatorOrAdmin && (
+              <button onClick={() => navigate("/live-video/webcast/create")} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
+                <Plus className="w-3.5 h-3.5" /> New Event
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
