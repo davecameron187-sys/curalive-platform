@@ -131,6 +131,8 @@ export function buildRegistrationConfirmationEmail(opts: {
   eventDate: string;
   dialInNumber?: string;
   accessCode?: string;
+  attendUrl?: string;
+  icsContent?: string;
 }): string {
   return `
 <!DOCTYPE html>
@@ -158,8 +160,22 @@ export function buildRegistrationConfirmationEmail(opts: {
             <td style="padding:32px 40px;">
               <p style="margin:0 0 16px;font-size:15px;color:#94a3b8;">Dear ${opts.firstName} ${opts.lastName},</p>
               <p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">
-                Your registration has been confirmed. Here are your joining details:
+                Your registration has been confirmed. Use the button below to join when the event goes live.
               </p>
+              ${opts.attendUrl ? `
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${opts.attendUrl}" style="display:inline-block;background:#3b82f6;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:8px;">Join Event</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top:8px;">
+                    <p style="margin:0;font-size:11px;color:#475569;">Or copy this link: ${opts.attendUrl}</p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
               ${opts.dialInNumber ? `
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:8px;padding:20px;margin:0 0 24px;">
                 <tr>
@@ -177,6 +193,11 @@ export function buildRegistrationConfirmationEmail(opts: {
                 </tr>
                 ` : ''}
               </table>
+              ` : ''}
+              ${opts.icsContent ? `
+              <p style="margin:0 0 16px;font-size:13px;color:#64748b;line-height:1.6;">
+                A calendar invite (.ics) is attached to this email. Open it to add the event to your calendar.
+              </p>
               ` : ''}
               <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">
                 If you have any questions, please contact your Chorus Call account manager.

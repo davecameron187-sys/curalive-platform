@@ -229,3 +229,13 @@
 - [ ] Add webcast Ably channel namespace (webcast:{slug}) to AblyContext
 - [ ] Add routes for /live-video/webcast/create and vertical template previews
 - [ ] Run all tests and confirm 0 TS errors
+
+## Round 44 — Go-Live Features (March 2026)
+- [x] Stream tab visibility fix in WebcastStudio — overflow-x-auto so all 7 tabs accessible
+- [x] attendeeToken field added to webcastRegistrations schema (db:push applied)
+- [x] Email confirmation with .ics calendar invite sent on registration (Resend + buildRegistrationConfirmationEmail)
+- [x] verifyAttendeeToken procedure in webcastRouter for token-gated attendee access
+- [x] markAttendeeJoined procedure in webcastRouter to record attendance
+- [x] AttendeeEventRoom page (/live-video/webcast/:slug/attend?token=...) — token-gated, live stream, transcript, Q&A, polls, 12-language selector
+- [x] WebcastRegister success state shows personal join link and updated confirmation message
+- [ ] Stripe billing integration (requires user to provide Stripe API keys via Settings → Payment)

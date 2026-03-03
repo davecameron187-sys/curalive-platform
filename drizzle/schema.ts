@@ -644,6 +644,7 @@ export const webcastRegistrations = mysqlTable("webcast_registrations", {
   engagementScore: int("engagement_score").default(0),
   registrationSource: varchar("registration_source", { length: 100 }).default("direct"),
   utmSource: varchar("utm_source", { length: 100 }),
+  attendeeToken: varchar("attendee_token", { length: 64 }),
   registeredAt: bigint("registered_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 });
 export type WebcastRegistration = typeof webcastRegistrations.$inferSelect;

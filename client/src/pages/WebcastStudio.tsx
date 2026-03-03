@@ -419,7 +419,7 @@ function WebcastStudioInner({ slug }: { slug: string }) {
         <div className="flex flex-col flex-1 overflow-hidden">
 
           {/* Tab bar */}
-          <div className="flex border-b border-border bg-card/30 shrink-0">
+          <div className="flex border-b border-border bg-card/30 shrink-0 overflow-x-auto">
             {([
               { id: "qa" as StudioTab, icon: MessageSquare, label: "Q&A", badge: pendingQs > 0 ? pendingQs : undefined as number | undefined },
               { id: "polls" as StudioTab, icon: BarChart3, label: "Polls", badge: livePolls.length > 0 ? livePolls.length : undefined as number | undefined },
@@ -432,7 +432,7 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               <button
                 key={id}
                 onClick={() => setActiveTab(id as StudioTab)}
-                className={`flex items-center gap-1.5 px-4 py-3 text-xs font-medium border-b-2 transition-colors relative ${
+                className={`flex items-center gap-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative whitespace-nowrap ${
                   activeTab === id
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"

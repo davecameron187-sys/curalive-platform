@@ -470,6 +470,7 @@ export default function WebcastRegister() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attendeeToken, setAttendeeToken] = useState<string | null>(null);
   const [lang, setLang] = useState("en");
   const [form, setForm] = useState<FormData>({
     firstName: "", lastName: "", email: "", company: "",
@@ -482,7 +483,11 @@ export default function WebcastRegister() {
   );
 
   const registerMutation = trpc.webcast.register.useMutation({
-    onSuccess: () => { setSubmitted(true); setSubmitting(false); },
+    onSuccess: (data) => {
+      setSubmitted(true);
+      setSubmitting(false);
+      if (data.attendeeToken) setAttendeeToken(data.attendeeToken);
+    },
     onError: (err) => { setError(err.message); setSubmitting(false); },
   });
 
@@ -511,6 +516,7 @@ export default function WebcastRegister() {
       jobTitle: form.jobTitle,
       country: form.country,
       registrationSource: "direct",
+      origin: window.location.origin,
     });
   };
 
@@ -723,7 +729,7 @@ export default function WebcastRegister() {
                   </div>
                   <h3 className="text-lg font-bold mb-2">You're registered!</h3>
                   <p className="text-sm text-muted-foreground mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    A confirmation email has been sent to <strong>{form.email}</strong>. You'll receive a reminder 24 hours and 1 hour before the event.
+                    A confirmation email with a calendar invite (.ics) has been sent to <strong>{form.email}</strong>.
                   </p>
                   <div className="bg-secondary rounded-xl p-4 text-left mb-4">
                     <div className="text-xs text-muted-foreground mb-1">Event</div>
@@ -735,8 +741,19 @@ export default function WebcastRegister() {
                     )}
                   </div>
                   {template.successExtras}
+                  {attendeeToken && (
+                    <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 mb-4 text-left">
+                      <div className="text-xs font-semibold text-primary mb-1">Your personal join link</div>
+                      <div className="text-[10px] text-muted-foreground break-all font-mono">
+                        {window.location.origin}/live-video/webcast/{slug || "ceo-town-hall-q1-2026"}/attend?token={attendeeToken}
+                      </div>
+                    </div>
+                  )}
                   <button
-                    onClick={() => navigate(`/live-video/webcast/${slug || "ceo-town-hall-q1-2026"}`)}
+                    onClick={() => navigate(attendeeToken
+                      ? `/live-video/webcast/${slug || "ceo-town-hall-q1-2026"}/attend?token=${attendeeToken}`
+                      : `/live-video/webcast/${slug || "ceo-town-hall-q1-2026"}`
+                    )}
                     className={`w-full flex items-center justify-center gap-2 ${template.accentBg} ${template.accentColor} border ${template.accentBorder} py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity mt-4`}
                   >
                     <Play className="w-4 h-4" /> Enter Event Room

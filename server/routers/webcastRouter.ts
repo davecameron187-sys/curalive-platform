@@ -3,8 +3,10 @@
  * Covers: event CRUD, registration, Q&A moderation, polls, and analytics.
  */
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import { router, publicProcedure, operatorProcedure } from "../_core/trpc";
 import { getDb } from "../db";
+import { sendEmail, buildRegistrationConfirmationEmail } from "../_core/email";
 import {
   webcastEvents,
   webcastRegistrations,
@@ -16,6 +18,45 @@ import {
   type WebcastPoll,
 } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
+
+// ─── ICS calendar attachment builder ─────────────────────────────────────────
+function buildICS(opts: {
+  uid: string;
+  title: string;
+  description: string;
+  startTime: number;
+  endTime: number;
+  timezone: string;
+  organizer: string;
+  attendeeEmail: string;
+  attendeeName: string;
+  attendUrl: string;
+}): string {
+  const fmt = (ts: number) => {
+    const d = new Date(ts);
+    return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  };
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Chorus.AI//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:REQUEST",
+    "BEGIN:VEVENT",
+    `UID:${opts.uid}`,
+    `DTSTAMP:${fmt(Date.now())}`,
+    `DTSTART:${fmt(opts.startTime)}`,
+    `DTEND:${fmt(opts.endTime)}`,
+    `SUMMARY:${opts.title}`,
+    `DESCRIPTION:Join at: ${opts.attendUrl}`,
+    `ORGANIZER;CN=${opts.organizer}:mailto:noreply@choruscall.ai`,
+    `ATTENDEE;CN=${opts.attendeeName};RSVP=TRUE:mailto:${opts.attendeeEmail}`,
+    `URL:${opts.attendUrl}`,
+    "STATUS:CONFIRMED",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
 
 // ─── Demo seed data ───────────────────────────────────────────────────────────
 const DEMO_EVENTS = [
@@ -261,20 +302,64 @@ export const webcastRouter = router({
       customFields: z.record(z.string(), z.string()).optional(),
       registrationSource: z.string().default("direct"),
       utmSource: z.string().optional(),
+      origin: z.string().optional(), // frontend passes window.location.origin for attendee link
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) return { success: true };
-      const { customFields, ...rest } = input;
+      if (!db) return { success: true, attendeeToken: null };
+      const { customFields, origin, ...rest } = input;
+      // Generate a secure unique token for the attendee's personal event link
+      const attendeeToken = randomBytes(24).toString("hex");
       await db.insert(webcastRegistrations).values({
         ...rest,
         customFields: customFields ? JSON.stringify(customFields) : null,
+        attendeeToken,
         registeredAt: Date.now(),
       } as any);
       await db.update(webcastEvents)
         .set({ registrationCount: sql`registration_count + 1`, updatedAt: Date.now() })
         .where(eq(webcastEvents.id, input.eventId));
-      return { success: true };
+      // Fetch event details for the confirmation email
+      const [event] = await db.select().from(webcastEvents).where(eq(webcastEvents.id, input.eventId)).limit(1);
+      if (event) {
+        const baseUrl = origin ?? "https://chorusai-mdu4k2ib.manus.space";
+        const attendUrl = `${baseUrl}/live-video/webcast/${event.slug}/attend?token=${attendeeToken}`;
+        const startTs = event.startTime ?? Date.now() + 24 * 60 * 60 * 1000;
+        const endTs = event.endTime ?? startTs + 90 * 60 * 1000;
+        const eventDate = new Date(startTs).toLocaleDateString("en-GB", {
+          weekday: "long", year: "numeric", month: "long", day: "numeric",
+          hour: "2-digit", minute: "2-digit", timeZoneName: "short",
+        });
+        // Build ICS calendar invite
+        const icsContent = buildICS({
+          uid: `webcast-${event.id}-${attendeeToken}@choruscall.ai`,
+          title: event.title,
+          description: event.description ?? "",
+          startTime: startTs,
+          endTime: endTs,
+          timezone: event.timezone ?? "UTC",
+          organizer: event.hostOrganization ?? "Chorus Call Inc.",
+          attendeeEmail: input.email,
+          attendeeName: `${input.firstName} ${input.lastName}`,
+          attendUrl,
+        });
+        const html = buildRegistrationConfirmationEmail({
+          firstName: input.firstName,
+          lastName: input.lastName,
+          eventTitle: event.title,
+          company: event.hostOrganization ?? "Chorus Call Inc.",
+          eventDate,
+          attendUrl,
+          icsContent,
+        });
+        // Send confirmation email (non-blocking — don't fail registration if email fails)
+        sendEmail({
+          to: input.email,
+          subject: `Registration Confirmed: ${event.title}`,
+          html,
+        }).catch(err => console.error("[Webcast] Email send failed:", err));
+      }
+      return { success: true, attendeeToken };
     }),
 
   /**
@@ -487,5 +572,58 @@ export const webcastRouter = router({
           (polls.length > 0 ? 30 : 0)
         ),
       };
+    }),
+
+  /**
+   * Verify an attendee token and return the registration + event details.
+   * Used by the Attendee Event Room to validate the join link.
+   */
+  verifyAttendeeToken: publicProcedure
+    .input(z.object({
+      slug: z.string(),
+      token: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      // Find the event by slug
+      const [event] = await db.select().from(webcastEvents).where(eq(webcastEvents.slug, input.slug)).limit(1);
+      if (!event) return null;
+      // Find the registration by token
+      const [registration] = await db.select().from(webcastRegistrations)
+        .where(and(eq(webcastRegistrations.eventId, event.id), eq(webcastRegistrations.attendeeToken, input.token)))
+        .limit(1);
+      if (!registration) return null;
+      return {
+        valid: true,
+        event,
+        registration: {
+          id: registration.id,
+          firstName: registration.firstName,
+          lastName: registration.lastName,
+          email: registration.email,
+          company: registration.company,
+          jobTitle: registration.jobTitle,
+        },
+      };
+    }),
+
+  /**
+   * Mark an attendee as having joined the event.
+   */
+  markAttendeeJoined: publicProcedure
+    .input(z.object({
+      slug: z.string(),
+      token: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+      const [event] = await db.select().from(webcastEvents).where(eq(webcastEvents.slug, input.slug)).limit(1);
+      if (!event) return { success: false };
+      await db.update(webcastRegistrations)
+        .set({ attended: true, joinedAt: Date.now() })
+        .where(and(eq(webcastRegistrations.eventId, event.id), eq(webcastRegistrations.attendeeToken, input.token)));
+      return { success: true };
     }),
 });
