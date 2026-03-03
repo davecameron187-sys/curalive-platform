@@ -15,13 +15,14 @@ import RecallBotPanel from "@/components/RecallBotPanel";
 import MuxStreamPanel from "@/components/MuxStreamPanel";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { AblyProvider, useAbly, type QAItem, type Poll } from "@/contexts/AblyContext";
 import {
   Mic, MicOff, Video, VideoOff, Radio, Users, MessageSquare,
   BarChart3, Settings, Check, X,
   Send, Play, Pause, StopCircle, Globe,
   Activity, Zap, Clock, Eye, ThumbsUp, AlertCircle, Bot as BotIcon,
-  Loader2, Plus, ChevronRight
+  Loader2, Plus, ChevronRight, Share2, CheckCircle2, ExternalLink, Upload
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -137,11 +138,49 @@ function WebcastStudioInner({ slug }: { slug: string }) {
   const [showNewPoll, setShowNewPoll] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // ── Publish Recording state ─────────────────────────────────────────────────
+  const [recordingUrlInput, setRecordingUrlInput] = useState("");
+  const [muxPlaybackIdInput, setMuxPlaybackIdInput] = useState("");
+  const [publishMode, setPublishMode] = useState<"url" | "mux">("url");
+  const [publishSuccess, setPublishSuccess] = useState(false);
+
+  const setRecordingUrlMutation = trpc.webcast.setRecordingUrl.useMutation({
+    onSuccess: () => {
+      setPublishSuccess(true);
+      toast.success("Recording published — event is now On Demand");
+      setTimeout(() => setPublishSuccess(false), 5000);
+      // Refresh event data so the status badge updates
+      setTimeout(() => refetchEvent(), 500);
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Failed to publish recording");
+    },
+  });
+
+  const handlePublishRecording = () => {
+    if (!event?.id) { toast.error("Event not loaded"); return; }
+    if (publishMode === "mux") {
+      if (!muxPlaybackIdInput.trim()) { toast.error("Enter a Mux playback ID"); return; }
+      setRecordingUrlMutation.mutate({
+        id: event.id,
+        muxAssetPlaybackId: muxPlaybackIdInput.trim(),
+        transitionToOnDemand: true,
+      });
+    } else {
+      if (!recordingUrlInput.trim()) { toast.error("Enter a recording URL"); return; }
+      setRecordingUrlMutation.mutate({
+        id: event.id,
+        recordingUrl: recordingUrlInput.trim(),
+        transitionToOnDemand: true,
+      });
+    }
+  };
+
   // ── Ably real-time context ──────────────────────────────────────────────────
   const { transcript, sentiment, qaItems, polls, presenceCount, publish, mode } = useAbly();
 
   // Fetch event details
-  const { data: event } = trpc.webcast.getEvent.useQuery(
+  const { data: event, refetch: refetchEvent } = trpc.webcast.getEvent.useQuery(
     { slug: slug || "ceo-town-hall-q1-2026" },
     { enabled: !!slug, retry: false }
   );
@@ -773,13 +812,145 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               </div>
             )}
 
-            {/* ── Mux RTMP Stream Panel ── */}
+            {/* ── Mux RTMP Stream Panel + Publish Recording ── */}
             {activeTab === "stream" && (
-              <div className="p-4">
+              <div className="p-4 space-y-4">
                 <MuxStreamPanel
                   eventId={event?.id}
                   eventLabel={event?.title ?? slug}
                 />
+
+                {/* ── Publish Recording ── */}
+                <div className="border border-border rounded-xl overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-3 bg-card/40 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-semibold">Publish Recording</span>
+                    </div>
+                    {(event?.status === "on_demand") && (
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> On Demand
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-4 space-y-4">
+                    {/* Already published notice */}
+                    {(event?.status === "on_demand" && event?.recordingUrl) && (
+                      <div className="flex items-start gap-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-emerald-400 mb-0.5">Recording is live</p>
+                          <p className="text-[10px] text-muted-foreground break-all font-mono">{event.recordingUrl}</p>
+                          <a
+                            href={event.recordingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline mt-1"
+                          >
+                            <ExternalLink className="w-2.5 h-2.5" /> Preview
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mode toggle */}
+                    <div className="flex rounded-lg overflow-hidden border border-border text-xs font-semibold">
+                      <button
+                        onClick={() => setPublishMode("url")}
+                        className={`flex-1 py-2 transition-colors ${
+                          publishMode === "url"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Direct URL
+                      </button>
+                      <button
+                        onClick={() => setPublishMode("mux")}
+                        className={`flex-1 py-2 transition-colors border-l border-border ${
+                          publishMode === "mux"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Mux Playback ID
+                      </button>
+                    </div>
+
+                    {/* Input */}
+                    {publishMode === "url" ? (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                          Recording URL (MP4, HLS .m3u8, or Mux stream URL)
+                        </label>
+                        <input
+                          type="url"
+                          value={recordingUrlInput}
+                          onChange={e => setRecordingUrlInput(e.target.value)}
+                          placeholder="https://stream.mux.com/abc123.m3u8"
+                          className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 font-mono"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                          Paste any publicly accessible video URL. Mux HLS URLs are recommended for best performance.
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                          Mux Asset Playback ID
+                        </label>
+                        <input
+                          type="text"
+                          value={muxPlaybackIdInput}
+                          onChange={e => setMuxPlaybackIdInput(e.target.value)}
+                          placeholder="DS00Spx1CV902MCtPj5WknGlR102V5HFkDe4NtNDnBO8c"
+                          className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 font-mono"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                          Find this in the Mux Dashboard under Assets → Playback IDs. The HLS URL will be built automatically.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Transition notice */}
+                    <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
+                        Publishing a recording will automatically transition this event to <strong className="text-amber-400">On Demand</strong> status. Registered attendees will be able to watch via their personal link.
+                      </p>
+                    </div>
+
+                    {/* Publish button */}
+                    <button
+                      onClick={handlePublishRecording}
+                      disabled={setRecordingUrlMutation.isPending || publishSuccess}
+                      className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {setRecordingUrlMutation.isPending ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Publishing…</>
+                      ) : publishSuccess ? (
+                        <><CheckCircle2 className="w-4 h-4" /> Published! — Event is On Demand</>
+                      ) : (
+                        <><Upload className="w-4 h-4" /> Publish Recording</>
+                      )}
+                    </button>
+
+                    {/* Share watch link after publish */}
+                    {publishSuccess && (
+                      <button
+                        onClick={() => {
+                          const watchUrl = `${window.location.origin}/live-video/webcast/${slug}/watch`;
+                          navigator.clipboard.writeText(watchUrl).then(() => toast.success("Watch page URL copied to clipboard"));
+                        }}
+                        className="w-full flex items-center justify-center gap-2 border border-border text-muted-foreground hover:text-foreground hover:bg-secondary py-2 rounded-lg text-xs font-semibold transition-colors"
+                      >
+                        <Share2 className="w-3.5 h-3.5" /> Copy Watch Page Link
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

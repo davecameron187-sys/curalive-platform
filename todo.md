@@ -248,3 +248,6 @@
 - [x] Update WebcastRegister success state: show "Watch Recording" button if event already ended
 - [x] Update PostEvent page: add "Share Recording Link" that generates a token-gated watch URL
 - [x] Add route for /live-video/webcast/:slug/watch in App.tsx
+
+## Round 46 — Publish Recording in Operator Console
+- [x] Add "Publish Recording" section to WebcastStudio Operator Console tab with URL input, publish button, and status indicator
