@@ -129,6 +129,9 @@ function NewPollForm({ onSubmit, onCancel }: { onSubmit: (q: string, opts: strin
 function WebcastStudioInner({ slug }: { slug: string }) {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<StudioTab>("qa");
+
+  // Operator profile
+  const { data: operatorProfile } = trpc.profile.get.useQuery();
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("live");
   const [micOn, setMicOn] = useState(true);
   const [videoOn, setVideoOn] = useState(true);
@@ -390,6 +393,22 @@ function WebcastStudioInner({ slug }: { slug: string }) {
             >
               <StopCircle className="w-3.5 h-3.5" /> End
             </button>
+            {/* Operator profile chip */}
+            {operatorProfile && (
+              <div className="hidden xl:flex items-center gap-2 ml-2 pl-2 border-l border-border">
+                {operatorProfile.avatarUrl ? (
+                  <img src={operatorProfile.avatarUrl} alt="Operator" className="w-7 h-7 rounded-full object-cover border border-border" />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
+                    {(operatorProfile.name ?? "?").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
+                  </div>
+                )}
+                <div className="leading-tight">
+                  <div className="text-xs font-semibold text-foreground">{operatorProfile.name}</div>
+                  {operatorProfile.jobTitle && <div className="text-[10px] text-muted-foreground">{operatorProfile.jobTitle}</div>}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>

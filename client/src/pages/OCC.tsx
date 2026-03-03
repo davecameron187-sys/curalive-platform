@@ -459,6 +459,9 @@ export default function OCC() {
     return () => clearInterval(t);
   }, []);
 
+  // Operator profile
+  const { data: operatorProfile } = trpc.profile.get.useQuery();
+
   // tRPC queries (with demo fallback)
   const conferencesQuery = trpc.occ.getConferences.useQuery(undefined, { retry: false });
   const conferences = (conferencesQuery.data && conferencesQuery.data.length > 0)
@@ -1097,8 +1100,15 @@ export default function OCC() {
             </div>
           )}
           <div className="flex items-center gap-2 bg-[#1a2236] border border-slate-700 rounded px-3 py-1.5">
-            <div className={`w-2.5 h-2.5 rounded-full ${operatorStateColor(operatorState)}`} />
-            <span className="text-xs font-medium text-slate-200">{user?.name ?? "Operator"}</span>
+            {operatorProfile?.avatarUrl ? (
+              <img src={operatorProfile.avatarUrl} alt="Operator" className="w-5 h-5 rounded-full object-cover border border-slate-600" />
+            ) : (
+              <div className={`w-2.5 h-2.5 rounded-full ${operatorStateColor(operatorState)}`} />
+            )}
+            <div className="leading-tight">
+              <span className="text-xs font-medium text-slate-200">{operatorProfile?.name ?? user?.name ?? "Operator"}</span>
+              {operatorProfile?.jobTitle && <span className="hidden xl:inline text-[10px] text-slate-400 ml-1">· {operatorProfile.jobTitle}</span>}
+            </div>
             <span className="text-xs text-slate-400">({operatorStateLabel(operatorState)})</span>
           </div>
           <button

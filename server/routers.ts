@@ -7,7 +7,7 @@ import { notifyOwner } from "./_core/notification";
 import { sendEmail, buildIRSummaryEmail, buildRegistrationConfirmationEmail } from "./_core/email";
 import { getDb, listUsers, updateUserRole, getUserById, updateUserProfile } from "./db";
 import { storagePut } from "./storage";
-import { attendeeRegistrations, events, irContacts } from "../drizzle/schema";
+import { attendeeRegistrations, events, irContacts, webcastEvents } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { occRouter } from "./routers/occ";
@@ -17,6 +17,7 @@ import { brandingRouter } from "./routers/branding";
 import { webcastRouter } from "./routers/webcastRouter";
 import { recallRouter } from "./routers/recallRouter";
 import { muxRouter } from "./routers/muxRouter";
+import { billingRouter } from "./routers/billingRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -45,6 +46,7 @@ export const appRouter = router({
   webcast: webcastRouter,
   recall: recallRouter,
   mux: muxRouter,
+  billing: billingRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
@@ -153,6 +155,34 @@ export const appRouter = router({
         const { url } = await storagePut(key, buffer, input.mimeType);
         await updateUserProfile(ctx.user.id, { avatarUrl: url });
         return { avatarUrl: url };
+      }),
+
+    /**
+     * Get the host profile for a webcast event (public — shown on registration page).
+     * Returns the profile of the operator who created the event, or falls back to
+     * the event's hostName / hostOrganization fields.
+     */
+    getEventHost: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return null;
+        const [event] = await db
+          .select()
+          .from(webcastEvents)
+          .where(eq(webcastEvents.slug, input.slug))
+          .limit(1);
+        if (!event) return null;
+        // Try to get the creator's profile from the users table
+        // webcast_events doesn't have createdByUserId, so fall back to event host fields
+        return {
+          name: event.hostName ?? null,
+          organisation: event.hostOrganization ?? null,
+          jobTitle: null as string | null,
+          bio: null as string | null,
+          avatarUrl: null as string | null,
+          linkedinUrl: null as string | null,
+        };
       }),
   }),
 

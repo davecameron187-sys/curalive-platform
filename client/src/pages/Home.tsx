@@ -83,6 +83,9 @@ export default function Home() {
                 <button onClick={() => navigate("/profile")} className="flex items-center gap-1.5 border border-border text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg text-xs font-semibold hover:bg-secondary transition-colors">
                   <User className="w-3 h-3" /> Profile
                 </button>
+                <button onClick={() => navigate("/billing")} className="hidden md:flex items-center gap-1.5 border border-border text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg text-xs font-semibold hover:bg-secondary transition-colors">
+                  <Zap className="w-3 h-3" /> Billing
+                </button>
                 <button onClick={() => logout()} className="flex items-center gap-1.5 border border-border text-muted-foreground hover:text-foreground px-3 py-2 rounded-lg text-xs font-semibold hover:bg-secondary transition-colors">
                   <LogOut className="w-3 h-3" /> Sign Out
                 </button>

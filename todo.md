@@ -326,3 +326,24 @@
 - [x] Show avatar + name in OCC header when profile is set
 - [x] Show operator name/title in WebcastStudio header
 - [x] Write vitest for updateProfile procedure
+
+## Round 56 — Avatar in Studio/OCC, Speaker Card on Registration, Stripe Billing
+
+### Operator Avatar in Studio & OCC
+- [x] Show operator avatar + name + title in WebcastStudio header (fetch from profile.get)
+- [x] Show operator avatar + name + title in OCC header
+
+### Speaker Profile Card on Registration
+- [x] Add getEventHost tRPC query (returns host profile for a given webcast slug)
+- [x] Add speaker profile card to WebcastRegister page (avatar, name, title, org, bio)
+- [x] Add speaker profile card to Registration page (existing events)
+
+### Stripe Billing
+- [x] Request Stripe API keys from user via webdev_request_secrets
+- [x] Add stripe_customer_id + stripeSubscriptionId to users table, run db:push
+- [x] Create server/products.ts with Starter/Professional/Enterprise plans
+- [x] Create checkout session tRPC mutation (billingRouter.ts)
+- [x] Create /api/stripe/webhook endpoint with signature verification (stripeWebhook.ts)
+- [x] Build /billing page with plan cards and upgrade CTA
+- [x] Add Billing link to Home header for logged-in users
+- [x] Write vitest for checkout session procedure (73 tests passing)

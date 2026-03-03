@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import SpeakerProfileCard from "@/components/SpeakerProfileCard";
 import {
   Calendar, Clock, Globe, Users, CheckCircle2, ChevronRight,
   Video, Mic, BarChart3, MessageSquare, Play, ArrowRight,
@@ -482,6 +483,11 @@ export default function WebcastRegister() {
     { enabled: !!slug, retry: false }
   );
 
+  const { data: hostProfile } = trpc.profile.getEventHost.useQuery(
+    { slug: slug || "" },
+    { enabled: !!slug, retry: false }
+  );
+
   const registerMutation = trpc.webcast.register.useMutation({
     onSuccess: (data) => {
       setSubmitted(true);
@@ -698,6 +704,13 @@ export default function WebcastRegister() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Speaker / Host Profile */}
+            {hostProfile && (hostProfile.name || hostProfile.organisation) && (
+              <div className="mb-8">
+                <SpeakerProfileCard profile={hostProfile} label="Hosted by" />
               </div>
             )}
 

@@ -120,6 +120,13 @@
       "when": 1772562941313,
       "tag": "0016_sudden_supreme_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1772564217201,
+      "tag": "0017_white_george_stacy",
+      "breakpoints": true
     }
   ]
 }
