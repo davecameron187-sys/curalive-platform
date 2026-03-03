@@ -270,3 +270,15 @@
 - [x] Build Privacy Policy page (/legal/privacy)
 - [x] Add footer links to ToS and Privacy Policy on Home, WebcastRegister, and CreateEventWizard pages
 - [x] Add routes for /live-video/webcast/:slug/report, /legal/terms, /legal/privacy in App.tsx
+
+## Round 49 — Reminders Tab in WebcastStudio
+- [ ] Add "reminders" to StudioTab type in WebcastStudio
+- [ ] Add Bell icon to imports in WebcastStudio
+- [ ] Add Reminders tab button to the tab bar
+- [ ] Add getReminderStatus and sendRemindersNow trpc calls in WebcastStudioInner
+- [ ] Build Reminders panel: summary cards (total registered, 24h sent, 1h sent), registration table with per-row sent timestamps, and manual Send Now buttons for each tier
+
+## Round 50 — Platform Links Reference Page
+- [x] Build PlatformLinks page at /platform-links with all 35 URLs, search/filter, copy-to-clipboard, section grouping
+- [x] Register route in App.tsx
+- [x] Add link to PlatformLinks from TechHandover and TestGuide pages

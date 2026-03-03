@@ -186,6 +186,34 @@ function WebcastStudioInner({ slug }: { slug: string }) {
     { enabled: !!slug, retry: false }
   );
 
+  // ── Reminders state ────────────────────────────────────────────────────────
+  const [sendingReminder, setSendingReminder] = useState<"24h" | "1h" | null>(null);
+  const { data: reminderStatus, refetch: refetchReminderStatus } = trpc.webcast.getReminderStatus.useQuery(
+    { eventId: event?.id ?? 0 },
+    { enabled: !!event?.id, refetchInterval: 30_000 }
+  );
+  const sendRemindersNowMutation = trpc.webcast.sendRemindersNow.useMutation({
+    onSuccess: (result) => {
+      toast.success(`${result.sent} reminder${result.sent !== 1 ? 's' : ''} sent${result.errors > 0 ? ` (${result.errors} failed)` : ''}`);
+      setSendingReminder(null);
+      refetchReminderStatus();
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Failed to send reminders");
+      setSendingReminder(null);
+    },
+  });
+  const handleSendReminders = (type: "24h" | "1h", force = false) => {
+    if (!event?.id) { toast.error("Event not loaded"); return; }
+    setSendingReminder(type);
+    sendRemindersNowMutation.mutate({
+      eventId: event.id,
+      reminderType: type,
+      force,
+      origin: window.location.origin,
+    });
+  };
+
   // ── Elapsed timer + peak attendee tracking ──────────────────────────────────
   useEffect(() => {
     const interval = setInterval(() => {
