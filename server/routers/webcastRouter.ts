@@ -287,6 +287,111 @@ export const webcastRouter = router({
     }),
 
   /**
+   * Set or update the recording URL for an event (operator only).
+   * Also accepts an optional muxAssetPlaybackId for Mux-hosted recordings.
+   * Automatically transitions status to on_demand when a recording URL is set.
+   */
+  setRecordingUrl: operatorProcedure
+    .input(z.object({
+      id: z.number(),
+      recordingUrl: z.string().url().optional().nullable(),
+      muxAssetPlaybackId: z.string().optional().nullable(),
+      transitionToOnDemand: z.boolean().default(true),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, unknown> = { updatedAt: Date.now() };
+      if (input.recordingUrl !== undefined) updates.recordingUrl = input.recordingUrl;
+      if (input.muxAssetPlaybackId !== undefined) {
+        // Build HLS URL from Mux asset playback ID
+        updates.recordingUrl = input.muxAssetPlaybackId
+          ? `https://stream.mux.com/${input.muxAssetPlaybackId}.m3u8`
+          : input.recordingUrl ?? null;
+      }
+      if (input.transitionToOnDemand) {
+        updates.status = "on_demand";
+      }
+      await db.update(webcastEvents).set(updates as any).where(eq(webcastEvents.id, input.id));
+      return { success: true };
+    }),
+
+  /**
+   * Get on-demand access for a registered attendee.
+   * Verifies the attendee token and returns the event + recording URL if available.
+   * Works for both ended and on_demand events.
+   */
+  getOnDemandAccess: publicProcedure
+    .input(z.object({
+      slug: z.string(),
+      token: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      // Demo fallback: find demo event by slug
+      if (!db) {
+        const DEMO_RECORDING_EVENTS = ["q4-2025-earnings-webcast", "cme-oncology-update-ep3", "africa-capital-markets-summit-2026"];
+        if (DEMO_RECORDING_EVENTS.includes(input.slug)) {
+          return {
+            valid: true,
+            eventTitle: "Demo Event Recording",
+            eventStatus: "on_demand" as const,
+            recordingUrl: "https://stream.mux.com/DS00Spx1CV902MCtPj5WknGlR102V5HFkDe4NtNDnBO8c.m3u8",
+            muxPlaybackId: "DS00Spx1CV902MCtPj5WknGlR102V5HFkDe4NtNDnBO8c",
+            attendeeName: "Demo Attendee",
+            hostName: null,
+            hostOrganization: null,
+            startTime: Date.now() - 7 * 24 * 60 * 60 * 1000,
+            endTime: Date.now() - 7 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000,
+          };
+        }
+        return null;
+      }
+      // Find event by slug
+      const [event] = await db.select().from(webcastEvents).where(eq(webcastEvents.slug, input.slug)).limit(1);
+      if (!event) return null;
+      // Verify attendee token
+      const [registration] = await db.select().from(webcastRegistrations)
+        .where(and(eq(webcastRegistrations.eventId, event.id), eq(webcastRegistrations.attendeeToken, input.token)))
+        .limit(1);
+      if (!registration) return null;
+      // Only return recording if event has ended or is on_demand
+      const isAccessible = event.status === "ended" || event.status === "on_demand";
+      if (!isAccessible) {
+        return {
+          valid: true,
+          eventTitle: event.title,
+          eventStatus: event.status,
+          recordingUrl: null,
+          muxPlaybackId: null,
+          attendeeName: `${registration.firstName} ${registration.lastName}`,
+          hostName: event.hostName,
+          hostOrganization: event.hostOrganization,
+          startTime: event.startTime,
+          endTime: event.endTime,
+        };
+      }
+      // Extract Mux playback ID from recording URL if it's a Mux HLS URL
+      let muxPlaybackId: string | null = null;
+      if (event.recordingUrl?.includes("stream.mux.com")) {
+        const match = event.recordingUrl.match(/stream\.mux\.com\/([^.]+)/);
+        muxPlaybackId = match?.[1] ?? null;
+      }
+      return {
+        valid: true,
+        eventTitle: event.title,
+        eventStatus: event.status,
+        recordingUrl: event.recordingUrl ?? null,
+        muxPlaybackId,
+        attendeeName: `${registration.firstName} ${registration.lastName}`,
+        hostName: event.hostName,
+        hostOrganization: event.hostOrganization,
+        startTime: event.startTime,
+        endTime: event.endTime,
+      };
+    }),
+
+  /**
    * Register for a webcast event (public).
    */
   register: publicProcedure

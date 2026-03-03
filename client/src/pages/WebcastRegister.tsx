@@ -743,21 +743,35 @@ export default function WebcastRegister() {
                   {template.successExtras}
                   {attendeeToken && (
                     <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 mb-4 text-left">
-                      <div className="text-xs font-semibold text-primary mb-1">Your personal join link</div>
+                      <div className="text-xs font-semibold text-primary mb-1">
+                        {ev.status === "on_demand" || ev.status === "ended" ? "Your personal watch link" : "Your personal join link"}
+                      </div>
                       <div className="text-[10px] text-muted-foreground break-all font-mono">
-                        {window.location.origin}/live-video/webcast/{slug || "ceo-town-hall-q1-2026"}/attend?token={attendeeToken}
+                        {window.location.origin}/live-video/webcast/{slug || "ceo-town-hall-q1-2026"}/{
+                          ev.status === "on_demand" || ev.status === "ended" ? "watch" : "attend"
+                        }?token={attendeeToken}
                       </div>
                     </div>
                   )}
-                  <button
-                    onClick={() => navigate(attendeeToken
-                      ? `/live-video/webcast/${slug || "ceo-town-hall-q1-2026"}/attend?token=${attendeeToken}`
-                      : `/live-video/webcast/${slug || "ceo-town-hall-q1-2026"}`
-                    )}
-                    className={`w-full flex items-center justify-center gap-2 ${template.accentBg} ${template.accentColor} border ${template.accentBorder} py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity mt-4`}
-                  >
-                    <Play className="w-4 h-4" /> Enter Event Room
-                  </button>
+                  {/* Primary CTA: Watch Recording (on_demand/ended) or Enter Event Room (live/scheduled) */}
+                  {(ev.status === "on_demand" || ev.status === "ended") && attendeeToken ? (
+                    <button
+                      onClick={() => navigate(`/live-video/webcast/${slug || "ceo-town-hall-q1-2026"}/watch?token=${attendeeToken}`)}
+                      className="w-full flex items-center justify-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity mt-4"
+                    >
+                      <Play className="w-4 h-4" /> Watch Recording Now
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => navigate(attendeeToken
+                        ? `/live-video/webcast/${slug || "ceo-town-hall-q1-2026"}/attend?token=${attendeeToken}`
+                        : `/live-video/webcast/${slug || "ceo-town-hall-q1-2026"}`
+                      )}
+                      className={`w-full flex items-center justify-center gap-2 ${template.accentBg} ${template.accentColor} border ${template.accentBorder} py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity mt-4`}
+                    >
+                      <Play className="w-4 h-4" /> {ev.status === "live" ? "Watch Live Now" : "Enter Event Room"}
+                    </button>
+                  )}
                 </div>
               ) : (
                 /* Registration form */

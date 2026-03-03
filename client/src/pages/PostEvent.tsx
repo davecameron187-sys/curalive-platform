@@ -5,7 +5,7 @@ import {
   MessageSquare, Clock, Users, Globe, CheckCircle,
   TrendingUp, Minus, ChevronDown, ChevronUp,
   Sparkles, Loader2, AlertCircle, RefreshCw, Send, UserPlus, Trash2, X,
-  AlertTriangle, Shield, TrendingDown, Pencil, Check, Phone
+  AlertTriangle, Shield, TrendingDown, Pencil, Check, Phone, Share2
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -252,19 +252,29 @@ export default function PostEvent() {
 
         {/* Replay Player */}
         <div className="bg-card border border-border rounded-2xl overflow-hidden mb-8">
-          <div className="bg-black/60 aspect-video flex items-center justify-center relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            <button className="relative z-10 w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center hover:bg-primary transition-colors">
-              <Play className="w-7 h-7 text-primary-foreground ml-1" />
-            </button>
-            <div className="absolute bottom-4 left-4 text-white/80 text-sm font-semibold">Q4 2025 Earnings Call — Full Replay</div>
+          {/* On-demand video player */}
+          <div className="bg-black aspect-video">
+            <video
+              src="https://stream.mux.com/DS00Spx1CV902MCtPj5WknGlR102V5HFkDe4NtNDnBO8c.m3u8"
+              controls
+              className="w-full h-full object-contain"
+            />
           </div>
-          <div className="p-4 flex items-center justify-between">
+          <div className="p-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-              <span className="text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>Replay available for 90 days</span>
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>On-demand — available for 90 days</span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  const watchUrl = `${window.location.origin}/live-video/webcast/q4-2025-earnings-webcast/watch?token=demo`;
+                  navigator.clipboard.writeText(watchUrl).then(() => toast.success("Recording link copied to clipboard"));
+                }}
+                className="flex items-center gap-1.5 text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors font-semibold"
+              >
+                <Share2 className="w-3 h-3" /> Share Recording Link
+              </button>
               <button onClick={() => toast.info("Video download coming soon")} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
                 <Download className="w-3 h-3" /> Video (MP4)
               </button>

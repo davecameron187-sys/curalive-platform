@@ -239,3 +239,12 @@
 - [x] AttendeeEventRoom page (/live-video/webcast/:slug/attend?token=...) — token-gated, live stream, transcript, Q&A, polls, 12-language selector
 - [x] WebcastRegister success state shows personal join link and updated confirmation message
 - [ ] Stripe billing integration (requires user to provide Stripe API keys via Settings → Payment)
+
+## Round 45 — On-Demand Recording Access for Attendees
+- [x] Add getOnDemandAccess tRPC procedure: verify token, return event + recording URL if event ended
+- [x] Add setRecordingUrl tRPC mutation (operatorProcedure) to set/update recording URL on an event
+- [x] Update AttendeeEventRoom: show Mux on-demand player (or recordingUrl video) when event status is ended/on_demand
+- [x] Build dedicated OnDemandWatch page at /live-video/webcast/:slug/watch?token=... for replay
+- [x] Update WebcastRegister success state: show "Watch Recording" button if event already ended
+- [x] Update PostEvent page: add "Share Recording Link" that generates a token-gated watch URL
+- [x] Add route for /live-video/webcast/:slug/watch in App.tsx

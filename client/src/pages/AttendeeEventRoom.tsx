@@ -230,21 +230,38 @@ function AttendeeRoomInner({
         <div className="flex-1 flex flex-col min-w-0">
           {/* Video player */}
           <div className="relative bg-black" style={{ aspectRatio: "16/9", maxHeight: "calc(100vh - 14rem)" }}>
-            {activeStream?.muxPlaybackId ? (
+            {/* Live stream via Mux */}
+            {activeStream?.muxPlaybackId && isLive ? (
               <MuxPlayer
                 playbackId={activeStream.muxPlaybackId}
-                streamType={isLive ? "live" : "on-demand"}
+                streamType="live"
                 autoPlay
                 muted={false}
                 style={{ width: "100%", height: "100%" }}
               />
             ) : isOnDemand && recordingUrl ? (
-              <video
-                src={recordingUrl}
-                controls
-                autoPlay={false}
-                className="w-full h-full object-contain"
-              />
+              // On-demand: use MuxPlayer for Mux HLS URLs, native <video> for others
+              recordingUrl.includes("stream.mux.com") ? (() => {
+                const muxMatch = recordingUrl.match(/stream\.mux\.com\/([^.]+)/);
+                const playbackId = muxMatch?.[1];
+                return playbackId ? (
+                  <MuxPlayer
+                    playbackId={playbackId}
+                    streamType="on-demand"
+                    autoPlay={false}
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                ) : (
+                  <video src={recordingUrl} controls className="w-full h-full object-contain" />
+                );
+              })() : (
+                <video
+                  src={recordingUrl}
+                  controls
+                  autoPlay={false}
+                  className="w-full h-full object-contain"
+                />
+              )
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
