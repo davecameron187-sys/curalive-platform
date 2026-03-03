@@ -947,6 +947,15 @@ export default function WebcastRegister() {
             </div>
           </div>
         </div>
+        {/* Legal footer */}
+        <div className="mt-8 pb-6 text-center">
+          <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
+            By registering you agree to our{" "}
+            <button onClick={() => navigate("/legal/terms")} className="underline hover:text-foreground transition-colors">Terms of Service</button>
+            {" "}and{" "}
+            <button onClick={() => navigate("/legal/privacy")} className="underline hover:text-foreground transition-colors">Privacy Policy</button>.
+          </p>
+        </div>
       </div>
     </div>
   );

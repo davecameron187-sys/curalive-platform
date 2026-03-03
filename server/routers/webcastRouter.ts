@@ -7,6 +7,7 @@ import { randomBytes } from "crypto";
 import { router, publicProcedure, operatorProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { sendEmail, buildRegistrationConfirmationEmail } from "../_core/email";
+import { runReminderPass } from "../reminderScheduler";
 import {
   webcastEvents,
   webcastRegistrations,
@@ -17,7 +18,7 @@ import {
   type WebcastQa,
   type WebcastPoll,
 } from "../../drizzle/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, isNull, isNotNull } from "drizzle-orm";
 
 // ─── ICS calendar attachment builder ─────────────────────────────────────────
 function buildICS(opts: {
@@ -730,5 +731,205 @@ export const webcastRouter = router({
         .set({ attended: true, joinedAt: Date.now() })
         .where(and(eq(webcastRegistrations.eventId, event.id), eq(webcastRegistrations.attendeeToken, input.token)));
       return { success: true };
+    }),
+
+  /**
+   * Get reminder status for all registrations of an event (operator only).
+   * Returns counts of pending and sent reminders for both 24h and 1h windows.
+   */
+  getReminderStatus: operatorProcedure
+    .input(z.object({ eventId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { total: 0, pending24h: 0, sent24h: 0, pending1h: 0, sent1h: 0 };
+
+      const regs = await db
+        .select({
+          id: webcastRegistrations.id,
+          reminder24SentAt: webcastRegistrations.reminder24SentAt,
+          reminder1SentAt: webcastRegistrations.reminder1SentAt,
+        })
+        .from(webcastRegistrations)
+        .where(eq(webcastRegistrations.eventId, input.eventId));
+
+      const total = regs.length;
+      const sent24h = regs.filter(r => r.reminder24SentAt != null).length;
+      const sent1h = regs.filter(r => r.reminder1SentAt != null).length;
+
+      return {
+        total,
+        sent24h,
+        pending24h: total - sent24h,
+        sent1h,
+        pending1h: total - sent1h,
+      };
+    }),
+
+  /**
+   * Manually trigger a reminder pass for a specific event (operator only).
+   * Useful for testing or sending reminders outside the automatic window.
+   * @param reminderType - "24h" or "1h"
+   * @param force - if true, sends to ALL registrations even if already sent
+   * @param origin - the app origin for building attendee URLs
+   */
+  sendRemindersNow: operatorProcedure
+    .input(z.object({
+      eventId: z.number(),
+      reminderType: z.enum(["24h", "1h"]),
+      force: z.boolean().default(false),
+      origin: z.string().url(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const [event] = await db.select().from(webcastEvents).where(eq(webcastEvents.id, input.eventId)).limit(1);
+      if (!event) throw new Error("Event not found");
+
+      // Build the list of registrations to send to
+      const allRegs = await db
+        .select()
+        .from(webcastRegistrations)
+        .where(eq(webcastRegistrations.eventId, input.eventId));
+
+      const pendingRegs = input.force
+        ? allRegs
+        : allRegs.filter(r =>
+            input.reminderType === "24h"
+              ? r.reminder24SentAt == null
+              : r.reminder1SentAt == null
+          );
+
+      if (pendingRegs.length === 0) {
+        return { sent: 0, errors: 0, message: "No pending registrations" };
+      }
+
+      const startTime = event.startTime ?? Date.now() + 60 * 60 * 1000;
+      const eventDate = new Date(startTime).toLocaleDateString("en-GB", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+      });
+      const eventTime = new Date(startTime).toLocaleTimeString("en-GB", {
+        hour: "2-digit", minute: "2-digit", timeZone: "UTC",
+      }) + " UTC";
+
+      const { buildReminderEmail } = await import("../_core/email");
+      let sent = 0;
+      let errors = 0;
+
+      for (const reg of pendingRegs) {
+        try {
+          const attendUrl = reg.attendeeToken
+            ? `${input.origin}/live-video/webcast/${event.slug}/attend?token=${reg.attendeeToken}`
+            : `${input.origin}/live-video/webcast/${event.slug}/attend`;
+
+          const html = buildReminderEmail({
+            firstName: reg.firstName,
+            lastName: reg.lastName,
+            eventTitle: event.title,
+            eventDate,
+            eventTime,
+            attendUrl,
+            reminderType: input.reminderType,
+          });
+
+          const subject = input.reminderType === "24h"
+            ? `Reminder: \"${event.title}\" starts tomorrow`
+            : `Starting soon: \"${event.title}\" in 1 hour`;
+
+          const result = await sendEmail({ to: reg.email, subject, html });
+
+          if (result.success) {
+            const update = input.reminderType === "24h"
+              ? { reminder24SentAt: Date.now() }
+              : { reminder1SentAt: Date.now() };
+            await db.update(webcastRegistrations).set(update).where(eq(webcastRegistrations.id, reg.id));
+            sent++;
+          } else {
+            errors++;
+          }
+        } catch {
+          errors++;
+        }
+      }
+
+      return { sent, errors, message: `Sent ${sent} reminders, ${errors} errors` };
+    }),
+
+  /**
+   * Get a full post-event report for a webcast (operator only).
+   * Returns event metadata, attendance stats, all Q&A, poll results with vote breakdowns,
+   * and a list of all registrations with attendance flags.
+   */
+  getWebcastReport: operatorProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const [event] = await db.select().from(webcastEvents).where(eq(webcastEvents.slug, input.slug)).limit(1);
+      if (!event) throw new Error("Event not found");
+
+      const registrations = await db.select().from(webcastRegistrations).where(eq(webcastRegistrations.eventId, event.id));
+      const questions = await db.select().from(webcastQa).where(eq(webcastQa.eventId, event.id)).orderBy(desc(webcastQa.upvotes));
+      const polls = await db.select().from(webcastPolls).where(eq(webcastPolls.eventId, event.id));
+
+      const attended = registrations.filter((r: WebcastRegistration) => r.attended);
+      const showUpRate = registrations.length > 0 ? Math.round((attended.length / registrations.length) * 100) : 0;
+      const avgWatchTime = attended.length > 0
+        ? Math.round(attended.reduce((sum: number, r: WebcastRegistration) => sum + (r.watchTimeSeconds || 0), 0) / attended.length)
+        : 0;
+
+      // Parse poll options and results for the report
+      const pollsWithBreakdown = polls.map((p: WebcastPoll) => {
+        let options: string[] = [];
+        let results: number[] = [];
+        try { options = JSON.parse(p.options); } catch { options = []; }
+        try { results = JSON.parse(p.results || "[]"); } catch { results = []; }
+        const total = results.reduce((s: number, v: number) => s + v, 0);
+        return {
+          ...p,
+          optionsList: options,
+          resultsList: results,
+          totalVotes: total,
+          percentages: options.map((_: string, i: number) =>
+            total > 0 ? Math.round(((results[i] || 0) / total) * 100) : 0
+          ),
+        };
+      });
+
+      // Company breakdown from registrations
+      const companyMap: Record<string, number> = {};
+      for (const r of registrations) {
+        if (r.company) companyMap[r.company] = (companyMap[r.company] || 0) + 1;
+      }
+      const topCompanies = Object.entries(companyMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([company, count]) => ({ company, count }));
+
+      return {
+        event,
+        stats: {
+          totalRegistrations: registrations.length,
+          totalAttendees: attended.length,
+          showUpRate,
+          avgWatchTimeSeconds: avgWatchTime,
+          peakAttendees: event.peakAttendees || 0,
+          totalQuestions: questions.length,
+          answeredQuestions: questions.filter((q: WebcastQa) => q.status === "answered").length,
+          approvedQuestions: questions.filter((q: WebcastQa) => q.status === "approved" || q.status === "answered").length,
+          totalPolls: polls.length,
+          totalPollVotes: polls.reduce((sum: number, p: WebcastPoll) => sum + (p.totalVotes || 0), 0),
+          engagementScore: Math.round(
+            (registrations.length > 0 ? (attended.length / Math.max(registrations.length, 1)) * 40 : 0) +
+            (questions.length > 0 ? Math.min(questions.length / Math.max(attended.length, 1) * 100, 30) : 0) +
+            (polls.length > 0 ? 30 : 0)
+          ),
+        },
+        questions,
+        polls: pollsWithBreakdown,
+        registrations,
+        topCompanies,
+      };
     }),
 });

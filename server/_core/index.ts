@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerSlideDeckUploadRoute } from "../slideDeckUpload";
 import { registerRecallWebhookRoute } from "../recallWebhook";
+import { startReminderScheduler } from "../reminderScheduler";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -65,6 +66,11 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Start the pre-event reminder email scheduler
+    // In production the origin is derived from the VITE_APP_ID-based domain;
+    // in development we fall back to localhost so reminders still log without sending.
+    const origin = process.env.APP_ORIGIN ?? `http://localhost:${port}`;
+    startReminderScheduler(origin);
   });
 }
 

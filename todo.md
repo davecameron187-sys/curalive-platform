@@ -251,3 +251,22 @@
 
 ## Round 46 — Publish Recording in Operator Console
 - [x] Add "Publish Recording" section to WebcastStudio Operator Console tab with URL input, publish button, and status indicator
+
+## Round 47 — Attendee Reminder Emails
+- [ ] Add reminder24SentAt and reminder1SentAt timestamp columns to webcastRegistrations schema
+- [ ] Push schema migration to DB
+- [ ] Build reminder email template (buildReminderEmail) in server/_core/email.ts
+- [ ] Create server-side reminder scheduler (server/reminderScheduler.ts) that runs every 5 minutes
+- [ ] Wire scheduler into server/_core/index.ts startup
+- [ ] Add tRPC procedures: getReminderStatus (list registrations + sent timestamps) and sendRemindersNow (manual trigger)
+- [ ] Add Reminders panel to WebcastStudio Stream tab (or new tab) showing sent counts and manual trigger button
+- [ ] Write vitest tests for reminder scheduling logic
+
+## Round 48 — GTM 2b: First Paying Customer Features
+- [x] Verify Create Event Wizard → DB persistence (createEvent mutation fully wired with all wizard fields)
+- [x] Build Webcast Post-Event Report page (/live-video/webcast/:slug/report) — poll results, attendance stats, AI summary, full transcript, recording link
+- [x] Add webcast post-event report tRPC procedure (getWebcastReport) returning registrations, attendance, poll results, Q&A, transcript
+- [x] Build Terms of Service page (/legal/terms)
+- [x] Build Privacy Policy page (/legal/privacy)
+- [x] Add footer links to ToS and Privacy Policy on Home, WebcastRegister, and CreateEventWizard pages
+- [x] Add routes for /live-video/webcast/:slug/report, /legal/terms, /legal/privacy in App.tsx

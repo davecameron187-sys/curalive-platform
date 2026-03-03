@@ -220,3 +220,135 @@ export function buildRegistrationConfirmationEmail(opts: {
 </html>
   `.trim();
 }
+
+// ─── Reminder Email Template ──────────────────────────────────────────────────
+
+export interface ReminderEmailOptions {
+  firstName: string;
+  lastName: string;
+  eventTitle: string;
+  eventDate: string;       // Human-readable date string, e.g. "Tuesday, 4 March 2026"
+  eventTime: string;       // Human-readable time string, e.g. "14:00 UTC"
+  attendUrl: string;       // Personal token-gated join link
+  reminderType: "24h" | "1h";
+  organizerName?: string;
+}
+
+/**
+ * Build the HTML body for a pre-event reminder email.
+ * reminderType "24h" = 24-hour reminder, "1h" = 1-hour reminder.
+ */
+export function buildReminderEmail(opts: ReminderEmailOptions): string {
+  const timeLabel = opts.reminderType === "24h" ? "24 hours" : "1 hour";
+  const urgencyColor = opts.reminderType === "1h" ? "#ef4444" : "#3b82f6";
+  const urgencyBg = opts.reminderType === "1h" ? "#fef2f2" : "#eff6ff";
+  const urgencyBorder = opts.reminderType === "1h" ? "#fecaca" : "#bfdbfe";
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="background:#0f172a;padding:28px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <span style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">
+                      Chorus<span style="color:#3b82f6;">.AI</span>
+                    </span>
+                  </td>
+                  <td align="right">
+                    <span style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:1px;">
+                      Event Reminder
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Urgency Banner -->
+          <tr>
+            <td style="background:${urgencyBg};border-bottom:1px solid ${urgencyBorder};padding:12px 40px;">
+              <p style="margin:0;font-size:13px;font-weight:600;color:${urgencyColor};text-align:center;">
+                &#9200; Your event starts in <strong>${timeLabel}</strong>
+              </p>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px;">
+              <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;line-height:1.3;">
+                ${opts.eventTitle}
+              </p>
+              <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.6;">
+                Hi ${opts.firstName}, this is your ${timeLabel} reminder for the upcoming event.
+              </p>
+
+              <!-- Event Details Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding-bottom:12px;">
+                          <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px;">Date</span><br/>
+                          <span style="font-size:15px;font-weight:600;color:#0f172a;">${opts.eventDate}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px;">Time</span><br/>
+                          <span style="font-size:15px;font-weight:600;color:#0f172a;">${opts.eventTime}</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                <tr>
+                  <td align="center">
+                    <a href="${opts.attendUrl}" style="display:inline-block;background:#3b82f6;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:8px;letter-spacing:0.2px;">
+                      Join Event Now &#8594;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Personal link fallback -->
+              <p style="margin:0 0 8px;font-size:12px;color:#94a3b8;text-align:center;">
+                Or copy your personal link:
+              </p>
+              <p style="margin:0 0 28px;font-size:11px;color:#3b82f6;text-align:center;word-break:break-all;font-family:monospace;">
+                ${opts.attendUrl}
+              </p>
+
+              <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">
+                This link is unique to you &mdash; please do not share it. If you have any questions, contact your Chorus Call account manager.
+              </p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background:#0f172a;padding:20px 40px;border-top:1px solid #1e293b;">
+              <p style="margin:0;font-size:12px;color:#475569;text-align:center;">
+                Chorus.AI &middot; Powered by ${opts.organizerName ?? "Chorus Call Inc."}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}

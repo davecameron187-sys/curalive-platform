@@ -22,11 +22,12 @@ import {
   BarChart3, Settings, Check, X,
   Send, Play, Pause, StopCircle, Globe,
   Activity, Zap, Clock, Eye, ThumbsUp, AlertCircle, Bot as BotIcon,
-  Loader2, Plus, ChevronRight, Share2, CheckCircle2, ExternalLink, Upload
+  Loader2, Plus, ChevronRight, Share2, CheckCircle2, ExternalLink, Upload,
+  Bell, RefreshCw, Mail
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics" | "bot" | "stream";
+type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics" | "bot" | "stream" | "reminders";
 type StreamStatus = "offline" | "connecting" | "live" | "paused";
 
 type ChatMessage = {
@@ -467,6 +468,7 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               { id: "analytics" as StudioTab, icon: Activity, label: "Analytics", badge: undefined as number | undefined },
               { id: "bot" as StudioTab, icon: BotIcon, label: "Bot", badge: undefined as number | undefined },
               { id: "stream" as StudioTab, icon: Radio, label: "Stream", badge: undefined as number | undefined },
+              { id: "reminders" as StudioTab, icon: Bell, label: "Reminders", badge: undefined as number | undefined },
             ]).map(({ id, icon: Icon, label, badge }) => (
               <button
                 key={id}

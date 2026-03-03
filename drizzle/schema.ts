@@ -646,6 +646,9 @@ export const webcastRegistrations = mysqlTable("webcast_registrations", {
   utmSource: varchar("utm_source", { length: 100 }),
   attendeeToken: varchar("attendee_token", { length: 64 }),
   registeredAt: bigint("registered_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  // Reminder tracking — Unix ms timestamps when each reminder was sent (null = not yet sent)
+  reminder24SentAt: bigint("reminder_24_sent_at", { mode: "number" }),
+  reminder1SentAt: bigint("reminder_1_sent_at", { mode: "number" }),
 });
 export type WebcastRegistration = typeof webcastRegistrations.$inferSelect;
 export type InsertWebcastRegistration = typeof webcastRegistrations.$inferInsert;

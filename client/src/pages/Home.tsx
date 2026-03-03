@@ -303,10 +303,12 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-6 w-auto object-contain" />
           </div>
-          <div className="flex items-center gap-6 text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
+          <div className="flex flex-wrap items-center gap-6 text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
             <button onClick={() => navigate("/integrations")} className="hover:text-foreground transition-colors">Integration Hub</button>
             <button onClick={() => navigate("/partner-api")} className="hover:text-foreground transition-colors">Partner API</button>
             <button onClick={() => navigate("/embed/q4-earnings-2026")} className="hover:text-foreground transition-colors">Embed Widget</button>
+            <button onClick={() => navigate("/legal/terms")} className="hover:text-foreground transition-colors">Terms of Service</button>
+            <button onClick={() => navigate("/legal/privacy")} className="hover:text-foreground transition-colors">Privacy Policy</button>
           </div>
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
             Confidential — Chorus Call Board Presentation

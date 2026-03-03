@@ -37,6 +37,9 @@ import WebcastAnalytics from "./pages/WebcastAnalytics";
 import CreateEventWizard from "./pages/CreateEventWizard";
 import AttendeeEventRoom from "./pages/AttendeeEventRoom";
 import OnDemandWatch from "./pages/OnDemandWatch";
+import WebcastReport from "./pages/WebcastReport";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -71,7 +74,10 @@ function Router() {
       <Route path="/live-video/webcast/:slug" component={WebcastStudio} />
       <Route path="/live-video/webcast/:slug/attend" component={AttendeeEventRoom} />
       <Route path="/live-video/webcast/:slug/watch" component={OnDemandWatch} />
+      <Route path="/live-video/webcast/:slug/report" component={WebcastReport} />
       <Route path="/live-video/webcast/:slug/register" component={WebcastRegister} />
+      <Route path="/legal/terms" component={TermsOfService} />
+      <Route path="/legal/privacy" component={PrivacyPolicy} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
       <Route path="/404" component={NotFound} />
