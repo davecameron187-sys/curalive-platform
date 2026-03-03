@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -695,3 +695,40 @@ export const webcastPolls = mysqlTable("webcast_polls", {
 });
 export type WebcastPoll = typeof webcastPolls.$inferSelect;
 export type InsertWebcastPoll = typeof webcastPolls.$inferInsert;
+
+/**
+ * recall_bots — Tracks Recall.ai meeting bot instances for live transcription.
+ * Each row represents one bot deployed to a meeting (Zoom, Teams, Webex, etc.)
+ */
+export const recallBots = mysqlTable("recall_bots", {
+  id: int("id").autoincrement().primaryKey(),
+  // Links to either a webcast event or a live roadshow meeting
+  eventId: int("event_id"),
+  meetingId: int("meeting_id"),
+  // Recall.ai bot identifier (UUID)
+  recallBotId: varchar("recall_bot_id", { length: 100 }).notNull().unique(),
+  // The meeting URL the bot joined
+  meetingUrl: text("meeting_url").notNull(),
+  // Bot display name shown in the meeting
+  botName: varchar("bot_name", { length: 200 }).default("Chorus.AI"),
+  // Recall.ai bot status: created, joining, in_call, done, failed
+  status: varchar("status", { length: 50 }).notNull().default("created"),
+  // Ably channel name this bot publishes transcripts to
+  ablyChannel: varchar("ably_channel", { length: 200 }),
+  // Full transcript accumulated from webhook chunks (JSON array of segments)
+  transcriptJson: longtext("transcript_json"),
+  // AI-generated summary (populated after bot leaves)
+  summary: text("summary"),
+  // Recording URL from Recall.ai (if recording enabled)
+  recordingUrl: text("recording_url"),
+  // Error message if bot failed
+  errorMessage: text("error_message"),
+  // Timestamps
+  startedAt: bigint("started_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  joinedAt: bigint("joined_at", { mode: "number" }),
+  leftAt: bigint("left_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type RecallBot = typeof recallBots.$inferSelect;
+export type InsertRecallBot = typeof recallBots.$inferInsert;
+

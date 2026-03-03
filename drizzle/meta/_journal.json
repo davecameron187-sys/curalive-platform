@@ -85,6 +85,13 @@
       "when": 1772469431952,
       "tag": "0011_good_vin_gonzales",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1772535968387,
+      "tag": "0012_striped_franklin_storm",
+      "breakpoints": true
     }
   ]
 }

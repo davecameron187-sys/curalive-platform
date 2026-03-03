@@ -11,6 +11,7 @@
  *   - Presence: attendee count from presenceCount
  */
 import { useState, useEffect, useCallback, useRef } from "react";
+import RecallBotPanel from "@/components/RecallBotPanel";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { AblyProvider, useAbly, type QAItem, type Poll } from "@/contexts/AblyContext";
@@ -18,12 +19,12 @@ import {
   Mic, MicOff, Video, VideoOff, Radio, Users, MessageSquare,
   BarChart3, Settings, Check, X,
   Send, Play, Pause, StopCircle, Globe,
-  Activity, Zap, Clock, Eye, ThumbsUp, AlertCircle,
+  Activity, Zap, Clock, Eye, ThumbsUp, AlertCircle, Bot as BotIcon,
   Loader2, Plus, ChevronRight
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics";
+type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics" | "bot";
 type StreamStatus = "offline" | "connecting" | "live" | "paused";
 
 type ChatMessage = {
@@ -424,6 +425,7 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               { id: "chat" as StudioTab, icon: Send, label: "Chat", badge: undefined as number | undefined },
               { id: "captions" as StudioTab, icon: Globe, label: "Translation", badge: undefined as number | undefined },
               { id: "analytics" as StudioTab, icon: Activity, label: "Analytics", badge: undefined as number | undefined },
+              { id: "bot" as StudioTab, icon: BotIcon, label: "Bot", badge: undefined as number | undefined },
             ]).map(({ id, icon: Icon, label, badge }) => (
               <button
                 key={id}
@@ -759,6 +761,13 @@ function WebcastStudioInner({ slug }: { slug: string }) {
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* ── Recall.ai Bot Panel ── */}
+            {activeTab === "bot" && (
+              <div className="p-4">
+                <RecallBotPanel eventId={event?.id} />
               </div>
             )}
 
