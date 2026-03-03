@@ -984,6 +984,136 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               </div>
             )}
 
+            {/* ── Reminders Tab ─────────────────────────────────────────── */}
+            {activeTab === "reminders" && (
+              <div className="p-4 space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold">Attendee Reminders</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      Automated emails are sent 24 h and 1 h before the event. Use the buttons below to trigger a manual send.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => refetchReminderStatus()}
+                    className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                    title="Refresh counts"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Stats row */}
+                {reminderStatus ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                      <div className="text-xl font-bold">{reminderStatus.total}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Registered</div>
+                    </div>
+                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                      <div className="text-xl font-bold text-primary">{reminderStatus.sent24h}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">24 h Sent</div>
+                    </div>
+                    <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                      <div className="text-xl font-bold text-primary">{reminderStatus.sent1h}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">1 h Sent</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-3">
+                    {[0,1,2].map(i => (
+                      <div key={i} className="bg-secondary/30 rounded-lg p-3 h-16 animate-pulse" />
+                    ))}
+                  </div>
+                )}
+
+                {/* 24-hour reminder card */}
+                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold">24-Hour Reminder</span>
+                    {reminderStatus && reminderStatus.total > 0 && reminderStatus.sent24h === reminderStatus.total && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded ml-auto">All Sent</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    Sends to registrations that have <strong className="text-foreground">not yet received</strong> a 24-hour reminder.
+                    {reminderStatus && (
+                      <span className="ml-1 text-primary font-medium">{reminderStatus.pending24h} pending.</span>
+                    )}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSendReminders("24h", false)}
+                      disabled={sendingReminder !== null || (reminderStatus?.pending24h ?? 0) === 0}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-primary/10 text-primary border border-primary/20 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {sendingReminder === "24h" ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending…</>
+                      ) : (
+                        <><Bell className="w-3.5 h-3.5" /> Send to Pending</>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleSendReminders("24h", true)}
+                      disabled={sendingReminder !== null || (reminderStatus?.total ?? 0) === 0}
+                      title="Force-send to all registrations, including those already sent"
+                      className="flex items-center justify-center gap-1.5 border border-border text-muted-foreground px-3 py-2 rounded-lg text-xs font-semibold hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {sendingReminder === "24h" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 1-hour reminder card */}
+                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-amber-400" />
+                    <span className="text-sm font-semibold">1-Hour Reminder</span>
+                    {reminderStatus && reminderStatus.total > 0 && reminderStatus.sent1h === reminderStatus.total && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded ml-auto">All Sent</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    Sends to registrations that have <strong className="text-foreground">not yet received</strong> a 1-hour reminder.
+                    {reminderStatus && (
+                      <span className="ml-1 text-amber-400 font-medium">{reminderStatus.pending1h} pending.</span>
+                    )}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSendReminders("1h", false)}
+                      disabled={sendingReminder !== null || (reminderStatus?.pending1h ?? 0) === 0}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-amber-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {sendingReminder === "1h" ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending…</>
+                      ) : (
+                        <><Bell className="w-3.5 h-3.5" /> Send to Pending</>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleSendReminders("1h", true)}
+                      disabled={sendingReminder !== null || (reminderStatus?.total ?? 0) === 0}
+                      title="Force-send to all registrations, including those already sent"
+                      className="flex items-center justify-center gap-1.5 border border-border text-muted-foreground px-3 py-2 rounded-lg text-xs font-semibold hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {sendingReminder === "1h" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Scheduler notice */}
+                <div className="flex items-start gap-2 p-3 bg-secondary/40 border border-border/50 rounded-lg">
+                  <Bell className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    The automatic scheduler checks every 5 minutes and sends reminders within the 24 h and 1 h windows before the event start time. Manual sends above bypass the time window.
+                  </p>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       </div>
