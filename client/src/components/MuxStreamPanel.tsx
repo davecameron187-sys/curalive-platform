@@ -27,6 +27,9 @@ import {
   Loader2,
   Plus,
   ExternalLink,
+  Mic,
+  MicOff,
+  Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -102,6 +105,99 @@ function CopyField({ label, value, secret = false }: { label: string; value: str
           <Copy className="w-3.5 h-3.5" />
         </button>
       </div>
+    </div>
+  );
+}
+
+// ─── Audio Ingest Controls sub-component ─────────────────────────────────────
+
+interface AudioIngestControlsProps {
+  muxStreamId: string;
+  isStreamActive: boolean;
+  eventId?: number;
+}
+
+function AudioIngestControls({ muxStreamId, isStreamActive, eventId }: AudioIngestControlsProps) {
+  // Derive Ably channel name from eventId or muxStreamId
+  const ablyChannel = eventId
+    ? `chorus-event-${eventId}`
+    : `chorus-stream-${muxStreamId}`;
+
+  const { data: ingestStatus, refetch: refetchStatus } = trpc.mux.getAudioIngestStatus.useQuery(
+    { muxStreamId },
+    { refetchInterval: 5000 }
+  );
+
+  const startIngest = trpc.mux.startAudioIngest.useMutation({
+    onSuccess: () => {
+      toast.success("Audio ingest started — transcript will appear in the Event Room within 15 seconds");
+      refetchStatus();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const stopIngest = trpc.mux.stopAudioIngest.useMutation({
+    onSuccess: () => {
+      toast.success("Audio ingest stopped");
+      refetchStatus();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const isRunning = ingestStatus?.status === "running";
+  const isError = ingestStatus?.status === "error";
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Activity className="w-3.5 h-3.5 text-primary" />
+          <span className="text-xs font-semibold">Live Audio Ingest</span>
+          {isRunning && (
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px] px-1.5 py-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block mr-1" />
+              Active
+            </Badge>
+          )}
+          {isError && (
+            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px] px-1.5 py-0">Error</Badge>
+          )}
+        </div>
+        {isRunning ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 text-[11px] text-red-400 hover:bg-red-500/10 gap-1"
+            disabled={stopIngest.isPending}
+            onClick={() => stopIngest.mutate({ muxStreamId })}
+          >
+            {stopIngest.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <MicOff className="w-3 h-3" />}
+            Stop
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 text-[11px] text-green-400 hover:bg-green-500/10 gap-1"
+            disabled={startIngest.isPending || !isStreamActive}
+            title={!isStreamActive ? "Start streaming from OBS/vMix first" : "Start live transcription"}
+            onClick={() => startIngest.mutate({ muxStreamId, ablyChannel })}
+          >
+            {startIngest.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mic className="w-3 h-3" />}
+            Start Transcription
+          </Button>
+        )}
+      </div>
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        {isRunning
+          ? `Transcribing live audio → Ably channel "${ablyChannel}" · ${ingestStatus?.segmentsProcessed ?? 0} segments processed`
+          : isStreamActive
+          ? "Stream is live. Click Start Transcription to begin real-time captions."
+          : "Start streaming from OBS/vMix first, then enable audio ingest."}
+      </p>
+      {isError && ingestStatus?.errorMessage && (
+        <p className="text-[11px] text-red-400">{ingestStatus.errorMessage}</p>
+      )}
     </div>
   );
 }
@@ -303,6 +399,13 @@ export default function MuxStreamPanel({ eventId, meetingId, eventLabel }: MuxSt
                   Waiting for encoder — paste the RTMP URL and stream key into OBS/vMix and start streaming
                 </div>
               )}
+
+              {/* Audio Ingest Controls */}
+              <AudioIngestControls
+                muxStreamId={stream.muxStreamId}
+                isStreamActive={stream.status === "active"}
+                eventId={eventId}
+              />
 
               {/* Actions */}
               <div className="flex items-center gap-2 pt-1 border-t border-border">

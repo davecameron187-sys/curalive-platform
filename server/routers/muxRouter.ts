@@ -20,6 +20,12 @@ import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { muxStreams } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import {
+  startIngest,
+  stopIngest,
+  getIngestStatus,
+  listActiveIngests,
+} from "../audioIngest";
 
 const MUX_TOKEN_ID = process.env.MUX_TOKEN_ID ?? "";
 const MUX_TOKEN_SECRET = process.env.MUX_TOKEN_SECRET ?? "";
@@ -299,4 +305,91 @@ export const muxRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Start live audio ingest for a Mux stream.
+   * Spawns an ffmpeg worker that pulls the HLS audio, chunks it into 5-second
+   * WAV files, transcribes each chunk via Whisper, and publishes transcript
+   * segments to the Ably channel for the event in real time.
+   */
+  startAudioIngest: protectedProcedure
+    .input(
+      z.object({
+        muxStreamId: z.string(),
+        ablyChannel: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+      const [stream] = await db
+        .select()
+        .from(muxStreams)
+        .where(eq(muxStreams.muxStreamId, input.muxStreamId))
+        .limit(1);
+
+      if (!stream) throw new TRPCError({ code: "NOT_FOUND", message: "Stream not found" });
+      if (!stream.muxPlaybackId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Stream has no playback ID yet — wait for the stream to become active.",
+        });
+      }
+
+      const hlsUrl = `https://stream.mux.com/${stream.muxPlaybackId}.m3u8`;
+      const worker = await startIngest(input.muxStreamId, hlsUrl, input.ablyChannel);
+
+      return {
+        success: true,
+        streamId: worker.streamId,
+        hlsUrl,
+        ablyChannel: worker.ablyChannel,
+        startedAt: worker.startedAt,
+        message: "Audio ingest started. Transcript segments will appear in the Event Room within 10–15 seconds.",
+      };
+    }),
+
+  /**
+   * Stop live audio ingest for a Mux stream.
+   */
+  stopAudioIngest: protectedProcedure
+    .input(z.object({ muxStreamId: z.string() }))
+    .mutation(async ({ input }) => {
+      await stopIngest(input.muxStreamId);
+      return { success: true, message: "Audio ingest stopped." };
+    }),
+
+  /**
+   * Get the current status of the audio ingest worker for a stream.
+   */
+  getAudioIngestStatus: protectedProcedure
+    .input(z.object({ muxStreamId: z.string() }))
+    .query(async ({ input }) => {
+      const worker = getIngestStatus(input.muxStreamId);
+      if (!worker) {
+        return { status: "stopped" as const, segmentsProcessed: 0 };
+      }
+      return {
+        status: worker.status,
+        segmentsProcessed: worker.segmentsProcessed,
+        startedAt: worker.startedAt,
+        stoppedAt: worker.stoppedAt,
+        errorMessage: worker.errorMessage,
+      };
+    }),
+
+  /**
+   * List all currently active audio ingest workers.
+   */
+  listActiveIngests: protectedProcedure.query(async () => {
+    return listActiveIngests().map((w) => ({
+      streamId: w.streamId,
+      hlsUrl: w.hlsUrl,
+      ablyChannel: w.ablyChannel,
+      status: w.status,
+      segmentsProcessed: w.segmentsProcessed,
+      startedAt: w.startedAt,
+    }));
+  }),
 });
