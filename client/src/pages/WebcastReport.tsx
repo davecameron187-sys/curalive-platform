@@ -13,9 +13,8 @@ import { toast } from "sonner";
 import {
   Users, BarChart3, MessageSquare, Clock, TrendingUp, Award,
   Download, Share2, ArrowLeft, CheckCircle2, Play, Building2,
-  FileText, Zap, Eye, ThumbsUp, ChevronDown, ChevronUp, Loader2
+  FileText,  Zap, Eye, ThumbsUp, ChevronDown, ChevronUp, Loader2, Sparkles, Newspaper
 } from "lucide-react";
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -62,11 +61,45 @@ export default function WebcastReport() {
   const [expandedPoll, setExpandedPoll] = useState<number | null>(null);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [pressRelease, setPressRelease] = useState<{ headline: string; subheadline: string; body: string; boilerplate: string } | null>(null);
+  const [generatingPR, setGeneratingPR] = useState(false);
 
   const { data: report, isLoading, error } = trpc.webcast.getWebcastReport.useQuery(
     { slug: slug || "" },
     { enabled: !!slug && isAuthenticated, retry: false }
   );
+
+  const generateEnhancedSummaryMutation = trpc.ai.generateEnhancedSummary.useMutation({
+    onSuccess: (data) => {
+      setAiSummary([
+        `**Executive Summary**`,
+        ``,
+        data.executiveSummary,
+        data.financialHighlights.length > 0 ? `\n**Financial Highlights**\n${data.financialHighlights.map((h: string) => `• ${h}`).join("\n")}` : "",
+        data.keyTopics.length > 0 ? `\n**Key Topics**\n${data.keyTopics.map((t: string) => `• ${t}`).join("\n")}` : "",
+        data.forwardLookingStatements.length > 0 ? `\n**Forward-Looking Statements**\n${data.forwardLookingStatements.map((s: string) => `• ${s}`).join("\n")}` : "",
+        data.riskFactors.length > 0 ? `\n**Risk Factors**\n${data.riskFactors.map((r: string) => `• ${r}`).join("\n")}` : "",
+        data.actionItems.length > 0 ? `\n**Action Items**\n${data.actionItems.map((a: string) => `• ${a}`).join("\n")}` : "",
+        `\n**Audience Sentiment:** ${data.sentiment} (score: ${data.sentimentScore}/100)`,
+      ].filter(Boolean).join("\n"));
+      setGeneratingSummary(false);
+    },
+    onError: () => {
+      setGeneratingSummary(false);
+      toast.error("Failed to generate AI summary");
+    },
+  });
+
+  const generatePressReleaseMutation = trpc.ai.generatePressRelease.useMutation({
+    onSuccess: (data) => {
+      setPressRelease(data);
+      setGeneratingPR(false);
+    },
+    onError: () => {
+      setGeneratingPR(false);
+      toast.error("Failed to generate press release");
+    },
+  });
 
   const _generateSummaryMutation = (trpc.webcast as any).generateWebcastSummary?.useMutation?.({
     onSuccess: (data: { summary?: string }) => {
@@ -82,21 +115,22 @@ export default function WebcastReport() {
   const handleGenerateSummary = () => {
     if (!report?.event?.id) return;
     setGeneratingSummary(true);
-    // Fallback: build a simple summary from available data
     const { stats, event } = report;
-    const summary = [
-      `**${event.title}** — Post-Event Summary`,
-      ``,
-      `**Attendance:** ${stats.totalAttendees} of ${stats.totalRegistrations} registered attendees joined (${stats.showUpRate}% show-up rate).`,
-      stats.peakAttendees > 0 ? `Peak concurrent viewers: ${stats.peakAttendees}.` : "",
-      stats.avgWatchTimeSeconds > 0 ? `Average watch time: ${fmtDuration(stats.avgWatchTimeSeconds)}.` : "",
-      ``,
-      `**Engagement:** ${stats.totalQuestions} questions submitted (${stats.answeredQuestions} answered). ${stats.totalPolls} polls ran with ${stats.totalPollVotes} total votes. Overall engagement score: ${stats.engagementScore}/100.`,
-      ``,
-      event.recordingUrl ? `**Recording** is available for on-demand viewing.` : "",
-    ].filter(Boolean).join("\n");
-    setAiSummary(summary);
-    setGeneratingSummary(false);
+    generateEnhancedSummaryMutation.mutate({
+      eventTitle: event.title,
+      qaItems: [],  // Q&A items not available in report view without a separate query
+    });
+  };
+
+  const handleGeneratePressRelease = () => {
+    if (!report?.event) return;
+    setGeneratingPR(true);
+    const { stats, event } = report;
+    generatePressReleaseMutation.mutate({
+      eventTitle: event.title,
+      companyName: event.hostOrganization ?? "",
+      eventDate: event.startTime ? new Date(event.startTime).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "",
+    });
   };
 
   const handleExportCSV = () => {
@@ -285,6 +319,64 @@ export default function WebcastReport() {
                     <div className="text-center py-8 text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
                       <FileText className="w-8 h-8 mx-auto mb-3 opacity-40" />
                       Click "Generate Summary" to produce an AI-written event summary from attendance data, Q&A, and poll results.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Press Release Draft */}
+              <div className="border border-border rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 bg-card/40 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <Newspaper className="w-4 h-4 text-violet-400" />
+                    <span className="text-sm font-semibold">AI Press Release Draft</span>
+                    <span className="text-xs text-muted-foreground bg-violet-500/10 border border-violet-500/20 text-violet-400 px-2 py-0.5 rounded-full">SENS / RNS Ready</span>
+                  </div>
+                  {!pressRelease && (
+                    <button
+                      onClick={handleGeneratePressRelease}
+                      disabled={generatingPR}
+                      className="flex items-center gap-1.5 bg-violet-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {generatingPR ? <><Loader2 className="w-3 h-3 animate-spin" /> Drafting…</> : <><Sparkles className="w-3 h-3" /> Draft Press Release</>}
+                    </button>
+                  )}
+                  {pressRelease && (
+                    <button
+                      onClick={() => {
+                        const text = `${pressRelease.headline}\n${pressRelease.subheadline}\n\n${pressRelease.body}\n\n${pressRelease.boilerplate}`;
+                        navigator.clipboard.writeText(text).then(() => toast.success("Press release copied to clipboard"));
+                      }}
+                      className="flex items-center gap-1.5 border border-border text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                    >
+                      <Download className="w-3 h-3" /> Copy Text
+                    </button>
+                  )}
+                </div>
+                <div className="p-4">
+                  {pressRelease ? (
+                    <div className="space-y-3 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      <div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Headline</div>
+                        <div className="font-bold text-foreground text-base">{pressRelease.headline}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Sub-headline</div>
+                        <div className="text-muted-foreground italic">{pressRelease.subheadline}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Body</div>
+                        <div className="text-foreground leading-relaxed whitespace-pre-wrap">{pressRelease.body}</div>
+                      </div>
+                      <div className="border-t border-border pt-3">
+                        <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Boilerplate</div>
+                        <div className="text-muted-foreground text-xs leading-relaxed">{pressRelease.boilerplate}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                      <Newspaper className="w-8 h-8 mx-auto mb-3 opacity-40" />
+                      Generate a SENS/RNS-ready press release draft from this event's data and transcript.
                     </div>
                   )}
                 </div>

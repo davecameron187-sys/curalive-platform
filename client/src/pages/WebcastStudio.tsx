@@ -23,11 +23,13 @@ import {
   Send, Play, Pause, StopCircle, Globe,
   Activity, Zap, Clock, Eye, ThumbsUp, AlertCircle, Bot as BotIcon,
   Loader2, Plus, ChevronRight, Share2, CheckCircle2, ExternalLink, Upload,
-  Bell, RefreshCw, Mail
+  Bell, RefreshCw, Mail, Sparkles
 } from "lucide-react";
+import RollingSummaryPanel from "@/components/RollingSummaryPanel";
+import EventBriefPanel from "@/components/EventBriefPanel";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics" | "bot" | "stream" | "reminders";
+type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics" | "ai" | "bot" | "stream" | "reminders";
 type StreamStatus = "offline" | "connecting" | "live" | "paused";
 
 type ChatMessage = {
@@ -513,6 +515,7 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               { id: "chat" as StudioTab, icon: Send, label: "Chat", badge: undefined as number | undefined },
               { id: "captions" as StudioTab, icon: Globe, label: "Translation", badge: undefined as number | undefined },
               { id: "analytics" as StudioTab, icon: Activity, label: "Analytics", badge: undefined as number | undefined },
+              { id: "ai" as StudioTab, icon: Sparkles, label: "AI", badge: undefined as number | undefined },
               { id: "bot" as StudioTab, icon: BotIcon, label: "Bot", badge: undefined as number | undefined },
               { id: "stream" as StudioTab, icon: Radio, label: "Stream", badge: undefined as number | undefined },
               { id: "reminders" as StudioTab, icon: Bell, label: "Reminders", badge: undefined as number | undefined },
@@ -851,6 +854,29 @@ function WebcastStudioInner({ slug }: { slug: string }) {
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* ── AI Summary Panel ── */}
+            {activeTab === "ai" && (
+              <div className="p-4 space-y-4">
+                <RollingSummaryPanel
+                  eventTitle={event?.title ?? "Live Event"}
+                  className="w-full"
+                />
+                {/* Sentiment keywords */}
+                {sentiment?.keywords && sentiment.keywords.length > 0 && (
+                  <div className="bg-card border border-border rounded-xl p-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Sentiment Keywords</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {sentiment.keywords.map((kw: string) => (
+                        <span key={kw} className="text-xs bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-1">{kw}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Event Brief Generator */}
+                <EventBriefPanel eventTitle={event?.title ?? ""} />
               </div>
             )}
 

@@ -10,7 +10,7 @@ import { AblyProvider, useAbly } from "@/contexts/AblyContext";
 
 function PresenterInner({ eventId }: { eventId: string }) {
   const [, navigate] = useLocation();
-  const { transcript, sentiment, qaItems, presenceCount } = useAbly();
+  const { transcript, sentiment, qaItems, presenceCount, rollingSummary } = useAbly();
   const [fontSize, setFontSize] = useState(32);
   const [showQA, setShowQA] = useState(true);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -67,6 +67,7 @@ function PresenterInner({ eventId }: { eventId: string }) {
 
   // ── Feature #13: Sentiment history for presenter ───────────────────────────────
   const [sentimentHistory, setSentimentHistory] = useState<number[]>([72]);
+  const [showSummary, setShowSummary] = useState(false);
   useEffect(() => {
     setSentimentHistory((prev) => [...prev.slice(-12), sentiment.score]);
   }, [sentiment.score]);
@@ -159,12 +160,35 @@ function PresenterInner({ eventId }: { eventId: string }) {
           </svg>
           <span style={{ fontSize: "13px", fontWeight: 700, color: sentimentColor }}>{sentiment.score}</span>
         </div>
+        {rollingSummary && (
+          <button
+            onClick={() => setShowSummary((v) => !v)}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: showSummary ? "rgba(139,92,246,0.2)" : "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: "8px", padding: "4px 10px", cursor: "pointer", color: "#a78bfa" }}
+          >
+            <span style={{ fontSize: "11px", fontWeight: 700 }}>✦ AI Summary</span>
+            <span style={{ fontSize: "10px", color: "rgba(167,139,250,0.7)" }}>{showSummary ? "Hide" : "Show"}</span>
+          </button>
+        )}
         <div style={{ flex: 1 }} />
         <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#ef4444", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
           <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444", display: "inline-block", animation: "live-pulse 2s ease-in-out infinite" }} />
           Live Transcription Active
         </div>
       </div>
+
+      {/* Rolling AI Summary overlay */}
+      {showSummary && rollingSummary && (
+        <div style={{ background: "rgba(139,92,246,0.06)", borderBottom: `1px solid rgba(139,92,246,0.2)`, padding: "12px 24px", display: "flex", gap: "12px", alignItems: "flex-start" }}>
+          <div style={{ flexShrink: 0, width: "20px", height: "20px", borderRadius: "50%", background: "rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px" }}>
+            <span style={{ fontSize: "10px" }}>✦</span>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: "10px", fontWeight: 700, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>AI Rolling Summary</div>
+            <div style={{ fontSize: "14px", color: isDark ? "rgba(241,245,249,0.85)" : "rgba(15,23,42,0.85)", lineHeight: 1.5, fontFamily: "'Inter', sans-serif" }}>{rollingSummary.text}</div>
+          </div>
+          <button onClick={() => setShowSummary(false)} style={{ flexShrink: 0, color: mutedFg, background: "none", border: "none", cursor: "pointer", fontSize: "16px", lineHeight: 1, padding: "0 4px" }}>×</button>
+        </div>
+      )}
 
       {/* Main content */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>

@@ -347,3 +347,19 @@
 - [x] Build /billing page with plan cards and upgrade CTA
 - [x] Add Billing link to Home header for logged-in users
 - [x] Write vitest for checkout session procedure (73 tests passing)
+
+## Round 57 — Complete AI Feature Suite
+
+- [x] Wire real-time LLM sentiment scoring from live transcript into Recall webhook (replace simulated data)
+- [x] Publish live sentiment.update events to Ably channel every N transcript segments
+- [x] Build rolling AI summary: tRPC mutation that summarises last 60s of transcript, published to Ably
+- [x] Show rolling summary panel in WebcastStudio (AI tab), Presenter teleprompter, and AttendeeEventRoom
+- [x] Build AI Q&A auto-triage: LLM classifies each submitted question (approved/duplicate/off-topic/sensitive)
+- [x] Show triage badge on each Q&A card in Moderator console
+- [x] Build toxicity/compliance filter: flag price-sensitive or abusive questions before they enter the queue
+- [x] Build AI Event Brief Generator in WebcastStudio: paste press release → LLM returns brief + talking points
+- [x] Build AI Press Release Draft in WebcastReport: one-click SENS/RNS-style press release from transcript
+- [x] Enhance post-event AI summary: add financial highlights extraction, risk factors, forward-looking statements
+- [x] Add speaking-pace coach to Presenter teleprompter: WPM detector with colour-coded pace indicator
+- [x] Wire multi-language transcript selector to actual LLM translation (aiRouter.translateSegment procedure added)
+- [x] Write vitest for AI triage and sentiment scoring procedures (73 tests passing)

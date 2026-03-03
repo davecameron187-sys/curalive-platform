@@ -46,8 +46,15 @@ export type Poll = {
 
 export type SentimentUpdate = {
   score: number;
-  label: "Positive" | "Neutral" | "Negative";
+  label: "Positive" | "Neutral" | "Cautious" | "Negative";
+  keywords?: string[];
   timestamp: number;
+};
+
+export type RollingSummary = {
+  text: string;
+  timestamp: number;
+  segmentCount: number;
 };
 
 export type PresenceUser = {
@@ -78,7 +85,8 @@ export type ChorusMessage =
   | { type: "hand.raise"; data: RaisedHand }
   | { type: "hand.lower"; data: { id: string } }
   | { type: "hand.unmute"; data: { id: string } }
-  | { type: "hand.dismiss"; data: { id: string } };
+  | { type: "hand.dismiss"; data: { id: string } }
+  | { type: "rolling.summary"; data: RollingSummary };
 
 type Listener = (msg: ChorusMessage) => void;
 
@@ -134,6 +142,7 @@ type AblyContextValue = {
   eventId: string;
   transcript: TranscriptSegment[];
   sentiment: SentimentUpdate;
+  rollingSummary: RollingSummary | null;
   qaItems: QAItem[];
   polls: Poll[];
   raisedHands: RaisedHand[];
@@ -148,6 +157,7 @@ const AblyContext = createContext<AblyContextValue | null>(null);
 export function AblyProvider({ eventId, children }: { eventId: string; children: React.ReactNode }) {
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [sentiment, setSentiment] = useState<SentimentUpdate>({ score: 72, label: "Positive", timestamp: Date.now() });
+  const [rollingSummary, setRollingSummary] = useState<RollingSummary | null>(null);
   const [qaItems, setQaItems] = useState<QAItem[]>(INITIAL_QA);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [raisedHands, setRaisedHands] = useState<RaisedHand[]>([]);
@@ -258,6 +268,9 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
         case "hand.dismiss":
           setRaisedHands((prev) => prev.filter((h) => h.id !== msg.data.id));
           break;
+        case "rolling.summary":
+          setRollingSummary(msg.data);
+          break;
       }
     });
     return unsub;
@@ -297,7 +310,7 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
   const mode: "demo" | "ably" = ablyConfig?.mode === "ably" ? "ably" : "demo";
 
   return (
-    <AblyContext.Provider value={{ eventId, transcript, sentiment, qaItems, polls, raisedHands, presenceCount, isSimulating, mode, publish }}>
+    <AblyContext.Provider value={{ eventId, transcript, sentiment, rollingSummary, qaItems, polls, raisedHands, presenceCount, isSimulating, mode, publish }}>
       {children}
     </AblyContext.Provider>
   );

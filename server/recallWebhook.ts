@@ -23,6 +23,7 @@ import crypto from "crypto";
 import { getDb } from "./db";
 import { recallBots } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { scoreSentiment, generateRollingSummary } from "./aiAnalysis";
 
 const RECALL_WEBHOOK_SECRET = process.env.RECALL_AI_WEBHOOK_SECRET ?? "";
 const ABLY_API_KEY = process.env.ABLY_API_KEY ?? "";
@@ -175,12 +176,52 @@ async function handleTranscriptData(payload: {
     .set({ transcriptJson: JSON.stringify(existing) })
     .where(eq(recallBots.recallBotId, recallBotId));
 
-  // Publish to Ably in real time
+  // Publish transcript segment to Ably in real time
   if (bot.ablyChannel) {
     await ablyPublish(bot.ablyChannel, "chorus", JSON.stringify({
       type: "transcript.segment",
       data: transcriptSegment,
     }));
+  }
+
+  // ── AI analysis: every 5 segments, run sentiment + rolling summary ──────────
+  const SENTIMENT_INTERVAL = 5;
+  if (existing.length > 0 && existing.length % SENTIMENT_INTERVAL === 0) {
+    // Run in background — don't await to keep webhook response fast
+    void (async () => {
+      try {
+        const recentText = existing
+          .slice(-SENTIMENT_INTERVAL)
+          .map((s: { text: string }) => s.text)
+          .join(" ");
+
+        // 1. Sentiment scoring
+        const sentiment = await scoreSentiment(recentText);
+        if (bot.ablyChannel) {
+          await ablyPublish(bot.ablyChannel, "chorus", JSON.stringify({
+            type: "sentiment.update",
+            data: sentiment,
+          }));
+        }
+
+        // 2. Rolling summary every 10 segments
+        if (existing.length % 10 === 0) {
+          const eventTitle = bot.eventId ? `Event ${bot.eventId}` : "Live Event";
+          const summary = await generateRollingSummary(
+            existing.slice(-20) as Array<{ speaker: string; text: string }>,
+            eventTitle
+          );
+          if (bot.ablyChannel) {
+            await ablyPublish(bot.ablyChannel, "chorus", JSON.stringify({
+              type: "rolling.summary",
+              data: summary,
+            }));
+          }
+        }
+      } catch (err) {
+        console.warn("[AI] Background analysis error:", err);
+      }
+    })();
   }
 }
 

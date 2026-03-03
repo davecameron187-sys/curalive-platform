@@ -17,6 +17,9 @@ import {
   BarChart3, Mic, AlertTriangle, Radio, Hand, MicOff
 } from "lucide-react";
 import { AblyProvider, useAbly, type QAItem, type Poll, type RaisedHand } from "@/contexts/AblyContext";
+import { trpc } from "@/lib/trpc";
+import { Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 // ─── Inner component (needs AblyProvider) ────────────────────────────────────
 
@@ -153,7 +156,7 @@ function ModeratorInner({ eventId }: { eventId: string }) {
                   </div>
                   <div className="space-y-2">
                     {pendingQA.map((q) => (
-                      <QACard key={q.id} item={q} onApprove={() => handleQAStatus(q.id, "approved")} onReject={() => handleQAStatus(q.id, "rejected")} onAnswer={() => handleQAStatus(q.id, "answered")} />
+                      <QACard key={q.id} item={q} onApprove={() => handleQAStatus(q.id, "approved")} onReject={() => handleQAStatus(q.id, "rejected")} onAnswer={() => handleQAStatus(q.id, "answered")} existingQuestions={qaItems.map(i => i.question)} />
                     ))}
                   </div>
                 </div>
@@ -166,7 +169,7 @@ function ModeratorInner({ eventId }: { eventId: string }) {
                   </div>
                   <div className="space-y-2">
                     {approvedQA.map((q) => (
-                      <QACard key={q.id} item={q} onApprove={() => handleQAStatus(q.id, "approved")} onReject={() => handleQAStatus(q.id, "rejected")} onAnswer={() => handleQAStatus(q.id, "answered")} />
+                      <QACard key={q.id} item={q} onApprove={() => handleQAStatus(q.id, "approved")} onReject={() => handleQAStatus(q.id, "rejected")} onAnswer={() => handleQAStatus(q.id, "answered")} existingQuestions={qaItems.map(i => i.question)} />
                     ))}
                   </div>
                 </div>
@@ -177,7 +180,7 @@ function ModeratorInner({ eventId }: { eventId: string }) {
                   <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">Answered ({answeredQA.length})</div>
                   <div className="space-y-2 opacity-50">
                     {answeredQA.map((q) => (
-                      <QACard key={q.id} item={q} onApprove={() => handleQAStatus(q.id, "approved")} onReject={() => handleQAStatus(q.id, "rejected")} onAnswer={() => handleQAStatus(q.id, "answered")} />
+                      <QACard key={q.id} item={q} onApprove={() => handleQAStatus(q.id, "approved")} onReject={() => handleQAStatus(q.id, "rejected")} onAnswer={() => handleQAStatus(q.id, "answered")} existingQuestions={qaItems.map(i => i.question)} />
                     ))}
                   </div>
                 </div>
@@ -460,7 +463,29 @@ function ModeratorInner({ eventId }: { eventId: string }) {
 
 // ─── Q&A Card ────────────────────────────────────────────────────────────────
 
-function QACard({ item, onApprove, onReject, onAnswer }: { item: QAItem; onApprove: () => void; onReject: () => void; onAnswer: () => void }) {
+function QACard({ item, onApprove, onReject, onAnswer, existingQuestions }: { item: QAItem; onApprove: () => void; onReject: () => void; onAnswer: () => void; existingQuestions: string[] }) {
+  const [triageResult, setTriageResult] = useState<{ classification: string; confidence: number; reason: string } | null>(null);
+
+  const triageMutation = trpc.ai.triageQuestion.useMutation({
+    onSuccess: (data) => {
+      setTriageResult(data);
+      // Auto-suggest action based on classification
+      if (data.classification === "approved" && data.confidence >= 80) {
+        toast.success(`AI suggests: Approve (${data.confidence}% confidence)`);
+      } else if (data.classification === "duplicate" || data.classification === "off-topic" || data.classification === "sensitive" || data.classification === "compliance") {
+        toast.warning(`AI flags: ${data.classification} — ${data.reason}`);
+      }
+    },
+    onError: () => toast.error("AI triage unavailable"),
+  });
+  const triageColors: Record<string, string> = {
+    approved: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
+    duplicate: "text-amber-400 border-amber-500/20 bg-amber-500/10",
+    "off-topic": "text-orange-400 border-orange-500/20 bg-orange-500/10",
+    toxic: "text-red-400 border-red-500/20 bg-red-500/10",
+    unclear: "text-slate-400 border-slate-500/20 bg-slate-500/10",
+  };
+
   const statusConfig: Record<QAItem["status"], { label: string; color: string }> = {
     pending: { label: "Pending", color: "text-amber-400" },
     approved: { label: "Approved", color: "text-emerald-400" },
@@ -485,8 +510,15 @@ function QACard({ item, onApprove, onReject, onAnswer }: { item: QAItem; onAppro
           </div>
         </div>
       </div>
+      {triageResult && (
+        <div className={`mt-2 flex items-center gap-1.5 text-xs border rounded-lg px-2.5 py-1.5 ${triageColors[triageResult.classification] ?? "text-muted-foreground border-border bg-secondary"}`}>
+          <Sparkles className="w-3 h-3" />
+          <span className="font-semibold capitalize">{triageResult.classification}</span>
+          <span className="text-muted-foreground">({triageResult.confidence}%) — {triageResult.reason}</span>
+        </div>
+      )}
       {(item.status === "pending" || item.status === "approved") && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
           {item.status === "pending" && (
             <button onClick={onApprove} className="flex items-center gap-1 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors">
               <CheckCircle className="w-3 h-3" /> Approve
@@ -500,6 +532,16 @@ function QACard({ item, onApprove, onReject, onAnswer }: { item: QAItem; onAppro
           <button onClick={onReject} className="flex items-center gap-1 text-xs text-destructive border border-destructive/20 px-2.5 py-1.5 rounded-lg hover:bg-destructive/10 transition-colors">
             <XCircle className="w-3 h-3" /> Reject
           </button>
+          {!triageResult && item.status === "pending" && (
+            <button
+              onClick={() => triageMutation.mutate({ question: item.question, existingQuestions })}
+              disabled={triageMutation.isPending}
+              className="flex items-center gap-1 text-xs text-violet-400 border border-violet-500/20 px-2.5 py-1.5 rounded-lg hover:bg-violet-500/10 transition-colors disabled:opacity-40"
+            >
+              <Sparkles className="w-3 h-3" />
+              {triageMutation.isPending ? "Analysing…" : "AI Triage"}
+            </button>
+          )}
         </div>
       )}
     </div>
