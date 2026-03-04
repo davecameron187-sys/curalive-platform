@@ -172,6 +172,17 @@ export default function Webphone({
 
   const handleBackspace = () => setDialValue(v => v.slice(0, -1));
 
+  // ─── E.164 normalization ─────────────────────────────────────────────────────
+  // Converts local SA numbers (0xxxxxxxxx) to +27xxxxxxxxx, handles 00-prefix,
+  // and strips spaces/dashes/parens. Numbers already starting with + pass through.
+  const normalizeToE164 = (raw: string): string => {
+    const stripped = raw.trim().replace(/[\s\-().]/g, "");
+    if (stripped.startsWith("+")) return stripped;          // already E.164
+    if (stripped.startsWith("00")) return "+" + stripped.slice(2); // 00-prefixed international
+    if (stripped.startsWith("0") && stripped.length === 10) return "+27" + stripped.slice(1); // SA local
+    return stripped; // pass through as-is
+  };
+
   // ─── Initiate call ───────────────────────────────────────────────────────────
 
   const handleCall = async () => {
@@ -194,10 +205,12 @@ export default function Webphone({
         toast("Carrier failover active", { description: "Primary carrier unavailable — using backup carrier." });
       }
 
+      const normalizedNumber = normalizeToE164(dialValue);
+
       if (data.carrier === "twilio") {
-        await initTwilioCall(data as { token: string; carrier: "twilio" }, dialValue.trim());
+        await initTwilioCall(data as { token: string; carrier: "twilio" }, normalizedNumber);
       } else {
-        await initTelnyxCall(data as { sipUser: string; sipPassword: string; sipDomain: string; carrier: "telnyx" }, dialValue.trim());
+        await initTelnyxCall(data as { sipUser: string; sipPassword: string; sipDomain: string; carrier: "telnyx" }, normalizedNumber);
       }
 
       setActiveCarrier(data.carrier);
@@ -206,11 +219,11 @@ export default function Webphone({
       const logResult = await logSessionMutation.mutateAsync({
         carrier: data.carrier,
         direction: "outbound",
-        remoteNumber: dialValue.trim(),
+        remoteNumber: normalizedNumber,
         conferenceId,
       });
       setSessionId(logResult.id);
-      onCallStart?.(dialValue.trim(), data.carrier);
+      onCallStart?.(normalizedNumber, data.carrier);
 
     } catch (err: unknown) {
       setCallState("idle");
