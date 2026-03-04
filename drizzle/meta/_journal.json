@@ -127,6 +127,13 @@
       "when": 1772564217201,
       "tag": "0017_white_george_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1772602875850,
+      "tag": "0018_faulty_anthem",
+      "breakpoints": true
     }
   ]
 }

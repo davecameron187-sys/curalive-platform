@@ -23,10 +23,11 @@ import {
   Send, Play, Pause, StopCircle, Globe,
   Activity, Zap, Clock, Eye, ThumbsUp, AlertCircle, Bot as BotIcon,
   Loader2, Plus, ChevronRight, Share2, CheckCircle2, ExternalLink, Upload,
-  Bell, RefreshCw, Mail, Sparkles
+  Bell, RefreshCw, Mail, Sparkles, Phone
 } from "lucide-react";
 import RollingSummaryPanel from "@/components/RollingSummaryPanel";
 import EventBriefPanel from "@/components/EventBriefPanel";
+import Webphone from "@/components/Webphone";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics" | "ai" | "bot" | "stream" | "reminders";
@@ -137,6 +138,7 @@ function WebcastStudioInner({ slug }: { slug: string }) {
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("live");
   const [micOn, setMicOn] = useState(true);
   const [videoOn, setVideoOn] = useState(true);
+  const [showWebphone, setShowWebphone] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(2478);
   const [chatInput, setChatInput] = useState("");
   const [chat, setChat] = useState<ChatMessage[]>(SEED_CHAT);
@@ -395,6 +397,18 @@ function WebcastStudioInner({ slug }: { slug: string }) {
             >
               <StopCircle className="w-3.5 h-3.5" /> End
             </button>
+            {/* Webphone button */}
+            <button
+              onClick={() => setShowWebphone(v => !v)}
+              title="Open Webphone"
+              className={`p-2 rounded-lg border transition-colors ${
+                showWebphone
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                  : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Phone className="w-4 h-4" />
+            </button>
             {/* Operator profile chip */}
             {operatorProfile && (
               <div className="hidden xl:flex items-center gap-2 ml-2 pl-2 border-l border-border">
@@ -415,6 +429,12 @@ function WebcastStudioInner({ slug }: { slug: string }) {
         </div>
       </header>
 
+      {/* ── Webphone floating panel ── */}
+      {showWebphone && (
+        <div className="absolute top-16 right-4 z-50">
+          <Webphone defaultMinimised={false} />
+        </div>
+      )}
       {/* ── Main Studio Layout ── */}
       <div className="flex flex-1 overflow-hidden">
 

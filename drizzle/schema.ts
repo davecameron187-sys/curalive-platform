@@ -783,3 +783,36 @@ export const muxStreams = mysqlTable("mux_streams", {
 });
 export type MuxStream = typeof muxStreams.$inferSelect;
 export type InsertMuxStream = typeof muxStreams.$inferInsert;
+
+/**
+ * Webphone sessions — records every WebRTC / PSTN call made via the softphone.
+ */
+export const webphoneSessions = mysqlTable("webphone_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  conferenceId: int("conference_id"),          // optional link to OCC conference
+  carrier: mysqlEnum("carrier", ["twilio", "telnyx"]).notNull().default("twilio"),
+  status: mysqlEnum("status", ["initiated", "ringing", "in_progress", "completed", "failed", "no_answer"]).notNull().default("initiated"),
+  direction: mysqlEnum("direction", ["outbound", "inbound"]).notNull().default("outbound"),
+  remoteNumber: varchar("remote_number", { length: 32 }),  // E.164 format
+  callSid: varchar("call_sid", { length: 128 }),           // Twilio CallSid or Telnyx call_control_id
+  durationSecs: int("duration_secs"),
+  startedAt: bigint("started_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  endedAt: bigint("ended_at", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type WebphoneSession = typeof webphoneSessions.$inferSelect;
+export type InsertWebphoneSession = typeof webphoneSessions.$inferInsert;
+
+/**
+ * Webphone carrier status — tracks health of Twilio and Telnyx for automatic failover.
+ */
+export const webphoneCarrierStatus = mysqlTable("webphone_carrier_status", {
+  id: int("id").autoincrement().primaryKey(),
+  carrier: mysqlEnum("carrier", ["twilio", "telnyx"]).notNull().unique(),
+  status: mysqlEnum("status", ["healthy", "degraded", "down"]).notNull().default("healthy"),
+  failoverActive: boolean("failover_active").notNull().default(false),
+  lastCheckedAt: bigint("last_checked_at", { mode: "number" }).$defaultFn(() => Date.now()),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type WebphoneCarrierStatus = typeof webphoneCarrierStatus.$inferSelect;

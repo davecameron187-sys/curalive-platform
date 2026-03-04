@@ -371,3 +371,52 @@
 - [x] Show pulsing indicator badge when a new summary arrives while panel is collapsed
 - [x] Smooth expand/collapse animation with chevron toggle
 - [x] Panel persists open/closed state across re-renders (useState)
+
+## Round 59 — Webphone (Dual-Carrier Hybrid: Twilio WebRTC + Telnyx PSTN Fallback)
+
+### Database & Schema
+- [x] Add webphone_sessions table (id, userId, conferenceId, carrier, status, startedAt, endedAt, durationSecs, direction, remoteNumber)
+- [x] Add webphone_carrier_status table (carrier, status, lastCheckedAt, failoverActive)
+- [x] Run pnpm db:push to apply schema
+
+### Server — tRPC Procedures
+- [x] Add webphoneRouter.ts with procedures: getToken (Twilio/Telnyx), getCarrierStatus, logSession, endSession, getSessionHistory
+- [x] getToken: generate Twilio Access Token (Voice SDK) or Telnyx WebRTC token based on active carrier
+- [x] getCarrierStatus: return current primary/fallback carrier health from DB
+- [x] logSession / endSession: persist call records to webphone_sessions
+- [x] Add webphoneRouter to main router in routers.ts
+
+### Carrier Integration
+- [x] Add Twilio SDK (twilio npm package) to server dependencies
+- [x] Add Telnyx SDK (telnyx npm package) to server dependencies
+- [x] Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_TWIML_APP_SID secrets via webdev_request_secrets
+- [x] Add TELNYX_API_KEY, TELNYX_SIP_CONNECTION_ID secrets via webdev_request_secrets
+- [x] Build server/webphone/twilio.ts — generateTwilioToken(), handleTwiMLVoice()
+- [x] Build server/webphone/telnyx.ts — generateTelnyxToken(), handleTelnyxWebhook()
+- [x] Build server/webphone/carrierManager.ts — getActiveCarrier(), triggerFailover(), healthCheck()
+- [x] Add /api/webphone/twiml POST endpoint (TwiML response for Twilio voice calls)
+- [x] Add /api/webphone/telnyx-webhook POST endpoint (Telnyx call control events)
+
+### Frontend — Webphone Component
+- [x] Build client/src/components/Webphone.tsx — full WebRTC softphone UI
+- [x] Dial pad (0–9, *, #) with DTMF tone support
+- [x] Call controls: Call, Hang Up, Mute, Hold, Transfer
+- [x] Carrier status indicator: Primary (Twilio/Telnyx) + Fallback badge with health dot
+- [x] Auto-failover: if primary carrier token fails, silently switch to fallback carrier
+- [x] Call duration timer, call quality indicator (MOS score if available)
+- [x] Recent calls list (last 10 sessions from webphone_sessions)
+- [x] Minimise/expand toggle (compact mode for use alongside OCC)
+
+### Integration — OCC
+- [x] Add Webphone panel as a new launcher icon in OCC top bar (phone handset icon)
+- [x] Webphone opens as a floating panel (draggable, stays on top of CCP)
+- [x] Clicking a participant phone number in CCP pre-fills the Webphone dial pad
+
+### Integration — Webcast Studio
+- [x] Add Webphone button to WebcastStudio header (for operator to dial in speakers)
+- [x] Pre-fill dial pad from speaker profile phone number
+
+### Tests
+- [x] Write vitest for getToken procedure (Twilio + Telnyx paths)
+- [x] Write vitest for logSession and endSession procedures
+- [x] Write vitest for carrierManager failover logic

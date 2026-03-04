@@ -19,6 +19,7 @@ import {
   PhoneForwarded, Trash2, Upload
 } from "lucide-react";
 import { toast } from "sonner";
+import Webphone from "@/components/Webphone";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -181,6 +182,8 @@ export default function OCC() {
   const [showCCP, setShowCCP] = useState(false);
   const [showLounge, setShowLounge] = useState(false);
   const [showOpRequests, setShowOpRequests] = useState(false);
+  const [showWebphone, setShowWebphone] = useState(false);
+  const [webphonePrefill, setWebphonePrefill] = useState("");
   const [showCallerControl, setShowCallerControl] = useState(false);
   const [showAccessCodes, setShowAccessCodes] = useState(false);
 
@@ -1074,6 +1077,7 @@ export default function OCC() {
             { icon: LayoutGrid, label: "Overview", count: runningConfs.length, color: "text-blue-400", onClick: () => setShowOverview(v => !v) },
             { icon: Activity, label: "CCP", count: null, color: showCCP ? "text-emerald-400" : "text-slate-400", onClick: () => setShowCCP(v => !v) },
             { icon: List, label: "Access Codes", count: null, color: showAccessCodesModal ? "text-blue-400" : "text-slate-400", onClick: () => setShowAccessCodesModal(v => !v) },
+            { icon: Phone, label: "Webphone", count: null, color: showWebphone ? "text-emerald-400" : "text-slate-400", onClick: () => setShowWebphone(v => !v) },
           ].map(({ icon: Icon, label, count, color, onClick }) => (
             <button
               key={label}
@@ -1260,6 +1264,16 @@ export default function OCC() {
           </div>
         )}
 
+        {/* ── Webphone Panel ───────────────────────────────────────────────────── */}
+        {showWebphone && (
+          <div className="flex justify-end">
+            <Webphone
+              prefillNumber={webphonePrefill}
+              defaultMinimised={false}
+              onCallStart={() => setWebphonePrefill("")}
+            />
+          </div>
+        )}
         {/* ── Conference Overview ──────────────────────────────────────────────── */}
         {showOverview && (
           <div className="bg-[#111827] border border-slate-700 rounded-lg overflow-hidden">
