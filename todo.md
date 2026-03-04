@@ -437,3 +437,52 @@
 - [x] Show total call minutes, call count, carrier breakdown (Twilio vs Telnyx)
 - [x] Show failover events (times Telnyx was used as fallback)
 - [x] Show per-call log: time, duration, direction, carrier, number dialled
+
+## Round 61 — AI Tools Audit, Translation Completion, Phone Numbers & OCC Live Counter
+
+### Twilio Upgrade
+- [ ] Guide Twilio Trial account upgrade to remove verified-number restriction
+
+### Phone Numbers
+- [ ] Purchase US phone number on Telnyx via API
+- [ ] Purchase US phone number on Twilio via API
+- [ ] Wire purchased numbers into OCC dial-in panel display
+- [ ] Store purchased numbers in platform settings/DB
+
+### OCC Live Call Counter
+- [ ] Add live Webphone Activity summary card to OCC dashboard
+- [ ] Show active calls count, total minutes today, carrier health dots
+- [ ] Real-time update via polling or Ably subscription
+
+### Auto-Translation AI Tool
+- [ ] Audit current translation implementation for completeness
+- [ ] Ensure 8-language support is wired end-to-end (UI selector → backend → Ably broadcast)
+- [ ] Confirm translation appears in attendee Event Room view
+- [ ] Add translation language selector to Attendee Event Room
+- [ ] Confirm translation toggle in Moderator console works
+
+### AI Tools Full Audit
+- [ ] Audit all 7 AI features: Sentiment Scoring, Rolling Summary, Q&A Auto-Triage, Event Brief Generator, Enhanced Summary, Press Release Draft, Speaking-Pace Coach
+- [ ] Confirm each feature has: backend procedure, frontend UI, real data flow
+- [ ] Document any incomplete features and fix them
+
+### AI Tools Audit Results (Round 61)
+- [x] Rolling Summary — COMPLETE (RollingSummaryPanel.tsx → trpc.ai.generateRollingSummary)
+- [x] Q&A Auto-Triage — COMPLETE (Moderator.tsx → trpc.ai.triageQuestion)
+- [x] Event Brief Generator — COMPLETE (EventBriefPanel.tsx → trpc.ai.generateEventBrief)
+- [x] Enhanced Summary — COMPLETE (WebcastReport.tsx → trpc.ai.generateEnhancedSummary)
+- [x] Press Release Draft — COMPLETE (WebcastReport.tsx → trpc.ai.generatePressRelease)
+- [x] Sentiment Scoring — COMPLETE (EventRoom.tsx live via Ably)
+- [ ] Auto-Translation — INCOMPLETE: EventRoom uses static lookup table, not real AI. AttendeeEventRoom shows raw English text regardless of language selection. Fix: wire trpc.ai.translateSegment to both pages.
+- [ ] Speaking-Pace Coach — INCOMPLETE: Only WPM counter in Presenter.tsx (client-side calc). No AI analysis, no PostEvent report. Fix: add analyzeSpeakingPace() to aiAnalysis.ts + aiRouter + PostEvent AI Summary tab.
+
+### Translation Fix
+- [ ] Replace static TRANSLATIONS lookup in EventRoom.tsx with real trpc.ai.translateSegment calls (cache translated segments in state to avoid re-translating)
+- [ ] Wire language selector in AttendeeEventRoom.tsx to translate displayed transcript segments via trpc.ai.translateSegment
+- [ ] Add translation loading indicator (spinner on each segment while translating)
+- [ ] Cache translated segments per language to avoid redundant API calls
+
+### Speaking-Pace Coach (Post-Event)
+- [ ] Add analyzeSpeakingPace() function to server/aiAnalysis.ts
+- [ ] Add speakingPaceAnalysis procedure to aiRouter.ts
+- [ ] Add Speaking-Pace Coach section to PostEvent AI Summary tab

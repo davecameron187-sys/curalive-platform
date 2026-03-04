@@ -71,7 +71,7 @@ function aiPriorityScore(q: QAItem): number {
   return voteScore + recencyScore + catWeight[cat];
 }
 
-// ─── Simulated translated transcript lines ────────────────────────────────────
+// ─── Static demo translations (fallback while AI translation loads) ────────────
 
 const TRANSLATIONS: Record<string, Record<string, string>> = {
   "seg-0": {
@@ -102,9 +102,9 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
   },
 };
 
-function translateSegment(seg: { id: string; text: string }, langCode: string): string {
+function getStaticTranslation(seg: { id: string; text: string }, langCode: string): string {
   if (langCode === "en") return seg.text;
-  return TRANSLATIONS[seg.id]?.[langCode] ?? `[${langCode.toUpperCase()}] ${seg.text}`;
+  return TRANSLATIONS[seg.id]?.[langCode] ?? seg.text;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -283,6 +283,55 @@ function EventRoomInner({ eventId }: { eventId: string }) {
     }, 800);
     return () => clearTimeout(timer);
   }, [transcript, summaryLoading, rollingSummary]);
+
+  // ── AI Translation cache: segId → langCode → translated text ────────────────────────
+  const [translationCache, setTranslationCache] = useState<Record<string, Record<string, string>>>({});
+  const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
+  const translateMutation = trpc.ai.translateSegment.useMutation({
+    onSuccess: (data, variables) => {
+      const { text, targetLanguage } = variables;
+      // Find the segment id by matching text
+      const seg = transcript.find((s) => s.text === text);
+      if (!seg) return;
+      const segId = seg.id;
+      if (!targetLanguage) return;
+      const lang = targetLanguage as string;
+      setTranslationCache((prev) => {
+        const updated = { ...prev };
+        const existing = prev[segId] ?? {};
+        const newEntry: Record<string, string> = {};
+        Object.assign(newEntry, existing);
+        newEntry[lang] = data.translated;
+        updated[segId] = newEntry;
+        return updated;
+      });
+      setTranslatingIds((prev) => { const next = new Set(prev); next.delete(`${seg.id}:${lang}`); return next; });
+    },
+  });
+
+  // Translate new transcript segments when language changes or new segments arrive
+  useEffect(() => {
+    if (language === "en") return;
+    const untranslated = transcript.filter((seg) => {
+      const key = `${seg.id}:${language}`;
+      return !translationCache[seg.id]?.[language] && !translatingIds.has(key);
+    });
+    if (untranslated.length === 0) return;
+    // Translate up to 3 segments at a time to avoid flooding
+    untranslated.slice(0, 3).forEach((seg) => {
+      const key = `${seg.id}:${language}`;
+      setTranslatingIds((prev) => { const next = new Set(Array.from(prev)); next.add(key); return next; });
+      translateMutation.mutate({ text: seg.text, targetLanguage: language });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transcript, language]);
+
+  const getTranslatedText = (seg: { id: string; text: string }, langCode: string): string => {
+    if (langCode === "en") return seg.text;
+    // AI cache first, then static demo fallback
+    if (translationCache[seg.id]?.[langCode]) return translationCache[seg.id][langCode];
+    return getStaticTranslation(seg, langCode);
+  };
 
   // ── Feature 2: Sentiment history for sparkline ──────────────────────────────
   const [sentimentHistory, setSentimentHistory] = useState<number[]>([72]);
@@ -529,7 +578,10 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                   <span className="text-primary/80 text-[10px] font-bold uppercase tracking-widest block mb-0.5">
                     {latestSegment.speaker}
                   </span>
-                  {translateSegment(latestSegment, language)}
+                  {getTranslatedText(latestSegment, language)}
+                  {translatingIds.has(`${latestSegment.id}:${language}`) && (
+                    <span className="ml-1 text-[9px] text-primary/60 animate-pulse">translating…</span>
+                  )}
                 </div>
               </div>
             )}
@@ -745,7 +797,10 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                         {isRTL ? `${seg.timeLabel} · ${seg.speaker}` : `${seg.speaker} · ${seg.timeLabel}`}
                       </div>
                       <p className="text-sm leading-relaxed" style={{ fontFamily: isRTL ? "'Noto Sans Arabic', 'Inter', sans-serif" : "'Inter', sans-serif", opacity: i === transcript.length - 1 ? 1 : 0.75 }}>
-                        {translateSegment(seg, language)}
+                        {getTranslatedText(seg, language)}
+                        {translatingIds.has(`${seg.id}:${language}`) && (
+                          <span className="ml-1 text-[9px] text-primary/60 animate-pulse">…</span>
+                        )}
                       </p>
                     </div>
                   ))}

@@ -20,6 +20,7 @@ import {
   generatePressRelease,
   generateEnhancedSummary,
   translateText,
+  analyzeSpeakingPace,
 } from "../aiAnalysis";
 import { getDb } from "../db";
 import { recallBots } from "../../drizzle/schema";
@@ -172,7 +173,24 @@ export const aiRouter = router({
       return generateEnhancedSummary(segments, input.eventTitle, input.qaItems);
     }),
 
-  // ─── Translation ──────────────────────────────────────────────────────────────
+  // ─── Speaking-Pace Coach ────────────────────────────────────────────
+  analyzeSpeakingPace: operatorProcedure
+    .input(
+      z.object({
+        transcript: z.array(
+          z.object({
+            speaker: z.string(),
+            text: z.string(),
+            timeLabel: z.string().optional(),
+          })
+        ).min(1),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return analyzeSpeakingPace(input.transcript);
+    }),
+
+   // ─── Translation ────────────────────────────────────────────
   translateSegment: publicProcedure
     .input(
       z.object({

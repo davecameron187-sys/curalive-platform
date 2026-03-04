@@ -65,7 +65,15 @@ type AISummary = {
 export default function PostEvent() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<"summary" | "transcript" | "analytics" | "operator" | "webphone">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "transcript" | "analytics" | "operator" | "webphone" | "pace">("summary");
+
+  // Speaking-Pace Coach state
+  const [paceReport, setPaceReport] = useState<null | { speakers: Array<{ speaker: string; wordCount: number; durationSeconds: number; wpm: number; paceLabel: string; pauseScore: number; fillerWordCount: number; fillerWords: string[]; coachingTips: string[]; overallScore: number }>; overallEventPace: string; summary: string }>(null);
+  const [paceGenerated, setPaceGenerated] = useState(false);
+  const analyzePaceMutation = trpc.ai.analyzeSpeakingPace.useMutation({
+    onSuccess: (data) => { setPaceReport(data as typeof paceReport); setPaceGenerated(true); toast.success("Speaking-Pace Coach analysis complete!"); },
+    onError: () => toast.error("Failed to run pace analysis. Please try again."),
+  });
 
   // Webphone session data for this event
   const eventId = params.id ? parseInt(params.id, 10) : undefined;
@@ -301,6 +309,7 @@ export default function PostEvent() {
             { key: "analytics", label: "Analytics", icon: BarChart3 },
             ...(occData ? [{ key: "operator", label: "Operator Report", icon: Users }] : []),
             { key: "webphone", label: "Webphone Activity", icon: PhoneCall },
+            { key: "pace", label: "Speaking-Pace Coach", icon: TrendingUp },
   ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -872,6 +881,109 @@ export default function PostEvent() {
                 <pre className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{occData.notes}</pre>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Speaking-Pace Coach ── */}
+        {activeTab === "pace" && (
+          <div className="space-y-6">
+            {!paceGenerated ? (
+              <div className="bg-card border border-primary/20 rounded-2xl p-8 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <TrendingUp className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">Speaking-Pace Coach</h3>
+                <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Chorus.AI analyses each speaker’s words-per-minute, filler word usage, and pause patterns — then provides personalised coaching tips for investor communications.
+                </p>
+                <button
+                  onClick={() => analyzePaceMutation.mutate({ transcript: TRANSCRIPT.map(t => ({ speaker: t.speaker, text: t.text, timeLabel: t.time })) })}
+                  disabled={analyzePaceMutation.isPending}
+                  className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 mx-auto"
+                >
+                  {analyzePaceMutation.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Analysing…</> : <><TrendingUp className="w-4 h-4" /> Run Pace Analysis</>}
+                </button>
+              </div>
+            ) : paceReport ? (
+              <>
+                {/* Summary banner */}
+                <div className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">{paceReport.overallEventPace}</div>
+                    <p className="text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>{paceReport.summary}</p>
+                  </div>
+                  <button
+                    onClick={() => { setPaceGenerated(false); setPaceReport(null); }}
+                    className="ml-auto flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors shrink-0"
+                  >
+                    <RefreshCw className="w-3 h-3" /> Re-run
+                  </button>
+                </div>
+
+                {/* Per-speaker cards */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  {paceReport.speakers.map((sp) => {
+                    const paceColor = sp.paceLabel === "Optimal" ? "text-emerald-400" : sp.paceLabel === "Too Fast" ? "text-amber-400" : "text-blue-400";
+                    const paceBg = sp.paceLabel === "Optimal" ? "bg-emerald-500/10 border-emerald-500/20" : sp.paceLabel === "Too Fast" ? "bg-amber-500/10 border-amber-500/20" : "bg-blue-500/10 border-blue-500/20";
+                    const scoreColor = sp.overallScore >= 75 ? "text-emerald-400" : sp.overallScore >= 50 ? "text-amber-400" : "text-red-400";
+                    return (
+                      <div key={sp.speaker} className="bg-card border border-border rounded-2xl p-5 space-y-4">
+                        {/* Speaker header */}
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold text-sm">{sp.speaker}</div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${paceBg} ${paceColor}`}>{sp.paceLabel}</span>
+                            <span className={`text-lg font-bold ${scoreColor}`}>{sp.overallScore}<span className="text-xs text-muted-foreground">/100</span></span>
+                          </div>
+                        </div>
+
+                        {/* Metrics grid */}
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { label: "WPM", value: sp.wpm, color: paceColor },
+                            { label: "Pause Score", value: `${sp.pauseScore}/100`, color: "text-foreground" },
+                            { label: "Filler Words", value: sp.fillerWordCount, color: sp.fillerWordCount > 3 ? "text-amber-400" : "text-emerald-400" },
+                          ].map(({ label, value, color }) => (
+                            <div key={label} className="bg-background/60 border border-border rounded-lg p-2.5 text-center">
+                              <div className={`text-lg font-bold ${color}`}>{value}</div>
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Filler words detected */}
+                        {sp.fillerWords.length > 0 && (
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1.5">Detected filler words:</div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {sp.fillerWords.map((fw) => (
+                                <span key={fw} className="text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">{fw}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Coaching tips */}
+                        <div>
+                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Coaching Tips</div>
+                          <ul className="space-y-1.5">
+                            {sp.coachingTips.map((tip, i) => (
+                              <li key={i} className="flex items-start gap-2 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                <span className="w-4 h-4 rounded-full bg-primary/20 text-primary text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                                <span className="text-muted-foreground leading-relaxed">{tip}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
           </div>
         )}
 

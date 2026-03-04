@@ -504,3 +504,150 @@ export async function translateText(
     return text; // fallback to original on error
   }
 }
+
+// ─── 8. Speaking-Pace Coach ───────────────────────────────────────────────────
+
+export interface SpeakerPaceAnalysis {
+  speaker: string;
+  wordCount: number;
+  durationSeconds: number;
+  wpm: number;                          // words per minute
+  paceLabel: "Too Fast" | "Optimal" | "Too Slow";
+  pauseScore: number;                   // 0–100 (higher = better pause usage)
+  fillerWordCount: number;
+  fillerWords: string[];                // detected filler words
+  coachingTips: string[];               // 2–4 actionable tips
+  overallScore: number;                 // 0–100
+}
+
+export interface PaceCoachReport {
+  speakers: SpeakerPaceAnalysis[];
+  overallEventPace: "Fast-Paced" | "Well-Paced" | "Slow-Paced";
+  summary: string;
+}
+
+/**
+ * Analyses speaking pace and delivery quality per speaker.
+ * Uses word-count heuristics + LLM coaching tips.
+ */
+export async function analyzeSpeakingPace(
+  transcript: Array<{ speaker: string; text: string; timeLabel?: string }>
+): Promise<PaceCoachReport> {
+  // Group segments by speaker
+  const bySpeaker: Record<string, string[]> = {};
+  for (const seg of transcript) {
+    if (!bySpeaker[seg.speaker]) bySpeaker[seg.speaker] = [];
+    bySpeaker[seg.speaker].push(seg.text);
+  }
+
+  // Estimate duration: assume ~30 s per segment on average
+  const segCountBySpeaker: Record<string, number> = {};
+  for (const seg of transcript) {
+    segCountBySpeaker[seg.speaker] = (segCountBySpeaker[seg.speaker] ?? 0) + 1;
+  }
+
+  const FILLER_WORDS = ["um", "uh", "like", "you know", "basically", "literally", "actually", "right", "so", "well"];
+
+  const speakerAnalyses: SpeakerPaceAnalysis[] = [];
+
+  for (const [speaker, texts] of Object.entries(bySpeaker)) {
+    const fullText = texts.join(" ");
+    const words = fullText.split(/\s+/).filter(Boolean);
+    const wordCount = words.length;
+    const durationSeconds = (segCountBySpeaker[speaker] ?? 1) * 30;
+    const wpm = Math.round((wordCount / durationSeconds) * 60);
+
+    const paceLabel: SpeakerPaceAnalysis["paceLabel"] =
+      wpm > 180 ? "Too Fast" : wpm < 110 ? "Too Slow" : "Optimal";
+
+    // Filler word detection
+    const lowerText = fullText.toLowerCase();
+    const detectedFillers = FILLER_WORDS.filter((fw) => lowerText.includes(fw));
+    const fillerWordCount = detectedFillers.reduce((count, fw) => {
+      const re = new RegExp(`\\b${fw}\\b`, "gi");
+      return count + (fullText.match(re)?.length ?? 0);
+    }, 0);
+
+    // Pause score heuristic: punctuation density
+    const punctCount = (fullText.match(/[,;:.!?]/g) ?? []).length;
+    const pauseScore = Math.min(100, Math.round((punctCount / Math.max(wordCount, 1)) * 500));
+
+    // LLM coaching tips
+    let coachingTips: string[] = [];
+    let overallScore = 75;
+    try {
+      const response = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a professional speaking coach for investor relations and corporate communications. " +
+              "Provide concise, actionable coaching tips. Return JSON only.",
+          },
+          {
+            role: "user",
+            content: `Speaker: ${speaker}\nWords per minute: ${wpm} (${paceLabel})\nFiller words detected: ${detectedFillers.join(", ") || "none"}\nFiller count: ${fillerWordCount}\nPause score: ${pauseScore}/100\n\nSample text:\n"${fullText.slice(0, 600)}"\n\nProvide 3 actionable coaching tips and an overall delivery score.`,
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "pace_coach",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                coachingTips: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "3 concise actionable coaching tips",
+                },
+                overallScore: {
+                  type: "integer",
+                  description: "Overall delivery score 0–100",
+                },
+              },
+              required: ["coachingTips", "overallScore"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      const raw = response.choices?.[0]?.message?.content;
+      if (raw) {
+        const parsed = JSON.parse(extractContent(raw));
+        coachingTips = parsed.coachingTips ?? [];
+        overallScore = parsed.overallScore ?? 75;
+      }
+    } catch {
+      // fallback tips
+      coachingTips = [
+        paceLabel === "Too Fast" ? "Slow down slightly — aim for 140–160 WPM for investor calls." : paceLabel === "Too Slow" ? "Pick up the pace to maintain audience engagement." : "Your pace is well-calibrated for investor calls.",
+        fillerWordCount > 3 ? `Reduce filler words (detected: ${detectedFillers.slice(0, 3).join(", ")}).` : "Good control of filler words.",
+        pauseScore < 40 ? "Use more deliberate pauses after key financial figures." : "Good use of pauses to emphasise key points.",
+      ];
+    }
+
+    speakerAnalyses.push({
+      speaker,
+      wordCount,
+      durationSeconds,
+      wpm,
+      paceLabel,
+      pauseScore,
+      fillerWordCount,
+      fillerWords: detectedFillers,
+      coachingTips,
+      overallScore,
+    });
+  }
+
+  // Overall event pace
+  const avgWpm = speakerAnalyses.reduce((s, a) => s + a.wpm, 0) / Math.max(speakerAnalyses.length, 1);
+  const overallEventPace: PaceCoachReport["overallEventPace"] =
+    avgWpm > 175 ? "Fast-Paced" : avgWpm < 115 ? "Slow-Paced" : "Well-Paced";
+
+  const summary = `The event averaged ${Math.round(avgWpm)} WPM across ${speakerAnalyses.length} speaker${speakerAnalyses.length !== 1 ? "s" : ""}. Overall delivery was ${overallEventPace.toLowerCase()}.`;
+
+  return { speakers: speakerAnalyses, overallEventPace, summary };
+}

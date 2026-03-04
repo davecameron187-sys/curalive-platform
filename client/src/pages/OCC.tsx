@@ -1135,6 +1135,28 @@ export default function OCC() {
       {/* ── Main workspace ────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col gap-2 p-2 overflow-auto">
 
+        {/* ── Live Call Counter Dashboard ─────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-2 shrink-0">
+          {[
+            { label: "Live Calls", value: runningConfs.length, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Activity },
+            { label: "Pending", value: pendingConfs.length, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", icon: Clock },
+            { label: "Completed", value: completedConfs.length, color: "text-slate-300", bg: "bg-slate-700/30 border-slate-700", icon: CheckCircle2 },
+            { label: "Lounge", value: loungeEntries.length, color: loungeEntries.length > 0 ? "text-amber-400" : "text-slate-400", bg: loungeEntries.length > 0 ? "bg-amber-500/10 border-amber-500/20" : "bg-slate-700/30 border-slate-700", icon: Users },
+            { label: "Op Requests", value: opRequests.length, color: opRequests.length > 0 ? "text-red-400" : "text-slate-400", bg: opRequests.length > 0 ? "bg-red-500/10 border-red-500/20" : "bg-slate-700/30 border-slate-700", icon: Bell },
+            { label: "Participants", value: participants.length, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20", icon: Headphones },
+            { label: "Active CCP", value: activeCCPConferenceId ? 1 : 0, color: activeCCPConferenceId ? "text-emerald-400" : "text-slate-500", bg: activeCCPConferenceId ? "bg-emerald-500/10 border-emerald-500/20" : "bg-slate-700/30 border-slate-700", icon: Radio },
+            { label: "Bridge Status", value: "OK", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Wifi },
+          ].map(({ label, value, color, bg, icon: Icon }) => (
+            <div key={label} className={`flex items-center gap-2.5 border rounded-lg px-3 py-2 ${bg}`}>
+              <Icon className={`w-4 h-4 shrink-0 ${color}`} />
+              <div className="min-w-0">
+                <div className={`text-sm font-bold leading-none ${color}`}>{value}</div>
+                <div className="text-[10px] text-slate-500 mt-0.5 truncate">{label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* ── Operator Requests Panel ─────────────────────────────────────────── */}
         {showOpRequests && (
           <div className="bg-[#111827] border border-slate-700 rounded-lg overflow-hidden">

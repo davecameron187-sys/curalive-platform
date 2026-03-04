@@ -146,6 +146,51 @@ function AttendeeRoomInner({
     }
   }, [transcript, autoScroll]);
 
+  // ── AI Translation cache: segId → langCode → translated text ───────────────
+  const [translationCache, setTranslationCache] = useState<Record<string, Record<string, string>>>({});
+  const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
+  const translateMutation = trpc.ai.translateSegment.useMutation({
+    onSuccess: (data, variables) => {
+      const { text, targetLanguage } = variables;
+      if (!targetLanguage) return;
+      const lang = targetLanguage as string;
+      const seg = transcript.find((s) => s.text === text);
+      if (!seg) return;
+      const segId = seg.id;
+      setTranslationCache((prev) => {
+        const updated = { ...prev };
+        const existing = prev[segId] ?? {};
+        const newEntry: Record<string, string> = {};
+        Object.assign(newEntry, existing);
+        newEntry[lang] = data.translated;
+        updated[segId] = newEntry;
+        return updated;
+      });
+      setTranslatingIds((prev) => { const next = new Set(prev); next.delete(`${segId}:${lang}`); return next; });
+    },
+  });
+
+  // Trigger AI translation when language changes or new segments arrive
+  useEffect(() => {
+    if (language === "en") return;
+    const untranslated = transcript.filter((seg) => {
+      const key = `${seg.id}:${language}`;
+      return !translationCache[seg.id]?.[language] && !translatingIds.has(key);
+    });
+    if (untranslated.length === 0) return;
+    untranslated.slice(0, 3).forEach((seg) => {
+      const key = `${seg.id}:${language}`;
+      setTranslatingIds((prev) => { const next = new Set(Array.from(prev)); next.add(key); return next; });
+      translateMutation.mutate({ text: seg.text, targetLanguage: language });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transcript, language]);
+
+  const getTranslatedText = (seg: { id: string; text: string }, langCode: string): string => {
+    if (langCode === "en") return seg.text;
+    return translationCache[seg.id]?.[langCode] ?? seg.text;
+  };
+
   const handleSubmitQuestion = useCallback(() => {
     if (!newQuestion.trim()) return;
     publish({
@@ -391,7 +436,10 @@ function AttendeeRoomInner({
                     <div>
                       <span className="text-xs font-semibold text-primary mr-2">{seg.speaker}</span>
                       <span className="text-muted-foreground leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        {seg.text}
+                        {getTranslatedText(seg, language)}
+                        {translatingIds.has(`${seg.id}:${language}`) && (
+                          <span className="ml-1 text-[9px] text-primary/60 animate-pulse">…</span>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -444,7 +492,10 @@ function AttendeeRoomInner({
                         <span className="text-xs font-semibold text-primary">{seg.speaker}</span>
                       </div>
                       <p className="text-muted-foreground text-xs leading-relaxed pl-8" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        {seg.text}
+                        {getTranslatedText(seg, language)}
+                        {translatingIds.has(`${seg.id}:${language}`) && (
+                          <span className="ml-1 text-[9px] text-primary/60 animate-pulse">…</span>
+                        )}
                       </p>
                     </div>
                   ))
