@@ -114,6 +114,10 @@ export default function Webphone({
   const twilioCallRef = useRef<unknown>(null);
 
   // tRPC
+  const { data: accountStatus } = trpc.webphone.getAccountStatus.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // cache for 5 minutes — account type rarely changes
+    retry: false,
+  });
   const { data: carrierStatus, refetch: refetchCarrierStatus } = trpc.webphone.getCarrierStatus.useQuery(undefined, {
     refetchInterval: 30_000, // poll every 30s
   });
@@ -414,8 +418,8 @@ export default function Webphone({
 
       {!minimised && (
         <>
-          {/* ── Twilio Trial warning banner ── */}
-          {twilioHealth?.status !== "down" && (
+          {/* ── Twilio Trial warning banner — only shown when account is actually on Trial ── */}
+          {accountStatus?.isTrial && twilioHealth?.status !== "down" && (
             <div className="flex items-start gap-2 px-3 py-2 bg-amber-500/10 border-b border-amber-500/20">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
               <div className="text-[10px] text-amber-300 leading-relaxed">

@@ -15,6 +15,7 @@ import { router, protectedProcedure, operatorProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { webphoneSessions } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
+import twilio from "twilio";
 import { generateTwilioToken } from "../webphone/twilio";
 import { getTelnyxCredentials } from "../webphone/telnyx";
 import {
@@ -212,4 +213,32 @@ export const webphoneRouter = router({
         },
       };
     }),
+
+  /**
+   * getAccountStatus — fetches the real Twilio account type to determine if trial banner should show.
+   * Returns { isTrial: boolean, accountType: string, friendlyName: string }
+   */
+  getAccountStatus: operatorProcedure.query(async () => {
+    try {
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const apiKey = process.env.TWILIO_API_KEY;
+      const apiSecret = process.env.TWILIO_API_SECRET;
+      if (!accountSid || !apiKey || !apiSecret) {
+        return { isTrial: false, accountType: "unknown", friendlyName: "" };
+      }
+      const client = twilio(apiKey, apiSecret, { accountSid });
+      const account = await client.api.accounts(accountSid).fetch();
+      // Twilio trial accounts have type "Trial"
+      const isTrial = account.type === "Trial";
+      return {
+        isTrial,
+        accountType: account.type ?? "Full",
+        friendlyName: account.friendlyName ?? "",
+      };
+    } catch (err: any) {
+      console.error("[Webphone] getAccountStatus error:", err.message);
+      // On error, assume not trial to avoid false warnings
+      return { isTrial: false, accountType: "unknown", friendlyName: "" };
+    }
+  }),
 });
