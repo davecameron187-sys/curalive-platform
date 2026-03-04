@@ -816,3 +816,22 @@ export const webphoneCarrierStatus = mysqlTable("webphone_carrier_status", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 export type WebphoneCarrierStatus = typeof webphoneCarrierStatus.$inferSelect;
+
+/**
+ * Speaker pace analysis results — stores per-speaker WPM and coaching scores
+ * for each event, enabling trend charts across multiple events.
+ */
+export const speakerPaceResults = mysqlTable("speaker_pace_results", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  eventTitle: varchar("event_title", { length: 255 }).notNull(),
+  speaker: varchar("speaker", { length: 255 }).notNull(),
+  wpm: int("wpm").notNull(),
+  paceLabel: varchar("pace_label", { length: 32 }).notNull(),
+  pauseScore: int("pause_score").notNull(),
+  fillerWordCount: int("filler_word_count").notNull().default(0),
+  overallScore: int("overall_score").notNull(),
+  analysedAt: bigint("analysed_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type SpeakerPaceResult = typeof speakerPaceResults.$inferSelect;
+export type InsertSpeakerPaceResult = typeof speakerPaceResults.$inferInsert;

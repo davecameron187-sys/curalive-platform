@@ -22,7 +22,7 @@ import {
   translateText,
   analyzeSpeakingPace,
 } from "../aiAnalysis";
-import { getDb } from "../db";
+import { getDb, savePaceResults, getPaceHistory, getEventPaceResults } from "../db";
 import { recallBots } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
@@ -189,10 +189,58 @@ export const aiRouter = router({
     .mutation(async ({ input }) => {
       return analyzeSpeakingPace(input.transcript);
     }),
-
-   // ─── Translation ────────────────────────────────────────────
-  translateSegment: publicProcedure
+  // ─── Pace History (persist & retrieve) ────────────────────────────────
+  savePaceResults: operatorProcedure
     .input(
+      z.object({
+        eventId: z.string(),
+        eventTitle: z.string(),
+        speakers: z.array(
+          z.object({
+            speaker: z.string(),
+            wpm: z.number(),
+            paceLabel: z.string(),
+            pauseScore: z.number(),
+            fillerWordCount: z.number(),
+            overallScore: z.number(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const rows = input.speakers.map((sp) => ({
+        eventId: input.eventId,
+        eventTitle: input.eventTitle,
+        speaker: sp.speaker,
+        wpm: sp.wpm,
+        paceLabel: sp.paceLabel,
+        pauseScore: sp.pauseScore,
+        fillerWordCount: sp.fillerWordCount,
+        overallScore: sp.overallScore,
+      }));
+      await savePaceResults(rows);
+      return { saved: rows.length };
+    }),
+
+  getPaceHistory: operatorProcedure
+    .input(
+      z.object({
+        speaker: z.string(),
+        limit: z.number().min(1).max(50).default(10),
+      })
+    )
+    .query(async ({ input }) => {
+      return getPaceHistory(input.speaker, input.limit);
+    }),
+
+  getEventPaceResults: operatorProcedure
+    .input(z.object({ eventId: z.string() }))
+    .query(async ({ input }) => {
+      return getEventPaceResults(input.eventId);
+    }),
+
+  // ─── Translation ─────────────────────────────────────────────────
+  translateSegment: publicProcedure .input(
       z.object({
         text: z.string().min(1).max(2000),
         targetLanguage: z.string().default("en"),

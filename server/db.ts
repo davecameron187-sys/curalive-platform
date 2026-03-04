@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { eq, desc } from "drizzle-orm";
+import { InsertUser, users, speakerPaceResults, InsertSpeakerPaceResult } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -129,6 +129,37 @@ export async function updateUserProfile(
   );
   if (Object.keys(updateSet).length === 0) return;
   await db.update(users).set(updateSet).where(eq(users.id, userId));
+}
+
+// ─── Speaking-Pace Coach helpers ─────────────────────────────────────────────
+
+/** Persist a batch of per-speaker pace results for one event. */
+export async function savePaceResults(rows: InsertSpeakerPaceResult[]) {
+  const db = await getDb();
+  if (!db || rows.length === 0) return;
+  await db.insert(speakerPaceResults).values(rows);
+}
+
+/** Fetch the last N pace results for a given speaker across all events. */
+export async function getPaceHistory(speaker: string, limit = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(speakerPaceResults)
+    .where(eq(speakerPaceResults.speaker, speaker))
+    .orderBy(desc(speakerPaceResults.analysedAt))
+    .limit(limit);
+}
+
+/** Fetch all pace results for a specific event. */
+export async function getEventPaceResults(eventId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(speakerPaceResults)
+    .where(eq(speakerPaceResults.eventId, eventId));
 }
 
 // TODO: add feature queries here as your schema grows.

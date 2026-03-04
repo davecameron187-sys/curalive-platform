@@ -318,13 +318,58 @@ export default function OCC() {
   const [callerCompany, setCallerCompany] = useState("");
   const [callerRole, setCallerRole] = useState<"moderator" | "participant">("participant");
 
-  // Ably real-time for Lounge and Operator Requests
+  // Ably real-time for Lounge, Operator Requests, and OCC Overview counter
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ablyClientRef = useRef<any>(null);
   const ablyLoungeChanRef = useRef<any>(null);
   const ablyRequestsChanRef = useRef<any>(null);
   const ablyConferenceChanRef = useRef<any>(null);
+  const ablyOverviewChanRef = useRef<any>(null);
   const [otherOperators, setOtherOperators] = useState<{ clientId: string; name: string; conferenceId: number }[]>([]);
+  const [bridgeStatus, setBridgeStatus] = useState<"OK" | "DEGRADED" | "DOWN">("OK");
+  const [totalActiveCalls, setTotalActiveCalls] = useState<number | null>(null);
+
+  // Subscribe to occ:overview channel for live counter auto-refresh
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const Ably = await import("ably");
+        if (!ablyClientRef.current) {
+          ablyClientRef.current = new (Ably.default as any).Realtime({ key: undefined, authUrl: "/api/trpc/ably.tokenRequest" });
+        }
+        const client = ablyClientRef.current;
+        const overviewChan = client.channels.get("occ:overview");
+        ablyOverviewChanRef.current = overviewChan;
+        overviewChan.subscribe((msg: any) => {
+          if (cancelled) return;
+          try {
+            const payload = JSON.parse(msg.data);
+            if (msg.name === "overview.update") {
+              // Bridge pushes { runningCount, pendingCount, bridgeStatus } on any state change
+              if (typeof payload.runningCount === "number") setTotalActiveCalls(payload.runningCount);
+              if (payload.bridgeStatus) setBridgeStatus(payload.bridgeStatus);
+              // Trigger a background refetch of conferences so the list stays in sync
+              conferencesQuery.refetch().catch(() => {});
+            } else if (msg.name === "conference.status") {
+              // Individual conference status change pushed by bridge
+              setLocalConferences(prev => prev.map(c =>
+                c.id === payload.conferenceId ? { ...c, status: payload.status } : c
+              ));
+              conferencesQuery.refetch().catch(() => {});
+            }
+          } catch {}
+        });
+      } catch {
+        // Ably not configured — counters stay reactive to local state
+      }
+    })();
+    return () => {
+      cancelled = true;
+      ablyOverviewChanRef.current?.unsubscribe();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!activeCCPConferenceId) return;
@@ -1138,14 +1183,14 @@ export default function OCC() {
         {/* ── Live Call Counter Dashboard ─────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-2 shrink-0">
           {[
-            { label: "Live Calls", value: runningConfs.length, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Activity },
+            { label: "Live Calls", value: totalActiveCalls !== null ? totalActiveCalls : runningConfs.length, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Activity },
             { label: "Pending", value: pendingConfs.length, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", icon: Clock },
             { label: "Completed", value: completedConfs.length, color: "text-slate-300", bg: "bg-slate-700/30 border-slate-700", icon: CheckCircle2 },
             { label: "Lounge", value: loungeEntries.length, color: loungeEntries.length > 0 ? "text-amber-400" : "text-slate-400", bg: loungeEntries.length > 0 ? "bg-amber-500/10 border-amber-500/20" : "bg-slate-700/30 border-slate-700", icon: Users },
             { label: "Op Requests", value: opRequests.length, color: opRequests.length > 0 ? "text-red-400" : "text-slate-400", bg: opRequests.length > 0 ? "bg-red-500/10 border-red-500/20" : "bg-slate-700/30 border-slate-700", icon: Bell },
             { label: "Participants", value: participants.length, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20", icon: Headphones },
             { label: "Active CCP", value: activeCCPConferenceId ? 1 : 0, color: activeCCPConferenceId ? "text-emerald-400" : "text-slate-500", bg: activeCCPConferenceId ? "bg-emerald-500/10 border-emerald-500/20" : "bg-slate-700/30 border-slate-700", icon: Radio },
-            { label: "Bridge Status", value: "OK", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Wifi },
+            { label: "Bridge", value: bridgeStatus, color: bridgeStatus === "OK" ? "text-emerald-400" : bridgeStatus === "DEGRADED" ? "text-amber-400" : "text-red-400", bg: bridgeStatus === "OK" ? "bg-emerald-500/10 border-emerald-500/20" : bridgeStatus === "DEGRADED" ? "bg-amber-500/10 border-amber-500/20" : "bg-red-500/10 border-red-500/20", icon: bridgeStatus === "OK" ? Wifi : WifiOff },
           ].map(({ label, value, color, bg, icon: Icon }) => (
             <div key={label} className={`flex items-center gap-2.5 border rounded-lg px-3 py-2 ${bg}`}>
               <Icon className={`w-4 h-4 shrink-0 ${color}`} />

@@ -10,6 +10,67 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useEffect as _useEffect, useRef } from "react";
+import { Chart, registerables } from "chart.js";
+Chart.register(...registerables);
+
+type PaceHistoryRow = { id: number; eventId: string; eventTitle: string; speaker: string; wpm: number; paceLabel: string; pauseScore: number; fillerWordCount: number; overallScore: number; analysedAt: number };
+
+function PaceTrendChart({ data, speaker }: { data: PaceHistoryRow[]; speaker: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  _useEffect(() => {
+    if (!canvasRef.current) return;
+    const sorted = [...data].sort((a, b) => a.analysedAt - b.analysedAt);
+    const labels = sorted.map((r) => r.eventTitle.length > 18 ? r.eventTitle.slice(0, 16) + "…" : r.eventTitle);
+    const wpmData = sorted.map((r) => r.wpm);
+    const scoreData = sorted.map((r) => r.overallScore);
+    const chart = new Chart(canvasRef.current, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "WPM",
+            data: wpmData,
+            borderColor: "hsl(var(--primary))",
+            backgroundColor: "hsla(var(--primary), 0.15)",
+            tension: 0.4,
+            fill: true,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            yAxisID: "y",
+          },
+          {
+            label: "Score /100",
+            data: scoreData,
+            borderColor: "#34d399",
+            backgroundColor: "rgba(52,211,153,0.1)",
+            tension: 0.4,
+            fill: false,
+            pointRadius: 4,
+            borderDash: [4, 4],
+            yAxisID: "y1",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: "hsl(var(--muted-foreground))", font: { size: 11 } } },
+          tooltip: { mode: "index", intersect: false },
+        },
+        scales: {
+          x: { ticks: { color: "hsl(var(--muted-foreground))", font: { size: 10 } }, grid: { color: "hsl(var(--border))" } },
+          y: { position: "left", title: { display: true, text: "WPM", color: "hsl(var(--muted-foreground))" }, ticks: { color: "hsl(var(--muted-foreground))" }, grid: { color: "hsl(var(--border))" } },
+          y1: { position: "right", min: 0, max: 100, title: { display: true, text: "Score", color: "hsl(var(--muted-foreground))" }, ticks: { color: "hsl(var(--muted-foreground))" }, grid: { drawOnChartArea: false } },
+        },
+      },
+    });
+    return () => chart.destroy();
+  }, [data, speaker]);
+  return <canvas ref={canvasRef} />;
+}
 
 const SUMMARY = `Chorus Call delivered a strong Q4 2025, with revenue of $47.2 million representing 28% year-over-year growth. CEO James Mitchell highlighted the accelerating adoption of the Chorus.AI intelligence platform, which drove a 40% improvement in engagement metrics across the enterprise client base.
 
@@ -70,8 +131,43 @@ export default function PostEvent() {
   // Speaking-Pace Coach state
   const [paceReport, setPaceReport] = useState<null | { speakers: Array<{ speaker: string; wordCount: number; durationSeconds: number; wpm: number; paceLabel: string; pauseScore: number; fillerWordCount: number; fillerWords: string[]; coachingTips: string[]; overallScore: number }>; overallEventPace: string; summary: string }>(null);
   const [paceGenerated, setPaceGenerated] = useState(false);
+  const [trendSpeaker, setTrendSpeaker] = useState<string | null>(null);
+  const eventSlug = params.id ?? "q4-earnings-2026";
+
+  const savePaceMutation = trpc.ai.savePaceResults.useMutation();
+
+  const { data: paceHistory } = trpc.ai.getPaceHistory.useQuery(
+    { speaker: trendSpeaker ?? "", limit: 10 },
+    { enabled: !!trendSpeaker }
+  );
+
+  const { data: existingEventPace } = trpc.ai.getEventPaceResults.useQuery(
+    { eventId: eventSlug },
+    { enabled: activeTab === "pace" }
+  );
+
   const analyzePaceMutation = trpc.ai.analyzeSpeakingPace.useMutation({
-    onSuccess: (data) => { setPaceReport(data as typeof paceReport); setPaceGenerated(true); toast.success("Speaking-Pace Coach analysis complete!"); },
+    onSuccess: (data) => {
+      const report = data as typeof paceReport;
+      setPaceReport(report);
+      setPaceGenerated(true);
+      toast.success("Speaking-Pace Coach analysis complete!");
+      // Auto-save results to DB for trend tracking
+      if (report?.speakers) {
+        savePaceMutation.mutate({
+          eventId: eventSlug,
+          eventTitle: "Q4 2025 Earnings Call",
+          speakers: report.speakers.map((sp) => ({
+            speaker: sp.speaker,
+            wpm: sp.wpm,
+            paceLabel: sp.paceLabel,
+            pauseScore: sp.pauseScore,
+            fillerWordCount: sp.fillerWordCount,
+            overallScore: sp.overallScore,
+          })),
+        });
+      }
+    },
     onError: () => toast.error("Failed to run pace analysis. Please try again."),
   });
 
@@ -921,6 +1017,44 @@ export default function PostEvent() {
                   >
                     <RefreshCw className="w-3 h-3" /> Re-run
                   </button>
+                </div>
+
+                {/* Trend Chart — WPM over past events */}
+                <div className="bg-card border border-border rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <div className="font-semibold text-sm">WPM Trend — Across Events</div>
+                      <div className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>Select a speaker to view their pace history</div>
+                    </div>
+                    <div className="flex gap-2">
+                      {paceReport.speakers.map((sp) => (
+                        <button
+                          key={sp.speaker}
+                          onClick={() => setTrendSpeaker(trendSpeaker === sp.speaker ? null : sp.speaker)}
+                          className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+                            trendSpeaker === sp.speaker
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
+                          }`}
+                        >
+                          {sp.speaker.split(" ")[0]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {trendSpeaker && paceHistory && paceHistory.length > 0 ? (
+                    <div style={{ height: 200 }}>
+                      <PaceTrendChart data={paceHistory} speaker={trendSpeaker} />
+                    </div>
+                  ) : trendSpeaker && paceHistory && paceHistory.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                      No historical data yet for {trendSpeaker}. Run analysis on more events to build the trend.
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                      Select a speaker above to view their WPM trend across past events.
+                    </div>
+                  )}
                 </div>
 
                 {/* Per-speaker cards */}
