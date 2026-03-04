@@ -4,8 +4,10 @@
  * and can authenticate against their respective APIs.
  */
 import { describe, it, expect } from "vitest";
+import twilio from "twilio";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_API_KEY = process.env.TWILIO_API_KEY;
 const TWILIO_API_SECRET = process.env.TWILIO_API_SECRET;
 const TWILIO_TWIML_APP_SID = process.env.TWILIO_TWIML_APP_SID;
@@ -17,10 +19,14 @@ describe("Webphone Credentials", () => {
     it("should have all Twilio credentials set", () => {
       expect(TWILIO_ACCOUNT_SID).toBeDefined();
       expect(TWILIO_ACCOUNT_SID).toMatch(/^AC/);
+      expect(TWILIO_AUTH_TOKEN).toBeDefined();
+      expect(TWILIO_AUTH_TOKEN!.length).toBeGreaterThan(10);
       expect(TWILIO_API_KEY).toBeDefined();
       expect(TWILIO_API_KEY).toMatch(/^SK/);
       expect(TWILIO_API_SECRET).toBeDefined();
       expect(TWILIO_API_SECRET!.length).toBeGreaterThan(10);
+      // API Secret must NOT equal Auth Token — they are separate credentials
+      expect(TWILIO_API_SECRET).not.toBe(TWILIO_AUTH_TOKEN);
       expect(TWILIO_TWIML_APP_SID).toBeDefined();
       expect(TWILIO_TWIML_APP_SID).toMatch(/^AP/);
     });
@@ -35,9 +41,9 @@ describe("Webphone Credentials", () => {
 
   describe("Twilio API Connectivity", () => {
     it("should authenticate with Twilio API using Account SID and Auth Token", async () => {
-      // TWILIO_API_SECRET holds the Auth Token for direct account authentication
+      // Use TWILIO_AUTH_TOKEN (not API Secret) for REST API authentication
       const credentials = Buffer.from(
-        `${TWILIO_ACCOUNT_SID}:${TWILIO_API_SECRET}`
+        `${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`
       ).toString("base64");
 
       const response = await fetch(
@@ -57,7 +63,7 @@ describe("Webphone Credentials", () => {
 
     it("should confirm TwiML App SID exists in Twilio account", async () => {
       const credentials = Buffer.from(
-        `${TWILIO_ACCOUNT_SID}:${TWILIO_API_SECRET}`
+        `${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`
       ).toString("base64");
 
       const response = await fetch(
@@ -73,6 +79,32 @@ describe("Webphone Credentials", () => {
       const data = (await response.json()) as { sid: string; friendly_name: string };
       expect(data.sid).toBe(TWILIO_TWIML_APP_SID);
     }, 15000);
+
+    it("should generate a valid Voice Access Token signed with API Key + Secret", () => {
+      const { AccessToken } = twilio.jwt;
+      const { VoiceGrant } = AccessToken;
+
+      // Token MUST be signed with API Key + Secret (NOT Auth Token)
+      const token = new AccessToken(
+        TWILIO_ACCOUNT_SID!,
+        TWILIO_API_KEY!,
+        TWILIO_API_SECRET!,
+        { identity: "test-operator", ttl: 60 }
+      );
+      const grant = new VoiceGrant({
+        outgoingApplicationSid: TWILIO_TWIML_APP_SID,
+        incomingAllow: true,
+      });
+      token.addGrant(grant);
+      const jwt = token.toJwt();
+
+      const parts = jwt.split(".");
+      expect(parts.length).toBe(3); // valid JWT structure
+      const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
+      expect(payload.iss).toBe(TWILIO_API_KEY); // ISS must be the API Key SID
+      expect(payload.sub).toBe(TWILIO_ACCOUNT_SID); // SUB must be the Account SID
+      expect(payload.grants?.voice?.outgoing?.application_sid).toBe(TWILIO_TWIML_APP_SID);
+    });
   });
 
   describe("Telnyx API Connectivity", () => {

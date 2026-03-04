@@ -44,9 +44,18 @@ async function startServer() {
   // Must use urlencoded body (Twilio sends application/x-www-form-urlencoded).
   app.post("/api/webphone/twiml", express.urlencoded({ extended: false }), (req, res) => {
     const to = req.body?.To ?? "";
-    const callerId = req.body?.From ?? process.env.TWILIO_CALLER_ID ?? "";
+    // Always use the verified TWILIO_CALLER_ID as callerId.
+    // Twilio sends the client identity string (e.g. "operator-1") as From, NOT a phone number,
+    // so using req.body.From as callerId causes calls to fail with "Invalid From number".
+    const callerId = process.env.TWILIO_CALLER_ID ?? "";
+    console.log(`[TwiML] to=${to} callerId=${callerId} clientIdentity=${req.body?.From}`);
     if (!to) {
       res.type("text/xml").send("<Response><Say>Missing destination number.</Say></Response>");
+      return;
+    }
+    if (!callerId) {
+      console.error("[TwiML] TWILIO_CALLER_ID env var not set!");
+      res.type("text/xml").send("<Response><Say>Caller ID not configured.</Say></Response>");
       return;
     }
     const twiml = buildTwiMLVoiceResponse(to, callerId);
