@@ -420,3 +420,20 @@
 - [x] Write vitest for getToken procedure (Twilio + Telnyx paths)
 - [x] Write vitest for logSession and endSession procedures
 - [x] Write vitest for carrierManager failover logic
+
+## Round 60 — Phone Numbers, Twilio Upgrade & Webphone Usage Report
+
+### Phone Numbers
+- [ ] Purchase Telnyx phone number via API and assign to chorus-ai-webphone SIP connection
+- [ ] Guide Twilio phone number purchase (US local number for inbound PSTN)
+- [ ] Store purchased numbers in platform settings/DB for display in OCC dial-in panel
+
+### Twilio Trial Upgrade
+- [x] Add Twilio upgrade prompt/instructions to operator settings page
+- [x] Display trial account warning banner in Webphone component when on Trial account
+
+### Webphone Usage Report (Post-Event Page)
+- [x] Add "Webphone Activity" section to Post-Event page
+- [x] Show total call minutes, call count, carrier breakdown (Twilio vs Telnyx)
+- [x] Show failover events (times Telnyx was used as fallback)
+- [x] Show per-call log: time, duration, direction, carrier, number dialled

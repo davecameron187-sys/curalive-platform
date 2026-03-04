@@ -163,4 +163,53 @@ export const webphoneRouter = router({
         .orderBy(desc(webphoneSessions.startedAt))
         .limit(input.limit);
     }),
+
+  /**
+   * Return all call sessions for a specific event (by conferenceId or all if null).
+   * Used by the Post-Event Webphone Activity report.
+   */
+  getEventSessions: operatorProcedure
+    .input(z.object({
+      conferenceId: z.number().int().optional(),
+      limit: z.number().int().min(1).max(200).default(100),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      const { and, isNotNull } = await import("drizzle-orm");
+
+      const conditions = input.conferenceId != null
+        ? eq(webphoneSessions.conferenceId, input.conferenceId)
+        : isNotNull(webphoneSessions.id); // all sessions
+
+      const rows = await db
+        .select()
+        .from(webphoneSessions)
+        .where(conditions)
+        .orderBy(desc(webphoneSessions.startedAt))
+        .limit(input.limit);
+
+      // Aggregate stats
+      const totalCalls = rows.length;
+      const completedCalls = rows.filter(r => r.status === "completed").length;
+      const failedCalls = rows.filter(r => r.status === "failed" || r.status === "no_answer").length;
+      const totalMinutes = rows.reduce((sum, r) => sum + (r.durationSecs ?? 0), 0) / 60;
+      const twilioCount = rows.filter(r => r.carrier === "twilio").length;
+      const telnyxCount = rows.filter(r => r.carrier === "telnyx").length;
+      const failoverEvents = rows.filter(r => r.carrier === "telnyx" && r.direction === "outbound").length;
+
+      return {
+        sessions: rows,
+        stats: {
+          totalCalls,
+          completedCalls,
+          failedCalls,
+          totalMinutes: Math.round(totalMinutes * 10) / 10,
+          twilioCount,
+          telnyxCount,
+          failoverEvents,
+        },
+      };
+    }),
 });

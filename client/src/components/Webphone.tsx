@@ -414,6 +414,24 @@ export default function Webphone({
 
       {!minimised && (
         <>
+          {/* ── Twilio Trial warning banner ── */}
+          {twilioHealth?.status !== "down" && (
+            <div className="flex items-start gap-2 px-3 py-2 bg-amber-500/10 border-b border-amber-500/20">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-[10px] text-amber-300 leading-relaxed">
+                <span className="font-semibold">Twilio Trial Account</span> — outbound calls limited to verified numbers only.{" "}
+                <a
+                  href="https://console.twilio.com/us1/billing/manage-billing/billing-overview"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-amber-400 hover:text-amber-300"
+                >
+                  Upgrade to unlock full PSTN access
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* ── Carrier status bar ── */}
           <div className="flex items-center justify-between px-3 py-1.5 bg-[#0c0e14] border-b border-[#2a2d3a]">
             <CarrierDot

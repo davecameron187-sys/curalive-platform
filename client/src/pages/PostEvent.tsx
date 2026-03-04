@@ -5,7 +5,8 @@ import {
   MessageSquare, Clock, Users, Globe, CheckCircle,
   TrendingUp, Minus, ChevronDown, ChevronUp,
   Sparkles, Loader2, AlertCircle, RefreshCw, Send, UserPlus, Trash2, X,
-  AlertTriangle, Shield, TrendingDown, Pencil, Check, Phone, Share2
+  AlertTriangle, Shield, TrendingDown, Pencil, Check, Phone, Share2,
+  PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed, Wifi, WifiOff
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -64,7 +65,14 @@ type AISummary = {
 export default function PostEvent() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<"summary" | "transcript" | "analytics" | "operator">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "transcript" | "analytics" | "operator" | "webphone">("summary");
+
+  // Webphone session data for this event
+  const eventId = params.id ? parseInt(params.id, 10) : undefined;
+  const { data: webphoneData, isLoading: webphoneLoading } = trpc.webphone.getEventSessions.useQuery(
+    { conferenceId: isNaN(eventId ?? NaN) ? undefined : eventId, limit: 100 },
+    { retry: false }
+  );
 
   // Read OCC export data from sessionStorage (set by OCC Export button)
   const [occData, setOccData] = useState<{ conferenceId: number; subject: string; callId: string; participants: Array<{ name: string | null; company: string | null; role: string; state: string; phone: string | null; connectTime: string | null }>; notes: string; exportedAt: string } | null>(null);
@@ -292,6 +300,7 @@ export default function PostEvent() {
             { key: "transcript", label: "Full Transcript", icon: MessageSquare },
             { key: "analytics", label: "Analytics", icon: BarChart3 },
             ...(occData ? [{ key: "operator", label: "Operator Report", icon: Users }] : []),
+            { key: "webphone", label: "Webphone Activity", icon: PhoneCall },
   ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -863,6 +872,117 @@ export default function PostEvent() {
                 <pre className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{occData.notes}</pre>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Webphone Activity ── */}
+        {activeTab === "webphone" && (
+          <div className="space-y-6">
+            {webphoneLoading ? (
+              <div className="flex items-center justify-center py-16 text-muted-foreground gap-3">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm">Loading call activity...</span>
+              </div>
+            ) : !webphoneData || (typeof webphoneData === 'object' && 'sessions' in webphoneData && webphoneData.sessions.length === 0) ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+                <PhoneCall className="w-10 h-10 opacity-30" />
+                <p className="text-sm">No webphone calls recorded for this event.</p>
+                <p className="text-xs opacity-60">Calls made via the Webphone panel during the event will appear here.</p>
+              </div>
+            ) : (() => {
+              const data = webphoneData as { sessions: Array<{ id: number; carrier: string; direction: string; status: string; remoteNumber: string | null; startedAt: number | null; durationSecs: number | null }>; stats: { totalCalls: number; completedCalls: number; failedCalls: number; totalMinutes: number; twilioCount: number; telnyxCount: number; failoverEvents: number } };
+              const { sessions, stats } = data;
+              return (
+                <>
+                  {/* Stats row */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { label: "Total Calls", value: stats.totalCalls, icon: PhoneCall, color: "text-primary" },
+                      { label: "Total Minutes", value: `${stats.totalMinutes}m`, icon: Clock, color: "text-blue-400" },
+                      { label: "Completed", value: stats.completedCalls, icon: CheckCircle, color: "text-emerald-400" },
+                      { label: "Failed / No Answer", value: stats.failedCalls, icon: PhoneMissed, color: "text-red-400" },
+                    ].map(({ label, value, icon: Icon, color }) => (
+                      <div key={label} className="bg-card border border-border rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon className={`w-4 h-4 ${color}`} />
+                          <span className="text-xs text-muted-foreground">{label}</span>
+                        </div>
+                        <div className={`text-2xl font-bold ${color}`}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Carrier breakdown */}
+                  <div className="bg-card border border-border rounded-2xl p-6">
+                    <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
+                      <Wifi className="w-4 h-4 text-primary" /> Carrier Breakdown
+                    </h3>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                        <div className="text-xs text-blue-400 font-semibold uppercase tracking-wider mb-1">Twilio (Primary)</div>
+                        <div className="text-2xl font-bold text-blue-400">{stats.twilioCount}</div>
+                        <div className="text-xs text-muted-foreground mt-1">calls via Twilio WebRTC</div>
+                      </div>
+                      <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
+                        <div className="text-xs text-violet-400 font-semibold uppercase tracking-wider mb-1">Telnyx (Fallback)</div>
+                        <div className="text-2xl font-bold text-violet-400">{stats.telnyxCount}</div>
+                        <div className="text-xs text-muted-foreground mt-1">calls via Telnyx PSTN</div>
+                      </div>
+                      <div className={`${stats.failoverEvents > 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-emerald-500/10 border-emerald-500/20'} border rounded-xl p-4`}>
+                        <div className={`text-xs font-semibold uppercase tracking-wider mb-1 ${stats.failoverEvents > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>Failover Events</div>
+                        <div className={`text-2xl font-bold ${stats.failoverEvents > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{stats.failoverEvents}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{stats.failoverEvents === 0 ? 'No failovers — primary carrier stable' : 'Telnyx activated as backup'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Per-call log */}
+                  <div className="bg-card border border-border rounded-2xl p-6">
+                    <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-primary" /> Call Log
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-2 px-3 text-xs text-muted-foreground font-semibold">Time</th>
+                            <th className="text-left py-2 px-3 text-xs text-muted-foreground font-semibold">Direction</th>
+                            <th className="text-left py-2 px-3 text-xs text-muted-foreground font-semibold">Number</th>
+                            <th className="text-left py-2 px-3 text-xs text-muted-foreground font-semibold">Carrier</th>
+                            <th className="text-left py-2 px-3 text-xs text-muted-foreground font-semibold">Duration</th>
+                            <th className="text-left py-2 px-3 text-xs text-muted-foreground font-semibold">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sessions.map((s) => {
+                            const startTime = s.startedAt ? new Date(s.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+                            const duration = s.durationSecs != null ? `${Math.floor(s.durationSecs / 60)}m ${s.durationSecs % 60}s` : '—';
+                            const DirIcon = s.direction === 'inbound' ? PhoneIncoming : PhoneOutgoing;
+                            const statusColor = s.status === 'completed' ? 'text-emerald-400' : s.status === 'initiated' ? 'text-blue-400' : 'text-red-400';
+                            const carrierColor = s.carrier === 'twilio' ? 'text-blue-400' : 'text-violet-400';
+                            return (
+                              <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                                <td className="py-2.5 px-3 text-muted-foreground font-mono text-xs">{startTime}</td>
+                                <td className="py-2.5 px-3">
+                                  <span className="flex items-center gap-1.5 text-xs">
+                                    <DirIcon className={`w-3.5 h-3.5 ${s.direction === 'inbound' ? 'text-emerald-400' : 'text-blue-400'}`} />
+                                    {s.direction}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 font-mono text-xs">{s.remoteNumber ?? '—'}</td>
+                                <td className={`py-2.5 px-3 text-xs font-semibold ${carrierColor}`}>{s.carrier}</td>
+                                <td className="py-2.5 px-3 text-xs text-muted-foreground">{duration}</td>
+                                <td className={`py-2.5 px-3 text-xs font-semibold ${statusColor}`}>{s.status}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
