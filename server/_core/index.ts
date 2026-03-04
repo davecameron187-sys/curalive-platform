@@ -11,6 +11,8 @@ import { registerSlideDeckUploadRoute } from "../slideDeckUpload";
 import { registerRecallWebhookRoute } from "../recallWebhook";
 import { startReminderScheduler } from "../reminderScheduler";
 import { handleStripeWebhook } from "../stripeWebhook";
+import { buildTwiMLVoiceResponse } from "../webphone/twilio";
+import { parseTelnyxWebhook } from "../webphone/telnyx";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -37,6 +39,34 @@ async function startServer() {
   // ⚠️ Stripe webhook MUST be registered BEFORE express.json() so the raw body
   // is available for signature verification.
   app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
+
+  // Twilio TwiML voice endpoint — Twilio calls this URL when a WebRTC call is placed.
+  // Must use urlencoded body (Twilio sends application/x-www-form-urlencoded).
+  app.post("/api/webphone/twiml", express.urlencoded({ extended: false }), (req, res) => {
+    const to = req.body?.To ?? "";
+    const callerId = req.body?.From ?? process.env.TWILIO_CALLER_ID ?? "";
+    if (!to) {
+      res.type("text/xml").send("<Response><Say>Missing destination number.</Say></Response>");
+      return;
+    }
+    const twiml = buildTwiMLVoiceResponse(to, callerId);
+    res.type("text/xml").send(twiml);
+  });
+
+  // Telnyx webhook endpoint — receives call events from Telnyx.
+  app.post("/api/webphone/telnyx", express.raw({ type: "application/json" }), (req, res) => {
+    try {
+      const body = JSON.parse(req.body.toString());
+      const event = parseTelnyxWebhook(body);
+      if (event) {
+        console.log(`[Telnyx Webhook] event=${event.event} callId=${event.callControlId ?? "n/a"} from=${event.from} to=${event.to}`);
+      }
+      res.json({ received: true });
+    } catch (err: any) {
+      console.error("[Telnyx Webhook] Parse error:", err.message);
+      res.status(400).json({ error: "Invalid webhook body" });
+    }
+  });
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

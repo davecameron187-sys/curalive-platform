@@ -486,3 +486,15 @@
 - [ ] Add analyzeSpeakingPace() function to server/aiAnalysis.ts
 - [ ] Add speakingPaceAnalysis procedure to aiRouter.ts
 - [ ] Add Speaking-Pace Coach section to PostEvent AI Summary tab
+
+## Round 62 — Critical Blockers: Twilio Upgrade & TwiML Endpoint
+
+### Twilio Critical Blocker — RESOLVED
+- [x] Twilio account upgraded from Trial to paid ($20 credit added) — unrestricted PSTN calling enabled
+- [x] Purchased South African phone number +27110108353 for caller ID on outbound calls
+- [x] Set TWILIO_CALLER_ID environment variable to +27110108353
+- [x] Register POST /api/webphone/twiml endpoint in server (was missing — Twilio could not route outbound calls)
+- [x] Register POST /api/webphone/telnyx endpoint in server for Telnyx webhook events
+- [x] Configure TwiML App Voice URL in Twilio dashboard to https://chorusai-mdu4k2ib.manus.space/api/webphone/twiml
+- [x] Configure Telnyx webhook URL to https://chorusai-mdu4k2ib.manus.space/api/webphone/telnyx
+- [x] Verified: token generation SUCCESS, caller ID format valid, TwiML XML generation SUCCESS
