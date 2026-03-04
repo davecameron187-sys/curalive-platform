@@ -800,6 +800,17 @@ export const webphoneSessions = mysqlTable("webphone_sessions", {
   recordingSid: varchar("recording_sid", { length: 128 }),  // Twilio RecordingSid
   recordingUrl: varchar("recording_url", { length: 512 }),  // Twilio recording URL
   recordingStatus: mysqlEnum("recording_status", ["pending", "completed", "failed"]),
+  // Voicemail fields
+  isVoicemail: boolean("is_voicemail").notNull().default(false),
+  voicemailUrl: varchar("voicemail_url", { length: 512 }),
+  voicemailDuration: int("voicemail_duration"),
+  // Transcription fields
+  transcription: text("transcription"),
+  transcriptionLanguage: varchar("transcription_language", { length: 16 }),
+  transcriptionStatus: mysqlEnum("transcription_status", ["pending", "processing", "completed", "failed"]),
+  // Transfer fields
+  transferredTo: varchar("transferred_to", { length: 128 }),
+  transferType: mysqlEnum("transfer_type", ["blind", "warm"]),
   startedAt: bigint("started_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   endedAt: bigint("ended_at", { mode: "number" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),

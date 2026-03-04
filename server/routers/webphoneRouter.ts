@@ -738,6 +738,242 @@ export const webphoneRouter = router({
       })),
     };
   }),
+
+  /**
+   * Blind transfer — redirect an active Twilio call to another number or operator.
+   * The original caller is connected directly to the transfer target.
+   */
+  blindTransfer: operatorProcedure
+    .input(z.object({
+      callSid: z.string().min(1),
+      transferTo: z.string().min(1), // E.164 number or operator identity
+      sessionId: z.number().int().positive().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const accountSid = process.env.TWILIO_ACCOUNT_SID;
+        const authToken = process.env.TWILIO_AUTH_TOKEN;
+        if (!accountSid || !authToken) {
+          return { success: false, error: "Twilio credentials not configured." };
+        }
+
+        const client = twilio(accountSid, authToken);
+
+        // Build TwiML to redirect the call
+        const twimlStr = `<Response><Dial>${input.transferTo.startsWith("+") ? `<Number>${input.transferTo}</Number>` : `<Client>${input.transferTo}</Client>`}</Dial></Response>`;
+
+        // Update the live call with new TwiML
+        await client.calls(input.callSid).update({
+          twiml: twimlStr,
+        });
+
+        // Update session record if provided
+        if (input.sessionId) {
+          const db = await getDb();
+          if (db) {
+            await db
+              .update(webphoneSessions)
+              .set({
+                transferredTo: input.transferTo,
+                transferType: "blind",
+              })
+              .where(eq(webphoneSessions.id, input.sessionId));
+          }
+        }
+
+        console.log(`[Webphone] Blind transfer: ${input.callSid} → ${input.transferTo}`);
+        return { success: true, message: `Call transferred to ${input.transferTo}` };
+      } catch (err: any) {
+        console.error("[Webphone] blindTransfer error:", err.message);
+        return { success: false, error: err.message };
+      }
+    }),
+
+  /**
+   * Warm transfer — create a conference, add the original caller and the transfer target,
+   * allowing the operator to announce the transfer before dropping off.
+   */
+  warmTransfer: operatorProcedure
+    .input(z.object({
+      callSid: z.string().min(1),
+      transferTo: z.string().min(1), // E.164 number to call
+      sessionId: z.number().int().positive().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const accountSid = process.env.TWILIO_ACCOUNT_SID;
+        const authToken = process.env.TWILIO_AUTH_TOKEN;
+        if (!accountSid || !authToken) {
+          return { success: false, error: "Twilio credentials not configured." };
+        }
+
+        const client = twilio(accountSid, authToken);
+        const conferenceName = `warm-transfer-${input.callSid}-${Date.now()}`;
+
+        // Step 1: Move the original call into a conference
+        const conferenceTwiml = `<Response><Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="false" waitUrl="">${conferenceName}</Conference></Dial></Response>`;
+        await client.calls(input.callSid).update({ twiml: conferenceTwiml });
+
+        // Step 2: Call the transfer target and add them to the same conference
+        const callerId = process.env.TWILIO_CALLER_ID ?? "";
+        if (!callerId) {
+          return { success: false, error: "No caller ID configured for outbound leg." };
+        }
+
+        const participantTwiml = `<Response><Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true" waitUrl="">${conferenceName}</Conference></Dial></Response>`;
+        await client.calls.create({
+          to: input.transferTo,
+          from: callerId,
+          twiml: participantTwiml,
+        });
+
+        // Update session record
+        if (input.sessionId) {
+          const db = await getDb();
+          if (db) {
+            await db
+              .update(webphoneSessions)
+              .set({
+                transferredTo: input.transferTo,
+                transferType: "warm",
+              })
+              .where(eq(webphoneSessions.id, input.sessionId));
+          }
+        }
+
+        console.log(`[Webphone] Warm transfer: ${input.callSid} → conference ${conferenceName} → ${input.transferTo}`);
+        return {
+          success: true,
+          conferenceName,
+          message: `Conference created. ${input.transferTo} is being called. You can drop off when ready.`,
+        };
+      } catch (err: any) {
+        console.error("[Webphone] warmTransfer error:", err.message);
+        return { success: false, error: err.message };
+      }
+    }),
+
+  /**
+   * Get voicemails — list all voicemail recordings.
+   */
+  getVoicemails: operatorProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(50).default(20) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      return await db
+        .select()
+        .from(webphoneSessions)
+        .where(eq(webphoneSessions.isVoicemail, true))
+        .orderBy(desc(webphoneSessions.startedAt))
+        .limit(input.limit);
+    }),
+
+  /**
+   * Transcribe a recording — calls Whisper on the recording URL and stores the result.
+   */
+  transcribeRecording: operatorProcedure
+    .input(z.object({
+      sessionId: z.number().int().positive(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable." };
+
+      // Fetch the session
+      const [session] = await db
+        .select()
+        .from(webphoneSessions)
+        .where(eq(webphoneSessions.id, input.sessionId))
+        .limit(1);
+
+      if (!session) return { success: false, error: "Session not found." };
+      if (session.userId !== ctx.user.id && session.userId !== 0) {
+        return { success: false, error: "Access denied." };
+      }
+
+      const audioUrl = session.voicemailUrl || session.recordingUrl;
+      if (!audioUrl) return { success: false, error: "No recording available for this session." };
+
+      // Mark as processing
+      await db
+        .update(webphoneSessions)
+        .set({ transcriptionStatus: "processing" })
+        .where(eq(webphoneSessions.id, input.sessionId));
+
+      try {
+        const { transcribeAudio } = await import("../_core/voiceTranscription");
+        const result = await transcribeAudio({
+          audioUrl,
+          prompt: "Transcribe this phone call recording or voicemail",
+        });
+
+        if ("text" in result && result.text) {
+          await db
+            .update(webphoneSessions)
+            .set({
+              transcription: result.text,
+              transcriptionLanguage: result.language ?? "en",
+              transcriptionStatus: "completed",
+            })
+            .where(eq(webphoneSessions.id, input.sessionId));
+
+          return { success: true, text: result.text, language: result.language };
+        } else {
+          const errorMsg = "error" in result ? result.error : "Transcription returned empty.";
+          await db
+            .update(webphoneSessions)
+            .set({ transcriptionStatus: "failed" })
+            .where(eq(webphoneSessions.id, input.sessionId));
+          return { success: false, error: errorMsg };
+        }
+      } catch (err: any) {
+        await db
+          .update(webphoneSessions)
+          .set({ transcriptionStatus: "failed" })
+          .where(eq(webphoneSessions.id, input.sessionId));
+        return { success: false, error: err.message };
+      }
+    }),
+
+  /**
+   * Search transcriptions — full-text search across all transcribed sessions.
+   */
+  searchTranscriptions: operatorProcedure
+    .input(z.object({
+      query: z.string().min(1).max(200),
+      limit: z.number().int().min(1).max(50).default(20),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      // Use LIKE for basic text search (MySQL doesn't have built-in FTS without plugins)
+      const searchPattern = `%${input.query}%`;
+      const results = await db
+        .select()
+        .from(webphoneSessions)
+        .where(
+          and(
+            sql`${webphoneSessions.transcription} IS NOT NULL`,
+            sql`${webphoneSessions.transcription} LIKE ${searchPattern}`,
+          )
+        )
+        .orderBy(desc(webphoneSessions.startedAt))
+        .limit(input.limit);
+
+      return results.map(r => ({
+        id: r.id,
+        remoteNumber: r.remoteNumber,
+        direction: r.direction,
+        isVoicemail: r.isVoicemail,
+        transcription: r.transcription,
+        transcriptionLanguage: r.transcriptionLanguage,
+        durationSecs: r.durationSecs,
+        startedAt: r.startedAt,
+      }));
+    }),
 });
 
 function getEmptyStats() {

@@ -577,3 +577,32 @@
 - [x] 16 tests in webphone.round65.test.ts (Ably publish, TwiML recording, error map, E.164, presence, routing)
 - [x] All 66 webphone tests passing across 5 test files
 - [x] Save checkpoint and present to user
+
+## Round 66 — Voicemail, Call Transfer, Recording Transcription
+
+### 1. Voicemail Recording
+- [x] /api/webphone/inbound TwiML: when no operators available, plays greeting + records voicemail
+- [x] Added voicemail columns to webphoneSessions (isVoicemail, voicemailUrl, voicemailDuration, voicemailTranscript)
+- [x] Added /api/webphone/voicemail-status callback (captures recording URL, auto-transcribes, publishes Ably event)
+- [x] Added getVoicemails tRPC query (list voicemails with caller, duration, timestamp, transcript)
+- [x] Notifies via Ably voicemail:received event + notifyOwner on new voicemail
+- [x] Voicemail panel in Webphone component with playback + transcribe button
+
+### 2. Call Transfer (Warm & Blind)
+- [x] Added blindTransfer tRPC mutation (Twilio REST API redirect active call)
+- [x] Added warmTransfer tRPC mutation (plays announcement then dials target)
+- [x] Transfer UI in Webphone: transfer button during active call, target input, blind/warm toggle
+- [x] E.164 normalisation applied to transfer target
+
+### 3. Recording Transcription
+- [x] Added transcription, transcriptionStatus, transcriptionLanguage columns to webphoneSessions
+- [x] Added transcribeRecording tRPC mutation (calls Whisper helper on recording URL)
+- [x] Auto-triggers transcription when recording-status callback fires with completed status
+- [x] Transcription displayed in call history and voicemail panel
+- [x] Added searchTranscriptions tRPC query (full-text search across all transcriptions)
+- [x] Transcripts view in Webphone component with search input and call-back button
+
+### Tests & Checkpoint
+- [x] 19 tests in webphone.round66.test.ts (voicemail TwiML, blind/warm transfer, transcription, search, Ably events)
+- [x] All 85 webphone tests passing across 6 test files
+- [x] Save checkpoint and present to user

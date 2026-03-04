@@ -16,7 +16,8 @@ export type WebphoneEvent =
   | "call:started"
   | "call:ended"
   | "call:failed"
-  | "stats:refresh";
+  | "stats:refresh"
+  | "voicemail:received";
 
 export interface WebphoneEventData {
   sessionId?: number;

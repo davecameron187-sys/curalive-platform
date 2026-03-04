@@ -97,7 +97,7 @@ async function startServer() {
     }
 
     // Smart routing: find the next available operator from DB
-    let targetIdentity = "operator-1"; // fallback
+    let targetIdentity: string | null = null;
     try {
       const { getDb } = await import("../db");
       const db = await getDb();
@@ -120,15 +120,36 @@ async function startServer() {
           targetIdentity = `operator-${available[0].userId}`;
           console.log(`[TwiML Inbound] Routing to available operator: ${targetIdentity} (${available.length} available)`);
         } else {
-          console.log(`[TwiML Inbound] No available operators, falling back to operator-1`);
+          console.log(`[TwiML Inbound] No available operators — routing to voicemail`);
         }
       }
     } catch (err) {
-      console.warn("[TwiML Inbound] Failed to query operator presence, using fallback:", err);
+      console.warn("[TwiML Inbound] Failed to query operator presence:", err);
     }
 
-    const dial = twiml.dial(dialOptions);
-    dial.client(targetIdentity);
+    if (targetIdentity) {
+      // Route to an available operator with a 30-second timeout
+      const appIdForFallback = process.env.VITE_APP_ID ?? "";
+      const fallbackUrl = appIdForFallback
+        ? `https://${appIdForFallback}.manus.space/api/webphone/voicemail-fallback`
+        : "/api/webphone/voicemail-fallback";
+      const dial = twiml.dial({ ...dialOptions, timeout: 30, action: fallbackUrl } as Record<string, unknown>);
+      dial.client(targetIdentity);
+    } else {
+      // No operators available — go straight to voicemail
+      twiml.say({ voice: "Polly.Joanna" }, "Thank you for calling. All operators are currently unavailable. Please leave a message after the tone and we will return your call as soon as possible.");
+      const voicemailCallbackUrl = appId
+        ? `https://${appId}.manus.space/api/webphone/voicemail-status`
+        : "/api/webphone/voicemail-status";
+      twiml.record({
+        maxLength: 120,
+        playBeep: true,
+        transcribe: false,
+        recordingStatusCallback: voicemailCallbackUrl,
+        recordingStatusCallbackMethod: "POST",
+      } as Record<string, unknown>);
+      twiml.say({ voice: "Polly.Joanna" }, "We did not receive a recording. Goodbye.");
+    }
     res.type("text/xml").send(twiml.toString());
   });
 
@@ -177,6 +198,130 @@ async function startServer() {
         }
       } catch (err) {
         console.error("[Recording Callback] DB update error:", err);
+      }
+    }
+
+    res.sendStatus(204);
+  });
+
+  // Voicemail fallback — Twilio calls this when the <Dial> times out or the operator doesn't answer.
+  // Plays a voicemail greeting and records the caller's message.
+  app.post("/api/webphone/voicemail-fallback", express.urlencoded({ extended: false }), (req, res) => {
+    const dialCallStatus = req.body?.DialCallStatus ?? "";
+    const callSid = req.body?.CallSid ?? "";
+    console.log(`[Voicemail Fallback] callSid=${callSid} dialCallStatus=${dialCallStatus}`);
+
+    const twimlVm = new twilio_twiml.twiml.VoiceResponse();
+
+    // If the operator answered, no voicemail needed
+    if (dialCallStatus === "completed" || dialCallStatus === "answered") {
+      twimlVm.hangup();
+      res.type("text/xml").send(twimlVm.toString());
+      return;
+    }
+
+    // Operator didn't answer — record voicemail
+    twimlVm.say({ voice: "Polly.Joanna" as any }, "The operator is not available right now. Please leave a message after the tone and we will return your call.");
+    const vmAppId = process.env.VITE_APP_ID ?? "";
+    const vmCallbackUrl = vmAppId
+      ? `https://${vmAppId}.manus.space/api/webphone/voicemail-status`
+      : "/api/webphone/voicemail-status";
+    twimlVm.record({
+      maxLength: 120,
+      playBeep: true,
+      transcribe: false,
+      recordingStatusCallback: vmCallbackUrl,
+      recordingStatusCallbackMethod: "POST",
+    } as Record<string, unknown>);
+    twimlVm.say({ voice: "Polly.Joanna" as any }, "We did not receive a recording. Goodbye.");
+    res.type("text/xml").send(twimlVm.toString());
+  });
+
+  // Voicemail status callback — captures voicemail recording URL and notifies the owner.
+  app.post("/api/webphone/voicemail-status", express.urlencoded({ extended: false }), async (req, res) => {
+    const callSid = req.body?.CallSid ?? "";
+    const recordingSid = req.body?.RecordingSid ?? "";
+    const recordingUrl = req.body?.RecordingUrl ?? "";
+    const recordingStatus = req.body?.RecordingStatus ?? "";
+    const recordingDuration = parseInt(req.body?.RecordingDuration ?? "0", 10);
+    const from = req.body?.From ?? "Unknown";
+
+    console.log(`[Voicemail Callback] callSid=${callSid} from=${from} recordingSid=${recordingSid} status=${recordingStatus} duration=${recordingDuration}s`);
+
+    if (callSid && recordingSid && recordingStatus === "completed") {
+      try {
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (db) {
+          const { webphoneSessions } = await import("../../drizzle/schema");
+          // Create a voicemail session record
+          await db.insert(webphoneSessions).values({
+            userId: 0, // system/voicemail
+            carrier: "twilio",
+            direction: "inbound",
+            remoteNumber: from,
+            callSid,
+            status: "completed",
+            isVoicemail: true,
+            voicemailUrl: recordingUrl ? `${recordingUrl}.mp3` : null,
+            voicemailDuration: recordingDuration,
+            recordingSid,
+            recordingUrl: recordingUrl ? `${recordingUrl}.mp3` : null,
+            recordingStatus: "completed",
+            durationSecs: recordingDuration,
+            startedAt: Date.now(),
+            endedAt: Date.now(),
+          });
+          console.log(`[Voicemail Callback] Saved voicemail from ${from}`);
+        }
+
+        // Notify owner via Ably
+        const { publishWebphoneEvent } = await import("../webphone/ablyPublish");
+        publishWebphoneEvent("voicemail:received", {
+          remoteNumber: from,
+          durationSecs: recordingDuration,
+          timestamp: Date.now(),
+        }).catch(() => {});
+
+        // Notify owner via notification system
+        try {
+          const { notifyOwner } = await import("./notification");
+          await notifyOwner({
+            title: `New voicemail from ${from}`,
+            content: `Duration: ${recordingDuration}s. Listen at: ${recordingUrl}.mp3`,
+          });
+        } catch (notifyErr) {
+          console.warn("[Voicemail] Owner notification failed:", notifyErr);
+        }
+
+        // Auto-transcribe the voicemail
+        try {
+          const { transcribeAudio } = await import("./voiceTranscription");
+          const transcriptionResult = await transcribeAudio({
+            audioUrl: `${recordingUrl}.mp3`,
+            prompt: "Transcribe this voicemail message",
+          });
+          if ("text" in transcriptionResult && transcriptionResult.text) {
+            const { eq } = await import("drizzle-orm");
+            const dbForTranscript = await getDb();
+            if (dbForTranscript) {
+              const { webphoneSessions: ws } = await import("../../drizzle/schema");
+              await dbForTranscript
+                .update(ws)
+                .set({
+                  transcription: transcriptionResult.text,
+                  transcriptionLanguage: transcriptionResult.language ?? "en",
+                  transcriptionStatus: "completed",
+                })
+                .where(eq(ws.callSid, callSid));
+              console.log(`[Voicemail] Auto-transcribed: "${transcriptionResult.text.substring(0, 80)}..."`);
+            }
+          }
+        } catch (transcribeErr) {
+          console.warn("[Voicemail] Auto-transcription failed:", transcribeErr);
+        }
+      } catch (err) {
+        console.error("[Voicemail Callback] DB error:", err);
       }
     }
 
