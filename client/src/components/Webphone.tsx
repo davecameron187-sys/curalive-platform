@@ -18,7 +18,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Device as TwilioDevice, Call as TwilioCallNS } from "@twilio/voice-sdk";
+import { Device as TwilioDevice } from "@twilio/voice-sdk";
 import type { Call as TwilioCall } from "@twilio/voice-sdk";
 import { Phone, PhoneOff, Mic, MicOff, PhoneCall, ChevronDown, ChevronUp, Clock, Signal, AlertTriangle, CheckCircle, XCircle, RotateCcw, Hash } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -223,13 +223,33 @@ export default function Webphone({
 
   const initTwilioCall = async (data: { token: string }, number: string) => {
     // Use statically imported @twilio/voice-sdk (no CDN loading needed)
-    const device = new TwilioDevice(data.token, { logLevel: 1, codecPreferences: [TwilioCallNS.Codec.Opus, TwilioCallNS.Codec.PCMU] });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const device = new TwilioDevice(data.token, { logLevel: 1, codecPreferences: ["opus", "pcmu"] as any });
     twilioDeviceRef.current = device;
 
     device.on("error", (err: unknown) => {
-      console.error("[Webphone/Twilio] Error:", err);
+      console.error("[Webphone/Twilio] Device error:", err);
       setCallState("idle");
-      toast.error("Call error", { description: "Twilio reported an error." });
+      const errMsg = (err as { message?: string })?.message || "Twilio reported an error.";
+      toast.error("Call error", { description: errMsg });
+    });
+
+    // Must register the device with Twilio's signalling server before placing a call
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error("Device registration timed out — check TwiML App SID and API credentials")),
+        12000
+      );
+      device.on("registered", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      device.on("registrationFailed", (err: unknown) => {
+        clearTimeout(timeout);
+        const msg = (err as { message?: string })?.message || "Device registration failed";
+        reject(new Error(msg));
+      });
+      device.register();
     });
 
     const call: TwilioCall = await device.connect({ params: { To: number } });
