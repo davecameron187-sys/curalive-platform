@@ -20,7 +20,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Device as TwilioDevice } from "@twilio/voice-sdk";
 import type { Call as TwilioCall } from "@twilio/voice-sdk";
-import { Phone, PhoneOff, Mic, MicOff, PhoneCall, ChevronDown, ChevronUp, Clock, Signal, AlertTriangle, CheckCircle, XCircle, RotateCcw, Hash, ChevronsUpDown } from "lucide-react";
+import { Phone, PhoneOff, Mic, MicOff, PhoneCall, ChevronDown, ChevronUp, Clock, Signal, AlertTriangle, CheckCircle, XCircle, RotateCcw, Hash } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -111,27 +111,11 @@ export default function Webphone({
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Caller ID selection
-  const [selectedCallerId, setSelectedCallerId] = useState<string>("");
-  const [callerIdDropdownOpen, setCallerIdDropdownOpen] = useState(false);
-
   // Twilio device ref
   const twilioDeviceRef = useRef<unknown>(null);
   const twilioCallRef = useRef<unknown>(null);
 
   // tRPC
-  const { data: callerIds } = trpc.webphone.getCallerIds.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-
-  // Set default caller ID when list loads
-  useEffect(() => {
-    if (callerIds && callerIds.length > 0 && !selectedCallerId) {
-      setSelectedCallerId(callerIds[0].phoneNumber);
-    }
-  }, [callerIds, selectedCallerId]);
-
   const { data: accountStatus } = trpc.webphone.getAccountStatus.useQuery(undefined, {
     staleTime: 5 * 60 * 1000, // cache for 5 minutes — account type rarely changes
     retry: false,
@@ -268,9 +252,7 @@ export default function Webphone({
       device.register();
     });
 
-    const callParams: Record<string, string> = { To: number };
-    if (selectedCallerId) callParams.CallerId = selectedCallerId;
-    const call: TwilioCall = await device.connect({ params: callParams });
+    const call: TwilioCall = await device.connect({ params: { To: number } });
     twilioCallRef.current = call;
 
     call.on("ringing", () => setCallState("ringing"));
@@ -470,46 +452,6 @@ export default function Webphone({
               active={activeCarrier === "telnyx" && callState !== "idle"}
             />
           </div>
-
-          {/* ── Caller ID selector ── */}
-          {callerIds && callerIds.length > 0 && callState === "idle" && (
-            <div className="px-3 pt-2 pb-0 relative">
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">Caller ID</p>
-              <button
-                onClick={() => setCallerIdDropdownOpen(o => !o)}
-                className="w-full flex items-center justify-between bg-[#0c0e14] border border-[#2a2d3a] rounded-lg px-3 py-1.5 text-xs font-mono text-foreground hover:border-primary/30 transition-colors"
-              >
-                <span className="truncate">
-                  {callerIds.find(c => c.phoneNumber === selectedCallerId)?.friendlyName
-                    ? `${callerIds.find(c => c.phoneNumber === selectedCallerId)?.friendlyName} (${selectedCallerId})`
-                    : selectedCallerId || "Select caller ID…"}
-                </span>
-                <ChevronsUpDown className="w-3 h-3 text-muted-foreground shrink-0 ml-1" />
-              </button>
-              {callerIdDropdownOpen && (
-                <div className="absolute left-3 right-3 top-full mt-1 z-50 bg-[#13161f] border border-[#2a2d3a] rounded-lg shadow-xl overflow-hidden">
-                  {callerIds.map(c => (
-                    <button
-                      key={c.phoneNumber}
-                      onClick={() => { setSelectedCallerId(c.phoneNumber); setCallerIdDropdownOpen(false); }}
-                      className={cn(
-                        "w-full text-left px-3 py-2 text-xs hover:bg-[#1a1d27] transition-colors",
-                        c.phoneNumber === selectedCallerId ? "text-primary bg-primary/10" : "text-foreground"
-                      )}
-                    >
-                      <div className="font-mono">{c.phoneNumber}</div>
-                      <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                        <span>{c.friendlyName}</span>
-                        <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-[#2a2d3a]">
-                          {c.type}
-                        </Badge>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* ── Display ── */}
           <div className="px-3 pt-3 pb-1">
