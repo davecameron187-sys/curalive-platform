@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE webphone_carrier_status SET status = 'healthy' WHERE carrier = 'twilio'; UPDATE webphone_carrier_status SET status = 'down' WHERE carrier = 'telnyx';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2h457xAgLtxN22J.8d91d5a5e05f --database Mdu4k2iB9LVRNHXWAQDZg3 --execute UPDATE webphone_carrier_status SET status = 'healthy' WHERE carrier = 'twilio'; UPDATE webphone_carrier_status SET status = 'down' WHERE carrier = 'telnyx';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 424
+}
