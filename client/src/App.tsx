@@ -44,6 +44,7 @@ import PlatformLinks from "./pages/PlatformLinks";
 import Profile from "./pages/Profile";
 import Billing from "./pages/Billing";
 import Training from "./pages/Training";
+import OperatorGuide from "./pages/OperatorGuide";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -86,6 +87,7 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/billing" component={Billing} />
       <Route path="/training" component={Training} />
+      <Route path="/operator-guide" component={OperatorGuide} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
       <Route path="/404" component={NotFound} />
