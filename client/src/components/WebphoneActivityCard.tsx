@@ -5,7 +5,7 @@
  * average duration, and a mini recent-calls list.
  */
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Phone, PhoneIncoming, PhoneOutgoing, Activity, Clock, Signal,
   TrendingUp, AlertTriangle, CheckCircle, XCircle, RefreshCw,
@@ -38,11 +38,56 @@ export default function WebphoneActivityCard() {
   const [expanded, setExpanded] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
 
-  // Fetch activity stats — refetch every 15 seconds for near-real-time
+  // Fetch activity stats — Ably pushes trigger instant refetch; 30s fallback polling
   const { data: stats, isLoading, refetch } = trpc.webphone.getActivityStats.useQuery(
     undefined,
-    { refetchInterval: 15000 }
+    { refetchInterval: 30000 }
   );
+
+  // Ably token for real-time subscription
+  const { data: ablyToken } = trpc.ably.tokenRequest.useQuery(
+    { clientId: `occ-activity-${Date.now()}` },
+    { staleTime: 300000 }
+  );
+
+  // Ably real-time subscription — triggers instant refetch on call events
+  const ablyRef = useRef<any>(null);
+  const channelRef = useRef<any>(null);
+
+  const handleAblyMessage = useCallback(() => {
+    // Instantly refetch stats when any call event arrives
+    refetch();
+  }, [refetch]);
+
+  useEffect(() => {
+    if (!ablyToken?.tokenRequest || ablyToken.mode !== "ably") return;
+
+    let ably: any = null;
+    let channel: any = null;
+
+    const connectAbly = async () => {
+      try {
+        const Ably = await import("ably");
+        ably = new Ably.Realtime({ authCallback: (_params, cb) => cb(null, ablyToken.tokenRequest as any) });
+        channel = ably.channels.get("webphone:activity");
+        channel.subscribe(handleAblyMessage);
+        ablyRef.current = ably;
+        channelRef.current = channel;
+        console.log("[WebphoneActivity] Ably connected — real-time updates active");
+      } catch (err) {
+        console.warn("[WebphoneActivity] Ably connection failed, falling back to polling:", err);
+      }
+    };
+
+    connectAbly();
+
+    return () => {
+      if (channel) channel.unsubscribe();
+      if (ably) ably.close();
+      ablyRef.current = null;
+      channelRef.current = null;
+    };
+  }, [ablyToken, handleAblyMessage]);
 
   // Inbound routing status
   const { data: routingStatus } = trpc.webphone.getInboundRoutingStatus.useQuery(
@@ -57,8 +102,10 @@ export default function WebphoneActivityCard() {
   );
 
   // Mutations
+  type MutationResult = { success: boolean; message?: string; error?: string };
+
   const configureInbound = trpc.webphone.configureInboundRouting.useMutation({
-    onSuccess: (result) => {
+    onSuccess: (result: MutationResult) => {
       if (result.success) {
         toast.success(result.message);
       } else {
@@ -68,7 +115,7 @@ export default function WebphoneActivityCard() {
   });
 
   const purchaseTelnyx = trpc.webphone.purchaseTelnyxNumber.useMutation({
-    onSuccess: (result) => {
+    onSuccess: (result: MutationResult) => {
       if (result.success) {
         toast.success(result.message);
       } else {
@@ -179,7 +226,7 @@ export default function WebphoneActivityCard() {
               <p className="text-[11px] text-muted-foreground text-center py-3">No calls recorded yet.</p>
             ) : (
               <div className="space-y-1">
-                {recentCalls.map((call) => (
+                {recentCalls.map((call: { id: number; carrier: string; direction: string; remoteNumber: string | null; status: string; durationSecs: number | null; startedAt: number | null }) => (
                   <div key={call.id} className="flex items-center justify-between py-1 px-2 rounded bg-background/50 text-[11px]">
                     <div className="flex items-center gap-2">
                       {call.direction === "inbound" ? (
@@ -220,7 +267,7 @@ export default function WebphoneActivityCard() {
           {/* Twilio Numbers */}
           {routingStatus?.numbers && routingStatus.numbers.length > 0 ? (
             <div className="space-y-1.5">
-              {routingStatus.numbers.map((n) => (
+              {routingStatus.numbers.map((n: { phoneNumber: string; friendlyName: string; voiceUrl: string; isConfigured: boolean }) => (
                 <div key={n.phoneNumber} className="flex items-center justify-between py-1.5 px-2 rounded bg-background/50 text-[11px]">
                   <div className="flex items-center gap-2">
                     <Phone className="w-3 h-3 text-blue-400" />
@@ -258,7 +305,7 @@ export default function WebphoneActivityCard() {
           <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pt-2">Telnyx Numbers</h4>
           {telnyxNumbers?.numbers && telnyxNumbers.numbers.length > 0 ? (
             <div className="space-y-1.5">
-              {telnyxNumbers.numbers.map((n) => (
+              {telnyxNumbers.numbers.map((n: { phoneNumber: string; status: string; connectionId: string | null; connectionName: string | null }) => (
                 <div key={n.phoneNumber} className="flex items-center justify-between py-1.5 px-2 rounded bg-background/50 text-[11px]">
                   <div className="flex items-center gap-2">
                     <Phone className="w-3 h-3 text-emerald-400" />

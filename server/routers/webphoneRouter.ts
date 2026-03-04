@@ -13,7 +13,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, operatorProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { webphoneSessions } from "../../drizzle/schema";
+import { webphoneSessions, occOperatorSessions } from "../../drizzle/schema";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import twilio from "twilio";
 import { generateTwilioToken } from "../webphone/twilio";
@@ -26,6 +26,7 @@ import {
   setCarrierStatus,
   type Carrier,
 } from "../webphone/carrierManager";
+import { publishWebphoneEvent } from "../webphone/ablyPublish";
 
 // ─── Twilio error code → user-friendly message map ─────────────────────────
 const TWILIO_ERROR_MAP: Record<number, string> = {
@@ -155,7 +156,20 @@ export const webphoneRouter = router({
         startedAt: Date.now(),
       });
 
-      return { id: (result as { insertId: number }).insertId };
+      const sessionId = (result as { insertId: number }).insertId;
+
+      // Publish real-time event via Ably
+      publishWebphoneEvent("call:started", {
+        sessionId,
+        carrier: input.carrier,
+        direction: input.direction,
+        remoteNumber: input.remoteNumber ?? undefined,
+        operatorId: ctx.user.id,
+        operatorName: ctx.user.name ?? undefined,
+        timestamp: Date.now(),
+      }).catch(() => {});
+
+      return { id: sessionId };
     }),
 
   /**
@@ -180,6 +194,15 @@ export const webphoneRouter = router({
         })
         .where(eq(webphoneSessions.id, input.sessionId));
 
+      // Publish real-time event via Ably
+      const eventName = input.status === "failed" ? "call:failed" as const : "call:ended" as const;
+      publishWebphoneEvent(eventName, {
+        sessionId: input.sessionId,
+        status: input.status,
+        durationSecs: input.durationSecs ?? undefined,
+        timestamp: Date.now(),
+      }).catch(() => {});
+
       return { success: true };
     }),
 
@@ -198,6 +221,37 @@ export const webphoneRouter = router({
         .where(eq(webphoneSessions.userId, ctx.user.id))
         .orderBy(desc(webphoneSessions.startedAt))
         .limit(input.limit);
+    }),
+
+  /**
+   * Get the recording URL for a specific session.
+   */
+  getRecording: operatorProcedure
+    .input(z.object({ sessionId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { recordingUrl: null, recordingStatus: null };
+
+      const [session] = await db
+        .select({
+          recordingUrl: webphoneSessions.recordingUrl,
+          recordingStatus: webphoneSessions.recordingStatus,
+          recordingSid: webphoneSessions.recordingSid,
+          userId: webphoneSessions.userId,
+        })
+        .from(webphoneSessions)
+        .where(eq(webphoneSessions.id, input.sessionId))
+        .limit(1);
+
+      if (!session || session.userId !== ctx.user.id) {
+        return { recordingUrl: null, recordingStatus: null };
+      }
+
+      return {
+        recordingUrl: session.recordingUrl,
+        recordingStatus: session.recordingStatus,
+        recordingSid: session.recordingSid,
+      };
     }),
 
   /**
@@ -610,6 +664,79 @@ export const webphoneRouter = router({
       console.error("[Webphone] getActivityStats error:", err.message);
       return getEmptyStats();
     }
+  }),
+
+  /**
+   * Set the current operator's presence state for call routing.
+   */
+  setPresence: operatorProcedure
+    .input(z.object({
+      state: z.enum(["absent", "present", "in_call", "break"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+
+      const now = new Date();
+      const extra: Record<string, Date | null> = {};
+      if (input.state === "present") extra.loginAt = now;
+      if (input.state === "break") extra.breakAt = now;
+      if (input.state === "absent") extra.logoutAt = now;
+
+      // Upsert: update if exists, insert if not
+      const existing = await db
+        .select()
+        .from(occOperatorSessions)
+        .where(eq(occOperatorSessions.userId, ctx.user.id))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await db
+          .update(occOperatorSessions)
+          .set({ state: input.state, lastHeartbeat: now, ...extra })
+          .where(eq(occOperatorSessions.userId, ctx.user.id));
+      } else {
+        await db.insert(occOperatorSessions).values({
+          userId: ctx.user.id,
+          operatorName: ctx.user.name ?? `Operator ${ctx.user.id}`,
+          state: input.state,
+          lastHeartbeat: now,
+          ...(input.state === "present" ? { loginAt: now } : {}),
+        });
+      }
+
+      // Publish presence change via Ably
+      publishWebphoneEvent("stats:refresh", {
+        operatorId: ctx.user.id,
+        operatorName: ctx.user.name ?? undefined,
+        status: input.state,
+        timestamp: Date.now(),
+      }).catch(() => {});
+
+      return { success: true, state: input.state };
+    }),
+
+  /**
+   * Get all operators and their current presence state.
+   */
+  getAvailableOperators: operatorProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { operators: [] };
+
+    const operators = await db
+      .select()
+      .from(occOperatorSessions)
+      .orderBy(desc(occOperatorSessions.lastHeartbeat));
+
+    return {
+      operators: operators.map(op => ({
+        userId: op.userId,
+        name: op.operatorName,
+        state: op.state,
+        lastHeartbeat: op.lastHeartbeat?.getTime() ?? null,
+        activeConferenceId: op.activeConferenceId,
+      })),
+    };
   }),
 });
 

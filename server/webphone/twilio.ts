@@ -55,11 +55,25 @@ export function generateTwilioToken(userId: number): TwilioTokenResult | null {
 /**
  * Build a TwiML response for outbound calls.
  * This is served at POST /api/webphone/twiml and tells Twilio how to connect the call.
+ * Recording is enabled by default; the status callback captures the recording URL.
  */
-export function buildTwiMLVoiceResponse(to: string, callerId: string): string {
+export function buildTwiMLVoiceResponse(to: string, callerId: string, options?: { record?: boolean; recordingCallbackUrl?: string }): string {
   const VoiceResponse = twilio.twiml.VoiceResponse;
   const twiml = new VoiceResponse();
-  const dial = twiml.dial({ callerId, record: "do-not-record" });
+
+  const shouldRecord = options?.record !== false; // default: true
+  const dialOptions: Record<string, string> = {
+    callerId,
+    record: shouldRecord ? "record-from-answer-dual" : "do-not-record",
+  };
+
+  if (shouldRecord && options?.recordingCallbackUrl) {
+    dialOptions.recordingStatusCallback = options.recordingCallbackUrl;
+    dialOptions.recordingStatusCallbackMethod = "POST";
+    dialOptions.recordingStatusCallbackEvent = "completed";
+  }
+
+  const dial = twiml.dial(dialOptions);
   dial.number(to);
   return twiml.toString();
 }

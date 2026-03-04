@@ -549,3 +549,31 @@
 - [x] Write vitest for inbound routing config, Telnyx purchase flow, activity stats (14 tests)
 - [x] All 50 webphone tests passing across 4 test files
 - [x] Save checkpoint and present to user
+
+## Round 65 — Ably Real-Time Push, Call Recording & Playback, Operator Presence
+
+### 1. Ably Real-Time Push for Call Activity
+- [x] Created server/webphone/ablyPublish.ts — shared Ably REST publish helper
+- [x] Publish call:started from logSession, call:ended/call:failed from endSession
+- [x] WebphoneActivityCard subscribes to Ably channel webphone:activity with auto-reconnect
+- [x] Instant stats refresh on call events + 30s polling fallback
+
+### 2. Call Recording & Playback
+- [x] Outbound calls: record-from-answer-dual via buildTwiMLVoiceResponse
+- [x] Inbound calls: recording enabled in /api/webphone/inbound TwiML
+- [x] Added recordingUrl, recordingSid, recordingStatus columns to webphoneSessions
+- [x] Added /api/webphone/recording-status callback endpoint (updates DB on completion)
+- [x] Added getRecording tRPC query (returns recording URL for a session)
+- [x] Added RecordingPlayButton component in call history (play/stop with Web Audio)
+
+### 3. Operator Presence & Smart Call Assignment
+- [x] Reuses existing occOperatorSessions table (state: absent/present/in_call/break)
+- [x] Added setPresence mutation (upsert operator state + Ably publish)
+- [x] Added getAvailableOperators query (lists all operators with state)
+- [x] /api/webphone/inbound now queries DB for available operators, sorts by oldest heartbeat (round-robin)
+- [x] Falls back to operator-1 if no operators are present or DB query fails
+
+### Tests & Checkpoint
+- [x] 16 tests in webphone.round65.test.ts (Ably publish, TwiML recording, error map, E.164, presence, routing)
+- [x] All 66 webphone tests passing across 5 test files
+- [x] Save checkpoint and present to user

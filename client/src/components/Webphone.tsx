@@ -21,7 +21,7 @@ import type { Call as TwilioCall } from "@twilio/voice-sdk";
 import {
   Phone, PhoneOff, Mic, MicOff, PhoneCall, PhoneIncoming, PhoneForwarded,
   ChevronDown, ChevronUp, Clock, Signal, AlertTriangle, CheckCircle,
-  XCircle, RotateCcw, Hash, History, ChevronRight, Volume2
+  XCircle, RotateCcw, Hash, History, ChevronRight, Volume2, Play, Square
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -848,20 +848,26 @@ export default function Webphone({
                           </p>
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <Badge
-                          variant="outline"
-                          className={cn("text-[9px] px-1 py-0 h-4",
-                            s.status === "completed" ? "border-emerald-500/30 text-emerald-400" :
-                            s.status === "failed" ? "border-red-500/30 text-red-400" :
-                            "border-amber-500/30 text-amber-400"
-                          )}
-                        >
-                          {s.status}
-                        </Badge>
-                        {s.durationSecs != null && (
-                          <p className="text-[10px] font-mono text-muted-foreground mt-0.5">{formatDuration(s.durationSecs)}</p>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Recording playback button */}
+                        {s.status === "completed" && (
+                          <RecordingPlayButton sessionId={s.id} />
                         )}
+                        <div className="text-right">
+                          <Badge
+                            variant="outline"
+                            className={cn("text-[9px] px-1 py-0 h-4",
+                              s.status === "completed" ? "border-emerald-500/30 text-emerald-400" :
+                              s.status === "failed" ? "border-red-500/30 text-red-400" :
+                              "border-amber-500/30 text-amber-400"
+                            )}
+                          >
+                            {s.status}
+                          </Badge>
+                          {s.durationSecs != null && (
+                            <p className="text-[10px] font-mono text-muted-foreground mt-0.5">{formatDuration(s.durationSecs)}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -872,5 +878,70 @@ export default function Webphone({
         </>
       )}
     </div>
+  );
+}
+
+// ─── Recording Playback Button ─────────────────────────────────────────────────
+
+function RecordingPlayButton({ sessionId }: { sessionId: number }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const utils = trpc.useUtils();
+
+  const handleClick = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent row click (redial)
+
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+      return;
+    }
+
+    // Fetch recording URL
+    try {
+      const result = await utils.webphone.getRecording.fetch({ sessionId });
+      if (!result?.recordingUrl) {
+        toast.info("No recording available for this call.");
+        return;
+      }
+
+      const audio = new Audio(result.recordingUrl);
+      audioRef.current = audio;
+      audio.onended = () => setIsPlaying(false);
+      audio.onerror = () => {
+        toast.error("Failed to play recording.");
+        setIsPlaying(false);
+      };
+      audio.play();
+      setIsPlaying(true);
+    } catch {
+      toast.error("Failed to load recording.");
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  return (
+    <button
+      onClick={handleClick}
+      className={cn(
+        "p-1 rounded transition-colors",
+        isPlaying
+          ? "text-primary bg-primary/10"
+          : "text-muted-foreground hover:text-foreground hover:bg-[#1a1d27]"
+      )}
+      title={isPlaying ? "Stop playback" : "Play recording"}
+    >
+      {isPlaying ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+    </button>
   );
 }

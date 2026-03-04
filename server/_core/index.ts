@@ -60,23 +60,75 @@ async function startServer() {
       res.type("text/xml").send("<Response><Say>Caller ID not configured.</Say></Response>");
       return;
     }
-    const twiml = buildTwiMLVoiceResponse(to, callerId);
+    // Build recording callback URL based on the app domain
+    const appId = process.env.VITE_APP_ID ?? "";
+    const recordingCallbackUrl = appId
+      ? `https://${appId}.manus.space/api/webphone/recording-status`
+      : undefined;
+    const twiml = buildTwiMLVoiceResponse(to, callerId, {
+      record: true,
+      recordingCallbackUrl,
+    });
     res.type("text/xml").send(twiml);
   });
 
   // Twilio inbound call endpoint — routes incoming calls to the browser client.
   // Configure the Twilio phone number's Voice URL to point to this endpoint.
-  app.post("/api/webphone/inbound", express.urlencoded({ extended: false }), (req, res) => {
+  app.post("/api/webphone/inbound", express.urlencoded({ extended: false }), async (req, res) => {
     const from = req.body?.From ?? "Unknown";
     const to = req.body?.To ?? "";
     const callSid = req.body?.CallSid ?? "";
     console.log(`[TwiML Inbound] from=${from} to=${to} callSid=${callSid}`);
     const twiml = new twilio_twiml.twiml.VoiceResponse();
-    // Ring all connected browser clients (identity pattern: operator-*)
-    const dial = twiml.dial();
-    // Route to the first available operator client
-    // In a multi-operator setup, you'd iterate over connected clients
-    dial.client("operator-1");
+
+    // Enable recording on inbound calls
+    const appId = process.env.VITE_APP_ID ?? "";
+    const recordingCallbackUrl = appId
+      ? `https://${appId}.manus.space/api/webphone/recording-status`
+      : undefined;
+
+    const dialOptions: Record<string, string> = {
+      record: "record-from-answer-dual",
+    };
+    if (recordingCallbackUrl) {
+      dialOptions.recordingStatusCallback = recordingCallbackUrl;
+      dialOptions.recordingStatusCallbackMethod = "POST";
+      dialOptions.recordingStatusCallbackEvent = "completed";
+    }
+
+    // Smart routing: find the next available operator from DB
+    let targetIdentity = "operator-1"; // fallback
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (db) {
+        const { occOperatorSessions } = await import("../../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const available = await db
+          .select()
+          .from(occOperatorSessions)
+          .where(eq(occOperatorSessions.state, "present"))
+          .limit(5);
+
+        if (available.length > 0) {
+          // Round-robin: pick the operator with the oldest heartbeat (least recently active)
+          available.sort((a, b) => {
+            const aTime = a.lastHeartbeat?.getTime() ?? 0;
+            const bTime = b.lastHeartbeat?.getTime() ?? 0;
+            return aTime - bTime;
+          });
+          targetIdentity = `operator-${available[0].userId}`;
+          console.log(`[TwiML Inbound] Routing to available operator: ${targetIdentity} (${available.length} available)`);
+        } else {
+          console.log(`[TwiML Inbound] No available operators, falling back to operator-1`);
+        }
+      }
+    } catch (err) {
+      console.warn("[TwiML Inbound] Failed to query operator presence, using fallback:", err);
+    }
+
+    const dial = twiml.dial(dialOptions);
+    dial.client(targetIdentity);
     res.type("text/xml").send(twiml.toString());
   });
 
@@ -93,6 +145,42 @@ async function startServer() {
       console.error("[Telnyx Webhook] Parse error:", err.message);
       res.status(400).json({ error: "Invalid webhook body" });
     }
+  });
+
+  // Twilio recording status callback — captures recording URL when recording completes.
+  app.post("/api/webphone/recording-status", express.urlencoded({ extended: false }), async (req, res) => {
+    const callSid = req.body?.CallSid ?? "";
+    const recordingSid = req.body?.RecordingSid ?? "";
+    const recordingUrl = req.body?.RecordingUrl ?? "";
+    const recordingStatus = req.body?.RecordingStatus ?? "";
+    const recordingDuration = parseInt(req.body?.RecordingDuration ?? "0", 10);
+
+    console.log(`[Recording Callback] callSid=${callSid} recordingSid=${recordingSid} status=${recordingStatus} duration=${recordingDuration}s url=${recordingUrl}`);
+
+    if (callSid && recordingSid) {
+      try {
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (db) {
+          const { webphoneSessions } = await import("../../drizzle/schema");
+          const { eq } = await import("drizzle-orm");
+          // Update the session that matches this CallSid
+          await db
+            .update(webphoneSessions)
+            .set({
+              recordingSid,
+              recordingUrl: recordingUrl ? `${recordingUrl}.mp3` : null,
+              recordingStatus: recordingStatus === "completed" ? "completed" : "failed",
+            })
+            .where(eq(webphoneSessions.callSid, callSid));
+          console.log(`[Recording Callback] Updated session for callSid=${callSid}`);
+        }
+      } catch (err) {
+        console.error("[Recording Callback] DB update error:", err);
+      }
+    }
+
+    res.sendStatus(204);
   });
 
   // Configure body parser with larger size limit for file uploads

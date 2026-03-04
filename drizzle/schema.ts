@@ -797,6 +797,9 @@ export const webphoneSessions = mysqlTable("webphone_sessions", {
   remoteNumber: varchar("remote_number", { length: 32 }),  // E.164 format
   callSid: varchar("call_sid", { length: 128 }),           // Twilio CallSid or Telnyx call_control_id
   durationSecs: int("duration_secs"),
+  recordingSid: varchar("recording_sid", { length: 128 }),  // Twilio RecordingSid
+  recordingUrl: varchar("recording_url", { length: 512 }),  // Twilio recording URL
+  recordingStatus: mysqlEnum("recording_status", ["pending", "completed", "failed"]),
   startedAt: bigint("started_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   endedAt: bigint("ended_at", { mode: "number" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
