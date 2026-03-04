@@ -220,13 +220,13 @@ export default function Webphone({
   // ─── Twilio call init ────────────────────────────────────────────────────────
 
   const initTwilioCall = async (data: { token: string }, number: string) => {
-    // Dynamically load Twilio Voice JS SDK
+    // Dynamically load Twilio Voice JS SDK (@twilio/voice-sdk v2.18.0 via unpkg)
     if (!(window as unknown as Record<string, unknown>).Twilio) {
       await new Promise<void>((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = "https://media.twiliocdn.com/sdk/js/voice/releases/2.10.0/twilio.min.js";
+        script.src = "https://unpkg.com/@twilio/voice-sdk@2.18.0/dist/twilio.min.js";
         script.onload = () => resolve();
-        script.onerror = () => reject(new Error("Failed to load Twilio SDK"));
+        script.onerror = () => reject(new Error("Failed to load Twilio SDK — check network or CSP settings"));
         document.head.appendChild(script);
       });
     }
