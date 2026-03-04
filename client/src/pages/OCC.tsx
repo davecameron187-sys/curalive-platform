@@ -16,7 +16,7 @@ import {
   ArrowRight, UserCheck, UserX, Activity, Clock,
   List, LayoutGrid, Bell, BellOff, Send, Search, Filter,
   Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical, FileText,
-  PhoneForwarded, Trash2, Upload
+  PhoneForwarded, Trash2, Upload, GraduationCap
 } from "lucide-react";
 import { toast } from "sonner";
 import Webphone from "@/components/Webphone";
@@ -1124,6 +1124,7 @@ export default function OCC() {
             { icon: Activity, label: "CCP", count: null, color: showCCP ? "text-emerald-400" : "text-slate-400", onClick: () => setShowCCP(v => !v) },
             { icon: List, label: "Access Codes", count: null, color: showAccessCodesModal ? "text-blue-400" : "text-slate-400", onClick: () => setShowAccessCodesModal(v => !v) },
             { icon: Phone, label: "Webphone", count: null, color: showWebphone ? "text-emerald-400" : "text-slate-400", onClick: () => setShowWebphone(v => !v) },
+            { icon: GraduationCap, label: "Training", count: null, color: "text-violet-400", onClick: () => navigate("/training") },
           ].map(({ icon: Icon, label, count, color, onClick }) => (
             <button
               key={label}

@@ -606,3 +606,22 @@
 - [x] 19 tests in webphone.round66.test.ts (voicemail TwiML, blind/warm transfer, transcription, search, Ably events)
 - [x] All 85 webphone tests passing across 6 test files
 - [x] Save checkpoint and present to user
+
+## Round 67 — Interactive Operator Training Guide
+
+### Training Guide Page (/training)
+- [x] Created /training route with interactive phase-based learning page
+- [x] Phase 1: Getting Started (Modules 01-03) with deep links to OCC
+- [x] Phase 2: Conference Management (Modules 04-06) with deep links to CCP
+- [x] Phase 3: Advanced Controls (Modules 07-09) with deep links to feature tabs
+- [x] Phase 4: Post-Event & Best Practices (Modules 10-13) with deep links
+- [x] Per-phase Q&A answer boxes (3-4 per phase, multiple choice + free text) with 75% pass mark
+- [x] Progress tracking (completed phases, scores, answers saved to localStorage)
+- [x] Quick Reference card (15 common actions) with slide-in panel
+- [x] GraduationCap icon link added to OCC top navigation bar
+- [x] Answer selection visual feedback fixed with inline styles (blue=selected, green=correct, red=wrong)
+- [ ] Answer selection visual feedback deferred (will revisit)
+
+### TS Error Fixes
+- [ ] Fix WebphoneActivityCard TS errors (getTelnyxNumbers, configureInboundRouting, purchaseTelnyxNumber not found in LSP — stale watcher, tsc --noEmit shows 0 errors)
+- [x] Save checkpoint and present to user
