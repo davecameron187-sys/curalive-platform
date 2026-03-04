@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Webphone from "@/components/Webphone";
+import WebphoneActivityCard from "@/components/WebphoneActivityCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1333,7 +1334,10 @@ export default function OCC() {
 
         {/* ── Webphone Panel ───────────────────────────────────────────────────── */}
         {showWebphone && (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-4">
+            <div className="w-80">
+              <WebphoneActivityCard />
+            </div>
             <Webphone
               prefillNumber={webphonePrefill}
               defaultMinimised={false}

@@ -14,7 +14,7 @@ import { z } from "zod";
 import { router, protectedProcedure, operatorProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { webphoneSessions } from "../../drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, gte, sql } from "drizzle-orm";
 import twilio from "twilio";
 import { generateTwilioToken } from "../webphone/twilio";
 import { getTelnyxCredentials } from "../webphone/telnyx";
@@ -330,4 +330,296 @@ export const webphoneRouter = router({
       return { isTrial: false, accountType: "unknown", friendlyName: "" };
     }
   }),
+
+  /**
+   * Configure inbound routing — updates a Twilio phone number's Voice URL
+   * to point to our /api/webphone/inbound endpoint.
+   */
+  configureInboundRouting: operatorProcedure
+    .input(z.object({
+      phoneNumber: z.string().optional(),
+      voiceUrl: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const accountSid = process.env.TWILIO_ACCOUNT_SID;
+        const authToken = process.env.TWILIO_AUTH_TOKEN;
+        if (!accountSid || !authToken) {
+          return { success: false, error: "Twilio credentials not configured." };
+        }
+
+        const client = twilio(accountSid, authToken);
+
+        // Determine the target phone number — use input or first purchased number
+        let targetSid: string | null = null;
+        let targetNumber = input.phoneNumber ?? "";
+
+        const incomingNumbers = await client.incomingPhoneNumbers.list({ limit: 20 });
+
+        if (targetNumber) {
+          const match = incomingNumbers.find(n => n.phoneNumber === targetNumber);
+          if (match) targetSid = match.sid;
+        } else if (incomingNumbers.length > 0) {
+          targetSid = incomingNumbers[0].sid;
+          targetNumber = incomingNumbers[0].phoneNumber;
+        }
+
+        if (!targetSid) {
+          return { success: false, error: `Phone number ${targetNumber || '(none)'} not found in your Twilio account.` };
+        }
+
+        // Determine the Voice URL — use the published domain or input override
+        const appId = process.env.VITE_APP_ID ?? "";
+        const defaultVoiceUrl = appId
+          ? `https://${appId}.manus.space/api/webphone/inbound`
+          : "";
+        const voiceUrl = input.voiceUrl || defaultVoiceUrl;
+
+        if (!voiceUrl) {
+          return { success: false, error: "Cannot determine Voice URL. Set VITE_APP_ID or provide a voiceUrl." };
+        }
+
+        // Update the phone number's Voice URL
+        await client.incomingPhoneNumbers(targetSid).update({
+          voiceUrl,
+          voiceMethod: "POST",
+          statusCallback: voiceUrl.replace("/inbound", "/status"),
+          statusCallbackMethod: "POST",
+        });
+
+        console.log(`[Webphone] Configured inbound routing: ${targetNumber} → ${voiceUrl}`);
+        return {
+          success: true,
+          phoneNumber: targetNumber,
+          voiceUrl,
+          message: `Inbound calls to ${targetNumber} will now ring in the Webphone.`,
+        };
+      } catch (err: any) {
+        console.error("[Webphone] configureInboundRouting error:", err.message);
+        return { success: false, error: err.message };
+      }
+    }),
+
+  /**
+   * Get the current inbound routing configuration for all Twilio numbers.
+   */
+  getInboundRoutingStatus: operatorProcedure.query(async () => {
+    try {
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      if (!accountSid || !authToken) return { numbers: [] };
+
+      const client = twilio(accountSid, authToken);
+      const incomingNumbers = await client.incomingPhoneNumbers.list({ limit: 20 });
+
+      const appId = process.env.VITE_APP_ID ?? "";
+      const expectedUrl = appId ? `https://${appId}.manus.space/api/webphone/inbound` : "";
+
+      return {
+        numbers: incomingNumbers.map(n => ({
+          phoneNumber: n.phoneNumber,
+          friendlyName: n.friendlyName,
+          voiceUrl: n.voiceUrl ?? "",
+          isConfigured: expectedUrl ? (n.voiceUrl ?? "").includes("/api/webphone/inbound") : false,
+        })),
+      };
+    } catch (err: any) {
+      console.error("[Webphone] getInboundRoutingStatus error:", err.message);
+      return { numbers: [] };
+    }
+  }),
+
+  /**
+   * Purchase a Telnyx phone number and assign it to the SIP connection.
+   * Searches for available numbers in the specified country (default: US).
+   */
+  purchaseTelnyxNumber: operatorProcedure
+    .input(z.object({
+      countryCode: z.string().default("US"),
+      areaCode: z.string().optional(),
+      numberType: z.enum(["local", "toll_free", "national"]).default("local"),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const apiKey = process.env.TELNYX_API_KEY;
+        const connectionId = process.env.TELNYX_SIP_CONNECTION_ID;
+        if (!apiKey) {
+          return { success: false, error: "TELNYX_API_KEY not configured." };
+        }
+
+        const headers = {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        };
+
+        // Step 1: Search for available numbers
+        const searchParams = new URLSearchParams({
+          "filter[country_code]": input.countryCode,
+          "filter[features]": "sip_trunking",
+          "filter[limit]": "5",
+        });
+        if (input.areaCode) {
+          searchParams.set("filter[national_destination_code]", input.areaCode);
+        }
+
+        const searchRes = await fetch(
+          `https://api.telnyx.com/v2/available_phone_numbers?${searchParams}`,
+          { headers }
+        );
+        const searchData = await searchRes.json() as { data?: Array<{ phone_number: string; features?: Array<{ name: string }>; region_information?: Array<{ region_name: string }> }> };
+
+        if (!searchData.data || searchData.data.length === 0) {
+          return { success: false, error: `No ${input.numberType} numbers available in ${input.countryCode}${input.areaCode ? ` (area ${input.areaCode})` : ""}.` };
+        }
+
+        const availableNumber = searchData.data[0];
+        console.log(`[Telnyx] Found available number: ${availableNumber.phone_number}`);
+
+        // Step 2: Purchase the number
+        const orderBody: Record<string, unknown> = {
+          phone_numbers: [{ phone_number: availableNumber.phone_number }],
+        };
+        if (connectionId) {
+          orderBody.connection_id = connectionId;
+        }
+
+        const orderRes = await fetch("https://api.telnyx.com/v2/number_orders", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(orderBody),
+        });
+        const orderData = await orderRes.json() as { data?: { id: string; status: string; phone_numbers?: Array<{ phone_number: string; status: string }> }; errors?: Array<{ detail: string }> };
+
+        if (orderData.errors && orderData.errors.length > 0) {
+          return { success: false, error: orderData.errors[0].detail };
+        }
+
+        const purchasedNumber = orderData.data?.phone_numbers?.[0]?.phone_number ?? availableNumber.phone_number;
+        console.log(`[Telnyx] Purchased number: ${purchasedNumber}, order: ${orderData.data?.id}`);
+
+        // Step 3: If connection ID is set, assign the number to the SIP connection
+        if (connectionId) {
+          try {
+            // Update the phone number's connection
+            await fetch(`https://api.telnyx.com/v2/phone_numbers/${purchasedNumber}`, {
+              method: "PATCH",
+              headers,
+              body: JSON.stringify({ connection_id: connectionId }),
+            });
+            console.log(`[Telnyx] Assigned ${purchasedNumber} to connection ${connectionId}`);
+          } catch (assignErr: any) {
+            console.warn(`[Telnyx] Failed to assign to connection: ${assignErr.message}`);
+          }
+        }
+
+        return {
+          success: true,
+          phoneNumber: purchasedNumber,
+          orderId: orderData.data?.id ?? "",
+          connectionId: connectionId ?? null,
+          message: `Purchased ${purchasedNumber}${connectionId ? ` and assigned to SIP connection ${connectionId}` : ""}.`,
+        };
+      } catch (err: any) {
+        console.error("[Webphone] purchaseTelnyxNumber error:", err.message);
+        return { success: false, error: err.message };
+      }
+    }),
+
+  /**
+   * List Telnyx phone numbers on the account.
+   */
+  getTelnyxNumbers: operatorProcedure.query(async () => {
+    try {
+      const apiKey = process.env.TELNYX_API_KEY;
+      if (!apiKey) return { numbers: [] };
+
+      const res = await fetch("https://api.telnyx.com/v2/phone_numbers?page[size]=20", {
+        headers: { "Authorization": `Bearer ${apiKey}` },
+      });
+      const data = await res.json() as { data?: Array<{ phone_number: string; status: string; connection_id: string | null; connection_name: string | null }> };
+
+      return {
+        numbers: (data.data ?? []).map(n => ({
+          phoneNumber: n.phone_number,
+          status: n.status,
+          connectionId: n.connection_id,
+          connectionName: n.connection_name,
+        })),
+      };
+    } catch (err: any) {
+      console.error("[Webphone] getTelnyxNumbers error:", err.message);
+      return { numbers: [] };
+    }
+  }),
+
+  /**
+   * Get aggregated webphone activity stats for the OCC dashboard.
+   * Returns totals for today, this week, and all-time, plus per-carrier breakdown.
+   */
+  getActivityStats: operatorProcedure.query(async () => {
+    try {
+      const db = await getDb();
+      if (!db) return getEmptyStats();
+
+      const now = Date.now();
+      const todayStart = now - (now % 86400000); // Start of UTC day
+      const weekStart = todayStart - (6 * 86400000); // 7 days ago
+
+      // All sessions
+      const allSessions = await db
+        .select()
+        .from(webphoneSessions)
+        .orderBy(desc(webphoneSessions.startedAt))
+        .limit(500);
+
+      const todaySessions = allSessions.filter(s => (s.startedAt ?? 0) >= todayStart);
+      const weekSessions = allSessions.filter(s => (s.startedAt ?? 0) >= weekStart);
+
+      // Currently active calls (status = 'initiated' and no endedAt)
+      const activeCalls = allSessions.filter(s => s.status === "initiated" && !s.endedAt);
+
+      const computeStats = (sessions: typeof allSessions) => {
+        const total = sessions.length;
+        const completed = sessions.filter(s => s.status === "completed").length;
+        const failed = sessions.filter(s => s.status === "failed" || s.status === "no_answer").length;
+        const totalSecs = sessions.reduce((sum, s) => sum + (s.durationSecs ?? 0), 0);
+        const avgDuration = total > 0 ? Math.round(totalSecs / total) : 0;
+        const twilioCount = sessions.filter(s => s.carrier === "twilio").length;
+        const telnyxCount = sessions.filter(s => s.carrier === "telnyx").length;
+        const inbound = sessions.filter(s => s.direction === "inbound").length;
+        const outbound = sessions.filter(s => s.direction === "outbound").length;
+        return { total, completed, failed, totalSecs, avgDuration, twilioCount, telnyxCount, inbound, outbound };
+      }
+
+      return {
+        today: computeStats(todaySessions),
+        week: computeStats(weekSessions),
+        allTime: computeStats(allSessions),
+        activeCalls: activeCalls.length,
+        recentCalls: allSessions.slice(0, 5).map(s => ({
+          id: s.id,
+          carrier: s.carrier,
+          direction: s.direction,
+          remoteNumber: s.remoteNumber,
+          status: s.status,
+          durationSecs: s.durationSecs,
+          startedAt: s.startedAt,
+        })),
+      };
+    } catch (err: any) {
+      console.error("[Webphone] getActivityStats error:", err.message);
+      return getEmptyStats();
+    }
+  }),
 });
+
+function getEmptyStats() {
+  const empty = { total: 0, completed: 0, failed: 0, totalSecs: 0, avgDuration: 0, twilioCount: 0, telnyxCount: 0, inbound: 0, outbound: 0 };
+  return {
+    today: empty,
+    week: empty,
+    allTime: empty,
+    activeCalls: 0,
+    recentCalls: [] as Array<{ id: number; carrier: string; direction: string; remoteNumber: string | null; status: string; durationSecs: number | null; startedAt: number | null }>,
+  };
+}

@@ -522,3 +522,30 @@
 ### Tests & Checkpoint
 - [x] Write vitest for call history, caller ID, error mapping, and E.164 normalization (18 tests passing)
 - [x] Save checkpoint and present to user
+
+## Round 64 — Webphone Inbound Routing, Telnyx Number & OCC Activity Card
+
+### 1. Configure Twilio Inbound Routing via API
+- [x] Add configureInboundRouting tRPC mutation (updates Twilio number Voice URL via REST API)
+- [x] Add getInboundRoutingStatus tRPC query (shows current Voice URL config for all numbers)
+- [x] Voice URL auto-derived from VITE_APP_ID → https://{appId}.manus.space/api/webphone/inbound
+- [x] One-click "Configure" button in WebphoneActivityCard config panel
+
+### 2. Purchase Telnyx Phone Number
+- [x] Add purchaseTelnyxNumber tRPC mutation (search → order → assign to SIP connection)
+- [x] Add getTelnyxNumbers tRPC query (list all Telnyx numbers with connection status)
+- [x] Supports country code and area code filters
+- [x] Auto-assigns to TELNYX_SIP_CONNECTION_ID if set
+- [x] One-click "Purchase US Number" button in config panel
+
+### 3. Live Webphone Activity Card on OCC Dashboard
+- [x] Add getActivityStats tRPC procedure (today/week/allTime stats, active calls, carrier split, avg duration)
+- [x] Build WebphoneActivityCard component with period tabs, stats grid, carrier bar, recent calls
+- [x] Add card to OCC Webphone panel (appears alongside the Webphone dialer)
+- [x] Auto-refresh every 15 seconds for near-real-time updates
+- [x] Expandable config panel with inbound routing + Telnyx number management
+
+### Tests & Checkpoint
+- [x] Write vitest for inbound routing config, Telnyx purchase flow, activity stats (14 tests)
+- [x] All 50 webphone tests passing across 4 test files
+- [x] Save checkpoint and present to user
