@@ -18,6 +18,8 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Device as TwilioDevice, Call as TwilioCallNS } from "@twilio/voice-sdk";
+import type { Call as TwilioCall } from "@twilio/voice-sdk";
 import { Phone, PhoneOff, Mic, MicOff, PhoneCall, ChevronDown, ChevronUp, Clock, Signal, AlertTriangle, CheckCircle, XCircle, RotateCcw, Hash } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -220,27 +222,8 @@ export default function Webphone({
   // ─── Twilio call init ────────────────────────────────────────────────────────
 
   const initTwilioCall = async (data: { token: string }, number: string) => {
-    // Dynamically load Twilio Voice JS SDK (@twilio/voice-sdk v2.18.0 via unpkg)
-    if (!(window as unknown as Record<string, unknown>).Twilio) {
-      await new Promise<void>((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/@twilio/voice-sdk@2.18.0/dist/twilio.min.js";
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error("Failed to load Twilio SDK — check network or CSP settings"));
-        document.head.appendChild(script);
-      });
-    }
-
-    const TwilioSDK = (window as unknown as Record<string, { Device: unknown }>).Twilio;
-    const Device = TwilioSDK.Device as {
-      new(token: string, opts: object): {
-        connect: (opts: object) => unknown;
-        on: (event: string, cb: (...args: unknown[]) => void) => void;
-        destroy: () => void;
-      };
-    };
-
-    const device = new Device(data.token, { logLevel: 1, codecPreferences: ["opus", "pcmu"] });
+    // Use statically imported @twilio/voice-sdk (no CDN loading needed)
+    const device = new TwilioDevice(data.token, { logLevel: 1, codecPreferences: [TwilioCallNS.Codec.Opus, TwilioCallNS.Codec.PCMU] });
     twilioDeviceRef.current = device;
 
     device.on("error", (err: unknown) => {
@@ -249,18 +232,14 @@ export default function Webphone({
       toast.error("Call error", { description: "Twilio reported an error." });
     });
 
-    const call = device.connect({ params: { To: number } });
+    const call: TwilioCall = await device.connect({ params: { To: number } });
     twilioCallRef.current = call;
 
-    const callObj = call as {
-      on: (event: string, cb: (...args: unknown[]) => void) => void;
-    };
-
-    callObj.on("ringing", () => setCallState("ringing"));
-    callObj.on("accept", () => setCallState("in_call"));
-    callObj.on("disconnect", () => handleCallEnded("completed"));
-    callObj.on("cancel", () => handleCallEnded("no_answer"));
-    callObj.on("reject", () => handleCallEnded("no_answer"));
+    call.on("ringing", () => setCallState("ringing"));
+    call.on("accept", () => setCallState("in_call"));
+    call.on("disconnect", () => handleCallEnded("completed"));
+    call.on("cancel", () => handleCallEnded("no_answer"));
+    call.on("reject", () => handleCallEnded("no_answer"));
 
     setCallState("ringing");
   };

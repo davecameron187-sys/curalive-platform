@@ -48,6 +48,7 @@
     "@trpc/client": "^11.6.0",
     "@trpc/react-query": "^11.6.0",
     "@trpc/server": "^11.6.0",
+    "@twilio/voice-sdk": "^2.18.0",
     "@types/multer": "^2.0.0",
     "ably": "^2.18.0",
     "axios": "^1.12.0",
