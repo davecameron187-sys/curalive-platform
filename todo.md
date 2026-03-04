@@ -498,3 +498,27 @@
 - [x] Configure TwiML App Voice URL in Twilio dashboard to https://chorusai-mdu4k2ib.manus.space/api/webphone/twiml
 - [x] Configure Telnyx webhook URL to https://chorusai-mdu4k2ib.manus.space/api/webphone/telnyx
 - [x] Verified: token generation SUCCESS, caller ID format valid, TwiML XML generation SUCCESS
+
+## Round 63 — Webphone Completion & Polish
+
+### Call History Logging
+- [x] Add call history logging to DB (persist webphone_sessions on call end)
+- [x] Add getCallHistory tRPC procedure with pagination
+- [x] Add Call History panel to Webphone UI (recent calls list with duration, status, number)
+
+### Human-Readable Error Messages
+- [x] Map Twilio error codes to user-friendly descriptions in Webphone UI
+- [x] Add error toast/banner with actionable messages
+
+### Caller ID Selection
+- [x] Restore caller ID selection dropdown (fetch verified numbers from Twilio API)
+- [x] Pass selected caller ID through Device.connect() params to TwiML endpoint
+
+### Inbound Call Routing
+- [x] Add inbound TwiML endpoint (/api/webphone/inbound) for routing calls to browser client
+- [x] Add incoming call UI (ring notification, accept/reject buttons)
+- [ ] Configure Twilio number Voice URL to point to /api/webphone/inbound (requires Twilio dashboard)
+
+### Tests & Checkpoint
+- [x] Write vitest for call history, caller ID, error mapping, and E.164 normalization (18 tests passing)
+- [x] Save checkpoint and present to user

@@ -4,23 +4,25 @@
  * Features:
  *   - Dial pad (0–9, *, #) with DTMF tone support via Web Audio API
  *   - Call controls: Call, Hang Up, Mute, Hold
+ *   - Caller ID selection dropdown (fetches purchased + verified Twilio numbers)
+ *   - Human-readable Twilio error messages
+ *   - Incoming call UI (ring notification, accept/reject)
  *   - Dual-carrier indicator: Twilio (primary) + Telnyx (fallback)
  *   - Automatic failover: if primary token fails, silently switches to fallback
  *   - Call duration timer
- *   - Recent calls list (last 10 sessions)
+ *   - Enhanced recent calls list with call history panel
  *   - Minimise/expand toggle for use alongside OCC panels
  *   - Pre-fill dial pad from external prop (e.g. clicking a participant phone number)
- *
- * Integration:
- *   - Twilio Voice JS SDK loaded dynamically from CDN
- *   - Telnyx WebRTC SDK loaded dynamically from CDN
- *   - Both SDKs are loaded only when needed to keep initial bundle small
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Device as TwilioDevice } from "@twilio/voice-sdk";
 import type { Call as TwilioCall } from "@twilio/voice-sdk";
-import { Phone, PhoneOff, Mic, MicOff, PhoneCall, ChevronDown, ChevronUp, Clock, Signal, AlertTriangle, CheckCircle, XCircle, RotateCcw, Hash } from "lucide-react";
+import {
+  Phone, PhoneOff, Mic, MicOff, PhoneCall, PhoneIncoming, PhoneForwarded,
+  ChevronDown, ChevronUp, Clock, Signal, AlertTriangle, CheckCircle,
+  XCircle, RotateCcw, Hash, History, ChevronRight, Volume2
+} from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,8 +31,9 @@ import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type CallState = "idle" | "connecting" | "ringing" | "in_call" | "ending";
+type CallState = "idle" | "connecting" | "ringing" | "in_call" | "ending" | "incoming";
 type Carrier = "twilio" | "telnyx";
+type ViewMode = "dialer" | "history";
 
 interface WebphoneProps {
   /** Pre-fill the dial pad with this number (e.g. from a participant row) */
@@ -43,6 +46,40 @@ interface WebphoneProps {
   onCallStart?: (number: string, carrier: Carrier) => void;
   /** Callback when a call ends */
   onCallEnd?: (durationSecs: number) => void;
+}
+
+// ─── Twilio error code → user-friendly message map (client-side) ─────────────
+
+const TWILIO_ERROR_MAP: Record<number, string> = {
+  13224: "Invalid phone number format. Use E.164 format (e.g. +27821234567).",
+  13225: "Caller ID is not a verified Twilio number.",
+  13227: "Destination number is not reachable.",
+  13228: "Call rejected by the destination carrier.",
+  13230: "Destination number is busy. Try again later.",
+  13231: "Call timed out — no answer.",
+  13233: "International calling is not enabled on this account.",
+  13235: "Destination country is not supported.",
+  20101: "Access token is invalid or expired. Refresh the page.",
+  20103: "Access token has expired. Refresh the page.",
+  31002: "Connection declined by Twilio.",
+  31003: "Connection timed out. Check your internet.",
+  31005: "WebSocket connection failed. Check firewall settings.",
+  31009: "Transport error — unstable internet connection.",
+  31201: "Authentication failed. Credentials may be invalid.",
+  31204: "Voice SDK could not register. Check TwiML App SID.",
+  31205: "JWT token expired during the call. Refresh and retry.",
+  31208: "Media connection failed. Check microphone and firewall.",
+  31401: "Insufficient funds in Twilio account.",
+  31480: "No answer from the dialled number.",
+  31486: "The dialled number is busy.",
+  31603: "Call rejected by the remote party.",
+};
+
+function friendlyError(err: unknown): string {
+  if (!err) return "An unknown error occurred.";
+  const e = err as { code?: number; message?: string };
+  if (e.code && TWILIO_ERROR_MAP[e.code]) return TWILIO_ERROR_MAP[e.code];
+  return e.message || "An unknown error occurred.";
 }
 
 // ─── DTMF tone frequencies ────────────────────────────────────────────────────
@@ -70,8 +107,44 @@ function playDTMF(key: string) {
       osc.stop(ctx.currentTime + 0.12);
     });
   } catch {
-    // AudioContext not available (e.g. SSR) — silently ignore
+    // AudioContext not available — silently ignore
   }
+}
+
+// ─── Ring tone generator ──────────────────────────────────────────────────────
+
+function useRingTone() {
+  const ctxRef = useRef<AudioContext | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const start = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      ctxRef.current = ctx;
+      const playRing = () => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 440;
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      };
+      playRing();
+      intervalRef.current = setInterval(playRing, 2000);
+    } catch { /* ignore */ }
+  }, []);
+
+  const stop = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = null;
+    ctxRef.current?.close();
+    ctxRef.current = null;
+  }, []);
+
+  return { start, stop };
 }
 
 // ─── Carrier status dot ───────────────────────────────────────────────────────
@@ -100,12 +173,15 @@ export default function Webphone({
 }: WebphoneProps) {
   // UI state
   const [minimised, setMinimised] = useState(defaultMinimised);
+  const [viewMode, setViewMode] = useState<ViewMode>("dialer");
   const [dialValue, setDialValue] = useState(prefillNumber);
   const [callState, setCallState] = useState<CallState>("idle");
   const [muted, setMuted] = useState(false);
   const [onHold, setOnHold] = useState(false);
   const [activeCarrier, setActiveCarrier] = useState<Carrier>("twilio");
   const [sessionId, setSessionId] = useState<number | null>(null);
+  const [selectedCallerId, setSelectedCallerId] = useState<string>("");
+  const [incomingFrom, setIncomingFrom] = useState<string>("");
 
   // Call timer
   const [elapsed, setElapsed] = useState(0);
@@ -115,24 +191,38 @@ export default function Webphone({
   const twilioDeviceRef = useRef<unknown>(null);
   const twilioCallRef = useRef<unknown>(null);
 
+  // Ring tone
+  const ringTone = useRingTone();
+
   // tRPC
   const { data: accountStatus } = trpc.webphone.getAccountStatus.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000, // cache for 5 minutes — account type rarely changes
+    staleTime: 5 * 60 * 1000,
     retry: false,
   });
   const { data: carrierStatus, refetch: refetchCarrierStatus } = trpc.webphone.getCarrierStatus.useQuery(undefined, {
-    refetchInterval: 30_000, // poll every 30s
+    refetchInterval: 30_000,
   });
-  const { data: sessionHistory, refetch: refetchHistory } = trpc.webphone.getSessionHistory.useQuery({ limit: 10 });
+  const { data: callerIdData } = trpc.webphone.getCallerIds.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const { data: sessionHistory, refetch: refetchHistory } = trpc.webphone.getSessionHistory.useQuery({ limit: 20 });
   const getTokenQuery = trpc.webphone.getToken.useQuery(
     { preferredCarrier: "auto" },
-    { enabled: false } // only fetch on demand
+    { enabled: false }
   );
   const logSessionMutation = trpc.webphone.logSession.useMutation();
   const endSessionMutation = trpc.webphone.endSession.useMutation();
   const setCarrierStatusMutation = trpc.webphone.setCarrierStatus.useMutation({
     onSuccess: () => refetchCarrierStatus(),
   });
+
+  // Set default caller ID when data loads
+  useEffect(() => {
+    if (callerIdData?.defaultCallerId && !selectedCallerId) {
+      setSelectedCallerId(callerIdData.defaultCallerId);
+    }
+  }, [callerIdData, selectedCallerId]);
 
   // Sync prefill number
   useEffect(() => {
@@ -161,7 +251,6 @@ export default function Webphone({
   const handleKey = useCallback((key: string) => {
     playDTMF(key);
     if (callState === "in_call" && twilioCallRef.current) {
-      // Send DTMF to active call
       try {
         (twilioCallRef.current as { sendDigits: (d: string) => void }).sendDigits(key);
       } catch { /* ignore */ }
@@ -173,14 +262,12 @@ export default function Webphone({
   const handleBackspace = () => setDialValue(v => v.slice(0, -1));
 
   // ─── E.164 normalization ─────────────────────────────────────────────────────
-  // Converts local SA numbers (0xxxxxxxxx) to +27xxxxxxxxx, handles 00-prefix,
-  // and strips spaces/dashes/parens. Numbers already starting with + pass through.
   const normalizeToE164 = (raw: string): string => {
     const stripped = raw.trim().replace(/[\s\-().]/g, "");
-    if (stripped.startsWith("+")) return stripped;          // already E.164
-    if (stripped.startsWith("00")) return "+" + stripped.slice(2); // 00-prefixed international
-    if (stripped.startsWith("0") && stripped.length === 10) return "+27" + stripped.slice(1); // SA local
-    return stripped; // pass through as-is
+    if (stripped.startsWith("+")) return stripped;
+    if (stripped.startsWith("00")) return "+" + stripped.slice(2);
+    if (stripped.startsWith("0") && stripped.length === 10) return "+27" + stripped.slice(1);
+    return stripped;
   };
 
   // ─── Initiate call ───────────────────────────────────────────────────────────
@@ -195,7 +282,6 @@ export default function Webphone({
     setCallState("connecting");
 
     try {
-      // Fetch token from server (auto-selects carrier with failover)
       const tokenData = await getTokenQuery.refetch();
       if (!tokenData.data) throw new Error("Could not obtain carrier credentials");
 
@@ -215,7 +301,6 @@ export default function Webphone({
 
       setActiveCarrier(data.carrier);
 
-      // Log session
       const logResult = await logSessionMutation.mutateAsync({
         carrier: data.carrier,
         direction: "outbound",
@@ -227,7 +312,7 @@ export default function Webphone({
 
     } catch (err: unknown) {
       setCallState("idle");
-      const msg = err instanceof Error ? err.message : "Call failed";
+      const msg = friendlyError(err);
       toast.error("Call failed", { description: msg });
     }
   };
@@ -235,7 +320,6 @@ export default function Webphone({
   // ─── Twilio call init ────────────────────────────────────────────────────────
 
   const initTwilioCall = async (data: { token: string }, number: string) => {
-    // Use statically imported @twilio/voice-sdk (no CDN loading needed)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const device = new TwilioDevice(data.token, { logLevel: 1, codecPreferences: ["opus", "pcmu"] as any });
     twilioDeviceRef.current = device;
@@ -243,11 +327,29 @@ export default function Webphone({
     device.on("error", (err: unknown) => {
       console.error("[Webphone/Twilio] Device error:", err);
       setCallState("idle");
-      const errMsg = (err as { message?: string })?.message || "Twilio reported an error.";
+      const errMsg = friendlyError(err);
       toast.error("Call error", { description: errMsg });
     });
 
-    // Must register the device with Twilio's signalling server before placing a call
+    // Register for incoming calls
+    device.on("incoming", (call: TwilioCall) => {
+      const from = call.parameters?.From || "Unknown";
+      setIncomingFrom(from);
+      setCallState("incoming");
+      twilioCallRef.current = call;
+      ringTone.start();
+
+      call.on("cancel", () => {
+        ringTone.stop();
+        setCallState("idle");
+        setIncomingFrom("");
+        toast("Missed call", { description: `From ${from}` });
+      });
+
+      call.on("disconnect", () => handleCallEnded("completed"));
+    });
+
+    // Must register the device before placing a call
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(
         () => reject(new Error("Device registration timed out — check TwiML App SID and API credentials")),
@@ -259,13 +361,18 @@ export default function Webphone({
       });
       device.on("registrationFailed", (err: unknown) => {
         clearTimeout(timeout);
-        const msg = (err as { message?: string })?.message || "Device registration failed";
+        const msg = friendlyError(err);
         reject(new Error(msg));
       });
       device.register();
     });
 
-    const call: TwilioCall = await device.connect({ params: { To: number } });
+    // Place outbound call with selected caller ID
+    const connectParams: Record<string, string> = { To: number };
+    if (selectedCallerId) {
+      connectParams.CallerId = selectedCallerId;
+    }
+    const call: TwilioCall = await device.connect({ params: connectParams });
     twilioCallRef.current = call;
 
     call.on("ringing", () => setCallState("ringing"));
@@ -277,10 +384,34 @@ export default function Webphone({
     setCallState("ringing");
   };
 
+  // ─── Accept incoming call ────────────────────────────────────────────────────
+
+  const handleAcceptIncoming = () => {
+    ringTone.stop();
+    const call = twilioCallRef.current as { accept?: () => void } | null;
+    call?.accept?.();
+    setCallState("in_call");
+
+    // Log inbound session
+    logSessionMutation.mutateAsync({
+      carrier: "twilio",
+      direction: "inbound",
+      remoteNumber: incomingFrom,
+      conferenceId,
+    }).then(result => setSessionId(result.id));
+  };
+
+  const handleRejectIncoming = () => {
+    ringTone.stop();
+    const call = twilioCallRef.current as { reject?: () => void } | null;
+    call?.reject?.();
+    setCallState("idle");
+    setIncomingFrom("");
+  };
+
   // ─── Telnyx call init ────────────────────────────────────────────────────────
 
   const initTelnyxCall = async (data: { sipUser: string; sipPassword: string; sipDomain: string }, number: string) => {
-    // Dynamically load Telnyx WebRTC SDK
     if (!(window as unknown as Record<string, unknown>).TelnyxRTC) {
       await new Promise<void>((resolve, reject) => {
         const script = document.createElement("script");
@@ -306,7 +437,7 @@ export default function Webphone({
     });
 
     client.on("telnyx.ready", () => {
-      const call = client.newCall({ destinationNumber: number, callerNumber: "+27000000000" });
+      const call = client.newCall({ destinationNumber: number, callerNumber: selectedCallerId || "+27000000000" });
       twilioCallRef.current = call;
       setCallState("ringing");
     });
@@ -343,6 +474,8 @@ export default function Webphone({
     setCallState("idle");
     setMuted(false);
     setOnHold(false);
+    setIncomingFrom("");
+    ringTone.stop();
 
     // Destroy device
     try {
@@ -361,7 +494,7 @@ export default function Webphone({
 
     refetchHistory();
     onCallEnd?.(duration);
-  }, [elapsed, sessionId, endSessionMutation, refetchHistory, onCallEnd]);
+  }, [elapsed, sessionId, endSessionMutation, refetchHistory, onCallEnd, ringTone]);
 
   // ─── Mute / Hold ─────────────────────────────────────────────────────────────
 
@@ -374,7 +507,6 @@ export default function Webphone({
   };
 
   const toggleHold = () => {
-    // Hold is simulated via mute for now; full hold requires TwiML update
     setOnHold(h => !h);
     toast(onHold ? "Resumed" : "On Hold", { description: onHold ? "Call resumed." : "Caller placed on hold." });
   };
@@ -395,10 +527,11 @@ export default function Webphone({
 
   const callStateLabel: Record<CallState, string> = {
     idle: "Ready",
-    connecting: "Connecting…",
-    ringing: "Ringing…",
+    connecting: "Connecting\u2026",
+    ringing: "Ringing\u2026",
     in_call: formatDuration(elapsed),
-    ending: "Ending…",
+    ending: "Ending\u2026",
+    incoming: "Incoming\u2026",
   };
 
   const callStateColour: Record<CallState, string> = {
@@ -407,12 +540,13 @@ export default function Webphone({
     ringing: "text-amber-400 animate-pulse",
     in_call: "text-emerald-400",
     ending: "text-red-400",
+    incoming: "text-blue-400 animate-pulse",
   };
 
   return (
     <div className={cn(
       "bg-[#0f1117] border border-[#2a2d3a] rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200",
-      minimised ? "w-64" : "w-72"
+      minimised ? "w-64" : "w-80"
     )}>
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[#2a2d3a] bg-[#13161f]">
@@ -423,14 +557,55 @@ export default function Webphone({
             {callStateLabel[callState]}
           </span>
         </div>
-        <button onClick={() => setMinimised(m => !m)} className="text-muted-foreground hover:text-foreground transition-colors">
-          {minimised ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-1">
+          {!minimised && (
+            <button
+              onClick={() => setViewMode(v => v === "dialer" ? "history" : "dialer")}
+              className={cn("text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded",
+                viewMode === "history" && "text-primary")}
+              title={viewMode === "dialer" ? "Call History" : "Dialer"}
+            >
+              <History className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button onClick={() => setMinimised(m => !m)} className="text-muted-foreground hover:text-foreground transition-colors">
+            {minimised ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
 
       {!minimised && (
         <>
-          {/* ── Twilio Trial warning banner — only shown when account is actually on Trial ── */}
+          {/* ── Incoming call banner ── */}
+          {callState === "incoming" && (
+            <div className="px-3 py-3 bg-blue-500/10 border-b border-blue-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <PhoneIncoming className="w-4 h-4 text-blue-400 animate-pulse" />
+                <div>
+                  <p className="text-xs font-semibold text-blue-300">Incoming Call</p>
+                  <p className="text-[11px] font-mono text-blue-200">{incomingFrom || "Unknown"}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleAcceptIncoming}
+                  size="sm"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white h-8 text-xs"
+                >
+                  <Phone className="w-3 h-3 mr-1" /> Accept
+                </Button>
+                <Button
+                  onClick={handleRejectIncoming}
+                  size="sm"
+                  className="flex-1 bg-red-600 hover:bg-red-500 text-white h-8 text-xs"
+                >
+                  <PhoneOff className="w-3 h-3 mr-1" /> Reject
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Twilio Trial warning banner ── */}
           {accountStatus?.isTrial && twilioHealth?.status !== "down" && (
             <div className="flex items-start gap-2 px-3 py-2 bg-amber-500/10 border-b border-amber-500/20">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
@@ -466,130 +641,231 @@ export default function Webphone({
             />
           </div>
 
-          {/* ── Display ── */}
-          <div className="px-3 pt-3 pb-1">
-            <div className="flex items-center gap-1 bg-[#0c0e14] border border-[#2a2d3a] rounded-lg px-3 py-2">
-              <input
-                type="tel"
-                value={dialValue}
-                onChange={e => setDialValue(e.target.value)}
-                placeholder="+27 XX XXX XXXX"
-                disabled={callState !== "idle"}
-                className="flex-1 bg-transparent text-sm font-mono text-foreground placeholder:text-muted-foreground/50 outline-none"
-              />
-              {dialValue && callState === "idle" && (
-                <button onClick={handleBackspace} className="text-muted-foreground hover:text-foreground">
-                  <Hash className="w-3.5 h-3.5 rotate-45" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* ── Dial pad ── */}
-          <div className="px-3 py-2 grid grid-cols-3 gap-1.5">
-            {dialPadKeys.flat().map(key => (
-              <button
-                key={key}
-                onClick={() => handleKey(key)}
-                className="h-10 rounded-lg bg-[#1a1d27] hover:bg-[#22263a] active:bg-[#2a2d3a] text-foreground font-mono text-sm font-semibold transition-colors border border-[#2a2d3a] hover:border-primary/30"
-              >
-                {key}
-              </button>
-            ))}
-          </div>
-
-          {/* ── Call controls ── */}
-          <div className="px-3 pb-3 flex items-center gap-2">
-            {callState === "idle" ? (
-              <Button
-                onClick={handleCall}
-                disabled={!dialValue.trim()}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white h-10"
-              >
-                <Phone className="w-4 h-4 mr-2" />
-                Call
-              </Button>
-            ) : (
-              <>
-                <Button
-                  onClick={toggleMute}
-                  variant="outline"
-                  size="icon"
-                  className={cn("h-10 w-10 border-[#2a2d3a]", muted && "bg-amber-500/20 border-amber-500/40 text-amber-400")}
-                  disabled={callState !== "in_call"}
-                >
-                  {muted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </Button>
-                <Button
-                  onClick={toggleHold}
-                  variant="outline"
-                  size="icon"
-                  className={cn("h-10 w-10 border-[#2a2d3a]", onHold && "bg-blue-500/20 border-blue-500/40 text-blue-400")}
-                  disabled={callState !== "in_call"}
-                >
-                  <Clock className="w-4 h-4" />
-                </Button>
-                <Button
-                  onClick={handleHangUp}
-                  className="flex-1 bg-red-600 hover:bg-red-500 text-white h-10"
-                >
-                  <PhoneOff className="w-4 h-4 mr-2" />
-                  Hang Up
-                </Button>
-              </>
-            )}
-          </div>
-
-          {/* ── Carrier override controls ── */}
-          <div className="px-3 pb-2 flex items-center gap-1.5 border-t border-[#2a2d3a] pt-2">
-            <span className="text-[10px] text-muted-foreground flex-1">Carrier override:</span>
-            {(["twilio", "telnyx"] as Carrier[]).map(c => {
-              const health = c === "twilio" ? twilioHealth : telnyxHealth;
-              const isDown = health?.status === "down";
-              return (
-                <button
-                  key={c}
-                  onClick={() => setCarrierStatusMutation.mutate({ carrier: c, status: isDown ? "healthy" : "down" })}
-                  title={isDown ? `Restore ${c}` : `Mark ${c} down`}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {isDown
-                    ? <><RotateCcw className="w-3 h-3 text-emerald-400" /><span className="text-emerald-400">{c}</span></>
-                    : <><XCircle className="w-3 h-3" /><span>{c}</span></>
-                  }
-                </button>
-              );
-            })}
-          </div>
-
-          {/* ── Recent calls ── */}
-          {sessionHistory && sessionHistory.length > 0 && (
-            <div className="border-t border-[#2a2d3a] px-3 py-2 max-h-36 overflow-y-auto">
-              <p className="text-[10px] text-muted-foreground mb-1.5 font-semibold uppercase tracking-wider">Recent Calls</p>
-              <div className="space-y-1">
-                {sessionHistory.slice(0, 5).map(s => (
-                  <div
-                    key={s.id}
-                    className="flex items-center justify-between text-[11px] cursor-pointer hover:text-foreground text-muted-foreground"
-                    onClick={() => callState === "idle" && setDialValue(s.remoteNumber ?? "")}
+          {viewMode === "dialer" ? (
+            <>
+              {/* ── Caller ID selector ── */}
+              {callerIdData && callerIdData.callerIds.length > 0 && callState === "idle" && (
+                <div className="px-3 pt-2">
+                  <label className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1 block">
+                    Caller ID
+                  </label>
+                  <select
+                    value={selectedCallerId}
+                    onChange={e => setSelectedCallerId(e.target.value)}
+                    className="w-full bg-[#0c0e14] border border-[#2a2d3a] rounded-lg px-2 py-1.5 text-xs font-mono text-foreground outline-none focus:border-primary/40"
                   >
-                    <div className="flex items-center gap-1.5">
-                      {s.status === "completed"
-                        ? <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" />
-                        : <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
-                      }
-                      <span className="font-mono truncate max-w-[110px]">{s.remoteNumber ?? "Unknown"}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-[#2a2d3a]">
-                        {s.carrier}
-                      </Badge>
-                      {s.durationSecs != null && (
-                        <span className="font-mono text-[10px]">{formatDuration(s.durationSecs)}</span>
-                      )}
-                    </div>
-                  </div>
+                    {callerIdData.callerIds.map(c => (
+                      <option key={c.number} value={c.number}>
+                        {c.number} {c.label !== c.number ? `(${c.label})` : ""} [{c.type}]
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* ── Display ── */}
+              <div className="px-3 pt-2 pb-1">
+                <div className="flex items-center gap-1 bg-[#0c0e14] border border-[#2a2d3a] rounded-lg px-3 py-2">
+                  <input
+                    type="tel"
+                    value={dialValue}
+                    onChange={e => setDialValue(e.target.value)}
+                    placeholder="+27 XX XXX XXXX"
+                    disabled={callState !== "idle"}
+                    className="flex-1 bg-transparent text-sm font-mono text-foreground placeholder:text-muted-foreground/50 outline-none"
+                  />
+                  {dialValue && callState === "idle" && (
+                    <button onClick={handleBackspace} className="text-muted-foreground hover:text-foreground">
+                      <Hash className="w-3.5 h-3.5 rotate-45" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Dial pad ── */}
+              <div className="px-3 py-2 grid grid-cols-3 gap-1.5">
+                {dialPadKeys.flat().map(key => (
+                  <button
+                    key={key}
+                    onClick={() => handleKey(key)}
+                    className="h-10 rounded-lg bg-[#1a1d27] hover:bg-[#22263a] active:bg-[#2a2d3a] text-foreground font-mono text-sm font-semibold transition-colors border border-[#2a2d3a] hover:border-primary/30"
+                  >
+                    {key}
+                  </button>
                 ))}
+              </div>
+
+              {/* ── Call controls ── */}
+              <div className="px-3 pb-3 flex items-center gap-2">
+                {callState === "idle" ? (
+                  <Button
+                    onClick={handleCall}
+                    disabled={!dialValue.trim()}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white h-10"
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
+                    Call
+                  </Button>
+                ) : callState === "incoming" ? null : (
+                  <>
+                    <Button
+                      onClick={toggleMute}
+                      variant="outline"
+                      size="icon"
+                      className={cn("h-10 w-10 border-[#2a2d3a]", muted && "bg-amber-500/20 border-amber-500/40 text-amber-400")}
+                      disabled={callState !== "in_call"}
+                    >
+                      {muted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </Button>
+                    <Button
+                      onClick={toggleHold}
+                      variant="outline"
+                      size="icon"
+                      className={cn("h-10 w-10 border-[#2a2d3a]", onHold && "bg-blue-500/20 border-blue-500/40 text-blue-400")}
+                      disabled={callState !== "in_call"}
+                    >
+                      <Clock className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={handleHangUp}
+                      className="flex-1 bg-red-600 hover:bg-red-500 text-white h-10"
+                    >
+                      <PhoneOff className="w-4 h-4 mr-2" />
+                      Hang Up
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* ── Carrier override controls ── */}
+              <div className="px-3 pb-2 flex items-center gap-1.5 border-t border-[#2a2d3a] pt-2">
+                <span className="text-[10px] text-muted-foreground flex-1">Carrier override:</span>
+                {(["twilio", "telnyx"] as Carrier[]).map(c => {
+                  const health = c === "twilio" ? twilioHealth : telnyxHealth;
+                  const isDown = health?.status === "down";
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => setCarrierStatusMutation.mutate({ carrier: c, status: isDown ? "healthy" : "down" })}
+                      title={isDown ? `Restore ${c}` : `Mark ${c} down`}
+                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {isDown
+                        ? <><RotateCcw className="w-3 h-3 text-emerald-400" /><span className="text-emerald-400">{c}</span></>
+                        : <><XCircle className="w-3 h-3" /><span>{c}</span></>
+                      }
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* ── Quick recent calls (last 3) ── */}
+              {sessionHistory && sessionHistory.length > 0 && (
+                <div className="border-t border-[#2a2d3a] px-3 py-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Recent</p>
+                    <button
+                      onClick={() => setViewMode("history")}
+                      className="text-[10px] text-primary hover:text-primary/80 flex items-center gap-0.5"
+                    >
+                      View all <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    {sessionHistory.slice(0, 3).map(s => (
+                      <div
+                        key={s.id}
+                        className="flex items-center justify-between text-[11px] cursor-pointer hover:text-foreground text-muted-foreground"
+                        onClick={() => callState === "idle" && setDialValue(s.remoteNumber ?? "")}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          {s.direction === "inbound"
+                            ? <PhoneIncoming className="w-3 h-3 text-blue-400 shrink-0" />
+                            : s.status === "completed"
+                              ? <PhoneForwarded className="w-3 h-3 text-emerald-400 shrink-0" />
+                              : <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                          }
+                          <span className="font-mono truncate max-w-[120px]">{s.remoteNumber ?? "Unknown"}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-[#2a2d3a]">
+                            {s.carrier}
+                          </Badge>
+                          {s.durationSecs != null && (
+                            <span className="font-mono text-[10px]">{formatDuration(s.durationSecs)}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            /* ── Full Call History View ── */
+            <div className="flex flex-col max-h-[400px]">
+              <div className="px-3 py-2 border-b border-[#2a2d3a] flex items-center justify-between">
+                <p className="text-xs font-semibold text-foreground">Call History</p>
+                <button
+                  onClick={() => setViewMode("dialer")}
+                  className="text-[10px] text-primary hover:text-primary/80"
+                >
+                  Back to Dialer
+                </button>
+              </div>
+              <div className="overflow-y-auto px-3 py-2 space-y-1.5">
+                {(!sessionHistory || sessionHistory.length === 0) ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Volume2 className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-xs">No call history yet</p>
+                  </div>
+                ) : (
+                  sessionHistory.map(s => (
+                    <div
+                      key={s.id}
+                      className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-[#1a1d27] cursor-pointer transition-colors"
+                      onClick={() => {
+                        if (callState === "idle" && s.remoteNumber) {
+                          setDialValue(s.remoteNumber);
+                          setViewMode("dialer");
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        {s.direction === "inbound"
+                          ? <PhoneIncoming className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                          : s.status === "completed"
+                            ? <PhoneForwarded className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            : s.status === "failed"
+                              ? <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                              : <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        }
+                        <div>
+                          <p className="text-[11px] font-mono text-foreground">{s.remoteNumber ?? "Unknown"}</p>
+                          <p className="text-[9px] text-muted-foreground">
+                            {s.direction === "inbound" ? "Inbound" : "Outbound"} · {s.carrier}
+                            {s.startedAt ? ` · ${new Date(s.startedAt).toLocaleTimeString()}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <Badge
+                          variant="outline"
+                          className={cn("text-[9px] px-1 py-0 h-4",
+                            s.status === "completed" ? "border-emerald-500/30 text-emerald-400" :
+                            s.status === "failed" ? "border-red-500/30 text-red-400" :
+                            "border-amber-500/30 text-amber-400"
+                          )}
+                        >
+                          {s.status}
+                        </Badge>
+                        {s.durationSecs != null && (
+                          <p className="text-[10px] font-mono text-muted-foreground mt-0.5">{formatDuration(s.durationSecs)}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

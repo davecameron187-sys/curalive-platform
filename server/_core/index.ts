@@ -13,6 +13,7 @@ import { startReminderScheduler } from "../reminderScheduler";
 import { handleStripeWebhook } from "../stripeWebhook";
 import { buildTwiMLVoiceResponse } from "../webphone/twilio";
 import { parseTelnyxWebhook } from "../webphone/telnyx";
+import twilio_twiml from "twilio";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -44,22 +45,39 @@ async function startServer() {
   // Must use urlencoded body (Twilio sends application/x-www-form-urlencoded).
   app.post("/api/webphone/twiml", express.urlencoded({ extended: false }), (req, res) => {
     const to = req.body?.To ?? "";
-    // Always use the verified TWILIO_CALLER_ID as callerId.
-    // Twilio sends the client identity string (e.g. "operator-1") as From, NOT a phone number,
-    // so using req.body.From as callerId causes calls to fail with "Invalid From number".
-    const callerId = process.env.TWILIO_CALLER_ID ?? "";
-    console.log(`[TwiML] to=${to} callerId=${callerId} clientIdentity=${req.body?.From}`);
+    // The client can pass a CallerId param (from the caller ID selector dropdown).
+    // If provided and it looks like a valid E.164 number, use it; otherwise fall back to env var.
+    const clientCallerId = req.body?.CallerId ?? "";
+    const envCallerId = process.env.TWILIO_CALLER_ID ?? "";
+    const callerId = (clientCallerId && clientCallerId.startsWith("+")) ? clientCallerId : envCallerId;
+    console.log(`[TwiML] to=${to} callerId=${callerId} clientCallerId=${clientCallerId} envCallerId=${envCallerId} clientIdentity=${req.body?.From}`);
     if (!to) {
       res.type("text/xml").send("<Response><Say>Missing destination number.</Say></Response>");
       return;
     }
     if (!callerId) {
-      console.error("[TwiML] TWILIO_CALLER_ID env var not set!");
+      console.error("[TwiML] No caller ID available!");
       res.type("text/xml").send("<Response><Say>Caller ID not configured.</Say></Response>");
       return;
     }
     const twiml = buildTwiMLVoiceResponse(to, callerId);
     res.type("text/xml").send(twiml);
+  });
+
+  // Twilio inbound call endpoint — routes incoming calls to the browser client.
+  // Configure the Twilio phone number's Voice URL to point to this endpoint.
+  app.post("/api/webphone/inbound", express.urlencoded({ extended: false }), (req, res) => {
+    const from = req.body?.From ?? "Unknown";
+    const to = req.body?.To ?? "";
+    const callSid = req.body?.CallSid ?? "";
+    console.log(`[TwiML Inbound] from=${from} to=${to} callSid=${callSid}`);
+    const twiml = new twilio_twiml.twiml.VoiceResponse();
+    // Ring all connected browser clients (identity pattern: operator-*)
+    const dial = twiml.dial();
+    // Route to the first available operator client
+    // In a multi-operator setup, you'd iterate over connected clients
+    dial.client("operator-1");
+    res.type("text/xml").send(twiml.toString());
   });
 
   // Telnyx webhook endpoint — receives call events from Telnyx.

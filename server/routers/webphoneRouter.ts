@@ -27,6 +27,41 @@ import {
   type Carrier,
 } from "../webphone/carrierManager";
 
+// ─── Twilio error code → user-friendly message map ─────────────────────────
+const TWILIO_ERROR_MAP: Record<number, string> = {
+  13224: "Invalid phone number format. Please use E.164 format (e.g. +27821234567).",
+  13225: "Caller ID is not a verified Twilio number. Contact your administrator.",
+  13227: "Destination number is not reachable or has been disconnected.",
+  13228: "The call was rejected by the destination carrier.",
+  13230: "The destination number is busy. Try again later.",
+  13231: "The call timed out — no answer from the remote party.",
+  13233: "International calling is not enabled on this Twilio account.",
+  13235: "The destination country is not supported. Contact your administrator.",
+  20101: "Access token is invalid or expired. Please refresh the page.",
+  20103: "Access token has expired. Please refresh the page to get a new token.",
+  20104: "Access token not yet valid. Check your system clock.",
+  31002: "Connection declined by Twilio. Check your TwiML App configuration.",
+  31003: "Connection timed out. Check your internet connection.",
+  31005: "WebSocket connection to Twilio failed. Check your firewall settings.",
+  31009: "Transport error — your internet connection may be unstable.",
+  31201: "Authentication failed. Your Twilio credentials may be invalid.",
+  31204: "Twilio Voice SDK could not register. Check your TwiML App SID.",
+  31205: "JWT token expired during the call. Please refresh and try again.",
+  31208: "Media connection failed. Check your microphone permissions and firewall.",
+  31401: "Insufficient funds in your Twilio account. Please top up your balance.",
+  31480: "The number you dialled did not answer.",
+  31486: "The number you dialled is busy.",
+  31603: "The call was rejected by the remote party.",
+};
+
+/**
+ * Convert a Twilio error code to a human-readable message.
+ */
+function friendlyTwilioError(code: number | undefined, fallback: string): string {
+  if (code && TWILIO_ERROR_MAP[code]) return TWILIO_ERROR_MAP[code];
+  return fallback;
+}
+
 export const webphoneRouter = router({
   /**
    * Get a WebRTC token/credentials for the active carrier.
@@ -212,6 +247,60 @@ export const webphoneRouter = router({
           failoverEvents,
         },
       };
+    }),
+
+  /**
+   * Get available caller IDs — fetches purchased Twilio numbers and verified outgoing caller IDs.
+   */
+  getCallerIds: operatorProcedure.query(async () => {
+    try {
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      if (!accountSid || !authToken) return { callerIds: [], defaultCallerId: process.env.TWILIO_CALLER_ID ?? "" };
+
+      const client = twilio(accountSid, authToken);
+      const numbers: Array<{ number: string; label: string; type: string }> = [];
+
+      // Fetch purchased incoming phone numbers
+      const incomingNumbers = await client.incomingPhoneNumbers.list({ limit: 20 });
+      for (const n of incomingNumbers) {
+        numbers.push({
+          number: n.phoneNumber,
+          label: n.friendlyName || n.phoneNumber,
+          type: "purchased",
+        });
+      }
+
+      // Fetch verified outgoing caller IDs
+      const outgoingCallerIds = await client.outgoingCallerIds.list({ limit: 20 });
+      for (const c of outgoingCallerIds) {
+        // Skip if already in purchased numbers
+        if (!numbers.find(n => n.number === c.phoneNumber)) {
+          numbers.push({
+            number: c.phoneNumber,
+            label: c.friendlyName || c.phoneNumber,
+            type: "verified",
+          });
+        }
+      }
+
+      return {
+        callerIds: numbers,
+        defaultCallerId: process.env.TWILIO_CALLER_ID ?? (numbers[0]?.number ?? ""),
+      };
+    } catch (err: any) {
+      console.error("[Webphone] getCallerIds error:", err.message);
+      return { callerIds: [], defaultCallerId: process.env.TWILIO_CALLER_ID ?? "" };
+    }
+  }),
+
+  /**
+   * Translate a Twilio error code to a human-readable message.
+   */
+  translateError: operatorProcedure
+    .input(z.object({ code: z.number().int(), fallback: z.string().optional() }))
+    .query(({ input }) => {
+      return { message: friendlyTwilioError(input.code, input.fallback ?? "An unknown error occurred.") };
     }),
 
   /**
