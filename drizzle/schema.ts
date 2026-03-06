@@ -952,3 +952,374 @@ export const directAccessLog = mysqlTable("direct_access_log", {
 });
 export type DirectAccessLog = typeof directAccessLog.$inferSelect;
 export type InsertDirectAccessLog = typeof directAccessLog.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enterprise Quote & Billing System
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * billing_clients — CuraLive's enterprise customers (companies).
+ * One client can have many quotes and invoices.
+ */
+export const billingClients = mysqlTable("billing_clients", {
+  id: int("id").autoincrement().primaryKey(),
+  // Company details
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  registrationNumber: varchar("registration_number", { length: 128 }),
+  vatNumber: varchar("vat_number", { length: 64 }),
+  industry: varchar("industry", { length: 128 }),
+  // Primary contact
+  contactName: varchar("contact_name", { length: 255 }).notNull(),
+  contactEmail: varchar("contact_email", { length: 320 }).notNull(),
+  contactPhone: varchar("contact_phone", { length: 64 }),
+  contactJobTitle: varchar("contact_job_title", { length: 255 }),
+  // Billing address
+  billingAddress: text("billing_address"),
+  billingCity: varchar("billing_city", { length: 128 }),
+  billingCountry: varchar("billing_country", { length: 128 }).default("South Africa"),
+  billingPostalCode: varchar("billing_postal_code", { length: 32 }),
+  // Account settings
+  currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+  paymentTermsDays: int("payment_terms_days").default(30).notNull(),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["active", "inactive", "prospect"]).default("prospect").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BillingClient = typeof billingClients.$inferSelect;
+export type InsertBillingClient = typeof billingClients.$inferInsert;
+
+/**
+ * billing_quotes — Formal quotes sent to clients before invoicing.
+ * Tracks the full lifecycle: draft → sent → accepted / declined → invoiced.
+ */
+export const billingQuotes = mysqlTable("billing_quotes", {
+  id: int("id").autoincrement().primaryKey(),
+  quoteNumber: varchar("quote_number", { length: 32 }).notNull().unique(), // e.g. "QUO-2026-0001"
+  clientId: int("client_id").notNull(), // FK → billing_clients.id
+  // Metadata
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  // Financials (stored in minor units, e.g. cents)
+  subtotalCents: bigint("subtotal_cents", { mode: "number" }).default(0).notNull(),
+  discountCents: bigint("discount_cents", { mode: "number" }).default(0).notNull(),
+  taxPercent: int("tax_percent").default(15).notNull(), // VAT %
+  totalCents: bigint("total_cents", { mode: "number" }).default(0).notNull(),
+  currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+  // Status lifecycle
+  status: mysqlEnum("status", ["draft", "sent", "viewed", "accepted", "declined", "invoiced", "expired"]).default("draft").notNull(),
+  // Dates
+  issuedAt: timestamp("issued_at"),
+  expiresAt: timestamp("expires_at"),
+  acceptedAt: timestamp("accepted_at"),
+  // Client-facing access token (for /quote/:token page)
+  accessToken: varchar("access_token", { length: 64 }).unique(),
+  // Terms and notes
+  paymentTerms: text("payment_terms"),
+  internalNotes: text("internal_notes"),
+  clientNotes: text("client_notes"),
+  // Created by
+  createdByUserId: int("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BillingQuote = typeof billingQuotes.$inferSelect;
+export type InsertBillingQuote = typeof billingQuotes.$inferInsert;
+
+/**
+ * billing_line_items — Individual line items on a quote or invoice.
+ * Can be linked to a quote, an invoice, or both.
+ */
+export const billingLineItems = mysqlTable("billing_line_items", {
+  id: int("id").autoincrement().primaryKey(),
+  quoteId: int("quote_id"),   // FK → billing_quotes.id (nullable if invoice-only)
+  invoiceId: int("invoice_id"), // FK → billing_invoices.id (nullable if quote-only)
+  // Item details
+  description: varchar("description", { length: 512 }).notNull(),
+  category: varchar("category", { length: 128 }), // e.g. "Platform License", "Event Fee", "Setup"
+  quantity: int("quantity").default(1).notNull(),
+  unitPriceCents: bigint("unit_price_cents", { mode: "number" }).notNull(),
+  totalCents: bigint("total_cents", { mode: "number" }).notNull(),
+  sortOrder: int("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type BillingLineItem = typeof billingLineItems.$inferSelect;
+export type InsertBillingLineItem = typeof billingLineItems.$inferInsert;
+
+/**
+ * billing_invoices — Formal tax invoices raised against accepted quotes or directly.
+ * Tracks payment status: unpaid → partial → paid → overdue → cancelled.
+ */
+export const billingInvoices = mysqlTable("billing_invoices", {
+  id: int("id").autoincrement().primaryKey(),
+  invoiceNumber: varchar("invoice_number", { length: 32 }).notNull().unique(), // e.g. "INV-2026-0001"
+  clientId: int("client_id").notNull(), // FK → billing_clients.id
+  quoteId: int("quote_id"),             // FK → billing_quotes.id (optional)
+  // Metadata
+  title: varchar("title", { length: 255 }).notNull(),
+  // Financials
+  subtotalCents: bigint("subtotal_cents", { mode: "number" }).default(0).notNull(),
+  discountCents: bigint("discount_cents", { mode: "number" }).default(0).notNull(),
+  taxPercent: int("tax_percent").default(15).notNull(),
+  taxCents: bigint("tax_cents", { mode: "number" }).default(0).notNull(),
+  totalCents: bigint("total_cents", { mode: "number" }).default(0).notNull(),
+  paidCents: bigint("paid_cents", { mode: "number" }).default(0).notNull(),
+  currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+  // Status
+  status: mysqlEnum("status", ["draft", "sent", "viewed", "unpaid", "partial", "paid", "overdue", "cancelled"]).default("draft").notNull(),
+  // Dates
+  issuedAt: timestamp("issued_at"),
+  dueAt: timestamp("due_at"),
+  paidAt: timestamp("paid_at"),
+  // Client-facing access token (for /invoice/:token page)
+  accessToken: varchar("access_token", { length: 64 }).unique(),
+  // Notes
+  paymentTerms: text("payment_terms"),
+  internalNotes: text("internal_notes"),
+  clientNotes: text("client_notes"),
+  bankDetails: text("bank_details"), // JSON string with bank account info
+  // Created by
+  createdByUserId: int("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BillingInvoice = typeof billingInvoices.$inferSelect;
+export type InsertBillingInvoice = typeof billingInvoices.$inferInsert;
+
+/**
+ * billing_payments — Records of payments received against an invoice.
+ * Supports partial payments and multiple payment records per invoice.
+ */
+export const billingPayments = mysqlTable("billing_payments", {
+  id: int("id").autoincrement().primaryKey(),
+  invoiceId: int("invoice_id").notNull(), // FK → billing_invoices.id
+  clientId: int("client_id").notNull(),
+  amountCents: bigint("amount_cents", { mode: "number" }).notNull(),
+  currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+  paymentMethod: mysqlEnum("payment_method", ["eft", "bank_transfer", "cheque", "credit_card", "other"]).default("eft").notNull(),
+  reference: varchar("reference", { length: 255 }), // bank reference or POP reference
+  paidAt: timestamp("paid_at").notNull(),
+  notes: text("notes"),
+  recordedByUserId: int("recorded_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type BillingPayment = typeof billingPayments.$inferSelect;
+export type InsertBillingPayment = typeof billingPayments.$inferInsert;
+
+/**
+ * billing_client_contacts — Multiple contacts per client.
+ * One client can have many contacts (CFO, IR Manager, Legal, etc.)
+ */
+export const billingClientContacts = mysqlTable("billing_client_contacts", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(), // FK → billing_clients.id
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 64 }),
+  jobTitle: varchar("job_title", { length: 255 }),
+  department: varchar("department", { length: 128 }), // e.g. "Finance", "Investor Relations", "Legal"
+  isPrimary: boolean("is_primary").default(false).notNull(), // Primary billing contact
+  receivesQuotes: boolean("receives_quotes").default(true).notNull(),
+  receivesInvoices: boolean("receives_invoices").default(true).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BillingClientContact = typeof billingClientContacts.$inferSelect;
+export type InsertBillingClientContact = typeof billingClientContacts.$inferInsert;
+
+/**
+ * billing_quote_versions — Tracks revisions of a quote (v1, v2, v3).
+ * Each revision is a snapshot of the quote at a point in time.
+ * The parent quote always reflects the latest version.
+ */
+export const billingQuoteVersions = mysqlTable("billing_quote_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  quoteId: int("quote_id").notNull(), // FK → billing_quotes.id
+  versionNumber: int("version_number").notNull(), // 1, 2, 3...
+  // Snapshot of financials at this version
+  subtotalCents: bigint("subtotal_cents", { mode: "number" }).notNull(),
+  discountCents: bigint("discount_cents", { mode: "number" }).default(0).notNull(),
+  taxPercent: int("tax_percent").default(15).notNull(),
+  totalCents: bigint("total_cents", { mode: "number" }).notNull(),
+  currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+  // Snapshot of line items as JSON (denormalised for historical accuracy)
+  lineItemsSnapshot: text("line_items_snapshot").notNull(), // JSON array
+  // Change summary
+  changeNotes: text("change_notes"), // e.g. "Reduced platform fee, added training line"
+  createdByUserId: int("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type BillingQuoteVersion = typeof billingQuoteVersions.$inferSelect;
+export type InsertBillingQuoteVersion = typeof billingQuoteVersions.$inferInsert;
+
+/**
+ * billing_credit_notes — Credit notes issued against invoices.
+ * Can be full or partial credits. Reduces the outstanding balance.
+ */
+export const billingCreditNotes = mysqlTable("billing_credit_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  creditNoteNumber: varchar("credit_note_number", { length: 32 }).notNull().unique(), // e.g. "CN-2026-0001"
+  invoiceId: int("invoice_id").notNull(), // FK → billing_invoices.id
+  clientId: int("client_id").notNull(),   // FK → billing_clients.id
+  // Financials
+  amountCents: bigint("amount_cents", { mode: "number" }).notNull(), // Credit amount (before tax)
+  taxPercent: int("tax_percent").default(15).notNull(),
+  taxCents: bigint("tax_cents", { mode: "number" }).default(0).notNull(),
+  totalCents: bigint("total_cents", { mode: "number" }).notNull(), // Total credit including tax
+  currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+  // Details
+  reason: text("reason").notNull(), // Why the credit was issued
+  status: mysqlEnum("status", ["draft", "issued", "applied", "cancelled"]).default("draft").notNull(),
+  // Client-facing access token
+  accessToken: varchar("access_token", { length: 64 }).unique(),
+  issuedAt: timestamp("issued_at"),
+  appliedAt: timestamp("applied_at"),
+  internalNotes: text("internal_notes"),
+  createdByUserId: int("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BillingCreditNote = typeof billingCreditNotes.$inferSelect;
+export type InsertBillingCreditNote = typeof billingCreditNotes.$inferInsert;
+
+/**
+ * billing_fx_rates — Cached live exchange rates for ZAR, USD, EUR.
+ * Refreshed on demand via external API. Used for currency conversion on quotes/invoices.
+ */
+export const billingFxRates = mysqlTable("billing_fx_rates", {
+  id: int("id").autoincrement().primaryKey(),
+  baseCurrency: varchar("base_currency", { length: 8 }).notNull(), // e.g. "ZAR"
+  targetCurrency: varchar("target_currency", { length: 8 }).notNull(), // e.g. "USD"
+  rate: varchar("rate", { length: 32 }).notNull(), // stored as string to avoid float precision issues
+  source: varchar("source", { length: 64 }).default("exchangerate-api").notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+});
+
+export type BillingFxRate = typeof billingFxRates.$inferSelect;
+export type InsertBillingFxRate = typeof billingFxRates.$inferInsert;
+
+/**
+ * billing_activity_log — Full audit trail for every quote and invoice event.
+ * Records who did what and when, for both admin actions and client interactions.
+ */
+export const billingActivityLog = mysqlTable("billing_activity_log", {
+  id: int("id").autoincrement().primaryKey(),
+  // Entity references (one of these will be set)
+  quoteId: int("quote_id"),     // FK → billing_quotes.id
+  invoiceId: int("invoice_id"), // FK → billing_invoices.id
+  clientId: int("client_id").notNull(),
+  // Event details
+  eventType: varchar("event_type", { length: 64 }).notNull(),
+  // e.g. "quote.created", "quote.sent", "quote.viewed", "quote.accepted",
+  //      "quote.version_created", "invoice.created", "invoice.sent",
+  //      "invoice.viewed", "invoice.payment_recorded", "invoice.overdue",
+  //      "credit_note.issued", "email.opened"
+  description: text("description").notNull(), // Human-readable summary
+  metadata: text("metadata"),  // JSON: extra context (e.g. old/new status, amount, IP)
+  // Actor
+  actorUserId: int("actor_user_id"),   // CuraLive team member (null = system/client)
+  actorType: varchar("actor_type", { length: 16 }).default("system").notNull(), // "admin" | "client" | "system"
+  ipAddress: varchar("ip_address", { length: 64 }),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type BillingActivityLog = typeof billingActivityLog.$inferSelect;
+export type InsertBillingActivityLog = typeof billingActivityLog.$inferInsert;
+
+/**
+ * billing_line_item_templates — Saved reusable line item templates.
+ * Operators can save frequently used line items and insert them into quotes with one click.
+ */
+export const billingLineItemTemplates = mysqlTable("billing_line_item_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(), // e.g. "Standard Earnings Call Package"
+  description: text("description").notNull(),        // Default line item description
+  category: varchar("category", { length: 128 }).notNull(),
+  defaultUnitPriceCents: bigint("default_unit_price_cents", { mode: "number" }).notNull(),
+  defaultCurrency: varchar("default_currency", { length: 8 }).default("ZAR").notNull(),
+  // Package templates contain multiple line items (stored as JSON)
+  isPackage: boolean("is_package").default(false).notNull(),
+  packageItemsJson: text("package_items_json"), // JSON array of line items for package templates
+  // Usage tracking
+  usageCount: int("usage_count").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdByUserId: int("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BillingLineItemTemplate = typeof billingLineItemTemplates.$inferSelect;
+export type InsertBillingLineItemTemplate = typeof billingLineItemTemplates.$inferInsert;
+
+/**
+ * billing_email_events — Email open and click tracking for quotes and invoices.
+ * A 1x1 pixel is embedded in each email; when loaded it records an open event.
+ */
+export const billingEmailEvents = mysqlTable("billing_email_events", {
+  id: int("id").autoincrement().primaryKey(),
+  // Tracking token (unique per email send)
+  trackingToken: varchar("tracking_token", { length: 64 }).notNull().unique(),
+  // Entity references
+  quoteId: int("quote_id"),
+  invoiceId: int("invoice_id"),
+  creditNoteId: int("credit_note_id"),
+  clientId: int("client_id").notNull(),
+  recipientEmail: varchar("recipient_email", { length: 320 }).notNull(),
+  // Email metadata
+  emailType: varchar("email_type", { length: 32 }).notNull(),
+  // "quote_sent" | "invoice_sent" | "credit_note_sent" | "payment_reminder" | "quote_expiry_reminder"
+  subject: varchar("subject", { length: 512 }),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+  // Open tracking
+  firstOpenedAt: timestamp("first_opened_at"),
+  openCount: int("open_count").default(0).notNull(),
+  lastOpenedAt: timestamp("last_opened_at"),
+  lastOpenIp: varchar("last_open_ip", { length: 64 }),
+  lastOpenUserAgent: text("last_open_user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type BillingEmailEvent = typeof billingEmailEvents.$inferSelect;
+export type InsertBillingEmailEvent = typeof billingEmailEvents.$inferInsert;
+
+/**
+ * billing_recurring_templates — Recurring quote templates for retainer clients.
+ * Defines a schedule and template; a job generates a new draft quote on each cycle.
+ */
+export const billingRecurringTemplates = mysqlTable("billing_recurring_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(), // e.g. "Nedbank Monthly Platform License"
+  clientId: int("client_id").notNull(),
+  // Quote template fields
+  titleTemplate: varchar("title_template", { length: 512 }).notNull(),
+  // Supports tokens: {month}, {quarter}, {year} e.g. "Platform License — {month} {year}"
+  lineItemsJson: text("line_items_json").notNull(), // JSON array of line items
+  discountPercent: int("discount_percent").default(0).notNull(),
+  taxPercent: int("tax_percent").default(15).notNull(),
+  currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+  paymentTerms: text("payment_terms"),
+  // Schedule
+  frequency: mysqlEnum("frequency", ["monthly", "quarterly", "annually"]).notNull(),
+  dayOfMonth: int("day_of_month").default(1).notNull(), // Day of month to generate (1–28)
+  nextGenerationAt: timestamp("next_generation_at").notNull(),
+  lastGeneratedAt: timestamp("last_generated_at"),
+  // Control
+  isActive: boolean("is_active").default(true).notNull(),
+  autoDraft: boolean("auto_draft").default(true).notNull(), // true = auto-create draft; false = notify only
+  createdByUserId: int("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BillingRecurringTemplate = typeof billingRecurringTemplates.$inferSelect;
+export type InsertBillingRecurringTemplate = typeof billingRecurringTemplates.$inferInsert;

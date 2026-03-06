@@ -1,5 +1,5 @@
 /**
- * routers/billing.ts  Enterprise Billing System tRPC router.
+ * routers/billing.ts — Enterprise Billing System tRPC router.
  * All mutations are admin-only. Queries are admin-only except the public
  * quote/invoice view endpoints which are gated by access token.
  */
@@ -28,7 +28,7 @@ import {
 } from "../db.billing";
 import { sendEmail } from "../_core/email";
 
-//  Admin guard 
+// ─── Admin guard ─────────────────────────────────────────────────────────────
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin" && ctx.user.role !== "operator") {
@@ -37,7 +37,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
-//  Zod schemas 
+// ─── Zod schemas ─────────────────────────────────────────────────────────────
 
 const lineItemSchema = z.object({
   description: z.string().min(1),
@@ -48,11 +48,11 @@ const lineItemSchema = z.object({
   sortOrder: z.number().int().default(0),
 });
 
-//  Router 
+// ─── Router ───────────────────────────────────────────────────────────────────
 
 export const billingRouter = router({
 
-  // Clients 
+  // ── Clients ────────────────────────────────────────────────────────────────
 
   getClients: adminProcedure.query(async () => {
     return getBillingClients();
@@ -133,7 +133,7 @@ export const billingRouter = router({
       return { success: true };
     }),
 
-  // Contacts 
+  // ── Contacts ───────────────────────────────────────────────────────────────
 
   addContact: adminProcedure
     .input(z.object({
@@ -175,7 +175,7 @@ export const billingRouter = router({
       return { success: true };
     }),
 
-  // Quotes 
+  // ── Quotes ─────────────────────────────────────────────────────────────────
 
   getQuotes: adminProcedure
     .input(z.object({ clientId: z.number().optional() }).optional())
@@ -372,7 +372,7 @@ export const billingRouter = router({
       return { success: true };
     }),
 
-  // Public quote view (client-facing) 
+  // ── Public quote view (client-facing) ─────────────────────────────────────
 
   getQuoteByToken: publicProcedure
     .input(z.object({ token: z.string() }))
@@ -423,7 +423,7 @@ export const billingRouter = router({
       return { success: true };
     }),
 
-  // Convert quote to invoice 
+  // ── Convert quote to invoice ───────────────────────────────────────────────
 
   convertToInvoice: adminProcedure
     .input(z.object({ quoteId: z.number() }))
@@ -446,7 +446,7 @@ export const billingRouter = router({
       return { invoiceId, invoiceNumber, accessToken };
     }),
 
-  // Invoices 
+  // ── Invoices ───────────────────────────────────────────────────────────────
 
   getInvoices: adminProcedure
     .input(z.object({ clientId: z.number().optional() }).optional())
@@ -548,7 +548,7 @@ export const billingRouter = router({
       return { invoice, lineItems, client, creditNotes };
     }),
 
-  // Payments 
+  // ── Payments ───────────────────────────────────────────────────────────────
 
   recordPayment: adminProcedure
     .input(z.object({
@@ -588,7 +588,7 @@ export const billingRouter = router({
       return { id };
     }),
 
-  // Credit Notes 
+  // ── Credit Notes ───────────────────────────────────────────────────────────
 
   createCreditNote: adminProcedure
     .input(z.object({
@@ -630,7 +630,7 @@ export const billingRouter = router({
       return { id, creditNoteNumber };
     }),
 
-  // Line Item Templates 
+  // ── Line Item Templates ────────────────────────────────────────────────────
 
   getLineItemTemplates: adminProcedure.query(async () => {
     return getLineItemTemplates();
@@ -674,7 +674,7 @@ export const billingRouter = router({
       return template ?? null;
     }),
 
-  // FX Rates 
+  // ── FX Rates ───────────────────────────────────────────────────────────────
 
   getFxRates: publicProcedure.query(async () => {
     // Try to fetch live rates; fall back to cached DB rates
@@ -705,7 +705,7 @@ export const billingRouter = router({
     return getLatestFxRates();
   }),
 
-  // Recurring Templates 
+  // ── Recurring Templates ────────────────────────────────────────────────────
 
   getRecurringTemplates: adminProcedure.query(async () => {
     return getRecurringTemplates();
@@ -744,14 +744,14 @@ export const billingRouter = router({
       return { success: true };
     }),
 
-  // Ageing Report 
+  // ── Ageing Report ──────────────────────────────────────────────────────────
 
   getAgeingReport: adminProcedure.query(async () => {
     await markOverdueInvoices();
     return getAgeingReport();
   }),
 
-  // Activity Log 
+  // ── Activity Log ───────────────────────────────────────────────────────────
 
   getActivityLog: adminProcedure
     .input(z.object({
@@ -763,14 +763,14 @@ export const billingRouter = router({
       return getActivityLog(input);
     }),
 
-  // Mark Overdue 
+  // ── Overdue check ────────────────────────────────────────────────────────────
 
   markOverdueInvoices: adminProcedure.mutation(async () => {
     const count = await markOverdueInvoices();
     return { count };
   }),
 
-  // Dashboard KPIs 
+  // ── Dashboard KPIs ─────────────────────────────────────────────────────────
 
   getDashboardKpis: adminProcedure.query(async () => {
     const [quotes, invoices, clients] = await Promise.all([
@@ -813,10 +813,10 @@ export const billingRouter = router({
   }),
 });
 
-//  Email template helpers 
+// ─── Email template helpers ───────────────────────────────────────────────────
 
 function formatCurrency(cents: number, currency: string): string {
-  const symbols: Record<string, string> = { ZAR: "R", USD: "$", EUR: "" };
+  const symbols: Record<string, string> = { ZAR: "R", USD: "$", EUR: "€" };
   const symbol = symbols[currency] ?? currency;
   return `${symbol}${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
 }
@@ -848,7 +848,7 @@ function buildQuoteEmailHtml(opts: {
   </div>
   ${expiryLine}
   <a href="${opts.quoteUrl}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;margin-top:8px;">View & Accept Quote</a>
-  <p style="color:#9ca3af;font-size:12px;margin-top:32px;">CuraLive  Intelligent Event Intelligence Platform</p>
+  <p style="color:#9ca3af;font-size:12px;margin-top:32px;">CuraLive · Intelligent Event Intelligence Platform</p>
 </div>
 <img src="${opts.trackingPixelUrl}" width="1" height="1" style="display:none;" alt="" />
 </body></html>`;
@@ -881,7 +881,7 @@ function buildInvoiceEmailHtml(opts: {
     <p style="margin:8px 0 0;color:#6b7280;font-size:14px;">Due: <strong style="color:#0f172a;">${dueDate}</strong></p>
   </div>
   <a href="${opts.invoiceUrl}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;margin-top:8px;">View Invoice</a>
-  <p style="color:#9ca3af;font-size:12px;margin-top:32px;">CuraLive  Intelligent Event Intelligence Platform</p>
+  <p style="color:#9ca3af;font-size:12px;margin-top:32px;">CuraLive · Intelligent Event Intelligence Platform</p>
 </div>
 <img src="${opts.trackingPixelUrl}" width="1" height="1" style="display:none;" alt="" />
 </body></html>`;

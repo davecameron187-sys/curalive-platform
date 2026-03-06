@@ -10,6 +10,7 @@ import { serveStatic, setupVite } from "./vite";
 import { registerSlideDeckUploadRoute } from "../slideDeckUpload";
 import { registerRecallWebhookRoute } from "../recallWebhook";
 import { startReminderScheduler } from "../reminderScheduler";
+import { registerBillingPdfRoutes } from "../billingPdf";
 import { handleStripeWebhook } from "../stripeWebhook";
 import { buildTwiMLVoiceResponse } from "../webphone/twilio";
 import { parseTelnyxWebhook } from "../webphone/telnyx";
@@ -437,6 +438,7 @@ async function startServer() {
   registerSlideDeckUploadRoute(app);
   // Recall.ai webhook (raw body, HMAC-verified)
   registerRecallWebhookRoute(app);
+  registerBillingPdfRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

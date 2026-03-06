@@ -47,7 +47,12 @@ import Training from "./pages/Training";
 import OperatorGuide from "./pages/OperatorGuide";
 import DemoRegistration from "./pages/DemoRegistration";
 import TwilioDirectGuide from "./pages/TwilioDirectGuide";
+import BillingPreview from "./pages/BillingPreview";
 import MyEvents from "./pages/MyEvents";
+import QuoteBuilder from "./pages/QuoteBuilder";
+import InvoiceViewer from "./pages/InvoiceViewer";
+import QuoteView from "./pages/QuoteView";
+import InvoiceView from "./pages/InvoiceView";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -93,7 +98,12 @@ function Router() {
       <Route path="/training" component={Training} />
       <Route path="/operator-guide" component={OperatorGuide} />
       <Route path="/integrations/twilio-direct" component={TwilioDirectGuide} />
+      <Route path="/billing/preview" component={BillingPreview} />
       <Route path="/my-events" component={MyEvents} />
+      <Route path="/admin/billing/quotes/:id" component={QuoteBuilder} />
+      <Route path="/admin/billing/invoices/:id" component={InvoiceViewer} />
+      <Route path="/quote/:token" component={QuoteView} />
+      <Route path="/invoice/:token" component={InvoiceView} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
       <Route path="/404" component={NotFound} />

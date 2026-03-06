@@ -679,3 +679,76 @@
 - [x] Twilio configuration guide page (/integrations/twilio-direct) with step-by-step setup instructions
 - [x] PIN re-send/reset action in OCC participant row (backend procedure + UI button)
 - [x] Attendee self-service /my-events portal with upcoming events list and PIN retrieval
+
+## Enterprise Quote & Billing System
+- [ ] DB schema: billing_clients, billing_quotes, billing_line_items, billing_invoices, billing_payments tables
+- [ ] tRPC procedures: client CRUD, quote CRUD, invoice generation, status management
+- [ ] Admin billing dashboard (/admin/billing) — pipeline kanban + client list + invoice tracker
+- [ ] Quote builder UI — line items, pricing tiers, discount, terms, live preview
+- [ ] Client-facing quote acceptance page (/quote/:token)
+- [ ] Client-facing invoice view page (/invoice/:token)
+- [ ] PDF generation for quotes and invoices
+- [ ] Email delivery: quote to client, invoice to client, payment reminder
+- [ ] Vitest tests for billing procedures
+
+## Enterprise Billing — Full Implementation (Approved Scope)
+- [ ] DB: billing_activity_log table
+- [ ] DB: billing_line_item_templates table
+- [ ] DB: billing_email_events table (open tracking)
+- [ ] DB: billing_recurring_templates table
+- [ ] Backend: client CRUD + multi-contact management
+- [ ] Backend: quote CRUD with versioning and auto-expiry
+- [ ] Backend: quote → invoice one-click conversion
+- [ ] Backend: invoice management + partial payment recording
+- [ ] Backend: credit note issuance
+- [ ] Backend: overdue invoice detection + alerts
+- [ ] Backend: activity log (all quote/invoice events)
+- [ ] Backend: saved line item templates CRUD
+- [ ] Backend: recurring quote template generation
+- [ ] Backend: FX rate fetching (ZAR/USD/EUR)
+- [ ] Backend: email open tracking pixel endpoint
+- [ ] Backend: bulk PDF export (ZIP)
+- [ ] UI: admin billing dashboard (/admin/billing)
+- [ ] UI: quote pipeline kanban
+- [ ] UI: client list + contacts management
+- [ ] UI: invoice tracker with ageing report
+- [ ] UI: quote builder with saved templates + version history
+- [ ] UI: invoice detail + partial payment recording
+- [ ] UI: credit note issuance
+- [ ] UI: ageing report view
+- [ ] UI: bulk PDF export
+- [ ] UI: client quote acceptance page (/quote/:token)
+- [ ] UI: client invoice view (/invoice/:token)
+- [ ] PDF: quote, invoice, credit note generation
+- [ ] Email: quote/invoice delivery with open-tracking pixel
+
+## Enterprise Billing — Full Implementation (Approved Scope)
+- [ ] DB: billing_activity_log table
+- [ ] DB: billing_line_item_templates table
+- [ ] DB: billing_email_events table (open tracking)
+- [ ] DB: billing_recurring_templates table
+- [ ] Backend: client CRUD + multi-contact management
+- [ ] Backend: quote CRUD with versioning and auto-expiry
+- [ ] Backend: quote to invoice one-click conversion
+- [ ] Backend: invoice management + partial payment recording
+- [ ] Backend: credit note issuance
+- [ ] Backend: overdue invoice detection + alerts
+- [ ] Backend: activity log (all quote/invoice events)
+- [ ] Backend: saved line item templates CRUD
+- [ ] Backend: recurring quote template generation
+- [ ] Backend: FX rate fetching (ZAR/USD/EUR)
+- [ ] Backend: email open tracking pixel endpoint
+- [ ] Backend: bulk PDF export (ZIP)
+- [ ] UI: admin billing dashboard (/admin/billing)
+- [ ] UI: quote pipeline kanban
+- [ ] UI: client list + contacts management
+- [ ] UI: invoice tracker with ageing report
+- [ ] UI: quote builder with saved templates + version history
+- [ ] UI: invoice detail + partial payment recording
+- [ ] UI: credit note issuance
+- [ ] UI: ageing report view
+- [ ] UI: bulk PDF export
+- [ ] UI: client quote acceptance page (/quote/:token)
+- [ ] UI: client invoice view (/invoice/:token)
+- [ ] PDF: quote, invoice, credit note generation
+- [ ] Email: quote/invoice delivery with open-tracking pixel
