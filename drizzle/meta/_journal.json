@@ -169,6 +169,13 @@
       "when": 1772795719740,
       "tag": "0023_rich_hardball",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1772812891878,
+      "tag": "0024_condemned_steve_rogers",
+      "breakpoints": true
     }
   ]
 }

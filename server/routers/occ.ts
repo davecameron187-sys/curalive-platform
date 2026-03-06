@@ -38,6 +38,7 @@ import {
   occGreenRooms,
 } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { getDirectAccessStats, getRecentDirectAccessAttempts } from "../directAccess";
 import { invokeLLM } from "../_core/llm";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -133,6 +134,35 @@ export const occRouter = router({
       await updateOccConference(input.conferenceId, { status: "completed", endedAt: new Date() });
       await publishAblyEvent(`occ:conference:${input.conferenceId}`, "conference:terminated", {});
       return { success: true };
+    }),
+
+  // ── CuraLive Direct — PIN auto-admit ───────────────────────────────────────────────
+
+  /** Toggle the CuraLive Direct auto-admit feature for a conference. */
+  toggleAutoAdmit: operatorProcedure
+    .input(z.object({ conferenceId: z.number(), enabled: z.boolean() }))
+    .mutation(async ({ input }) => {
+      const conf = await updateOccConference(input.conferenceId, { autoAdmitEnabled: input.enabled });
+      await publishAblyEvent(
+        `occ:conference:${input.conferenceId}`,
+        "conference:updated",
+        { autoAdmitEnabled: input.enabled }
+      );
+      return conf;
+    }),
+
+  /** Get CuraLive Direct stats + recent attempts for the status panel. */
+  getDirectAccessStats: operatorProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .query(async ({ input }) => {
+      return getDirectAccessStats(input.conferenceId);
+    }),
+
+  /** Get recent direct access log entries (for the live panel). */
+  getDirectAccessLog: operatorProcedure
+    .input(z.object({ conferenceId: z.number(), limit: z.number().int().min(1).max(100).optional().default(20) }))
+    .query(async ({ input }) => {
+      return getRecentDirectAccessAttempts(input.conferenceId, input.limit);
     }),
 
   // ── Participant queries ───────────────────────────────────────────────────

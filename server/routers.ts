@@ -8,6 +8,7 @@ import { sendEmail, buildIRSummaryEmail, buildRegistrationConfirmationEmail } fr
 import { getDb, listUsers, updateUserRole, getUserById, updateUserProfile } from "./db";
 import { storagePut } from "./storage";
 import { attendeeRegistrations, events, irContacts, webcastEvents } from "../drizzle/schema";
+import { generateUniquePin } from "./directAccess";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { occRouter } from "./routers/occ";
@@ -444,6 +445,15 @@ Produce a JSON response with this exact structure:
           return { success: true, alreadyRegistered: true, registrationId: existing.id };
         }
 
+        // Generate a unique CuraLive Direct PIN for this registrant
+        let accessPin: string | undefined;
+        try {
+          accessPin = await generateUniquePin(input.eventId);
+        } catch {
+          // Non-fatal — registration continues without PIN if generation fails
+          console.warn("[CuraLive Direct] PIN generation failed for", input.email);
+        }
+
         const [result] = await db.insert(attendeeRegistrations).values({
           eventId: input.eventId,
           name: input.name,
@@ -453,12 +463,13 @@ Produce a JSON response with this exact structure:
           language: input.language,
           dialIn: input.dialIn,
           accessGranted: true,
+          accessPin: accessPin ?? null,
         }).$returningId();
 
         // Notify owner of new registration
         await notifyOwner({
           title: `New Registration: ${input.name}`,
-          content: `${input.name} (${input.email}) registered for event: ${input.eventId}`,
+          content: `${input.name} (${input.email}) registered for event: ${input.eventId}${accessPin ? ` | CuraLive Direct PIN: ${accessPin}` : ''}`,
         }).catch(() => {}); // non-blocking
 
         // Send confirmation email to attendee
@@ -475,6 +486,7 @@ Produce a JSON response with this exact structure:
           eventTitle,
           company: event?.company ?? "CuraLive Inc.",
           eventDate,
+          accessPin,
         });
 
         await sendEmail({

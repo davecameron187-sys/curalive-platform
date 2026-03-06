@@ -133,6 +133,7 @@ export function buildRegistrationConfirmationEmail(opts: {
   accessCode?: string;
   attendUrl?: string;
   icsContent?: string;
+  accessPin?: string; // CuraLive Direct — personal dial-in PIN
 }): string {
   return `
 <!DOCTYPE html>
@@ -192,6 +193,29 @@ export function buildRegistrationConfirmationEmail(opts: {
                   </td>
                 </tr>
                 ` : ''}
+              </table>
+              ` : ''}
+              ${opts.accessPin ? `
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-radius:10px;overflow:hidden;border:2px solid #7c3aed;">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#4c1d95,#1e1b4b);padding:14px 20px;">
+                    <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;">&#9670;&nbsp; CuraLive Direct &mdash; Your Personal Dial-In PIN</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background:#0f172a;padding:20px;">
+                    <p style="margin:0 0 12px;font-size:14px;color:#c4b5fd;line-height:1.6;">As a registered attendee you have been assigned a personal PIN. When you dial in, enter your PIN when prompted and you will be connected directly to the conference &mdash; <strong style="color:#f1f5f9;">no operator assistance required</strong>.</p>
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="background:#1e1b4b;border:1px solid #7c3aed;border-radius:8px;padding:14px 28px;">
+                          <p style="margin:0;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;">Your PIN</p>
+                          <p style="margin:4px 0 0;font-size:36px;font-weight:800;color:#f1f5f9;font-family:monospace;letter-spacing:8px;">${opts.accessPin}</p>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="margin:10px 0 0;font-size:12px;color:#6b7280;">Keep this PIN confidential. It is unique to your registration and grants direct access to the conference.</p>
+                  </td>
+                </tr>
               </table>
               ` : ''}
               ${opts.icsContent ? `

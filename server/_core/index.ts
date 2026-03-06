@@ -328,6 +328,106 @@ async function startServer() {
     res.sendStatus(204);
   });
 
+  // ─── CuraLive Direct IVR ─────────────────────────────────────────────────────
+  // /api/voice/inbound  — Twilio calls this when a participant dials in.
+  //   Greets the caller and collects a 5-digit PIN via <Gather>.
+  // /api/voice/pin      — Twilio calls this with the gathered digits.
+  //   Validates the PIN, auto-admits the caller, or falls through to operator queue.
+
+  app.post("/api/voice/inbound", express.urlencoded({ extended: false }), (req, res) => {
+    const callSid = req.body?.CallSid ?? "";
+    const to = req.body?.To ?? "";
+    console.log(`[CuraLive Direct IVR] Inbound call: callSid=${callSid} to=${to}`);
+
+    const twiml = new twilio_twiml.twiml.VoiceResponse();
+    const gather = twiml.gather({
+      numDigits: 5,
+      action: "/api/voice/pin",
+      method: "POST",
+      timeout: 15,
+      finishOnKey: "#",
+    });
+    gather.say(
+      { voice: "Polly.Joanna" },
+      "Welcome to the CuraLive conference bridge. If you have a CuraLive Direct PIN, please enter your five-digit PIN now, followed by the hash key. Otherwise, please hold and an operator will assist you."
+    );
+    // If no input, fall through to operator queue
+    twiml.say({ voice: "Polly.Joanna" }, "No PIN entered. Please hold while we connect you to an operator.");
+    twiml.enqueue("operator-queue");
+    res.type("text/xml").send(twiml.toString());
+  });
+
+  app.post("/api/voice/pin", express.urlencoded({ extended: false }), async (req, res) => {
+    const digits = (req.body?.Digits ?? "").trim();
+    const callSid = req.body?.CallSid ?? "";
+    const from = req.body?.From ?? "";
+    const to = req.body?.To ?? "";
+    console.log(`[CuraLive Direct IVR] PIN attempt: digits=${digits} callSid=${callSid} from=${from} to=${to}`);
+
+    const twiml = new twilio_twiml.twiml.VoiceResponse();
+
+    try {
+      const { findRunningConferenceByDialIn, lookupPinForEvent, markPinUsed, logDirectAccessAttempt } = await import("../directAccess");
+
+      // Find the conference this number belongs to
+      const conference = await findRunningConferenceByDialIn(to);
+
+      if (!conference) {
+        console.log(`[CuraLive Direct IVR] No running conference for number: ${to}`);
+        await logDirectAccessAttempt({ conferenceId: null, registrationId: null, enteredPin: digits, callerNumber: from, outcome: "no_conference", callSid, dialInNumber: to });
+        twiml.say({ voice: "Polly.Joanna" }, "We could not find an active conference for this number. Please check your dial-in details and try again. Goodbye.");
+        twiml.hangup();
+        res.type("text/xml").send(twiml.toString());
+        return;
+      }
+
+      // Validate PIN against registrations for this event
+      const registration = await lookupPinForEvent(conference.eventId, digits);
+
+      if (registration && conference.autoAdmitEnabled) {
+        // Valid PIN + auto-admit enabled → connect directly to conference
+        console.log(`[CuraLive Direct IVR] Auto-admitting: ${registration.name} (${registration.email}) to conference ${conference.callId}`);
+        await markPinUsed(registration.id);
+        await logDirectAccessAttempt({ conferenceId: conference.id, registrationId: registration.id, enteredPin: digits, callerNumber: from, outcome: "admitted", callSid, dialInNumber: to });
+
+        twiml.say({ voice: "Polly.Joanna" }, `Welcome, ${registration.name.split(" ")[0]}. Connecting you to the conference now.`);
+        const dial = twiml.dial();
+        (dial as any).conference(conference.callId, {
+          startConferenceOnEnter: false,
+          endConferenceOnExit: false,
+          muted: true, // Participants join muted; operator can unmute
+          waitUrl: "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical",
+        });
+      } else if (registration && !conference.autoAdmitEnabled) {
+        // Valid PIN but auto-admit disabled → log and send to operator queue
+        console.log(`[CuraLive Direct IVR] Valid PIN but auto-admit disabled for conference ${conference.callId}`);
+        await logDirectAccessAttempt({ conferenceId: conference.id, registrationId: registration.id, enteredPin: digits, callerNumber: from, outcome: "operator_queue", callSid, dialInNumber: to });
+        twiml.say({ voice: "Polly.Joanna" }, "Your PIN has been verified. Please hold while an operator connects you.");
+        twiml.enqueue("operator-queue");
+      } else {
+        // Invalid PIN → retry or fall to operator
+        console.log(`[CuraLive Direct IVR] Invalid PIN: ${digits} for event ${conference.eventId}`);
+        await logDirectAccessAttempt({ conferenceId: conference.id, registrationId: null, enteredPin: digits, callerNumber: from, outcome: "failed", callSid, dialInNumber: to });
+        const gather = twiml.gather({
+          numDigits: 5,
+          action: "/api/voice/pin",
+          method: "POST",
+          timeout: 10,
+          finishOnKey: "#",
+        });
+        gather.say({ voice: "Polly.Joanna" }, "That PIN was not recognised. Please try again, or press star to speak with an operator.");
+        twiml.say({ voice: "Polly.Joanna" }, "Connecting you to an operator.");
+        twiml.enqueue("operator-queue");
+      }
+    } catch (err) {
+      console.error("[CuraLive Direct IVR] Error processing PIN:", err);
+      twiml.say({ voice: "Polly.Joanna" }, "We encountered a technical issue. Please hold while we connect you to an operator.");
+      twiml.enqueue("operator-queue");
+    }
+
+    res.type("text/xml").send(twiml.toString());
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

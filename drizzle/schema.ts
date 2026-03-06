@@ -61,6 +61,9 @@ export const attendeeRegistrations = mysqlTable("attendee_registrations", {
   dialIn: boolean("dialIn").default(false).notNull(),
   accessGranted: boolean("accessGranted").default(false).notNull(),
   joinedAt: timestamp("joinedAt"),
+  // CuraLive Direct — unique 5-digit PIN for auto-admit dial-in
+  accessPin: varchar("access_pin", { length: 8 }),
+  pinUsedAt: timestamp("pin_used_at"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -111,6 +114,8 @@ export const occConferences = mysqlTable("occ_conferences", {
   participantLimitEnabled: boolean("participantLimitEnabled").default(false).notNull(),
   participantLimit: int("participantLimit").default(500),
   requestsToSpeakEnabled: boolean("requestsToSpeakEnabled").default(true).notNull(),
+  // CuraLive Direct — when true, callers with valid PIN bypass operator queue
+  autoAdmitEnabled: boolean("autoAdmitEnabled").default(false).notNull(),
   scheduledStart: timestamp("scheduledStart"),
   actualStart: timestamp("actualStart"),
   endedAt: timestamp("endedAt"),
@@ -920,3 +925,28 @@ export const eventCustomisation = mysqlTable("event_customisation", {
 });
 export type EventCustomisation = typeof eventCustomisation.$inferSelect;
 export type InsertEventCustomisation = typeof eventCustomisation.$inferInsert;
+
+// ─── CuraLive Direct — PIN Auto-Admit ────────────────────────────────────────
+/**
+ * direct_access_log — Audit trail for every PIN entry attempt on the IVR.
+ * Records whether the caller was auto-admitted, sent to operator queue, or failed.
+ */
+export const directAccessLog = mysqlTable("direct_access_log", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: int("conference_id"),
+  registrationId: int("registration_id"),
+  enteredPin: varchar("entered_pin", { length: 8 }).notNull(),
+  callerNumber: varchar("caller_number", { length: 32 }),
+  outcome: mysqlEnum("outcome", [
+    "admitted",
+    "operator_queue",
+    "no_conference",
+    "failed",
+  ]).notNull().default("failed"),
+  callSid: varchar("call_sid", { length: 128 }),
+  dialInNumber: varchar("dial_in_number", { length: 32 }),
+  attemptedAt: bigint("attempted_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type DirectAccessLog = typeof directAccessLog.$inferSelect;
+export type InsertDirectAccessLog = typeof directAccessLog.$inferInsert;

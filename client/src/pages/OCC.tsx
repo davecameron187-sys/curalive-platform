@@ -16,7 +16,7 @@ import {
   ArrowRight, UserCheck, UserX, Activity, Clock,
   List, LayoutGrid, Bell, BellOff, Send, Search, Filter,
   Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical, FileText,
-  PhoneForwarded, Trash2, Upload, GraduationCap
+  PhoneForwarded, Trash2, Upload, GraduationCap, KeyRound, ShieldCheck, ShieldOff, BarChart2
 } from "lucide-react";
 import { toast } from "sonner";
 import Webphone from "@/components/Webphone";
@@ -27,7 +27,7 @@ import WebphoneActivityCard from "@/components/WebphoneActivityCard";
 type OperatorState = "absent" | "present" | "in_call" | "break";
 type ParticipantState = "free" | "incoming" | "connected" | "muted" | "parked" | "speaking" | "waiting_operator" | "web_participant" | "dropped";
 type FilterMode = "all" | "moderators" | "participants" | "unmuted" | "muted" | "parked" | "connected" | "waiting" | "web" | "speak_requests";
-type FeatureTab = "monitoring" | "connection" | "history" | "audio" | "chat" | "notes" | "qa_queue";
+type FeatureTab = "monitoring" | "connection" | "history" | "audio" | "chat" | "notes" | "qa_queue" | "direct_access";
 type OverviewTab = "running" | "pending" | "planned" | "completed" | "alarms";
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ const DEMO_CONFERENCES: any[] = [
     id: 1, eventId: "q4-earnings-2026", callId: "CC-9921", subject: "Q4 2025 Earnings Call",
     reseller: "CuraLive Inc.", product: "Event Conference",
     moderatorCode: "4872", participantCode: "9341", securityCode: "7723" as string | null,   dialInNumber: "+27 11 535 0000", status: "running" as const,
-    isLocked: false, isRecording: true, waitingMusicEnabled: true, requestsToSpeakEnabled: true,
+    isLocked: false, isRecording: true, waitingMusicEnabled: true, requestsToSpeakEnabled: true, autoAdmitEnabled: true,
     scheduledStart: new Date(Date.now() - 3600000), actualStart: new Date(Date.now() - 42 * 60000),
     endedAt: null, participantLimit: 500, participantLimitEnabled: false, webAccessCode: "WEB-4872",
     createdAt: new Date(), updatedAt: new Date(),
@@ -111,7 +111,7 @@ const DEMO_CONFERENCES: any[] = [
     reseller: "CuraLive Inc.", product: "Event Conference",
     moderatorCode: "5511", participantCode: "8823", securityCode: null,
     dialInNumber: "+27 11 535 0001", status: "pending" as const,
-    isLocked: false, isRecording: false, waitingMusicEnabled: true, requestsToSpeakEnabled: true,
+    isLocked: false, isRecording: false, waitingMusicEnabled: true, requestsToSpeakEnabled: true, autoAdmitEnabled: false,
     scheduledStart: new Date(Date.now() + 7200000), actualStart: null,
     endedAt: null, participantLimit: 500, participantLimitEnabled: false, webAccessCode: null,
     createdAt: new Date(), updatedAt: new Date(),
@@ -121,7 +121,7 @@ const DEMO_CONFERENCES: any[] = [
     reseller: "CuraLive Inc.", product: "Event Conference",
     moderatorCode: "3301", participantCode: "6612", securityCode: null,
     dialInNumber: "+27 11 535 0002", status: "completed" as const,
-    isLocked: false, isRecording: false, waitingMusicEnabled: false, requestsToSpeakEnabled: false,
+    isLocked: false, isRecording: false, waitingMusicEnabled: false, requestsToSpeakEnabled: false, autoAdmitEnabled: false,
     scheduledStart: new Date(Date.now() - 10800000), actualStart: new Date(Date.now() - 10800000),
     endedAt: new Date(Date.now() - 5400000), participantLimit: 500, participantLimitEnabled: false, webAccessCode: null,
     createdAt: new Date(), updatedAt: new Date(),
@@ -644,6 +644,34 @@ export default function OCC() {
   const closeGreenRoomMut = trpc.occ.closeGreenRoom.useMutation({ onSuccess: () => greenRoomQuery.refetch() });
   const addToGreenRoomMut = trpc.occ.addToGreenRoom.useMutation({ onSuccess: () => { participantsQuery.refetch(); greenRoomQuery.refetch(); } });
   const transferGreenRoomMut = trpc.occ.transferGreenRoomToMain.useMutation({ onSuccess: () => { participantsQuery.refetch(); greenRoomQuery.refetch(); } });
+
+  // CuraLive Direct
+  const toggleAutoAdmitMut = trpc.occ.toggleAutoAdmit.useMutation({
+    onSuccess: () => { conferencesQuery.refetch(); },
+    onError: () => toast.error("Failed to toggle CuraLive Direct"),
+  });
+  const directAccessStatsQuery = trpc.occ.getDirectAccessStats.useQuery(
+    { conferenceId: activeCCPConferenceId ?? 0 },
+    { enabled: !!activeCCPConferenceId && featureTab === "direct_access", refetchInterval: featureTab === "direct_access" ? 10000 : false }
+  );
+  const directAccessLogQuery = trpc.occ.getDirectAccessLog.useQuery(
+    { conferenceId: activeCCPConferenceId ?? 0, limit: 20 },
+    { enabled: !!activeCCPConferenceId && featureTab === "direct_access", refetchInterval: featureTab === "direct_access" ? 10000 : false }
+  );
+
+  const doToggleAutoAdmit = async () => {
+    if (!activeConf) return;
+    const next = !activeConf.autoAdmitEnabled;
+    // Optimistic local update
+    setLocalConferences(prev => prev.map(c => c.id === activeConf.id ? { ...c, autoAdmitEnabled: next } : c));
+    try {
+      await toggleAutoAdmitMut.mutateAsync({ conferenceId: activeConf.id, enabled: next });
+      toast.success(next ? "CuraLive Direct enabled — callers with valid PINs will be auto-admitted" : "CuraLive Direct disabled — all callers go to operator queue");
+    } catch {
+      // Rollback
+      setLocalConferences(prev => prev.map(c => c.id === activeConf.id ? { ...c, autoAdmitEnabled: !next } : c));
+    }
+  };
 
   // Scroll chat to bottom
   useEffect(() => {
@@ -2013,6 +2041,7 @@ export default function OCC() {
                       { key: "chat", label: "Chat", icon: MessageSquare },
                       { key: "notes", label: "Notes", icon: List },
                       { key: "qa_queue", label: "Q&A Queue", icon: MessageSquare },
+                      { key: "direct_access", label: "CuraLive Direct", icon: KeyRound },
                     ] as const).map(({ key, label, icon: Icon }) => (
                       <button
                         key={key}
@@ -2359,6 +2388,94 @@ export default function OCC() {
                             <Send className="w-3.5 h-3.5" />
                           </button>
                         </div>
+                      </div>
+                    )}
+                    {/* CuraLive Direct Panel */}
+                    {featureTab === "direct_access" && (
+                      <div className="flex flex-col gap-3">
+                        {/* Toggle row */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold ${
+                              activeConf?.autoAdmitEnabled
+                                ? "bg-violet-900/40 border-violet-500/50 text-violet-300"
+                                : "bg-slate-800 border-slate-600 text-slate-400"
+                            }`}>
+                              {activeConf?.autoAdmitEnabled
+                                ? <><ShieldCheck className="w-4 h-4 text-violet-400" /> CuraLive Direct: ON</>
+                                : <><ShieldOff className="w-4 h-4 text-slate-500" /> CuraLive Direct: OFF</>}
+                            </div>
+                            <button
+                              onClick={doToggleAutoAdmit}
+                              disabled={toggleAutoAdmitMut.isPending}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded text-xs font-semibold transition-colors disabled:opacity-50 ${
+                                activeConf?.autoAdmitEnabled
+                                  ? "bg-red-900/40 hover:bg-red-800/60 text-red-300 border border-red-700/50"
+                                  : "bg-violet-700 hover:bg-violet-600 text-white"
+                              }`}
+                            >
+                              {activeConf?.autoAdmitEnabled
+                                ? <><ShieldOff className="w-3.5 h-3.5" /> Disable Auto-Admit</>
+                                : <><ShieldCheck className="w-3.5 h-3.5" /> Enable Auto-Admit</>}
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => { directAccessStatsQuery.refetch(); directAccessLogQuery.refetch(); }}
+                            className="flex items-center gap-1 px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs transition-colors"
+                          >
+                            <RefreshCw className="w-3 h-3" /> Refresh
+                          </button>
+                        </div>
+                        {/* Stats row */}
+                        {directAccessStatsQuery.data && (
+                          <div className="flex gap-3">
+                            {[
+                              { label: "Admitted", value: directAccessStatsQuery.data.admitted, color: "text-emerald-400", bg: "bg-emerald-900/20 border-emerald-700/30" },
+                              { label: "Failed PINs", value: directAccessStatsQuery.data.failed, color: "text-red-400", bg: "bg-red-900/20 border-red-700/30" },
+                              { label: "Operator Queue", value: directAccessStatsQuery.data.operatorQueue, color: "text-amber-400", bg: "bg-amber-900/20 border-amber-700/30" },
+                              { label: "No Conference", value: directAccessStatsQuery.data.noConference, color: "text-slate-400", bg: "bg-slate-800 border-slate-700" },
+                            ].map(({ label, value, color, bg }) => (
+                              <div key={label} className={`flex flex-col items-center px-4 py-2 rounded border ${bg}`}>
+                                <span className={`text-xl font-bold font-mono ${color}`}>{value}</span>
+                                <span className="text-[10px] text-slate-400 mt-0.5">{label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* Recent log */}
+                        <div className="overflow-auto" style={{ maxHeight: "140px" }}>
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="text-slate-500 border-b border-slate-700">
+                                <th className="text-left py-1 pr-3 font-medium">Time</th>
+                                <th className="text-left py-1 pr-3 font-medium">Caller</th>
+                                <th className="text-left py-1 pr-3 font-medium">PIN</th>
+                                <th className="text-left py-1 font-medium">Outcome</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(directAccessLogQuery.data ?? []).length === 0 && (
+                                <tr><td colSpan={4} className="py-4 text-center text-slate-600 italic">No direct access attempts yet for this conference.</td></tr>
+                              )}
+                              {(directAccessLogQuery.data ?? []).map((entry: any) => (
+                                <tr key={entry.id} className="border-b border-slate-800/60 hover:bg-slate-800/30">
+                                  <td className="py-1 pr-3 text-slate-400 font-mono">{new Date(entry.attemptedAt).toLocaleTimeString()}</td>
+                                  <td className="py-1 pr-3 text-slate-300 font-mono">{entry.callerNumber ?? '—'}</td>
+                                  <td className="py-1 pr-3 font-mono text-slate-200 tracking-widest">{entry.enteredPin ?? '—'}</td>
+                                  <td className="py-1">
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
+                                      entry.outcome === 'admitted' ? 'bg-emerald-900/50 text-emerald-300' :
+                                      entry.outcome === 'failed' ? 'bg-red-900/50 text-red-300' :
+                                      entry.outcome === 'operator_queue' ? 'bg-amber-900/50 text-amber-300' :
+                                      'bg-slate-700 text-slate-400'
+                                    }`}>{entry.outcome.replace('_', ' ')}</span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <p className="text-[10px] text-slate-600 italic">IVR endpoint: POST /api/voice/inbound — configure this as the Voice URL on your Twilio number to enable CuraLive Direct.</p>
                       </div>
                     )}
                   </div>
