@@ -120,7 +120,7 @@ function buildQuoteHtml(params: {
       <div class="brand-icon">
         <svg viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
       </div>
-      <div class="brand-name">Chorus<span>.AI</span></div>
+      <div class="brand-name">CuraLive</div>
     </div>
     <div class="doc-info">
       <div class="doc-type">Quote</div>
@@ -133,8 +133,8 @@ function buildQuoteHtml(params: {
   <div class="parties">
     <div class="party">
       <div class="party-label">From</div>
-      <div class="party-name">Chorus.AI</div>
-      <div class="party-detail">Intelligent Event Intelligence Platform<br>billing@chorusai.com</div>
+      <div class="party-name">CuraLive</div>
+      <div class="party-detail">Intelligent Event Intelligence Platform<br>billing@curalive.com</div>
     </div>
     <div class="party">
       <div class="party-label">Prepared For</div>
@@ -218,8 +218,8 @@ function buildQuoteHtml(params: {
   <!-- Footer -->
   <div class="footer">
     <div class="footer-left">
-      Chorus.AI · Intelligent Event Intelligence Platform<br>
-      billing@chorusai.com
+      CuraLive · Intelligent Event Intelligence Platform<br>
+      billing@curalive.com
     </div>
     <div class="footer-right">
       This quote is valid until ${formatDate(quote.expiresAt)}<br>
@@ -343,7 +343,7 @@ function buildInvoiceHtml(params: {
       <div class="brand-icon">
         <svg viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
       </div>
-      <div class="brand-name">Chorus<span>.AI</span></div>
+      <div class="brand-name">CuraLive</div>
     </div>
     <div class="doc-info">
       <div class="doc-type">Tax Invoice</div>
@@ -355,8 +355,8 @@ function buildInvoiceHtml(params: {
   <div class="parties">
     <div class="party">
       <div class="party-label">From</div>
-      <div class="party-name">Chorus.AI</div>
-      <div class="party-detail">Intelligent Event Intelligence Platform<br>billing@chorusai.com</div>
+      <div class="party-name">CuraLive</div>
+      <div class="party-detail">Intelligent Event Intelligence Platform<br>billing@curalive.com</div>
     </div>
     <div class="party">
       <div class="party-label">Billed To</div>
@@ -454,8 +454,8 @@ function buildInvoiceHtml(params: {
 
   <div class="footer">
     <div class="footer-left">
-      Chorus.AI · Intelligent Event Intelligence Platform<br>
-      billing@chorusai.com
+      CuraLive · Intelligent Event Intelligence Platform<br>
+      billing@curalive.com
     </div>
     <div class="footer-right">
       ${escapeHtml(invoice.invoiceNumber)}<br>

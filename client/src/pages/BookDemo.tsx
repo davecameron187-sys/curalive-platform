@@ -96,7 +96,7 @@ export default function BookDemo() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="text-lg font-bold tracking-tight">Chorus<span className="text-primary">.AI</span></span>
+            <span className="text-lg font-bold tracking-tight">CuraLive</span>
           </button>
           <button onClick={() => navigate("/")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back to Home

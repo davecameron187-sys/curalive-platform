@@ -137,7 +137,7 @@ async function processChunk(
 
     await ablyPublish(
       worker.ablyChannel,
-      "chorus",
+      "curalive",
       JSON.stringify({
         type: "transcript.segment",
         data: segment,
@@ -203,7 +203,7 @@ function startChunkWatcher(worker: IngestWorker): NodeJS.Timeout {
  *
  * @param streamId    Unique identifier for the stream (mux_streams.id)
  * @param hlsUrl      Mux HLS URL: https://stream.mux.com/{playbackId}.m3u8
- * @param ablyChannel Ably channel name for the event (e.g. "chorus-event-q4-earnings-2026")
+ * @param ablyChannel Ably channel name for the event (e.g. "curalive-event-q4-earnings-2026")
  */
 export async function startIngest(
   streamId: string,
@@ -214,7 +214,7 @@ export async function startIngest(
   await stopIngest(streamId);
 
   // Create a temp directory for WAV chunks
-  const chunkDir = path.join(os.tmpdir(), `chorus-ingest-${streamId}`);
+  const chunkDir = path.join(os.tmpdir(), `curalive-ingest-${streamId}`);
   await fs.mkdir(chunkDir, { recursive: true });
 
   const worker: IngestWorker = {

@@ -302,7 +302,7 @@ export default function PostEvent() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `chorus-ai-summary-q4-2025.txt`;
+    a.download = `curalive-summary-q4-2025.txt`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Summary downloaded!");
@@ -315,7 +315,7 @@ export default function PostEvent() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `chorus-ai-transcript-q4-2025.txt`;
+    a.download = `curalive-transcript-q4-2025.txt`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Transcript downloaded!");

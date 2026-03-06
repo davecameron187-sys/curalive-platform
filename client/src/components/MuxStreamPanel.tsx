@@ -120,8 +120,8 @@ interface AudioIngestControlsProps {
 function AudioIngestControls({ muxStreamId, isStreamActive, eventId }: AudioIngestControlsProps) {
   // Derive Ably channel name from eventId or muxStreamId
   const ablyChannel = eventId
-    ? `chorus-event-${eventId}`
-    : `chorus-stream-${muxStreamId}`;
+    ? `curalive-event-${eventId}`
+    : `curalive-stream-${muxStreamId}`;
 
   const { data: ingestStatus, refetch: refetchStatus } = trpc.mux.getAudioIngestStatus.useQuery(
     { muxStreamId },

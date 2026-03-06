@@ -187,7 +187,7 @@ describe("AblyContext chat:translation event forwarding", () => {
 
   it("publishes chat:translation event to the correct Ably channel", async () => {
     const eventId = "q4-earnings-2026";
-    const channel = `chorus-event-${eventId}`;
+    const channel = `curalive-event-${eventId}`;
     const translationPayload = {
       messageId: 1,
       detectedLanguage: "en",
@@ -206,7 +206,7 @@ describe("AblyContext chat:translation event forwarding", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("chorus-event-q4-earnings-2026"),
+      expect.stringContaining("curalive-event-q4-earnings-2026"),
       expect.objectContaining({
         method: "POST",
         body: expect.stringContaining("chat:translation"),

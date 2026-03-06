@@ -48,9 +48,9 @@ vi.mock("./webphone/carrierManager", () => ({
 
 describe("Twilio Inbound Routing Configuration", () => {
   it("should construct the correct Voice URL from VITE_APP_ID", () => {
-    const appId = "chorusai-mdu4k2ib";
+    const appId = "curalive-mdu4k2ib";
     const voiceUrl = `https://${appId}.manus.space/api/webphone/inbound`;
-    expect(voiceUrl).toBe("https://chorusai-mdu4k2ib.manus.space/api/webphone/inbound");
+    expect(voiceUrl).toBe("https://curalive-mdu4k2ib.manus.space/api/webphone/inbound");
     expect(voiceUrl).toContain("/api/webphone/inbound");
   });
 
@@ -71,9 +71,9 @@ describe("Twilio Inbound Routing Configuration", () => {
   });
 
   it("should derive status callback from voice URL", () => {
-    const voiceUrl = "https://chorusai-mdu4k2ib.manus.space/api/webphone/inbound";
+    const voiceUrl = "https://curalive-mdu4k2ib.manus.space/api/webphone/inbound";
     const statusCallback = voiceUrl.replace("/inbound", "/status");
-    expect(statusCallback).toBe("https://chorusai-mdu4k2ib.manus.space/api/webphone/status");
+    expect(statusCallback).toBe("https://curalive-mdu4k2ib.manus.space/api/webphone/status");
   });
 });
 

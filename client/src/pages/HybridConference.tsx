@@ -34,7 +34,7 @@ const AGENDA: { day: string; date: string; sessions: { time: string; title: stri
       { time: "11:15", title: "1:1 Investor Meetings — Session A", type: "1x1", speaker: "Operator-managed", track: "Private Rooms" },
       { time: "13:00", title: "Lunch & Networking", type: "networking", speaker: "", track: "All" },
       { time: "14:00", title: "Research Presentation: SA Banking Sector", type: "research", speaker: "Head of Research, Barclays", track: "Track A" },
-      { time: "14:00", title: "Research Presentation: Infrastructure & Energy", type: "research", speaker: "Senior Analyst, Chorus Capital", track: "Track B" },
+      { time: "14:00", title: "Research Presentation: Infrastructure & Energy", type: "research", speaker: "Senior Analyst, CuraLive Capital", track: "Track B" },
       { time: "15:30", title: "1:1 Investor Meetings — Session B", type: "1x1", speaker: "Operator-managed", track: "Private Rooms" },
       { time: "17:30", title: "Evening Cocktail Reception", type: "networking", speaker: "", track: "All" },
     ],

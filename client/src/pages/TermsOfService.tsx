@@ -8,7 +8,7 @@ import { ArrowLeft, Zap } from "lucide-react";
 const EFFECTIVE_DATE = "1 March 2026";
 const COMPANY_NAME = "CuraLive (Pty) Ltd";
 const COMPANY_JURISDICTION = "South Africa";
-const CONTACT_EMAIL = "legal@choruscall.ai";
+const CONTACT_EMAIL = "legal@curalive.com";
 const PLATFORM_NAME = "CuraLive";
 const WEBSITE = "https://curalive.cc";
 
@@ -34,7 +34,7 @@ export default function TermsOfService() {
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Zap className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="text-sm font-bold tracking-tight">Chorus<span className="text-primary">.AI</span></span>
+            <span className="text-sm font-bold tracking-tight">CuraLive</span>
           </div>
         </div>
       </header>

@@ -72,7 +72,7 @@ const PHASES = [
     dotColor: "bg-sky-400",
     borderColor: "border-sky-400/20",
     bgColor: "bg-sky-400/5",
-    description: "Set up Railway hosting (R370/month), connect the GitHub repository exported from Manus, configure environment variables, and run the first production deployment. Set up Clerk for authentication (free tier to start) and replace the Manus OAuth demo login. Register the domain choruscall.ai and point it to Railway.",
+    description: "Set up Railway hosting (R370/month), connect the GitHub repository exported from Manus, configure environment variables, and run the first production deployment. Set up Clerk for authentication (free tier to start) and replace the Manus OAuth demo login. Register the domain curalive.com and point it to Railway.",
     action: "Export the code from Manus (Settings → GitHub), push to a CuraLive GitHub organisation, deploy to Railway using their one-click Node.js template.",
     links: [{ label: "railway.app", url: "https://railway.app" }, { label: "clerk.com", url: "https://clerk.com" }],
   },
@@ -129,7 +129,7 @@ const PHASES = [
     borderColor: "border-violet-400/20",
     bgColor: "bg-violet-400/5",
     description: "Build the React Native mobile app using Expo — it reuses all existing React components and TypeScript types. Add push notifications for Q&A approvals and operator alerts. Scale the Railway deployment to handle 5,000+ concurrent attendees using Railway's horizontal scaling.",
-    action: "Run `npx create-expo-app chorus-ai-mobile` and import shared components from the existing codebase. Use the same tRPC API — no back-end changes needed.",
+    action: "Run `npx create-expo-app curalive-mobile` and import shared components from the existing codebase. Use the same tRPC API — no back-end changes needed.",
     links: [{ label: "expo.dev", url: "https://expo.dev" }],
   },
 ];
@@ -142,7 +142,7 @@ const SERVICES = [
   { name: "Deepgram (transcription)", where: "deepgram.com", cost: "~R0.39/event" },
   { name: "Stripe (billing)", where: "stripe.com", cost: "3.1–4.0% per transaction" },
   { name: "GitHub organisation", where: "github.com", cost: "Free" },
-  { name: "Domain: choruscall.ai", where: "domains.co.za or Cloudflare", cost: "~R200/year" },
+  { name: "Domain: curalive.com", where: "domains.co.za or Cloudflare", cost: "~R200/year" },
 ];
 
 const COST_SCENARIOS = [

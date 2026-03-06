@@ -62,8 +62,8 @@ function StepCard({
   );
 }
 
-const WEBHOOK_URL_PLACEHOLDER = "https://chorusai-mdu4k2ib.manus.space/api/voice/inbound";
-const PIN_WEBHOOK_URL_PLACEHOLDER = "https://chorusai-mdu4k2ib.manus.space/api/voice/pin";
+const WEBHOOK_URL_PLACEHOLDER = "https://curalive-mdu4k2ib.manus.space/api/voice/inbound";
+const PIN_WEBHOOK_URL_PLACEHOLDER = "https://curalive-mdu4k2ib.manus.space/api/voice/pin";
 
 const TWIML_INBOUND = `<?xml version="1.0" encoding="UTF-8"?>
 <!-- This TwiML is generated dynamically by /api/voice/inbound -->

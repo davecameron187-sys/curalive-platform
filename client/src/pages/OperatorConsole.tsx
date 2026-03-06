@@ -127,7 +127,7 @@ export default function OperatorConsole() {
   // White-label config
   const [wlConfig, setWlConfig] = useState({
     brandName: "CuraLive",
-    subdomain: "chorus",
+    subdomain: "curalive",
     primaryColor: "#e63946",
     logoUrl: "",
     tagline: "The Intelligence Layer for Every Meeting",

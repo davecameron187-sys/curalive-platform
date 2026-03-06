@@ -87,7 +87,7 @@ export default function InvoiceView() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="text-lg font-bold tracking-tight">Chorus<span className="text-primary">.AI</span></span>
+            <span className="text-lg font-bold tracking-tight">CuraLive</span>
           </div>
           <div className="flex items-center gap-2">
             <a
@@ -309,8 +309,8 @@ export default function InvoiceView() {
 
         {/* Footer */}
         <div className="text-center mt-8 text-xs text-muted-foreground">
-          <p>Questions? Contact your account manager at <a href="mailto:billing@chorusai.com" className="text-primary hover:underline">billing@chorusai.com</a></p>
-          <p className="mt-1">Chorus.AI — Intelligent Event Intelligence Platform</p>
+          <p>Questions? Contact your account manager at <a href="mailto:billing@curalive.com" className="text-primary hover:underline">billing@curalive.com</a></p>
+          <p className="mt-1">CuraLive — Intelligent Event Intelligence Platform</p>
         </div>
       </div>
     </div>

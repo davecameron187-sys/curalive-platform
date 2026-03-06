@@ -78,7 +78,7 @@ export type ChatTranslationEvent = {
   translationLanguage: string;
 };
 
-export type ChorusMessage =
+export type CuraLiveMessage =
   | { type: "transcript.segment"; data: TranscriptSegment }
   | { type: "sentiment.update"; data: SentimentUpdate }
   | { type: "qa.submitted"; data: QAItem }
@@ -95,7 +95,7 @@ export type ChorusMessage =
   | { type: "hand.dismiss"; data: { id: string } }
   | { type: "rolling.summary"; data: RollingSummary };
 
-type Listener = (msg: ChorusMessage) => void;
+type Listener = (msg: CuraLiveMessage) => void;
 
 // ─── In-Memory Event Bus (simulates Ably channels) ────────────────────────────
 
@@ -108,7 +108,7 @@ class EventBus {
     return () => { this.listeners.get(eventId)?.delete(listener); };
   }
 
-  publish(eventId: string, msg: ChorusMessage) {
+  publish(eventId: string, msg: CuraLiveMessage) {
     this.listeners.get(eventId)?.forEach((l) => l(msg));
   }
 }
@@ -156,7 +156,7 @@ type AblyContextValue = {
   presenceCount: number;
   isSimulating: boolean;
   mode: "demo" | "ably";
-  publish: (msg: ChorusMessage) => void;
+  publish: (msg: CuraLiveMessage) => void;
   chatTranslationEvents: ChatTranslationEvent[];
 };
 
@@ -193,18 +193,18 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
             callback(null, ablyConfig.tokenRequest);
           }
         });
-        const channel = ablyClient.channels.get(`chorus-event-${eventId}`);
+        const channel = ablyClient.channels.get(`curalive-event-${eventId}`);
         ablyChannelRef.current = channel;
-        // Subscribe to all Chorus message types over the real Ably channel
+        // Subscribe to all CuraLive message types over the real Ably channel
         channel.subscribe((msg: any) => {
           try {
-            // Handle chat:translation events separately (not a ChorusMessage)
+            // Handle chat:translation events separately (not a CuraLiveMessage)
             if (msg.name === "chat:translation") {
               const data = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
               setChatTranslationEvents((prev) => [...prev, data as ChatTranslationEvent]);
               return;
             }
-            const parsed: ChorusMessage = JSON.parse(msg.data);
+            const parsed: CuraLiveMessage = JSON.parse(msg.data);
             bus.publish(eventId, parsed);
           } catch {}
         });
@@ -219,12 +219,12 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
     return () => { ablyClient?.close(); };
   }, [ablyConfig, eventId]);
 
-  const publish = useCallback((msg: ChorusMessage) => {
+  const publish = useCallback((msg: CuraLiveMessage) => {
     // Publish to local bus (for same-session sync)
     bus.publish(eventId, msg);
     // Also publish to real Ably channel if connected
     if (ablyChannelRef.current) {
-      ablyChannelRef.current.publish("chorus", JSON.stringify(msg)).catch(console.warn);
+      ablyChannelRef.current.publish("curalive", JSON.stringify(msg)).catch(console.warn);
     }
   }, [eventId]);
 

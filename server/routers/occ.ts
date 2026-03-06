@@ -1107,7 +1107,7 @@ export const occRouter = router({
       return getOccChatMessages(conf.id, input.limit);
     }),
 
-  // ── Public: Attendee on-demand translation (broadcasts to chorus-event channel) ──
+  // ── Public: Attendee on-demand translation (broadcasts to curalive-event channel) ──
 
   translateEventChatMessage: publicProcedure
     .input(z.object({
@@ -1154,7 +1154,7 @@ export const occRouter = router({
 
       // Broadcast to all attendees on this event's Ably channel
       await publishAblyEvent(
-        `chorus-event-${input.eventId}`,
+        `curalive-event-${input.eventId}`,
         "chat:translation",
         {
           messageId: input.messageId,

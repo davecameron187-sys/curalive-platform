@@ -163,7 +163,7 @@ app.post('/api/webhooks/twilio-voice', (req, res) => {
   const twiml = new VoiceResponse();
   const dial = twiml.dial();
   // Connect to conference room
-  dial.conference(\`chorus-event-\${eventId}\`, {
+  dial.conference(\`curalive-event-\${eventId}\`, {
     startConferenceOnEnter: false,
     endConferenceOnExit: false,
     record: 'record-from-start',
@@ -204,7 +204,7 @@ export default function IntegrationHub() {
           <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
             <Zap className="w-3 h-3 text-primary-foreground" strokeWidth={2.5} />
           </div>
-          <span className="font-bold text-sm">Chorus<span className="text-primary">.AI</span></span>
+          <span className="font-bold text-sm">CuraLive</span>
           <span className="text-muted-foreground text-sm">/ Integration Hub</span>
         </div>
       </header>

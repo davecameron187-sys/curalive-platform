@@ -52,7 +52,7 @@ interface Phase {
 
 // ─── Storage helpers ──────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "chorus_training_progress";
+const STORAGE_KEY = "curalive_training_progress";
 
 interface Progress {
   completedPhases: string[];

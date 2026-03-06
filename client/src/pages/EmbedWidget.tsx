@@ -21,7 +21,7 @@ const speakerColor: Record<string, string> = {
 };
 
 // The actual embeddable widget component
-function ChorusWidget({ eventId }: { eventId: string }) {
+function CuraLiveWidget({ eventId }: { eventId: string }) {
   const [activeTab, setActiveTab] = useState<"transcript" | "qa" | "sentiment">("transcript");
   const [visibleLines, setVisibleLines] = useState<typeof TRANSCRIPT_LINES>([]);
   const [lineIdx, setLineIdx] = useState(0);
@@ -63,7 +63,7 @@ function ChorusWidget({ eventId }: { eventId: string }) {
           <div style={{ width: "20px", height: "20px", borderRadius: "6px", background: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Zap style={{ width: "10px", height: "10px", color: "white" }} strokeWidth={2.5} />
           </div>
-          <span style={{ fontSize: "12px", fontWeight: 700 }}>Chorus<span style={{ color: "#ef4444" }}>.AI</span></span>
+          <span style={{ fontSize: "12px", fontWeight: 700 }}>CuraLive</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />
@@ -205,7 +205,7 @@ export default function EmbedWidget() {
           <div>
             <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Live Widget Preview</div>
             <div style={{ height: "480px" }}>
-              <ChorusWidget eventId={eventId} />
+              <CuraLiveWidget eventId={eventId} />
             </div>
           </div>
 

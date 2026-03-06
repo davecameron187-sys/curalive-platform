@@ -117,7 +117,7 @@ export const recallRouter = router({
       }
 
       const webhookUrl = `${input.webhookBaseUrl}/api/recall/webhook`;
-      const ablyChannel = `chorus-event-${input.eventId ?? input.meetingId ?? "webcast"}-${Date.now()}`;
+      const ablyChannel = `curalive-event-${input.eventId ?? input.meetingId ?? "webcast"}-${Date.now()}`;
 
       // Create bot via Recall.ai API
       const bot = await createRecallBot({

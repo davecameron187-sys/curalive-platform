@@ -139,9 +139,9 @@ describe("Webphone Credentials", () => {
       expect(response.status).toBe(200);
       const data = (await response.json()) as { data: Array<{ connection_name: string }> };
       expect(Array.isArray(data.data)).toBe(true);
-      // Confirm our chorus-ai-webphone connection exists
+      // Confirm our curalive-webphone connection exists
       const ourConnection = data.data.find(
-        (c) => c.connection_name === "chorus-ai-webphone"
+        (c) => c.connection_name === "curalive-webphone"
       );
       expect(ourConnection).toBeDefined();
     }, 15000);

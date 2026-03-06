@@ -66,17 +66,17 @@ describe("ably.tokenRequest", () => {
   });
 
   it("uses correct channel naming convention for cross-device sync", () => {
-    // Channel name format: chorus-event-{eventId}
+    // Channel name format: curalive-event-{eventId}
     const eventId = "q4-earnings-2026";
-    const channelName = `chorus-event-${eventId}`;
+    const channelName = `curalive-event-${eventId}`;
 
-    expect(channelName).toBe("chorus-event-q4-earnings-2026");
-    expect(channelName).toMatch(/^chorus-event-[a-z0-9-]+$/);
+    expect(channelName).toBe("curalive-event-q4-earnings-2026");
+    expect(channelName).toMatch(/^curalive-event-[a-z0-9-]+$/);
   });
 
   it("sync-test page uses a dedicated channel", () => {
-    // The SyncTest page uses eventId="sync-test" → channel "chorus-event-sync-test"
-    const syncTestChannel = `chorus-event-sync-test`;
-    expect(syncTestChannel).toBe("chorus-event-sync-test");
+    // The SyncTest page uses eventId="sync-test" → channel "curalive-event-sync-test"
+    const syncTestChannel = `curalive-event-sync-test`;
+    expect(syncTestChannel).toBe("curalive-event-sync-test");
   });
 });

@@ -106,7 +106,7 @@ async function handleBotStatusChange(payload: {
     .limit(1);
 
   if (bot?.ablyChannel) {
-    await ablyPublish(bot.ablyChannel, "chorus", JSON.stringify({
+    await ablyPublish(bot.ablyChannel, "curalive", JSON.stringify({
       type: "bot.status",
       data: { status, recallBotId },
     }));
@@ -178,7 +178,7 @@ async function handleTranscriptData(payload: {
 
   // Publish transcript segment to Ably in real time
   if (bot.ablyChannel) {
-    await ablyPublish(bot.ablyChannel, "chorus", JSON.stringify({
+    await ablyPublish(bot.ablyChannel, "curalive", JSON.stringify({
       type: "transcript.segment",
       data: transcriptSegment,
     }));
@@ -198,7 +198,7 @@ async function handleTranscriptData(payload: {
         // 1. Sentiment scoring
         const sentiment = await scoreSentiment(recentText);
         if (bot.ablyChannel) {
-          await ablyPublish(bot.ablyChannel, "chorus", JSON.stringify({
+          await ablyPublish(bot.ablyChannel, "curalive", JSON.stringify({
             type: "sentiment.update",
             data: sentiment,
           }));
@@ -212,7 +212,7 @@ async function handleTranscriptData(payload: {
             eventTitle
           );
           if (bot.ablyChannel) {
-            await ablyPublish(bot.ablyChannel, "chorus", JSON.stringify({
+            await ablyPublish(bot.ablyChannel, "curalive", JSON.stringify({
               type: "rolling.summary",
               data: summary,
             }));

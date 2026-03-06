@@ -76,7 +76,7 @@ export const brandingRouter = router({
       return { success: true };
     }),
 
-  // ── Delete branding (reset to Chorus defaults) ────────────────────────────
+  // ── Delete branding (reset to CuraLive defaults) ────────────────────────────
   deleteBranding: operatorProcedure
     .input(z.object({ roadshowId: z.string() }))
     .mutation(async ({ input }) => {

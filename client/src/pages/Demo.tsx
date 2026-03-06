@@ -178,7 +178,7 @@ export default function Demo() {
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
                 href={DEMO_VIDEO_URL}
-                download="Chorus_AI_Demo.mp4"
+                download="CuraLive_Demo.mp4"
                 className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
               >
                 <Download className="w-4 h-4" /> Download MP4

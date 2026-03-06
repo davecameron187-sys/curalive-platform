@@ -40,8 +40,8 @@ function verifyWebhookSignature(
 }
 
 // In your Express webhook handler:
-app.post('/webhook/chorus', express.raw({ type: '*/*' }), (req, res) => {
-  const signature = req.headers['x-chorus-signature'] as string;
+app.post('/webhook/curalive', express.raw({ type: '*/*' }), (req, res) => {
+  const signature = req.headers['x-curalive-signature'] as string;
   const isValid = verifyWebhookSignature(
     req.body.toString(),
     signature,
@@ -78,7 +78,7 @@ export default function PartnerAPI() {
           <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
             <Zap className="w-3 h-3 text-primary-foreground" strokeWidth={2.5} />
           </div>
-          <span className="font-bold text-sm">Chorus<span className="text-primary">.AI</span></span>
+          <span className="font-bold text-sm">CuraLive</span>
           <span className="text-muted-foreground text-sm">/ Partner API</span>
         </div>
       </header>
@@ -163,7 +163,7 @@ export default function PartnerAPI() {
           </div>
           <div className="p-6">
             <p className="text-sm text-muted-foreground mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>
-              All webhook requests are signed with HMAC-SHA256 using your partner secret. Verify the <code className="font-mono text-xs bg-secondary px-1.5 py-0.5 rounded">X-Chorus-Signature</code> header on every request.
+              All webhook requests are signed with HMAC-SHA256 using your partner secret. Verify the <code className="font-mono text-xs bg-secondary px-1.5 py-0.5 rounded">X-CuraLive-Signature</code> header on every request.
             </p>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider">

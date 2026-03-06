@@ -26,7 +26,7 @@ describe("ably.tokenRequest", () => {
     expect(tr.nonce).toBeTruthy();
     expect(tr.clientId).toBe("test-user-123");
     expect(tr.ttl).toBe(3600 * 1000);
-    expect(JSON.parse(tr.capability)).toHaveProperty("chorus-event-*");
+    expect(JSON.parse(tr.capability)).toHaveProperty("curalive-event-*");
   });
 
   it("returns demo mode when ABLY_API_KEY is not set", async () => {

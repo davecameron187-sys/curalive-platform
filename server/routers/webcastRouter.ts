@@ -50,7 +50,7 @@ function buildICS(opts: {
     `DTEND:${fmt(opts.endTime)}`,
     `SUMMARY:${opts.title}`,
     `DESCRIPTION:Join at: ${opts.attendUrl}`,
-    `ORGANIZER;CN=${opts.organizer}:mailto:noreply@choruscall.ai`,
+    `ORGANIZER;CN=${opts.organizer}:mailto:noreply@curalive.com`,
     `ATTENDEE;CN=${opts.attendeeName};RSVP=TRUE:mailto:${opts.attendeeEmail}`,
     `URL:${opts.attendUrl}`,
     "STATUS:CONFIRMED",
@@ -428,7 +428,7 @@ export const webcastRouter = router({
       // Fetch event details for the confirmation email
       const [event] = await db.select().from(webcastEvents).where(eq(webcastEvents.id, input.eventId)).limit(1);
       if (event) {
-        const baseUrl = origin ?? "https://chorusai-mdu4k2ib.manus.space";
+        const baseUrl = origin ?? "https://curalive-mdu4k2ib.manus.space";
         const attendUrl = `${baseUrl}/live-video/webcast/${event.slug}/attend?token=${attendeeToken}`;
         const startTs = event.startTime ?? Date.now() + 24 * 60 * 60 * 1000;
         const endTs = event.endTime ?? startTs + 90 * 60 * 1000;
@@ -438,7 +438,7 @@ export const webcastRouter = router({
         });
         // Build ICS calendar invite
         const icsContent = buildICS({
-          uid: `webcast-${event.id}-${attendeeToken}@choruscall.ai`,
+          uid: `webcast-${event.id}-${attendeeToken}@curalive.com`,
           title: event.title,
           description: event.description ?? "",
           startTime: startTs,

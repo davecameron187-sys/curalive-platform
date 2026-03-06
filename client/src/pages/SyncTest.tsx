@@ -120,7 +120,7 @@ function SyncTestInner() {
           <Zap className="w-3 h-3 text-primary-foreground" strokeWidth={2.5} />
         </div>
         <span className="font-bold text-sm">
-          Chorus<span className="text-primary">.AI</span>
+          CuraLive
         </span>
         <div className="w-px h-5 bg-border" />
         <span className="text-sm font-semibold text-muted-foreground">Cross-Device Sync Test</span>
@@ -300,7 +300,7 @@ function SyncTestInner() {
                 "1. Browser requests token from /api/trpc/realtime.tokenRequest",
                 "2. Server signs token with platform key (never exposed to browser)",
                 "3. SDK connects via WebSocket using the token",
-                "4. Messages publish to chorus-event-{eventId} channel",
+                "4. Messages publish to curalive-event-{eventId} channel",
                 "5. All subscribers receive the message in <100ms",
               ].map((step) => (
                 <div key={step} className="flex gap-2">

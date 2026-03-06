@@ -147,13 +147,13 @@ describe("occ.translateEventChatMessage (public)", () => {
     expect(mockUpdateTranslation).toHaveBeenCalledWith(1, "en", "Bienvenue à l'appel Q4.", "fr");
   });
 
-  it("broadcasts to the chorus-event Ably channel after translation", async () => {
+  it("broadcasts to the curalive-event Ably channel after translation", async () => {
     mockInvokeLLM.mockResolvedValue(makeLLMResponse("en", "مرحباً بكم في مكالمة الأرباح."));
     mockUpdateTranslation.mockResolvedValue(undefined);
     fetchMock.mockResolvedValue({ ok: true });
 
     // Simulate the publishAblyEvent call
-    const channel = "chorus-event-q4-earnings-2026";
+    const channel = "curalive-event-q4-earnings-2026";
     const url = `https://rest.ably.io/channels/${encodeURIComponent(channel)}/messages`;
     await fetch(url, {
       method: "POST",
@@ -162,7 +162,7 @@ describe("occ.translateEventChatMessage (public)", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("chorus-event-q4-earnings-2026"),
+      expect.stringContaining("curalive-event-q4-earnings-2026"),
       expect.objectContaining({ method: "POST" })
     );
   });

@@ -32,7 +32,7 @@ async function createAblyTokenRequest(clientId: string) {
   const timestamp = Date.now();
   const ttl = 3600 * 1000;
   const nonce = Math.random().toString(36).substring(2, 15);
-  const capability = JSON.stringify({ [`chorus-event-*`]: ["subscribe", "publish", "presence", "history"] });
+  const capability = JSON.stringify({ [`curalive-event-*`]: ["subscribe", "publish", "presence", "history"] });
 
   const { createHmac } = await import("crypto");
   const signString = [keyName, ttl, nonce, clientId, timestamp, capability, ""].join("\n");
@@ -198,7 +198,7 @@ export const appRouter = router({
     tokenRequest: publicProcedure
       .input(z.object({
         clientId: z.string().optional().default("anonymous"),
-        channelPrefix: z.string().optional().default("chorus-event"),
+        channelPrefix: z.string().optional().default("curalive-event"),
       }))
       .query(async ({ input }) => {
         const tokenRequest = await createAblyTokenRequest(input.clientId);
@@ -774,7 +774,7 @@ Recipients: ${allEmails.join(", ")}
           html: `
             <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #f8fafc; padding: 40px; border-radius: 12px;">
               <div style="margin-bottom: 32px;">
-                <span style="font-size: 24px; font-weight: 700;">Chorus<span style="color: #ef4444;">.AI</span></span>
+                <span style="font-size: 24px; font-weight: 700;"CuraLive</span>
               </div>
               <h1 style="font-size: 22px; font-weight: 700; margin-bottom: 16px;">Thank you, ${input.name}.</h1>
               <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
@@ -787,7 +787,7 @@ Recipients: ${allEmails.join(", ")}
                 <p style="margin: 4px 0;"><strong>Service Interest:</strong> ${input.serviceInterest.replace(/_/g, " ")}</p>
                 ${input.preferredDate ? `<p style="margin: 4px 0;"><strong>Preferred Date:</strong> ${input.preferredDate}</p>` : ""}
               </div>
-              <p style="color: #94a3b8; font-size: 13px;">In the meantime, explore the live platform at <a href="https://chorusai-mdu4k2ib.manus.space" style="color: #ef4444;">chorusai-mdu4k2ib.manus.space</a></p>
+              <p style="color: #94a3b8; font-size: 13px;">In the meantime, explore the live platform at <a href="https://curalive-mdu4k2ib.manus.space" style="color: #ef4444;">curalive-mdu4k2ib.manus.space</a></p>
             </div>
           `,
         }).catch(() => {});

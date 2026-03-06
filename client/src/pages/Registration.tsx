@@ -138,7 +138,7 @@ export default function Registration() {
           <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
             <Zap className="w-3 h-3 text-primary-foreground" strokeWidth={2.5} />
           </div>
-          <span className="font-bold text-sm">Chorus<span className="text-primary">.AI</span></span>
+          <span className="font-bold text-sm">CuraLive</span>
         </div>
         <span className="text-muted-foreground text-sm">/ Registration</span>
         {requiresCode && (

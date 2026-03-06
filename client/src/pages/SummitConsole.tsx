@@ -79,7 +79,7 @@ const MOCK_PARTIES: Party[] = [
   { id: 3, role: "Guest", name: "Priya Naidoo", phone: "+27 31 555 0300", quality: "Fair", dnisDesc: "JSE Earnings", userDefined: "Goldman Sachs", mode: "Listen", status: "Connected", connectTime: "00:38:12", port: "P003" },
   { id: 4, role: "Guest", name: "Tom Barker", phone: "+44 20 555 0400", quality: "Good", dnisDesc: "JSE Earnings", userDefined: "JP Morgan", mode: "Muted", status: "Muted", connectTime: "00:35:04", port: "P004" },
   { id: 5, role: "Guest", name: "Lena Fischer", phone: "+49 30 555 0500", quality: "Poor", dnisDesc: "JSE Earnings", userDefined: "UBS", mode: "Listen", status: "Connected", connectTime: "00:29:44", port: "P005" },
-  { id: 6, role: "Operator", name: "Chorus Operator 1", phone: "+27 11 555 0001", quality: "Good", dnisDesc: "OPS", userDefined: "Internal", mode: "Listen", status: "Connected", connectTime: "00:43:00", port: "P006" },
+  { id: 6, role: "Operator", name: "CuraLive Operator 1", phone: "+27 11 555 0001", quality: "Good", dnisDesc: "OPS", userDefined: "Internal", mode: "Listen", status: "Connected", connectTime: "00:43:00", port: "P006" },
 ];
 
 const MOCK_QA: QAItem[] = [
@@ -578,7 +578,7 @@ export default function SummitConsole() {
         connected ? `Connected: Bridge-ZA-01` : "Not Connected",
         `Time: ${timeStr}`,
         `Date: ${dateStr}`,
-        `Operator: Chorus Operator 1`,
+        `Operator: CuraLive Operator 1`,
         selectedParties.length > 0 ? `${selectedParties.length} party(ies) selected` : "No selection",
         `Audio Prob: 0`,
         `Res Alerts: 0`,

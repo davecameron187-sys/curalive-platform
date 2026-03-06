@@ -53,7 +53,7 @@ const DEMO_EVENT = {
     { icon: MessageSquare, label: "Chat", desc: "Connect with fellow attendees" },
     { icon: Globe, label: "Multi-language", desc: "Captions in 8 languages" },
     { icon: Play, label: "On-Demand", desc: "Recording available after the event" },
-    { icon: Zap, label: "Real-Time", desc: "Sub-100ms delivery via Chorus edge" },
+    { icon: Zap, label: "Real-Time", desc: "Sub-100ms delivery via CuraLive edge" },
   ],
 };
 

@@ -1,7 +1,7 @@
 /**
  * EventPass — Public-facing event registration page for CuraLive.
  * Accessible at /event-pass/:id
- * Embeddable on choruscall.co.za via iframe or direct link.
+ * Embeddable on curalive.com via iframe or direct link.
  * Replaces the legacy "Diamond Pass" product page.
  */
 import { useState } from "react";
@@ -165,7 +165,7 @@ export default function EventPass() {
             <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="font-bold tracking-tight">Chorus<span className="text-primary">.AI</span></span>
+            <span className="font-bold tracking-tight">CuraLive</span>
           </div>
           <span className="text-xs text-slate-500 uppercase tracking-widest font-semibold">Event Pass</span>
         </div>
@@ -275,7 +275,7 @@ export default function EventPass() {
                   required
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="james@choruscall.co.za"
+                  placeholder="james@curalive.com"
                   className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary transition-colors"
                 />
               </div>

@@ -70,7 +70,7 @@ describe("ably.tokenRequest", () => {
 
     const result = await caller.ably.tokenRequest({
       clientId: "test-client-123",
-      channelPrefix: "chorus-test",
+      channelPrefix: "curalive-test",
     });
 
     expect(result.tokenRequest).toBeDefined();

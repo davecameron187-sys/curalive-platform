@@ -69,19 +69,19 @@ describe("audioIngest worker", () => {
     const worker = await startIngest(
       "test-stream-001",
       "https://stream.mux.com/test.m3u8",
-      "chorus-event-1"
+      "curalive-event-1"
     );
 
     expect(worker.streamId).toBe("test-stream-001");
     expect(worker.status).toBe("running");
     expect(worker.hlsUrl).toBe("https://stream.mux.com/test.m3u8");
-    expect(worker.ablyChannel).toBe("chorus-event-1");
+    expect(worker.ablyChannel).toBe("curalive-event-1");
     expect(worker.segmentsProcessed).toBe(0);
     expect(worker.ffmpegProcess).not.toBeNull();
   });
 
   it("getIngestStatus returns the worker when running", async () => {
-    await startIngest("test-stream-002", "https://stream.mux.com/test2.m3u8", "chorus-event-2");
+    await startIngest("test-stream-002", "https://stream.mux.com/test2.m3u8", "curalive-event-2");
 
     const status = getIngestStatus("test-stream-002");
     expect(status).not.toBeNull();
@@ -95,8 +95,8 @@ describe("audioIngest worker", () => {
   });
 
   it("listActiveIngests returns all running workers", async () => {
-    await startIngest("test-stream-003", "https://stream.mux.com/test3.m3u8", "chorus-event-3");
-    await startIngest("test-stream-004", "https://stream.mux.com/test4.m3u8", "chorus-event-4");
+    await startIngest("test-stream-003", "https://stream.mux.com/test3.m3u8", "curalive-event-3");
+    await startIngest("test-stream-004", "https://stream.mux.com/test4.m3u8", "curalive-event-4");
 
     const active = listActiveIngests();
     const ids = active.map((w) => w.streamId);
@@ -105,7 +105,7 @@ describe("audioIngest worker", () => {
   });
 
   it("stopIngest removes the worker from the registry", async () => {
-    await startIngest("test-stream-005", "https://stream.mux.com/test5.m3u8", "chorus-event-5");
+    await startIngest("test-stream-005", "https://stream.mux.com/test5.m3u8", "curalive-event-5");
     expect(getIngestStatus("test-stream-005")).not.toBeNull();
 
     await stopIngest("test-stream-005");
@@ -121,7 +121,7 @@ describe("audioIngest worker", () => {
     const worker1 = await startIngest(
       "test-stream-006",
       "https://stream.mux.com/test6.m3u8",
-      "chorus-event-6"
+      "curalive-event-6"
     );
     const ffmpeg1 = worker1.ffmpegProcess;
 
@@ -129,7 +129,7 @@ describe("audioIngest worker", () => {
     const worker2 = await startIngest(
       "test-stream-006",
       "https://stream.mux.com/test6-v2.m3u8",
-      "chorus-event-6-v2"
+      "curalive-event-6-v2"
     );
 
     expect(worker2.hlsUrl).toBe("https://stream.mux.com/test6-v2.m3u8");
@@ -139,8 +139,8 @@ describe("audioIngest worker", () => {
   });
 
   it("stopAllIngests stops every active worker", async () => {
-    await startIngest("test-stream-007", "https://stream.mux.com/test7.m3u8", "chorus-event-7");
-    await startIngest("test-stream-008", "https://stream.mux.com/test8.m3u8", "chorus-event-8");
+    await startIngest("test-stream-007", "https://stream.mux.com/test7.m3u8", "curalive-event-7");
+    await startIngest("test-stream-008", "https://stream.mux.com/test8.m3u8", "curalive-event-8");
 
     await stopAllIngests();
 

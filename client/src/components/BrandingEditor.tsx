@@ -22,7 +22,7 @@ const FONT_OPTIONS = [
 
 const PRESET_THEMES = [
   {
-    name: "Chorus Dark",
+    name: "CuraLive Dark",
     primaryColor: "#3b82f6",
     accentColor: "#10b981",
     backgroundColor: "#0f172a",
@@ -112,7 +112,7 @@ export default function BrandingEditor({ roadshowId, roadshowTitle, onClose }: B
 
   const deleteMutation = trpc.branding.deleteBranding.useMutation({
     onSuccess: () => {
-      toast.success("Branding reset to Chorus defaults");
+      toast.success("Branding reset to CuraLive defaults");
       onClose();
     },
     onError: (e) => toast.error(e.message),
@@ -354,7 +354,7 @@ export default function BrandingEditor({ roadshowId, roadshowTitle, onClose }: B
                   disabled={deleteMutation.isPending}
                   className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-300 py-2 rounded-lg text-xs font-semibold transition-colors"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" /> Reset to Chorus Defaults
+                  <RotateCcw className="w-3.5 h-3.5" /> Reset to CuraLive Defaults
                 </button>
               )}
             </div>

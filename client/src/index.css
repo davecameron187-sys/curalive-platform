@@ -42,10 +42,10 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* CuraLive Brand Tokens */
-  --chorus-coral: oklch(0.65 0.22 22);
-  --chorus-coral-dim: oklch(0.65 0.22 22 / 20%);
-  --chorus-teal: oklch(0.72 0.17 170);
-  --chorus-amber: oklch(0.78 0.17 75);
+  --curalive-coral: oklch(0.65 0.22 22);
+  --curalive-coral-dim: oklch(0.65 0.22 22 / 20%);
+  --curalive-teal: oklch(0.72 0.17 170);
+  --curalive-amber: oklch(0.78 0.17 75);
 }
 
 :root {
