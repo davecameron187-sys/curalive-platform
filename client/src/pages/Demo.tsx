@@ -3,7 +3,7 @@ import {
   Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight,
   Play, Settings, Code2, Package, FileText, Radio, MonitorPlay,
   CheckCircle2, ExternalLink, Users, Clock, Shield, TrendingUp,
-  PhoneCall, Mail, Calendar, Download
+  PhoneCall, Mail, Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -101,8 +101,7 @@ export default function Demo() {
             <span className="text-xs font-semibold uppercase tracking-widest text-primary border border-primary/30 bg-primary/10 px-2 py-0.5 rounded-full">Sales Demo</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#video" className="hover:text-foreground transition-colors">Demo Video</a>
-            <a href="#modules" className="hover:text-foreground transition-colors">Platform Modules</a>
+<a href="#modules" className="hover:text-foreground transition-colors">Platform Modules</a>
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
           </nav>
@@ -155,47 +154,7 @@ export default function Demo() {
         </div>
       </section>
 
-      {/* Demo Video */}
-      <section id="video" className="py-20 border-b border-border">
-        <div className="container">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-8 text-center">
-              <h2 className="text-3xl font-bold mb-3">Platform Demo Video</h2>
-              <p className="text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-                55-second overview of all 10 platform modules — cinematic visuals with professional voiceover narration.
-              </p>
-            </div>
-            <div className="relative rounded-2xl overflow-hidden border border-border bg-black shadow-2xl">
-              <video
-                controls
-                autoPlay={false}
-                className="w-full aspect-video"
-                poster={DEMO_VIDEO_URL}
-              >
-                <source src={DEMO_VIDEO_URL} type="video/mp4" />
-              </video>
-            </div>
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href={DEMO_VIDEO_URL}
-                download="CuraLive_Demo.mp4"
-                className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                <Download className="w-4 h-4" /> Download MP4
-              </a>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-                <span>55 seconds</span>
-                <span>·</span>
-                <span>1280×720 HD</span>
-                <span>·</span>
-                <span>22.6 MB</span>
-                <span>·</span>
-                <span>Professional AI voiceover</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* Platform Modules */}
       <section id="modules" className="py-20 border-b border-border bg-card/20">

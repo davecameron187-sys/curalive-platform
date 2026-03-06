@@ -107,7 +107,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
         <div className="container relative z-10 py-24">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="max-w-2xl">
             <div>
               <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-6">
                 <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — CuraLive Inc.
@@ -127,31 +127,7 @@ export default function Home() {
                 </button>
               </div>
             </div>
-            {/* Demo Video */}
-            <div className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl shadow-primary/10">
-              <video
-                src={DEMO_VIDEO_URL}
-                controls
-                playsInline
-                className="w-full aspect-video object-cover bg-black"
-                poster={HERO_IMAGE}
-              />
-              <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
-                CuraLive Demo — 55s
-              </div>
-            </div>
-            {/* Download button */}
-            <div className="mt-3 flex justify-center">
-              <a
-                href={DEMO_VIDEO_URL}
-                download="CuraLive_Demo.mp4"
-                className="flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary px-5 py-2 rounded-lg text-sm font-semibold hover:bg-primary/20 transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download MP4 (26.8 MB)
-              </a>
-            </div>
+
           </div>
         </div>
       </section>
