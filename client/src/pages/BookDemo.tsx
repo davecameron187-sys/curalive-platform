@@ -113,7 +113,7 @@ export default function BookDemo() {
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Book a Live Demo
             </div>
             <h1 className="text-4xl font-bold leading-tight tracking-tight mb-4">
-              See Chorus.AI in Action
+              See CuraLive in Action
             </h1>
             <p className="text-muted-foreground leading-relaxed mb-8" style={{ fontFamily: "'Inter', sans-serif" }}>
               Get a personalised walkthrough of the full platform — from live event intelligence and real-time transcription to AI-powered roadshow management and investor commitment signal detection.

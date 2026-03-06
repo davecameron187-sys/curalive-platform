@@ -1,6 +1,6 @@
 /**
  * OCC — Operator Call Centre
- * VIER-style production operator console for Chorus.AI
+ * VIER-style production operator console for CuraLive
  * Covers: Operator State Machine, Conference Overview, Conference Control Panel,
  * Feature Bar (Monitoring/Connection/History/Audio/Chat), Lounge, Operator Requests, Caller Control
  */
@@ -99,7 +99,7 @@ function formatTime(dt: Date | string | null): string {
 const DEMO_CONFERENCES: any[] = [
   {
     id: 1, eventId: "q4-earnings-2026", callId: "CC-9921", subject: "Q4 2025 Earnings Call",
-    reseller: "Chorus Call Inc.", product: "Event Conference",
+    reseller: "CuraLive Inc.", product: "Event Conference",
     moderatorCode: "4872", participantCode: "9341", securityCode: "7723" as string | null,   dialInNumber: "+27 11 535 0000", status: "running" as const,
     isLocked: false, isRecording: true, waitingMusicEnabled: true, requestsToSpeakEnabled: true,
     scheduledStart: new Date(Date.now() - 3600000), actualStart: new Date(Date.now() - 42 * 60000),
@@ -108,7 +108,7 @@ const DEMO_CONFERENCES: any[] = [
   },
   {
     id: 2, eventId: "investor-day-2026", callId: "CC-9922", subject: "Annual Investor Day",
-    reseller: "Chorus Call Inc.", product: "Event Conference",
+    reseller: "CuraLive Inc.", product: "Event Conference",
     moderatorCode: "5511", participantCode: "8823", securityCode: null,
     dialInNumber: "+27 11 535 0001", status: "pending" as const,
     isLocked: false, isRecording: false, waitingMusicEnabled: true, requestsToSpeakEnabled: true,
@@ -118,7 +118,7 @@ const DEMO_CONFERENCES: any[] = [
   },
   {
     id: 3, eventId: "board-briefing", callId: "CC-9919", subject: "Board Strategy Briefing",
-    reseller: "Chorus Call Inc.", product: "Event Conference",
+    reseller: "CuraLive Inc.", product: "Event Conference",
     moderatorCode: "3301", participantCode: "6612", securityCode: null,
     dialInNumber: "+27 11 535 0002", status: "completed" as const,
     isLocked: false, isRecording: false, waitingMusicEnabled: false, requestsToSpeakEnabled: false,
@@ -130,8 +130,8 @@ const DEMO_CONFERENCES: any[] = [
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const DEMO_PARTICIPANTS: any[] = [
-  { id: 1, conferenceId: 1, lineNumber: 1, role: "moderator" as const, name: "Sarah Nkosi", company: "Chorus Call Inc.", location: "Johannesburg", phoneNumber: "+27 82 555 0100", dialInNumber: "+27 11 535 0000", voiceServer: "VS-01", state: "connected" as const, isSpeaking: false, isWebParticipant: false, requestToSpeak: false, requestToSpeakPosition: null, subconferenceId: null, isMonitored: false, monitoringOperatorId: null, connectedAt: new Date(Date.now() - 42 * 60000), disconnectedAt: null, createdAt: new Date(), updatedAt: new Date() },
-  { id: 2, conferenceId: 1, lineNumber: 2, role: "host" as const, name: "James Dlamini", company: "Chorus Call Inc.", location: "Cape Town", phoneNumber: "+27 82 555 0101", dialInNumber: "+27 11 535 0000", voiceServer: "VS-01", state: "speaking" as const, isSpeaking: true, isWebParticipant: false, requestToSpeak: false, requestToSpeakPosition: null, subconferenceId: null, isMonitored: false, monitoringOperatorId: null, connectedAt: new Date(Date.now() - 40 * 60000), disconnectedAt: null, createdAt: new Date(), updatedAt: new Date() },
+  { id: 1, conferenceId: 1, lineNumber: 1, role: "moderator" as const, name: "Sarah Nkosi", company: "CuraLive Inc.", location: "Johannesburg", phoneNumber: "+27 82 555 0100", dialInNumber: "+27 11 535 0000", voiceServer: "VS-01", state: "connected" as const, isSpeaking: false, isWebParticipant: false, requestToSpeak: false, requestToSpeakPosition: null, subconferenceId: null, isMonitored: false, monitoringOperatorId: null, connectedAt: new Date(Date.now() - 42 * 60000), disconnectedAt: null, createdAt: new Date(), updatedAt: new Date() },
+  { id: 2, conferenceId: 1, lineNumber: 2, role: "host" as const, name: "James Dlamini", company: "CuraLive Inc.", location: "Cape Town", phoneNumber: "+27 82 555 0101", dialInNumber: "+27 11 535 0000", voiceServer: "VS-01", state: "speaking" as const, isSpeaking: true, isWebParticipant: false, requestToSpeak: false, requestToSpeakPosition: null, subconferenceId: null, isMonitored: false, monitoringOperatorId: null, connectedAt: new Date(Date.now() - 40 * 60000), disconnectedAt: null, createdAt: new Date(), updatedAt: new Date() },
   { id: 3, conferenceId: 1, lineNumber: 3, role: "participant" as const, name: "Thabo Molefe", company: "Investec Asset Management", location: "Sandton", phoneNumber: "+27 83 555 0200", dialInNumber: "+27 11 535 0000", voiceServer: "VS-02", state: "connected" as const, isSpeaking: false, isWebParticipant: false, requestToSpeak: false, requestToSpeakPosition: null, subconferenceId: null, isMonitored: false, monitoringOperatorId: null, connectedAt: new Date(Date.now() - 37 * 60000), disconnectedAt: null, createdAt: new Date(), updatedAt: new Date() },
   { id: 4, conferenceId: 1, lineNumber: 4, role: "participant" as const, name: "Priya Naidoo", company: "Old Mutual Investments", location: "Durban", phoneNumber: "+27 84 555 0300", dialInNumber: "+27 11 535 0000", voiceServer: "VS-02", state: "muted" as const, isSpeaking: false, isWebParticipant: false, requestToSpeak: false, requestToSpeakPosition: null, subconferenceId: null, isMonitored: false, monitoringOperatorId: null, connectedAt: new Date(Date.now() - 35 * 60000), disconnectedAt: null, createdAt: new Date(), updatedAt: new Date() },
   { id: 5, conferenceId: 1, lineNumber: 5, role: "participant" as const, name: "Mark van der Berg", company: "Coronation Fund Managers", location: "Cape Town", phoneNumber: "+27 21 555 0400", dialInNumber: "+27 11 535 0000", voiceServer: "VS-03", state: "connected" as const, isSpeaking: false, isWebParticipant: false, requestToSpeak: true, requestToSpeakPosition: 1, subconferenceId: null, isMonitored: false, monitoringOperatorId: null, connectedAt: new Date(Date.now() - 32 * 60000), disconnectedAt: null, createdAt: new Date(), updatedAt: new Date() },
@@ -212,7 +212,7 @@ export default function OCC() {
   // Schedule new conference modal
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [schedSubject, setSchedSubject] = useState("");
-  const [schedReseller, setSchedReseller] = useState("Chorus Call Inc.");
+  const [schedReseller, setSchedReseller] = useState("CuraLive Inc.");
   const [schedDate, setSchedDate] = useState("");
   const [schedTime, setSchedTime] = useState("");
   const [schedModCode, setSchedModCode] = useState("");
@@ -1046,7 +1046,7 @@ export default function OCC() {
           <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center animate-pulse">
             <Headphones className="w-5 h-5 text-white" />
           </div>
-          <p className="text-slate-400 text-sm">Loading Chorus.OCC…</p>
+          <p className="text-slate-400 text-sm">Loading CuraLive.OCC…</p>
         </div>
       </div>
     );
@@ -1060,8 +1060,8 @@ export default function OCC() {
             <Headphones className="w-7 h-7 text-blue-400" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-white mb-2">Chorus.OCC</h1>
-            <p className="text-slate-400 text-sm leading-relaxed">Operator Call Centre access requires authentication. Please sign in with your Chorus Call operator account.</p>
+            <h1 className="text-xl font-bold text-white mb-2">CuraLive.OCC</h1>
+            <p className="text-slate-400 text-sm leading-relaxed">Operator Call Centre access requires authentication. Please sign in with your CuraLive operator account.</p>
           </div>
           <a
             href={`/api/oauth/login?returnTo=${encodeURIComponent('/occ')}`}
@@ -1070,7 +1070,7 @@ export default function OCC() {
             <LogOut className="w-4 h-4 rotate-180" />
             Sign in to access OCC
           </a>
-          <a href="/" className="text-xs text-slate-500 hover:text-slate-400 transition-colors">← Back to Chorus.AI</a>
+          <a href="/" className="text-xs text-slate-500 hover:text-slate-400 transition-colors">← Back to CuraLive</a>
         </div>
       </div>
     );
@@ -1087,9 +1087,9 @@ export default function OCC() {
           </div>
           <div className="text-center">
             <h1 className="text-xl font-bold text-white mb-2">Access Denied</h1>
-            <p className="text-slate-400 text-sm leading-relaxed">Your account does not have operator access to Chorus.OCC. Contact your Chorus Call administrator to request access.</p>
+            <p className="text-slate-400 text-sm leading-relaxed">Your account does not have operator access to CuraLive.OCC. Contact your CuraLive administrator to request access.</p>
           </div>
-          <a href="/" className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">← Back to Chorus.AI</a>
+          <a href="/" className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">← Back to CuraLive</a>
         </div>
       </div>
     );
@@ -1106,7 +1106,7 @@ export default function OCC() {
             <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center">
               <Headphones className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="font-bold text-white text-sm tracking-tight">Chorus<span className="text-blue-400">.OCC</span></span>
+            <span className="font-bold text-white text-sm tracking-tight">CuraLive<span className="text-blue-400">.OCC</span></span>
           </div>
           <div className="hidden md:flex items-center gap-1 text-xs text-slate-400">
             {["File", "Conference", "Participants", "Utility", "Setup", "Help"].map(m => (
@@ -2819,7 +2819,7 @@ export default function OCC() {
                   {(() => {
                     const SMS_TEMPLATES = [
                       { label: "Standard Invite", text: "Dear {{name}}, you are invited to join the {{conference}} conference call on {{date}} at {{time}}. Our operator will call you on {{phone}}." },
-                      { label: "Earnings Call", text: "Dear {{name}}, please be advised that Chorus Call will connect you to the {{conference}} earnings call at {{time}} on {{date}}. Ensure your line is available." },
+                      { label: "Earnings Call", text: "Dear {{name}}, please be advised that CuraLive will connect you to the {{conference}} earnings call at {{time}} on {{date}}. Ensure your line is available." },
                       { label: "Reminder", text: "Reminder: {{name}}, the {{conference}} conference call starts in 15 minutes. Our operator will dial {{phone}} shortly." },
                       { label: "Board Briefing", text: "Dear {{name}} ({{company}}), you are scheduled to join the {{conference}} board briefing at {{time}}. An operator will call you directly." },
                     ];
@@ -2934,7 +2934,7 @@ export default function OCC() {
                   {/* ── Voice Message ─────────────────────────────────── */}
                   {(() => {
                     const VOICE_TEMPLATES = [
-                      { label: "Standard Greeting", text: "Good day, {{name}}. You are about to be connected to the {{conference}} conference call hosted by Chorus Call. Please hold while we connect you." },
+                      { label: "Standard Greeting", text: "Good day, {{name}}. You are about to be connected to the {{conference}} conference call hosted by CuraLive. Please hold while we connect you." },
                       { label: "Earnings Call", text: "Hello {{name}} from {{company}}. Welcome to the {{conference}} earnings call. This call is being recorded. Please hold while we connect you to the conference." },
                       { label: "Board Briefing", text: "Good day, {{name}}. You are being connected to the {{conference}} board briefing. This is a confidential call. Please hold." },
                       { label: "Reminder Prompt", text: "Hello {{name}}, this is a reminder that the {{conference}} conference call is starting now. Please hold while we connect you." },
@@ -3842,7 +3842,7 @@ export default function OCC() {
       {/* ── Status Bar ───────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-3 py-1 bg-[#0a0d14] border-t border-slate-800 text-[10px] text-slate-500 shrink-0">
         <div className="flex items-center gap-4">
-          <span>Chorus.OCC v1.0</span>
+          <span>CuraLive.OCC v1.0</span>
           <span>Bridge: <span className="text-emerald-400">Connected</span></span>
           <span>Running: <span className="text-slate-300">{runningConfs.length}</span></span>
           <span>Lounge: <span className={loungeEntries.length > 0 ? "text-amber-400" : "text-slate-300"}>{loungeEntries.length}</span></span>

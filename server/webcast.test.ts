@@ -1,5 +1,5 @@
 /**
- * webcast.test.ts — Tests for the Chorus.AI Webcasting Platform router.
+ * webcast.test.ts — Tests for the CuraLive Webcasting Platform router.
  * Validates: event listing, registration, Q&A, polls, and analytics.
  */
 import { describe, it, expect } from "vitest";

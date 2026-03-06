@@ -1,5 +1,5 @@
 /**
- * CreateEventWizard.tsx — Chorus.AI Create Event Wizard
+ * CreateEventWizard.tsx — CuraLive Create Event Wizard
  * 6-step guided flow: Event Type → Details → Branding → Agenda & Speakers → Registration → Publish
  * Operators can self-serve new webcasts, webinars, virtual events, and hybrid events.
  */

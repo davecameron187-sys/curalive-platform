@@ -15,20 +15,21 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import CustomisationPortal from "@/components/CustomisationPortal";
 
 const EVENT_META: Record<string, { title: string; company: string; platform: string; date: string; time: string }> = {
-  "q4-earnings-2026": { title: "Q4 2025 Earnings Call", company: "Chorus Call Inc.", platform: "Zoom", date: "1 Mar 2026", time: "10:00 SAST" },
-  "investor-day-2026": { title: "Annual Investor Day", company: "Chorus Call Inc.", platform: "Microsoft Teams", date: "15 Mar 2026", time: "09:00 SAST" },
-  "board-briefing": { title: "Board Strategy Briefing", company: "Chorus Call Inc.", platform: "Webex", date: "28 Feb 2026", time: "14:00 SAST" },
+  "q4-earnings-2026": { title: "Q4 2025 Earnings Call", company: "CuraLive Inc.", platform: "Zoom", date: "1 Mar 2026", time: "10:00 SAST" },
+  "investor-day-2026": { title: "Annual Investor Day", company: "CuraLive Inc.", platform: "Microsoft Teams", date: "15 Mar 2026", time: "09:00 SAST" },
+  "board-briefing": { title: "Board Strategy Briefing", company: "CuraLive Inc.", platform: "Webex", date: "28 Feb 2026", time: "14:00 SAST" },
 };
 
 type BotStatus = "disconnected" | "connecting" | "live" | "ended";
-type Tab = "overview" | "connect" | "qa" | "dialin" | "rtmp" | "settings" | "attendees" | "whitelabel";
+type Tab = "overview" | "connect" | "qa" | "dialin" | "rtmp" | "settings" | "attendees" | "customise";
 
 type QAItem = { id: number; question: string; author: string; firm: string; votes: number; approved: boolean; dismissed: boolean; answered: boolean; flagged?: boolean };
 
 const INITIAL_QA: QAItem[] = [
-  { id: 1, question: "Can you provide more detail on the Chorus.AI revenue contribution in Q4?", author: "Sarah Chen", firm: "Goldman Sachs", votes: 47, approved: true, dismissed: false, answered: false },
+  { id: 1, question: "Can you provide more detail on the CuraLive revenue contribution in Q4?", author: "Sarah Chen", firm: "Goldman Sachs", votes: 47, approved: true, dismissed: false, answered: false },
   { id: 2, question: "What is the timeline for the native Microsoft Teams integration?", author: "James Okafor", firm: "JP Morgan", votes: 31, approved: true, dismissed: false, answered: false },
   { id: 3, question: "How does the Recall.ai partnership affect your gross margin profile?", author: "Priya Naidoo", firm: "Morgan Stanley", votes: 28, approved: false, dismissed: false, answered: false },
   { id: 4, question: "Can you elaborate on the 40% engagement increase metric?", author: "Tom Barker", firm: "Barclays", votes: 19, approved: true, dismissed: false, answered: true },
@@ -59,7 +60,7 @@ const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType; badge?: numb
   { id: "dialin", label: "Dial-In Numbers", icon: Phone },
   { id: "rtmp", label: "RTMP / Stream Key", icon: Video },
   { id: "settings", label: "Event Settings", icon: Settings },
-  { id: "whitelabel", label: "White-Label", icon: Palette },
+  { id: "customise", label: "Customise", icon: Palette },
 ];
 
 function LiveDot({ pulse = true }: { pulse?: boolean }) {
@@ -125,7 +126,7 @@ export default function OperatorConsole() {
 
   // White-label config
   const [wlConfig, setWlConfig] = useState({
-    brandName: "Chorus.AI",
+    brandName: "CuraLive",
     subdomain: "chorus",
     primaryColor: "#e63946",
     logoUrl: "",
@@ -143,8 +144,8 @@ export default function OperatorConsole() {
   });
 
   const rtmpKey = "evt_q4_2026_xK9mNpQ3";
-  const rtmpUrl = `rtmp://ingest.chorus.ai/live/${rtmpKey}`;
-  const webhookUrl = `https://chorus.ai/api/webhooks/recall`;
+  const rtmpUrl = `rtmp://ingest.pulselive.events/live/${rtmpKey}`;
+  const webhookUrl = `https://pulselive.events/api/webhooks/recall`;
 
   // Silence detector
   useEffect(() => {
@@ -181,7 +182,7 @@ export default function OperatorConsole() {
   const handleConnect = () => {
     if (!meetingUrl.trim()) { toast.error("Please enter a meeting URL"); return; }
     setBotStatus("connecting");
-    toast.info("Dispatching Chorus.AI bot to meeting…");
+    toast.info("Dispatching CuraLive bot to meeting…");
     setTimeout(() => {
       setBotStatus("live");
       setEventStarted(true);
@@ -431,7 +432,7 @@ export default function OperatorConsole() {
               <div>
                 <h2 className="text-xl font-bold text-white mb-1">Connect Webcast</h2>
                 <p className="text-slate-500 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  Paste the meeting URL. Chorus.AI dispatches a silent bot that joins as a participant and begins live transcription.
+                  Paste the meeting URL. CuraLive dispatches a silent bot that joins as a participant and begins live transcription.
                 </p>
               </div>
 
@@ -698,7 +699,7 @@ export default function OperatorConsole() {
               <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
                 <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">OBS Studio Setup</div>
                 <div className="space-y-2 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {[["Service", "Custom…"], ["Server", "rtmp://ingest.chorus.ai/live"], ["Stream Key", rtmpKey], ["Audio Bitrate", "128 kbps (mono)"], ["Video Bitrate", "2500–4000 kbps"]].map(([k, v]) => (
+                  {[["Service", "Custom…"], ["Server", "rtmp://ingest.pulselive.events/live"], ["Stream Key", rtmpKey], ["Audio Bitrate", "128 kbps (mono)"], ["Video Bitrate", "2500–4000 kbps"]].map(([k, v]) => (
                     <div key={k} className="flex justify-between border-b border-white/5 pb-2">
                       <span className="text-slate-500">{k}</span>
                       <span className="font-mono text-xs text-slate-300">{v}</span>
@@ -808,77 +809,8 @@ export default function OperatorConsole() {
           )}
 
           {/* ── WHITE-LABEL ── */}
-          {activeTab === "whitelabel" && (
-            <div className="p-6 max-w-3xl space-y-5">
-              <div>
-                <h2 className="text-xl font-bold text-white mb-1">White-Label Configuration</h2>
-                <p className="text-slate-500 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Customise the platform branding for this client deployment.</p>
-              </div>
-              <div className="grid md:grid-cols-2 gap-5">
-                <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5 space-y-4">
-                  <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Brand Settings</div>
-                  {[
-                    { label: "Brand Name", key: "brandName", placeholder: "Chorus.AI" },
-                    { label: "Subdomain", key: "subdomain", placeholder: "chorus" },
-                    { label: "Tagline", key: "tagline", placeholder: "The Intelligence Layer…" },
-                  ].map(({ label, key, placeholder }) => (
-                    <div key={key}>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">{label}</label>
-                      <input
-                        type="text"
-                        value={String((wlConfig as Record<string, unknown>)[key] ?? "")}
-                        onChange={(e) => setWlConfig((c) => ({ ...c, [key]: e.target.value }))}
-                        placeholder={placeholder}
-                        className="w-full bg-[#06080f] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-primary/50"
-                      />
-                    </div>
-                  ))}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">Primary Colour</label>
-                      <div className="flex items-center gap-2 bg-[#06080f] border border-white/10 rounded-lg px-3 py-2">
-                        <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: wlConfig.primaryColor }} />
-                        <input type="text" value={wlConfig.primaryColor} onChange={(e) => setWlConfig((c) => ({ ...c, primaryColor: e.target.value }))} className="flex-1 bg-transparent text-xs font-mono text-slate-300 focus:outline-none" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1.5">Logo URL</label>
-                      <input type="text" value={wlConfig.logoUrl} onChange={(e) => setWlConfig((c) => ({ ...c, logoUrl: e.target.value }))} placeholder="https://…" className="w-full bg-[#06080f] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-primary/50" />
-                    </div>
-                  </div>
-                  <button onClick={() => toast.success("White-label config saved!")} className="w-full flex items-center justify-center gap-2 bg-primary text-white font-bold py-2.5 rounded-lg hover:opacity-90 transition-opacity text-sm">
-                    <Save className="w-4 h-4" /> Save Configuration
-                  </button>
-                </div>
-
-                {/* Preview */}
-                <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
-                  <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Live Preview</div>
-                  <div className="rounded-lg overflow-hidden border border-white/10">
-                    <div className="h-8 flex items-center px-3 gap-2" style={{ backgroundColor: wlConfig.primaryColor + "22", borderBottom: `1px solid ${wlConfig.primaryColor}33` }}>
-                      <div className="w-4 h-4 rounded" style={{ backgroundColor: wlConfig.primaryColor }} />
-                      <span className="text-xs font-bold" style={{ color: wlConfig.primaryColor }}>{wlConfig.brandName}</span>
-                    </div>
-                    <div className="bg-[#06080f] p-4">
-                      <div className="text-sm font-bold text-white mb-1">{meta.title}</div>
-                      <div className="text-xs text-slate-500">{wlConfig.tagline}</div>
-                      <div className="mt-3 h-1.5 rounded-full bg-white/5 overflow-hidden">
-                        <div className="h-full rounded-full w-2/3" style={{ backgroundColor: wlConfig.primaryColor }} />
-                      </div>
-                      {wlConfig.showPoweredBy && (
-                        <div className="text-[10px] text-slate-700 mt-3 text-right">Powered by Chorus.AI</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-600">Subdomain: <span className="font-mono text-slate-400">{wlConfig.subdomain}.chorus.ai</span></span>
-                    <button onClick={() => setWlConfig((c) => ({ ...c, showPoweredBy: !c.showPoweredBy }))} className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors">
-                      {wlConfig.showPoweredBy ? "Hide" : "Show"} branding
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {activeTab === "customise" && (
+            <CustomisationPortal eventId={eventId} />
           )}
 
         </main>

@@ -1,5 +1,5 @@
 /**
- * aiRouter.ts — tRPC procedures for Chorus.AI AI features.
+ * aiRouter.ts — tRPC procedures for CuraLive AI features.
  *
  * Procedures:
  *   ai.generateRollingSummary   — summarise last N transcript segments (operatorProcedure)

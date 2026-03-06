@@ -104,7 +104,7 @@ export const recallRouter = router({
   deployBot: protectedProcedure
     .input(z.object({
       meetingUrl: z.string().url("Must be a valid meeting URL"),
-      botName: z.string().default("Chorus.AI"),
+      botName: z.string().default("CuraLive"),
       eventId: z.number().optional(),
       meetingId: z.number().optional(),
       enableRecording: z.boolean().default(false),

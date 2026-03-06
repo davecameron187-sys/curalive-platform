@@ -27,7 +27,7 @@ describe("profile.update", () => {
     const input = {
       name: "David Cameron",
       jobTitle: "Head of IR",
-      organisation: "Chorus Call Inc.",
+      organisation: "CuraLive Inc.",
       bio: "Experienced IR professional.",
       phone: "+27 11 000 0000",
       linkedinUrl: null,

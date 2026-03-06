@@ -1,5 +1,5 @@
 /**
- * EventPass — Public-facing event registration page for Chorus Call.
+ * EventPass — Public-facing event registration page for CuraLive.
  * Accessible at /event-pass/:id
  * Embeddable on choruscall.co.za via iframe or direct link.
  * Replaces the legacy "Diamond Pass" product page.
@@ -20,27 +20,27 @@ const EVENT_META: Record<string, {
 }> = {
   "q4-earnings-2026": {
     title: "Q4 2025 Earnings Call",
-    company: "Chorus Call Inc.",
+    company: "CuraLive Inc.",
     platform: "Zoom",
     date: "March 1, 2026",
     time: "9:00 AM EST / 2:00 PM GMT",
-    description: "Join Chorus Call's CEO James Mitchell and CFO Sarah Chen for a live discussion of Q4 2025 financial results, full-year 2025 performance, and 2026 guidance.",
+    description: "Join CuraLive's CEO James Mitchell and CFO Sarah Chen for a live discussion of Q4 2025 financial results, full-year 2025 performance, and 2026 guidance.",
   },
   "investor-day-2026": {
     title: "Annual Investor Day",
-    company: "Chorus Call Inc.",
+    company: "CuraLive Inc.",
     platform: "Microsoft Teams",
     date: "March 15, 2026",
     time: "10:00 AM EST / 3:00 PM GMT",
-    description: "A full-day investor event featuring presentations from the executive team on Chorus.AI strategy, product roadmap, and long-term financial targets.",
+    description: "A full-day investor event featuring presentations from the executive team on CuraLive strategy, product roadmap, and long-term financial targets.",
   },
   "board-briefing": {
     title: "Board Strategy Briefing",
-    company: "Chorus Call Inc.",
+    company: "CuraLive Inc.",
     platform: "Webex",
     date: "March 5, 2026",
     time: "2:00 PM EST / 7:00 PM GMT",
-    description: "Confidential board briefing on the Chorus.AI platform strategy, competitive positioning, and 2026 build plan.",
+    description: "Confidential board briefing on the CuraLive platform strategy, competitive positioning, and 2026 build plan.",
   },
 };
 
@@ -177,7 +177,7 @@ export default function EventPass() {
           {/* Event badge */}
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-5">
             <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-            Event Pass — Chorus Call Inc.
+            Event Pass — CuraLive Inc.
           </div>
 
           <h1 className="text-4xl font-bold leading-tight mb-3">
@@ -285,7 +285,7 @@ export default function EventPass() {
                   type="text"
                   value={form.company}
                   onChange={e => setForm(f => ({ ...f, company: e.target.value }))}
-                  placeholder="Chorus Call Inc."
+                  placeholder="CuraLive Inc."
                   className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary transition-colors"
                 />
               </div>
@@ -336,7 +336,7 @@ export default function EventPass() {
             </button>
 
             <p className="text-xs text-slate-500 text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
-              By registering you agree to receive event communications from Chorus Call. No spam.
+              By registering you agree to receive event communications from CuraLive. No spam.
             </p>
           </form>
 

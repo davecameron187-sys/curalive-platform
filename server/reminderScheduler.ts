@@ -1,5 +1,5 @@
 /**
- * reminderScheduler.ts — Chorus.AI pre-event reminder email scheduler.
+ * reminderScheduler.ts — CuraLive pre-event reminder email scheduler.
  *
  * Runs every 5 minutes and sends reminder emails to registered attendees:
  *   - 24-hour reminder: sent when the event is 23h–25h away

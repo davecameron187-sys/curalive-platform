@@ -96,7 +96,7 @@ function ModeratorInner({ eventId }: { eventId: string }) {
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="w-px h-5 bg-border" />
-        <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-6 w-auto object-contain" />
+        <span className="font-bold text-white text-sm tracking-tight">Cura<span className="text-primary">Live</span></span>
         <div className="w-px h-5 bg-border" />
         <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full">
           <Radio className="w-3 h-3" /> Moderator

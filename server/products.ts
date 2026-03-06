@@ -1,5 +1,5 @@
 /**
- * products.ts — Chorus.AI subscription plan definitions.
+ * products.ts — CuraLive subscription plan definitions.
  *
  * These are the canonical plan objects used across the billing system.
  * Stripe Price IDs are set via environment variables so they can differ

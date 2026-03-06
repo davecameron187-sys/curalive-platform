@@ -12,13 +12,13 @@ describe("Email helper", () => {
     const html = buildIRSummaryEmail({
       contactName: "Test Contact",
       eventTitle: "Q4 2025 Earnings Call",
-      company: "Chorus Call Inc.",
+      company: "CuraLive Inc.",
       summary: "Strong Q4 results with 28% YoY revenue growth.",
       date: "2 March 2026",
     });
     expect(html).toContain("Q4 2025 Earnings Call");
     expect(html).toContain("Test Contact");
-    expect(html).toContain("Chorus Call Inc.");
+    expect(html).toContain("CuraLive Inc.");
     expect(html).toContain("28% YoY revenue growth");
   });
 
@@ -27,7 +27,7 @@ describe("Email helper", () => {
       firstName: "Jane",
       lastName: "Smith",
       eventTitle: "Annual Investor Day",
-      company: "Chorus Call Inc.",
+      company: "CuraLive Inc.",
       eventDate: "15 April 2026",
       dialInNumber: "+27 11 535 0000",
       accessCode: "9341",
@@ -42,11 +42,11 @@ describe("Email helper", () => {
     // Resend allows sending to 'delivered@resend.dev' for testing — no domain verification needed
     const result = await sendEmail({
       to: "delivered@resend.dev",
-      subject: "Chorus.AI — API Key Validation Test",
+      subject: "CuraLive — API Key Validation Test",
       html: buildIRSummaryEmail({
         contactName: "Resend Test",
         eventTitle: "API Key Validation",
-        company: "Chorus Call Inc.",
+        company: "CuraLive Inc.",
         summary: "This is an automated test to confirm the Resend API key is working correctly.",
         date: new Date().toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" }),
       }),

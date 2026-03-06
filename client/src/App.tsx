@@ -45,6 +45,7 @@ import Profile from "./pages/Profile";
 import Billing from "./pages/Billing";
 import Training from "./pages/Training";
 import OperatorGuide from "./pages/OperatorGuide";
+import DemoRegistration from "./pages/DemoRegistration";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/presenter/:id" component={Presenter} />
       <Route path="/operator/:id" component={OperatorConsole} />
       <Route path="/register/:id" component={Registration} />
+      <Route path="/demo-registration" component={DemoRegistration} />
       <Route path="/event-pass/:id" component={EventPass} />
       <Route path="/post-event/:id" component={PostEvent} />
       <Route path="/integrations" component={IntegrationHub} />

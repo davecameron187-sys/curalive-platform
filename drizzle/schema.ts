@@ -725,7 +725,7 @@ export const recallBots = mysqlTable("recall_bots", {
   // The meeting URL the bot joined
   meetingUrl: text("meeting_url").notNull(),
   // Bot display name shown in the meeting
-  botName: varchar("bot_name", { length: 200 }).default("Chorus.AI"),
+  botName: varchar("bot_name", { length: 200 }).default("PulseLive"),
   // Recall.ai bot status: created, joining, in_call, done, failed
   status: varchar("status", { length: 50 }).notNull().default("created"),
   // Ably channel name this bot publishes transcripts to
@@ -849,3 +849,71 @@ export const speakerPaceResults = mysqlTable("speaker_pace_results", {
 });
 export type SpeakerPaceResult = typeof speakerPaceResults.$inferSelect;
 export type InsertSpeakerPaceResult = typeof speakerPaceResults.$inferInsert;
+
+// ─── Event Customisation Portal ──────────────────────────────────────────────
+/**
+ * event_customisation — Per-event branding, registration page config, and booking form config.
+ * Used by the Customisation Portal tab in the Operator Console.
+ */
+export const eventCustomisation = mysqlTable("event_customisation", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull().unique(), // references events.eventId or webcast slug
+
+  // ── Brand Identity ──────────────────────────────────────────────────────────
+  clientName: varchar("client_name", { length: 200 }).notNull().default("PulseLive"),
+  logoUrl: varchar("logo_url", { length: 500 }),
+  primaryColor: varchar("primary_color", { length: 20 }).default("#c8a96e"),
+  accentColor: varchar("accent_color", { length: 20 }).default("#10b981"),
+  fontFamily: varchar("font_family", { length: 100 }).default("Space Grotesk"),
+  showPoweredBy: boolean("show_powered_by").default(true),
+
+  // ── Registration Page ───────────────────────────────────────────────────────
+  regPageTitle: varchar("reg_page_title", { length: 300 }),
+  regPageSubtitle: varchar("reg_page_subtitle", { length: 500 }),
+  regHostName: varchar("reg_host_name", { length: 200 }),
+  regHostTitle: varchar("reg_host_title", { length: 200 }),
+  regHostOrg: varchar("reg_host_org", { length: 200 }),
+  regEventDate: varchar("reg_event_date", { length: 100 }),
+  regEventTime: varchar("reg_event_time", { length: 100 }),
+  regEventTimezone: varchar("reg_event_timezone", { length: 64 }).default("SAST"),
+  regDescription: text("reg_description"),
+  regFeatures: text("reg_features"),       // JSON array of feature bullet strings
+  regAgenda: text("reg_agenda"),           // JSON array of {time, title, speaker}
+  regSpeakers: text("reg_speakers"),       // JSON array of {name, title, org, initials, color}
+  regIndustryVertical: varchar("reg_industry_vertical", { length: 64 }).default("general"),
+  regMaxAttendees: int("reg_max_attendees").default(1000),
+  regConsentText: text("reg_consent_text"),
+  regSupportEmail: varchar("reg_support_email", { length: 320 }),
+  // Form field toggles (which fields are shown/required)
+  regFieldCompany: boolean("reg_field_company").default(true),
+  regFieldJobTitle: boolean("reg_field_job_title").default(true),
+  regFieldPhone: boolean("reg_field_phone").default(false),
+  regFieldCountry: boolean("reg_field_country").default(false),
+  regFieldLanguage: boolean("reg_field_language").default(true),
+  regFieldDialIn: boolean("reg_field_dial_in").default(true),
+
+  // ── Booking Form ────────────────────────────────────────────────────────────
+  bookHeadline: varchar("book_headline", { length: 300 }),
+  bookSubheadline: varchar("book_subheadline", { length: 500 }),
+  bookFeatures: text("book_features"),     // JSON array of feature bullet strings
+  bookServiceOptions: text("book_service_options"), // JSON array of service dropdown options
+  bookReplyEmail: varchar("book_reply_email", { length: 320 }),
+  bookButtonLabel: varchar("book_button_label", { length: 100 }).default("Submit Booking Request"),
+
+  // ── Email Branding ──────────────────────────────────────────────────────────
+  emailSenderName: varchar("email_sender_name", { length: 200 }).default("PulseLive"),
+  emailSenderAddress: varchar("email_sender_address", { length: 320 }),
+  emailHeaderColor: varchar("email_header_color", { length: 20 }).default("#0f172a"),
+  emailButtonColor: varchar("email_button_color", { length: 20 }).default("#3b82f6"),
+  emailButtonLabel: varchar("email_button_label", { length: 100 }).default("Join Event"),
+  emailFooterText: varchar("email_footer_text", { length: 500 }),
+
+  // ── Unique Links ────────────────────────────────────────────────────────────
+  customSlug: varchar("custom_slug", { length: 128 }),  // override the default slug
+  shortLinkEnabled: boolean("short_link_enabled").default(false),
+
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type EventCustomisation = typeof eventCustomisation.$inferSelect;
+export type InsertEventCustomisation = typeof eventCustomisation.$inferInsert;

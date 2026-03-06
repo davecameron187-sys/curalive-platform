@@ -7,27 +7,27 @@ import { toast } from "sonner";
 const EVENT_META: Record<string, { title: string; company: string; platform: string; date: string; time: string; description: string }> = {
   "q4-earnings-2026": {
     title: "Q4 2025 Earnings Call",
-    company: "Chorus Call Inc.",
+    company: "CuraLive Inc.",
     platform: "Zoom",
     date: "March 1, 2026",
     time: "9:00 AM EST / 2:00 PM GMT",
-    description: "Join Chorus Call's CEO James Mitchell and CFO Sarah Chen for a live discussion of Q4 2025 financial results, full-year 2025 performance, and 2026 guidance.",
+    description: "Join CuraLive's CEO James Mitchell and CFO Sarah Chen for a live discussion of Q4 2025 financial results, full-year 2025 performance, and 2026 guidance.",
   },
   "investor-day-2026": {
     title: "Annual Investor Day",
-    company: "Chorus Call Inc.",
+    company: "CuraLive Inc.",
     platform: "Microsoft Teams",
     date: "March 15, 2026",
     time: "10:00 AM EST / 3:00 PM GMT",
-    description: "A full-day investor event featuring presentations from the executive team on Chorus.AI strategy, product roadmap, and long-term financial targets.",
+    description: "A full-day investor event featuring presentations from the executive team on CuraLive strategy, product roadmap, and long-term financial targets.",
   },
   "board-briefing": {
     title: "Board Strategy Briefing",
-    company: "Chorus Call Inc.",
+    company: "CuraLive Inc.",
     platform: "Webex",
     date: "March 5, 2026",
     time: "2:00 PM EST / 7:00 PM GMT",
-    description: "Confidential board briefing on the Chorus.AI platform strategy, competitive positioning, and 2026 build plan.",
+    description: "Confidential board briefing on the CuraLive platform strategy, competitive positioning, and 2026 build plan.",
   },
 };
 
@@ -163,7 +163,7 @@ export default function Registration() {
               { icon: Calendar, label: meta.date },
               { icon: Clock, label: meta.time },
               { icon: Users, label: "Open to registered investors and analysts" },
-              { icon: Globe, label: "Available in 12 languages via Chorus.AI translation" },
+              { icon: Globe, label: "Available in 12 languages via CuraLive translation" },
             ].map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center gap-3 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
                 <Icon className="w-4 h-4 text-primary shrink-0" />
@@ -173,7 +173,7 @@ export default function Registration() {
           </div>
 
           <div className="mt-8 bg-card border border-border rounded-xl p-5">
-            <div className="text-sm font-semibold mb-3">Powered by Chorus.AI</div>
+            <div className="text-sm font-semibold mb-3">Powered by CuraLive</div>
             <div className="space-y-2 text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
               {["Real-time transcription in your language", "Live sentiment analysis", "AI-prioritized Q&A", "Post-event summary & full transcript"].map((f) => (
                 <div key={f} className="flex items-center gap-2">

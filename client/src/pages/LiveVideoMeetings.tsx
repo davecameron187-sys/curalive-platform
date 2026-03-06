@@ -65,7 +65,7 @@ const SERVICE_TYPES = [
     icon: Mic,
     title: "Earnings Calls & Investor Updates",
     desc: "Quarterly earnings calls and investor update sessions with live transcription, sentiment analysis, and AI summaries.",
-    detail: "Integrated with Chorus.AI event platform",
+    detail: "Integrated with CuraLive event platform",
     accent: "amber",
   },
   {
@@ -264,7 +264,7 @@ export default function LiveVideoMeetings() {
         <div className="container flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate("/")} className="text-slate-500 hover:text-white transition-colors">
-              <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-7 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity" />
+              <span className="font-bold text-white text-sm tracking-tight">Cura<span className="text-primary">Live</span></span>
             </button>
             <span className="text-slate-600">/</span>
             <div className="flex items-center gap-2">

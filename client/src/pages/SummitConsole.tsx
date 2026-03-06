@@ -67,7 +67,7 @@ interface IncomingCall {
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const MOCK_CONFERENCES: Conference[] = [
-  { id: "C001", name: "Q4 2025 Earnings Call", billingCode: "BC-9921", status: "Active", startTime: "10:02:14", partition: "Partition 1", parties: 1247, hold: false, info: "JSE Listed — Chorus Call Inc." },
+  { id: "C001", name: "Q4 2025 Earnings Call", billingCode: "BC-9921", status: "Active", startTime: "10:02:14", partition: "Partition 1", parties: 1247, hold: false, info: "JSE Listed — CuraLive Inc." },
   { id: "C002", name: "Annual Investor Day", billingCode: "BC-9922", status: "Idle", startTime: "—", partition: "Partition 1", parties: 0, hold: false, info: "Scheduled 15 Mar 09:00" },
   { id: "C003", name: "Board Strategy Briefing", billingCode: "BC-9923", status: "Hold", startTime: "14:01:55", partition: "Partition 2", parties: 24, hold: true, info: "Board members only" },
   { id: "C004", name: "JSE Analyst Briefing", billingCode: "BC-9924", status: "Active", startTime: "09:45:00", partition: "Partition 1", parties: 312, hold: false, info: "Quarterly results" },
@@ -83,7 +83,7 @@ const MOCK_PARTIES: Party[] = [
 ];
 
 const MOCK_QA: QAItem[] = [
-  { id: 1, name: "Priya Naidoo", phone: "+27 31 555 0300", question: "Can you provide more detail on the Chorus.AI revenue contribution in Q4?", state: "Active" },
+  { id: 1, name: "Priya Naidoo", phone: "+27 31 555 0300", question: "Can you provide more detail on the CuraLive revenue contribution in Q4?", state: "Active" },
   { id: 2, name: "Tom Barker", phone: "+44 20 555 0400", question: "What is the timeline for the native Microsoft Teams integration?", state: "Waiting" },
   { id: 3, name: "Lena Fischer", phone: "+49 30 555 0500", question: "How does the Recall.ai partnership affect your gross margin profile?", state: "Waiting" },
 ];

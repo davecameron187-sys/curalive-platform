@@ -1,5 +1,5 @@
 /**
- * aiAnalysis.ts — Real-time AI analysis helpers for the Chorus.AI platform.
+ * aiAnalysis.ts — Real-time AI analysis helpers for the CuraLive platform.
  *
  * Used by the Recall webhook pipeline and tRPC procedures to provide:
  *   1. Live sentiment scoring from transcript segments

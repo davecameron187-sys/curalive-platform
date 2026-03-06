@@ -308,8 +308,8 @@ export default function BrandingEditor({ roadshowId, roadshowTitle, onClose }: B
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <div>
-                      <p className="text-xs text-slate-300">Show Chorus.AI Watermark</p>
-                      <p className="text-[10px] text-slate-500">Displays "Powered by Chorus.AI" in the footer</p>
+                      <p className="text-xs text-slate-300">Show CuraLive Watermark</p>
+                      <p className="text-[10px] text-slate-500">Displays "Powered by CuraLive" in the footer</p>
                     </div>
                     <button
                       onClick={() => setForm(f => ({ ...f, showChorusWatermark: !f.showChorusWatermark }))}
@@ -434,7 +434,7 @@ export default function BrandingEditor({ roadshowId, roadshowTitle, onClose }: B
                 >
                   {form.footerText || "Confidential — For Authorised Investors Only"}
                   {form.showChorusWatermark && (
-                    <span className="ml-2">· Powered by Chorus.AI</span>
+                    <span className="ml-2">· Powered by CuraLive</span>
                   )}
                 </div>
               </div>

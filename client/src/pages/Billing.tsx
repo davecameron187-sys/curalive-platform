@@ -1,5 +1,5 @@
 /**
- * Billing.tsx — Chorus.AI subscription plans and billing management page.
+ * Billing.tsx — CuraLive subscription plans and billing management page.
  *
  * Shows:
  *   - Current subscription status (if active)
@@ -196,7 +196,7 @@ export default function Billing() {
           </button>
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-primary" />
-            <span className="text-sm font-bold">Chorus.AI — Billing</span>
+            <span className="text-sm font-bold">CuraLive — Billing</span>
           </div>
           <div />
         </div>
@@ -210,7 +210,7 @@ export default function Billing() {
             <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
             <div>
               <div className="font-semibold text-emerald-400">Subscription activated!</div>
-              <div className="text-sm text-muted-foreground">Your plan is now active. Thank you for subscribing to Chorus.AI.</div>
+              <div className="text-sm text-muted-foreground">Your plan is now active. Thank you for subscribing to CuraLive.</div>
             </div>
           </div>
         )}

@@ -1,5 +1,5 @@
 /**
- * Webphone — Browser-based softphone component for the Chorus.AI Operator Console.
+ * Webphone — Browser-based softphone component for the CuraLive Operator Console.
  *
  * Features:
  *   - Dial pad (0–9, *, #) with DTMF tone support via Web Audio API

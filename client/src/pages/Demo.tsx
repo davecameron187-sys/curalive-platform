@@ -8,8 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus_ai_demo_v5_7a9fdeb3.mp4";
-const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png";
-const APP_BASE = "https://chorusai-mdu4k2ib.manus.space";
+const APP_BASE = "https://curalive.cc";
 
 const PLATFORM_MODULES = [
   {
@@ -76,7 +75,7 @@ const FEATURES = [
   { icon: BarChart3, label: "Sentiment Analysis", desc: "AI monitors tone and audience reaction in real-time throughout the event" },
   { icon: MessageSquare, label: "Smart Q&A", desc: "Attendees submit, upvote, categorize — moderated and AI-prioritised" },
   { icon: Video, label: "Platform Neutral", desc: "Zoom RTMS, Microsoft Teams Bot, Webex, RTMP, PSTN dial-in — all supported" },
-  { icon: Zap, label: "Real-Time Delivery", desc: "Sub-100ms message delivery via Chorus Call's proprietary edge network — zero polling" },
+  { icon: Zap, label: "Real-Time Delivery", desc: "Sub-100ms message delivery via CuraLive's proprietary edge network — zero polling" },
   { icon: Shield, label: "White-Label Ready", desc: "Your brand, your domain, your colours — full white-label configuration" },
   { icon: TrendingUp, label: "JSE/IFRS Compliance", desc: "Post-event AI summary flags regulatory items and generates press-ready output" },
 ];
@@ -98,7 +97,7 @@ export default function Demo() {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <img src={LOGO_URL} alt="Chorus Call" className="h-9 w-auto object-contain" />
+            <span className="text-xl font-bold tracking-tight text-foreground">Cura<span className="text-primary">Live</span></span>
             <span className="text-xs font-semibold uppercase tracking-widest text-primary border border-primary/30 bg-primary/10 px-2 py-0.5 rounded-full">Sales Demo</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
@@ -121,7 +120,7 @@ export default function Demo() {
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> Board Presentation — Sales Forecast Q1 2026
             </div>
             <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight mb-5">
-              Chorus.AI<br />
+              CuraLive<br />
               <span className="text-primary">The Intelligence Layer</span><br />
               for Every Investor Event
             </h1>
@@ -171,7 +170,7 @@ export default function Demo() {
                 controls
                 autoPlay={false}
                 className="w-full aspect-video"
-                poster={LOGO_URL}
+                poster={DEMO_VIDEO_URL}
               >
                 <source src={DEMO_VIDEO_URL} type="video/mp4" />
               </video>
@@ -204,7 +203,7 @@ export default function Demo() {
           <div className="mb-10 text-center">
             <h2 className="text-3xl font-bold mb-3">Live Platform Modules</h2>
             <p className="text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Click any module to enter the live demo environment. All data is real-time, powered by Chorus Call.
+              Click any module to enter the live demo environment. All data is real-time, powered by CuraLive.
             </p>
             <div className="mt-3 inline-flex items-center gap-2 text-xs text-emerald-400 font-semibold">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -296,14 +295,14 @@ export default function Demo() {
         <div className="container max-w-4xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold mb-5">Why Chorus.AI Wins</h2>
+              <h2 className="text-3xl font-bold mb-5">Why CuraLive Wins</h2>
               <div className="space-y-3" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {[
                   "Platform-neutral — sits on top of Zoom, Teams, Webex, RTMP, PSTN",
                   "Fully white-label — client's brand, domain, and colour scheme",
                   "12 languages including Arabic RTL — Africa, Mauritius, UAE markets",
                   "JSE/IFRS compliance flagging in post-event AI summary",
-                  "Sub-100ms real-time delivery via Chorus Call proprietary edge network",
+                  "Sub-100ms real-time delivery via CuraLive proprietary edge network",
                   "AI Q&A moderation with toxicity filter — zero manual triage",
                   "18-country PSTN dial-in — essential for emerging markets",
                   "Partner API + embeddable widget for IR portal integration",
@@ -322,7 +321,7 @@ export default function Demo() {
                   { market: "JSE-Listed Companies", desc: "Earnings calls, investor days, AGMs — JSE/IFRS compliant summaries" },
                   { market: "African Capital Markets", desc: "18-country dial-in, Swahili, Zulu, French, Portuguese support" },
                   { market: "Mauritius & UAE", desc: "Arabic RTL, French — IFC and DIFC-regulated IR events" },
-                  { market: "IR Agencies & Banks", desc: "White-label reseller model — your brand, Chorus.AI engine" },
+                  { market: "IR Agencies & Banks", desc: "White-label reseller model — your brand, CuraLive engine" },
                 ].map(({ market, desc }) => (
                   <div key={market} className="border-l-2 border-primary/40 pl-3">
                     <div className="font-semibold text-foreground">{market}</div>
@@ -340,12 +339,12 @@ export default function Demo() {
         <div className="container max-w-3xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Book a Live Demo?</h2>
           <p className="text-muted-foreground mb-8 leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Schedule a personalised walkthrough with the Chorus.AI team. We'll configure a white-label instance with your brand and run a live test event on your preferred platform.
+            Schedule a personalised walkthrough with the CuraLive team. We'll configure a white-label instance with your brand and run a live test event on your preferred platform.
           </p>
           <div className="grid sm:grid-cols-3 gap-4 mb-8">
             {[
               { icon: Calendar, label: "Book a Demo", desc: "30-min live walkthrough", action: "Schedule Now" },
-              { icon: Mail, label: "Email Us", desc: "demo@chorus.ai", action: "Send Email" },
+              { icon: Mail, label: "Email Us", desc: "demo@pulselive.events", action: "Send Email" },
               { icon: PhoneCall, label: "Call Us", desc: "+27 11 000 0000", action: "Call Now" },
             ].map(({ icon: Icon, label, desc, action }) => (
               <div key={label} className="bg-card border border-border rounded-xl p-5 text-center">
@@ -371,13 +370,13 @@ export default function Demo() {
       <footer className="border-t border-border py-8 bg-card/20">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
           <div className="flex items-center gap-2">
-            <img src={LOGO_URL} alt="Chorus Call" className="h-6 w-auto object-contain opacity-70" />
-            <span>© 2026 Chorus Call Inc. All rights reserved.</span>
+            <span className="text-sm font-bold tracking-tight text-foreground/70">Cura<span className="text-primary">Live</span></span>
+            <span>© 2026 CuraLive Inc. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-4">
             <span>Platform: <a href={APP_BASE} className="text-primary hover:underline">{APP_BASE}</a></span>
             <span>·</span>
-            <span>Powered by Chorus.AI</span>
+            <span>Powered by CuraLive</span>
           </div>
         </div>
       </footer>

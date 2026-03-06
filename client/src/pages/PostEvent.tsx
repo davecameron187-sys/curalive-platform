@@ -72,24 +72,24 @@ function PaceTrendChart({ data, speaker }: { data: PaceHistoryRow[]; speaker: st
   return <canvas ref={canvasRef} />;
 }
 
-const SUMMARY = `Chorus Call delivered a strong Q4 2025, with revenue of $47.2 million representing 28% year-over-year growth. CEO James Mitchell highlighted the accelerating adoption of the Chorus.AI intelligence platform, which drove a 40% improvement in engagement metrics across the enterprise client base.
+const SUMMARY = `CuraLive delivered a strong Q4 2025, with revenue of $47.2 million representing 28% year-over-year growth. CEO James Mitchell highlighted the accelerating adoption of the CuraLive intelligence platform, which drove a 40% improvement in engagement metrics across the enterprise client base.
 
 CFO Sarah Chen reported gross margin expansion to 72%, driven by AI infrastructure efficiencies. The company ended the quarter with $124 million in cash and equivalents. Full-year 2026 guidance was set at $195–$210 million in revenue with adjusted EBITDA margins of 18–22%.
 
-Key strategic themes: native Zoom RTMS and Microsoft Teams integrations, the Recall.ai partnership enabling rapid multi-platform deployment, and the Chorus Call proprietary real-time infrastructure underpinning the live intelligence layer.`;
+Key strategic themes: native Zoom RTMS and Microsoft Teams integrations, the Recall.ai partnership enabling rapid multi-platform deployment, and the CuraLive proprietary real-time infrastructure underpinning the live intelligence layer.`;
 
 const TRANSCRIPT = [
-  { speaker: "Operator", time: "00:00:05", text: "Good morning and welcome to the Chorus Call Q4 2025 Earnings Call. All participants will be in listen-only mode." },
-  { speaker: "James Mitchell (CEO)", time: "00:01:12", text: "Thank you, Operator. Good morning everyone. I'm delighted to share that Q4 has been an exceptional quarter for Chorus Call." },
-  { speaker: "James Mitchell (CEO)", time: "00:02:30", text: "Our AI-powered platform, Chorus.AI, has seen remarkable adoption across our enterprise client base, with a 40% increase in engagement metrics." },
+  { speaker: "Operator", time: "00:00:05", text: "Good morning and welcome to the CuraLive Q4 2025 Earnings Call. All participants will be in listen-only mode." },
+  { speaker: "James Mitchell (CEO)", time: "00:01:12", text: "Thank you, Operator. Good morning everyone. I'm delighted to share that Q4 has been an exceptional quarter for CuraLive." },
+  { speaker: "James Mitchell (CEO)", time: "00:02:30", text: "Our AI-powered platform, CuraLive, has seen remarkable adoption across our enterprise client base, with a 40% increase in engagement metrics." },
   { speaker: "Sarah Chen (CFO)", time: "00:04:15", text: "Thank you James. From a financial perspective, Q4 revenue came in at $47.2 million, representing 28% year-over-year growth." },
-  { speaker: "Sarah Chen (CFO)", time: "00:05:40", text: "Our gross margins expanded to 72%, driven primarily by the efficiency gains from our new Chorus.AI intelligence layer." },
+  { speaker: "Sarah Chen (CFO)", time: "00:05:40", text: "Our gross margins expanded to 72%, driven primarily by the efficiency gains from our new CuraLive intelligence layer." },
   { speaker: "James Mitchell (CEO)", time: "00:07:22", text: "Looking ahead to 2026, we're particularly excited about our Teams and Zoom native integrations, which will open significant new enterprise opportunities." },
   { speaker: "Sarah Chen (CFO)", time: "00:09:05", text: "We're guiding to full-year 2026 revenue of $195 to $210 million, with adjusted EBITDA margins of 18 to 22 percent." },
   { speaker: "Operator", time: "00:10:30", text: "We will now open the line for questions. Please press star one to join the queue." },
-  { speaker: "James Mitchell (CEO)", time: "00:12:15", text: "The Chorus.AI platform represents a fundamental shift in how we deliver value to our clients. We're not just a conferencing provider anymore." },
-  { speaker: "Sarah Chen (CFO)", time: "00:14:00", text: "Capital expenditure for the year was $8.3 million, primarily invested in our AI infrastructure and the Chorus Call real-time messaging platform." },
-  { speaker: "James Mitchell (CEO)", time: "00:16:45", text: "Our partnership with Recall.ai has been transformative. It allows us to deploy the Chorus.AI intelligence layer on any platform within days, not months." },
+  { speaker: "James Mitchell (CEO)", time: "00:12:15", text: "The CuraLive platform represents a fundamental shift in how we deliver value to our clients. We're not just a conferencing provider anymore." },
+  { speaker: "Sarah Chen (CFO)", time: "00:14:00", text: "Capital expenditure for the year was $8.3 million, primarily invested in our AI infrastructure and the CuraLive real-time messaging platform." },
+  { speaker: "James Mitchell (CEO)", time: "00:16:45", text: "Our partnership with Recall.ai has been transformative. It allows us to deploy the CuraLive intelligence layer on any platform within days, not months." },
   { speaker: "Sarah Chen (CFO)", time: "00:18:20", text: "We ended the quarter with $124 million in cash and equivalents, providing significant runway to execute on our strategic roadmap." },
 ];
 
@@ -228,7 +228,7 @@ export default function PostEvent() {
     if (!aiSummary) return;
     const extras = additionalEmails.split(",").map(e => e.trim()).filter(e => e.includes("@"));
     sendSummaryMutation.mutate({
-      eventTitle: "Q4 2025 Earnings Call — Chorus Call Inc.",
+      eventTitle: "Q4 2025 Earnings Call — CuraLive Inc.",
       summary: aiSummary,
       additionalEmails: extras,
     });
@@ -251,10 +251,10 @@ export default function PostEvent() {
 
   const handleGenerateSummary = () => {
     generateSummary.mutate({
-      eventTitle: "Q4 2025 Earnings Call — Chorus Call Inc.",
+      eventTitle: "Q4 2025 Earnings Call — CuraLive Inc.",
       transcript: TRANSCRIPT.map(t => ({ speaker: t.speaker, text: t.text, timeLabel: t.time })),
       qaItems: [
-        { question: "Can you provide more detail on the Chorus.AI revenue contribution in Q4?", author: "Goldman Sachs", status: "answered" },
+        { question: "Can you provide more detail on the CuraLive revenue contribution in Q4?", author: "Goldman Sachs", status: "answered" },
         { question: "What is the timeline for the native Microsoft Teams integration?", author: "JP Morgan", status: "answered" },
         { question: "How does the Recall.ai partnership affect your gross margin profile?", author: "Morgan Stanley", status: "approved" },
       ],
@@ -269,7 +269,7 @@ export default function PostEvent() {
       "CHORUS.AI — POST-EVENT EXECUTIVE SUMMARY",
       "=========================================",
       "",
-      "Q4 2025 Earnings Call — Chorus Call Inc.",
+      "Q4 2025 Earnings Call — CuraLive Inc.",
       `Generated: ${new Date().toLocaleString()}`,
       "",
       "HEADLINE",
@@ -295,7 +295,7 @@ export default function PostEvent() {
       summary.executiveSummary,
       "",
       "---",
-      "Produced by Chorus.AI — Chorus Call Inc.",
+      "Produced by CuraLive — CuraLive Inc.",
     ].join("\n");
 
     const blob = new Blob([content], { type: "text/plain" });
@@ -310,7 +310,7 @@ export default function PostEvent() {
 
   const handleDownloadTranscript = () => {
     const lines = TRANSCRIPT.map(t => `[${t.time}] ${t.speaker}: ${t.text}`).join("\n\n");
-    const content = `CHORUS.AI — FULL TRANSCRIPT\nQ4 2025 Earnings Call — Chorus Call Inc.\nGenerated: ${new Date().toLocaleString()}\n\n${'='.repeat(60)}\n\n${lines}\n\n${'='.repeat(60)}\nTranscribed by Whisper AI · Speaker-diarized by Recall.ai\nProduced by Chorus.AI — Chorus Call Inc.`;
+    const content = `CHORUS.AI — FULL TRANSCRIPT\nQ4 2025 Earnings Call — CuraLive Inc.\nGenerated: ${new Date().toLocaleString()}\n\n${'='.repeat(60)}\n\n${lines}\n\n${'='.repeat(60)}\nTranscribed by Whisper AI · Speaker-diarized by Recall.ai\nProduced by CuraLive — CuraLive Inc.`;
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -333,7 +333,7 @@ export default function PostEvent() {
         </button>
         <div className="w-px h-5 bg-border" />
         <div className="flex items-center gap-2">
-          <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-6 w-auto object-contain" />
+          <span className="font-bold text-white text-sm tracking-tight">Cura<span className="text-primary">Live</span></span>
           <span className="text-muted-foreground text-sm">/ Post-Event Report</span>
         </div>
         <div className="flex-1" />
@@ -429,7 +429,7 @@ export default function PostEvent() {
                 </div>
                 <h3 className="font-bold text-lg mb-2">Generate AI Executive Summary</h3>
                 <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  Chorus.AI will analyse the full transcript and Q&A to produce a structured executive summary, financial highlights, and action items — ready for your IR contacts.
+                  CuraLive will analyse the full transcript and Q&A to produce a structured executive summary, financial highlights, and action items — ready for your IR contacts.
                 </p>
                 <button
                   onClick={handleGenerateSummary}
@@ -458,7 +458,7 @@ export default function PostEvent() {
                     <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                       <Sparkles className="w-3.5 h-3.5 text-primary" />
                     </div>
-                    <span className="font-semibold">Chorus.AI Executive Summary</span>
+                    <span className="font-semibold">CuraLive Executive Summary</span>
                     <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">AI Generated</span>
                   </div>
                   <div className="flex gap-2">
@@ -716,7 +716,7 @@ export default function PostEvent() {
               <div className="bg-card border border-border rounded-xl p-5">
                 <div className="font-semibold text-sm mb-3">Key Topics Detected</div>
                 <div className="flex flex-wrap gap-2">
-                  {["Q4 Revenue", "AI Strategy", "Chorus.AI", "Gross Margin", "Teams Integration", "2026 Guidance", "Recall.ai", "EBITDA", "Cash Position", "Investor Day"].map((tag) => (
+                  {["Q4 Revenue", "AI Strategy", "CuraLive", "Gross Margin", "Teams Integration", "2026 Guidance", "Recall.ai", "EBITDA", "Cash Position", "Investor Day"].map((tag) => (
                     <span key={tag} className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full">{tag}</span>
                   ))}
                 </div>
@@ -990,7 +990,7 @@ export default function PostEvent() {
                 </div>
                 <h3 className="font-bold text-lg mb-2">Speaking-Pace Coach</h3>
                 <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  Chorus.AI analyses each speaker’s words-per-minute, filler word usage, and pause patterns — then provides personalised coaching tips for investor communications.
+                  CuraLive analyses each speaker’s words-per-minute, filler word usage, and pause patterns — then provides personalised coaching tips for investor communications.
                 </p>
                 <button
                   onClick={() => analyzePaceMutation.mutate({ transcript: TRANSCRIPT.map(t => ({ speaker: t.speaker, text: t.text, timeLabel: t.time })) })}

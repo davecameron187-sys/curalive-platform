@@ -1,5 +1,5 @@
 /**
- * stripeWebhook.ts — Stripe webhook handler for Chorus.AI billing events.
+ * stripeWebhook.ts — Stripe webhook handler for CuraLive billing events.
  *
  * Registered at POST /api/stripe/webhook with express.raw() middleware
  * BEFORE express.json() so signature verification works correctly.

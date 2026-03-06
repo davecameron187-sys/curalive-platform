@@ -86,7 +86,7 @@ function PresenterInner({ eventId }: { eventId: string }) {
           <ArrowLeft style={{ width: "16px", height: "16px" }} />
         </button>
         <div style={{ width: "1px", height: "20px", background: borderColor }} />
-        <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" style={{ height: "24px", width: "auto", objectFit: "contain" }} />
+        <span className="font-bold text-white text-sm tracking-tight">Cura<span className="text-primary">Live</span></span>
         <div style={{ width: "1px", height: "20px", background: borderColor }} />
         <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", padding: "4px 10px", borderRadius: "999px" }}>
           <Radio style={{ width: "12px", height: "12px" }} /> Presenter

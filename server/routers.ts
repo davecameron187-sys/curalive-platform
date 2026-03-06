@@ -20,6 +20,7 @@ import { muxRouter } from "./routers/muxRouter";
 import { billingRouter } from "./routers/billingRouter";
 import { aiRouter } from "./routers/aiRouter";
 import { webphoneRouter } from "./routers/webphoneRouter";
+import { customisationRouter } from "./routers/customisationRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -51,6 +52,7 @@ export const appRouter = router({
   billing: billingRouter,
   ai: aiRouter,
   webphone: webphoneRouter,
+  customisation: customisationRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
@@ -289,7 +291,7 @@ export const appRouter = router({
         await db.insert(events).values({
           eventId: input.eventId,
           title: input.eventId, // placeholder if event doesn't exist yet
-          company: "Chorus Call Inc.",
+          company: "CuraLive Inc.",
           platform: "Unknown",
           status: "upcoming",
           accessCode: input.accessCode,
@@ -394,8 +396,8 @@ Produce a JSON response with this exact structure:
               keyPoints: ["Revenue growth exceeded analyst expectations", "AI platform adoption accelerating", "Guidance raised for full-year 2026"],
               financialHighlights: ["Q4 Revenue: $47.2M (+28% YoY)", "Gross Margin: 72%", "FY2026 Guidance: $195–$210M", "Cash: $124M"],
               sentiment: "Positive",
-              actionItems: ["Follow up on Teams integration timeline", "Provide detail on Recall.ai margin impact", "Clarify Chorus.AI revenue contribution"],
-              executiveSummary: `${input.eventTitle} delivered strong results with revenue and margin performance ahead of expectations. Management highlighted the accelerating adoption of the Chorus.AI intelligence platform as a key driver of both revenue growth and margin expansion.\n\nThe company raised full-year 2026 guidance and outlined a clear roadmap for native integrations with Microsoft Teams and Zoom.\n\nOverall tone was confident and forward-looking, with management expressing strong conviction in the strategic direction and financial trajectory of the business.`,
+              actionItems: ["Follow up on Teams integration timeline", "Provide detail on Recall.ai margin impact", "Clarify CuraLive revenue contribution"],
+              executiveSummary: `${input.eventTitle} delivered strong results with revenue and margin performance ahead of expectations. Management highlighted the accelerating adoption of the CuraLive intelligence platform as a key driver of both revenue growth and margin expansion.\n\nThe company raised full-year 2026 guidance and outlined a clear roadmap for native integrations with Microsoft Teams and Zoom.\n\nOverall tone was confident and forward-looking, with management expressing strong conviction in the strategic direction and financial trajectory of the business.`,
               forwardLookingStatements: ["FY2026 revenue guidance of $195–$210M", "Adjusted EBITDA margins of 18–22% expected for FY2026", "Native Teams and Zoom integrations to open new enterprise opportunities", "Recall.ai partnership enables rapid multi-platform deployment"],
               regulatoryHighlights: ["Forward-looking guidance provided in line with JSE Listings Requirements para 3.4", "No material changes to share capital or borrowing powers disclosed", "All financial metrics presented on an IFRS-compliant basis"],
               riskFactors: ["Integration timelines subject to third-party platform API availability", "Gross margin profile may be affected by Recall.ai partnership terms", "Revenue guidance assumes continued enterprise adoption of AI features"],
@@ -471,7 +473,7 @@ Produce a JSON response with this exact structure:
           firstName,
           lastName,
           eventTitle,
-          company: event?.company ?? "Chorus Call Inc.",
+          company: event?.company ?? "CuraLive Inc.",
           eventDate,
         });
 
@@ -636,7 +638,7 @@ ACTION ITEMS:
 ${input.summary.actionItems.map((a, i) => `${i + 1}. ${a}`).join("\n")}
 
 ---
-Sent via Chorus.AI — The Intelligence Layer for Every Meeting
+Sent via CuraLive — The Intelligence Layer for Every Meeting
 Recipients: ${allEmails.join(", ")}
         `.trim();
 
@@ -649,7 +651,7 @@ Recipients: ${allEmails.join(", ")}
           const html = buildIRSummaryEmail({
             contactName: contact.name,
             eventTitle: input.eventTitle,
-            company: contact.company ?? "Chorus Call Inc.",
+            company: contact.company ?? "CuraLive Inc.",
             summary: summaryContent,
             date: dateStr,
           });
@@ -666,7 +668,7 @@ Recipients: ${allEmails.join(", ")}
           const html = buildIRSummaryEmail({
             contactName: "IR Contact",
             eventTitle: input.eventTitle,
-            company: "Chorus Call Inc.",
+            company: "CuraLive Inc.",
             summary: summaryContent,
             date: dateStr,
           });
@@ -723,7 +725,7 @@ Recipients: ${allEmails.join(", ")}
         // Also send a confirmation email to the prospect
         await sendEmail({
           to: input.email,
-          subject: "Your Chorus.AI Demo Request — We'll be in touch shortly",
+          subject: "Your CuraLive Demo Request — We'll be in touch shortly",
           html: `
             <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #f8fafc; padding: 40px; border-radius: 12px;">
               <div style="margin-bottom: 32px;">
@@ -731,7 +733,7 @@ Recipients: ${allEmails.join(", ")}
               </div>
               <h1 style="font-size: 22px; font-weight: 700; margin-bottom: 16px;">Thank you, ${input.name}.</h1>
               <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
-                We've received your demo request and our team will be in touch within one business day to schedule a personalised walkthrough of the Chorus.AI platform.
+                We've received your demo request and our team will be in touch within one business day to schedule a personalised walkthrough of the CuraLive platform.
               </p>
               <div style="background: #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
                 <p style="font-size: 13px; color: #64748b; margin: 0 0 8px;">YOUR REQUEST SUMMARY</p>

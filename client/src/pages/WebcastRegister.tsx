@@ -1,5 +1,5 @@
 /**
- * WebcastRegister.tsx — Chorus.AI Event Registration Landing Page
+ * WebcastRegister.tsx — CuraLive Event Registration Landing Page
  * Public-facing registration page for any webcast, webinar, virtual event, or hybrid event.
  * Auto-applies vertical-specific templates:
  *   - healthcare / professional_services → CME/CPD accreditation banner + certificate download
@@ -24,7 +24,7 @@ const DEMO_EVENT = {
   subtitle: "Quarterly business update, strategy review, and open Q&A with the leadership team.",
   hostName: "David Cameron",
   hostTitle: "Chief Executive Officer",
-  hostOrganization: "Chorus Call Inc.",
+  hostOrganization: "CuraLive Inc.",
   eventType: "webcast",
   industryVertical: "corporate_communications",
   status: "scheduled",
@@ -561,7 +561,7 @@ export default function WebcastRegister() {
           </button>
           <div className="flex items-center gap-2">
             <Radio className="w-4 h-4 text-primary" />
-            <span className="text-sm font-bold">Chorus.AI</span>
+            <span className="text-sm font-bold">CuraLive</span>
           </div>
           <button onClick={() => navigate("/book-demo")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             Request Demo
@@ -936,10 +936,10 @@ export default function WebcastRegister() {
 
                   <p className="text-center text-[10px] text-muted-foreground mt-3" style={{ fontFamily: "'Inter', sans-serif" }}>
                     {vertical === "financial_services" || vertical === "capital_markets"
-                      ? "Institutional access only · Powered by Chorus.AI"
+                      ? "Institutional access only · Powered by CuraLive"
                       : vertical === "healthcare" || vertical === "professional_services"
-                      ? "CPD accredited · Powered by Chorus.AI"
-                      : "Free to attend · Powered by Chorus.AI"}
+                      ? "CPD accredited · Powered by CuraLive"
+                      : "Free to attend · Powered by CuraLive"}
                   </p>
                 </form>
               )}
@@ -954,7 +954,7 @@ export default function WebcastRegister() {
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">Hosted by</div>
-                <div className="text-sm font-semibold">{ev.hostName || "Chorus Call"}</div>
+                <div className="text-sm font-semibold">{ev.hostName || "CuraLive"}</div>
                 {ev.hostTitle && <div className="text-xs text-muted-foreground">{ev.hostTitle}</div>}
               </div>
             </div>

@@ -13,7 +13,7 @@ vi.mock("./_core/llm", () => ({
       {
         message: {
           content: JSON.stringify({
-            headline: "Chorus Call Q4 2025 beats expectations with 28% revenue growth",
+            headline: "CuraLive Q4 2025 beats expectations with 28% revenue growth",
             keyPoints: ["Revenue $47.2M (+28% YoY)", "AI platform adoption accelerating"],
             financialHighlights: ["Q4 Revenue: $47.2M", "Gross Margin: 72%"],
             sentiment: "Positive",

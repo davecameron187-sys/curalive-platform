@@ -1,5 +1,5 @@
 /**
- * billingRouter.ts — Chorus.AI Stripe billing procedures.
+ * billingRouter.ts — CuraLive Stripe billing procedures.
  *
  * Procedures:
  *   - billing.getPlans        — public, returns plan list for the pricing page

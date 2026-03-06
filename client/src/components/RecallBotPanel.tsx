@@ -49,7 +49,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function RecallBotPanel({ eventId, meetingId, compact = false }: RecallBotPanelProps) {
   const [meetingUrl, setMeetingUrl] = useState("");
-  const [botName, setBotName] = useState("Chorus.AI");
+  const [botName, setBotName] = useState("CuraLive");
   const [activeBotId, setActiveBotId] = useState<string | null>(null);
   const [ablyChannel, setAblyChannel] = useState<string | null>(null);
   // Real-time transcript segments received via Ably (supplements the polled data)
@@ -236,7 +236,7 @@ export default function RecallBotPanel({ eventId, meetingId, compact = false }: 
                 value={botName}
                 onChange={(e) => setBotName(e.target.value)}
                 className="text-sm h-9"
-                placeholder="Chorus.AI"
+                placeholder="CuraLive"
               />
             </div>
           )}

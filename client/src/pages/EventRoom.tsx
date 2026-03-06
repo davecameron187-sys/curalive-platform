@@ -14,9 +14,9 @@ import MuxPlayer from "@mux/mux-player-react";
 // ─── Event Metadata ───────────────────────────────────────────────────────────
 
 const EVENT_META: Record<string, { title: string; company: string; platform: string }> = {
-  "q4-earnings-2026": { title: "Q4 2025 Earnings Call", company: "Chorus Call Inc.", platform: "Zoom" },
-  "investor-day-2026": { title: "Annual Investor Day", company: "Chorus Call Inc.", platform: "Microsoft Teams" },
-  "board-briefing": { title: "Board Strategy Briefing", company: "Chorus Call Inc.", platform: "Webex" },
+  "q4-earnings-2026": { title: "Q4 2025 Earnings Call", company: "CuraLive Inc.", platform: "Zoom" },
+  "investor-day-2026": { title: "Annual Investor Day", company: "CuraLive Inc.", platform: "Microsoft Teams" },
+  "board-briefing": { title: "Board Strategy Briefing", company: "CuraLive Inc.", platform: "Webex" },
 };
 
 // ─── Language configuration (Africa · Mauritius · UAE — 12 languages) ──────────
@@ -75,30 +75,30 @@ function aiPriorityScore(q: QAItem): number {
 
 const TRANSLATIONS: Record<string, Record<string, string>> = {
   "seg-0": {
-    fr:  "Bonjour et bienvenue à l'appel de résultats du T4 2025 de Chorus Call. Tous les participants seront en mode écoute.",
-    ar:  "صباح الخير ومرحباً بكم في مكالمة نتائج الربع الرابع 2025 لـ Chorus Call. سيكون جميع المشاركين في وضع الاستماع.",
-    pt:  "Bom dia e bem-vindos à chamada de resultados do Q4 2025 da Chorus Call. Todos os participantes estarão no modo de escuta.",
-    sw:  "Habari za asubuhi na karibu kwenye simu ya matokeo ya Q4 2025 ya Chorus Call. Washiriki wote watakuwa katika hali ya kusikiliza.",
-    zu:  "Sawubona futhi wamukelekile ku-Chorus Call Q4 2025 Earnings Call. Bonke abahlanganyeli bazoba ngezindlebe kuphela.",
-    af:  "Goeie môre en welkom by die Chorus Call K4 2025 Verdiensteoproep. Alle deelnemers sal in luister-modus wees.",
-    ha:  "Barka da safiya kuma maraba da ku zuwa kiran sakamakon Q4 2025 na Chorus Call. Dukkan mahalarta za su kasance a yanayin sauraro.",
-    am:  "እንኳን ደህና መጡ ወደ Chorus Call Q4 2025 የገቢ ጥሪ። ሁሉም ተሳታፊዎች በማዳመጥ ሁነታ ይሆናሉ።",
-    zh:  "早上好，欢迎参加Chorus Call 2025年第四季度业绩电话会议。所有参与者将处于收听模式。",
-    hi:  "सुप्रभात और Chorus Call Q4 2025 अर्निंग्स कॉल में आपका स्वागत है। सभी प्रतिभागी सुनने के मोड में होंगे।",
-    mfe: "Bonzour ek byenveni dan Chorus Call Q4 2025 Earnings Call. Tou bann partisipan pou dan mod lekout.",
+    fr:  "Bonjour et bienvenue à l'appel de résultats du T4 2025 de CuraLive. Tous les participants seront en mode écoute.",
+    ar:  "صباح الخير ومرحباً بكم في مكالمة نتائج الربع الرابع 2025 لـ CuraLive. سيكون جميع المشاركين في وضع الاستماع.",
+    pt:  "Bom dia e bem-vindos à chamada de resultados do Q4 2025 da CuraLive. Todos os participantes estarão no modo de escuta.",
+    sw:  "Habari za asubuhi na karibu kwenye simu ya matokeo ya Q4 2025 ya CuraLive. Washiriki wote watakuwa katika hali ya kusikiliza.",
+    zu:  "Sawubona futhi wamukelekile ku-CuraLive Q4 2025 Earnings Call. Bonke abahlanganyeli bazoba ngezindlebe kuphela.",
+    af:  "Goeie môre en welkom by die CuraLive K4 2025 Verdiensteoproep. Alle deelnemers sal in luister-modus wees.",
+    ha:  "Barka da safiya kuma maraba da ku zuwa kiran sakamakon Q4 2025 na CuraLive. Dukkan mahalarta za su kasance a yanayin sauraro.",
+    am:  "እንኳን ደህና መጡ ወደ CuraLive Q4 2025 የገቢ ጥሪ። ሁሉም ተሳታፊዎች በማዳመጥ ሁነታ ይሆናሉ።",
+    zh:  "早上好，欢迎参加CuraLive 2025年第四季度业绩电话会议。所有参与者将处于收听模式。",
+    hi:  "सुप्रभात और CuraLive Q4 2025 अर्निंग्स कॉल में आपका स्वागत है। सभी प्रतिभागी सुनने के मोड में होंगे।",
+    mfe: "Bonzour ek byenveni dan CuraLive Q4 2025 Earnings Call. Tou bann partisipan pou dan mod lekout.",
   },
   "seg-1": {
-    fr:  "Merci, Opérateur. Bonjour à tous. Je suis ravi de partager que le T4 a été un trimestre exceptionnel pour Chorus Call.",
-    ar:  "شكراً، المشغل. صباح الخير للجميع. يسعدني مشاركة أن الربع الرابع كان ربعاً استثنائياً لـ Chorus Call.",
-    pt:  "Obrigado, Operador. Bom dia a todos. Estou satisfeito em compartilhar que o Q4 foi um trimestre excepcional para a Chorus Call.",
-    sw:  "Asante, Opereta. Habari za asubuhi wote. Ninafurahi kushiriki kwamba Q4 ilikuwa robo nzuri sana kwa Chorus Call.",
-    zu:  "Ngiyabonga, Operator. Sawubona nonke. Ngijabule ukwabelana ukuthi uQ4 ubuyikukhulu isikhathi ku-Chorus Call.",
-    af:  "Dankie, Operateur. Goeie môre almal. Ek is verheug om te deel dat K4 'n uitsonderlike kwartaal vir Chorus Call was.",
-    ha:  "Na gode, Mai aiki. Barka da safiya ga kowa. Ina farin ciki don raba cewa Q4 ya kasance kwata mai ban mamaki ga Chorus Call.",
-    am:  "አመሰግናለሁ፣ ኦፕሬተር። ሁሉም ሰው ሰው እንደምን አደሩ። Q4 ለ Chorus Call ልዩ ሩብ ዓመት እንደነበር ለማካፈል ደስ ብሎኛል።",
-    zh:  "谢谢，运营商。大家早上好。我很高兴分享第四季度对Chorus Call来说是一个出色的季度。",
-    hi:  "धन्यवाद, ऑपरेटर। सभी को सुप्रभात। मुझे यह साझा करते हुए खुशी है कि Q4 Chorus Call के लिए एक असाधारण तिमाही रही।",
-    mfe: "Mersi, Operater. Bonzour tou dimoun. Mo kontan partaze ki Q4 ti enn trimes exepsyonel pou Chorus Call.",
+    fr:  "Merci, Opérateur. Bonjour à tous. Je suis ravi de partager que le T4 a été un trimestre exceptionnel pour CuraLive.",
+    ar:  "شكراً، المشغل. صباح الخير للجميع. يسعدني مشاركة أن الربع الرابع كان ربعاً استثنائياً لـ CuraLive.",
+    pt:  "Obrigado, Operador. Bom dia a todos. Estou satisfeito em compartilhar que o Q4 foi um trimestre excepcional para a CuraLive.",
+    sw:  "Asante, Opereta. Habari za asubuhi wote. Ninafurahi kushiriki kwamba Q4 ilikuwa robo nzuri sana kwa CuraLive.",
+    zu:  "Ngiyabonga, Operator. Sawubona nonke. Ngijabule ukwabelana ukuthi uQ4 ubuyikukhulu isikhathi ku-CuraLive.",
+    af:  "Dankie, Operateur. Goeie môre almal. Ek is verheug om te deel dat K4 'n uitsonderlike kwartaal vir CuraLive was.",
+    ha:  "Na gode, Mai aiki. Barka da safiya ga kowa. Ina farin ciki don raba cewa Q4 ya kasance kwata mai ban mamaki ga CuraLive.",
+    am:  "አመሰግናለሁ፣ ኦፕሬተር። ሁሉም ሰው ሰው እንደምን አደሩ። Q4 ለ CuraLive ልዩ ሩብ ዓመት እንደነበር ለማካፈል ደስ ብሎኛል።",
+    zh:  "谢谢，运营商。大家早上好。我很高兴分享第四季度对CuraLive来说是一个出色的季度。",
+    hi:  "धन्यवाद, ऑपरेटर। सभी को सुप्रभात। मुझे यह साझा करते हुए खुशी है कि Q4 CuraLive के लिए एक असाधारण तिमाही रही।",
+    mfe: "Mersi, Operater. Bonzour tou dimoun. Mo kontan partaze ki Q4 ti enn trimes exepsyonel pou CuraLive.",
   },
 };
 
@@ -522,7 +522,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
           <span className="hidden sm:inline">Events</span>
         </button>
         <div className="w-px h-5 bg-border" />
-        <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-6 w-auto object-contain hidden sm:block" />
+        <span className="font-bold text-white text-sm tracking-tight hidden sm:block">Cura<span className="text-primary">Live</span></span>
         <div className="w-px h-5 bg-border" />
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-sm truncate">{meta.title}</h1>
@@ -757,7 +757,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                   <div className="shrink-0 bg-primary/5 border-b border-primary/20 px-4 py-1.5 flex items-center gap-2">
                     <Sparkles className="w-3 h-3 text-primary" />
                     <span className="text-[10px] text-primary font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
-                      Transcript translated to {currentLang.label} in real-time by Chorus.AI · Powered by OpenAI
+                      Transcript translated to {currentLang.label} in real-time by CuraLive · Powered by OpenAI
                     </span>
                   </div>
                 )}
@@ -979,7 +979,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                 <div className="bg-card border border-border rounded-xl p-4">
                   <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Key Topics</div>
                   <div className="flex flex-wrap gap-1.5">
-                    {["Q4 Revenue", "AI Strategy", "Chorus.AI", "Gross Margin", "Teams Integration", "2026 Guidance", "Recall.ai", "EBITDA"].map((tag) => (
+                    {["Q4 Revenue", "AI Strategy", "CuraLive", "Gross Margin", "Teams Integration", "2026 Guidance", "Recall.ai", "EBITDA"].map((tag) => (
                       <span key={tag} className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">{tag}</span>
                     ))}
                   </div>

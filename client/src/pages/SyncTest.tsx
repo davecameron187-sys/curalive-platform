@@ -46,9 +46,9 @@ function SyncTestInner() {
     const DEMO_MESSAGES = [
       "Hello from another device! 👋",
       "Real-time sync is working!",
-      "Chorus Call delivers this in <100ms",
+      "CuraLive delivers this in <100ms",
       "Open this page on your phone to test",
-      "All three views stay in sync via Chorus Call",
+      "All three views stay in sync via CuraLive",
     ];
     let i = 0;
     const interval = setInterval(() => {
@@ -146,7 +146,7 @@ function SyncTestInner() {
             <div>
               <p className="text-sm font-semibold">Test real-time sync across devices</p>
               <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                Open this URL on another device or browser tab — messages appear instantly via Chorus Call.
+                Open this URL on another device or browser tab — messages appear instantly via CuraLive.
               </p>
             </div>
             <button
@@ -257,11 +257,11 @@ function SyncTestInner() {
           <div className="bg-card border border-border rounded-xl p-4">
             <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Connection Mode</div>
             <div className={`text-sm font-bold ${mode === "ably" ? "text-emerald-400" : "text-amber-400"}`}>
-              {mode === "ably" ? "🟢 Chorus Call Live" : "🟡 Demo Mode"}
+              {mode === "ably" ? "🟢 CuraLive Live" : "🟡 Demo Mode"}
             </div>
             <div className="text-xs text-muted-foreground mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
               {mode === "ably"
-                ? "Real cross-device sync via Chorus Call WebSocket"
+                ? "Real cross-device sync via CuraLive WebSocket"
                 : "Simulated — upgrade to see real sync"}
             </div>
           </div>
@@ -271,7 +271,7 @@ function SyncTestInner() {
             <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Devices Online</div>
             <div className="text-3xl font-bold text-primary">{presenceCount}</div>
             <div className="text-xs text-muted-foreground mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Chorus Call presence channel
+              CuraLive presence channel
             </div>
           </div>
 

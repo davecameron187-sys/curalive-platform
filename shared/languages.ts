@@ -1,5 +1,5 @@
 /**
- * Chorus.AI Supported Languages
+ * PulseLive Supported Languages
  * Coverage: Sub-Saharan Africa, North Africa, Mauritius, UAE/Dubai
  */
 

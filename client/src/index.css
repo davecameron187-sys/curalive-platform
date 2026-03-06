@@ -41,7 +41,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Chorus.AI Brand Tokens */
+  /* CuraLive Brand Tokens */
   --chorus-coral: oklch(0.65 0.22 22);
   --chorus-coral-dim: oklch(0.65 0.22 22 / 20%);
   --chorus-teal: oklch(0.72 0.17 170);

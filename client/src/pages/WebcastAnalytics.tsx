@@ -1,5 +1,5 @@
 /**
- * WebcastAnalytics.tsx — Chorus.AI Webcasting Analytics Dashboard
+ * WebcastAnalytics.tsx — CuraLive Webcasting Analytics Dashboard
  * Cross-event analytics: attendance, engagement, Q&A, polls, watch time, geography, lead scoring.
  */
 import { useState } from "react";

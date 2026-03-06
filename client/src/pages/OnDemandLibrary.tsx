@@ -1,5 +1,5 @@
 /**
- * OnDemandLibrary.tsx — Chorus.AI On-Demand Media Hub
+ * OnDemandLibrary.tsx — CuraLive On-Demand Media Hub
  * Gated video library with search, filtering by vertical/type, watch progress, and certifications.
  */
 import { useState } from "react";
@@ -17,9 +17,9 @@ import {
 const DEMO_RECORDINGS = [
   {
     id: "q4-2025-earnings-webcast",
-    title: "Q4 2025 Earnings Webcast — Chorus Call Inc.",
+    title: "Q4 2025 Earnings Webcast — CuraLive Inc.",
     host: "Sarah Mitchell, CFO",
-    org: "Chorus Call Inc.",
+    org: "CuraLive Inc.",
     type: "webcast",
     vertical: "financial_services",
     duration: "1:12:34",
@@ -42,7 +42,7 @@ const DEMO_RECORDINGS = [
     id: "ceo-town-hall-q3-2025",
     title: "CEO All-Hands Town Hall — Q3 2025",
     host: "David Cameron, CEO",
-    org: "Chorus Call Inc.",
+    org: "CuraLive Inc.",
     type: "webcast",
     vertical: "corporate_communications",
     duration: "1:28:05",
@@ -134,7 +134,7 @@ const DEMO_RECORDINGS = [
     id: "investor-day-2025",
     title: "Annual Investor Day 2025 — Full Presentation",
     host: "Executive Leadership Team",
-    org: "Chorus Call Inc.",
+    org: "CuraLive Inc.",
     type: "webcast",
     vertical: "financial_services",
     duration: "3:42:18",
@@ -519,7 +519,7 @@ export default function OnDemandLibrary() {
             <Award className="w-10 h-10 text-violet-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-3">Earn CPD & CME Certificates</h2>
             <p className="text-muted-foreground text-sm leading-relaxed mb-6" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Chorus.AI supports accredited continuing professional development across healthcare, legal, financial services, and education. Watch qualifying recordings, complete the assessment, and download your certificate instantly.
+              CuraLive supports accredited continuing professional development across healthcare, legal, financial services, and education. Watch qualifying recordings, complete the assessment, and download your certificate instantly.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               {[

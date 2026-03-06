@@ -7,9 +7,9 @@ const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu
 const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus_ai_demo_v5_7a9fdeb3.mp4";
 
 const DEMO_EVENTS = [
-  { id: "q4-earnings-2026", title: "Q4 2025 Earnings Call", company: "Chorus Call Inc.", platform: "Zoom", status: "live", attendees: 1247, duration: "42:18" },
-  { id: "investor-day-2026", title: "Annual Investor Day", company: "Chorus Call Inc.", platform: "Microsoft Teams", status: "upcoming", attendees: 3500, duration: "—" },
-  { id: "board-briefing", title: "Board Strategy Briefing", company: "Chorus Call Inc.", platform: "Webex", status: "completed", attendees: 24, duration: "1:28:05" },
+  { id: "q4-earnings-2026", title: "Q4 2025 Earnings Call", company: "CuraLive Inc.", platform: "Zoom", status: "live", attendees: 1247, duration: "42:18" },
+  { id: "investor-day-2026", title: "Annual Investor Day", company: "CuraLive Inc.", platform: "Microsoft Teams", status: "upcoming", attendees: 3500, duration: "—" },
+  { id: "board-briefing", title: "Board Strategy Briefing", company: "CuraLive Inc.", platform: "Webex", status: "completed", attendees: 24, duration: "1:28:05" },
 ];
 
 const FEATURES = [
@@ -18,7 +18,7 @@ const FEATURES = [
   { icon: MessageSquare, label: "Smart Q&A", desc: "Attendees submit, upvote, and categorize questions — moderated by the operator." },
   { icon: Globe, label: "Auto-Translation", desc: "Participants choose their language; transcripts translate instantly into 8 languages." },
   { icon: Video, label: "Platform Neutral", desc: "Works with Zoom RTMS, Microsoft Teams Bot, Webex, RTMP, and PSTN dial-in." },
-  { icon: Zap, label: "Real-Time Delivery", desc: "Sub-100ms message delivery via Chorus Call's proprietary edge network — zero polling." },
+  { icon: Zap, label: "Real-Time Delivery", desc: "Sub-100ms message delivery via CuraLive's proprietary edge network — zero polling." },
 ];
 
 const PLATFORM_PAGES = [
@@ -56,7 +56,7 @@ export default function Home() {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-9 w-auto object-contain" />
+            <span className="text-xl font-bold tracking-tight text-foreground">Cura<span className="text-primary">Live</span></span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#events" className="hover:text-foreground transition-colors">Events</a>
@@ -110,13 +110,13 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-6">
-                <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — Chorus Call Inc.
+                <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — CuraLive Inc.
               </div>
               <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight mb-6">
                 The Intelligence Layer<br /><span className="text-primary">for Every Meeting</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed mb-10" style={{ fontFamily: "'Inter', sans-serif" }}>
-                Chorus.AI sits on top of Zoom, Microsoft Teams, Webex, and any RTMP source — delivering real-time transcription, sentiment analysis, smart Q&A, and AI summaries to every investor event, earnings call, and board briefing.
+                CuraLive sits on top of Zoom, Microsoft Teams, Webex, and any RTMP source — delivering real-time transcription, sentiment analysis, smart Q&A, and AI summaries to every investor event, earnings call, and board briefing.
               </p>
               <div className="flex flex-wrap gap-4">
                 <button onClick={() => navigate("/event/q4-earnings-2026")} className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity">
@@ -138,14 +138,14 @@ export default function Home() {
               />
               <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
-                Chorus.AI Demo — 55s
+                CuraLive Demo — 55s
               </div>
             </div>
             {/* Download button */}
             <div className="mt-3 flex justify-center">
               <a
                 href={DEMO_VIDEO_URL}
-                download="Chorus_AI_Demo.mp4"
+                download="CuraLive_Demo.mp4"
                 className="flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary px-5 py-2 rounded-lg text-sm font-semibold hover:bg-primary/20 transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -250,7 +250,7 @@ export default function Home() {
             <div>
               <h2 className="text-3xl font-bold mb-4">Platform Neutral by Design</h2>
               <p className="text-muted-foreground leading-relaxed mb-6" style={{ fontFamily: "'Inter', sans-serif" }}>
-                Chorus.AI doesn't compete with Zoom or Teams — it sits on top of them. We capture audio via native APIs and deliver intelligence to every participant, regardless of which platform they're on.
+                CuraLive doesn't compete with Zoom or Teams — it sits on top of them. We capture audio via native APIs and deliver intelligence to every participant, regardless of which platform they're on.
               </p>
               <div className="space-y-3">
                 {[
@@ -289,7 +289,7 @@ export default function Home() {
               </div>
               <div className="mt-6 text-center bg-primary/10 border border-primary/20 rounded-lg p-4">
                 <div className="text-xs text-muted-foreground mb-1">Powered by</div>
-                <div className="text-lg font-bold text-primary">Chorus Call</div>
+                <div className="text-lg font-bold text-primary">CuraLive</div>
               </div>
             </div>
           </div>
@@ -300,14 +300,14 @@ export default function Home() {
       <section className="py-24 border-t border-border bg-card/20">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Powered by Chorus Call</h2>
+            <h2 className="text-3xl font-bold mb-4">Powered by CuraLive</h2>
             <p className="text-muted-foreground leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Traditional HTTP polling generates 60,000 unnecessary database reads per hour for a 50-person event. Chorus.AI replaces this with proprietary WebSocket push — reducing DB reads to zero.
+              Traditional HTTP polling generates 60,000 unnecessary database reads per hour for a 50-person event. CuraLive replaces this with proprietary WebSocket push — reducing DB reads to zero.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { stat: "<100ms", label: "Message delivery latency", desc: "Chorus Call proprietary edge network" },
+              { stat: "<100ms", label: "Message delivery latency", desc: "CuraLive proprietary edge network" },
               { stat: "7", label: "Real-time channels", desc: "slides, qa, transcript, polls, voting, presence, chat" },
               { stat: "0", label: "Polling requests", desc: "Pure WebSocket push model" },
             ].map(({ stat, label, desc }) => (
@@ -325,7 +325,7 @@ export default function Home() {
       <footer className="border-t border-border py-8">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-call-logo_7f85e981.png" alt="Chorus Call" className="h-6 w-auto object-contain" />
+            <span className="text-sm font-bold tracking-tight text-foreground">Cura<span className="text-primary">Live</span></span>
           </div>
           <div className="flex flex-wrap items-center gap-6 text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
             <button onClick={() => navigate("/integrations")} className="hover:text-foreground transition-colors">Integration Hub</button>
@@ -335,7 +335,7 @@ export default function Home() {
             <button onClick={() => navigate("/legal/privacy")} className="hover:text-foreground transition-colors">Privacy Policy</button>
           </div>
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Confidential — Chorus Call Board Presentation
+            Confidential — CuraLive Board Presentation
           </p>
         </div>
       </footer>

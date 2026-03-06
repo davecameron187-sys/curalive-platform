@@ -1,5 +1,5 @@
 /**
- * PlatformLinks.tsx — Chorus.AI Platform Links Reference
+ * PlatformLinks.tsx — CuraLive Platform Links Reference
  * Version 3 · All 35 live URLs organized by section with search, copy, and new-tab links.
  */
 import { useState } from "react";
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const BASE = "https://chorusai-mdu4k2ib.manus.space";
+const BASE = "https://curalive.cc";
 
 type LinkEntry = {
   label: string;
@@ -133,7 +133,7 @@ const SECTIONS: Section[] = [
     icon: Lock,
     color: "text-slate-500",
     links: [
-      { label: "Team Guide", url: `${BASE}/test-guide`, description: "Internal testing guide and QA checklist for the Chorus.AI team", isInternal: true },
+      { label: "Team Guide", url: `${BASE}/test-guide`, description: "Internal testing guide and QA checklist for the CuraLive team", isInternal: true },
       { label: "Tech Handover", url: `${BASE}/tech-handover`, description: "Technical architecture, integration specs, and handover documentation", isInternal: true },
       { label: "Summit Console", url: `${BASE}/summit-console`, description: "Summit & large-scale event management console", isInternal: true },
       { label: "Admin — Users", url: `${BASE}/admin/users`, description: "User management and role administration", isInternal: true },
@@ -295,7 +295,7 @@ export default function PlatformLinks() {
           <div className="flex items-center gap-3">
             <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
               <Zap className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold">Chorus.AI</span>
+              <span className="text-sm font-semibold">CuraLive</span>
             </button>
             <span className="text-muted-foreground/40">/</span>
             <span className="text-sm font-medium">Platform Links</span>
@@ -321,7 +321,7 @@ export default function PlatformLinks() {
             <h1 className="text-2xl font-bold tracking-tight">Platform Links Reference</h1>
           </div>
           <p className="text-muted-foreground text-sm mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>
-            All {totalCount} live URLs for the Chorus.AI platform, organized by module. 
+            All {totalCount} live URLs for the CuraLive platform, organized by module. 
             {newCount > 0 && <> <span className="text-emerald-400 font-medium">{newCount} new pages</span> added in v3.</>}
           </p>
 
@@ -390,7 +390,7 @@ export default function PlatformLinks() {
 
         {/* Footer */}
         <div className="mt-10 pt-6 border-t border-border flex items-center justify-between text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-          <span>Chorus.AI Platform · Version 3 · March 3, 2026</span>
+          <span>CuraLive Platform · Version 3 · March 3, 2026</span>
           <div className="flex items-center gap-3">
             <a href={`${BASE}/legal/terms`} target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Terms</a>
             <a href={`${BASE}/legal/privacy`} target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Privacy</a>

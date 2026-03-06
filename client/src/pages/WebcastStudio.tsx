@@ -1,5 +1,5 @@
 /**
- * WebcastStudio.tsx — Chorus.AI Live Webcast Production Console
+ * WebcastStudio.tsx — CuraLive Live Webcast Production Console
  * The operator-facing studio for managing any live webcast/webinar/virtual event.
  * Features: stream status, Q&A moderation, polls, live chat, attendee count, AI captions.
  *

@@ -1,5 +1,5 @@
 /**
- * Chorus.AI — Ably Cross-Device Sync Tests
+ * CuraLive — Ably Cross-Device Sync Tests
  *
  * Validates:
  * 1. The ably.tokenRequest tRPC procedure returns a valid token or demo mode

@@ -3,14 +3,14 @@ import { useParams, useLocation } from "wouter";
 import { Zap, Copy, CheckCheck, ChevronUp, Send, BarChart3, MessageSquare, FileText } from "lucide-react";
 
 const TRANSCRIPT_LINES = [
-  { speaker: "James Mitchell (CEO)", text: "Our AI-powered platform, Chorus.AI, has seen remarkable adoption across our enterprise client base." },
+  { speaker: "James Mitchell (CEO)", text: "Our AI-powered platform, CuraLive, has seen remarkable adoption across our enterprise client base." },
   { speaker: "Sarah Chen (CFO)", text: "Q4 revenue came in at $47.2 million, representing 28% year-over-year growth." },
   { speaker: "James Mitchell (CEO)", text: "Looking ahead to 2026, we're particularly excited about our Teams and Zoom native integrations." },
-  { speaker: "Sarah Chen (CFO)", text: "Gross margins expanded to 72%, driven by efficiency gains from our new Chorus.AI intelligence layer." },
+  { speaker: "Sarah Chen (CFO)", text: "Gross margins expanded to 72%, driven by efficiency gains from our new CuraLive intelligence layer." },
 ];
 
 const QA_ITEMS = [
-  { id: 1, question: "Can you provide more detail on the Chorus.AI revenue contribution in Q4?", author: "Goldman Sachs", votes: 47 },
+  { id: 1, question: "Can you provide more detail on the CuraLive revenue contribution in Q4?", author: "Goldman Sachs", votes: 47 },
   { id: 2, question: "What is the timeline for the native Microsoft Teams integration?", author: "JP Morgan", votes: 31 },
   { id: 3, question: "How does the Recall.ai partnership affect your gross margin profile?", author: "Morgan Stanley", votes: 28 },
 ];
@@ -154,7 +154,7 @@ function ChorusWidget({ eventId }: { eventId: string }) {
 
       {/* Footer */}
       <div style={{ padding: "6px 10px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.25)" }}>Powered by Chorus.AI</span>
+        <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.25)" }}>Powered by CuraLive</span>
       </div>
     </div>
   );
@@ -167,9 +167,9 @@ export default function EmbedWidget() {
   const eventId = params.id ?? "q4-earnings-2026";
   const [copied, setCopied] = useState(false);
 
-  const embedCode = `<!-- Chorus.AI Embedded Widget -->
+  const embedCode = `<!-- CuraLive Embedded Widget -->
 <script
-  src="https://cdn.chorus.ai/widget.js"
+  src="https://cdn.pulselive.events/widget.js"
   data-event-id="${eventId}"
   data-api-key="ck_live_your_api_key"
   data-theme="dark"
@@ -187,7 +187,7 @@ export default function EmbedWidget() {
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
       <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-md px-6 h-14 flex items-center gap-4">
         <button onClick={() => navigate("/")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm">
-          <Zap className="w-4 h-4 text-primary" /> Chorus.AI
+          <Zap className="w-4 h-4 text-primary" /> CuraLive
         </button>
         <span className="text-muted-foreground text-sm">/ Embedded Widget</span>
       </header>
@@ -196,7 +196,7 @@ export default function EmbedWidget() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-3">Embedded Partner Widget</h1>
           <p className="text-muted-foreground leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Drop the Chorus.AI intelligence widget into any partner website with a single script tag. Attendees get live transcription, Q&A, and sentiment — without leaving the partner's page.
+            Drop the CuraLive intelligence widget into any partner website with a single script tag. Attendees get live transcription, Q&A, and sentiment — without leaving the partner's page.
           </p>
         </div>
 
@@ -227,7 +227,7 @@ export default function EmbedWidget() {
               <div className="font-semibold text-sm">Widget Attributes</div>
               <div className="space-y-2 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {[
-                  ["data-event-id", "Your Chorus.AI event ID", "Required"],
+                  ["data-event-id", "Your CuraLive event ID", "Required"],
                   ["data-api-key", "Your partner API key", "Required"],
                   ["data-theme", "dark | light", "Optional"],
                   ["data-width", "Widget width in px (default: 320)", "Optional"],

@@ -508,7 +508,7 @@ export const liveVideoRouter = router({
         </tr>
         <tr>
           <td style="background:#0f172a;padding:20px 40px;border-top:1px solid #1e293b;">
-            <p style="margin:0;font-size:12px;color:#475569;text-align:center;">Chorus.AI · Powered by Chorus Call Inc.</p>
+            <p style="margin:0;font-size:12px;color:#475569;text-align:center;">CuraLive · Powered by CuraLive Inc.</p>
           </td>
         </tr>
       </table>

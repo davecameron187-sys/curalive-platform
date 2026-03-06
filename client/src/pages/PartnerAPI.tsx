@@ -8,7 +8,7 @@ const WEBHOOK_EVENTS = [
   { event: "qa.question_submitted", payload: `{ "question": "Can you provide detail on Q4 revenue?", "submittedBy": "Goldman Sachs", "priority": "high", "votes": 47, "eventId": "q4-earnings-2026" }`, when: "On each Q&A submission" },
   { event: "event.started", payload: `{ "eventId": "q4-earnings-2026", "title": "Q4 2025 Earnings Call", "startedAt": "2026-03-01T14:00:00Z" }`, when: "When host starts event" },
   { event: "event.ended", payload: `{ "eventId": "q4-earnings-2026", "endedAt": "2026-03-01T14:18:32Z" }`, when: "When host ends event" },
-  { event: "event.summary_ready", payload: `{ "summaryUrl": "https://chorus.ai/api/events/q4-earnings-2026/summary", "eventId": "q4-earnings-2026" }`, when: "~30s after event ends" },
+  { event: "event.summary_ready", payload: `{ "summaryUrl": "https://pulselive.events/api/events/q4-earnings-2026/summary", "eventId": "q4-earnings-2026" }`, when: "~30s after event ends" },
 ];
 
 const REST_ENDPOINTS = [
@@ -21,7 +21,7 @@ const REST_ENDPOINTS = [
   { method: "DELETE", path: "/api/partners/{partnerId}", desc: "Remove partner registration" },
 ];
 
-const VERIFICATION_CODE = `// Verify Chorus.AI webhook signature (Node.js)
+const VERIFICATION_CODE = `// Verify CuraLive webhook signature (Node.js)
 import crypto from 'crypto';
 
 function verifyWebhookSignature(
@@ -87,7 +87,7 @@ export default function PartnerAPI() {
         <div className="mb-10">
           <h1 className="text-3xl font-bold mb-3">Open Partner API</h1>
           <p className="text-muted-foreground leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Any platform can push events to Chorus.AI or receive real-time event data via webhooks. Register a webhook URL and receive signed payloads for every event in your system.
+            Any platform can push events to CuraLive or receive real-time event data via webhooks. Register a webhook URL and receive signed payloads for every event in your system.
           </p>
         </div>
 
@@ -110,8 +110,8 @@ export default function PartnerAPI() {
             <div>
               <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Base URL</div>
               <div className="bg-background border border-border rounded-lg px-3 py-2 font-mono text-muted-foreground flex items-center justify-between">
-                <span>https://api.chorus.ai/v1</span>
-                <button onClick={() => handleCopy("https://api.chorus.ai/v1", "base")} className="text-muted-foreground hover:text-foreground transition-colors ml-2">
+                <span>https://api.pulselive.events/v1</span>
+                <button onClick={() => handleCopy("https://api.pulselive.events/v1", "base")} className="text-muted-foreground hover:text-foreground transition-colors ml-2">
                   {copied === "base" ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>

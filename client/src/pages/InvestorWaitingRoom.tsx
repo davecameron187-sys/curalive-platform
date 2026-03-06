@@ -295,7 +295,7 @@ export default function InvestorWaitingRoom() {
                 <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ backgroundColor: branding?.primaryColor ?? "var(--primary)" }}>
                   <Video className="w-4 h-4" style={{ color: branding?.backgroundColor ?? "white" }} />
                 </div>
-                <span className="font-bold text-sm">{branding?.clientName ?? "Chorus.AI"}</span>
+                <span className="font-bold text-sm">{branding?.clientName ?? "CuraLive"}</span>
               </>
             )}
             {branding?.tagline && <span className="text-xs opacity-50 hidden sm:block">{branding.tagline}</span>}

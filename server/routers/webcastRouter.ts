@@ -1,5 +1,5 @@
 /**
- * webcastRouter.ts — tRPC procedures for the Chorus.AI Webcasting Platform.
+ * webcastRouter.ts — tRPC procedures for the CuraLive Webcasting Platform.
  * Covers: event CRUD, registration, Q&A moderation, polls, and analytics.
  */
 import { z } from "zod";
@@ -40,7 +40,7 @@ function buildICS(opts: {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Chorus.AI//EN",
+    "PRODID:-//CuraLive//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:REQUEST",
     "BEGIN:VEVENT",
@@ -64,7 +64,7 @@ const DEMO_EVENTS = [
   {
     slug: "q4-2025-earnings-webcast",
     title: "Q4 2025 Earnings Results Webcast",
-    description: "Chorus Call Inc. presents its Q4 2025 financial results to analysts and investors. Live Q&A session to follow the presentation.",
+    description: "CuraLive Inc. presents its Q4 2025 financial results to analysts and investors. Live Q&A session to follow the presentation.",
     eventType: "webcast" as const,
     industryVertical: "financial_services" as const,
     status: "ended" as const,
@@ -75,7 +75,7 @@ const DEMO_EVENTS = [
     registrationCount: 1247,
     peakAttendees: 982,
     hostName: "Sarah Mitchell, CFO",
-    hostOrganization: "Chorus Call Inc.",
+    hostOrganization: "CuraLive Inc.",
     tags: "earnings,investor-relations,financial-results",
     recordingUrl: "https://example.com/recordings/q4-2025",
   },
@@ -91,14 +91,14 @@ const DEMO_EVENTS = [
     timezone: "Africa/Johannesburg",
     maxAttendees: 10000,
     registrationCount: 3842,
-    hostName: "Chorus Call Events",
-    hostOrganization: "Chorus Call Inc.",
+    hostName: "CuraLive Events",
+    hostOrganization: "CuraLive Inc.",
     tags: "africa,capital-markets,summit,ESG",
   },
   {
     slug: "product-launch-webinar-march-2026",
-    title: "Chorus.AI Platform Launch — What's New in 2026",
-    description: "Join our product team for a live walkthrough of the new Chorus.AI webcasting platform. See AI-powered features, the new Studio, and live demos.",
+    title: "CuraLive Platform Launch — What's New in 2026",
+    description: "Join our product team for a live walkthrough of the new CuraLive webcasting platform. See AI-powered features, the new Studio, and live demos.",
     eventType: "webinar" as const,
     industryVertical: "technology" as const,
     status: "scheduled" as const,
@@ -108,13 +108,13 @@ const DEMO_EVENTS = [
     maxAttendees: 2000,
     registrationCount: 678,
     hostName: "James Okafor, Head of Product",
-    hostOrganization: "Chorus Call Inc.",
+    hostOrganization: "CuraLive Inc.",
     tags: "product-launch,webinar,technology",
   },
   {
     slug: "ceo-town-hall-q1-2026",
     title: "CEO All-Hands Town Hall — Q1 2026",
-    description: "Quarterly all-hands meeting for Chorus Call Inc. employees. CEO update on company strategy, Q1 results, and roadmap for the year ahead.",
+    description: "Quarterly all-hands meeting for CuraLive Inc. employees. CEO update on company strategy, Q1 results, and roadmap for the year ahead.",
     eventType: "webcast" as const,
     industryVertical: "corporate_communications" as const,
     status: "live" as const,
@@ -125,7 +125,7 @@ const DEMO_EVENTS = [
     registrationCount: 487,
     peakAttendees: 412,
     hostName: "David Cameron, CEO",
-    hostOrganization: "Chorus Call Inc.",
+    hostOrganization: "CuraLive Inc.",
     tags: "town-hall,all-hands,internal",
   },
   {
@@ -149,7 +149,7 @@ const DEMO_EVENTS = [
   {
     slug: "agm-annual-general-meeting-2026",
     title: "Annual General Meeting 2026",
-    description: "Formal annual general meeting of Chorus Call Inc. shareholders. Voting on resolutions, board elections, and auditor appointment.",
+    description: "Formal annual general meeting of CuraLive Inc. shareholders. Voting on resolutions, board elections, and auditor appointment.",
     eventType: "hybrid_event" as const,
     industryVertical: "financial_services" as const,
     status: "scheduled" as const,
@@ -159,7 +159,7 @@ const DEMO_EVENTS = [
     maxAttendees: 1500,
     registrationCount: 892,
     hostName: "Board of Directors",
-    hostOrganization: "Chorus Call Inc.",
+    hostOrganization: "CuraLive Inc.",
     tags: "AGM,shareholders,governance",
   },
   {
@@ -181,7 +181,7 @@ const DEMO_EVENTS = [
   {
     slug: "partner-enablement-training-q1",
     title: "Partner Enablement Training — Q1 2026",
-    description: "Quarterly training for Chorus Call channel partners. New product features, sales playbooks, and certification exam.",
+    description: "Quarterly training for CuraLive channel partners. New product features, sales playbooks, and certification exam.",
     eventType: "simulive" as const,
     industryVertical: "technology" as const,
     status: "on_demand" as const,
@@ -192,7 +192,7 @@ const DEMO_EVENTS = [
     registrationCount: 623,
     peakAttendees: 501,
     hostName: "Partner Success Team",
-    hostOrganization: "Chorus Call Inc.",
+    hostOrganization: "CuraLive Inc.",
     tags: "training,partners,enablement,certification",
     recordingUrl: "https://example.com/recordings/partner-q1",
   },
@@ -444,7 +444,7 @@ export const webcastRouter = router({
           startTime: startTs,
           endTime: endTs,
           timezone: event.timezone ?? "UTC",
-          organizer: event.hostOrganization ?? "Chorus Call Inc.",
+          organizer: event.hostOrganization ?? "CuraLive Inc.",
           attendeeEmail: input.email,
           attendeeName: `${input.firstName} ${input.lastName}`,
           attendUrl,
@@ -453,7 +453,7 @@ export const webcastRouter = router({
           firstName: input.firstName,
           lastName: input.lastName,
           eventTitle: event.title,
-          company: event.hostOrganization ?? "Chorus Call Inc.",
+          company: event.hostOrganization ?? "CuraLive Inc.",
           eventDate,
           attendUrl,
           icsContent,

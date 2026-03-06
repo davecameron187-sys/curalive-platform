@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { ExternalLink, Phone, Monitor, FileText, Clock, Users, Mic, MicOff, PhoneOff, ArrowRightLeft, Bell, Settings, ChevronRight } from "lucide-react";
 
-const BASE_URL = "https://chorusai-mdu4k2ib.manus.space";
+const BASE_URL = "https://curalive.cc";
 
 function SectionLink({ href, label, external = false }: { href: string; label: string; external?: boolean }) {
   return (
@@ -140,7 +140,7 @@ export default function OperatorGuide() {
             <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full mb-4">
               For Experienced Operators
             </div>
-            <h1 className="text-3xl font-bold tracking-tight mb-3">Chorus.AI OCC Quick-Start Guide</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-3">CuraLive OCC Quick-Start Guide</h1>
             <p className="text-muted-foreground leading-relaxed max-w-2xl">
               You already know how to run a conference. This guide covers what is different in the new console — where to find things, what the controls do, and the handful of habits that will make you immediately effective.
             </p>
@@ -171,7 +171,7 @@ export default function OperatorGuide() {
             </p>
             <div className="mt-4 p-4 bg-muted/40 rounded-lg text-sm">
               <span className="font-semibold text-foreground">Platform URL: </span>
-              <SectionLink href={`${BASE_URL}/occ`} label="chorusai-mdu4k2ib.manus.space/occ" external />
+              <SectionLink href={`${BASE_URL}/occ`} label="curalive.cc/occ" external />
             </div>
           </Section>
 
@@ -467,7 +467,7 @@ export default function OperatorGuide() {
           </div>
 
           <p className="text-xs text-muted-foreground mt-8 text-center">
-            Chorus.AI OCC Operator Quick-Start Guide · v2.0 · March 2026
+            CuraLive OCC Operator Quick-Start Guide · v2.0 · March 2026
           </p>
         </main>
       </div>

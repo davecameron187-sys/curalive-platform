@@ -1,7 +1,7 @@
 import { ExternalLink, ArrowRight, CheckCircle2, Terminal, Globe, CreditCard, Mic, Shield, Smartphone, Github, Copy, Check } from "lucide-react";
 import { useState } from "react";
 
-const LIVE_URL = "https://chorusai-mdu4k2ib.manus.space";
+const LIVE_URL = "https://curalive.cc";
 
 function CopyBtn({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -73,7 +73,7 @@ const PHASES = [
     borderColor: "border-sky-400/20",
     bgColor: "bg-sky-400/5",
     description: "Set up Railway hosting (R370/month), connect the GitHub repository exported from Manus, configure environment variables, and run the first production deployment. Set up Clerk for authentication (free tier to start) and replace the Manus OAuth demo login. Register the domain choruscall.ai and point it to Railway.",
-    action: "Export the code from Manus (Settings → GitHub), push to a Chorus Call GitHub organisation, deploy to Railway using their one-click Node.js template.",
+    action: "Export the code from Manus (Settings → GitHub), push to a CuraLive GitHub organisation, deploy to Railway using their one-click Node.js template.",
     links: [{ label: "railway.app", url: "https://railway.app" }, { label: "clerk.com", url: "https://clerk.com" }],
   },
   {
@@ -100,7 +100,7 @@ const PHASES = [
     dotColor: "bg-emerald-400",
     borderColor: "border-emerald-400/20",
     bgColor: "bg-emerald-400/5",
-    description: "Integrate Stripe for subscription billing. Chorus Call's operator-assisted model means billing is per-event or monthly retainer — not per-seat. Use Stripe's metered billing or invoice API to match your existing commercial model.",
+    description: "Integrate Stripe for subscription billing. CuraLive's operator-assisted model means billing is per-event or monthly retainer — not per-seat. Use Stripe's metered billing or invoice API to match your existing commercial model.",
     action: "Run the Stripe feature setup in Manus (or manually install the stripe npm package), create Products and Prices in the Stripe dashboard, and wire the checkout flow.",
     links: [{ label: "stripe.com", url: "https://stripe.com" }],
   },
@@ -167,7 +167,7 @@ export default function TechHandover() {
       <header className="border-b border-white/8 bg-[#080c18]/90 backdrop-blur-md sticky top-0 z-20">
         <div className="container flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
-            <a href="/" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">← Chorus.AI</a>
+            <a href="/" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">← CuraLive</a>
             <span className="text-slate-700">/</span>
             <span className="text-sm font-semibold text-white">Technical Manager Handover</span>
           </div>
@@ -183,14 +183,14 @@ export default function TechHandover() {
         {/* Hero */}
         <div className="mb-12">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-5">
-            Chorus Call Inc. · Confidential · For Technical Manager
+            CuraLive Inc. · Confidential · For Technical Manager
           </div>
           <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
-            Chorus.AI Platform<br />
+            CuraLive Platform<br />
             <span className="text-primary">Technical Handover Brief</span>
           </h1>
           <p className="text-slate-400 text-base max-w-2xl leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-            This document explains how the Chorus.AI platform was built, what is real versus simulated in the current demo, and the step-by-step roadmap for you to take ownership and lead the transition to full production.
+            This document explains how the CuraLive platform was built, what is real versus simulated in the current demo, and the step-by-step roadmap for you to take ownership and lead the transition to full production.
           </p>
         </div>
 
@@ -199,7 +199,7 @@ export default function TechHandover() {
           <SectionLabel color="text-primary">01 · How It Was Built</SectionLabel>
           <div className="bg-white/[0.03] border border-white/8 rounded-xl p-6">
             <p className="text-slate-300 leading-relaxed mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>
-              The entire Chorus.AI platform — web application, demo video, slide decks, and all guides — was built using <strong className="text-white">Manus AI</strong>, an autonomous AI agent that writes code, generates assets, and deploys web applications without requiring a developer. It was produced in a single session on a personal Manus account and is currently live at:
+              The entire CuraLive platform — web application, demo video, slide decks, and all guides — was built using <strong className="text-white">Manus AI</strong>, an autonomous AI agent that writes code, generates assets, and deploys web applications without requiring a developer. It was produced in a single session on a personal Manus account and is currently live at:
             </p>
             <div className="flex items-center gap-2 bg-[#0f1629] border border-[#1e3a5f] border-l-4 border-l-primary rounded-lg px-4 py-3 mb-4">
               <a href={LIVE_URL} target="_blank" rel="noopener noreferrer" className="font-mono text-sm text-sky-400 hover:underline font-bold flex-1">
@@ -327,9 +327,9 @@ export default function TechHandover() {
 
         {/* Account Transfer */}
         <section className="mb-12">
-          <SectionLabel color="text-amber-400">05 · Transferring to a Chorus Call Account</SectionLabel>
+          <SectionLabel color="text-amber-400">05 · Transferring to a CuraLive Account</SectionLabel>
           <p className="text-slate-400 text-sm mb-5 leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-            The current project lives on a personal Manus account. Here are the three options for handing it over to Chorus Call, in order of recommendation.
+            The current project lives on a personal Manus account. Here are the three options for handing it over to CuraLive, in order of recommendation.
           </p>
           <div className="space-y-3">
             {[
@@ -339,7 +339,7 @@ export default function TechHandover() {
                 title: "Option A — GitHub Export",
                 steps: [
                   "In the Manus Management UI, go to Settings → GitHub.",
-                  "Export the full codebase to a new repository under the Chorus Call GitHub organisation.",
+                  "Export the full codebase to a new repository under the CuraLive GitHub organisation.",
                   "Clone the repo and deploy independently to Railway — no Manus dependency in production.",
                   "Create a new Manus account at manus.im for the Technical Manager to continue AI-assisted development of future features.",
                 ],
@@ -385,7 +385,7 @@ export default function TechHandover() {
             <div style={{ fontFamily: "'Inter', sans-serif" }}>
               <p className="text-sm font-semibold text-sky-300 mb-1">Create your Manus account</p>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Sign up at <a href="https://manus.im" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline font-semibold">manus.im</a> using the Chorus Call email address. The free tier is sufficient to start. Manus will allow you to continue building new features, generating content, and managing the platform using natural language instructions — no coding required.
+                Sign up at <a href="https://manus.im" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline font-semibold">manus.im</a> using the CuraLive email address. The free tier is sufficient to start. Manus will allow you to continue building new features, generating content, and managing the platform using natural language instructions — no coding required.
               </p>
             </div>
           </div>
@@ -449,7 +449,7 @@ export default function TechHandover() {
         {/* Footer */}
         <div className="border-t border-white/8 pt-6 flex items-center justify-between">
           <p className="text-xs text-slate-600" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Chorus Call Inc. · Confidential · Technical Manager Handover · March 2026
+            CuraLive Inc. · Confidential · Technical Manager Handover · March 2026
           </p>
           <a href="/test-guide" className="text-xs font-semibold text-primary hover:opacity-80 transition-opacity">
             Team Testing Guide →

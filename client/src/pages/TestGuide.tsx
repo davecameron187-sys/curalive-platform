@@ -1,11 +1,11 @@
 /**
- * TestGuide.tsx — Chorus.AI Internal Testing Reference Card
+ * TestGuide.tsx — CuraLive Internal Testing Reference Card
  * Updated: March 2026 — v6 — includes full webcasting workflow and Recall.ai bot testing
  */
 import { ExternalLink, CheckCircle2, Copy, Check } from "lucide-react";
 import { useState } from "react";
 
-const BASE_URL = "https://chorusai-mdu4k2ib.manus.space";
+const BASE_URL = "https://curalive.cc";
 
 interface TestStep {
   step: number;
@@ -358,7 +358,7 @@ const SECTIONS: Section[] = [
       {
         step: 3,
         action: "Deploy the bot to your meeting",
-        note: "Paste your meeting URL into the 'Meeting URL' field and click 'Deploy Bot'. The bot will appear in your meeting as a participant named 'Chorus.AI Bot'. You may need to admit it from the waiting room.",
+        note: "Paste your meeting URL into the 'Meeting URL' field and click 'Deploy Bot'. The bot will appear in your meeting as a participant named 'CuraLive Bot'. You may need to admit it from the waiting room.",
       },
       {
         step: 4,
@@ -368,7 +368,7 @@ const SECTIONS: Section[] = [
       {
         step: 5,
         action: "Speak clearly for 30–60 seconds",
-        note: "Say something like: 'This is a test of the Chorus.AI transcription service. We are testing the real-time transcript delivery via the Recall.ai bot integration.' Speak clearly and at a normal pace.",
+        note: "Say something like: 'This is a test of the CuraLive transcription service. We are testing the real-time transcript delivery via the Recall.ai bot integration.' Speak clearly and at a normal pace.",
       },
       {
         step: 6,
@@ -595,7 +595,7 @@ export default function TestGuide() {
         <div className="container flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
             <a href="/" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">
-              ← Chorus.AI
+              ← CuraLive
             </a>
             <span className="text-slate-700">/</span>
             <span className="text-sm font-semibold text-white">In-House Testing Guide</span>
@@ -616,7 +616,7 @@ export default function TestGuide() {
             In-House Testing Guide
           </h1>
           <p className="text-slate-400 text-sm max-w-2xl" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Step-by-step instructions for testing every module of the Chorus.AI platform.
+            Step-by-step instructions for testing every module of the CuraLive platform.
             Tick off each step as you complete it. Start with Section 0 (Login & Setup) before anything else.
             Estimated time: <strong className="text-slate-300">60–90 minutes</strong> for the full platform.
           </p>
@@ -694,7 +694,7 @@ export default function TestGuide() {
         {/* Footer note */}
         <div className="mt-10 border-t border-white/8 pt-6 flex items-center justify-between">
           <p className="text-xs text-slate-600" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Chorus Call — Confidential · Internal Use Only · Do Not Distribute
+            CuraLive — Confidential · Internal Use Only · Do Not Distribute
           </p>
           <a
             href="/platform-links"

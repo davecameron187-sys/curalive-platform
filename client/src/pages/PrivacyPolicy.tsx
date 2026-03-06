@@ -1,14 +1,14 @@
 /**
- * PrivacyPolicy.tsx — Privacy Policy for Chorus.AI
+ * PrivacyPolicy.tsx — Privacy Policy for CuraLive
  * Accessible at /legal/privacy
  */
 import { useLocation } from "wouter";
 import { ArrowLeft, Zap } from "lucide-react";
 
 const EFFECTIVE_DATE = "1 March 2026";
-const COMPANY_NAME = "Chorus Call (Pty) Ltd";
+const COMPANY_NAME = "CuraLive (Pty) Ltd";
 const CONTACT_EMAIL = "privacy@choruscall.ai";
-const PLATFORM_NAME = "Chorus.AI";
+const PLATFORM_NAME = "CuraLive";
 
 export default function PrivacyPolicy() {
   const [, navigate] = useLocation();
@@ -44,7 +44,7 @@ export default function PrivacyPolicy() {
         </div>
 
         <p className="text-sm text-muted-foreground leading-relaxed">
-          {COMPANY_NAME} ("Chorus Call", "we", "us", or "our") is committed to protecting your personal information.
+          {COMPANY_NAME} ("CuraLive", "we", "us", or "our") is committed to protecting your personal information.
           This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use the
           {" "}{PLATFORM_NAME} platform. Please read this policy carefully. If you do not agree with its terms, please
           discontinue use of the platform.

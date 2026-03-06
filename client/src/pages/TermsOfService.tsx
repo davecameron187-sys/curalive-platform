@@ -1,16 +1,16 @@
 /**
- * TermsOfService.tsx — Terms of Service for Chorus.AI
+ * TermsOfService.tsx — Terms of Service for CuraLive
  * Accessible at /legal/terms
  */
 import { useLocation } from "wouter";
 import { ArrowLeft, Zap } from "lucide-react";
 
 const EFFECTIVE_DATE = "1 March 2026";
-const COMPANY_NAME = "Chorus Call (Pty) Ltd";
+const COMPANY_NAME = "CuraLive (Pty) Ltd";
 const COMPANY_JURISDICTION = "South Africa";
 const CONTACT_EMAIL = "legal@choruscall.ai";
-const PLATFORM_NAME = "Chorus.AI";
-const WEBSITE = "https://chorusai-mdu4k2ib.manus.space";
+const PLATFORM_NAME = "CuraLive";
+const WEBSITE = "https://curalive.cc";
 
 export default function TermsOfService() {
   const [, navigate] = useLocation();
@@ -48,7 +48,7 @@ export default function TermsOfService() {
         <p className="text-sm text-muted-foreground leading-relaxed">
           These Terms of Service ("Terms") govern your access to and use of the {PLATFORM_NAME} platform and related services
           (collectively, the "Service") operated by {COMPANY_NAME}, a company incorporated in {COMPANY_JURISDICTION}
-          ("Chorus Call", "we", "us", or "our"). By accessing or using the Service, you agree to be bound by these Terms.
+          ("CuraLive", "we", "us", or "our"). By accessing or using the Service, you agree to be bound by these Terms.
           If you do not agree, you may not use the Service.
         </p>
 

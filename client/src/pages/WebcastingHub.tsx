@@ -1,5 +1,5 @@
 /**
- * WebcastingHub.tsx — Chorus.AI Webcasting Platform
+ * WebcastingHub.tsx — CuraLive Webcasting Platform
  * Central hub for all audio/video webcasting services across all event types and industry verticals.
  */
 import { useState } from "react";
@@ -633,7 +633,7 @@ export default function WebcastingHub() {
             <div>
               <h2 className="text-2xl font-bold mb-4">AI-Powered Intelligence Across Every Event</h2>
               <p className="text-muted-foreground leading-relaxed mb-6 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                Chorus.AI doesn't just stream your events — it understands them. Real-time transcription, sentiment analysis, Q&A triage, and post-event AI summaries are built into every event type, from a 10-person board call to a 100,000-person AGM webcast.
+                CuraLive doesn't just stream your events — it understands them. Real-time transcription, sentiment analysis, Q&A triage, and post-event AI summaries are built into every event type, from a 10-person board call to a 100,000-person AGM webcast.
               </p>
               <div className="space-y-3">
                 {[

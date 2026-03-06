@@ -10,7 +10,7 @@ import {
 const CONFERENCE = {
   title: "Africa Capital Markets Summit 2026",
   subtitle: "Connecting Issuers, Analysts & Institutional Investors",
-  organiser: "Chorus Call · BofA Securities · Barclays",
+  organiser: "CuraLive · BofA Securities · Barclays",
   dates: "14–16 April 2026",
   location: "Hybrid — Johannesburg & Virtual",
   badge: "By Invitation Only",
@@ -56,10 +56,10 @@ const AGENDA: { day: string; date: string; sessions: { time: string; title: stri
     day: "Day 3",
     date: "16 April 2026",
     sessions: [
-      { time: "09:00", title: "Morning Briefing: Market Update & Overnight News", type: "keynote", speaker: "Chorus.AI Live Transcript", track: "Plenary" },
+      { time: "09:00", title: "Morning Briefing: Market Update & Overnight News", type: "keynote", speaker: "CuraLive Live Transcript", track: "Plenary" },
       { time: "09:30", title: "1:1 Investor Meetings — Final Sessions", type: "1x1", speaker: "Operator-managed", track: "Private Rooms" },
       { time: "12:00", title: "Closing Lunch & Wrap-Up", type: "networking", speaker: "", track: "All" },
-      { time: "13:30", title: "Virtual Wrap: AI-Generated Conference Summary", type: "keynote", speaker: "Chorus.AI Post-Event Report", track: "Virtual" },
+      { time: "13:30", title: "Virtual Wrap: AI-Generated Conference Summary", type: "keynote", speaker: "CuraLive Post-Event Report", track: "Virtual" },
     ],
   },
 ];
@@ -277,7 +277,7 @@ export default function HybridConference() {
           </div>
         </div>
 
-        {/* Chorus.AI Integration Banner */}
+        {/* CuraLive Integration Banner */}
         <div className="border-b border-border bg-gradient-to-r from-violet-950/20 to-slate-900">
           <div className="container py-6">
             <div className="flex items-center gap-4">
@@ -285,7 +285,7 @@ export default function HybridConference() {
                 <Zap className="w-5 h-5 text-violet-400" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-bold text-white mb-1">Powered by Chorus.AI Intelligence Layer</h3>
+                <h3 className="text-sm font-bold text-white mb-1">Powered by CuraLive Intelligence Layer</h3>
                 <p className="text-xs text-slate-400" style={{ fontFamily: "'Inter', sans-serif" }}>
                   Every session is transcribed in real-time, sentiment-analysed, and summarised by AI. Post-event reports, Q&A transcripts, and replay links are delivered automatically to all registered attendees.
                 </p>

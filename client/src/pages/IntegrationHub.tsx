@@ -36,7 +36,7 @@ app.post('/api/webhooks/recall', (req, res) => {
   const { event, data } = req.body;
   if (event === 'transcript.data') {
     const { words, speaker } = data;
-    // Push to Chorus Call real-time broadcast
+    // Push to CuraLive real-time broadcast
   }
   res.sendStatus(200); // Must respond within 5s
 });`,
@@ -213,7 +213,7 @@ export default function IntegrationHub() {
         <div className="mb-10">
           <h1 className="text-3xl font-bold mb-3">Integration Hub</h1>
           <p className="text-muted-foreground leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Chorus.AI is platform-neutral by design. Connect any webcast platform using the method that fits your infrastructure. All paths feed into the same AI pipeline — transcription, sentiment, Q&A, and summary.
+            CuraLive is platform-neutral by design. Connect any webcast platform using the method that fits your infrastructure. All paths feed into the same AI pipeline — transcription, sentiment, Q&A, and summary.
           </p>
         </div>
 

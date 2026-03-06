@@ -101,7 +101,7 @@ const PHASES: Phase[] = [
         content: (
           <div className="space-y-4">
             <p className="text-slate-300 leading-relaxed">
-              <strong className="text-white">Chorus.AI</strong> is an AI-powered conference management platform built for IR teams, earnings calls, investor days, and board briefings. It sits on top of Zoom, Microsoft Teams, Webex, and any RTMP source — delivering real-time transcription, sentiment analysis, smart Q&A, and AI summaries to every participant.
+              <strong className="text-white">CuraLive</strong> is an AI-powered conference management platform built for IR teams, earnings calls, investor days, and board briefings. It sits on top of Zoom, Microsoft Teams, Webex, and any RTMP source — delivering real-time transcription, sentiment analysis, smart Q&A, and AI summaries to every participant.
             </p>
             <div className="grid grid-cols-2 gap-3">
               {[
@@ -1202,7 +1202,7 @@ export default function Training() {
               <GraduationCap className="w-5 h-5 text-violet-400" />
               <div>
                 <div className="text-sm font-bold text-slate-200">OCC Operator Training Guide</div>
-                <div className="text-xs text-slate-500">Chorus.AI · 4 Phases · 13 Modules</div>
+                <div className="text-xs text-slate-500">CuraLive · 4 Phases · 13 Modules</div>
               </div>
             </div>
           </div>
@@ -1245,7 +1245,7 @@ export default function Training() {
             <div>
               <div className="text-base font-bold text-slate-200 mb-1">Welcome to the OCC Operator Training Guide</div>
               <p className="text-sm text-slate-400 leading-relaxed">
-                This guide covers everything you need to operate the Chorus.AI OCC confidently. Work through the four phases in order — each phase builds on the last. Complete the assessment at the end of each phase (75% to pass) to track your progress. All progress is saved automatically in your browser.
+                This guide covers everything you need to operate the CuraLive OCC confidently. Work through the four phases in order — each phase builds on the last. Complete the assessment at the end of each phase (75% to pass) to track your progress. All progress is saved automatically in your browser.
               </p>
               <div className="flex items-center gap-4 mt-3">
                 <button
@@ -1310,7 +1310,7 @@ export default function Training() {
 
         {/* Footer */}
         <div className="text-center text-xs text-slate-600 py-4">
-          Chorus.AI OCC Operator Training Guide · v2.0 · {new Date().getFullYear()}
+          CuraLive OCC Operator Training Guide · v2.0 · {new Date().getFullYear()}
         </div>
       </div>
     </div>
