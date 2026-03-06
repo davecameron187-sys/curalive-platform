@@ -625,3 +625,18 @@
 ### TS Error Fixes
 - [ ] Fix WebphoneActivityCard TS errors (getTelnyxNumbers, configureInboundRouting, purchaseTelnyxNumber not found in LSP — stale watcher, tsc --noEmit shows 0 errors)
 - [x] Save checkpoint and present to user
+
+## Round 55 — Real-Time Chat Translation (CuraLive.OCC)
+- [x] Add detectedLanguage, translatedMessage, translationLanguage columns to occ_chat_messages schema
+- [x] DB migration applied via pnpm db:push
+- [x] updateChatMessageTranslation helper added to server/db.occ.ts
+- [x] translateChatMessage tRPC procedure (on-demand per-message translation via LLM)
+- [x] sendChatMessage updated with autoTranslateTo parameter (fire-and-forget auto-translation)
+- [x] Ably chat:translation event published on translation completion for real-time sync
+- [x] OCC frontend: Translation toolbar (toggle, language selector, auto checkbox, show/hide)
+- [x] OCC frontend: Inline translated text shown below each message in emerald italics
+- [x] OCC frontend: Per-message translate button (hover reveal) for manual on-demand translation
+- [x] OCC frontend: Detected language badge shown per message
+- [x] OCC frontend: Ably chat:translation handler to receive translations in real-time
+- [x] DB data seeded into messageTranslations state on chat load
+- [x] Unit tests: occ.chat.translation.test.ts (5 tests, all passing)

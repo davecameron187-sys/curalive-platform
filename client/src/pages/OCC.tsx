@@ -243,6 +243,15 @@ export default function OCC() {
   const [chatRecipient, setChatRecipient] = useState<"all" | "hosts">("all");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Chat Translation
+  const [translationEnabled, setTranslationEnabled] = useState(false);
+  const [translationLanguage, setTranslationLanguage] = useState("en");
+  const [autoTranslateOnSend, setAutoTranslateOnSend] = useState(true);
+  const [showTranslations, setShowTranslations] = useState(true);
+  // Map of messageId -> { detectedLanguage, translatedMessage, translationLanguage }
+  const [messageTranslations, setMessageTranslations] = useState<Record<number, { detectedLanguage: string; translatedMessage: string; translationLanguage: string }>>({});
+  const [translatingMessageId, setTranslatingMessageId] = useState<number | null>(null);
+
   // Lounge alert
   const [loungeAlert, setLoungeAlert] = useState(true);
 
@@ -449,6 +458,16 @@ export default function OCC() {
                   ? { ...c, scheduledEnd: payload.newEndTime ? new Date(payload.newEndTime) : c.scheduledEnd }
                   : c
               ));
+            } else if (msg.name === "chat:translation") {
+              // Real-time translation arrived for a message
+              setMessageTranslations(prev => ({
+                ...prev,
+                [payload.messageId]: {
+                  detectedLanguage: payload.detectedLanguage,
+                  translatedMessage: payload.translatedMessage,
+                  translationLanguage: payload.translationLanguage,
+                },
+              }));
             }
           } catch {}
         });
@@ -553,6 +572,24 @@ export default function OCC() {
     ? chatQuery.data
     : (activeCCPConferenceId === 1 ? localChat : []);
 
+  // Seed messageTranslations from DB data when chat loads
+  useEffect(() => {
+    if (!chatQuery.data) return;
+    const fromDb: Record<number, { detectedLanguage: string; translatedMessage: string; translationLanguage: string }> = {};
+    for (const msg of chatQuery.data) {
+      if (msg.translatedMessage && msg.detectedLanguage && msg.translationLanguage) {
+        fromDb[msg.id] = {
+          detectedLanguage: msg.detectedLanguage,
+          translatedMessage: msg.translatedMessage,
+          translationLanguage: msg.translationLanguage,
+        };
+      }
+    }
+    if (Object.keys(fromDb).length > 0) {
+      setMessageTranslations(prev => ({ ...fromDb, ...prev }));
+    }
+  }, [chatQuery.data]);
+
   const historyQuery = trpc.occ.getParticipantHistory.useQuery(
     { participantId: historyParticipantId ?? 0 },
     { enabled: !!historyParticipantId, retry: false }
@@ -571,6 +608,7 @@ export default function OCC() {
   const pickLoungeMut = trpc.occ.pickFromLounge.useMutation();
   const pickOpReqMut = trpc.occ.pickOperatorRequest.useMutation();
   const sendChatMut = trpc.occ.sendChatMessage.useMutation();
+  const translateChatMut = trpc.occ.translateChatMessage.useMutation();
   // Green Room
   const greenRoomQuery = trpc.occ.getGreenRoom.useQuery(
     { conferenceId: activeCCPConferenceId ?? 0 },
@@ -930,6 +968,9 @@ export default function OCC() {
       message: chatMessage.trim(),
       sentAt: new Date(),
       createdAt: new Date(),
+      detectedLanguage: null as string | null,
+      translatedMessage: null as string | null,
+      translationLanguage: null as string | null,
     };
     setLocalChat(prev => [...prev, msg]);
     setChatMessage("");
@@ -940,8 +981,34 @@ export default function OCC() {
         senderType: "operator",
         message: msg.message,
         recipientType: chatRecipient,
+        autoTranslateTo: (translationEnabled && autoTranslateOnSend) ? translationLanguage : undefined,
       });
     } catch { }
+  };
+
+  const doTranslateMessage = async (msgId: number, messageText: string) => {
+    if (!activeCCPConferenceId) return;
+    setTranslatingMessageId(msgId);
+    try {
+      const result = await translateChatMut.mutateAsync({
+        messageId: msgId,
+        message: messageText,
+        targetLanguage: translationLanguage,
+        conferenceId: activeCCPConferenceId,
+      });
+      setMessageTranslations(prev => ({
+        ...prev,
+        [msgId]: {
+          detectedLanguage: result.detectedLanguage,
+          translatedMessage: result.translatedMessage,
+          translationLanguage: result.translationLanguage,
+        },
+      }));
+    } catch {
+      toast.error("Translation failed");
+    } finally {
+      setTranslatingMessageId(null);
+    }
   };
 
   // ── Caller Control helpers ──────────────────────────────────────────────────
@@ -2129,29 +2196,123 @@ export default function OCC() {
                       </div>
                     )}
                     {featureTab === "chat" && (
-                      <div className="flex flex-col gap-2" style={{ height: "160px" }}>
+                      <div className="flex flex-col gap-1.5" style={{ height: "220px" }}>
+                        {/* Translation toolbar */}
+                        <div className="flex items-center gap-2 shrink-0 pb-1 border-b border-slate-700">
+                          <button
+                            onClick={() => setTranslationEnabled(v => !v)}
+                            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold transition-colors ${
+                              translationEnabled
+                                ? "bg-emerald-600/30 text-emerald-400 border border-emerald-600/40"
+                                : "bg-slate-700 text-slate-400 border border-slate-600 hover:text-slate-200"
+                            }`}
+                            title="Toggle real-time translation"
+                          >
+                            🌐 {translationEnabled ? "Translation ON" : "Translate"}
+                          </button>
+                          {translationEnabled && (
+                            <>
+                              <select
+                                value={translationLanguage}
+                                onChange={e => setTranslationLanguage(e.target.value)}
+                                className="bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-emerald-500"
+                                title="Target translation language"
+                              >
+                                <option value="en">English</option>
+                                <option value="fr">French</option>
+                                <option value="es">Spanish</option>
+                                <option value="de">German</option>
+                                <option value="pt">Portuguese</option>
+                                <option value="ar">Arabic</option>
+                                <option value="zh">Chinese</option>
+                                <option value="ja">Japanese</option>
+                                <option value="ko">Korean</option>
+                                <option value="ru">Russian</option>
+                                <option value="it">Italian</option>
+                                <option value="nl">Dutch</option>
+                                <option value="pl">Polish</option>
+                                <option value="tr">Turkish</option>
+                                <option value="hi">Hindi</option>
+                                <option value="sw">Swahili</option>
+                                <option value="zu">Zulu</option>
+                                <option value="af">Afrikaans</option>
+                              </select>
+                              <label className="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={autoTranslateOnSend}
+                                  onChange={e => setAutoTranslateOnSend(e.target.checked)}
+                                  className="w-3 h-3 accent-emerald-500"
+                                />
+                                Auto
+                              </label>
+                              <button
+                                onClick={() => setShowTranslations(v => !v)}
+                                className="text-[10px] text-slate-400 hover:text-slate-200 ml-auto"
+                                title={showTranslations ? "Hide translations" : "Show translations"}
+                              >
+                                {showTranslations ? "Hide" : "Show"} translations
+                              </button>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Messages */}
                         <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
-                          {chatMessages.map(msg => (
-                            <div key={msg.id} className={`text-xs ${msg.senderType === "system" ? "text-slate-500 italic" : ""}`}>
-                              <span className="text-slate-500 font-mono mr-1">{formatTime(msg.sentAt)}</span>
-                              <span className={`font-semibold mr-1 ${
-                                msg.senderType === "operator" ? "text-blue-400" :
-                                msg.senderType === "moderator" ? "text-amber-400" :
-                                msg.senderType === "system" ? "text-slate-500" :
-                                "text-slate-300"
-                              }`}>[{msg.senderName}]</span>
-                              {msg.recipientType !== "all" && <span className="text-slate-500 mr-1">→ {msg.recipientType}</span>}
-                              <span className="text-slate-200">{msg.message}</span>
-                            </div>
-                          ))}
+                          {chatMessages.map(msg => {
+                            const translation = messageTranslations[msg.id];
+                            const isTranslating = translatingMessageId === msg.id;
+                            return (
+                              <div key={msg.id} className={`text-xs group ${
+                                msg.senderType === "system" ? "text-slate-500 italic" : ""
+                              }`}>
+                                <div className="flex items-start gap-1">
+                                  <div className="flex-1">
+                                    <span className="text-slate-500 font-mono mr-1">{formatTime(msg.sentAt)}</span>
+                                    <span className={`font-semibold mr-1 ${
+                                      msg.senderType === "operator" ? "text-blue-400" :
+                                      msg.senderType === "moderator" ? "text-amber-400" :
+                                      msg.senderType === "system" ? "text-slate-500" :
+                                      "text-slate-300"
+                                    }`}>[{msg.senderName}]</span>
+                                    {msg.recipientType !== "all" && <span className="text-slate-500 mr-1">→ {msg.recipientType}</span>}
+                                    <span className="text-slate-200">{msg.message}</span>
+                                    {/* Detected language badge */}
+                                    {translation?.detectedLanguage && translationEnabled && (
+                                      <span className="ml-1 text-[9px] text-slate-500 font-mono uppercase">[{translation.detectedLanguage}]</span>
+                                    )}
+                                  </div>
+                                  {/* Per-message translate button */}
+                                  {translationEnabled && msg.senderType !== "system" && !translation && (
+                                    <button
+                                      onClick={() => doTranslateMessage(msg.id, msg.message)}
+                                      disabled={isTranslating}
+                                      className="opacity-0 group-hover:opacity-100 shrink-0 text-[9px] text-slate-500 hover:text-emerald-400 transition-all px-1 py-0.5 rounded hover:bg-emerald-500/10"
+                                      title={`Translate to ${translationLanguage}`}
+                                    >
+                                      {isTranslating ? "⧗" : "🌐"}
+                                    </button>
+                                  )}
+                                </div>
+                                {/* Translated text */}
+                                {translationEnabled && showTranslations && translation && (
+                                  <div className="ml-4 mt-0.5 text-[10px] text-emerald-400/80 italic border-l border-emerald-700/40 pl-2">
+                                    {translation.translatedMessage}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                           <div ref={chatEndRef} />
                         </div>
+
+                        {/* Input row */}
                         <div className="flex gap-2 shrink-0">
                           <input
                             value={chatMessage}
                             onChange={e => setChatMessage(e.target.value)}
                             onKeyDown={e => e.key === "Enter" && doSendChat()}
-                            placeholder="Type a message..."
+                            placeholder={translationEnabled && autoTranslateOnSend ? `Type a message (auto-translate → ${translationLanguage})...` : "Type a message..."}
                             className="flex-1 bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
                           />
                           <select

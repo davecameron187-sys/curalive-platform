@@ -162,6 +162,13 @@
       "when": 1772785953515,
       "tag": "0022_legal_leech",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1772795719740,
+      "tag": "0023_rich_hardball",
+      "breakpoints": true
     }
   ]
 }

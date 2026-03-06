@@ -22,6 +22,7 @@ import {
   heartbeatOperatorSession,
   getOccChatMessages,
   insertOccChatMessage,
+  updateChatMessageTranslation,
   getOccAudioFiles,
   getOccParticipantHistory,
   getOccAccessCodeLog,
@@ -37,6 +38,7 @@ import {
   occGreenRooms,
 } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { invokeLLM } from "../_core/llm";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -313,9 +315,10 @@ export const occRouter = router({
       senderType: z.enum(["operator", "participant", "moderator", "system"]),
       message: z.string().min(1).max(2000),
       recipientType: z.enum(["all", "hosts", "participant"]).default("all"),
+      autoTranslateTo: z.string().optional(), // e.g. 'en', 'fr' — if set, auto-translate on send
     }))
     .mutation(async ({ input }) => {
-      await insertOccChatMessage({
+      const result = await insertOccChatMessage({
         conferenceId: input.conferenceId,
         senderType: input.senderType,
         senderName: input.senderName,
@@ -323,12 +326,128 @@ export const occRouter = router({
         recipientType: input.recipientType,
         sentAt: new Date(),
       });
+
+      // Auto-translate if requested (fire-and-forget, don't block the response)
+      if (input.autoTranslateTo && result) {
+        const insertId = (result as any).insertId ?? (result as any)[0]?.insertId;
+        if (insertId) {
+          setImmediate(async () => {
+            try {
+              const llmResp = await invokeLLM({
+                messages: [
+                  {
+                    role: "system",
+                    content: `You are a professional translator. Detect the language of the input text and translate it to ${input.autoTranslateTo}. Respond ONLY with a JSON object: {"detectedLanguage": "<ISO-639-1 code>", "translation": "<translated text>"}. If the text is already in ${input.autoTranslateTo}, set translation to the original text.`,
+                  },
+                  { role: "user", content: input.message },
+                ],
+                response_format: {
+                  type: "json_schema",
+                  json_schema: {
+                    name: "translation_result",
+                    strict: true,
+                    schema: {
+                      type: "object",
+                      properties: {
+                        detectedLanguage: { type: "string" },
+                        translation: { type: "string" },
+                      },
+                      required: ["detectedLanguage", "translation"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+              });
+              const parsed = JSON.parse(llmResp.choices[0].message.content as string);
+              await updateChatMessageTranslation(
+                insertId,
+                parsed.detectedLanguage,
+                parsed.translation,
+                input.autoTranslateTo!
+              );
+              // Publish the translation via Ably so all operators get it instantly
+              await publishAblyEvent(
+                `occ:conference:${input.conferenceId}`,
+                "chat:translation",
+                {
+                  messageId: insertId,
+                  detectedLanguage: parsed.detectedLanguage,
+                  translatedMessage: parsed.translation,
+                  translationLanguage: input.autoTranslateTo,
+                }
+              );
+            } catch (e) {
+              // Translation failure is non-critical
+            }
+          });
+        }
+      }
+
       await publishAblyEvent(
         `occ:conference:${input.conferenceId}`,
         "chat:message",
         { senderName: input.senderName, message: input.message, recipientType: input.recipientType }
       );
       return { success: true };
+    }),
+
+  // ── Translate a single message on demand
+  translateChatMessage: protectedProcedure
+    .input(z.object({
+      messageId: z.number(),
+      message: z.string(),
+      targetLanguage: z.string().min(2).max(10),
+      conferenceId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const llmResp = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: `You are a professional translator. Detect the language of the input text and translate it to ${input.targetLanguage}. Respond ONLY with a JSON object: {"detectedLanguage": "<ISO-639-1 code>", "translation": "<translated text>"}. If the text is already in ${input.targetLanguage}, set translation to the original text.`,
+          },
+          { role: "user", content: input.message },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "translation_result",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                detectedLanguage: { type: "string" },
+                translation: { type: "string" },
+              },
+              required: ["detectedLanguage", "translation"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      const parsed = JSON.parse(llmResp.choices[0].message.content as string);
+      await updateChatMessageTranslation(
+        input.messageId,
+        parsed.detectedLanguage,
+        parsed.translation,
+        input.targetLanguage
+      );
+      // Broadcast translation to all operators on this conference
+      await publishAblyEvent(
+        `occ:conference:${input.conferenceId}`,
+        "chat:translation",
+        {
+          messageId: input.messageId,
+          detectedLanguage: parsed.detectedLanguage,
+          translatedMessage: parsed.translation,
+          translationLanguage: input.targetLanguage,
+        }
+      );
+      return {
+        detectedLanguage: parsed.detectedLanguage,
+        translatedMessage: parsed.translation,
+        translationLanguage: input.targetLanguage,
+      };
     }),
 
   // ── Audio Files ───────────────────────────────────────────────────────────

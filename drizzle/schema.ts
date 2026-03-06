@@ -246,6 +246,9 @@ export const occChatMessages = mysqlTable("occ_chat_messages", {
   recipientType: mysqlEnum("recipientType", ["all", "hosts", "participant"]).default("all").notNull(),
   recipientId: int("recipientId"), // null = broadcast
   message: text("message").notNull(),
+  detectedLanguage: varchar("detectedLanguage", { length: 10 }), // ISO 639-1 code e.g. 'fr', 'es'
+  translatedMessage: text("translatedMessage"), // translated to operator's preferred language
+  translationLanguage: varchar("translationLanguage", { length: 10 }), // target language of translation
   sentAt: timestamp("sentAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

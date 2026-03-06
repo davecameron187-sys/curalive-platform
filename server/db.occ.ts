@@ -194,7 +194,22 @@ export async function getOccChatMessages(conferenceId: number, limit = 100) {
 export async function insertOccChatMessage(data: InsertOccChatMessage) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(occChatMessages).values(data);
+  const result = await db.insert(occChatMessages).values(data);
+  return result;
+}
+
+export async function updateChatMessageTranslation(
+  id: number,
+  detectedLanguage: string,
+  translatedMessage: string,
+  translationLanguage: string
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(occChatMessages)
+    .set({ detectedLanguage, translatedMessage, translationLanguage })
+    .where(eq(occChatMessages.id, id));
 }
 
 // ─── Audio Files ──────────────────────────────────────────────────────────────
