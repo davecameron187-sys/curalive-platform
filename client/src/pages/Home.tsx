@@ -131,26 +131,66 @@ export default function Home() {
             {/* Right: feature highlight grid */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: Mic, label: "Live Transcription", stat: "<1s latency", color: "text-primary", bg: "bg-primary/10 border-primary/20" },
-                { icon: Globe, label: "12 Languages", stat: "incl. Arabic RTL", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-                { icon: BarChart3, label: "Sentiment Analysis", stat: "Real-time AI", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
-                { icon: MessageSquare, label: "Smart Q&A", stat: "AI-moderated", color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
-                { icon: Video, label: "Platform Neutral", stat: "Zoom · Teams · Webex", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-                { icon: Zap, label: "Real-Time Delivery", stat: "<100ms edge", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20" },
-                { icon: Settings, label: "White-Label Ready", stat: "Your brand & domain", color: "text-slate-400", bg: "bg-slate-500/10 border-slate-500/20" },
-                { icon: FileText, label: "JSE/IFRS Compliant", stat: "AI post-event report", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
-              ].map(({ icon: Icon, label, stat, color, bg }) => (
-                <div key={label} className={`flex items-start gap-3 border rounded-xl p-4 bg-card/60 backdrop-blur-sm ${bg}`}>
+                { icon: Mic, label: "Live Transcription", stat: "<1s latency", color: "text-primary", bg: "bg-primary/10 border-primary/20", path: "/event/q4-earnings-2026" },
+                { icon: Globe, label: "12 Languages", stat: "incl. Arabic RTL", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", path: "/event/q4-earnings-2026" },
+                { icon: BarChart3, label: "Sentiment Analysis", stat: "Real-time AI", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", path: "/moderator/q4-earnings-2026" },
+                { icon: MessageSquare, label: "Smart Q&A", stat: "AI-moderated", color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20", path: "/moderator/q4-earnings-2026" },
+                { icon: Video, label: "Platform Neutral", stat: "Zoom · Teams · Webex", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20", path: "/integrations" },
+                { icon: Zap, label: "Real-Time Delivery", stat: "<100ms edge", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20", path: "/event/q4-earnings-2026" },
+                { icon: Settings, label: "White-Label Ready", stat: "Your brand & domain", color: "text-slate-400", bg: "bg-slate-500/10 border-slate-500/20", path: "/operator/q4-earnings-2026" },
+                { icon: FileText, label: "JSE/IFRS Compliant", stat: "AI post-event report", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20", path: "/post-event/q4-earnings-2026" },
+              ].map(({ icon: Icon, label, stat, color, bg, path }) => (
+                <button key={label} onClick={() => navigate(path)} className={`group flex items-start gap-3 border rounded-xl p-4 bg-card/60 backdrop-blur-sm text-left hover:scale-[1.02] transition-transform cursor-pointer ${bg}`}>
                   <div className={`mt-0.5 shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${bg}`}>
                     <Icon className={`w-4 h-4 ${color}`} />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-foreground leading-tight">{label}</div>
+                    <div className="text-sm font-semibold text-foreground leading-tight group-hover:text-white transition-colors">{label}</div>
                     <div className={`text-xs mt-0.5 font-medium ${color}`} style={{ fontFamily: "'Inter', sans-serif" }}>{stat}</div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Bar */}
+      <section className="py-10 border-t border-border bg-card/40">
+        <div className="container">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            {[
+              { value: "12", label: "Languages Supported", color: "text-emerald-400" },
+              { value: "18", label: "Dial-In Countries", color: "text-blue-400" },
+              { value: "<1s", label: "Transcription Latency", color: "text-primary" },
+              { value: "<100ms", label: "Real-Time Delivery", color: "text-cyan-400" },
+            ].map(({ value, label, color }) => (
+              <div key={label} className="text-center">
+                <div className={`text-4xl font-bold mb-1 ${color}`}>{value}</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trusted By */}
+      <section className="py-10 border-t border-border">
+        <div className="container">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-8" style={{ fontFamily: "'Inter', sans-serif" }}>Trusted by leading financial institutions</p>
+          <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16">
+            {[
+              { name: "Investec", abbr: "INVESTEC", color: "#0057A8" },
+              { name: "JSE", abbr: "JSE", color: "#00843D" },
+              { name: "Standard Bank", abbr: "STANDARD BANK", color: "#0033A0" },
+              { name: "Nedbank", abbr: "NEDBANK", color: "#007A4D" },
+              { name: "FirstRand", abbr: "FIRSTRAND", color: "#C8102E" },
+            ].map(({ name, abbr, color }) => (
+              <div key={name} className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                <span className="text-sm font-bold tracking-widest text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: "0.12em" }}>{abbr}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
