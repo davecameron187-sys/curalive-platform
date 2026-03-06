@@ -50,7 +50,7 @@ function buildICS(opts: {
     `DTEND:${fmt(opts.endTime)}`,
     `SUMMARY:${opts.title}`,
     `DESCRIPTION:Join at: ${opts.attendUrl}`,
-    `ORGANIZER;CN=${opts.organizer}:mailto:noreply@curalive.com`,
+    `ORGANIZER;CN=${opts.organizer}:mailto:noreply@curalive.cc`,
     `ATTENDEE;CN=${opts.attendeeName};RSVP=TRUE:mailto:${opts.attendeeEmail}`,
     `URL:${opts.attendUrl}`,
     "STATUS:CONFIRMED",
@@ -438,7 +438,7 @@ export const webcastRouter = router({
         });
         // Build ICS calendar invite
         const icsContent = buildICS({
-          uid: `webcast-${event.id}-${attendeeToken}@curalive.com`,
+          uid: `webcast-${event.id}-${attendeeToken}@curalive.cc`,
           title: event.title,
           description: event.description ?? "",
           startTime: startTs,

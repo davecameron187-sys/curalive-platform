@@ -7,7 +7,7 @@ import { ArrowLeft, Zap } from "lucide-react";
 
 const EFFECTIVE_DATE = "1 March 2026";
 const COMPANY_NAME = "CuraLive (Pty) Ltd";
-const CONTACT_EMAIL = "privacy@curalive.com";
+const CONTACT_EMAIL = "privacy@curalive.cc";
 const PLATFORM_NAME = "CuraLive";
 
 export default function PrivacyPolicy() {

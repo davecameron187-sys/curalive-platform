@@ -134,7 +134,7 @@ function buildQuoteHtml(params: {
     <div class="party">
       <div class="party-label">From</div>
       <div class="party-name">CuraLive</div>
-      <div class="party-detail">Intelligent Event Intelligence Platform<br>billing@curalive.com</div>
+      <div class="party-detail">Intelligent Event Intelligence Platform<br>billing@curalive.cc</div>
     </div>
     <div class="party">
       <div class="party-label">Prepared For</div>
@@ -219,7 +219,7 @@ function buildQuoteHtml(params: {
   <div class="footer">
     <div class="footer-left">
       CuraLive · Intelligent Event Intelligence Platform<br>
-      billing@curalive.com
+      billing@curalive.cc
     </div>
     <div class="footer-right">
       This quote is valid until ${formatDate(quote.expiresAt)}<br>
@@ -356,7 +356,7 @@ function buildInvoiceHtml(params: {
     <div class="party">
       <div class="party-label">From</div>
       <div class="party-name">CuraLive</div>
-      <div class="party-detail">Intelligent Event Intelligence Platform<br>billing@curalive.com</div>
+      <div class="party-detail">Intelligent Event Intelligence Platform<br>billing@curalive.cc</div>
     </div>
     <div class="party">
       <div class="party-label">Billed To</div>
@@ -455,7 +455,7 @@ function buildInvoiceHtml(params: {
   <div class="footer">
     <div class="footer-left">
       CuraLive · Intelligent Event Intelligence Platform<br>
-      billing@curalive.com
+      billing@curalive.cc
     </div>
     <div class="footer-right">
       ${escapeHtml(invoice.invoiceNumber)}<br>

@@ -72,7 +72,7 @@ const PHASES = [
     dotColor: "bg-sky-400",
     borderColor: "border-sky-400/20",
     bgColor: "bg-sky-400/5",
-    description: "Set up Railway hosting (R370/month), connect the GitHub repository exported from Manus, configure environment variables, and run the first production deployment. Set up Clerk for authentication (free tier to start) and replace the Manus OAuth demo login. Register the domain curalive.com and point it to Railway.",
+    description: "Set up Railway hosting (R370/month), connect the GitHub repository exported from Manus, configure environment variables, and run the first production deployment. Set up Clerk for authentication (free tier to start) and replace the Manus OAuth demo login. Register the domain curalive.cc and point it to Railway.",
     action: "Export the code from Manus (Settings → GitHub), push to a CuraLive GitHub organisation, deploy to Railway using their one-click Node.js template.",
     links: [{ label: "railway.app", url: "https://railway.app" }, { label: "clerk.com", url: "https://clerk.com" }],
   },
@@ -142,7 +142,7 @@ const SERVICES = [
   { name: "Deepgram (transcription)", where: "deepgram.com", cost: "~R0.39/event" },
   { name: "Stripe (billing)", where: "stripe.com", cost: "3.1–4.0% per transaction" },
   { name: "GitHub organisation", where: "github.com", cost: "Free" },
-  { name: "Domain: curalive.com", where: "domains.co.za or Cloudflare", cost: "~R200/year" },
+  { name: "Domain: curalive.cc", where: "domains.co.za or Cloudflare", cost: "~R200/year" },
 ];
 
 const COST_SCENARIOS = [

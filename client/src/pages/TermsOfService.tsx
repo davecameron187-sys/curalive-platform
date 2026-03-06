@@ -8,7 +8,7 @@ import { ArrowLeft, Zap } from "lucide-react";
 const EFFECTIVE_DATE = "1 March 2026";
 const COMPANY_NAME = "CuraLive (Pty) Ltd";
 const COMPANY_JURISDICTION = "South Africa";
-const CONTACT_EMAIL = "legal@curalive.com";
+const CONTACT_EMAIL = "legal@curalive.cc";
 const PLATFORM_NAME = "CuraLive";
 const WEBSITE = "https://curalive.cc";
 

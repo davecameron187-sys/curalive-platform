@@ -309,7 +309,7 @@ export default function InvoiceView() {
 
         {/* Footer */}
         <div className="text-center mt-8 text-xs text-muted-foreground">
-          <p>Questions? Contact your account manager at <a href="mailto:billing@curalive.com" className="text-primary hover:underline">billing@curalive.com</a></p>
+          <p>Questions? Contact your account manager at <a href="mailto:billing@curalive.cc" className="text-primary hover:underline">billing@curalive.cc</a></p>
           <p className="mt-1">CuraLive — Intelligent Event Intelligence Platform</p>
         </div>
       </div>

@@ -1,7 +1,7 @@
 /**
  * EventPass — Public-facing event registration page for CuraLive.
  * Accessible at /event-pass/:id
- * Embeddable on curalive.com via iframe or direct link.
+ * Embeddable on curalive.cc via iframe or direct link.
  * Replaces the legacy "Diamond Pass" product page.
  */
 import { useState } from "react";
@@ -275,7 +275,7 @@ export default function EventPass() {
                   required
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="james@curalive.com"
+                  placeholder="james@curalive.cc"
                   className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary transition-colors"
                 />
               </div>
