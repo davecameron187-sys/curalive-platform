@@ -1602,6 +1602,44 @@ export default function OCC() {
                     >
                       <PhoneForwarded className="w-3 h-3" /> Multi-Dial
                     </button>
+                    {/* Post-Event Report — moved next to Multi-Dial */}
+                    <button
+                      onClick={() => {
+                        const conf = activeConf;
+                        if (!conf) return;
+                        const parts = participants;
+                        const notes = operatorNotes[activeCCPConferenceId!] ?? '';
+                        const exportPayload = {
+                          conferenceId: conf.id,
+                          subject: conf.subject,
+                          callId: conf.callId,
+                          exportedAt: new Date().toISOString(),
+                          participants: parts.map(p => ({
+                            name: p.name ?? null,
+                            company: p.company ?? null,
+                            role: p.role,
+                            state: p.state,
+                            phone: p.phoneNumber ?? null,
+                            connectTime: p.connectTime ? new Date(p.connectTime).toLocaleTimeString() : null,
+                          })),
+                          notes,
+                        };
+                        try { sessionStorage.setItem('occ_export_data', JSON.stringify(exportPayload)); } catch {}
+                        navigate(`/post-event/${conf.id}`);
+                      }}
+                      title="Open post-event report with participant list and operator notes"
+                      className="flex items-center gap-1 px-2 py-1 bg-emerald-800/40 hover:bg-emerald-700/60 text-emerald-300 rounded text-[10px] transition-colors"
+                    >
+                      <FileText className="w-3 h-3" /> Post-Event
+                    </button>
+                    {/* Simulate Incoming Call — moved next to Multi-Dial */}
+                    <button
+                      onClick={doSimulateIncomingCall}
+                      title="Simulate an incoming caller for demo purposes"
+                      className="flex items-center gap-1 px-2 py-1 bg-blue-900/40 hover:bg-blue-800/60 text-blue-400 rounded text-[10px] transition-colors"
+                    >
+                      <PhoneIncoming className="w-3 h-3" /> Simulate Call
+                    </button>
                     <button
                       onClick={() => setShowGreenRoomPanel(true)}
                       title="Open Speaker Green Room — pre-event sub-conference for speakers"
@@ -1694,56 +1732,18 @@ export default function OCC() {
                   >
                     <MicOff className="w-3.5 h-3.5" /> Mute All
                   </button>
-                  {/* Terminate */}
+                  {/* Disconnect */}
                   <button
                     onClick={async () => {
-                      if (!confirm("Terminate this conference?")) return;
+                      if (!confirm("Disconnect this conference?")) return;
                       setLocalConferences(prev => prev.map(c => c.id === activeConf.id ? { ...c, status: "completed" as const } : c));
                       try { await terminateMut.mutateAsync({ conferenceId: activeConf.id }); } catch { }
                     }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-red-900/40 hover:bg-red-800/60 text-red-400 border border-red-800/40 transition-colors"
                   >
-                    <PhoneOff className="w-3.5 h-3.5" /> Terminate
+                    <PhoneOff className="w-3.5 h-3.5" /> Disconnect
                   </button>
-                  {/* Export → Post-Event Report */}
-                  <button
-                    onClick={() => {
-                      const conf = activeConf;
-                      if (!conf) return;
-                      const parts = participants;
-                      const notes = operatorNotes[activeCCPConferenceId!] ?? '';
-                      // Persist OCC data to sessionStorage so PostEvent page can read it
-                      const exportPayload = {
-                        conferenceId: conf.id,
-                        subject: conf.subject,
-                        callId: conf.callId,
-                        exportedAt: new Date().toISOString(),
-                        participants: parts.map(p => ({
-                          name: p.name ?? null,
-                          company: p.company ?? null,
-                          role: p.role,
-                          state: p.state,
-                          phone: p.phoneNumber ?? null,
-                          connectTime: p.connectTime ? new Date(p.connectTime).toLocaleTimeString() : null,
-                        })),
-                        notes,
-                      };
-                      try { sessionStorage.setItem('occ_export_data', JSON.stringify(exportPayload)); } catch {}
-                      navigate(`/post-event/${conf.id}`);
-                    }}
-                    title="Open post-event report with participant list and operator notes"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-emerald-900/30 hover:bg-emerald-800/50 text-emerald-400 border border-emerald-800/30 transition-colors"
-                  >
-                    <FileText className="w-3.5 h-3.5" /> Post-Event
-                  </button>
-                  {/* Simulate Incoming Call */}
-                  <button
-                    onClick={doSimulateIncomingCall}
-                    title="Simulate an incoming caller for demo purposes"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-blue-900/40 hover:bg-blue-800/60 text-blue-400 border border-blue-800/40 transition-colors"
-                  >
-                    <PhoneIncoming className="w-3.5 h-3.5" /> Simulate Call
-                  </button>
+
                   {/* Dial-Out quick-launch */}
                   <button
                     onClick={() => setShowDialOutModal(true)}
@@ -1768,25 +1768,7 @@ export default function OCC() {
                       </div>
                     );
                   })()}
-                  {/* +15 min extension button */}
-                  <button
-                    onClick={() => {
-                      setLocalConferences(prev => prev.map(c =>
-                        c.id === activeCCPConferenceId
-                          ? { ...c, scheduledEnd: c.scheduledEnd ? new Date(c.scheduledEnd.getTime() + 15 * 60000) : new Date(Date.now() + 15 * 60000) }
-                          : c
-                      ));
-                      // Broadcast extension via Ably
-                      try {
-                        const newEnd = localConferences.find(c => c.id === activeCCPConferenceId)?.scheduledEnd;
-                        ablyConferenceChanRef.current?.publish('conference.extend', JSON.stringify({ newEndTime: newEnd ? new Date(newEnd.getTime() + 15 * 60000).toISOString() : null }));
-                      } catch {}
-                    }}
-                    title="Extend conference by 15 minutes"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-slate-700/60 hover:bg-slate-600/80 text-slate-300 border border-slate-600/40 transition-colors"
-                  >
-                    <Clock className="w-3.5 h-3.5" /> +15 min
-                  </button>
+
                   {/* Q&A Raised Hands Badge */}
                   {counts.speak_requests > 0 && (
                     <button

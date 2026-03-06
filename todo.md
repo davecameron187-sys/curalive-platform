@@ -663,9 +663,9 @@
 - [x] Real-time Ably push: extend AblyContext to forward chat:translation events
 
 ## OCC Targeted Changes (Preview → Live)
-- [ ] Rename "Terminate" button to "Disconnect" (label + confirm dialog text)
-- [ ] Remove "+15 min" button from the conference bar
-- [ ] Move "Post-Event" and "Simulate Call" buttons next to "Multi-Dial" in the CCP header
+- [ - [x] Rename "Terminate" button to "Disconnect" (label + confirm dialog)
+- [x] Remove "+15 min" button from the conference bar
+- [x] Move "Post-Event" and "Simulate Call" buttons next to "Multi-Dial" in the CCP headerr
 
 ## Audible Alert — Louder + Repeating Until Answered
 - [x] Increase gain from 0.4 to 0.9, use richer two-tone pattern (880→1100 Hz)
