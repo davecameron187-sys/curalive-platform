@@ -390,7 +390,7 @@ export default function QuoteBuilder() {
       } else {
         const result = await createQuoteMutation.mutateAsync(buildPayload());
         toast.success(`Quote ${result.quoteNumber} created`);
-        navigate(`/admin/billing/quotes/${result.id}`);
+        navigate(`/admin/billing/quote/${result.id}`);
       }
     } catch (e: any) {
       toast.error(e.message ?? "Failed to save quote");

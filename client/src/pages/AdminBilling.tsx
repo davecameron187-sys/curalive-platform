@@ -22,7 +22,7 @@ import {
   TrendingUp, Clock, CheckCircle2, XCircle, ChevronRight,
   Building2, Mail, Phone, Globe, DollarSign, Calendar,
   ArrowUpRight, ArrowDownRight, Loader2, Eye, Edit3,
-  Send, Copy, MoreHorizontal, Filter, Zap,
+  Send, Copy, MoreHorizontal, Filter, Zap, ExternalLink,
 } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -768,9 +768,14 @@ export default function AdminBilling() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold">Accounts Receivable Ageing Report</h2>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => refetchInvoices()}>
-                <RefreshCw className="w-3.5 h-3.5" /> Refresh
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => navigate("/billing/ageing")}>
+                  <ExternalLink className="w-3.5 h-3.5" /> Full Report
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => refetchInvoices()}>
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                </Button>
+              </div>
             </div>
             {invoicesLoading ? (
               <div className="flex items-center justify-center h-32"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>

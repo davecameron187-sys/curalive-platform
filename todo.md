@@ -752,3 +752,16 @@
 - [ ] UI: client invoice view (/invoice/:token)
 - [ ] PDF: quote, invoice, credit note generation
 - [ ] Email: quote/invoice delivery with open-tracking pixel
+
+## Enterprise Billing — Phase 3 Completion
+- [x] InvoiceViewer admin page (/admin/billing/invoice/:id) — payment recording, credit notes, status management
+- [x] QuoteBuilder admin page (/admin/billing/quote/:id) — line items, discounts, templates, version history
+- [x] Client-facing quote view (/quote/:token) — accept/sign flow, PDF download
+- [x] Client-facing invoice view (/invoice/:token) — payment instructions, bank details, PDF download
+- [x] PDF generation — server-side Puppeteer routes for quotes and invoices
+- [x] Email delivery — sendQuote and sendInvoice mutations wired in QuoteBuilder and InvoiceViewer
+- [x] AdminBilling navigation links — View Quote / View Invoice buttons on list rows
+- [x] Ageing Report standalone page (/billing/ageing) — bucket summary cards, client breakdown, invoice drill-down
+- [x] Ageing Report inline tab in AdminBilling — bucket bars + per-client table + Full Report link
+- [x] Route fixes — singular /admin/billing/quote/:id and /admin/billing/invoice/:id paths
+- [x] getAgeingReport enhanced to join client names from billingClients table

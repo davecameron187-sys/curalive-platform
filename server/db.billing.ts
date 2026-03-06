@@ -505,7 +505,24 @@ export async function getDueRecurringTemplates() {
 export async function getAgeingReport() {
   const db = await requireDb();
   const now = new Date();
-  const invoices = await db.select().from(billingInvoices)
+  const invoices = await db
+    .select({
+      id: billingInvoices.id,
+      invoiceNumber: billingInvoices.invoiceNumber,
+      clientId: billingInvoices.clientId,
+      title: billingInvoices.title,
+      totalCents: billingInvoices.totalCents,
+      paidCents: billingInvoices.paidCents,
+      currency: billingInvoices.currency,
+      status: billingInvoices.status,
+      dueAt: billingInvoices.dueAt,
+      issuedAt: billingInvoices.issuedAt,
+      accessToken: billingInvoices.accessToken,
+      clientName: billingClients.companyName,
+      contactEmail: billingClients.contactEmail,
+    })
+    .from(billingInvoices)
+    .leftJoin(billingClients, eq(billingInvoices.clientId, billingClients.id))
     .where(or(
       eq(billingInvoices.status, "unpaid"),
       eq(billingInvoices.status, "partial"),
