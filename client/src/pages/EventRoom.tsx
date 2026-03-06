@@ -235,7 +235,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
   const meta = EVENT_META[eventId] ?? EVENT_META["q4-earnings-2026"];
   const { transcript, sentiment, qaItems, polls, raisedHands, presenceCount, publish } = useAbly();
 
-  const [activeTab, setActiveTab] = useState<"transcript" | "qa" | "polls" | "analytics">("transcript");
+  const [activeTab, setActiveTab] = useState<"transcript" | "qa" | "polls" | "analytics" | "chat">("transcript");
   const [newQuestion, setNewQuestion] = useState("");
   const [language, setLanguage] = useState("en");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -475,6 +475,81 @@ function EventRoomInner({ eventId }: { eventId: string }) {
   // RTL layout support for Arabic
   const isRTL = language === "ar";
 
+  // ── Chat Translation feature ────────────────────────────────────────────────────────────────────────────────
+
+  // Chat language selector (separate from transcript language)
+  const [chatLanguage, setChatLanguage] = useState("en");
+  const [chatTranslationEnabled, setChatTranslationEnabled] = useState(false);
+  // messageId → { translatedMessage, detectedLanguage, translationLanguage }
+  const [chatTranslations, setChatTranslations] = useState<Record<number, { translatedMessage: string; detectedLanguage: string; translationLanguage: string }>>({});
+  const [translatingMsgIds, setTranslatingMsgIds] = useState<Set<number>>(new Set());
+
+  // Fetch event chat messages (public, no auth required)
+  const chatQuery = trpc.occ.getEventChatMessages.useQuery(
+    { eventId },
+    { refetchInterval: 10000, staleTime: 5000 }
+  );
+  const chatMessages = chatQuery.data ?? [];
+
+  // Seed translations from DB data on load
+  useEffect(() => {
+    if (!chatQuery.data) return;
+    const seed: Record<number, { translatedMessage: string; detectedLanguage: string; translationLanguage: string }> = {};
+    for (const msg of chatQuery.data) {
+      if (msg.translatedMessage && msg.detectedLanguage && msg.translationLanguage) {
+        seed[msg.id] = {
+          translatedMessage: msg.translatedMessage,
+          detectedLanguage: msg.detectedLanguage,
+          translationLanguage: msg.translationLanguage,
+        };
+      }
+    }
+    setChatTranslations(seed);
+  }, [chatQuery.data]);
+
+  // On-demand translate mutation
+  const translateChatMut = trpc.occ.translateEventChatMessage.useMutation({
+    onSuccess: (data, variables) => {
+      setChatTranslations((prev) => ({
+        ...prev,
+        [variables.messageId]: {
+          translatedMessage: data.translatedMessage,
+          detectedLanguage: data.detectedLanguage,
+          translationLanguage: data.translationLanguage,
+        },
+      }));
+      setTranslatingMsgIds((prev) => { const s = new Set(prev); s.delete(variables.messageId); return s; });
+    },
+    onError: (_err, variables) => {
+      setTranslatingMsgIds((prev) => { const s = new Set(prev); s.delete(variables.messageId); return s; });
+    },
+  });
+
+  const doTranslateChatMsg = useCallback((msgId: number, msgText: string) => {
+    if (translatingMsgIds.has(msgId)) return;
+    setTranslatingMsgIds((prev) => new Set(prev).add(msgId));
+    translateChatMut.mutate({ messageId: msgId, message: msgText, targetLanguage: chatLanguage, eventId });
+  }, [translatingMsgIds, translateChatMut, chatLanguage, eventId]);
+
+  // Auto-translate all visible messages when language changes and translation is enabled
+  useEffect(() => {
+    if (!chatTranslationEnabled || chatLanguage === "en") return;
+    const untranslated = chatMessages.filter(
+      (m) => !chatTranslations[m.id] || chatTranslations[m.id].translationLanguage !== chatLanguage
+    );
+    untranslated.slice(0, 5).forEach((m) => doTranslateChatMsg(m.id, m.message));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatTranslationEnabled, chatLanguage, chatMessages.length]);
+
+  // Listen for Ably chat:translation events from the event channel
+  useEffect(() => {
+    // The AblyContext bus doesn't carry chat:translation for the event room yet,
+    // so we poll via refetchInterval above. Real-time updates come via refetch.
+    // When Ably is live, the server broadcasts to chorus-event-{eventId} channel
+    // and AblyContext will need to be extended to forward chat:translation messages.
+    // For now, we rely on the 10s refetch as a fallback.
+  }, []);
+
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
 
@@ -701,6 +776,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
             {[
               { key: "transcript", label: "Transcript", icon: FileText },
               { key: "qa", label: `Q&A (${visibleQA.length})`, icon: MessageSquare },
+              { key: "chat", label: `Chat${chatMessages.length > 0 ? ` (${chatMessages.length})` : ""}`, icon: Globe },
               { key: "polls", label: `Polls${livePolls.length > 0 ? ` (${livePolls.length})` : ""}`, icon: BarChart3 },
               { key: "analytics", label: "Analytics", icon: BarChart3 },
             ].map(({ key, label, icon: Icon }) => (
@@ -904,6 +980,122 @@ function EventRoomInner({ eventId }: { eventId: string }) {
                       <Send className="w-4 h-4" />
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Chat Tab ── */}
+            {activeTab === "chat" && (
+              <div className="flex-1 overflow-hidden flex flex-col">
+                {/* Translation toolbar */}
+                <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border flex-wrap">
+                  <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <select
+                    value={chatLanguage}
+                    onChange={(e) => { setChatLanguage(e.target.value); if (e.target.value !== "en") setChatTranslationEnabled(true); }}
+                    className="bg-transparent text-xs text-muted-foreground outline-none cursor-pointer appearance-none pr-4"
+                    data-testid="chat-language-selector">
+                    {LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
+                    ))}
+                  </select>
+                  {chatLanguage !== "en" && (
+                    <button
+                      onClick={() => setChatTranslationEnabled((v) => !v)}
+                      className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded border transition-colors ${
+                        chatTranslationEnabled
+                          ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                          : "border-border text-muted-foreground hover:bg-secondary"
+                      }`}>
+                      <Sparkles className="w-3 h-3" />
+                      {chatTranslationEnabled ? "Translation ON" : "Translation OFF"}
+                    </button>
+                  )}
+                  {chatLanguage !== "en" && chatTranslationEnabled && (
+                    <span className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider ml-auto">
+                      AI Translated
+                    </span>
+                  )}
+                </div>
+
+                {/* Language info bar */}
+                {chatLanguage !== "en" && chatTranslationEnabled && (
+                  <div className="shrink-0 bg-emerald-500/5 border-b border-emerald-500/20 px-4 py-1.5 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-emerald-400" />
+                    <span className="text-[10px] text-emerald-400 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      Chat translated to {LANGUAGES.find((l) => l.code === chatLanguage)?.label ?? chatLanguage} · Powered by CuraLive AI
+                    </span>
+                  </div>
+                )}
+
+                {/* Message list */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {chatQuery.isLoading && (
+                    <div className="flex items-center justify-center h-24 text-muted-foreground text-sm">
+                      <span className="animate-pulse">Loading chat…</span>
+                    </div>
+                  )}
+                  {!chatQuery.isLoading && chatMessages.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
+                      <Globe className="w-8 h-8 mb-2 opacity-30" />
+                      <span>No messages yet.</span>
+                      <span className="text-xs mt-1 opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>The operator will post updates here.</span>
+                    </div>
+                  )}
+                  {chatMessages.map((msg) => {
+                    const translation = chatTranslations[msg.id];
+                    const showTranslation = chatTranslationEnabled && chatLanguage !== "en" && translation && translation.translationLanguage === chatLanguage;
+                    const isTranslating = translatingMsgIds.has(msg.id);
+                    const senderColors: Record<string, string> = {
+                      operator: "text-primary",
+                      moderator: "text-amber-400",
+                      system: "text-muted-foreground",
+                      participant: "text-emerald-400",
+                    };
+                    return (
+                      <div key={msg.id} className="group flex gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                            <span className={`text-[10px] font-bold ${senderColors[msg.senderType] ?? "text-foreground"}`}>
+                              {msg.senderName}
+                            </span>
+                            {msg.senderType === "operator" && (
+                              <span className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-1 py-0.5 rounded font-semibold">Operator</span>
+                            )}
+                            {msg.senderType === "moderator" && (
+                              <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1 py-0.5 rounded font-semibold">Moderator</span>
+                            )}
+                            {translation?.detectedLanguage && (
+                              <span className="text-[9px] bg-secondary text-muted-foreground border border-border px-1 py-0.5 rounded font-mono">
+                                {translation.detectedLanguage.toUpperCase()}
+                              </span>
+                            )}
+                            <span className="text-[9px] text-muted-foreground ml-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
+                              {new Date(msg.sentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                          <p className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>{msg.message}</p>
+                          {showTranslation && (
+                            <p className="text-xs text-emerald-400 italic mt-0.5 leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
+                              {translation.translatedMessage}
+                            </p>
+                          )}
+                          {isTranslating && (
+                            <p className="text-xs text-muted-foreground italic mt-0.5 animate-pulse" style={{ fontFamily: "'Inter', sans-serif" }}>Translating…</p>
+                          )}
+                        </div>
+                        {/* Per-message translate button (hover reveal) */}
+                        {chatLanguage !== "en" && !showTranslation && !isTranslating && (
+                          <button
+                            onClick={() => doTranslateChatMsg(msg.id, msg.message)}
+                            title={`Translate to ${LANGUAGES.find((l) => l.code === chatLanguage)?.label ?? chatLanguage}`}
+                            className="opacity-0 group-hover:opacity-100 shrink-0 self-start mt-1 text-muted-foreground hover:text-emerald-400 transition-all">
+                            <Globe className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

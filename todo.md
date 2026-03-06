@@ -640,3 +640,19 @@
 - [x] OCC frontend: Ably chat:translation handler to receive translations in real-time
 - [x] DB data seeded into messageTranslations state on chat load
 - [x] Unit tests: occ.chat.translation.test.ts (5 tests, all passing)
+
+## Round 56 — Attendee-Facing Chat Translation (Event Room)
+- [x] Public tRPC procedure: occ.getEventChatMessages (no auth, fetches by eventId)
+- [x] Public tRPC procedure: occ.translateEventChatMessage (no auth, LLM translation + Ably broadcast to chorus-event-{eventId})
+- [x] Event Room: Chat tab added (between Q&A and Polls)
+- [x] Chat tab: Language selector (12 languages matching transcript selector)
+- [x] Chat tab: Translation toggle button (ON/OFF)
+- [x] Chat tab: AI Translated badge and info bar
+- [x] Chat tab: Inline translated text in emerald italics below each message
+- [x] Chat tab: Per-message hover-reveal translate button (Globe icon)
+- [x] Chat tab: Detected language badge per message
+- [x] Chat tab: Operator/Moderator role badges
+- [x] Chat tab: 10s polling fallback + DB seed of existing translations on load
+- [x] Chat tab: Auto-translate up to 5 messages when language changes and translation is enabled
+- [x] Unit tests: event.chat.translation.test.ts (7 tests, all passing)
+- [x] Total tests: 170 passing

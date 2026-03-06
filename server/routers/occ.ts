@@ -941,4 +941,81 @@ export const occRouter = router({
       );
       return { success: true, transferredCount };
     }),
+
+  // ── Public: Attendee-facing chat messages (no auth required) ──────────────
+
+  getEventChatMessages: publicProcedure
+    .input(z.object({
+      eventId: z.string(),
+      limit: z.number().min(1).max(200).default(100),
+    }))
+    .query(async ({ input }) => {
+      const conf = await getOccConferenceByEventId(input.eventId);
+      if (!conf) return [];
+      return getOccChatMessages(conf.id, input.limit);
+    }),
+
+  // ── Public: Attendee on-demand translation (broadcasts to chorus-event channel) ──
+
+  translateEventChatMessage: publicProcedure
+    .input(z.object({
+      messageId: z.number(),
+      message: z.string().min(1).max(2000),
+      targetLanguage: z.string().min(2).max(10),
+      eventId: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const llmResp = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: `You are a professional translator. Detect the language of the input text and translate it to ${input.targetLanguage}. Respond ONLY with a JSON object: {"detectedLanguage": "<ISO-639-1 code>", "translation": "<translated text>"}. If the text is already in ${input.targetLanguage}, set translation to the original text.`,
+          },
+          { role: "user", content: input.message },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "translation_result",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                detectedLanguage: { type: "string" },
+                translation: { type: "string" },
+              },
+              required: ["detectedLanguage", "translation"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      const parsed = JSON.parse(llmResp.choices[0].message.content as string);
+
+      // Persist the translation in the DB
+      await updateChatMessageTranslation(
+        input.messageId,
+        parsed.detectedLanguage,
+        parsed.translation,
+        input.targetLanguage
+      );
+
+      // Broadcast to all attendees on this event's Ably channel
+      await publishAblyEvent(
+        `chorus-event-${input.eventId}`,
+        "chat:translation",
+        {
+          messageId: input.messageId,
+          detectedLanguage: parsed.detectedLanguage,
+          translatedMessage: parsed.translation,
+          translationLanguage: input.targetLanguage,
+        }
+      );
+
+      return {
+        detectedLanguage: parsed.detectedLanguage,
+        translatedMessage: parsed.translation,
+        translationLanguage: input.targetLanguage,
+      };
+    }),
 });
