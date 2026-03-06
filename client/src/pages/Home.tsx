@@ -4,7 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-hero-bg-bFr44AaNNWKkv4uMRbTXe8.webp";
-const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus_ai_demo_v5_7a9fdeb3.mp4";
+const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/demo_curalive_0cb4c723.mp4";
 
 const DEMO_EVENTS = [
   { id: "q4-earnings-2026", title: "Q4 2025 Earnings Call", company: "CuraLive Inc.", platform: "Zoom", status: "live", attendees: 1247, duration: "42:18" },

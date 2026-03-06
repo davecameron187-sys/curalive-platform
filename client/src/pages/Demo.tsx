@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus_ai_demo_v5_7a9fdeb3.mp4";
+const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/demo_curalive_0cb4c723.mp4";
 const APP_BASE = "https://curalive.cc";
 
 const PLATFORM_MODULES = [
@@ -188,7 +188,7 @@ export default function Demo() {
                 <span>·</span>
                 <span>1280×720 HD</span>
                 <span>·</span>
-                <span>26.8 MB</span>
+                <span>22.6 MB</span>
                 <span>·</span>
                 <span>Professional AI voiceover</span>
               </div>

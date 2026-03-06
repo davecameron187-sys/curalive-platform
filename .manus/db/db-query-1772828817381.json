@@ -1,0 +1,9 @@
+{
+  "query": "\nINSERT INTO events (eventId, title, company, platform, status, accessCode, createdAt, updatedAt)\nVALUES (\n  'dryrun-earnings-q1-2026',\n  'Q1 2026 Earnings Call — Dry Run',\n  'CuraLive Inc.',\n  'Microsoft Teams',\n  'upcoming',\n  NULL,\n  NOW(),\n  NOW()\n)\nON DUPLICATE KEY UPDATE\n  title = 'Q1 2026 Earnings Call — Dry Run',\n  company = 'CuraLive Inc.',\n  platform = 'Microsoft Teams',\n  status = 'upcoming';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2h457xAgLtxN22J.8d91d5a5e05f --database Mdu4k2iB9LVRNHXWAQDZg3 --execute \nINSERT INTO events (eventId, title, company, platform, status, accessCode, createdAt, updatedAt)\nVALUES (\n  'dryrun-earnings-q1-2026',\n  'Q1 2026 Earnings Call — Dry Run',\n  'CuraLive Inc.',\n  'Microsoft Teams',\n  'upcoming',\n  NULL,\n  NOW(),\n  NOW()\n)\nON DUPLICATE KEY UPDATE\n  title = 'Q1 2026 Earnings Call — Dry Run',\n  company = 'CuraLive Inc.',\n  platform = 'Microsoft Teams',\n  status = 'upcoming';\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 135
+}
