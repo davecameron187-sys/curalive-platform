@@ -658,8 +658,6 @@ export default function OperatorConsole() {
                 ))}
               </div>
               <div className="bg-[#0f1629] border border-white/8 rounded-xl p-4 grid grid-cols-2 gap-3 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                <div className="text-slate-500">Cost per minute</div><div className="text-slate-300 font-semibold">~$0.0085 / min</div>
-                <div className="text-slate-500">90-min event cost</div><div className="text-slate-300 font-semibold">~$0.50 / caller</div>
                 <div className="text-slate-500">Transcription</div><div className="text-emerald-400 font-semibold">✓ Included via Whisper</div>
                 <div className="text-slate-500">Countries covered</div><div className="text-slate-300 font-semibold">180+</div>
               </div>

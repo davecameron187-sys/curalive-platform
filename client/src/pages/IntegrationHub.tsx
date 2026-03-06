@@ -13,7 +13,6 @@ const INTEGRATIONS = [
     badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     status: "active",
     complexity: "Very Low",
-    costPer90: "~$0.98",
     platforms: ["Zoom", "Microsoft Teams", "Webex", "Google Meet", "Slack Huddles", "GoTo Meeting"],
     realTimeAudio: true,
     realTimeTranscript: true,
@@ -49,7 +48,6 @@ app.post('/api/webhooks/recall', (req, res) => {
     badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/20",
     status: "available",
     complexity: "Low",
-    costPer90: "~$0.23",
     platforms: ["Zoom"],
     realTimeAudio: true,
     realTimeTranscript: true,
@@ -78,7 +76,6 @@ rtms.onWebhookEvent(({ event, payload }) => {
     badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/20",
     status: "available",
     complexity: "Medium-High",
-    costPer90: "~$0.10",
     platforms: ["Microsoft Teams"],
     realTimeAudio: true,
     realTimeTranscript: true,
@@ -109,7 +106,6 @@ const subscribeToTranscript = async (callId: string) => {
     badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     status: "active",
     complexity: "Low",
-    costPer90: "~$1.20 (Mux)",
     platforms: ["OBS Studio", "vMix", "Wirecast", "Teradek", "LiveU", "Any RTMP encoder"],
     realTimeAudio: true,
     realTimeTranscript: false,
@@ -152,7 +148,6 @@ const stream = await trpc.mux.createStream.mutate({
     badgeColor: "bg-slate-500/10 text-slate-400 border-slate-500/20",
     status: "active",
     complexity: "Low",
-    costPer90: "~$0.50 / caller",
     platforms: ["Phone", "Mobile", "Landline"],
     realTimeAudio: true,
     realTimeTranscript: false,
@@ -227,7 +222,7 @@ export default function IntegrationHub() {
                   <th className="text-center px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider font-semibold">Real-Time Audio</th>
                   <th className="text-center px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider font-semibold">Real-Time Transcript</th>
                   <th className="text-center px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider font-semibold">Complexity</th>
-                  <th className="text-right px-5 py-3 text-xs text-muted-foreground uppercase tracking-wider font-semibold">Cost / 90 min</th>
+
                 </tr>
               </thead>
               <tbody>
@@ -246,7 +241,7 @@ export default function IntegrationHub() {
                       {intg.realTimeTranscript ? <CheckCircle className="w-4 h-4 text-emerald-400 mx-auto" /> : <AlertCircle className="w-4 h-4 text-muted-foreground mx-auto" />}
                     </td>
                     <td className="text-center px-4 py-3 text-muted-foreground text-xs" style={{ fontFamily: "'Inter', sans-serif" }}>{intg.complexity}</td>
-                    <td className="text-right px-5 py-3 font-semibold">{intg.costPer90}</td>
+
                   </tr>
                 ))}
               </tbody>
