@@ -106,8 +106,9 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-background/30" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
-        <div className="container relative z-10 py-24">
-          <div className="max-w-2xl">
+        <div className="container relative z-10 py-20">
+          <div className="grid md:grid-cols-2 gap-14 items-center">
+            {/* Left: headline + CTAs */}
             <div>
               <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-6">
                 <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — CuraLive Inc.
@@ -123,11 +124,33 @@ export default function Home() {
                   Enter Live Event Room <ArrowRight className="w-4 h-4" />
                 </button>
                 <button onClick={() => navigate("/demo")} className="flex items-center gap-2 border border-primary/40 text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary/10 transition-colors">
-                  <Play className="w-4 h-4" /> Watch Demo
+                  <Play className="w-4 h-4" /> Sales Demo
                 </button>
               </div>
             </div>
-
+            {/* Right: feature highlight grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { icon: Mic, label: "Live Transcription", stat: "<1s latency", color: "text-primary", bg: "bg-primary/10 border-primary/20" },
+                { icon: Globe, label: "12 Languages", stat: "incl. Arabic RTL", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                { icon: BarChart3, label: "Sentiment Analysis", stat: "Real-time AI", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+                { icon: MessageSquare, label: "Smart Q&A", stat: "AI-moderated", color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
+                { icon: Video, label: "Platform Neutral", stat: "Zoom · Teams · Webex", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+                { icon: Zap, label: "Real-Time Delivery", stat: "<100ms edge", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20" },
+                { icon: Settings, label: "White-Label Ready", stat: "Your brand & domain", color: "text-slate-400", bg: "bg-slate-500/10 border-slate-500/20" },
+                { icon: FileText, label: "JSE/IFRS Compliant", stat: "AI post-event report", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
+              ].map(({ icon: Icon, label, stat, color, bg }) => (
+                <div key={label} className={`flex items-start gap-3 border rounded-xl p-4 bg-card/60 backdrop-blur-sm ${bg}`}>
+                  <div className={`mt-0.5 shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${bg}`}>
+                    <Icon className={`w-4 h-4 ${color}`} />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-foreground leading-tight">{label}</div>
+                    <div className={`text-xs mt-0.5 font-medium ${color}`} style={{ fontFamily: "'Inter', sans-serif" }}>{stat}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
