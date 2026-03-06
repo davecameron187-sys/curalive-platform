@@ -55,6 +55,7 @@ import QuoteView from "./pages/QuoteView";
 import InvoiceView from "./pages/InvoiceView";
 import AdminBilling from "./pages/AdminBilling";
 import AgeingReport from "./pages/AgeingReport";
+import RecurringTemplates from "./pages/RecurringTemplates";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -106,6 +107,7 @@ function Router() {
       <Route path="/admin/billing/quote/:id" component={QuoteBuilder} />
       <Route path="/admin/billing/invoice/:id" component={InvoiceViewer} />
       <Route path="/billing/ageing" component={AgeingReport} />
+      <Route path="/billing/recurring" component={RecurringTemplates} />
       <Route path="/quote/:token" component={QuoteView} />
       <Route path="/invoice/:token" component={InvoiceView} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />

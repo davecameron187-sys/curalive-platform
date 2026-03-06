@@ -765,3 +765,15 @@
 - [x] Ageing Report inline tab in AdminBilling — bucket bars + per-client table + Full Report link
 - [x] Route fixes — singular /admin/billing/quote/:id and /admin/billing/invoice/:id paths
 - [x] getAgeingReport enhanced to join client names from billingClients table
+
+## Enterprise Billing — Phase 4
+- [ ] Payment reminder emails: sendPaymentReminder tRPC procedure + Send Reminder button in InvoiceViewer
+- [ ] Recurring invoice templates UI: list, create, edit at /admin/billing (new Recurring tab)
+- [ ] Bulk PDF export: ZIP download of filtered invoices via /api/billing/pdf/bulk-invoices
+
+## Billing Phase 3 — Reminder, Recurring & Bulk Export
+- [x] Payment reminder email — sendPaymentReminder tRPC procedure + Send Reminder modal in InvoiceViewer
+- [x] Recurring invoice templates — full CRUD UI at /billing/recurring (list, create, edit, delete, generate)
+- [x] Bulk PDF ZIP export — /api/billing/pdf/invoices/bulk-zip endpoint + Export ZIP button in Invoices tab
+- [x] Recurring tab added to AdminBilling with link to /billing/recurring
+- [x] deleteRecurringTemplate and generateFromRecurringTemplate tRPC procedures added

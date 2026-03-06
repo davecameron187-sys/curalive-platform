@@ -7,7 +7,8 @@
  */
 import { Express } from "express";
 import puppeteer from "puppeteer";
-import { getBillingQuoteByToken, getLineItems } from "./db.billing";
+import archiver from "archiver";
+import { getBillingQuoteByToken, getLineItems, getBillingInvoices } from "./db.billing";
 import { getBillingInvoiceByToken, getCreditNotes } from "./db.billing";
 import { getBillingClient } from "./db.billing";
 
@@ -522,6 +523,49 @@ export function registerBillingPdfRoutes(app: Express) {
     } catch (err) {
       console.error("[BillingPDF] Quote PDF error:", err);
       res.status(500).json({ error: "Failed to generate PDF" });
+    }
+  });
+
+  // Bulk Invoice ZIP export — GET /api/billing/pdf/invoices/bulk-zip?status=unpaid&clientId=5
+  app.get("/api/billing/pdf/invoices/bulk-zip", async (req, res) => {
+    try {
+      const { status, clientId } = req.query as Record<string, string>;
+      const allInvoices = await getBillingInvoices(
+        clientId ? { clientId: parseInt(clientId) } : undefined
+      );
+      const invoices = status && status !== "all"
+        ? allInvoices.filter((inv: any) => inv.status === status)
+        : allInvoices;
+
+      if (invoices.length === 0) {
+        res.status(404).json({ error: "No invoices found for the given filters" });
+        return;
+      }
+
+      res.setHeader("Content-Type", "application/zip");
+      const label = status && status !== "all" ? status : "all";
+      res.setHeader("Content-Disposition", `attachment; filename="invoices-${label}-${Date.now()}.zip"`);
+
+      const zip = archiver("zip", { zlib: { level: 6 } });
+      zip.pipe(res);
+
+      for (const invoice of invoices) {
+        try {
+          const lineItems = await getLineItems(undefined, invoice.id);
+          const client = await getBillingClient(invoice.clientId);
+          const creditNotes = await getCreditNotes(invoice.id);
+          const html = buildInvoiceHtml({ invoice, lineItems, client, creditNotes });
+          const pdf = await htmlToPdf(html);
+          zip.append(pdf, { name: `${invoice.invoiceNumber}.pdf` });
+        } catch (err) {
+          console.error(`[BillingPDF] Skipping invoice ${invoice.id}:`, err);
+        }
+      }
+
+      await zip.finalize();
+    } catch (err) {
+      console.error("[BillingPDF] Bulk ZIP error:", err);
+      if (!res.headersSent) res.status(500).json({ error: "Failed to generate ZIP" });
     }
   });
 

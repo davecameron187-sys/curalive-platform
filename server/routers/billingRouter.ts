@@ -772,6 +772,128 @@ export const billingRouter = router({
 
   // Dashboard KPIs 
 
+  // Payment Reminder Email
+  sendPaymentReminder: adminProcedure
+    .input(z.object({
+      id: z.number(),
+      recipientEmail: z.string().email(),
+      recipientName: z.string(),
+      subject: z.string().optional(),
+      message: z.string().optional(),
+      origin: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const invoice = await getBillingInvoice(input.id);
+      if (!invoice) throw new TRPCError({ code: "NOT_FOUND" });
+      const trackingToken = generateTrackingToken();
+      const invoiceUrl = `${input.origin}/invoice/${invoice.accessToken}`;
+      const trackingPixelUrl = `${input.origin}/api/billing/track/${trackingToken}`;
+      const outstanding = invoice.totalCents - (invoice.paidCents ?? 0);
+      await createEmailEvent({
+        trackingToken,
+        invoiceId: invoice.id,
+        clientId: invoice.clientId,
+        recipientEmail: input.recipientEmail,
+        emailType: "payment_reminder",
+        subject: input.subject ?? `Payment Reminder: Invoice ${invoice.invoiceNumber}`,
+      });
+      await sendEmail({
+        to: input.recipientEmail,
+        subject: input.subject ?? `Payment Reminder: Invoice ${invoice.invoiceNumber}`,
+        html: buildPaymentReminderEmailHtml({
+          recipientName: input.recipientName,
+          invoiceNumber: invoice.invoiceNumber,
+          title: invoice.title,
+          totalCents: invoice.totalCents,
+          outstandingCents: outstanding,
+          currency: invoice.currency,
+          dueAt: invoice.dueAt,
+          message: input.message,
+          invoiceUrl,
+          trackingPixelUrl,
+        }),
+      });
+      await logBillingActivity({
+        invoiceId: input.id,
+        clientId: invoice.clientId,
+        eventType: "invoice.reminder_sent",
+        description: `Payment reminder sent to ${input.recipientEmail} for invoice ${invoice.invoiceNumber}`,
+        actorUserId: ctx.user.id,
+        actorType: "admin",
+      });
+      return { success: true };
+    }),
+  // Delete Recurring Template
+  deleteRecurringTemplate: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await updateRecurringTemplate(input.id, { isActive: false });
+      return { success: true };
+    }),
+  // Generate Quote from Recurring Template now
+  generateFromRecurringTemplate: adminProcedure
+    .input(z.object({ id: z.number(), origin: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const templates = await getRecurringTemplates();
+      const template = templates.find(t => t.id === input.id);
+      if (!template) throw new TRPCError({ code: "NOT_FOUND" });
+      const now = new Date();
+      const month = now.toLocaleString("en-ZA", { month: "long" });
+      const quarter = `Q${Math.ceil((now.getMonth() + 1) / 3)}`;
+      const year = now.getFullYear().toString();
+      const title = template.titleTemplate
+        .replace(/{month}/g, month)
+        .replace(/{quarter}/g, quarter)
+        .replace(/{year}/g, year);
+      const client = await getBillingClient(template.clientId);
+      if (!client) throw new TRPCError({ code: "NOT_FOUND", message: "Client not found" });
+      const lineItems: Array<{ description: string; quantity: number; unitPriceCents: number; taxable: boolean }> =
+        JSON.parse(template.lineItemsJson);
+      const subtotal = lineItems.reduce((s, li) => s + li.quantity * li.unitPriceCents, 0);
+      const discountCents = Math.round(subtotal * (template.discountPercent / 100));
+      const taxable = lineItems.filter(li => li.taxable).reduce((s, li) => s + li.quantity * li.unitPriceCents, 0);
+      const taxCents = Math.round((taxable - Math.round(taxable * (template.discountPercent / 100))) * (template.taxPercent / 100));
+      const totalCents = subtotal - discountCents + taxCents;
+      const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const { id: quoteId, quoteNumber: newQuoteNumber } = await createBillingQuote({
+        clientId: template.clientId,
+        title,
+        currency: template.currency as "ZAR" | "USD" | "EUR",
+        subtotalCents: subtotal,
+        discountCents,
+        taxPercent: template.taxPercent,
+        totalCents,
+        paymentTerms: template.paymentTerms ?? undefined,
+        expiresAt,
+        createdByUserId: ctx.user.id,
+      });
+      await upsertLineItems(
+        lineItems.map((li, i) => ({
+          description: li.description,
+          quantity: li.quantity,
+          unitPriceCents: li.unitPriceCents,
+          taxable: li.taxable ?? true,
+          totalCents: li.quantity * li.unitPriceCents,
+          sortOrder: i,
+        })),
+        quoteId
+      );
+      // Advance next generation date
+      const next = new Date(template.nextGenerationAt);
+      if (template.frequency === "monthly") next.setMonth(next.getMonth() + 1);
+      else if (template.frequency === "quarterly") next.setMonth(next.getMonth() + 3);
+      else next.setFullYear(next.getFullYear() + 1);
+      await updateRecurringTemplate(template.id, { lastGeneratedAt: now, nextGenerationAt: next });
+      await logBillingActivity({
+        quoteId,
+        clientId: template.clientId,
+        eventType: "quote.created",
+        description: `Quote generated from recurring template "${template.name}"`,
+        actorUserId: ctx.user.id,
+        actorType: "admin",
+      });
+      return { quoteId, quoteNumber: newQuoteNumber };
+    }),
   getDashboardKpis: adminProcedure.query(async () => {
     const [quotes, invoices, clients] = await Promise.all([
       getBillingQuotes(),
@@ -814,6 +936,53 @@ export const billingRouter = router({
 });
 
 //  Email template helpers 
+
+function buildPaymentReminderEmailHtml(opts: {
+  recipientName: string;
+  invoiceNumber: string;
+  title: string;
+  totalCents: number;
+  outstandingCents: number;
+  currency: string;
+  dueAt?: Date | null;
+  message?: string;
+  invoiceUrl: string;
+  trackingPixelUrl: string;
+}): string {
+  const dueDate = opts.dueAt
+    ? new Date(opts.dueAt).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })
+    : "as per agreed terms";
+  const daysPast = opts.dueAt ? Math.max(0, Math.floor((Date.now() - new Date(opts.dueAt).getTime()) / 86_400_000)) : 0;
+  const urgencyColor = daysPast > 60 ? "#dc2626" : daysPast > 30 ? "#ea580c" : "#d97706";
+  return `<!DOCTYPE html><html><body style="font-family:Inter,sans-serif;background:#f9fafb;margin:0;padding:32px;">
+<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;padding:40px;border:1px solid #e5e7eb;">
+  <div style="margin-bottom:32px;"><span style="font-size:22px;font-weight:700;color:#0f172a;">CuraLive</span></div>
+  <div style="background:${urgencyColor}15;border:1px solid ${urgencyColor}40;border-radius:8px;padding:12px 16px;margin-bottom:24px;">
+    <p style="margin:0;color:${urgencyColor};font-weight:600;font-size:14px;">⚠ Payment Reminder — Invoice ${opts.invoiceNumber}${daysPast > 0 ? ` (${daysPast} days overdue)` : ""}</p>
+  </div>
+  <p style="color:#374151;margin-bottom:4px;">Dear ${opts.recipientName},</p>
+  ${opts.message ? `<p style="color:#374151;">${opts.message}</p>` : `<p style="color:#374151;">This is a friendly reminder that payment is due for the invoice below. Please arrange payment at your earliest convenience.</p>`}
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:24px 0;">
+    <p style="margin:0 0 4px;color:#6b7280;font-size:13px;text-transform:uppercase;letter-spacing:.05em;">Invoice</p>
+    <p style="margin:0 0 12px;font-weight:600;color:#0f172a;font-size:16px;">${opts.title}</p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+      <div>
+        <p style="margin:0 0 4px;color:#6b7280;font-size:12px;">Total Invoice</p>
+        <p style="margin:0;font-size:20px;font-weight:600;color:#6b7280;text-decoration:line-through;">${formatCurrency(opts.totalCents, opts.currency)}</p>
+      </div>
+      <div style="text-align:right;">
+        <p style="margin:0 0 4px;color:#6b7280;font-size:12px;">Outstanding Balance</p>
+        <p style="margin:0;font-size:28px;font-weight:700;color:${urgencyColor};">${formatCurrency(opts.outstandingCents, opts.currency)}</p>
+      </div>
+    </div>
+    <p style="margin:12px 0 0;color:#6b7280;font-size:14px;">Due date: <strong style="color:${urgencyColor};">${dueDate}</strong></p>
+  </div>
+  <a href="${opts.invoiceUrl}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;margin-top:8px;">View Invoice &amp; Pay</a>
+  <p style="color:#9ca3af;font-size:12px;margin-top:32px;">If you have already made payment, please disregard this reminder. CuraLive — Intelligent Event Intelligence Platform</p>
+</div>
+<img src="${opts.trackingPixelUrl}" width="1" height="1" style="display:none;" alt="" />
+</body></html>`;
+}
 
 function formatCurrency(cents: number, currency: string): string {
   const symbols: Record<string, string> = { ZAR: "R", USD: "$", EUR: "" };

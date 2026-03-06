@@ -22,7 +22,7 @@ import {
   TrendingUp, Clock, CheckCircle2, XCircle, ChevronRight,
   Building2, Mail, Phone, Globe, DollarSign, Calendar,
   ArrowUpRight, ArrowDownRight, Loader2, Eye, Edit3,
-  Send, Copy, MoreHorizontal, Filter, Zap, ExternalLink,
+  Send, Copy, MoreHorizontal, Filter, Zap, ExternalLink, Repeat,
 } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -184,7 +184,7 @@ function AgeingReport({ invoices }: { invoices: any[] }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-type Tab = "overview" | "clients" | "quotes" | "invoices" | "ageing";
+type Tab = "overview" | "clients" | "quotes" | "invoices" | "ageing" | "recurring";
 
 export default function AdminBilling() {
   const [, navigate] = useLocation();
@@ -287,6 +287,7 @@ export default function AdminBilling() {
     { key: "quotes", label: "Quotes", icon: FileText },
     { key: "invoices", label: "Invoices", icon: Receipt },
     { key: "ageing", label: "Ageing Report", icon: BarChart3 },
+    { key: "recurring", label: "Recurring", icon: Repeat },
   ];
 
   return (
@@ -653,6 +654,19 @@ export default function AdminBilling() {
               <div className="flex gap-2">
                 <Button
                   variant="outline" size="sm"
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
+                    window.open(`/api/billing/pdf/invoices/bulk-zip?${params.toString()}`, "_blank");
+                  }}
+                  className="gap-1.5 text-xs"
+                  title="Download all filtered invoices as a ZIP of PDFs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Export ZIP
+                </Button>
+                <Button
+                  variant="outline" size="sm"
                   onClick={() => markOverdueMutation.mutate()}
                   disabled={markOverdueMutation.isPending}
                   className="gap-1.5 text-xs"
@@ -764,6 +778,26 @@ export default function AdminBilling() {
         )}
 
         {/* ── AGEING REPORT ── */}
+        {/* ── RECURRING TEMPLATES ── */}
+        {tab === "recurring" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold">Recurring Invoice Templates</h2>
+              <Button size="sm" onClick={() => navigate("/billing/recurring")} className="gap-1.5">
+                <ExternalLink className="w-3.5 h-3.5" /> Manage Templates
+              </Button>
+            </div>
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <Repeat className="w-10 h-10 mx-auto mb-3 text-primary opacity-60" />
+              <p className="font-semibold mb-1">Recurring Templates</p>
+              <p className="text-sm text-muted-foreground mb-4">Automate monthly, quarterly, and annual quote generation from templates.</p>
+              <Button onClick={() => navigate("/billing/recurring")} className="gap-1.5">
+                <Repeat className="w-4 h-4" /> Open Recurring Templates
+              </Button>
+            </div>
+          </div>
+        )}
+
         {tab === "ageing" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">

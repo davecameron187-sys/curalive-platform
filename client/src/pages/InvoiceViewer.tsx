@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import {
   ChevronRight, Send, Loader2, CheckCircle2, AlertTriangle,
   FileText, DollarSign, CreditCard, Activity, Plus, X,
-  Clock, Receipt, Building2, Calendar, Hash,
+  Clock, Receipt, Building2, Calendar, Hash, Bell,
 } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -273,6 +273,89 @@ function CreditNoteModal({
 
 // ─── Send Invoice Modal ───────────────────────────────────────────────────────
 
+function SendReminderModal({
+  invoiceId, defaultEmail, defaultName, onClose, onSuccess,
+}: {
+  invoiceId: number; defaultEmail: string; defaultName: string;
+  onClose: () => void; onSuccess: () => void;
+}) {
+  const [email, setEmail] = useState(defaultEmail);
+  const [name, setName] = useState(defaultName);
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const utils = trpc.useUtils();
+
+  const reminderMutation = trpc.billing.sendPaymentReminder.useMutation({
+    onSuccess: () => { utils.billing.getInvoice.invalidate({ id: invoiceId }); onSuccess(); },
+  });
+
+  const handleSend = async () => {
+    if (!email.trim()) { toast.error("Email is required"); return; }
+    setSending(true);
+    try {
+      await reminderMutation.mutateAsync({
+        id: invoiceId,
+        recipientEmail: email,
+        recipientName: name,
+        message: message || undefined,
+        origin: window.location.origin,
+      });
+      toast.success(`Payment reminder sent to ${email}`);
+      onClose();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to send reminder");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-2xl">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-amber-400" />
+            <h2 className="font-bold text-lg">Send Payment Reminder</h2>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 mb-4">
+          <p className="text-xs text-amber-400">A payment reminder email will be sent with the outstanding balance and a link to the invoice.</p>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Recipient Email *</label>
+            <Input value={email} onChange={e => setEmail(e.target.value)} className="bg-background" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Recipient Name</label>
+            <Input value={name} onChange={e => setName(e.target.value)} className="bg-background" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Custom Message (optional)</label>
+            <textarea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              rows={3}
+              placeholder="Add a personal note to the reminder..."
+              className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm resize-none"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
+          <Button onClick={handleSend} disabled={sending} className="flex-1 gap-1.5 bg-amber-600 hover:bg-amber-700">
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+            Send Reminder
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SendInvoiceModal({
   invoiceId, defaultEmail, defaultName, onClose, onSuccess,
 }: {
@@ -365,6 +448,7 @@ export default function InvoiceViewer() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
 
   const { data, isLoading, refetch } = trpc.billing.getInvoice.useQuery(
     { id: invoiceId },
@@ -427,6 +511,15 @@ export default function InvoiceViewer() {
           onSuccess={() => { setShowSendModal(false); refetch(); }}
         />
       )}
+      {showReminderModal && (
+        <SendReminderModal
+          invoiceId={invoiceId}
+          defaultEmail={client?.contactEmail ?? ""}
+          defaultName={client?.contactName ?? ""}
+          onClose={() => setShowReminderModal(false)}
+          onSuccess={() => { setShowReminderModal(false); refetch(); }}
+        />
+      )}
 
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
@@ -457,6 +550,11 @@ export default function InvoiceViewer() {
                 <Button variant="outline" size="sm" onClick={() => setShowSendModal(true)} className="gap-1.5">
                   <Send className="w-3.5 h-3.5" /> Send
                 </Button>
+                {(invoice.status === "overdue" || invoice.status === "partial" || invoice.status === "unpaid") && (
+                  <Button variant="outline" size="sm" onClick={() => setShowReminderModal(true)} className="gap-1.5 border-amber-500/40 text-amber-400 hover:bg-amber-500/10">
+                    <Bell className="w-3.5 h-3.5" /> Remind
+                  </Button>
+                )}
                 <Button size="sm" onClick={() => setShowPaymentModal(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
                   <DollarSign className="w-3.5 h-3.5" /> Record Payment
                 </Button>
