@@ -282,6 +282,7 @@ export default function OCC() {
 
   // Multi-Party Dial-Out modal
   const [showMultiDialModal, setShowMultiDialModal] = useState(false);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   type DialEntry = { id: string; name: string; company: string; phone: string; role: "moderator" | "participant"; status: "pending" | "dialling" | "connected" | "failed" };
   const [dialEntries, setDialEntries] = useState<DialEntry[]>([]);
   const [dialForm, setDialForm] = useState({ name: "", company: "", phone: "", role: "participant" as "moderator" | "participant" });
@@ -1734,11 +1735,7 @@ export default function OCC() {
                   </button>
                   {/* Disconnect */}
                   <button
-                    onClick={async () => {
-                      if (!confirm("Disconnect this conference?")) return;
-                      setLocalConferences(prev => prev.map(c => c.id === activeConf.id ? { ...c, status: "completed" as const } : c));
-                      try { await terminateMut.mutateAsync({ conferenceId: activeConf.id }); } catch { }
-                    }}
+                    onClick={() => setShowDisconnectModal(true)}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-red-900/40 hover:bg-red-800/60 text-red-400 border border-red-800/40 transition-colors"
                   >
                     <PhoneOff className="w-3.5 h-3.5" /> Disconnect
@@ -1905,15 +1902,17 @@ export default function OCC() {
                       ) : filteredParticipants.map(p => {
                         const isSelected = selectedParticipantIds.includes(p.id);
                         const isSpeakingRow = p.state === "speaking";
+                        const isWaitingOperator = p.state === "waiting_operator";
                         return (
                           <tr
                             key={p.id}
                             className={`border-b border-slate-800/60 transition-colors ${
                               isSpeakingRow ? "bg-emerald-900/20 border-l-2 border-l-emerald-500" :
                               isSelected ? "bg-blue-900/20" :
-                              p.state === "waiting_operator" ? "bg-red-900/10" :
+                              isWaitingOperator ? "bg-red-900/20 border-l-4 border-l-red-500 animate-pulse" :
                               "hover:bg-slate-800/30"
                             }`}
+                            style={isWaitingOperator ? { boxShadow: "inset 0 0 0 1px rgba(239,68,68,0.4)" } : undefined}
                           >
                             <td className="px-2 py-1.5">
                               <input
@@ -4024,6 +4023,73 @@ export default function OCC() {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Disconnect Conference Modal ───────────────────────────────────── */}
+      {showDisconnectModal && activeConf && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#111827] border border-red-800/60 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-800 bg-red-950/30">
+              <div className="w-9 h-9 rounded-full bg-red-900/50 flex items-center justify-center shrink-0">
+                <PhoneOff className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-base">Disconnect Conference</h3>
+                <p className="text-slate-400 text-xs mt-0.5">This action cannot be undone</p>
+              </div>
+            </div>
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div className="bg-slate-800/60 rounded-lg px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 text-xs">Conference</span>
+                  <span className="text-slate-200 text-sm font-medium truncate max-w-[220px]">{activeConf.subject}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 text-xs">Call ID</span>
+                  <span className="text-slate-300 text-xs font-mono">{activeConf.callId}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 text-xs">Connected participants</span>
+                  <span className={`text-sm font-semibold ${
+                    participants.filter(p => p.state !== "dropped" && p.state !== "free").length > 0
+                      ? "text-amber-400" : "text-slate-300"
+                  }`}>
+                    {participants.filter(p => p.state !== "dropped" && p.state !== "free").length}
+                  </span>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                All connected participants will be immediately disconnected from the conference bridge.
+              </p>
+            </div>
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-800">
+              <button
+                onClick={() => setShowDisconnectModal(false)}
+                className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setShowDisconnectModal(false);
+                  setLocalConferences(prev => prev.map(c => c.id === activeConf.id ? { ...c, status: "completed" as const } : c));
+                  try { await terminateMut.mutateAsync({ conferenceId: activeConf.id }); } catch { }
+                }}
+                disabled={terminateMut.isPending}
+                className="flex-1 px-4 py-2.5 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                {terminateMut.isPending ? (
+                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Disconnecting…</>
+                ) : (
+                  <><PhoneOff className="w-4 h-4" />Disconnect Now</>
+                )}
+              </button>
             </div>
           </div>
         </div>
