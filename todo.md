@@ -661,3 +661,16 @@
 - [x] Translate-all button: batch-translate all untranslated messages in one click
 - [x] Persist chat language preference to localStorage
 - [x] Real-time Ably push: extend AblyContext to forward chat:translation events
+
+## OCC Targeted Changes (Preview → Live)
+- [ ] Rename "Terminate" button to "Disconnect" (label + confirm dialog text)
+- [ ] Remove "+15 min" button from the conference bar
+- [ ] Move "Post-Event" and "Simulate Call" buttons next to "Multi-Dial" in the CCP header
+
+## Audible Alert — Louder + Repeating Until Answered
+- [x] Increase gain from 0.4 to 0.9, use richer two-tone pattern (880→1100 Hz)
+- [x] Add alertIntervalRef to repeat beep every 3s while waiting_operator count > 0
+- [x] Clear interval when waiting_operator count drops to 0 (all callers answered/dropped)
+- [x] Add "Stop Ringing" button in CCP header that appears while alert is ringing
+- [x] Respect settingAlertVolume slider for gain scaling
+- [x] Write vitest for alert trigger/stop logic

@@ -291,22 +291,47 @@ export default function OCC() {
   // Green Room (Speaker Sub-Conference)
   const [showGreenRoomPanel, setShowGreenRoomPanel] = useState(false);
   const [greenRoomDialForm, setGreenRoomDialForm] = useState({ name: "", phone: "", company: "", role: "participant" as "moderator" | "participant" | "host" });
-  // Audio beep helper
+  // Audio alert state
+  const alertIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isRinging, setIsRinging] = useState(false);
+
+  // Play a louder two-tone ring (880 Hz → 1100 Hz)
   const playBeep = useCallback(() => {
     try {
+      const volumeFraction = Math.max(0.05, Math.min(1, (settingAlertVolume ?? 70) / 100));
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.4, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.4);
+      // First tone: 880 Hz for 0.18s
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(880, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.9 * volumeFraction, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.18);
+      // Second tone: 1100 Hz for 0.18s after a 60ms gap
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(1100, ctx.currentTime + 0.24);
+      gain2.gain.setValueAtTime(0.9 * volumeFraction, ctx.currentTime + 0.24);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.42);
+      osc2.start(ctx.currentTime + 0.24);
+      osc2.stop(ctx.currentTime + 0.42);
     } catch { /* AudioContext not available */ }
+  }, [settingAlertVolume]);
+
+  // Stop the repeating ring
+  const stopRinging = useCallback(() => {
+    if (alertIntervalRef.current) {
+      clearInterval(alertIntervalRef.current);
+      alertIntervalRef.current = null;
+    }
+    setIsRinging(false);
   }, []);
 
   // Track previous Needs Operator count to detect new arrivals
@@ -873,14 +898,27 @@ export default function OCC() {
     try { await pickOpReqMut.mutateAsync({ requestId: reqId, conferenceId: activeCCPConferenceId ?? 0 }); } catch { }
   };
 
-  // Watch for new Needs Operator participants and play beep
+  // Watch for new Needs Operator participants — start/stop repeating ring
   useEffect(() => {
     const count = localParticipants.filter(p => p.state === "waiting_operator").length;
-    if (count > prevNeedsOperatorCount.current) {
+    const prev = prevNeedsOperatorCount.current;
+    prevNeedsOperatorCount.current = count;
+
+    if (count > 0 && !alertIntervalRef.current) {
+      // New caller waiting — play immediately then repeat every 3s
+      playBeep();
+      setIsRinging(true);
+      alertIntervalRef.current = setInterval(() => {
+        playBeep();
+      }, 3000);
+    } else if (count === 0 && alertIntervalRef.current) {
+      // All callers answered/dropped — stop ringing
+      stopRinging();
+    } else if (count > prev && alertIntervalRef.current) {
+      // Additional caller arrived while already ringing — play an extra beep now
       playBeep();
     }
-    prevNeedsOperatorCount.current = count;
-  }, [localParticipants, playBeep]);
+  }, [localParticipants, playBeep, stopRinging]);
 
   // Simulate an incoming caller (demo feature for Board presentation)
   const doSimulateIncomingCall = () => {
@@ -1579,6 +1617,15 @@ export default function OCC() {
                       <ArrowRight className="w-3 h-3" /> Transfer
                     </button>
                   </>
+                )}
+                {isRinging && (
+                  <button
+                    onClick={stopRinging}
+                    title="Stop the incoming call alert"
+                    className="flex items-center gap-1 px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-[10px] font-semibold animate-pulse transition-colors"
+                  >
+                    <BellOff className="w-3 h-3" /> Stop Ringing
+                  </button>
                 )}
                 <button
                   onClick={() => setShowSettingsModal(true)}
