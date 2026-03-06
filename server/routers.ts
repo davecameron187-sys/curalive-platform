@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, adminProcedure, router } from "./_core/trpc";
+import { publicProcedure, adminProcedure, protectedProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import { sendEmail, buildIRSummaryEmail, buildRegistrationConfirmationEmail } from "./_core/email";
@@ -507,6 +507,39 @@ Produce a JSON response with this exact structure:
         return db.select().from(attendeeRegistrations)
           .where(eq(attendeeRegistrations.eventId, input.eventId))
           .orderBy(attendeeRegistrations.createdAt);
+      }),
+
+    // Get all registrations for the currently logged-in user (by email)
+    getMyRegistrations: protectedProcedure
+      .query(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db) return [];
+        const userEmail = ctx.user.email;
+        if (!userEmail) return [];
+        // Fetch registrations for this user's email, joined with event metadata
+        const regs = await db
+          .select()
+          .from(attendeeRegistrations)
+          .where(eq(attendeeRegistrations.email, userEmail))
+          .orderBy(attendeeRegistrations.createdAt);
+        // Enrich with event info
+        const enriched = await Promise.all(
+          regs.map(async (reg) => {
+            const [event] = await db
+              .select()
+              .from(events)
+              .where(eq(events.eventId, reg.eventId))
+              .limit(1);
+            return {
+              ...reg,
+              eventTitle: event?.title ?? reg.eventId,
+              eventCompany: event?.company ?? "",
+              eventStatus: event?.status ?? "upcoming",
+              eventPlatform: event?.platform ?? "",
+            };
+          })
+        );
+        return enriched;
       }),
 
     // Mark attendee as joined (called when they enter the Event Room)

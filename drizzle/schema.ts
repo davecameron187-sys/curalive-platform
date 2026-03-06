@@ -157,6 +157,8 @@ export const occParticipants = mysqlTable("occ_participants", {
   isWebParticipant: boolean("isWebParticipant").default(false).notNull(),
   requestToSpeak: boolean("requestToSpeak").default(false).notNull(),
   requestToSpeakPosition: int("requestToSpeakPosition"),
+  // CuraLive Direct — link to attendee_registrations for PIN actions
+  registrationId: int("registrationId"), // null = no registration linked
   // Subconference
   subconferenceId: int("subconferenceId"), // null = main conference
   // Monitoring

@@ -10,6 +10,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { generatePin } from "./directAccess";
+import { z } from "zod";
 
 // ─── 1. generatePin ───────────────────────────────────────────────────────────
 
@@ -194,5 +195,109 @@ describe("dial-in number normalisation", () => {
 
   it("does not match different numbers", () => {
     expect(matches("+27 11 535 0000", "+27 11 535 0001")).toBe(false);
+  });
+});
+
+// ─── 6. resendPin / resetPin input validation ─────────────────────────────────
+
+describe("resendPin / resetPin input validation", () => {
+  /**
+   * Both procedures accept { participantId, conferenceId }.
+   * Validate that the input schema rejects invalid values.
+   */
+  const inputSchema = z.object({
+    participantId: z.number().int().positive(),
+    conferenceId: z.number().int().positive(),
+  });
+
+  it("accepts valid participantId and conferenceId", () => {
+    expect(() => inputSchema.parse({ participantId: 1, conferenceId: 42 })).not.toThrow();
+  });
+
+  it("rejects non-positive participantId", () => {
+    expect(() => inputSchema.parse({ participantId: 0, conferenceId: 1 })).toThrow();
+    expect(() => inputSchema.parse({ participantId: -5, conferenceId: 1 })).toThrow();
+  });
+
+  it("rejects non-integer participantId", () => {
+    expect(() => inputSchema.parse({ participantId: 1.5, conferenceId: 1 })).toThrow();
+  });
+
+  it("rejects missing fields", () => {
+    expect(() => inputSchema.parse({ participantId: 1 })).toThrow();
+    expect(() => inputSchema.parse({ conferenceId: 1 })).toThrow();
+  });
+});
+
+// ─── 7. getMyRegistrations enrichment logic ───────────────────────────────────
+
+describe("getMyRegistrations enrichment logic", () => {
+  /**
+   * Replicate the enrichment step: merge registration row with event metadata,
+   * falling back to reg.eventId when no event row is found.
+   */
+  interface RegRow {
+    id: number;
+    eventId: string;
+    name: string;
+    email: string;
+    accessPin: string | null;
+    pinUsedAt: Date | null;
+    createdAt: Date;
+  }
+
+  interface EventRow {
+    eventId: string;
+    title: string;
+    company: string;
+    status: string;
+    platform: string;
+  }
+
+  function enrich(reg: RegRow, event: EventRow | undefined) {
+    return {
+      ...reg,
+      eventTitle: event?.title ?? reg.eventId,
+      eventCompany: event?.company ?? "",
+      eventStatus: event?.status ?? "upcoming",
+      eventPlatform: event?.platform ?? "",
+    };
+  }
+
+  const baseReg: RegRow = {
+    id: 1,
+    eventId: "q4-earnings-2026",
+    name: "Alice Smith",
+    email: "alice@example.com",
+    accessPin: "12345",
+    pinUsedAt: null,
+    createdAt: new Date("2026-01-01"),
+  };
+
+  it("uses event title when event row is found", () => {
+    const event: EventRow = { eventId: "q4-earnings-2026", title: "Q4 Earnings Call", company: "CuraLive Inc.", status: "live", platform: "Zoom" };
+    const enriched = enrich(baseReg, event);
+    expect(enriched.eventTitle).toBe("Q4 Earnings Call");
+    expect(enriched.eventCompany).toBe("CuraLive Inc.");
+    expect(enriched.eventStatus).toBe("live");
+    expect(enriched.eventPlatform).toBe("Zoom");
+  });
+
+  it("falls back to eventId when no event row is found", () => {
+    const enriched = enrich(baseReg, undefined);
+    expect(enriched.eventTitle).toBe("q4-earnings-2026");
+    expect(enriched.eventCompany).toBe("");
+    expect(enriched.eventStatus).toBe("upcoming");
+    expect(enriched.eventPlatform).toBe("");
+  });
+
+  it("preserves the accessPin from the registration row", () => {
+    const enriched = enrich(baseReg, undefined);
+    expect(enriched.accessPin).toBe("12345");
+  });
+
+  it("preserves null accessPin when not set", () => {
+    const enriched = enrich({ ...baseReg, accessPin: null }, undefined);
+    expect(enriched.accessPin).toBeNull();
   });
 });

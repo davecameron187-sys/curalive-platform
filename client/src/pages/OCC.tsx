@@ -659,6 +659,15 @@ export default function OCC() {
     { enabled: !!activeCCPConferenceId && featureTab === "direct_access", refetchInterval: featureTab === "direct_access" ? 10000 : false }
   );
 
+  const resendPinMut = trpc.occ.resendPin.useMutation({
+    onSuccess: (data) => toast.success(`PIN re-sent to ${data.email}`),
+    onError: (e) => toast.error(`Failed to re-send PIN: ${e.message}`),
+  });
+  const resetPinMut = trpc.occ.resetPin.useMutation({
+    onSuccess: (data) => toast.success(`New PIN ${data.newPin} generated and sent to ${data.email}`),
+    onError: (e) => toast.error(`Failed to reset PIN: ${e.message}`),
+  });
+
   const doToggleAutoAdmit = async () => {
     if (!activeConf) return;
     const next = !activeConf.autoAdmitEnabled;
@@ -2018,6 +2027,23 @@ export default function OCC() {
                                   >
                                     ▶ Speak
                                   </button>
+                                )}
+                                {/* CuraLive Direct PIN actions — only shown if participant has a linked registration */}
+                                {p.registrationId && (
+                                  <>
+                                    <button
+                                      onClick={() => resendPinMut.mutate({ participantId: p.id, conferenceId: activeCCPConferenceId ?? 0 })}
+                                      disabled={resendPinMut.isPending}
+                                      title="Re-send existing PIN by email"
+                                      className="p-1 rounded bg-violet-900/40 hover:bg-violet-800 text-violet-400 transition-colors disabled:opacity-40"
+                                    ><KeyRound className="w-3 h-3" /></button>
+                                    <button
+                                      onClick={() => resetPinMut.mutate({ participantId: p.id, conferenceId: activeCCPConferenceId ?? 0 })}
+                                      disabled={resetPinMut.isPending}
+                                      title="Generate new PIN and send by email"
+                                      className="p-1 rounded bg-amber-900/40 hover:bg-amber-800 text-amber-400 transition-colors disabled:opacity-40"
+                                    ><RefreshCw className="w-3 h-3" /></button>
+                                  </>
                                 )}
                                 <button onClick={() => doParticipantAction("dropped", [p.id])} title="Disconnect" className="p-1 rounded bg-red-900/40 hover:bg-red-800 text-red-400 transition-colors"><PhoneOff className="w-3 h-3" /></button>
                               </div>

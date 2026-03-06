@@ -674,3 +674,8 @@
 - [x] Add "Stop Ringing" button in CCP header that appears while alert is ringing
 - [x] Respect settingAlertVolume slider for gain scaling
 - [x] Write vitest for alert trigger/stop logic
+
+## CuraLive Direct — Follow-on Features
+- [x] Twilio configuration guide page (/integrations/twilio-direct) with step-by-step setup instructions
+- [x] PIN re-send/reset action in OCC participant row (backend procedure + UI button)
+- [x] Attendee self-service /my-events portal with upcoming events list and PIN retrieval

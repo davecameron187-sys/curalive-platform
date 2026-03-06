@@ -36,9 +36,11 @@ import {
   occParticipantHistory,
   occDialOutHistory,
   occGreenRooms,
+  attendeeRegistrations,
 } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
-import { getDirectAccessStats, getRecentDirectAccessAttempts } from "../directAccess";
+import { getDirectAccessStats, getRecentDirectAccessAttempts, generateUniquePin } from "../directAccess";
+import { buildRegistrationConfirmationEmail, sendEmail } from "../_core/email";
 import { invokeLLM } from "../_core/llm";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -970,6 +972,126 @@ export const occRouter = router({
         { transferredCount }
       );
       return { success: true, transferredCount };
+    }),
+
+  // ── CuraLive Direct — PIN re-send / reset ────────────────────────────────
+
+  /**
+   * Re-send the existing PIN to a registrant's email.
+   * Looks up the registration by ID, then sends the confirmation email with the PIN.
+   */
+  resendPin: operatorProcedure
+    .input(z.object({
+      participantId: z.number().int().positive(),
+      conferenceId: z.number().int().positive(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // Look up the participant to get their registrationId
+      const participantRows = await db
+        .select()
+        .from(occParticipants)
+        .where(eq(occParticipants.id, input.participantId))
+        .limit(1);
+      const participant = participantRows[0];
+      if (!participant) throw new Error("Participant not found");
+      if (!participant.registrationId) throw new Error("No registration linked to this participant");
+
+      const rows = await db
+        .select()
+        .from(attendeeRegistrations)
+        .where(eq(attendeeRegistrations.id, participant.registrationId))
+        .limit(1);
+
+      const reg = rows[0];
+      if (!reg) throw new Error("Registration not found");
+      if (!reg.accessPin) throw new Error("No PIN assigned to this registration");
+
+      // Look up the conference to get the dial-in number
+      const conf = await getOccConferenceById(input.conferenceId);
+
+      const html = buildRegistrationConfirmationEmail({
+        firstName: reg.name.split(" ")[0] ?? reg.name,
+        lastName: reg.name.split(" ").slice(1).join(" ") ?? "",
+        eventTitle: conf?.subject ?? "Your Event",
+        company: reg.company ?? "",
+        eventDate: conf?.scheduledStart ? new Date(conf.scheduledStart).toLocaleDateString("en-ZA", { dateStyle: "full" }) : "TBC",
+        dialInNumber: conf?.dialInNumber ?? undefined,
+        accessPin: reg.accessPin,
+      });
+
+      await sendEmail({
+        to: reg.email,
+        subject: `Your CuraLive Direct PIN — ${conf?.subject ?? "Event"}`,
+        html,
+      });
+
+      return { success: true, email: reg.email, pin: reg.accessPin };
+    }),
+
+  /**
+   * Reset (regenerate) a registrant's PIN and re-send the confirmation email.
+   * Generates a new unique PIN for the event, persists it, then emails it.
+   */
+  resetPin: operatorProcedure
+    .input(z.object({
+      participantId: z.number().int().positive(),
+      conferenceId: z.number().int().positive(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // Look up the participant to get their registrationId
+      const participantRows = await db
+        .select()
+        .from(occParticipants)
+        .where(eq(occParticipants.id, input.participantId))
+        .limit(1);
+      const participant = participantRows[0];
+      if (!participant) throw new Error("Participant not found");
+      if (!participant.registrationId) throw new Error("No registration linked to this participant");
+
+      const rows = await db
+        .select()
+        .from(attendeeRegistrations)
+        .where(eq(attendeeRegistrations.id, participant.registrationId))
+        .limit(1);
+
+      const reg = rows[0];
+      if (!reg) throw new Error("Registration not found");
+
+      // Generate a new unique PIN for this event
+      const newPin = await generateUniquePin(reg.eventId);
+
+      // Persist the new PIN and clear the used timestamp
+      await db
+        .update(attendeeRegistrations)
+        .set({ accessPin: newPin, pinUsedAt: null })
+        .where(eq(attendeeRegistrations.id, reg.id));
+
+      // Look up the conference for email context
+      const conf = await getOccConferenceById(input.conferenceId);
+
+      const html = buildRegistrationConfirmationEmail({
+        firstName: reg.name.split(" ")[0] ?? reg.name,
+        lastName: reg.name.split(" ").slice(1).join(" ") ?? "",
+        eventTitle: conf?.subject ?? "Your Event",
+        company: reg.company ?? "",
+        eventDate: conf?.scheduledStart ? new Date(conf.scheduledStart).toLocaleDateString("en-ZA", { dateStyle: "full" }) : "TBC",
+        dialInNumber: conf?.dialInNumber ?? undefined,
+        accessPin: newPin,
+      });
+
+      await sendEmail({
+        to: reg.email,
+        subject: `Your new CuraLive Direct PIN — ${conf?.subject ?? "Event"}`,
+        html,
+      });
+
+      return { success: true, email: reg.email, newPin };
     }),
 
   // ── Public: Attendee-facing chat messages (no auth required) ──────────────

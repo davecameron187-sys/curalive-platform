@@ -46,6 +46,8 @@ import Billing from "./pages/Billing";
 import Training from "./pages/Training";
 import OperatorGuide from "./pages/OperatorGuide";
 import DemoRegistration from "./pages/DemoRegistration";
+import TwilioDirectGuide from "./pages/TwilioDirectGuide";
+import MyEvents from "./pages/MyEvents";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -90,6 +92,8 @@ function Router() {
       <Route path="/billing" component={Billing} />
       <Route path="/training" component={Training} />
       <Route path="/operator-guide" component={OperatorGuide} />
+      <Route path="/integrations/twilio-direct" component={TwilioDirectGuide} />
+      <Route path="/my-events" component={MyEvents} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
       <Route path="/404" component={NotFound} />
