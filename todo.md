@@ -656,3 +656,8 @@
 - [x] Chat tab: Auto-translate up to 5 messages when language changes and translation is enabled
 - [x] Unit tests: event.chat.translation.test.ts (7 tests, all passing)
 - [x] Total tests: 170 passing
+
+## Round 58 — Chat Translation Improvements
+- [x] Translate-all button: batch-translate all untranslated messages in one click
+- [x] Persist chat language preference to localStorage
+- [x] Real-time Ably push: extend AblyContext to forward chat:translation events

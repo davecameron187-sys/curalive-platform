@@ -71,6 +71,13 @@ export type RaisedHand = {
   status: "waiting" | "unmuted" | "dismissed";
 };
 
+export type ChatTranslationEvent = {
+  messageId: number;
+  detectedLanguage: string;
+  translatedMessage: string;
+  translationLanguage: string;
+};
+
 export type ChorusMessage =
   | { type: "transcript.segment"; data: TranscriptSegment }
   | { type: "sentiment.update"; data: SentimentUpdate }
@@ -150,6 +157,7 @@ type AblyContextValue = {
   isSimulating: boolean;
   mode: "demo" | "ably";
   publish: (msg: ChorusMessage) => void;
+  chatTranslationEvents: ChatTranslationEvent[];
 };
 
 const AblyContext = createContext<AblyContextValue | null>(null);
@@ -163,6 +171,7 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
   const [raisedHands, setRaisedHands] = useState<RaisedHand[]>([]);
   const [presenceCount, setPresenceCount] = useState(1247);
   const [isSimulating, setIsSimulating] = useState(true);
+  const [chatTranslationEvents, setChatTranslationEvents] = useState<ChatTranslationEvent[]>([]);
   const lineIdxRef = useRef(0);
   const sentimentIdxRef = useRef(0);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -189,6 +198,12 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
         // Subscribe to all Chorus message types over the real Ably channel
         channel.subscribe((msg: any) => {
           try {
+            // Handle chat:translation events separately (not a ChorusMessage)
+            if (msg.name === "chat:translation") {
+              const data = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
+              setChatTranslationEvents((prev) => [...prev, data as ChatTranslationEvent]);
+              return;
+            }
             const parsed: ChorusMessage = JSON.parse(msg.data);
             bus.publish(eventId, parsed);
           } catch {}
@@ -310,7 +325,7 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
   const mode: "demo" | "ably" = ablyConfig?.mode === "ably" ? "ably" : "demo";
 
   return (
-    <AblyContext.Provider value={{ eventId, transcript, sentiment, rollingSummary, qaItems, polls, raisedHands, presenceCount, isSimulating, mode, publish }}>
+    <AblyContext.Provider value={{ eventId, transcript, sentiment, rollingSummary, qaItems, polls, raisedHands, presenceCount, isSimulating, mode, publish, chatTranslationEvents }}>
       {children}
     </AblyContext.Provider>
   );
