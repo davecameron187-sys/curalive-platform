@@ -816,3 +816,25 @@
 - [ ] (Replit) Test in preview and iterate
 - [ ] (Replit) Push to GitHub
 - [x] Sync changes to Manus after completion
+
+
+## AI Transcription & Summarization Feature (New)
+
+- [ ] Design AI transcription and summarization architecture
+- [ ] Implement backend transcription service (Recall.ai Whisper integration)
+- [ ] Update database schema for transcription storage
+- [ ] Build real-time transcription display in OCC
+- [ ] Implement AI summarization engine (OpenAI GPT-4)
+- [ ] Add transcription search and filtering
+- [ ] Create post-event transcript download (PDF/TXT)
+- [ ] Build AI-generated summary display in post-event report
+- [ ] Add speaker identification and diarization
+- [ ] Implement multi-language transcription support
+- [ ] Add transcription accuracy metrics and confidence scores
+- [ ] Create transcription export options (SRT, VTT, JSON)
+- [ ] Implement real-time translation of transcripts
+- [ ] Add transcription editing and correction interface
+- [ ] Set up transcription archival and retention policies
+- [ ] Test transcription accuracy across all platforms (Zoom, Teams, Webex, RTMP, PSTN)
+- [ ] Optimize transcription latency and performance
+- [ ] Deploy to production and monitor
