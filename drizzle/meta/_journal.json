@@ -218,6 +218,20 @@
       "when": 1772880463535,
       "tag": "0030_goofy_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "5",
+      "when": 1772882236494,
+      "tag": "0031_chilly_shinko_yamashiro",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1772882701340,
+      "tag": "0032_white_the_leader",
+      "breakpoints": true
     }
   ]
 }

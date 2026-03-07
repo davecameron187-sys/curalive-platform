@@ -800,3 +800,19 @@
 - [ ] (Replit) Test in preview and iterate
 - [ ] (Replit) Push changes to GitHub
 - [x] Sync changes to Manus after approval
+
+
+## Operator Settings Panel
+
+- [x] Create OPERATOR_SETTINGS_BRIEF.md with complete implementation guide
+- [x] Create OPERATOR_SETTINGS_COMPONENT.tsx with production-ready React component
+- [ ] (Replit) Create operator_preferences database table in schema
+- [ ] (Replit) Add database helper functions in server/db.ts
+- [ ] (Replit) Add tRPC procedures in server/routers.ts
+- [ ] (Replit) Run pnpm db:push to create table
+- [ ] (Replit) Copy OperatorSettings component to client/src/components/
+- [ ] (Replit) Integrate settings panel into OCC header
+- [ ] (Replit) Load preferences on OCC mount and apply to display
+- [ ] (Replit) Test in preview and iterate
+- [ ] (Replit) Push to GitHub
+- [x] Sync changes to Manus after completion
