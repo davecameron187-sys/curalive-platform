@@ -1405,6 +1405,12 @@ export const occTranscriptionSegments = mysqlTable("occ_transcription_segments",
   confidence: int("confidence").default(95).notNull(), // 0-100 confidence percentage
   language: varchar("language", { length: 10 }).default("en").notNull(),
   isFinal: boolean("is_final").default(false).notNull(), // Whether segment is finalized
+  sentiment: mysqlEnum("sentiment", ["positive", "neutral", "negative"]),
+  sentimentConfidence: int("sentiment_confidence"),
+  emotion: mysqlEnum("emotion", ["happy", "sad", "angry", "surprised", "fearful", "disgusted", "neutral"]),
+  emotionScore: int("emotion_score"),
+  keyPhrases: text("key_phrases"),
+  tone: mysqlEnum("tone", ["professional", "casual", "formal", "aggressive", "supportive"]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type OccTranscriptionSegment = typeof occTranscriptionSegments.$inferSelect;
