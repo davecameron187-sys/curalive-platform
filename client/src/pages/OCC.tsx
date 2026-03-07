@@ -1195,48 +1195,9 @@ export default function OCC() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
-        <div className="bg-[#111827] border border-slate-700 rounded-xl p-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
-          <div className="w-14 h-14 rounded-xl bg-blue-600/20 border border-blue-600/40 flex items-center justify-center">
-            <Headphones className="w-7 h-7 text-blue-400" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-white mb-2">CuraLive.OCC</h1>
-            <p className="text-slate-400 text-sm leading-relaxed">Operator Call Centre access requires authentication. Please sign in with your CuraLive operator account.</p>
-          </div>
-          <a
-            href={`/api/oauth/login?returnTo=${encodeURIComponent('/occ')}`}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-          >
-            <LogOut className="w-4 h-4 rotate-180" />
-            Sign in to access OCC
-          </a>
-          <a href="/" className="text-xs text-slate-500 hover:text-slate-400 transition-colors">← Back to CuraLive</a>
-        </div>
-      </div>
-    );
-  }
-
-  // Operator role check — admin and operator roles can access OCC
-  const userRole = (user as any)?.role;
-  if (userRole && userRole !== 'admin' && userRole !== 'operator') {
-    return (
-      <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
-        <div className="bg-[#111827] border border-red-800/40 rounded-xl p-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
-          <div className="w-14 h-14 rounded-xl bg-red-600/20 border border-red-600/40 flex items-center justify-center">
-            <AlertCircle className="w-7 h-7 text-red-400" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-white mb-2">Access Denied</h1>
-            <p className="text-slate-400 text-sm leading-relaxed">Your account does not have operator access to CuraLive.OCC. Contact your CuraLive administrator to request access.</p>
-          </div>
-          <a href="/" className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">← Back to CuraLive</a>
-        </div>
-      </div>
-    );
-  }
+  // AUTH BYPASS — re-enable before going live
+  // if (!isAuthenticated) { ... }
+  // if (userRole && userRole !== 'admin' && userRole !== 'operator') { ... }
 
   return (
     <div className="min-h-screen bg-[#0a0d14] text-slate-200 flex flex-col" style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px" }}>
