@@ -1,8 +1,8 @@
 CREATE TABLE `operator_preferences` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`user_id` int NOT NULL,
-	`visible_columns` text NOT NULL DEFAULT ('["callId","subject","start","duration","participants","status","actions"]'),
-	`visible_metrics` text NOT NULL DEFAULT ('["liveCalls","pending","participants","alerts"]'),
+	`visible_columns` text NOT NULL,
+	`visible_metrics` text NOT NULL,
 	`compact_mode` boolean NOT NULL DEFAULT false,
 	`show_advanced_features` boolean NOT NULL DEFAULT false,
 	`sidebar_collapsed` boolean NOT NULL DEFAULT false,
