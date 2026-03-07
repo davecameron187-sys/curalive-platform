@@ -204,6 +204,13 @@
       "when": 1772817720530,
       "tag": "0028_bumpy_namor",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1772867147731,
+      "tag": "0029_milky_eddie_brock",
+      "breakpoints": true
     }
   ]
 }

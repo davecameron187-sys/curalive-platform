@@ -11,7 +11,6 @@ import { registerSlideDeckUploadRoute } from "../slideDeckUpload";
 import { registerRecallWebhookRoute } from "../recallWebhook";
 import { startReminderScheduler } from "../reminderScheduler";
 import { registerBillingPdfRoutes } from "../billingPdf";
-import { handleStripeWebhook } from "../stripeWebhook";
 import { buildTwiMLVoiceResponse } from "../webphone/twilio";
 import { parseTelnyxWebhook } from "../webphone/telnyx";
 import twilio_twiml from "twilio";
@@ -38,10 +37,6 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // ⚠️ Stripe webhook MUST be registered BEFORE express.json() so the raw body
-  // is available for signature verification.
-  app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
-
   // Twilio TwiML voice endpoint — Twilio calls this URL when a WebRTC call is placed.
   // Must use urlencoded body (Twilio sends application/x-www-form-urlencoded).
   app.post("/api/webphone/twiml", express.urlencoded({ extended: false }), (req, res) => {

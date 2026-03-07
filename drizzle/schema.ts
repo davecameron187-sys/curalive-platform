@@ -18,9 +18,6 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 64 }),
   linkedinUrl: varchar("linkedinUrl", { length: 512 }),
   timezone: varchar("timezone", { length: 64 }).default("Africa/Johannesburg"),
-  // Stripe billing identifiers
-  stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
-  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
