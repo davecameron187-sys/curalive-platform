@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerSlideDeckUploadRoute } from "../slideDeckUpload";
+import { registerAudioUploadRoute } from "../audioUpload";
 import { registerRecallWebhookRoute } from "../recallWebhook";
 import { startReminderScheduler } from "../reminderScheduler";
 import { registerBillingPdfRoutes } from "../billingPdf";
@@ -431,6 +432,8 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Slide deck file upload
   registerSlideDeckUploadRoute(app);
+  // OCC audio library upload
+  registerAudioUploadRoute(app);
   // Recall.ai webhook (raw body, HMAC-verified)
   registerRecallWebhookRoute(app);
   registerBillingPdfRoutes(app);

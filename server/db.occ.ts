@@ -224,6 +224,31 @@ export async function getOccAudioFiles(conferenceId: number) {
     .orderBy(asc(occAudioFiles.name));
 }
 
+export async function addOccAudioFile(data: {
+  conferenceId: number;
+  name: string;
+  fileUrl: string;
+  fileKey: string;
+  durationSeconds?: number;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(occAudioFiles).values(data);
+  return result;
+}
+
+export async function deleteOccAudioFile(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(occAudioFiles).where(eq(occAudioFiles.id, id));
+}
+
+export async function setOccAudioPlayState(id: number, isPlaying: boolean) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(occAudioFiles).set({ isPlaying }).where(eq(occAudioFiles.id, id));
+}
+
 // ─── Participant History ──────────────────────────────────────────────────────
 
 export async function getOccParticipantHistory(participantId: number) {

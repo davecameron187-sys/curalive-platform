@@ -10,6 +10,9 @@ channel = "stable-25_05"
 [userenv.shared]
 PORT = "5000"
 
+[userenv.production]
+AUTH_BYPASS = "false"
+
 [workflows]
 runButton = "Project"
 

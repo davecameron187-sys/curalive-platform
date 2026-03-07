@@ -80,3 +80,22 @@ The OCC is a world-class conference control centre built to the technical brief.
 - Capability grants `occ:*`, `curalive-event-*`, and `*` channel access
 - OCC.tsx uses `authUrl: "/api/ably-token"` for both Ably client instances
 - The old tRPC `ably.tokenRequest` procedure (in `server/routers.ts`) is still present but not used by OCC — it required tRPC input format which Ably SDK cannot send
+
+## OCC Audio Library
+
+- Audio files table: `occ_audio_files` (conferenceId, name, fileUrl, fileKey, durationSeconds, isPlaying)
+- Upload endpoint: `POST /api/upload-audio` (multipart, accepts MP3/WAV/OGG/WebM, max 20MB)
+- tRPC procedures: `occ.getAudioFiles`, `occ.addAudioFile`, `occ.deleteAudioFile`, `occ.setAudioPlayState`
+- Frontend: Audio tab in OCC.tsx reads from DB, supports upload/play/pause/delete with HTML5 Audio API
+
+## Database (MySQL via Drizzle)
+
+- `DATABASE_URL` secret is set and the schema is fully pushed — all tables exist
+- Demo data seeded: conference CC-9921 (Q4 2025 Earnings Call) with 10 participants
+- `pnpm db:push` runs `drizzle-kit generate && drizzle-kit migrate` if schema changes are needed
+
+## Auth
+
+- Dev: `NODE_ENV=development` (set in dev workflow) bypasses all auth — intentional for testing
+- Production: `AUTH_BYPASS=false` set as production env var — full JWT auth enforced on deployment
+- Controlled by `const DEV_BYPASS = process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development'` in `server/_core/trpc.ts`
