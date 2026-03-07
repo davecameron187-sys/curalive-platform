@@ -1,4 +1,4 @@
-# Chorus.AI GTM Brief v2.0 — Key Findings
+# CuraLive GTM Brief v2.0 — Key Findings
 ## March 2026 | Prepared by Manus AI
 
 ## Overall Status: 65.4% Complete (+7.1pp since v1)

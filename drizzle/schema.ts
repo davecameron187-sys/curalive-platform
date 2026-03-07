@@ -97,7 +97,7 @@ export const occConferences = mysqlTable("occ_conferences", {
   eventId: varchar("eventId", { length: 128 }).notNull(), // references events.eventId
   callId: varchar("callId", { length: 64 }).notNull().unique(), // e.g. "CC-9921"
   subject: varchar("subject", { length: 255 }).notNull(),
-  reseller: varchar("reseller", { length: 128 }).default("Chorus Call Inc.").notNull(),
+  reseller: varchar("reseller", { length: 128 }).default("CuraLive Inc.").notNull(),
   product: varchar("product", { length: 128 }).default("Event Conference").notNull(),
   moderatorCode: varchar("moderatorCode", { length: 32 }),
   participantCode: varchar("participantCode", { length: 32 }),
@@ -572,7 +572,7 @@ export const eventBranding = mysqlTable("event_branding", {
   tagline: varchar("tagline", { length: 300 }),
   footerText: varchar("footer_text", { length: 500 }),
   faviconUrl: varchar("favicon_url", { length: 500 }),
-  showChorusWatermark: boolean("show_chorus_watermark").default(true),
+  showCuraLiveWatermark: boolean("show_curalive_watermark").default(true),
   customCss: text("custom_css"),
   createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),

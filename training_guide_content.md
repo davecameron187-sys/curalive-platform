@@ -7,7 +7,7 @@
 ## PHASE 1 — Getting Started (Modules 01–03)
 
 ### Module 01 — Welcome & Platform Overview
-- Chorus.AI is an AI-powered conference management platform for IR teams, earnings calls, investor days, and board briefings
+- CuraLive is an AI-powered conference management platform for IR teams, earnings calls, investor days, and board briefings
 - The OCC (Operator Control Centre) is the command hub where operators manage live conferences
 - Key roles: Operator (manages calls), Moderator (hosts), Presenter (speaker), Attendee (participant)
 - Platform supports Zoom RTMS, Microsoft Teams Bot, Recall.ai, RTMP, and PSTN dial-in

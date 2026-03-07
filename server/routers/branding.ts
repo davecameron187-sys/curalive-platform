@@ -34,7 +34,7 @@ export const brandingRouter = router({
       tagline: z.string().optional(),
       footerText: z.string().optional(),
       faviconUrl: z.string().optional(),
-      showChorusWatermark: z.boolean().optional(),
+      showCuraLiveWatermark: z.boolean().optional(),
       customCss: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
@@ -59,7 +59,7 @@ export const brandingRouter = router({
         tagline: input.tagline ?? null,
         footerText: input.footerText ?? null,
         faviconUrl: input.faviconUrl ?? null,
-        showChorusWatermark: input.showChorusWatermark !== false,
+        showCuraLiveWatermark: input.showCuraLiveWatermark !== false,
         customCss: input.customCss ?? null,
         updatedAt: Date.now(),
       };

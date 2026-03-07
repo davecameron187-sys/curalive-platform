@@ -1,5 +1,5 @@
-# Chorus.AI OCC — Operator Quick-Start Guide
-**For experienced conference operators transitioning to the Chorus.AI platform**
+# CuraLive OCC — Operator Quick-Start Guide
+**For experienced conference operators transitioning to the CuraLive platform**
 *Version 2.0 · March 2026*
 
 ---
@@ -172,5 +172,5 @@ Open Settings from the gear icon in the CCP header.
 
 ---
 
-*Chorus.AI OCC Operator Quick-Start Guide · v2.0 · March 2026*
+*CuraLive OCC Operator Quick-Start Guide · v2.0 · March 2026*
 *For support, contact your platform administrator or refer to the full training guide at the link above.*

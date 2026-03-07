@@ -78,7 +78,7 @@ export default function BrandingEditor({ roadshowId, roadshowTitle, onClose }: B
     fontFamily: "Space Grotesk",
     tagline: "",
     footerText: "",
-    showChorusWatermark: true,
+    showCuraLiveWatermark: true,
     customCss: "",
   });
 
@@ -97,7 +97,7 @@ export default function BrandingEditor({ roadshowId, roadshowTitle, onClose }: B
         fontFamily: existing.fontFamily ?? "Space Grotesk",
         tagline: existing.tagline ?? "",
         footerText: existing.footerText ?? "",
-        showChorusWatermark: existing.showChorusWatermark !== false,
+        showCuraLiveWatermark: existing.showCuraLiveWatermark !== false,
         customCss: existing.customCss ?? "",
       });
     } else {
@@ -312,10 +312,10 @@ export default function BrandingEditor({ roadshowId, roadshowTitle, onClose }: B
                       <p className="text-[10px] text-slate-500">Displays "Powered by CuraLive" in the footer</p>
                     </div>
                     <button
-                      onClick={() => setForm(f => ({ ...f, showChorusWatermark: !f.showChorusWatermark }))}
-                      className={`w-10 h-5 rounded-full transition-colors relative ${form.showChorusWatermark ? "bg-violet-500" : "bg-slate-600"}`}
+                      onClick={() => setForm(f => ({ ...f, showCuraLiveWatermark: !f.showCuraLiveWatermark }))}
+                      className={`w-10 h-5 rounded-full transition-colors relative ${form.showCuraLiveWatermark ? "bg-violet-500" : "bg-slate-600"}`}
                     >
-                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${form.showChorusWatermark ? "translate-x-5" : "translate-x-0.5"}`} />
+                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${form.showCuraLiveWatermark ? "translate-x-5" : "translate-x-0.5"}`} />
                     </button>
                   </div>
                 </>
@@ -433,7 +433,7 @@ export default function BrandingEditor({ roadshowId, roadshowTitle, onClose }: B
                   style={{ borderColor: `${form.primaryColor}20` }}
                 >
                   {form.footerText || "Confidential — For Authorised Investors Only"}
-                  {form.showChorusWatermark && (
+                  {form.showCuraLiveWatermark && (
                     <span className="ml-2">· Powered by CuraLive</span>
                   )}
                 </div>
