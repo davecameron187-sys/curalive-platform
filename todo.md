@@ -786,3 +786,17 @@
 - [x] Build FeedbackForm React component with validation
 - [x] Integrate feedback form into Home page footer
 - [x] Write vitest tests for feedback submission
+
+
+## Operator Console UI Redesign
+
+- [x] Create OCC_REDESIGN_GUIDE.md with detailed specifications
+- [ ] (Replit) Simplify top menu bar - reduce window launcher buttons
+- [ ] (Replit) Reduce dashboard stats from 8 to 4 critical metrics
+- [ ] (Replit) Simplify conference table - reduce columns
+- [ ] (Replit) Reorganize CCP header with dropdown menus
+- [ ] (Replit) Create participant action dropdown menus
+- [ ] (Replit) Collapse advanced features section
+- [ ] (Replit) Test in preview and iterate
+- [ ] (Replit) Push changes to GitHub
+- [x] Sync changes to Manus after approval
