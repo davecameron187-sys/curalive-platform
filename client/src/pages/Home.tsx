@@ -174,27 +174,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trusted By */}
-      <section className="py-10 border-t border-border">
-        <div className="container">
-          <p className="text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-8" style={{ fontFamily: "'Inter', sans-serif" }}>Trusted by leading financial institutions</p>
-          <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16">
-            {[
-              { name: "Investec", abbr: "INVESTEC", color: "#0057A8" },
-              { name: "JSE", abbr: "JSE", color: "#00843D" },
-              { name: "Standard Bank", abbr: "STANDARD BANK", color: "#0033A0" },
-              { name: "Nedbank", abbr: "NEDBANK", color: "#007A4D" },
-              { name: "FirstRand", abbr: "FIRSTRAND", color: "#C8102E" },
-            ].map(({ name, abbr, color }) => (
-              <div key={name} className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-sm font-bold tracking-widest text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: "0.12em" }}>{abbr}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Platform Pages */}
       <section className="py-16 border-t border-border bg-card/20">
         <div className="container">
