@@ -203,6 +203,7 @@ export default function OCC() {
   const [participantSearch, setParticipantSearch] = useState("");
   const [featureTab, setFeatureTab] = useState<FeatureTab>("monitoring");
   const [historyParticipantId, setHistoryParticipantId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"running" | "post_event" | "simulate" | "settings" | "op_settings">("running");
 
   // Operator notes (per-conference)
   const [operatorNotes, setOperatorNotes] = useState<Record<number, string>>({});
@@ -1324,7 +1325,34 @@ export default function OCC() {
       </div>
 
       {/* ── Main workspace ────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col gap-2 p-2 overflow-auto">
+      <div className="flex-1 flex gap-2 p-2 overflow-auto">
+        {/* Sidebar Tabs (Left) */}
+        <div className="flex flex-col gap-1 shrink-0 w-20">
+          {[
+            { key: "running", label: "Running", icon: Activity },
+            { key: "post_event", label: "Post Evt", icon: FileText },
+            { key: "simulate", label: "Sim Call", icon: Phone },
+            { key: "settings", label: "Settings", icon: Settings },
+            { key: "op_settings", label: "Op Setgs", icon: BarChart2 },
+          ].map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key as any)}
+              title={label}
+              className={`flex flex-col items-center gap-1 px-2 py-2 rounded border transition-colors text-[10px] font-medium whitespace-nowrap ${
+                activeTab === key
+                  ? "bg-blue-600/40 border-blue-500/60 text-blue-300"
+                  : "bg-slate-800/40 border-slate-700 text-slate-400 hover:bg-slate-700/40 hover:text-slate-300"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col gap-2 overflow-auto">
 
         {/* ── Live Call Counter Dashboard ─────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-2 shrink-0">
@@ -4251,6 +4279,7 @@ export default function OCC() {
           <span>{new Date().toLocaleTimeString()}</span>
           <span>{new Date().toLocaleDateString()}</span>
           <span className="text-slate-400">{user?.name ?? "Operator"}</span>
+        </div>
         </div>
       </div>
     </div>
