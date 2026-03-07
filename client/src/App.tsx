@@ -19,7 +19,7 @@ import Demo from "./pages/Demo";
 import TestGuide from "./pages/TestGuide";
 import TechHandover from "./pages/TechHandover";
 import SummitConsole from "./pages/SummitConsole";
-import OCC from "./pages/OCC";
+import OCC from "./pages/OCC_REDESIGNED";
 import AdminUsers from "./pages/AdminUsers";
 import EventPass from "./pages/EventPass";
 import LiveVideoMeetings from "./pages/LiveVideoMeetings";
@@ -77,7 +77,7 @@ function Router() {
       <Route path="/test-guide" component={TestGuide} />
       <Route path="/tech-handover" component={TechHandover} />
       <Route path="/summit-console" component={SummitConsole} />
-      <Route path="/occ" component={OCC} />
+      <Route path="/occ" component={OCC} /> {/* Using redesigned UI */}
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/live-video" component={LiveVideoMeetings} />
       <Route path="/live-video/roadshow/:roadshowId" component={RoadshowDetail} />

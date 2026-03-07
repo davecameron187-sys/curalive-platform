@@ -232,6 +232,13 @@
       "when": 1772882701340,
       "tag": "0032_white_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1772882786618,
+      "tag": "0033_gigantic_giant_man",
+      "breakpoints": true
     }
   ]
 }

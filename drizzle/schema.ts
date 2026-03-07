@@ -1338,3 +1338,32 @@ export const userFeedback = mysqlTable("user_feedback", {
 
 export type UserFeedback = typeof userFeedback.$inferSelect;
 export type InsertUserFeedback = typeof userFeedback.$inferInsert;
+
+
+/**
+ * Operator Preferences table — stores per-operator customization for the OCC console.
+ * Allows operators to customize which columns, metrics, and layout options are visible.
+ */
+export const operatorPreferences = mysqlTable("operator_preferences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull().unique(), // One preference set per operator
+  // Conference table column visibility (JSON array of column names)
+  visibleColumns: text("visible_columns").notNull(), // Default set in application code
+  // Dashboard metrics to display (JSON array of metric keys)
+  visibleMetrics: text("visible_metrics").notNull(), // Default set in application code
+  // Layout preferences
+  compactMode: boolean("compact_mode").default(false).notNull(), // Reduce padding/spacing
+  showAdvancedFeatures: boolean("show_advanced_features").default(false).notNull(), // Show advanced tabs by default
+  sidebarCollapsed: boolean("sidebar_collapsed").default(false).notNull(), // Sidebar state
+  // Feature preferences
+  enableKeyboardShortcuts: boolean("enable_keyboard_shortcuts").default(true).notNull(),
+  enableAutoRefresh: boolean("enable_auto_refresh").default(true).notNull(),
+  autoRefreshInterval: int("auto_refresh_interval").default(5).notNull(), // Seconds
+  // Notification preferences
+  enableSoundAlerts: boolean("enable_sound_alerts").default(true).notNull(),
+  enableDesktopNotifications: boolean("enable_desktop_notifications").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type OperatorPreferences = typeof operatorPreferences.$inferSelect;
+export type InsertOperatorPreferences = typeof operatorPreferences.$inferInsert;
