@@ -1242,18 +1242,19 @@ export default function OCC() {
     <div className="min-h-screen bg-[#0a0d14] text-slate-200 flex flex-col" style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px" }}>
 
       {/* ── Top Menu Bar ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#111827] border-b border-slate-700/60 shrink-0">
+      <div className="flex items-center justify-between px-3 py-1 bg-[#0c1220] border-b border-slate-700/60 shrink-0" style={{ background: "linear-gradient(180deg, #0e1628 0%, #0a0f1e 100%)" }}>
         {/* Left: Logo + menus */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center">
-              <Headphones className="w-3.5 h-3.5 text-white" />
+            <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center shrink-0">
+              <Headphones className="w-3 h-3 text-white" />
             </div>
-            <span className="font-bold text-white text-sm tracking-tight">CuraLive<span className="text-blue-400">.OCC</span></span>
+            <span className="font-bold text-white text-xs tracking-wide">CuraLive<span className="text-blue-400">.OCC</span></span>
+            <span className="text-[9px] text-slate-700 font-mono uppercase tracking-widest hidden lg:block">v1.0</span>
           </div>
-          <div className="hidden md:flex items-center gap-1 text-xs text-slate-400">
+          <div className="hidden md:flex items-center border-l border-slate-700/60 pl-3 gap-0 text-[11px]">
             {["File", "Conference", "Participants", "Utility", "Setup", "Help"].map(m => (
-              <button key={m} className="px-2 py-1 rounded hover:bg-slate-700 hover:text-slate-200 transition-colors">{m}</button>
+              <button key={m} className="px-2.5 py-1 text-slate-500 hover:text-slate-200 hover:bg-slate-700/40 rounded transition-colors">{m}</button>
             ))}
           </div>
         </div>
@@ -1324,25 +1325,25 @@ export default function OCC() {
       </div>
 
       {/* ── Main workspace ────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col gap-2 p-2 overflow-auto">
+      <div className="flex-1 flex flex-col gap-1.5 p-1.5 overflow-hidden">
 
-        {/* ── Live Call Counter Dashboard ─────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-2 shrink-0">
-          {[
-            { label: "Live Calls", value: totalActiveCalls !== null ? totalActiveCalls : runningConfs.length, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Activity },
-            { label: "Pending", value: pendingConfs.length, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", icon: Clock },
-            { label: "Completed", value: completedConfs.length, color: "text-slate-300", bg: "bg-slate-700/30 border-slate-700", icon: CheckCircle2 },
-            { label: "Lounge", value: loungeEntries.length, color: loungeEntries.length > 0 ? "text-amber-400" : "text-slate-400", bg: loungeEntries.length > 0 ? "bg-amber-500/10 border-amber-500/20" : "bg-slate-700/30 border-slate-700", icon: Users },
-            { label: "Op Requests", value: opRequests.length, color: opRequests.length > 0 ? "text-red-400" : "text-slate-400", bg: opRequests.length > 0 ? "bg-red-500/10 border-red-500/20" : "bg-slate-700/30 border-slate-700", icon: Bell },
-            { label: "Participants", value: participants.length, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20", icon: Headphones },
-            { label: "Active CCP", value: activeCCPConferenceId ? 1 : 0, color: activeCCPConferenceId ? "text-emerald-400" : "text-slate-500", bg: activeCCPConferenceId ? "bg-emerald-500/10 border-emerald-500/20" : "bg-slate-700/30 border-slate-700", icon: Radio },
-            { label: "Bridge", value: bridgeStatus, color: bridgeStatus === "OK" ? "text-emerald-400" : bridgeStatus === "DEGRADED" ? "text-amber-400" : "text-red-400", bg: bridgeStatus === "OK" ? "bg-emerald-500/10 border-emerald-500/20" : bridgeStatus === "DEGRADED" ? "bg-amber-500/10 border-amber-500/20" : "bg-red-500/10 border-red-500/20", icon: bridgeStatus === "OK" ? Wifi : WifiOff },
-          ].map(({ label, value, color, bg, icon: Icon }) => (
-            <div key={label} className={`flex items-center gap-2.5 border rounded-lg px-3 py-2 ${bg}`}>
-              <Icon className={`w-4 h-4 shrink-0 ${color}`} />
-              <div className="min-w-0">
-                <div className={`text-sm font-bold leading-none ${color}`}>{value}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5 truncate">{label}</div>
+        {/* ── Live Metrics Strip ───────────────────────────────────────────────── */}
+        <div className="flex items-stretch bg-[#0d1117] border border-slate-700/80 rounded-lg shrink-0 overflow-hidden">
+          {([
+            { label: "LIVE", value: totalActiveCalls !== null ? totalActiveCalls : runningConfs.length, color: "text-emerald-400", alert: (totalActiveCalls ?? runningConfs.length) > 0, Icon: Activity },
+            { label: "PENDING", value: pendingConfs.length, color: "text-amber-400", alert: false, Icon: Clock },
+            { label: "COMPLETED", value: completedConfs.length, color: "text-slate-400", alert: false, Icon: CheckCircle2 },
+            { label: "LOUNGE", value: loungeEntries.length, color: loungeEntries.length > 0 ? "text-amber-300" : "text-slate-500", alert: loungeEntries.length > 0, Icon: Users },
+            { label: "REQUESTS", value: opRequests.length, color: opRequests.length > 0 ? "text-red-400" : "text-slate-500", alert: opRequests.length > 0, Icon: Bell },
+            { label: "PARTICIPANTS", value: participants.length, color: "text-sky-400", alert: false, Icon: Headphones },
+            { label: "CCP", value: activeCCPConferenceId ? (activeConf?.callId ?? "ACTIVE") : "—", color: activeCCPConferenceId ? "text-emerald-400" : "text-slate-600", alert: !!activeCCPConferenceId, Icon: Radio },
+            { label: "BRIDGE", value: bridgeStatus as string, color: bridgeStatus === "OK" ? "text-emerald-400" : bridgeStatus === "DEGRADED" ? "text-amber-400" : "text-red-400", alert: bridgeStatus !== "OK", Icon: bridgeStatus === "OK" ? Wifi : WifiOff },
+          ]).map(({ label, value, color, alert, Icon }, i, arr) => (
+            <div key={label} className={`flex-1 flex items-center gap-2 px-3 py-2 ${i < arr.length - 1 ? "border-r border-slate-700/60" : ""} ${alert ? "bg-slate-800/40" : ""}`}>
+              <Icon className={`w-3 h-3 shrink-0 ${color} ${alert && label !== "BRIDGE" && label !== "CCP" ? "animate-pulse" : ""}`} />
+              <div className="min-w-0 flex-1">
+                <div className={`font-mono font-bold text-sm leading-none truncate ${color}`}>{value}</div>
+                <div className="text-[9px] text-slate-600 mt-0.5 uppercase tracking-wider truncate">{label}</div>
               </div>
             </div>
           ))}
@@ -1490,23 +1491,27 @@ export default function OCC() {
             />
           </div>
         )}
-        {/* ── Conference Overview ──────────────────────────────────────────────── */}
+        {/* ── Main Split Area ─────────────────────────────────────────────────── */}
+        <div className="flex-1 flex gap-1.5 min-h-0 overflow-hidden">
+
+        {/* ── Conference Overview — left column ───────────────────────────────── */}
         {showOverview && (
-          <div className="bg-[#111827] border border-slate-700 rounded-lg overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 bg-[#0f172a] border-b border-slate-700">
+          <div className="w-[420px] shrink-0 bg-[#111827] border border-slate-700 rounded-lg overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-3 py-1.5 bg-[#0c1220] border-b border-slate-700/80">
               <div className="flex items-center gap-2">
-                <LayoutGrid className="w-4 h-4 text-blue-400" />
-                <span className="font-semibold text-sm">Conference Overview</span>
+                <div className="w-1 h-4 rounded-full bg-blue-500" />
+                <span className="font-semibold text-xs tracking-wide uppercase text-slate-300">Overview</span>
+                <span className="text-[10px] text-slate-600 font-mono">{overviewConfs.length} conf{overviewConfs.length !== 1 ? "s" : ""}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setShowScheduleModal(true)}
-                  className="flex items-center gap-1 px-2 py-1 bg-blue-700/30 hover:bg-blue-700/50 text-blue-400 border border-blue-700/30 rounded text-xs font-medium transition-colors"
+                  className="flex items-center gap-1 px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-semibold transition-colors"
                 >
                   <Plus className="w-3 h-3" /> Schedule
                 </button>
-                <button className="text-slate-400 hover:text-slate-200"><RefreshCw className="w-3.5 h-3.5" /></button>
-                <button onClick={() => setShowOverview(false)} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
+                <button className="p-1 text-slate-500 hover:text-slate-300 transition-colors" title="Refresh"><RefreshCw className="w-3 h-3" /></button>
+                <button onClick={() => setShowOverview(false)} className="p-1 text-slate-600 hover:text-red-400 transition-colors" title="Close"><X className="w-3.5 h-3.5" /></button>
               </div>
             </div>
             {/* Tab bar */}
@@ -1534,7 +1539,7 @@ export default function OCC() {
               ))}
             </div>
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="flex-1 overflow-auto min-h-0">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-700 text-slate-400 bg-[#0d1526]">
@@ -1613,18 +1618,23 @@ export default function OCC() {
           </div>
         )}
 
-        {/* ── Conference Control Panel ─────────────────────────────────────────── */}
+        {/* ── Conference Control Panel — right column ─────────────────────────── */}
         {showCCP && (
-          <div className={`flex gap-3 ${splitViewEnabled && secondaryCCPConferenceId ? 'flex-row' : 'flex-col'}`}>
+          <div className={`flex-1 min-w-0 flex gap-1.5 overflow-hidden ${splitViewEnabled && secondaryCCPConferenceId ? 'flex-row' : 'flex-col'}`}>
           {/* Primary CCP */}
-          <div className={`bg-[#111827] border border-slate-700 rounded-lg overflow-hidden flex flex-col ${splitViewEnabled && secondaryCCPConferenceId ? 'flex-1 min-w-0' : ''}`}>
+          <div className="flex-1 min-w-0 bg-[#111827] border border-slate-700 rounded-lg overflow-hidden flex flex-col">
             {/* CCP Header */}
-            <div className="flex items-center justify-between px-3 py-2 bg-[#0f172a] border-b border-slate-700 shrink-0">
-              <div className="flex items-center gap-3">
-                <Activity className="w-4 h-4 text-emerald-400" />
-                <span className="font-semibold text-sm">Conference Control Panel</span>
+            <div className="flex items-center justify-between px-3 py-1.5 bg-[#0c1220] border-b border-slate-700/80 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-4 rounded-full bg-emerald-500" />
+                <span className="font-semibold text-xs tracking-wide uppercase text-slate-300">Control Panel</span>
                 {activeConf && (
-                  <span className="text-slate-400 text-xs">— {activeConf.subject} ({activeConf.callId})</span>
+                  <span className="text-slate-500 text-[11px] font-mono">{activeConf.callId} · {activeConf.subject}</span>
+                )}
+                {activeConf?.isRecording && (
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500/20 border border-red-500/40 rounded text-[9px] text-red-400 font-semibold uppercase tracking-wider">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> REC
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -1732,59 +1742,63 @@ export default function OCC() {
             ) : (
               <>
                 {/* Conference Bar */}
-                <div className="flex items-center gap-2 px-3 py-2 bg-[#0d1526] border-b border-slate-700 flex-wrap shrink-0">
-                  {/* Record */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0a0f1e] border-b border-slate-700/80 flex-wrap shrink-0">
+                  {/* Group 1: Recording & Lock */}
                   <button
                     onClick={doToggleRecord}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
                       activeConf.isRecording
                         ? "bg-red-600 hover:bg-red-500 text-white"
-                        : "bg-slate-700 hover:bg-slate-600 text-slate-300"
+                        : "bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700"
                     }`}
                   >
-                    {activeConf.isRecording ? <><div className="w-2 h-2 rounded-full bg-white animate-pulse" /> Recording</> : <><Radio className="w-3.5 h-3.5" /> Record</>}
+                    {activeConf.isRecording ? <><div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> REC</> : <><Radio className="w-3 h-3" /> Record</>}
                   </button>
-                  {/* Lock */}
                   <button
                     onClick={doToggleLock}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
                       activeConf.isLocked
                         ? "bg-amber-600 hover:bg-amber-500 text-white"
-                        : "bg-slate-700 hover:bg-slate-600 text-slate-300"
+                        : "bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700"
                     }`}
                   >
-                    {activeConf.isLocked ? <><Lock className="w-3.5 h-3.5" /> Locked</> : <><Unlock className="w-3.5 h-3.5" /> Unlocked</>}
-                  </button>
-                  {/* Mute Participants Only */}
-                  <button
-                    onClick={doMuteParticipantsOnly}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-amber-900/30 hover:bg-amber-800/50 text-amber-400 border border-amber-800/30 transition-colors"
-                    title="Mute all participants (moderators stay unmuted)"
-                  >
-                    <MicOff className="w-3.5 h-3.5" /> Mute Parts
-                  </button>
-                  {/* Mute All */}
-                  <button
-                    onClick={doMuteAll}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
-                  >
-                    <MicOff className="w-3.5 h-3.5" /> Mute All
-                  </button>
-                  {/* Disconnect */}
-                  <button
-                    onClick={() => setShowDisconnectModal(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-red-900/40 hover:bg-red-800/60 text-red-400 border border-red-800/40 transition-colors"
-                  >
-                    <PhoneOff className="w-3.5 h-3.5" /> Disconnect
+                    {activeConf.isLocked ? <><Lock className="w-3 h-3" /> Lock</> : <><Unlock className="w-3 h-3" /> Lock</>}
                   </button>
 
-                  {/* Dial-Out quick-launch */}
+                  {/* Divider */}
+                  <div className="w-px h-4 bg-slate-700 mx-0.5" />
+
+                  {/* Group 2: Audio */}
+                  <button
+                    onClick={doMuteParticipantsOnly}
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-amber-900/40 hover:bg-amber-800/60 text-amber-400 border border-amber-700/30 transition-colors"
+                    title="Mute all participants (moderators stay unmuted)"
+                  >
+                    <MicOff className="w-3 h-3" /> Mute Parts
+                  </button>
+                  <button
+                    onClick={doMuteAll}
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-colors"
+                  >
+                    <MicOff className="w-3 h-3" /> Mute All
+                  </button>
+
+                  {/* Divider */}
+                  <div className="w-px h-4 bg-slate-700 mx-0.5" />
+
+                  {/* Group 3: Connection */}
+                  <button
+                    onClick={() => setShowDisconnectModal(true)}
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-red-900/40 hover:bg-red-800/60 text-red-400 border border-red-700/40 transition-colors"
+                  >
+                    <PhoneOff className="w-3 h-3" /> Terminate
+                  </button>
                   <button
                     onClick={() => setShowDialOutModal(true)}
                     title="Dial out to a participant"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border border-emerald-800/40 transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border border-emerald-700/30 transition-colors"
                   >
-                    <Phone className="w-3.5 h-3.5" /> Dial Out
+                    <Phone className="w-3 h-3" /> Dial Out
                   </button>
                   {/* +15min — extend conference duration */}
                   <button
@@ -1806,9 +1820,9 @@ export default function OCC() {
                       } catch { /* demo mode */ }
                     }}
                     title="Extend conference by 15 minutes"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-colors"
                   >
-                    <Clock className="w-3.5 h-3.5" /> +15min
+                    <Clock className="w-3 h-3" /> +15min
                   </button>
                   {/* Capacity warning */}
                   {(() => {
@@ -1838,10 +1852,10 @@ export default function OCC() {
                     </button>
                   )}
                   {/* Info */}
-                  <div className="ml-auto flex items-center gap-4 text-xs text-slate-400">
-                    <span className="font-mono">{activeConf.dialInNumber}</span>
-                    <span>Mod: <span className="text-slate-200 font-mono">{activeConf.moderatorCode}</span></span>
-                    <span>Part: <span className="text-slate-200 font-mono">{activeConf.participantCode}</span></span>
+                  <div className="ml-auto flex items-center gap-3 text-[10px] text-slate-500 font-mono">
+                    <span className="text-slate-400">{activeConf.dialInNumber}</span>
+                    <span>MOD <span className="text-slate-300 font-bold">{activeConf.moderatorCode}</span></span>
+                    <span>PART <span className="text-slate-300 font-bold">{activeConf.participantCode}</span></span>
                     {/* Timer with alert colouring */}
                     {(() => {
                       const ms = activeConf.actualStart ? Date.now() - new Date(activeConf.actualStart).getTime() : 0;
@@ -1863,52 +1877,55 @@ export default function OCC() {
                   </div>
                 </div>
 
-                {/* Search Bar */}
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0a0d14] border-b border-slate-800 shrink-0">
-                  <Search className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <input
-                    value={participantSearch}
-                    onChange={e => setParticipantSearch(e.target.value)}
-                    placeholder="Search by name, company, phone, location…"
-                    className="flex-1 bg-transparent text-xs text-slate-300 placeholder-slate-600 focus:outline-none"
-                  />
-                  {participantSearch && (
-                    <button onClick={() => setParticipantSearch("")} className="text-slate-500 hover:text-slate-300">
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                  {participantSearch && (
-                    <span className="text-[10px] text-slate-500">{filteredParticipants.length} result{filteredParticipants.length !== 1 ? "s" : ""}</span>
-                  )}
-                </div>
-
-                {/* Filter Bar */}
-                <div className="flex items-center gap-1 px-3 py-1.5 bg-[#0a0f1e] border-b border-slate-700 flex-wrap shrink-0">
-                  {([
-                    { key: "all", label: "All", count: counts.all },
-                    { key: "moderators", label: "Mod", count: counts.moderators },
-                    { key: "participants", label: "Part", count: counts.participants },
-                    { key: "unmuted", label: "Unmuted", count: counts.unmuted },
-                    { key: "muted", label: "Muted", count: counts.muted },
-                    { key: "parked", label: "Parked", count: counts.parked },
-                    { key: "connected", label: "Connected", count: counts.connected },
-                    { key: "waiting", label: "Waiting", count: counts.waiting },
-                    { key: "web", label: "Web", count: counts.web },
-                    { key: "speak_requests", label: "Speak Req", count: counts.speak_requests },
-                  ] as const).map(f => (
-                    <button
-                      key={f.key}
-                      onClick={() => setFilterMode(f.key)}
-                      className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                        filterMode === f.key
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-800 hover:bg-slate-700 text-slate-400"
-                      }`}
-                    >
-                      {f.label}
-                      <span className={`px-1 rounded text-[10px] ${filterMode === f.key ? "bg-blue-500" : "bg-slate-700"}`}>{f.count}</span>
-                    </button>
-                  ))}
+                {/* Search + Filter Bar */}
+                <div className="flex items-center gap-0 border-b border-slate-700/80 shrink-0 bg-[#080c14]">
+                  {/* Search */}
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-r border-slate-700/60 min-w-[200px]">
+                    <Search className="w-3 h-3 text-slate-600 shrink-0" />
+                    <input
+                      value={participantSearch}
+                      onChange={e => setParticipantSearch(e.target.value)}
+                      placeholder="Search participants…"
+                      className="flex-1 bg-transparent text-[11px] text-slate-300 placeholder-slate-700 focus:outline-none w-full"
+                    />
+                    {participantSearch && (
+                      <button onClick={() => setParticipantSearch("")} className="text-slate-600 hover:text-slate-300 shrink-0">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </div>
+                  {/* Filter tabs */}
+                  <div className="flex items-stretch overflow-x-auto flex-1">
+                    {([
+                      { key: "all", label: "All", count: counts.all },
+                      { key: "moderators", label: "Mod", count: counts.moderators },
+                      { key: "participants", label: "Part", count: counts.participants },
+                      { key: "unmuted", label: "Unmuted", count: counts.unmuted },
+                      { key: "muted", label: "Muted", count: counts.muted },
+                      { key: "parked", label: "Parked", count: counts.parked },
+                      { key: "connected", label: "Connected", count: counts.connected },
+                      { key: "waiting", label: "Waiting", count: counts.waiting },
+                      { key: "web", label: "Web", count: counts.web },
+                      { key: "speak_requests", label: "Q&A", count: counts.speak_requests },
+                    ] as const).map(f => (
+                      <button
+                        key={f.key}
+                        onClick={() => setFilterMode(f.key)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium border-r border-slate-700/40 whitespace-nowrap transition-colors ${
+                          filterMode === f.key
+                            ? "bg-blue-600/20 text-blue-400 border-b-2 border-b-blue-500"
+                            : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/40"
+                        }`}
+                      >
+                        {f.label}
+                        {f.count > 0 && (
+                          <span className={`text-[9px] font-bold px-1 rounded-full ${
+                            filterMode === f.key ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-400"
+                          }`}>{f.count}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Action Bar */}
@@ -1939,7 +1956,7 @@ export default function OCC() {
                 )}
 
                 {/* Participant Table */}
-                <div className="overflow-x-auto shrink-0" style={{ maxHeight: "320px", overflowY: "auto" }}>
+                <div className="flex-1 overflow-auto min-h-0">
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 bg-[#0d1526] z-10">
                       <tr className="border-b border-slate-700 text-slate-400">
@@ -2082,27 +2099,27 @@ export default function OCC() {
                 {/* Feature Bar */}
                 <div className="border-t border-slate-700 shrink-0">
                   {/* Feature tabs */}
-                  <div className="flex border-b border-slate-700 bg-[#0a0f1e]">
+                  <div className="flex bg-[#080c14] overflow-x-auto">
                     {([
                       { key: "monitoring", label: "Monitoring", icon: Headphones },
                       { key: "connection", label: "Connection", icon: UserPlus },
                       { key: "history", label: "History", icon: History },
-                      { key: "audio", label: "Audio Files", icon: Music },
+                      { key: "audio", label: "Audio", icon: Music },
                       { key: "chat", label: "Chat", icon: MessageSquare },
                       { key: "notes", label: "Notes", icon: List },
-                      { key: "qa_queue", label: "Q&A Queue", icon: MessageSquare },
-                      { key: "direct_access", label: "CuraLive Direct", icon: KeyRound },
+                      { key: "qa_queue", label: "Q&A", icon: MessageSquare },
+                      { key: "direct_access", label: "Direct", icon: KeyRound },
                     ] as const).map(({ key, label, icon: Icon }) => (
                       <button
                         key={key}
                         onClick={() => setFeatureTab(key)}
-                        className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium border-b-2 transition-colors ${
+                        className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-medium border-b-2 whitespace-nowrap transition-colors ${
                           featureTab === key
-                            ? "border-blue-500 text-blue-400"
-                            : "border-transparent text-slate-400 hover:text-slate-200"
+                            ? "border-blue-500 text-blue-400 bg-blue-500/5"
+                            : "border-transparent text-slate-600 hover:text-slate-400"
                         }`}
                       >
-                        <Icon className="w-3.5 h-3.5" /> {label}
+                        <Icon className="w-3 h-3" /> {label}
                       </button>
                     ))}
                   </div>
@@ -2622,14 +2639,15 @@ export default function OCC() {
           </div>
         )}
 
-        {/* Empty state */}
-        {!showOverview && !showCCP && !showLounge && !showOpRequests && (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-600 py-24">
-            <Headphones className="w-12 h-12 mb-4 opacity-30" />
-            <p className="text-sm font-medium">Operator Call Centre</p>
-            <p className="text-xs mt-1">Use the toolbar above to open the Conference Overview or Control Panel.</p>
+        {/* Empty state — shown inside the split area when both panels are hidden */}
+        {!showOverview && !showCCP && (
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-700">
+            <Headphones className="w-10 h-10 mb-3 opacity-20" />
+            <p className="text-sm font-medium text-slate-600">Operator Call Centre</p>
+            <p className="text-xs mt-1 text-slate-700">Use the toolbar to open the Conference Overview or Control Panel.</p>
           </div>
         )}
+        </div>{/* /split area */}
       </div>
 
       {/* ── Caller Control Popup ──────────────────────────────────────────────── */}
@@ -4263,18 +4281,18 @@ export default function OCC() {
       )}
 
       {/* ── Status Bar ───────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-3 py-1 bg-[#0a0d14] border-t border-slate-800 text-[10px] text-slate-500 shrink-0">
-        <div className="flex items-center gap-4">
-          <span>CuraLive.OCC v1.0</span>
-          <span>Bridge: <span className="text-emerald-400">Connected</span></span>
-          <span>Running: <span className="text-slate-300">{runningConfs.length}</span></span>
-          <span>Lounge: <span className={loungeEntries.length > 0 ? "text-amber-400" : "text-slate-300"}>{loungeEntries.length}</span></span>
-          <span>Requests: <span className={opRequests.length > 0 ? "text-red-400" : "text-slate-300"}>{opRequests.length}</span></span>
+      <div className="flex items-center justify-between px-3 py-0.5 bg-[#060910] border-t border-slate-800/80 text-[9px] text-slate-600 font-mono shrink-0">
+        <div className="flex items-center gap-0">
+          <span className="pr-3 mr-3 border-r border-slate-800 text-slate-700 font-semibold">CuraLive.OCC</span>
+          <span className="px-3 border-r border-slate-800">BRIDGE <span className={bridgeStatus === "OK" ? "text-emerald-500" : bridgeStatus === "DEGRADED" ? "text-amber-500" : "text-red-500"}>{bridgeStatus}</span></span>
+          <span className="px-3 border-r border-slate-800">RUNNING <span className="text-emerald-500">{runningConfs.length}</span></span>
+          <span className="px-3 border-r border-slate-800">LOUNGE <span className={loungeEntries.length > 0 ? "text-amber-500" : "text-slate-600"}>{loungeEntries.length}</span></span>
+          <span className="px-3">REQUESTS <span className={opRequests.length > 0 ? "text-red-500" : "text-slate-600"}>{opRequests.length}</span></span>
         </div>
-        <div className="flex items-center gap-4">
-          <span>{new Date().toLocaleTimeString()}</span>
-          <span>{new Date().toLocaleDateString()}</span>
-          <span className="text-slate-400">{user?.name ?? "Operator"}</span>
+        <div className="flex items-center gap-0">
+          <span className="px-3 border-l border-slate-800">{user?.name ?? "OPERATOR"}</span>
+          <span className="px-3 border-l border-slate-800">{new Date().toLocaleDateString()}</span>
+          <span className="px-3 border-l border-slate-800">{new Date().toLocaleTimeString()}</span>
         </div>
       </div>
     </div>
