@@ -180,7 +180,7 @@ export default function OCC() {
 
   // Window visibility
   const [showOverview, setShowOverview] = useState(true);
-  const [showCCP, setShowCCP] = useState(false);
+  const [showCCP, setShowCCP] = useState(true);
   const [showLounge, setShowLounge] = useState(false);
   const [showOpRequests, setShowOpRequests] = useState(false);
   const [showWebphone, setShowWebphone] = useState(false);
@@ -1785,6 +1785,30 @@ export default function OCC() {
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border border-emerald-800/40 transition-colors"
                   >
                     <Phone className="w-3.5 h-3.5" /> Dial Out
+                  </button>
+                  {/* +15min — extend conference duration */}
+                  <button
+                    onClick={async () => {
+                      const newEnd = new Date(Date.now() + 15 * 60 * 1000);
+                      setLocalConferences(prev => prev.map(c =>
+                        c.id === activeCCPConferenceId
+                          ? { ...c, scheduledEnd: newEnd }
+                          : c
+                      ));
+                      try {
+                        if (ablyConferenceChanRef.current) {
+                          await ablyConferenceChanRef.current.publish("conference.extend", {
+                            conferenceId: activeCCPConferenceId,
+                            newEndTime: newEnd.toISOString(),
+                            extendedBy: 15,
+                          });
+                        }
+                      } catch { /* demo mode */ }
+                    }}
+                    title="Extend conference by 15 minutes"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
+                  >
+                    <Clock className="w-3.5 h-3.5" /> +15min
                   </button>
                   {/* Capacity warning */}
                   {(() => {
