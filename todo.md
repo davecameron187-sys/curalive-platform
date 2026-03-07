@@ -838,3 +838,29 @@
 - [ ] Test transcription accuracy across all platforms (Zoom, Teams, Webex, RTMP, PSTN)
 - [ ] Optimize transcription latency and performance
 - [ ] Deploy to production and monitor
+
+
+## Transcript Editing & Correction Feature
+
+- [ ] Design transcript editing architecture and database schema
+- [ ] Create occ_transcript_edits table for version history
+- [ ] Create occ_transcript_audit_log table for audit trail
+- [ ] Implement backend TranscriptEditingService
+- [ ] Add tRPC procedures: editSegment, batchEditSegments, getEditHistory, revertEdit, approveEdit
+- [ ] Build frontend TranscriptEditor component with inline editing
+- [ ] Add version history panel showing all edits with timestamps
+- [ ] Implement audit trail showing who edited what and when
+- [ ] Add batch editing modal for bulk corrections
+- [ ] Implement undo/redo functionality
+- [ ] Add search and replace feature
+- [ ] Create transcript diff viewer (original vs corrected)
+- [ ] Add spell-check and grammar suggestions
+- [ ] Implement confidence score updates after corrections
+- [ ] Add editor permissions (operator vs admin approval)
+- [ ] Create transcript export with corrected text
+- [ ] Add corrections to post-event report
+- [ ] Implement real-time collaboration (multiple editors)
+- [ ] Add correction suggestions based on AI confidence scores
+- [ ] Create transcript correction analytics dashboard
+- [ ] Test editing across all export formats (PDF, SRT, VTT)
+- [ ] Deploy to production and monitor
