@@ -1798,63 +1798,12 @@ export default function OCC() {
                 )}
                 {activeCCPConferenceId && (
                   <>
-                    {/* Answer tab — opens the Answer Calls panel */}
-                    <button
-                      onClick={() => setShowAnswerPanel(v => !v)}
-                      title="Open Answer Calls panel — manage incoming participant calls"
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-semibold transition-colors border ${
-                        showAnswerPanel
-                          ? "bg-emerald-600 border-emerald-500 text-white"
-                          : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-300 border-emerald-700/50"
-                      }`}
-                    >
-                      <Phone className="w-3 h-3" /> Answer
-                    </button>
-                    <div className="w-px h-4 bg-slate-700 mx-0.5" />
                     <button
                       onClick={() => { setDialEntries([]); setDialAllStatus("idle"); setDialForm({ name: "", company: "", phone: "", role: "participant" }); setShowMultiDialModal(true); }}
                       title="Dial multiple participants into this conference"
                       className="flex items-center gap-1 px-2 py-1 bg-blue-800/40 hover:bg-blue-700/60 text-blue-300 rounded text-[10px] transition-colors"
                     >
                       <PhoneForwarded className="w-3 h-3" /> Multi-Dial
-                    </button>
-                    {/* Post-Event Report — moved next to Multi-Dial */}
-                    <button
-                      onClick={() => {
-                        const conf = activeConf;
-                        if (!conf) return;
-                        const parts = participants;
-                        const notes = operatorNotes[activeCCPConferenceId!] ?? '';
-                        const exportPayload = {
-                          conferenceId: conf.id,
-                          subject: conf.subject,
-                          callId: conf.callId,
-                          exportedAt: new Date().toISOString(),
-                          participants: parts.map(p => ({
-                            name: p.name ?? null,
-                            company: p.company ?? null,
-                            role: p.role,
-                            state: p.state,
-                            phone: p.phoneNumber ?? null,
-                            connectTime: p.connectTime ? new Date(p.connectTime).toLocaleTimeString() : null,
-                          })),
-                          notes,
-                        };
-                        try { sessionStorage.setItem('occ_export_data', JSON.stringify(exportPayload)); } catch {}
-                        navigate(`/post-event/${conf.id}`);
-                      }}
-                      title="Open post-event report with participant list and operator notes"
-                      className="flex items-center gap-1 px-2 py-1 bg-emerald-800/40 hover:bg-emerald-700/60 text-emerald-300 rounded text-[10px] transition-colors"
-                    >
-                      <FileText className="w-3 h-3" /> Post-Event
-                    </button>
-                    {/* Simulate Incoming Call — moved next to Multi-Dial */}
-                    <button
-                      onClick={doSimulateIncomingCall}
-                      title="Simulate an incoming caller for demo purposes"
-                      className="flex items-center gap-1 px-2 py-1 bg-blue-900/40 hover:bg-blue-800/60 text-blue-400 rounded text-[10px] transition-colors"
-                    >
-                      <PhoneIncoming className="w-3 h-3" /> Simulate Call
                     </button>
                     <button
                       onClick={() => setShowGreenRoomPanel(true)}
@@ -1881,13 +1830,6 @@ export default function OCC() {
                     <BellOff className="w-3 h-3" /> Stop Ringing
                   </button>
                 )}
-                <button
-                  onClick={() => setShowSettingsModal(true)}
-                  title="Operator preferences"
-                  className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/70 text-slate-300 rounded text-[10px] transition-colors"
-                >
-                  <Settings className="w-3 h-3" /> Settings
-                </button>
                 {splitViewEnabled && secondaryCCPConferenceId && (
                   <button
                     onClick={() => { setSplitViewEnabled(false); setSecondaryCCPConferenceId(null); }}
@@ -1967,6 +1909,17 @@ export default function OCC() {
                     className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border border-emerald-700/30 transition-colors"
                   >
                     <Phone className="w-3 h-3" /> Dial Out
+                  </button>
+                  <button
+                    onClick={() => setShowAnswerPanel(v => !v)}
+                    title="Open Answer Calls panel — manage incoming participant calls"
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors border ${
+                      showAnswerPanel
+                        ? "bg-emerald-600 border-emerald-500 text-white"
+                        : "bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border-emerald-700/30"
+                    }`}
+                  >
+                    <Phone className="w-3 h-3" /> Answer
                   </button>
                   {/* Capacity warning */}
                   {(() => {
@@ -2572,9 +2525,9 @@ export default function OCC() {
                     <div className="flex flex-col gap-px flex-1 overflow-y-auto p-1.5">
                       {([
                         { label: "Call",       color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("connection"),                                                                 checkbox: null },
-                        { label: "Op Join",    color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("monitoring"),                                                                 checkbox: "M"  },
-                        { label: "Join",       color: "bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300",  action: () => { if (activeParticipantId) doParticipantAction("connected", [activeParticipantId]); },     checkbox: "T"  },
-                        { label: "Hold",       color: "bg-amber-900/50 hover:bg-amber-800 text-amber-300",        action: () => { if (activeParticipantId) doParticipantAction("parked",   [activeParticipantId]); },     checkbox: "W"  },
+                        { label: "Op Join",    color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("monitoring"),                                                                 checkbox: null },
+                        { label: "Join",       color: "bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300",  action: () => { if (activeParticipantId) doParticipantAction("connected", [activeParticipantId]); },     checkbox: null },
+                        { label: "Hold",       color: "bg-amber-900/50 hover:bg-amber-800 text-amber-300",        action: () => { if (activeParticipantId) doParticipantAction("parked",   [activeParticipantId]); },     checkbox: null },
                         { label: "TL/Mon",     color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("monitoring"),                                                                 checkbox: null },
                         { label: "Disconnect", color: "bg-red-900/60 hover:bg-red-800 text-red-300",              action: () => { if (activeParticipantId) doParticipantAction("dropped",  [activeParticipantId]); },     checkbox: null },
                         { label: "Voting",     color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("qa_queue"),                                                                   checkbox: null },
