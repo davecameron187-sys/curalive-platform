@@ -1950,7 +1950,6 @@ export default function OCC() {
                   )}
                   {/* Info */}
                   <div className="ml-auto flex items-center gap-3 text-[10px] text-slate-500 font-mono">
-                    <span className="text-slate-400">{activeConf.dialInNumber}</span>
                     <span>MOD <span className="text-slate-300 font-bold">{activeConf.moderatorCode}</span></span>
                     <span>PART <span className="text-slate-300 font-bold">{activeConf.participantCode}</span></span>
                     {/* Timer with alert colouring */}
