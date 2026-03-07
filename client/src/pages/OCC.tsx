@@ -213,6 +213,24 @@ export default function OCC() {
   const [bbInfo, setBbInfo] = useState("");
   const [vuLevel, setVuLevel] = useState(0);
 
+  // Answer panel state
+  const [showAnswerPanel, setShowAnswerPanel] = useState(false);
+  const [answerFilter, setAnswerFilter] = useState<"assisted" | "unassisted">("assisted");
+  const [answerSelectedConfId, setAnswerSelectedConfId] = useState<number | null>(null);
+  const [answerName, setAnswerName] = useState("");
+  const [answerPhone, setAnswerPhone] = useState("");
+  const [answerAddl1, setAnswerAddl1] = useState("");
+  const [answerAddl2, setAnswerAddl2] = useState("");
+  const [answerAddl3, setAnswerAddl3] = useState("");
+  const [answerAddl4, setAnswerAddl4] = useState("");
+  const [answerSpecial, setAnswerSpecial] = useState("");
+  const [answerDnis, setAnswerDnis] = useState("");
+  const [answerDesc, setAnswerDesc] = useState("");
+  const [answerJoinMon, setAnswerJoinMon] = useState(false);
+  const [answerOpJoinMon, setAnswerOpJoinMon] = useState(false);
+  const [answerActivate, setAnswerActivate] = useState(false);
+  const [answerSelectAllDnis, setAnswerSelectAllDnis] = useState(false);
+
   // Fake VU meter animation when a conference is active
   useEffect(() => {
     if (!activeCCPConferenceId) { setVuLevel(0); return; }
@@ -1623,6 +1641,19 @@ export default function OCC() {
                 )}
                 {activeCCPConferenceId && (
                   <>
+                    {/* Answer tab — opens the Answer Calls panel */}
+                    <button
+                      onClick={() => setShowAnswerPanel(v => !v)}
+                      title="Open Answer Calls panel — manage incoming participant calls"
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-semibold transition-colors border ${
+                        showAnswerPanel
+                          ? "bg-emerald-600 border-emerald-500 text-white"
+                          : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-300 border-emerald-700/50"
+                      }`}
+                    >
+                      <Phone className="w-3 h-3" /> Answer
+                    </button>
+                    <div className="w-px h-4 bg-slate-700 mx-0.5" />
                     <button
                       onClick={() => { setDialEntries([]); setDialAllStatus("idle"); setDialForm({ name: "", company: "", phone: "", role: "participant" }); setShowMultiDialModal(true); }}
                       title="Dial multiple participants into this conference"
@@ -1928,7 +1959,234 @@ export default function OCC() {
                   </div>
                 )}
 
+                {/* ── Answer Calls Panel ───────────────────────────────────────── */}
+                {showAnswerPanel && (
+                  <div className="flex flex-1 min-h-0 overflow-hidden bg-[#0a0f1e] border-t border-slate-700">
+
+                    {/* LEFT — Active Conference Selection */}
+                    <div className="flex flex-col w-[480px] shrink-0 border-r border-slate-700 min-h-0">
+
+                      {/* Title bar */}
+                      <div className="flex items-center justify-between px-3 py-1.5 bg-[#080c14] border-b border-slate-700 shrink-0">
+                        <span className="text-xs font-semibold text-slate-300">Active Conference Selection</span>
+                        <div className="flex items-center gap-4 text-[10px] text-slate-400 font-mono">
+                          <span>Incoming: <span className="text-slate-200">0</span></span>
+                          <span>Sig: <span className="text-slate-200">0</span></span>
+                          <span>System Hold: <span className="text-slate-200">0</span></span>
+                        </div>
+                      </div>
+
+                      {/* ASSISTED / UNASSISTED tabs */}
+                      <div className="flex border-b border-slate-700 shrink-0">
+                        {(["assisted", "unassisted"] as const).map(f => (
+                          <button
+                            key={f}
+                            onClick={() => setAnswerFilter(f)}
+                            className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wide border-r border-slate-800 transition-colors ${
+                              answerFilter === f ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/40"
+                            }`}
+                          >{f}</button>
+                        ))}
+                        <div className="flex items-center gap-3 ml-auto px-3 text-[9px] text-slate-500 font-mono">
+                          <span>Lang</span><span>Summit</span><span>Port</span><span>State</span><span>Party Name</span><span>DNIS</span>
+                        </div>
+                      </div>
+
+                      {/* Conference table */}
+                      <div className="flex-1 overflow-y-auto min-h-0">
+                        <table className="w-full text-xs">
+                          <thead className="sticky top-0 bg-[#0d1526] z-10 border-b border-slate-700">
+                            <tr className="text-slate-400 text-[10px]">
+                              <th className="text-left px-2 py-1.5 w-10">Idx</th>
+                              <th className="text-left px-2 py-1.5">Conference Name</th>
+                              <th className="text-left px-2 py-1.5 w-20">Summit</th>
+                              <th className="text-left px-2 py-1.5 w-16">Guest P</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {conferences.map(c => (
+                              <tr
+                                key={c.id}
+                                onClick={() => setAnswerSelectedConfId(c.id)}
+                                className={`border-b border-slate-800/50 cursor-pointer transition-colors ${
+                                  answerSelectedConfId === c.id
+                                    ? "bg-blue-800/40 text-blue-200"
+                                    : c.status === "running" ? "text-red-400 hover:bg-slate-800/40" : "text-slate-300 hover:bg-slate-800/40"
+                                }`}
+                              >
+                                <td className="px-2 py-1 font-mono text-[10px] text-slate-400">{c.id}</td>
+                                <td className="px-2 py-1 text-[11px] font-medium">{c.subject}</td>
+                                <td className="px-2 py-1 text-[10px] text-slate-400">{c.reseller ?? "—"}</td>
+                                <td className="px-2 py-1 text-[10px] text-slate-500">{c.status === "running" ? "●" : "○"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Search bar */}
+                      <div className="flex items-center gap-1 px-2 py-1.5 border-t border-slate-700 bg-[#080c14] shrink-0">
+                        <Search className="w-3 h-3 text-slate-600 shrink-0" />
+                        <input placeholder="Search..." className="flex-1 bg-transparent text-[11px] text-slate-300 placeholder-slate-600 focus:outline-none" />
+                        <button className="text-slate-600 hover:text-slate-300"><X className="w-3 h-3" /></button>
+                      </div>
+
+                      {/* Bottom controls */}
+                      <div className="flex gap-2 px-2 py-2 border-t border-slate-700 bg-[#080c14] shrink-0 flex-wrap">
+                        {/* Answer Filter */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[9px] text-slate-500 font-semibold uppercase">Answer Filter</span>
+                          <button className="px-3 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Define</button>
+                          <label className="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer"><input type="checkbox" checked={answerActivate} onChange={e => setAnswerActivate(e.target.checked)} className="w-3 h-3 accent-blue-500" />Activate</label>
+                          <label className="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer"><input type="checkbox" checked={answerSelectAllDnis} onChange={e => setAnswerSelectAllDnis(e.target.checked)} className="w-3 h-3 accent-blue-500" />Select All DNIS</label>
+                        </div>
+
+                        {/* Conf actions */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[9px] text-slate-500 font-semibold uppercase">Activate Conf</span>
+                          <div className="flex gap-1">
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">New Conf</button>
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Info</button>
+                          </div>
+                          <div className="flex gap-1">
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Activate PC</button>
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Details</button>
+                          </div>
+                          <div className="flex gap-1">
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Unattended</button>
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Expand</button>
+                          </div>
+                          <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600 self-start">Schedule</button>
+                        </div>
+
+                        {/* Participant Details */}
+                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                          <span className="text-[9px] text-slate-500 font-semibold uppercase">Participant Details</span>
+                          <div className="flex gap-1">
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Name</label>
+                              <input value={answerName} onChange={e => setAnswerName(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Phone</label>
+                              <input value={answerPhone} onChange={e => setAnswerPhone(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5 font-mono" />
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Additional Info</label>
+                              <input value={answerAddl1} onChange={e => setAnswerAddl1(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Additional Info</label>
+                              <input value={answerAddl2} onChange={e => setAnswerAddl2(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5" />
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Additional Info</label>
+                              <input value={answerAddl3} onChange={e => setAnswerAddl3(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Additional Info</label>
+                              <input value={answerAddl4} onChange={e => setAnswerAddl4(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[9px] text-slate-500">Special Instructions</label>
+                            <div className="flex gap-1 mt-0.5">
+                              <textarea value={answerSpecial} onChange={e => setAnswerSpecial(e.target.value)} rows={2} className="flex-1 bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 resize-none" />
+                              <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600 self-end">View</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* DNIS / Description / OK */}
+                      <div className="flex items-center gap-2 px-2 py-1.5 border-t border-slate-700 bg-[#070b12] shrink-0">
+                        <span className="text-[10px] text-slate-500">DNIS:</span>
+                        <input value={answerDnis} onChange={e => setAnswerDnis(e.target.value)} className="w-24 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 font-mono" />
+                        <span className="text-[10px] text-slate-500 ml-2">Description:</span>
+                        <input value={answerDesc} onChange={e => setAnswerDesc(e.target.value)} className="flex-1 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500" />
+                        <button className="px-3 py-1 text-[10px] font-semibold bg-blue-700 hover:bg-blue-600 text-white rounded border border-blue-600">OK</button>
+                      </div>
+                    </div>
+
+                    {/* RIGHT — Incoming & Operator Action Buttons */}
+                    <div className="flex flex-col flex-1 min-h-0 bg-[#08111f]">
+                      <div className="flex items-center justify-between px-3 py-1.5 bg-[#080c14] border-b border-slate-700 shrink-0">
+                        <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Incoming</span>
+                      </div>
+                      <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
+                        {/* Incoming actions */}
+                        {[
+                          { label: "Answer",     color: "bg-emerald-700 hover:bg-emerald-600 text-white",      checkbox: null        },
+                          { label: "Join Mon",   color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: answerJoinMon, setCheckbox: setAnswerJoinMon },
+                          { label: "Transfer",   color: "bg-blue-800/60 hover:bg-blue-700/80 text-blue-300",   checkbox: null        },
+                          { label: "Hold",       color: "bg-amber-900/60 hover:bg-amber-800 text-amber-300",   checkbox: null        },
+                          { label: "Recall",     color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: null        },
+                          { label: "Disconnect", color: "bg-red-900/60 hover:bg-red-800 text-red-300",         checkbox: null        },
+                        ].map(({ label, color, checkbox, setCheckbox }) => (
+                          <div key={label} className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                if (label === "Transfer" && answerSelectedConfId) {
+                                  setActiveCCPConferenceId(answerSelectedConfId);
+                                  setShowAnswerPanel(false);
+                                }
+                              }}
+                              className={`flex-1 px-3 py-2 text-[11px] font-semibold rounded border border-slate-700/60 transition-colors text-left ${color}`}
+                            >{label}</button>
+                            {checkbox !== null && setCheckbox && (
+                              <label className="flex items-center gap-0.5 cursor-pointer shrink-0">
+                                <input type="checkbox" checked={checkbox as boolean} onChange={e => (setCheckbox as (v: boolean) => void)(e.target.checked)} className="w-3 h-3 accent-blue-500" />
+                              </label>
+                            )}
+                          </div>
+                        ))}
+                        <div>
+                          <label className="text-[9px] text-slate-500">Gain</label>
+                          <select className="w-full mt-0.5 bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none">
+                            <option>0 dB</option><option>+3 dB</option><option>+6 dB</option><option>-3 dB</option><option>-6 dB</option>
+                          </select>
+                        </div>
+
+                        {/* Operator section */}
+                        <div className="mt-2 pt-2 border-t border-slate-700">
+                          <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wide">Operator</span>
+                        </div>
+                        {[
+                          { label: "Op Join Mon", color: "bg-slate-700 hover:bg-slate-600 text-slate-200", checkbox: answerOpJoinMon, setCheckbox: setAnswerOpJoinMon },
+                          { label: "Op Hold",     color: "bg-amber-900/50 hover:bg-amber-800 text-amber-300", checkbox: null },
+                          { label: "OpTL/M",      color: "bg-slate-700 hover:bg-slate-600 text-slate-200", checkbox: null },
+                          { label: "OpGain",      color: "bg-slate-700 hover:bg-slate-600 text-slate-200", checkbox: null },
+                          { label: "View History",color: "bg-slate-700 hover:bg-slate-600 text-slate-200", checkbox: null },
+                        ].map(({ label, color, checkbox, setCheckbox }) => (
+                          <div key={label} className="flex items-center gap-1">
+                            <button className={`flex-1 px-3 py-1.5 text-[11px] font-semibold rounded border border-slate-700/60 transition-colors text-left ${color}`}>{label}</button>
+                            {checkbox !== null && setCheckbox && (
+                              <label className="flex items-center gap-0.5 cursor-pointer shrink-0">
+                                <input type="checkbox" checked={checkbox as boolean} onChange={e => (setCheckbox as (v: boolean) => void)(e.target.checked)} className="w-3 h-3 accent-blue-500" />
+                              </label>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Exit */}
+                      <div className="px-2 py-2 border-t border-slate-700 shrink-0">
+                        <button
+                          onClick={() => setShowAnswerPanel(false)}
+                          className="w-full px-3 py-1.5 text-[11px] font-semibold bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600 transition-colors"
+                        >Exit</button>
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+
                 {/* Main CCP workspace: left table + right action panel */}
+                {!showAnswerPanel && (
                 <div className="flex flex-1 min-h-0 overflow-hidden">
 
                   {/* ── Left: Parties / Operators / Alarms tabs + participant table ── */}
@@ -2131,25 +2389,15 @@ export default function OCC() {
 
                   </div>{/* end left column */}
 
-                  {/* ── Right: Standard / Group / Super + Action Buttons ── */}
+                  {/* ── Right: Action Buttons ── */}
                   <div className="w-36 shrink-0 border-l border-slate-700 bg-[#08111f] flex flex-col">
 
-                    {/* View tabs */}
-                    <div className="flex border-b border-slate-700 shrink-0">
-                      {(["standard", "group", "super"] as const).map(v => (
-                        <button
-                          key={v}
-                          onClick={() => setCcpView(v)}
-                          className={`flex-1 py-1.5 text-[9px] font-bold uppercase tracking-wide transition-colors border-r border-slate-800 last:border-r-0 ${
-                            ccpView === v ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/40"
-                          }`}
-                        >
-                          {v}
-                        </button>
-                      ))}
+                    {/* Action panel header */}
+                    <div className="px-2 py-1.5 border-b border-slate-700 bg-[#0a0f1e] shrink-0">
+                      <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">Actions</span>
                     </div>
 
-                    {/* F-key action buttons (F prefix removed) */}
+                    {/* Action buttons */}
                     <div className="flex flex-col gap-px flex-1 overflow-y-auto p-1.5">
                       {([
                         { label: "Call",       color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("connection"),                                                                 checkbox: null },
@@ -2180,7 +2428,8 @@ export default function OCC() {
 
                   </div>{/* end right action panel */}
 
-                </div>{/* end main workspace */}
+                </div>
+                )}
 
                 {/* Feature Bar */}
                 <div className="border-t border-slate-700 shrink-0">
