@@ -1182,22 +1182,10 @@ export default function OCC() {
   // ── Auth guard ────────────────────────────────────────────────────────────
   const { loading: authLoading, isAuthenticated } = useAuth();
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center animate-pulse">
-            <Headphones className="w-5 h-5 text-white" />
-          </div>
-          <p className="text-slate-400 text-sm">Loading CuraLive.OCC…</p>
-        </div>
-      </div>
-    );
-  }
-
-  // AUTH BYPASS — re-enable before going live
-  // if (!isAuthenticated) { ... }
-  // if (userRole && userRole !== 'admin' && userRole !== 'operator') { ... }
+  // AUTH BYPASS — re-enable before going live (remove these two lines and restore checks below)
+  // if (authLoading) { return <spinner> }
+  // if (!isAuthenticated) { return <login> }
+  // if (userRole && userRole !== 'admin' && userRole !== 'operator') { return <denied> }
 
   return (
     <div className="min-h-screen bg-[#0a0d14] text-slate-200 flex flex-col" style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px" }}>
