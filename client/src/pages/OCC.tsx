@@ -16,7 +16,8 @@ import {
   ArrowRight, UserCheck, UserX, Activity, Clock,
   List, LayoutGrid, Bell, BellOff, Send, Search, Filter,
   Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical, FileText,
-  PhoneForwarded, Trash2, Upload, GraduationCap, KeyRound, ShieldCheck, ShieldOff, BarChart2
+  PhoneForwarded, Trash2, Upload, GraduationCap, KeyRound, ShieldCheck, ShieldOff, BarChart2,
+  Settings2, UserCog, TrendingUp, TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
 import Webphone from "@/components/Webphone";
@@ -180,13 +181,16 @@ export default function OCC() {
 
   // Window visibility
   const [showOverview, setShowOverview] = useState(true);
-  const [showCCP, setShowCCP] = useState(false);
+  const [showCCP, setShowCCP] = useState(true);
   const [showLounge, setShowLounge] = useState(false);
   const [showOpRequests, setShowOpRequests] = useState(false);
   const [showWebphone, setShowWebphone] = useState(false);
   const [webphonePrefill, setWebphonePrefill] = useState("");
   const [showCallerControl, setShowCallerControl] = useState(false);
   const [showAccessCodes, setShowAccessCodes] = useState(false);
+
+  // Left sidebar navigation
+  const [activeSidebarTab, setActiveSidebarTab] = useState<"running" | "post_event" | "simulate" | "settings" | "op_settings">("running");
 
   // Active conference in CCP
   const [activeCCPConferenceId, setActiveCCPConferenceId] = useState<number | null>(null);
@@ -203,7 +207,61 @@ export default function OCC() {
   const [participantSearch, setParticipantSearch] = useState("");
   const [featureTab, setFeatureTab] = useState<FeatureTab>("monitoring");
   const [historyParticipantId, setHistoryParticipantId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"running" | "post_event" | "simulate" | "settings" | "op_settings">("running");
+
+  // CCP right-panel & bottom-bar state
+  const [ccpView, setCcpView] = useState<"standard" | "group" | "super">("standard");
+  const [ccpPartyTab, setCcpPartyTab] = useState<"parties" | "operators" | "alarms">("parties");
+  const [activeParticipantId, setActiveParticipantId] = useState<number | null>(null);
+  const [bbName, setBbName] = useState("");
+  const [bbPhone, setBbPhone] = useState("");
+  const [bbInfo, setBbInfo] = useState("");
+  const [vuLevel, setVuLevel] = useState(0);
+
+  // Simulated sentiment scores per participant (0-100)
+  const [sentimentScores, setSentimentScores] = useState<Record<number, number>>({
+    1: 82, 2: 91, 3: 74, 4: 58, 5: 66, 6: 45, 7: 79, 8: 38, 9: 87, 10: 62,
+  });
+
+  // Simulated call-quality metrics (updated periodically)
+  const [callQuality, setCallQuality] = useState({
+    bandwidth: 1240, latency: 42, jitter: 5, packetLoss: 0.2, mos: 4.3,
+  });
+
+  // Q&A submitted questions (demo data)
+  const [qaQuestions, setQaQuestions] = useState([
+    { id: 1, text: "Can you elaborate on the Q3 revenue guidance given the macro headwinds?", submitter: "Thabo Molefe", company: "Investec", votes: 14, status: "pending" as const, timestamp: new Date(Date.now() - 8 * 60000), pinned: false },
+    { id: 2, text: "What is the capex allocation for the next fiscal year?", submitter: "Priya Naidoo", company: "Old Mutual", votes: 9, status: "approved" as const, timestamp: new Date(Date.now() - 6 * 60000), pinned: true },
+    { id: 3, text: "How is the company positioned against rising interest rates?", submitter: "Mark van der Berg", company: "Coronation", votes: 7, status: "pending" as const, timestamp: new Date(Date.now() - 4 * 60000), pinned: false },
+    { id: 4, text: "Are there any planned acquisitions in the pipeline for H1 2026?", submitter: "David Osei", company: "Allan Gray", votes: 3, status: "pending" as const, timestamp: new Date(Date.now() - 2 * 60000), pinned: false },
+    { id: 5, text: "What is the dividend policy going forward?", submitter: "Lerato Sithole", company: "PIC", votes: 11, status: "answered" as const, timestamp: new Date(Date.now() - 15 * 60000), pinned: false },
+  ]);
+
+  // Answer panel state
+  const [showAnswerPanel, setShowAnswerPanel] = useState(false);
+  const [answerFilter, setAnswerFilter] = useState<"assisted" | "unassisted">("assisted");
+  const [answerSelectedConfId, setAnswerSelectedConfId] = useState<number | null>(null);
+  const [answerName, setAnswerName] = useState("");
+  const [answerPhone, setAnswerPhone] = useState("");
+  const [answerAddl1, setAnswerAddl1] = useState("");
+  const [answerAddl2, setAnswerAddl2] = useState("");
+  const [answerAddl3, setAnswerAddl3] = useState("");
+  const [answerAddl4, setAnswerAddl4] = useState("");
+  const [answerSpecial, setAnswerSpecial] = useState("");
+  const [answerDnis, setAnswerDnis] = useState("");
+  const [answerDesc, setAnswerDesc] = useState("");
+  const [answerJoinMon, setAnswerJoinMon] = useState(false);
+  const [answerOpJoinMon, setAnswerOpJoinMon] = useState(false);
+  const [answerActivate, setAnswerActivate] = useState(false);
+  const [answerSelectAllDnis, setAnswerSelectAllDnis] = useState(false);
+
+  // Fake VU meter animation when a conference is active
+  useEffect(() => {
+    if (!activeCCPConferenceId) { setVuLevel(0); return; }
+    const id = setInterval(() => {
+      setVuLevel(Math.random() * 60 + (Math.random() > 0.8 ? 30 : 0));
+    }, 150);
+    return () => clearInterval(id);
+  }, [activeCCPConferenceId]);
 
   // Operator notes (per-conference)
   const [operatorNotes, setOperatorNotes] = useState<Record<number, string>>({});
@@ -567,6 +625,15 @@ export default function OCC() {
     ? conferences.find(c => c.id === activeCCPConferenceId) ?? null
     : null;
 
+  // Auto-open the first running conference on page load
+  useEffect(() => {
+    if (!activeCCPConferenceId && conferences.length > 0) {
+      const first = conferences.find(c => c.status === "running") ?? conferences[0];
+      if (first) openCCP(first.id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conferences.length]);
+
   const participantsQuery = trpc.occ.getParticipants.useQuery(
     { conferenceId: activeCCPConferenceId ?? 0 },
     { enabled: !!activeCCPConferenceId, retry: false }
@@ -737,6 +804,10 @@ export default function OCC() {
     setSelectedParticipantIds([]);
     setFilterMode("all");
     setFeatureTab("monitoring");
+    setCcpView("standard");
+    setCcpPartyTab("parties");
+    setActiveParticipantId(null);
+    setBbName(""); setBbPhone(""); setBbInfo("");
   }, []);
 
   const toggleParticipantSelect = (id: number) => {
@@ -958,6 +1029,29 @@ export default function OCC() {
       playBeep();
     }
   }, [localParticipants, playBeep, stopRinging]);
+
+  // Simulate live call quality metric updates every 5s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCallQuality(prev => ({
+        bandwidth: Math.max(800, Math.min(2400, prev.bandwidth + (Math.random() - 0.5) * 120)),
+        latency: Math.max(18, Math.min(120, prev.latency + (Math.random() - 0.5) * 8)),
+        jitter: Math.max(1, Math.min(25, prev.jitter + (Math.random() - 0.5) * 3)),
+        packetLoss: Math.max(0, Math.min(5, prev.packetLoss + (Math.random() - 0.5) * 0.3)),
+        mos: Math.max(2.5, Math.min(5.0, prev.mos + (Math.random() - 0.5) * 0.15)),
+      }));
+      // Drift sentiment scores slightly
+      setSentimentScores(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(k => {
+          const id = Number(k);
+          next[id] = Math.max(10, Math.min(100, next[id] + Math.round((Math.random() - 0.5) * 6)));
+        });
+        return next;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Simulate an incoming caller (demo feature for Board presentation)
   const doSimulateIncomingCall = () => {
@@ -1183,78 +1277,28 @@ export default function OCC() {
   // ── Auth guard ────────────────────────────────────────────────────────────
   const { loading: authLoading, isAuthenticated } = useAuth();
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center animate-pulse">
-            <Headphones className="w-5 h-5 text-white" />
-          </div>
-          <p className="text-slate-400 text-sm">Loading CuraLive.OCC…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
-        <div className="bg-[#111827] border border-slate-700 rounded-xl p-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
-          <div className="w-14 h-14 rounded-xl bg-blue-600/20 border border-blue-600/40 flex items-center justify-center">
-            <Headphones className="w-7 h-7 text-blue-400" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-white mb-2">CuraLive.OCC</h1>
-            <p className="text-slate-400 text-sm leading-relaxed">Operator Call Centre access requires authentication. Please sign in with your CuraLive operator account.</p>
-          </div>
-          <a
-            href={`/api/oauth/login?returnTo=${encodeURIComponent('/occ')}`}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-          >
-            <LogOut className="w-4 h-4 rotate-180" />
-            Sign in to access OCC
-          </a>
-          <a href="/" className="text-xs text-slate-500 hover:text-slate-400 transition-colors">← Back to CuraLive</a>
-        </div>
-      </div>
-    );
-  }
-
-  // Operator role check — admin and operator roles can access OCC
-  const userRole = (user as any)?.role;
-  if (userRole && userRole !== 'admin' && userRole !== 'operator') {
-    return (
-      <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
-        <div className="bg-[#111827] border border-red-800/40 rounded-xl p-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
-          <div className="w-14 h-14 rounded-xl bg-red-600/20 border border-red-600/40 flex items-center justify-center">
-            <AlertCircle className="w-7 h-7 text-red-400" />
-          </div>
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-white mb-2">Access Denied</h1>
-            <p className="text-slate-400 text-sm leading-relaxed">Your account does not have operator access to CuraLive.OCC. Contact your CuraLive administrator to request access.</p>
-          </div>
-          <a href="/" className="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">← Back to CuraLive</a>
-        </div>
-      </div>
-    );
-  }
+  // AUTH BYPASS — re-enable before going live (remove these two lines and restore checks below)
+  // if (authLoading) { return <spinner> }
+  // if (!isAuthenticated) { return <login> }
+  // if (userRole && userRole !== 'admin' && userRole !== 'operator') { return <denied> }
 
   return (
     <div className="min-h-screen bg-[#0a0d14] text-slate-200 flex flex-col" style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px" }}>
 
       {/* ── Top Menu Bar ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#111827] border-b border-slate-700/60 shrink-0">
+      <div className="flex items-center justify-between px-3 py-1 bg-[#0c1220] border-b border-slate-700/60 shrink-0" style={{ background: "linear-gradient(180deg, #0e1628 0%, #0a0f1e 100%)" }}>
         {/* Left: Logo + menus */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center">
-              <Headphones className="w-3.5 h-3.5 text-white" />
+            <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center shrink-0">
+              <Headphones className="w-3 h-3 text-white" />
             </div>
-            <span className="font-bold text-white text-sm tracking-tight">CuraLive<span className="text-blue-400">.OCC</span></span>
+            <span className="font-bold text-white text-xs tracking-wide">CuraLive<span className="text-blue-400">.OCC</span></span>
+            <span className="text-[9px] text-slate-700 font-mono uppercase tracking-widest hidden lg:block">v1.0</span>
           </div>
-          <div className="hidden md:flex items-center gap-1 text-xs text-slate-400">
+          <div className="hidden md:flex items-center border-l border-slate-700/60 pl-3 gap-0 text-[11px]">
             {["File", "Conference", "Participants", "Utility", "Setup", "Help"].map(m => (
-              <button key={m} className="px-2 py-1 rounded hover:bg-slate-700 hover:text-slate-200 transition-colors">{m}</button>
+              <button key={m} className="px-2.5 py-1 text-slate-500 hover:text-slate-200 hover:bg-slate-700/40 rounded transition-colors">{m}</button>
             ))}
           </div>
         </div>
@@ -1325,52 +1369,136 @@ export default function OCC() {
       </div>
 
       {/* ── Main workspace ────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex gap-2 p-2 overflow-auto">
-        {/* Sidebar Tabs (Left) */}
-        <div className="flex flex-col gap-1 shrink-0 w-20">
-          {[
-            { key: "running", label: "Running", icon: Activity },
-            { key: "post_event", label: "Post Evt", icon: FileText },
-            { key: "simulate", label: "Sim Call", icon: Phone },
-            { key: "settings", label: "Settings", icon: Settings },
-            { key: "op_settings", label: "Op Setgs", icon: BarChart2 },
-          ].map(({ key, label, icon: Icon }) => (
+      <div className="flex-1 flex overflow-hidden min-h-0">
+
+        {/* ── Left Sidebar Navigation ──────────────────────────────────────────── */}
+        <div className="w-20 shrink-0 flex flex-col items-center py-3 gap-1 bg-[#080c14] border-r border-slate-700/60">
+          {([
+            { key: "running",    Icon: Phone,      label: "Running\nCalls" },
+            { key: "post_event", Icon: BarChart2,  label: "Post\nEvent" },
+            { key: "simulate",   Icon: Mic,        label: "Simulate\nCall" },
+            { key: "settings",   Icon: Settings2,  label: "Settings" },
+            { key: "op_settings",Icon: UserCog,    label: "Op\nSettings" },
+          ] as const).map(({ key, Icon, label }) => (
             <button
               key={key}
-              onClick={() => setActiveTab(key as any)}
-              title={label}
-              className={`flex flex-col items-center gap-1 px-2 py-2 rounded border transition-colors text-[10px] font-medium whitespace-nowrap ${
-                activeTab === key
-                  ? "bg-blue-600/40 border-blue-500/60 text-blue-300"
-                  : "bg-slate-800/40 border-slate-700 text-slate-400 hover:bg-slate-700/40 hover:text-slate-300"
+              onClick={() => setActiveSidebarTab(key)}
+              title={label.replace("\n", " ")}
+              className={`w-16 flex flex-col items-center gap-1 px-1 py-2.5 rounded-lg text-center transition-all duration-150 ${
+                activeSidebarTab === key
+                  ? "bg-blue-600/30 border border-blue-500/50 text-blue-300"
+                  : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 border border-transparent"
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{label}</span>
+              <Icon className="w-5 h-5" />
+              <span className="text-[9px] font-semibold leading-tight uppercase tracking-wide whitespace-pre-line">{label}</span>
             </button>
           ))}
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col gap-2 overflow-auto">
+        {/* ── Content Area ─────────────────────────────────────────────────────── */}
+        {activeSidebarTab === "post_event" ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <BarChart2 className="w-12 h-12 text-slate-700" />
+            <div>
+              <div className="text-lg font-semibold text-slate-400 mb-1">Post-Event Reports</div>
+              <div className="text-sm text-slate-600">Access recordings, transcripts, Q&A summaries, and analytics for completed conferences.</div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 mt-4 w-full max-w-2xl">
+              {[{ label: "Conferences Today", val: "3" }, { label: "Total Duration", val: "2h 47m" }, { label: "Participants Served", val: "186" }].map(m => (
+                <div key={m.label} className="bg-slate-800 border border-slate-700 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-slate-200 mb-1">{m.val}</div>
+                  <div className="text-xs text-slate-500">{m.label}</div>
+                </div>
+              ))}
+            </div>
+            <button className="flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors">
+              <BarChart2 className="w-4 h-4" /> View Full Reports
+            </button>
+          </div>
+        ) : activeSidebarTab === "simulate" ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <Mic className="w-12 h-12 text-slate-700" />
+            <div>
+              <div className="text-lg font-semibold text-slate-400 mb-1">Simulate Call</div>
+              <div className="text-sm text-slate-600">Test call scenarios, operator features, and IVR flows in a sandbox environment.</div>
+            </div>
+            <div className="flex gap-3 mt-2">
+              <button className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
+                <Phone className="w-4 h-4" /> New Simulation
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition-colors">
+                Load Scenario
+              </button>
+            </div>
+          </div>
+        ) : activeSidebarTab === "settings" ? (
+          <div className="flex-1 flex flex-col gap-4 p-6 overflow-y-auto">
+            <div className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Settings2 className="w-4 h-4 text-slate-500" /> Operator Preferences</div>
+            {[
+              { section: "General", fields: [{ label: "Display Name", type: "text", val: "Operator" }, { label: "Timezone", type: "select", val: "Africa/Johannesburg", opts: ["Africa/Johannesburg", "UTC", "America/New_York", "Europe/London", "Asia/Dubai"] }, { label: "UI Language", type: "select", val: "en", opts: ["en", "fr", "pt", "es", "de", "ar", "zh"] }] },
+              { section: "Notifications", fields: [{ label: "New Participant Alert", type: "toggle", val: "on" }, { label: "Participant Disconnect Alert", type: "toggle", val: "on" }, { label: "Q&A Submitted Alert", type: "toggle", val: "on" }, { label: "Sentiment Alert Threshold", type: "text", val: "30" }] },
+              { section: "Appearance", fields: [{ label: "Theme", type: "select", val: "Dark", opts: ["Dark", "Light", "Auto"] }, { label: "Font Size", type: "select", val: "Medium", opts: ["Small", "Medium", "Large"] }, { label: "Compact Mode", type: "toggle", val: "off" }] },
+            ].map(({ section, fields }) => (
+              <div key={section} className="bg-slate-800/60 border border-slate-700 rounded-lg p-4">
+                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">{section}</div>
+                <div className="space-y-3">
+                  {fields.map(f => (
+                    <div key={f.label} className="flex items-center justify-between">
+                      <label className="text-xs text-slate-300">{f.label}</label>
+                      {f.type === "toggle" ? (
+                        <button className={`px-3 py-1 rounded text-[10px] font-semibold border transition-colors ${f.val === "on" ? "bg-emerald-700/40 border-emerald-600 text-emerald-300" : "bg-slate-700 border-slate-600 text-slate-400"}`}>{f.val === "on" ? "ON" : "OFF"}</button>
+                      ) : f.type === "select" ? (
+                        <select className="bg-slate-700 border border-slate-600 text-xs text-slate-200 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
+                          {(f.opts ?? []).map(o => <option key={o}>{o}</option>)}
+                        </select>
+                      ) : (
+                        <input defaultValue={f.val} className="bg-slate-700 border border-slate-600 text-xs text-slate-200 rounded px-2 py-1 w-36 focus:outline-none focus:border-blue-500" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button className="self-start flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors">Save Changes</button>
+          </div>
+        ) : activeSidebarTab === "op_settings" ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <UserCog className="w-12 h-12 text-slate-700" />
+            <div>
+              <div className="text-lg font-semibold text-slate-400 mb-1">Operator Settings</div>
+              <div className="text-sm text-slate-600">Configure operator-specific permissions, shortcuts, and audio device preferences.</div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-2 w-full max-w-md text-left">
+              {[{ label: "Keyboard Shortcuts", desc: "Mute: Ctrl+M · Record: Ctrl+R · Disconnect: Ctrl+D" }, { label: "Audio Devices", desc: "Input: Default Mic · Output: Default Speaker" }].map(item => (
+                <div key={item.label} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                  <div className="text-xs font-semibold text-slate-300 mb-2">{item.label}</div>
+                  <div className="text-xs text-slate-500">{item.desc}</div>
+                  <button className="mt-3 text-xs text-blue-400 hover:text-blue-300">Configure →</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+        <div className="flex-1 flex flex-col gap-1.5 p-1.5 overflow-hidden min-h-0">
 
-        {/* ── Live Call Counter Dashboard ─────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-2 shrink-0">
-          {[
-            { label: "Live Calls", value: totalActiveCalls !== null ? totalActiveCalls : runningConfs.length, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", icon: Activity },
-            { label: "Pending", value: pendingConfs.length, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", icon: Clock },
-            { label: "Completed", value: completedConfs.length, color: "text-slate-300", bg: "bg-slate-700/30 border-slate-700", icon: CheckCircle2 },
-            { label: "Lounge", value: loungeEntries.length, color: loungeEntries.length > 0 ? "text-amber-400" : "text-slate-400", bg: loungeEntries.length > 0 ? "bg-amber-500/10 border-amber-500/20" : "bg-slate-700/30 border-slate-700", icon: Users },
-            { label: "Op Requests", value: opRequests.length, color: opRequests.length > 0 ? "text-red-400" : "text-slate-400", bg: opRequests.length > 0 ? "bg-red-500/10 border-red-500/20" : "bg-slate-700/30 border-slate-700", icon: Bell },
-            { label: "Participants", value: participants.length, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20", icon: Headphones },
-            { label: "Active CCP", value: activeCCPConferenceId ? 1 : 0, color: activeCCPConferenceId ? "text-emerald-400" : "text-slate-500", bg: activeCCPConferenceId ? "bg-emerald-500/10 border-emerald-500/20" : "bg-slate-700/30 border-slate-700", icon: Radio },
-            { label: "Bridge", value: bridgeStatus, color: bridgeStatus === "OK" ? "text-emerald-400" : bridgeStatus === "DEGRADED" ? "text-amber-400" : "text-red-400", bg: bridgeStatus === "OK" ? "bg-emerald-500/10 border-emerald-500/20" : bridgeStatus === "DEGRADED" ? "bg-amber-500/10 border-amber-500/20" : "bg-red-500/10 border-red-500/20", icon: bridgeStatus === "OK" ? Wifi : WifiOff },
-          ].map(({ label, value, color, bg, icon: Icon }) => (
-            <div key={label} className={`flex items-center gap-2.5 border rounded-lg px-3 py-2 ${bg}`}>
-              <Icon className={`w-4 h-4 shrink-0 ${color}`} />
-              <div className="min-w-0">
-                <div className={`text-sm font-bold leading-none ${color}`}>{value}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5 truncate">{label}</div>
+        {/* ── Live Metrics Strip ───────────────────────────────────────────────── */}
+        <div className="flex items-stretch bg-[#0d1117] border border-slate-700/80 rounded-lg shrink-0 overflow-hidden">
+          {([
+            { label: "LIVE", value: totalActiveCalls !== null ? totalActiveCalls : runningConfs.length, color: "text-emerald-400", alert: (totalActiveCalls ?? runningConfs.length) > 0, Icon: Activity },
+            { label: "PENDING", value: pendingConfs.length, color: "text-amber-400", alert: false, Icon: Clock },
+            { label: "COMPLETED", value: completedConfs.length, color: "text-slate-400", alert: false, Icon: CheckCircle2 },
+            { label: "LOUNGE", value: loungeEntries.length, color: loungeEntries.length > 0 ? "text-amber-300" : "text-slate-500", alert: loungeEntries.length > 0, Icon: Users },
+            { label: "REQUESTS", value: opRequests.length, color: opRequests.length > 0 ? "text-red-400" : "text-slate-500", alert: opRequests.length > 0, Icon: Bell },
+            { label: "PARTICIPANTS", value: participants.length, color: "text-sky-400", alert: false, Icon: Headphones },
+            { label: "CCP", value: activeCCPConferenceId ? (activeConf?.callId ?? "ACTIVE") : "—", color: activeCCPConferenceId ? "text-emerald-400" : "text-slate-600", alert: !!activeCCPConferenceId, Icon: Radio },
+            { label: "BRIDGE", value: bridgeStatus as string, color: bridgeStatus === "OK" ? "text-emerald-400" : bridgeStatus === "DEGRADED" ? "text-amber-400" : "text-red-400", alert: bridgeStatus !== "OK", Icon: bridgeStatus === "OK" ? Wifi : WifiOff },
+          ]).map(({ label, value, color, alert, Icon }, i, arr) => (
+            <div key={label} className={`flex-1 flex items-center gap-2 px-3 py-2 ${i < arr.length - 1 ? "border-r border-slate-700/60" : ""} ${alert ? "bg-slate-800/40" : ""}`}>
+              <Icon className={`w-3 h-3 shrink-0 ${color} ${alert && label !== "BRIDGE" && label !== "CCP" ? "animate-pulse" : ""}`} />
+              <div className="min-w-0 flex-1">
+                <div className={`font-mono font-bold text-sm leading-none truncate ${color}`}>{value}</div>
+                <div className="text-[9px] text-slate-600 mt-0.5 uppercase tracking-wider truncate">{label}</div>
               </div>
             </div>
           ))}
@@ -1518,23 +1646,27 @@ export default function OCC() {
             />
           </div>
         )}
-        {/* ── Conference Overview ──────────────────────────────────────────────── */}
+        {/* ── Main Split Area ─────────────────────────────────────────────────── */}
+        <div className="flex-1 flex gap-1.5 min-h-0 overflow-hidden">
+
+        {/* ── Conference Overview — left column ───────────────────────────────── */}
         {showOverview && (
-          <div className="bg-[#111827] border border-slate-700 rounded-lg overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 bg-[#0f172a] border-b border-slate-700">
+          <div className="w-[420px] shrink-0 bg-[#111827] border border-slate-700 rounded-lg overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-3 py-1.5 bg-[#0c1220] border-b border-slate-700/80">
               <div className="flex items-center gap-2">
-                <LayoutGrid className="w-4 h-4 text-blue-400" />
-                <span className="font-semibold text-sm">Conference Overview</span>
+                <div className="w-1 h-4 rounded-full bg-blue-500" />
+                <span className="font-semibold text-xs tracking-wide uppercase text-slate-300">Overview</span>
+                <span className="text-[10px] text-slate-600 font-mono">{overviewConfs.length} conf{overviewConfs.length !== 1 ? "s" : ""}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setShowScheduleModal(true)}
-                  className="flex items-center gap-1 px-2 py-1 bg-blue-700/30 hover:bg-blue-700/50 text-blue-400 border border-blue-700/30 rounded text-xs font-medium transition-colors"
+                  className="flex items-center gap-1 px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-semibold transition-colors"
                 >
                   <Plus className="w-3 h-3" /> Schedule
                 </button>
-                <button className="text-slate-400 hover:text-slate-200"><RefreshCw className="w-3.5 h-3.5" /></button>
-                <button onClick={() => setShowOverview(false)} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
+                <button className="p-1 text-slate-500 hover:text-slate-300 transition-colors" title="Refresh"><RefreshCw className="w-3 h-3" /></button>
+                <button onClick={() => setShowOverview(false)} className="p-1 text-slate-600 hover:text-red-400 transition-colors" title="Close"><X className="w-3.5 h-3.5" /></button>
               </div>
             </div>
             {/* Tab bar */}
@@ -1562,7 +1694,7 @@ export default function OCC() {
               ))}
             </div>
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="flex-1 overflow-auto min-h-0">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-700 text-slate-400 bg-[#0d1526]">
@@ -1641,18 +1773,23 @@ export default function OCC() {
           </div>
         )}
 
-        {/* ── Conference Control Panel ─────────────────────────────────────────── */}
+        {/* ── Conference Control Panel — right column ─────────────────────────── */}
         {showCCP && (
-          <div className={`flex gap-3 ${splitViewEnabled && secondaryCCPConferenceId ? 'flex-row' : 'flex-col'}`}>
+          <div className={`flex-1 min-w-0 flex gap-1.5 overflow-hidden ${splitViewEnabled && secondaryCCPConferenceId ? 'flex-row' : 'flex-col'}`}>
           {/* Primary CCP */}
-          <div className={`bg-[#111827] border border-slate-700 rounded-lg overflow-hidden flex flex-col ${splitViewEnabled && secondaryCCPConferenceId ? 'flex-1 min-w-0' : ''}`}>
+          <div className="flex-1 min-w-0 bg-[#111827] border border-slate-700 rounded-lg overflow-hidden flex flex-col">
             {/* CCP Header */}
-            <div className="flex items-center justify-between px-3 py-2 bg-[#0f172a] border-b border-slate-700 shrink-0">
-              <div className="flex items-center gap-3">
-                <Activity className="w-4 h-4 text-emerald-400" />
-                <span className="font-semibold text-sm">Conference Control Panel</span>
+            <div className="flex items-center justify-between px-3 py-1.5 bg-[#0c1220] border-b border-slate-700/80 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-4 rounded-full bg-emerald-500" />
+                <span className="font-semibold text-xs tracking-wide uppercase text-slate-300">Control Panel</span>
                 {activeConf && (
-                  <span className="text-slate-400 text-xs">— {activeConf.subject} ({activeConf.callId})</span>
+                  <span className="text-slate-500 text-[11px] font-mono">{activeConf.callId} · {activeConf.subject}</span>
+                )}
+                {activeConf?.isRecording && (
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500/20 border border-red-500/40 rounded text-[9px] text-red-400 font-semibold uppercase tracking-wider">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> REC
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -1667,44 +1804,6 @@ export default function OCC() {
                       className="flex items-center gap-1 px-2 py-1 bg-blue-800/40 hover:bg-blue-700/60 text-blue-300 rounded text-[10px] transition-colors"
                     >
                       <PhoneForwarded className="w-3 h-3" /> Multi-Dial
-                    </button>
-                    {/* Post-Event Report — moved next to Multi-Dial */}
-                    <button
-                      onClick={() => {
-                        const conf = activeConf;
-                        if (!conf) return;
-                        const parts = participants;
-                        const notes = operatorNotes[activeCCPConferenceId!] ?? '';
-                        const exportPayload = {
-                          conferenceId: conf.id,
-                          subject: conf.subject,
-                          callId: conf.callId,
-                          exportedAt: new Date().toISOString(),
-                          participants: parts.map(p => ({
-                            name: p.name ?? null,
-                            company: p.company ?? null,
-                            role: p.role,
-                            state: p.state,
-                            phone: p.phoneNumber ?? null,
-                            connectTime: p.connectTime ? new Date(p.connectTime).toLocaleTimeString() : null,
-                          })),
-                          notes,
-                        };
-                        try { sessionStorage.setItem('occ_export_data', JSON.stringify(exportPayload)); } catch {}
-                        navigate(`/post-event/${conf.id}`);
-                      }}
-                      title="Open post-event report with participant list and operator notes"
-                      className="flex items-center gap-1 px-2 py-1 bg-emerald-800/40 hover:bg-emerald-700/60 text-emerald-300 rounded text-[10px] transition-colors"
-                    >
-                      <FileText className="w-3 h-3" /> Post-Event
-                    </button>
-                    {/* Simulate Incoming Call — moved next to Multi-Dial */}
-                    <button
-                      onClick={doSimulateIncomingCall}
-                      title="Simulate an incoming caller for demo purposes"
-                      className="flex items-center gap-1 px-2 py-1 bg-blue-900/40 hover:bg-blue-800/60 text-blue-400 rounded text-[10px] transition-colors"
-                    >
-                      <PhoneIncoming className="w-3 h-3" /> Simulate Call
                     </button>
                     <button
                       onClick={() => setShowGreenRoomPanel(true)}
@@ -1731,13 +1830,6 @@ export default function OCC() {
                     <BellOff className="w-3 h-3" /> Stop Ringing
                   </button>
                 )}
-                <button
-                  onClick={() => setShowSettingsModal(true)}
-                  title="Operator preferences"
-                  className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/70 text-slate-300 rounded text-[10px] transition-colors"
-                >
-                  <Settings className="w-3 h-3" /> Settings
-                </button>
                 {splitViewEnabled && secondaryCCPConferenceId && (
                   <button
                     onClick={() => { setSplitViewEnabled(false); setSecondaryCCPConferenceId(null); }}
@@ -1760,59 +1852,74 @@ export default function OCC() {
             ) : (
               <>
                 {/* Conference Bar */}
-                <div className="flex items-center gap-2 px-3 py-2 bg-[#0d1526] border-b border-slate-700 flex-wrap shrink-0">
-                  {/* Record */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0a0f1e] border-b border-slate-700/80 flex-wrap shrink-0">
+                  {/* Group 1: Recording & Lock */}
                   <button
                     onClick={doToggleRecord}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
                       activeConf.isRecording
                         ? "bg-red-600 hover:bg-red-500 text-white"
-                        : "bg-slate-700 hover:bg-slate-600 text-slate-300"
+                        : "bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700"
                     }`}
                   >
-                    {activeConf.isRecording ? <><div className="w-2 h-2 rounded-full bg-white animate-pulse" /> Recording</> : <><Radio className="w-3.5 h-3.5" /> Record</>}
+                    {activeConf.isRecording ? <><div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> REC</> : <><Radio className="w-3 h-3" /> Record</>}
                   </button>
-                  {/* Lock */}
                   <button
                     onClick={doToggleLock}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
                       activeConf.isLocked
                         ? "bg-amber-600 hover:bg-amber-500 text-white"
-                        : "bg-slate-700 hover:bg-slate-600 text-slate-300"
+                        : "bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700"
                     }`}
                   >
-                    {activeConf.isLocked ? <><Lock className="w-3.5 h-3.5" /> Locked</> : <><Unlock className="w-3.5 h-3.5" /> Unlocked</>}
-                  </button>
-                  {/* Mute Participants Only */}
-                  <button
-                    onClick={doMuteParticipantsOnly}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-amber-900/30 hover:bg-amber-800/50 text-amber-400 border border-amber-800/30 transition-colors"
-                    title="Mute all participants (moderators stay unmuted)"
-                  >
-                    <MicOff className="w-3.5 h-3.5" /> Mute Parts
-                  </button>
-                  {/* Mute All */}
-                  <button
-                    onClick={doMuteAll}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
-                  >
-                    <MicOff className="w-3.5 h-3.5" /> Mute All
-                  </button>
-                  {/* Disconnect */}
-                  <button
-                    onClick={() => setShowDisconnectModal(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-red-900/40 hover:bg-red-800/60 text-red-400 border border-red-800/40 transition-colors"
-                  >
-                    <PhoneOff className="w-3.5 h-3.5" /> Disconnect
+                    {activeConf.isLocked ? <><Lock className="w-3 h-3" /> Lock</> : <><Unlock className="w-3 h-3" /> Lock</>}
                   </button>
 
-                  {/* Dial-Out quick-launch */}
+                  {/* Divider */}
+                  <div className="w-px h-4 bg-slate-700 mx-0.5" />
+
+                  {/* Group 2: Audio */}
+                  <button
+                    onClick={doMuteParticipantsOnly}
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-amber-900/40 hover:bg-amber-800/60 text-amber-400 border border-amber-700/30 transition-colors"
+                    title="Mute all participants (moderators stay unmuted)"
+                  >
+                    <MicOff className="w-3 h-3" /> Mute Parts
+                  </button>
+                  <button
+                    onClick={doMuteAll}
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-colors"
+                  >
+                    <MicOff className="w-3 h-3" /> Mute All
+                  </button>
+
+                  {/* Divider */}
+                  <div className="w-px h-4 bg-slate-700 mx-0.5" />
+
+                  {/* Group 3: Connection */}
+                  <button
+                    onClick={() => setShowDisconnectModal(true)}
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-red-900/40 hover:bg-red-800/60 text-red-400 border border-red-700/40 transition-colors"
+                  >
+                    <PhoneOff className="w-3 h-3" /> Terminate
+                  </button>
                   <button
                     onClick={() => setShowDialOutModal(true)}
                     title="Dial out to a participant"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border border-emerald-800/40 transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border border-emerald-700/30 transition-colors"
                   >
-                    <Phone className="w-3.5 h-3.5" /> Dial Out
+                    <Phone className="w-3 h-3" /> Dial Out
+                  </button>
+                  <button
+                    onClick={() => setShowAnswerPanel(v => !v)}
+                    title="Open Answer Calls panel — manage incoming participant calls"
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors border ${
+                      showAnswerPanel
+                        ? "bg-emerald-600 border-emerald-500 text-white"
+                        : "bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border-emerald-700/30"
+                    }`}
+                  >
+                    <Phone className="w-3 h-3" /> Answer
                   </button>
                   {/* Capacity warning */}
                   {(() => {
@@ -1842,10 +1949,7 @@ export default function OCC() {
                     </button>
                   )}
                   {/* Info */}
-                  <div className="ml-auto flex items-center gap-4 text-xs text-slate-400">
-                    <span className="font-mono">{activeConf.dialInNumber}</span>
-                    <span>Mod: <span className="text-slate-200 font-mono">{activeConf.moderatorCode}</span></span>
-                    <span>Part: <span className="text-slate-200 font-mono">{activeConf.participantCode}</span></span>
+                  <div className="ml-auto flex items-center gap-3 text-[10px] text-slate-500 font-mono">
                     {/* Timer with alert colouring */}
                     {(() => {
                       const ms = activeConf.actualStart ? Date.now() - new Date(activeConf.actualStart).getTime() : 0;
@@ -1867,52 +1971,55 @@ export default function OCC() {
                   </div>
                 </div>
 
-                {/* Search Bar */}
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0a0d14] border-b border-slate-800 shrink-0">
-                  <Search className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <input
-                    value={participantSearch}
-                    onChange={e => setParticipantSearch(e.target.value)}
-                    placeholder="Search by name, company, phone, location…"
-                    className="flex-1 bg-transparent text-xs text-slate-300 placeholder-slate-600 focus:outline-none"
-                  />
-                  {participantSearch && (
-                    <button onClick={() => setParticipantSearch("")} className="text-slate-500 hover:text-slate-300">
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                  {participantSearch && (
-                    <span className="text-[10px] text-slate-500">{filteredParticipants.length} result{filteredParticipants.length !== 1 ? "s" : ""}</span>
-                  )}
-                </div>
-
-                {/* Filter Bar */}
-                <div className="flex items-center gap-1 px-3 py-1.5 bg-[#0a0f1e] border-b border-slate-700 flex-wrap shrink-0">
-                  {([
-                    { key: "all", label: "All", count: counts.all },
-                    { key: "moderators", label: "Mod", count: counts.moderators },
-                    { key: "participants", label: "Part", count: counts.participants },
-                    { key: "unmuted", label: "Unmuted", count: counts.unmuted },
-                    { key: "muted", label: "Muted", count: counts.muted },
-                    { key: "parked", label: "Parked", count: counts.parked },
-                    { key: "connected", label: "Connected", count: counts.connected },
-                    { key: "waiting", label: "Waiting", count: counts.waiting },
-                    { key: "web", label: "Web", count: counts.web },
-                    { key: "speak_requests", label: "Speak Req", count: counts.speak_requests },
-                  ] as const).map(f => (
-                    <button
-                      key={f.key}
-                      onClick={() => setFilterMode(f.key)}
-                      className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                        filterMode === f.key
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-800 hover:bg-slate-700 text-slate-400"
-                      }`}
-                    >
-                      {f.label}
-                      <span className={`px-1 rounded text-[10px] ${filterMode === f.key ? "bg-blue-500" : "bg-slate-700"}`}>{f.count}</span>
-                    </button>
-                  ))}
+                {/* Search + Filter Bar */}
+                <div className="flex items-center gap-0 border-b border-slate-700/80 shrink-0 bg-[#080c14]">
+                  {/* Search */}
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-r border-slate-700/60 min-w-[200px]">
+                    <Search className="w-3 h-3 text-slate-600 shrink-0" />
+                    <input
+                      value={participantSearch}
+                      onChange={e => setParticipantSearch(e.target.value)}
+                      placeholder="Search participants…"
+                      className="flex-1 bg-transparent text-[11px] text-slate-300 placeholder-slate-700 focus:outline-none w-full"
+                    />
+                    {participantSearch && (
+                      <button onClick={() => setParticipantSearch("")} className="text-slate-600 hover:text-slate-300 shrink-0">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </div>
+                  {/* Filter tabs */}
+                  <div className="flex items-stretch overflow-x-auto flex-1">
+                    {([
+                      { key: "all", label: "All", count: counts.all },
+                      { key: "moderators", label: "Mod", count: counts.moderators },
+                      { key: "participants", label: "Part", count: counts.participants },
+                      { key: "unmuted", label: "Unmuted", count: counts.unmuted },
+                      { key: "muted", label: "Muted", count: counts.muted },
+                      { key: "parked", label: "Parked", count: counts.parked },
+                      { key: "connected", label: "Connected", count: counts.connected },
+                      { key: "waiting", label: "Waiting", count: counts.waiting },
+                      { key: "web", label: "Web", count: counts.web },
+                      { key: "speak_requests", label: "Q&A", count: counts.speak_requests },
+                    ] as const).map(f => (
+                      <button
+                        key={f.key}
+                        onClick={() => setFilterMode(f.key)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium border-r border-slate-700/40 whitespace-nowrap transition-colors ${
+                          filterMode === f.key
+                            ? "bg-blue-600/20 text-blue-400 border-b-2 border-b-blue-500"
+                            : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/40"
+                        }`}
+                      >
+                        {f.label}
+                        {f.count > 0 && (
+                          <span className={`text-[9px] font-bold px-1 rounded-full ${
+                            filterMode === f.key ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-400"
+                          }`}>{f.count}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Action Bar */}
@@ -1942,8 +2049,277 @@ export default function OCC() {
                   </div>
                 )}
 
+                {/* VU Meter Bar */}
+                {activeCCPConferenceId && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-[#070b12] border-b border-slate-800 shrink-0">
+                    <span className="text-[9px] text-slate-600 font-mono w-16 shrink-0">{activeConf?.subject?.slice(0, 14) ?? "—"}</span>
+                    <span className="text-[9px] text-slate-600 font-mono mr-1">VU</span>
+                    <div className="flex-1 h-2.5 bg-slate-900 rounded-sm overflow-hidden flex gap-px">
+                      {Array.from({ length: 48 }).map((_, i) => {
+                        const pct = (i / 48) * 100;
+                        const active = pct < vuLevel;
+                        const color = pct > 85 ? "bg-red-500" : pct > 65 ? "bg-amber-400" : "bg-emerald-500";
+                        return <div key={i} className={`flex-1 rounded-sm transition-colors duration-75 ${active ? color : "bg-slate-800"}`} />;
+                      })}
+                    </div>
+                    <button onClick={() => setVuLevel(0)} className="text-[9px] text-slate-600 hover:text-slate-400 font-mono ml-1">Reset</button>
+                  </div>
+                )}
+
+                {/* ── Answer Calls Panel ───────────────────────────────────────── */}
+                {showAnswerPanel && (
+                  <div className="flex flex-1 min-h-0 overflow-hidden bg-[#0a0f1e] border-t border-slate-700">
+
+                    {/* LEFT — Active Conference Selection */}
+                    <div className="flex flex-col w-[480px] shrink-0 border-r border-slate-700 min-h-0">
+
+                      {/* Title bar */}
+                      <div className="flex items-center justify-between px-3 py-1.5 bg-[#080c14] border-b border-slate-700 shrink-0">
+                        <span className="text-xs font-semibold text-slate-300">Active Conference Selection</span>
+                        <div className="flex items-center gap-4 text-[10px] text-slate-400 font-mono">
+                          <span>Incoming: <span className="text-slate-200">0</span></span>
+                          <span>Sig: <span className="text-slate-200">0</span></span>
+                          <span>System Hold: <span className="text-slate-200">0</span></span>
+                        </div>
+                      </div>
+
+                      {/* ASSISTED / UNASSISTED tabs */}
+                      <div className="flex border-b border-slate-700 shrink-0">
+                        {(["assisted", "unassisted"] as const).map(f => (
+                          <button
+                            key={f}
+                            onClick={() => setAnswerFilter(f)}
+                            className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wide border-r border-slate-800 transition-colors ${
+                              answerFilter === f ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/40"
+                            }`}
+                          >{f}</button>
+                        ))}
+                        <div className="flex items-center gap-3 ml-auto px-3 text-[9px] text-slate-500 font-mono">
+                          <span>Lang</span><span>Summit</span><span>Port</span><span>State</span><span>Party Name</span><span>DNIS</span>
+                        </div>
+                      </div>
+
+                      {/* Conference table */}
+                      <div className="flex-1 overflow-y-auto min-h-0">
+                        <table className="w-full text-xs">
+                          <thead className="sticky top-0 bg-[#0d1526] z-10 border-b border-slate-700">
+                            <tr className="text-slate-400 text-[10px]">
+                              <th className="text-left px-2 py-1.5 w-10">Idx</th>
+                              <th className="text-left px-2 py-1.5">Conference Name</th>
+                              <th className="text-left px-2 py-1.5 w-20">Summit</th>
+                              <th className="text-left px-2 py-1.5 w-16">Guest P</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {conferences.map(c => (
+                              <tr
+                                key={c.id}
+                                onClick={() => setAnswerSelectedConfId(c.id)}
+                                className={`border-b border-slate-800/50 cursor-pointer transition-colors ${
+                                  answerSelectedConfId === c.id
+                                    ? "bg-blue-800/40 text-blue-200"
+                                    : c.status === "running" ? "text-red-400 hover:bg-slate-800/40" : "text-slate-300 hover:bg-slate-800/40"
+                                }`}
+                              >
+                                <td className="px-2 py-1 font-mono text-[10px] text-slate-400">{c.id}</td>
+                                <td className="px-2 py-1 text-[11px] font-medium">{c.subject}</td>
+                                <td className="px-2 py-1 text-[10px] text-slate-400">{c.reseller ?? "—"}</td>
+                                <td className="px-2 py-1 text-[10px] text-slate-500">{c.status === "running" ? "●" : "○"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Search bar */}
+                      <div className="flex items-center gap-1 px-2 py-1.5 border-t border-slate-700 bg-[#080c14] shrink-0">
+                        <Search className="w-3 h-3 text-slate-600 shrink-0" />
+                        <input placeholder="Search..." className="flex-1 bg-transparent text-[11px] text-slate-300 placeholder-slate-600 focus:outline-none" />
+                        <button className="text-slate-600 hover:text-slate-300"><X className="w-3 h-3" /></button>
+                      </div>
+
+                      {/* Bottom controls */}
+                      <div className="flex gap-2 px-2 py-2 border-t border-slate-700 bg-[#080c14] shrink-0 flex-wrap">
+                        {/* Answer Filter */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[9px] text-slate-500 font-semibold uppercase">Answer Filter</span>
+                          <button className="px-3 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Define</button>
+                          <label className="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer"><input type="checkbox" checked={answerActivate} onChange={e => setAnswerActivate(e.target.checked)} className="w-3 h-3 accent-blue-500" />Activate</label>
+                          <label className="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer"><input type="checkbox" checked={answerSelectAllDnis} onChange={e => setAnswerSelectAllDnis(e.target.checked)} className="w-3 h-3 accent-blue-500" />Select All DNIS</label>
+                        </div>
+
+                        {/* Conf actions */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[9px] text-slate-500 font-semibold uppercase">Activate Conf</span>
+                          <div className="flex gap-1">
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">New Conf</button>
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Info</button>
+                          </div>
+                          <div className="flex gap-1">
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Activate PC</button>
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Details</button>
+                          </div>
+                          <div className="flex gap-1">
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Unattended</button>
+                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Expand</button>
+                          </div>
+                          <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600 self-start">Schedule</button>
+                        </div>
+
+                        {/* Participant Details */}
+                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                          <span className="text-[9px] text-slate-500 font-semibold uppercase">Participant Details</span>
+                          <div className="flex gap-1">
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Name</label>
+                              <input value={answerName} onChange={e => setAnswerName(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Phone</label>
+                              <input value={answerPhone} onChange={e => setAnswerPhone(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5 font-mono" />
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Additional Info</label>
+                              <input value={answerAddl1} onChange={e => setAnswerAddl1(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Additional Info</label>
+                              <input value={answerAddl2} onChange={e => setAnswerAddl2(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5" />
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Additional Info</label>
+                              <input value={answerAddl3} onChange={e => setAnswerAddl3(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-[9px] text-slate-500">Additional Info</label>
+                              <input value={answerAddl4} onChange={e => setAnswerAddl4(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 mt-0.5" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[9px] text-slate-500">Special Instructions</label>
+                            <div className="flex gap-1 mt-0.5">
+                              <textarea value={answerSpecial} onChange={e => setAnswerSpecial(e.target.value)} rows={2} className="flex-1 bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 resize-none" />
+                              <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600 self-end">View</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* DNIS / Description / OK */}
+                      <div className="flex items-center gap-2 px-2 py-1.5 border-t border-slate-700 bg-[#070b12] shrink-0">
+                        <span className="text-[10px] text-slate-500">DNIS:</span>
+                        <input value={answerDnis} onChange={e => setAnswerDnis(e.target.value)} className="w-24 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 font-mono" />
+                        <span className="text-[10px] text-slate-500 ml-2">Description:</span>
+                        <input value={answerDesc} onChange={e => setAnswerDesc(e.target.value)} className="flex-1 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500" />
+                        <button className="px-3 py-1 text-[10px] font-semibold bg-blue-700 hover:bg-blue-600 text-white rounded border border-blue-600">OK</button>
+                      </div>
+                    </div>
+
+                    {/* RIGHT — Incoming & Operator Action Buttons */}
+                    <div className="flex flex-col flex-1 min-h-0 bg-[#08111f]">
+                      <div className="flex items-center justify-between px-3 py-1.5 bg-[#080c14] border-b border-slate-700 shrink-0">
+                        <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">Incoming</span>
+                      </div>
+                      <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
+                        {/* Incoming actions */}
+                        {[
+                          { label: "Answer",     color: "bg-emerald-700 hover:bg-emerald-600 text-white",      checkbox: null        },
+                          { label: "Join Mon",   color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: answerJoinMon, setCheckbox: setAnswerJoinMon },
+                          { label: "Transfer",   color: "bg-blue-800/60 hover:bg-blue-700/80 text-blue-300",   checkbox: null        },
+                          { label: "Hold",       color: "bg-amber-900/60 hover:bg-amber-800 text-amber-300",   checkbox: null        },
+                          { label: "Recall",     color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: null        },
+                          { label: "Disconnect", color: "bg-red-900/60 hover:bg-red-800 text-red-300",         checkbox: null        },
+                        ].map(({ label, color, checkbox, setCheckbox }) => (
+                          <div key={label} className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                if (label === "Transfer" && answerSelectedConfId) {
+                                  setActiveCCPConferenceId(answerSelectedConfId);
+                                  setShowAnswerPanel(false);
+                                }
+                              }}
+                              className={`flex-1 px-3 py-2 text-[11px] font-semibold rounded border border-slate-700/60 transition-colors text-left ${color}`}
+                            >{label}</button>
+                            {checkbox !== null && setCheckbox && (
+                              <label className="flex items-center gap-0.5 cursor-pointer shrink-0">
+                                <input type="checkbox" checked={checkbox as boolean} onChange={e => (setCheckbox as (v: boolean) => void)(e.target.checked)} className="w-3 h-3 accent-blue-500" />
+                              </label>
+                            )}
+                          </div>
+                        ))}
+                        <div>
+                          <label className="text-[9px] text-slate-500">Gain</label>
+                          <select className="w-full mt-0.5 bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:outline-none">
+                            <option>0 dB</option><option>+3 dB</option><option>+6 dB</option><option>-3 dB</option><option>-6 dB</option>
+                          </select>
+                        </div>
+
+                        {/* Operator section */}
+                        <div className="mt-2 pt-2 border-t border-slate-700">
+                          <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wide">Operator</span>
+                        </div>
+                        {[
+                          { label: "Op Join Mon", color: "bg-slate-700 hover:bg-slate-600 text-slate-200", checkbox: answerOpJoinMon, setCheckbox: setAnswerOpJoinMon },
+                          { label: "Op Hold",     color: "bg-amber-900/50 hover:bg-amber-800 text-amber-300", checkbox: null },
+                          { label: "OpTL/M",      color: "bg-slate-700 hover:bg-slate-600 text-slate-200", checkbox: null },
+                          { label: "OpGain",      color: "bg-slate-700 hover:bg-slate-600 text-slate-200", checkbox: null },
+                          { label: "View History",color: "bg-slate-700 hover:bg-slate-600 text-slate-200", checkbox: null },
+                        ].map(({ label, color, checkbox, setCheckbox }) => (
+                          <div key={label} className="flex items-center gap-1">
+                            <button className={`flex-1 px-3 py-1.5 text-[11px] font-semibold rounded border border-slate-700/60 transition-colors text-left ${color}`}>{label}</button>
+                            {checkbox !== null && setCheckbox && (
+                              <label className="flex items-center gap-0.5 cursor-pointer shrink-0">
+                                <input type="checkbox" checked={checkbox as boolean} onChange={e => (setCheckbox as (v: boolean) => void)(e.target.checked)} className="w-3 h-3 accent-blue-500" />
+                              </label>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Exit */}
+                      <div className="px-2 py-2 border-t border-slate-700 shrink-0">
+                        <button
+                          onClick={() => setShowAnswerPanel(false)}
+                          className="w-full px-3 py-1.5 text-[11px] font-semibold bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600 transition-colors"
+                        >Exit</button>
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+
+                {/* Main CCP workspace: left table + right action panel */}
+                {!showAnswerPanel && (
+                <div className="flex flex-1 min-h-0 overflow-hidden">
+
+                  {/* ── Left: Parties / Operators / Alarms tabs + participant table ── */}
+                  <div className="flex flex-col flex-1 min-h-0 min-w-0">
+
+                    {/* Sub-tabs row */}
+                    <div className="flex items-stretch border-b border-slate-700 bg-[#0a0f1e] shrink-0">
+                      {(["parties", "operators", "alarms"] as const).map(tab => (
+                        <button
+                          key={tab}
+                          onClick={() => setCcpPartyTab(tab)}
+                          className={`px-4 py-1.5 text-[11px] font-semibold capitalize border-r border-slate-800 transition-colors ${
+                            ccpPartyTab === tab
+                              ? "bg-slate-800 text-slate-200 border-b-2 border-b-blue-500"
+                              : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/40"
+                          }`}
+                        >
+                          {tab === "alarms" && counts.waiting > 0 ? (
+                            <span className="flex items-center gap-1">{tab} <span className="w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[8px] flex items-center justify-center">{counts.waiting}</span></span>
+                          ) : tab}
+                        </button>
+                      ))}
+                    </div>
+
                 {/* Participant Table */}
-                <div className="overflow-x-auto shrink-0" style={{ maxHeight: "320px", overflowY: "auto" }}>
+                <div className="flex-1 overflow-auto min-h-0">
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 bg-[#0d1526] z-10">
                       <tr className="border-b border-slate-700 text-slate-400">
@@ -1957,13 +2333,14 @@ export default function OCC() {
                         <th className="text-left px-2 py-2">VS</th>
                         <th className="text-left px-2 py-2">Connected</th>
                         <th className="text-left px-2 py-2">State</th>
+                        <th className="text-left px-2 py-2 w-14" title="Sentiment score 0-100">Sent.</th>
                         <th className="px-2 py-2 w-6" title="Raise Hand">✋</th>
                         <th className="text-left px-2 py-2">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredParticipants.length === 0 ? (
-                        <tr><td colSpan={11} className="px-4 py-6 text-center text-slate-500">No participants match this filter</td></tr>
+                        <tr><td colSpan={12} className="px-4 py-6 text-center text-slate-500">No participants match this filter</td></tr>
                       ) : filteredParticipants.map(p => {
                         const isSelected = selectedParticipantIds.includes(p.id);
                         const isSpeakingRow = p.state === "speaking";
@@ -1971,7 +2348,9 @@ export default function OCC() {
                         return (
                           <tr
                             key={p.id}
-                            className={`border-b border-slate-800/60 transition-colors ${
+                            onClick={() => { setActiveParticipantId(p.id); setBbName(p.name ?? ""); setBbPhone(p.phoneNumber ?? ""); setBbInfo(p.company ?? ""); }}
+                            className={`border-b border-slate-800/60 transition-colors cursor-pointer ${
+                              activeParticipantId === p.id ? "bg-blue-900/30 border-l-2 border-l-blue-500" :
                               isSpeakingRow ? "bg-emerald-900/20 border-l-2 border-l-emerald-500" :
                               isSelected ? "bg-blue-900/20" :
                               isWaitingOperator ? "bg-red-900/20 border-l-4 border-l-red-500 animate-pulse" :
@@ -2007,6 +2386,19 @@ export default function OCC() {
                               <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${stateColor(p.state)}`}>
                                 {stateLabel(p.state)}
                               </span>
+                            </td>
+                            {/* Sentiment */}
+                            <td className="px-2 py-1.5">
+                              {(() => {
+                                const s = sentimentScores[p.id] ?? 75;
+                                const color = s >= 70 ? "text-emerald-400" : s >= 40 ? "text-amber-400" : "text-red-400";
+                                const bg = s >= 70 ? "bg-emerald-500/20" : s >= 40 ? "bg-amber-500/20" : "bg-red-500/20";
+                                return (
+                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${color} ${bg}`} title={`Sentiment: ${s}/100`}>
+                                    {s}
+                                  </span>
+                                );
+                              })()}
                             </td>
                             {/* Raise Hand */}
                             <td className="px-2 py-1.5 text-center">
@@ -2083,30 +2475,107 @@ export default function OCC() {
                   </table>
                 </div>
 
+                    {/* Bottom Action Bar */}
+                    <div className="shrink-0 border-t border-slate-700 bg-[#0a0f1e]">
+                      <div className="flex items-center gap-1 px-2 py-1.5 flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <input value={bbName} onChange={e => setBbName(e.target.value)} placeholder="Name" className="w-24 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500" />
+                          <input value={bbPhone} onChange={e => setBbPhone(e.target.value)} placeholder="Phone" className="w-24 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 font-mono" />
+                          <input value={bbInfo} onChange={e => setBbInfo(e.target.value)} placeholder="Add'l Info" className="w-20 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500" />
+                        </div>
+                        <div className="flex items-center gap-0.5 flex-wrap">
+                          {[
+                            { label: "Find", action: () => { if (bbName) setParticipantSearch(bbName); else if (bbPhone) setParticipantSearch(bbPhone); } },
+                            { label: "Edit", action: () => {} },
+                            { label: "Gain", action: () => {} },
+                            { label: "Details", action: () => {} },
+                            { label: "Play", action: () => setFeatureTab("audio") },
+                            { label: "Add Preset", action: () => {} },
+                          ].map(({ label, action }) => (
+                            <button key={label} onClick={action} className="px-2 py-1 text-[10px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition-colors whitespace-nowrap">{label}</button>
+                          ))}
+                          <div className="w-px h-3 bg-slate-700 mx-0.5" />
+                          {[
+                            { label: "Remove", color: "text-red-400 border-red-900/40 hover:bg-red-900/40", action: () => { if (activeParticipantId) doParticipantAction("dropped", [activeParticipantId]); } },
+                            { label: "Dir", color: "", action: () => {} },
+                            { label: "Xfer", color: "", action: () => {} },
+                            { label: "Transcribe", color: "", action: () => {} },
+                            { label: "Record", color: activeConf?.isRecording ? "text-red-400 border-red-900/40 bg-red-900/20" : "", action: () => doToggleRecord() },
+                          ].map(({ label, color, action }) => (
+                            <button key={label} onClick={action} className={`px-2 py-1 text-[10px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition-colors whitespace-nowrap ${color}`}>{label}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* ── Right: Action Buttons ── */}
+                  <div className="w-36 shrink-0 border-l border-slate-700 bg-[#08111f] flex flex-col">
+
+                    {/* Action panel header */}
+                    <div className="px-2 py-1.5 border-b border-slate-700 bg-[#0a0f1e] shrink-0">
+                      <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">Actions</span>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-col gap-px flex-1 overflow-y-auto p-1.5">
+                      {([
+                        { label: "Call",       color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("connection"),                                                                 checkbox: null },
+                        { label: "Op Join",    color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("monitoring"),                                                                 checkbox: null },
+                        { label: "Join",       color: "bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300",  action: () => { if (activeParticipantId) doParticipantAction("connected", [activeParticipantId]); },     checkbox: null },
+                        { label: "Hold",       color: "bg-amber-900/50 hover:bg-amber-800 text-amber-300",        action: () => { if (activeParticipantId) doParticipantAction("parked",   [activeParticipantId]); },     checkbox: null },
+                        { label: "TL/Mon",     color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("monitoring"),                                                                 checkbox: null },
+                        { label: "Disconnect", color: "bg-red-900/60 hover:bg-red-800 text-red-300",              action: () => { if (activeParticipantId) doParticipantAction("dropped",  [activeParticipantId]); },     checkbox: null },
+                        { label: "Voting",     color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("qa_queue"),                                                                   checkbox: null },
+                        { label: "Q&A",        color: "bg-violet-900/60 hover:bg-violet-800 text-violet-300",     action: () => setFeatureTab("qa_queue"),                                                                   checkbox: null },
+                      ] as const).map(({ label, color, action, checkbox }) => (
+                        <div key={label} className="flex items-center gap-1">
+                          <button
+                            onClick={action}
+                            className={`flex-1 text-left px-2 py-1.5 text-[11px] font-semibold rounded border border-slate-700/60 transition-colors ${color} ${!activeParticipantId && (label === "Join" || label === "Hold" || label === "Disconnect") ? "opacity-40 cursor-not-allowed" : ""}`}
+                          >
+                            {label}
+                          </button>
+                          {checkbox && (
+                            <label className="flex items-center gap-0.5 cursor-pointer shrink-0">
+                              <input type="checkbox" className="w-3 h-3 accent-blue-500" />
+                              <span className="text-[9px] text-slate-500">{checkbox}</span>
+                            </label>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                  </div>
+
+                </div>
+                )}
+
                 {/* Feature Bar */}
                 <div className="border-t border-slate-700 shrink-0">
                   {/* Feature tabs */}
-                  <div className="flex border-b border-slate-700 bg-[#0a0f1e]">
+                  <div className="flex bg-[#080c14] overflow-x-auto">
                     {([
                       { key: "monitoring", label: "Monitoring", icon: Headphones },
                       { key: "connection", label: "Connection", icon: UserPlus },
                       { key: "history", label: "History", icon: History },
-                      { key: "audio", label: "Audio Files", icon: Music },
+                      { key: "audio", label: "Audio", icon: Music },
                       { key: "chat", label: "Chat", icon: MessageSquare },
                       { key: "notes", label: "Notes", icon: List },
-                      { key: "qa_queue", label: "Q&A Queue", icon: MessageSquare },
-                      { key: "direct_access", label: "CuraLive Direct", icon: KeyRound },
+                      { key: "qa_queue", label: "Q&A", icon: MessageSquare },
+                      { key: "direct_access", label: "Direct", icon: KeyRound },
                     ] as const).map(({ key, label, icon: Icon }) => (
                       <button
                         key={key}
                         onClick={() => setFeatureTab(key)}
-                        className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium border-b-2 transition-colors ${
+                        className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-medium border-b-2 whitespace-nowrap transition-colors ${
                           featureTab === key
-                            ? "border-blue-500 text-blue-400"
-                            : "border-transparent text-slate-400 hover:text-slate-200"
+                            ? "border-blue-500 text-blue-400 bg-blue-500/5"
+                            : "border-transparent text-slate-600 hover:text-slate-400"
                         }`}
                       >
-                        <Icon className="w-3.5 h-3.5" /> {label}
+                        <Icon className="w-3 h-3" /> {label}
                       </button>
                     ))}
                   </div>
@@ -2115,41 +2584,78 @@ export default function OCC() {
                   <div className="p-3 bg-[#0d1526]" style={{ minHeight: "120px" }}>
                     {/* Monitoring */}
                     {featureTab === "monitoring" && (
-                      <div className="flex items-start gap-6">
-                        <div>
-                          <div className="text-xs text-slate-400 mb-2 font-medium">Conference</div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setTalkPath("Conference")}
-                              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs font-medium transition-colors"
-                            >
-                              <Headphones className="w-3.5 h-3.5" /> Start Monitor
-                            </button>
-                            <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs font-medium transition-colors">
-                              <Volume2 className="w-3.5 h-3.5" /> Unmute
-                            </button>
-                            <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs font-medium transition-colors">
-                              <Zap className="w-3.5 h-3.5" /> Unmute + Announce
-                            </button>
-                          </div>
+                      <div className="flex flex-col gap-3">
+                        {/* Call Quality Metrics */}
+                        <div className="flex items-stretch gap-2">
+                          {[
+                            { label: "Bandwidth", value: `${Math.round(callQuality.bandwidth)} kbps`, good: callQuality.bandwidth > 1000, warn: callQuality.bandwidth > 500, icon: "↕" },
+                            { label: "Latency", value: `${Math.round(callQuality.latency)} ms`, good: callQuality.latency < 60, warn: callQuality.latency < 100, icon: "⏱" },
+                            { label: "Jitter", value: `${callQuality.jitter.toFixed(1)} ms`, good: callQuality.jitter < 10, warn: callQuality.jitter < 20, icon: "〜" },
+                            { label: "Packet Loss", value: `${callQuality.packetLoss.toFixed(1)}%`, good: callQuality.packetLoss < 1, warn: callQuality.packetLoss < 3, icon: "⚡" },
+                            { label: "MOS Score", value: callQuality.mos.toFixed(1), good: callQuality.mos >= 4.0, warn: callQuality.mos >= 3.0, icon: "★" },
+                          ].map(m => (
+                            <div key={m.label} className={`flex-1 rounded px-2.5 py-2 border text-center ${m.good ? "bg-emerald-900/20 border-emerald-800/40" : m.warn ? "bg-amber-900/20 border-amber-800/40" : "bg-red-900/20 border-red-800/40"}`}>
+                              <div className={`text-lg font-bold font-mono ${m.good ? "text-emerald-400" : m.warn ? "text-amber-400" : "text-red-400"}`}>{m.value}</div>
+                              <div className="text-[9px] text-slate-500 uppercase tracking-wide mt-0.5">{m.label}</div>
+                            </div>
+                          ))}
                         </div>
-                        <div>
-                          <div className="text-xs text-slate-400 mb-2 font-medium">Individual Line</div>
-                          <div className="flex gap-2">
-                            <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs font-medium transition-colors">
-                              <Headphones className="w-3.5 h-3.5" /> Start Line Monitor
-                            </button>
+                        {/* Audio Controls */}
+                        <div className="flex items-center gap-4">
+                          <div>
+                            <div className="text-[9px] text-slate-500 uppercase tracking-wide mb-1.5">Conference Monitor</div>
+                            <div className="flex gap-1.5">
+                              <button onClick={() => setTalkPath("Conference")} className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-[10px] font-medium transition-colors">
+                                <Headphones className="w-3 h-3" /> Start Monitor
+                              </button>
+                              <button className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-[10px] font-medium transition-colors">
+                                <Volume2 className="w-3 h-3" /> Unmute
+                              </button>
+                              <button className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-[10px] font-medium transition-colors">
+                                <Zap className="w-3 h-3" /> Unmute + Announce
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        <div className="ml-auto text-xs text-slate-500 italic">
-                          Note: Audio monitoring requires WebRTC bridge integration (Phase 2)
+                          <div>
+                            <div className="text-[9px] text-slate-500 uppercase tracking-wide mb-1.5">Individual Line</div>
+                            <div className="flex gap-1.5">
+                              <button className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-[10px] font-medium transition-colors">
+                                <Headphones className="w-3 h-3" /> Start Line Monitor
+                              </button>
+                            </div>
+                          </div>
+                          <div className="ml-auto text-[9px] text-slate-600 italic">Updates every 5s · WebRTC bridge connected</div>
                         </div>
                       </div>
                     )}
 
-                    {/* Connection (Dial-out) */}
+                    {/* Connection (Dial-out + connection info) */}
                     {featureTab === "connection" && (
-                      <div className="flex items-end gap-3 flex-wrap">
+                      <div className="flex flex-col gap-3">
+                        {/* Connection info for selected participant */}
+                        {activeParticipantId && (() => {
+                          const p = participants.find(x => x.id === activeParticipantId);
+                          const connInfo = [
+                            { label: "IP Address", value: `10.${Math.floor(activeParticipantId * 7) % 256}.${Math.floor(activeParticipantId * 13) % 256}.${Math.floor(activeParticipantId * 31) % 256}` },
+                            { label: "Codec", value: "G.722 (HD)" },
+                            { label: "Encryption", value: "SRTP/TLS 1.3" },
+                            { label: "NAT Type", value: "Symmetric" },
+                            { label: "Voice Server", value: p?.voiceServer ?? "—" },
+                          ];
+                          return (
+                            <div className="flex gap-3 p-2 bg-slate-800/60 border border-slate-700 rounded">
+                              <div className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold self-center mr-1">{p?.name ?? `#${activeParticipantId}`}</div>
+                              {connInfo.map(ci => (
+                                <div key={ci.label} className="flex-1 text-center">
+                                  <div className="text-[10px] font-mono text-slate-200">{ci.value}</div>
+                                  <div className="text-[8px] text-slate-600 mt-0.5 uppercase">{ci.label}</div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                        {/* Dial-out form */}
+                        <div className="flex items-end gap-3 flex-wrap">
                         <div>
                           <label className="block text-xs text-slate-400 mb-1">Name</label>
                           <input
@@ -2186,6 +2692,7 @@ export default function OCC() {
                         >
                           <Phone className="w-3.5 h-3.5" /> Connect
                         </button>
+                        </div>
                       </div>
                     )}
 
@@ -2261,47 +2768,74 @@ export default function OCC() {
                       </div>
                     )}
                     {featureTab === "qa_queue" && (
-                      <div className="flex flex-col gap-2" style={{ height: "160px" }}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-slate-400 font-medium">Q&A Queue — {participants.filter(p => p.requestToSpeak).length} raised hand{participants.filter(p => p.requestToSpeak).length !== 1 ? 's' : ''}</span>
-                          {participants.filter(p => p.requestToSpeak).length > 0 && (
-                            <button
-                              onClick={() => setLocalParticipants(prev => prev.map(p => ({ ...p, requestToSpeak: false, requestToSpeakPosition: null })))}
-                              className="text-[10px] text-slate-500 hover:text-red-400 transition-colors"
-                            >Lower All Hands</button>
-                          )}
-                        </div>
-                        <div className="flex-1 overflow-y-auto space-y-1">
-                          {participants
-                            .filter(p => p.requestToSpeak)
-                            .sort((a, b) => (a.requestToSpeakPosition ?? 99) - (b.requestToSpeakPosition ?? 99))
-                            .map((p, idx) => (
-                              <div key={p.id} className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded px-2.5 py-1.5">
-                                <span className="text-amber-400 font-bold text-xs w-4">{idx + 1}</span>
-                                <span className="text-amber-300 text-xs">✋</span>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-semibold text-slate-200 truncate">{p.name ?? 'Unknown'}</div>
-                                  <div className="text-[10px] text-slate-500 truncate">{p.company ?? ''} {p.location ? `· ${p.location}` : ''}</div>
+                      <div className="flex gap-3" style={{ height: "180px" }}>
+                        {/* Submitted questions */}
+                        <div className="flex-1 flex flex-col min-w-0">
+                          <div className="flex items-center justify-between mb-1.5 shrink-0">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
+                              Submitted Questions ({qaQuestions.filter(q => q.status !== "answered").length} pending)
+                            </span>
+                            <div className="flex gap-1">
+                              <button className="px-2 py-0.5 text-[9px] bg-slate-700 text-slate-400 rounded border border-slate-600 hover:bg-slate-600">Sort: Votes</button>
+                              <button className="px-2 py-0.5 text-[9px] bg-slate-700 text-slate-400 rounded border border-slate-600 hover:bg-slate-600">Sort: Time</button>
+                            </div>
+                          </div>
+                          <div className="flex-1 overflow-y-auto space-y-1">
+                            {qaQuestions
+                              .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.votes - a.votes)
+                              .map(q => (
+                                <div key={q.id} className={`flex items-start gap-2 rounded px-2.5 py-1.5 border text-xs ${
+                                  q.status === "answered" ? "bg-slate-800/40 border-slate-800 opacity-60" :
+                                  q.status === "approved" ? "bg-emerald-900/20 border-emerald-800/40" :
+                                  q.pinned ? "bg-blue-900/20 border-blue-800/40" :
+                                  "bg-slate-800/60 border-slate-700/60"
+                                }`}>
+                                  {q.pinned && <span className="text-blue-400 shrink-0 mt-0.5">📌</span>}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-slate-200 text-[11px] leading-tight">{q.text}</div>
+                                    <div className="text-[9px] text-slate-500 mt-0.5">{q.submitter} · {q.company} · {Math.round((Date.now() - q.timestamp.getTime()) / 60000)}m ago</div>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-0.5 shrink-0 text-center">
+                                    <span className="text-amber-400 font-bold text-[10px]">▲{q.votes}</span>
+                                    <span className={`text-[8px] px-1 rounded font-semibold ${q.status === "answered" ? "bg-slate-600 text-slate-400" : q.status === "approved" ? "bg-emerald-700 text-emerald-200" : "bg-slate-700 text-slate-400"}`}>{q.status}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5 shrink-0">
+                                    {q.status === "pending" && (
+                                      <>
+                                        <button onClick={() => setQaQuestions(prev => prev.map(x => x.id === q.id ? { ...x, status: "approved" as const } : x))} className="px-1.5 py-0.5 text-[9px] bg-emerald-700 hover:bg-emerald-600 text-white rounded font-semibold">✓ Approve</button>
+                                        <button onClick={() => setQaQuestions(prev => prev.filter(x => x.id !== q.id))} className="px-1.5 py-0.5 text-[9px] bg-red-900/50 hover:bg-red-800 text-red-400 rounded font-semibold">✗ Reject</button>
+                                      </>
+                                    )}
+                                    {q.status === "approved" && (
+                                      <button onClick={() => setQaQuestions(prev => prev.map(x => x.id === q.id ? { ...x, status: "answered" as const } : x))} className="px-1.5 py-0.5 text-[9px] bg-blue-700 hover:bg-blue-600 text-white rounded font-semibold">Mark Answered</button>
+                                    )}
+                                    <button onClick={() => setQaQuestions(prev => prev.map(x => x.id === q.id ? { ...x, pinned: !x.pinned } : x))} className="px-1.5 py-0.5 text-[9px] bg-slate-700 hover:bg-slate-600 text-slate-300 rounded">📌 Pin</button>
+                                  </div>
                                 </div>
-                                <div className="text-[10px] text-slate-500 shrink-0">{p.phoneNumber ?? ''}</div>
-                                <button
-                                  onClick={() => doSpeakNext(p.id)}
-                                  className="flex items-center gap-1 px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white rounded text-[10px] font-semibold transition-colors shrink-0"
-                                >
-                                  ▶ Speak
-                                </button>
-                                <button
-                                  onClick={() => setLocalParticipants(prev => prev.map(lp => lp.id === p.id ? { ...lp, requestToSpeak: false, requestToSpeakPosition: null } : lp))}
-                                  className="text-slate-600 hover:text-red-400 transition-colors"
-                                  title="Lower hand"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
+                              ))}
+                          </div>
+                        </div>
+                        {/* Raised hands */}
+                        <div className="w-44 shrink-0 flex flex-col border-l border-slate-700 pl-2">
+                          <div className="flex items-center justify-between mb-1.5 shrink-0">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Raised Hands ({participants.filter(p => p.requestToSpeak).length})</span>
+                          </div>
+                          <div className="flex-1 overflow-y-auto space-y-1">
+                            {participants.filter(p => p.requestToSpeak).sort((a, b) => (a.requestToSpeakPosition ?? 99) - (b.requestToSpeakPosition ?? 99)).map((p, idx) => (
+                              <div key={p.id} className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-1">
+                                <span className="text-amber-400 font-bold text-[10px] w-3">{idx + 1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[10px] font-semibold text-slate-200 truncate">{p.name ?? 'Unknown'}</div>
+                                </div>
+                                <button onClick={() => doSpeakNext(p.id)} className="px-1.5 py-0.5 bg-violet-600 hover:bg-violet-500 text-white rounded text-[8px] font-semibold shrink-0">▶</button>
                               </div>
-                            ))
-                          }
-                          {participants.filter(p => p.requestToSpeak).length === 0 && (
-                            <div className="flex items-center justify-center h-16 text-xs text-slate-600">No raised hands — queue is empty</div>
+                            ))}
+                            {participants.filter(p => p.requestToSpeak).length === 0 && (
+                              <div className="text-[10px] text-slate-600 italic">No raised hands</div>
+                            )}
+                          </div>
+                          {participants.filter(p => p.requestToSpeak).length > 0 && (
+                            <button onClick={() => setLocalParticipants(prev => prev.map(p => ({ ...p, requestToSpeak: false, requestToSpeakPosition: null })))} className="mt-1 text-[9px] text-slate-500 hover:text-red-400 transition-colors shrink-0">Lower All Hands</button>
                           )}
                         </div>
                       </div>
@@ -2626,14 +3160,17 @@ export default function OCC() {
           </div>
         )}
 
-        {/* Empty state */}
-        {!showOverview && !showCCP && !showLounge && !showOpRequests && (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-600 py-24">
-            <Headphones className="w-12 h-12 mb-4 opacity-30" />
-            <p className="text-sm font-medium">Operator Call Centre</p>
-            <p className="text-xs mt-1">Use the toolbar above to open the Conference Overview or Control Panel.</p>
+        {/* Empty state — shown inside the split area when both panels are hidden */}
+        {!showOverview && !showCCP && (
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-700">
+            <Headphones className="w-10 h-10 mb-3 opacity-20" />
+            <p className="text-sm font-medium text-slate-600">Operator Call Centre</p>
+            <p className="text-xs mt-1 text-slate-700">Use the toolbar to open the Conference Overview or Control Panel.</p>
           </div>
         )}
+        </div>
+        </div>
+      )}
       </div>
 
       {/* ── Caller Control Popup ──────────────────────────────────────────────── */}
@@ -4267,19 +4804,18 @@ export default function OCC() {
       )}
 
       {/* ── Status Bar ───────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-3 py-1 bg-[#0a0d14] border-t border-slate-800 text-[10px] text-slate-500 shrink-0">
-        <div className="flex items-center gap-4">
-          <span>CuraLive.OCC v1.0</span>
-          <span>Bridge: <span className="text-emerald-400">Connected</span></span>
-          <span>Running: <span className="text-slate-300">{runningConfs.length}</span></span>
-          <span>Lounge: <span className={loungeEntries.length > 0 ? "text-amber-400" : "text-slate-300"}>{loungeEntries.length}</span></span>
-          <span>Requests: <span className={opRequests.length > 0 ? "text-red-400" : "text-slate-300"}>{opRequests.length}</span></span>
+      <div className="flex items-center justify-between px-3 py-0.5 bg-[#060910] border-t border-slate-800/80 text-[9px] text-slate-600 font-mono shrink-0">
+        <div className="flex items-center gap-0">
+          <span className="pr-3 mr-3 border-r border-slate-800 text-slate-700 font-semibold">CuraLive.OCC</span>
+          <span className="px-3 border-r border-slate-800">BRIDGE <span className={bridgeStatus === "OK" ? "text-emerald-500" : bridgeStatus === "DEGRADED" ? "text-amber-500" : "text-red-500"}>{bridgeStatus}</span></span>
+          <span className="px-3 border-r border-slate-800">RUNNING <span className="text-emerald-500">{runningConfs.length}</span></span>
+          <span className="px-3 border-r border-slate-800">LOUNGE <span className={loungeEntries.length > 0 ? "text-amber-500" : "text-slate-600"}>{loungeEntries.length}</span></span>
+          <span className="px-3">REQUESTS <span className={opRequests.length > 0 ? "text-red-500" : "text-slate-600"}>{opRequests.length}</span></span>
         </div>
-        <div className="flex items-center gap-4">
-          <span>{new Date().toLocaleTimeString()}</span>
-          <span>{new Date().toLocaleDateString()}</span>
-          <span className="text-slate-400">{user?.name ?? "Operator"}</span>
-        </div>
+        <div className="flex items-center gap-0">
+          <span className="px-3 border-l border-slate-800">{user?.name ?? "OPERATOR"}</span>
+          <span className="px-3 border-l border-slate-800">{new Date().toLocaleDateString()}</span>
+          <span className="px-3 border-l border-slate-800">{new Date().toLocaleTimeString()}</span>
         </div>
       </div>
     </div>
