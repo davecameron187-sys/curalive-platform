@@ -1798,6 +1798,19 @@ export default function OCC() {
                 )}
                 {activeCCPConferenceId && (
                   <>
+                    {/* Answer tab — opens the Answer Calls panel */}
+                    <button
+                      onClick={() => setShowAnswerPanel(v => !v)}
+                      title="Open Answer Calls panel — manage incoming participant calls"
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-semibold transition-colors border ${
+                        showAnswerPanel
+                          ? "bg-emerald-600 border-emerald-500 text-white"
+                          : "bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-300 border-emerald-700/50"
+                      }`}
+                    >
+                      <Phone className="w-3 h-3" /> Answer
+                    </button>
+                    <div className="w-px h-4 bg-slate-700 mx-0.5" />
                     <button
                       onClick={() => { setDialEntries([]); setDialAllStatus("idle"); setDialForm({ name: "", company: "", phone: "", role: "participant" }); setShowMultiDialModal(true); }}
                       title="Dial multiple participants into this conference"
@@ -1954,17 +1967,6 @@ export default function OCC() {
                     className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border border-emerald-700/30 transition-colors"
                   >
                     <Phone className="w-3 h-3" /> Dial Out
-                  </button>
-                  <button
-                    onClick={() => setShowAnswerPanel(v => !v)}
-                    title="Open Answer Calls panel — manage incoming participant calls"
-                    className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors border ${
-                      showAnswerPanel
-                        ? "bg-emerald-600 border-emerald-500 text-white"
-                        : "bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 border-emerald-700/30"
-                    }`}
-                  >
-                    <Phone className="w-3 h-3" /> Answer
                   </button>
                   {/* Capacity warning */}
                   {(() => {
