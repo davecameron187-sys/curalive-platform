@@ -1320,3 +1320,21 @@ export const billingRecurringTemplates = mysqlTable("billing_recurring_templates
 
 export type BillingRecurringTemplate = typeof billingRecurringTemplates.$inferSelect;
 export type InsertBillingRecurringTemplate = typeof billingRecurringTemplates.$inferInsert;
+
+
+/**
+ * User Feedback table — collects user ratings and suggestions from the Home page feedback form.
+ */
+export const userFeedback = mysqlTable("user_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  rating: int("rating").notNull(), // 1-5 star rating
+  suggestion: text("suggestion"), // Optional feedback text
+  email: varchar("email", { length: 320 }), // Optional email for follow-up
+  userId: int("user_id"), // Optional reference to authenticated user
+  pageUrl: varchar("page_url", { length: 512 }).default("/").notNull(), // Which page the feedback came from
+  ipAddress: varchar("ip_address", { length: 64 }), // For spam detection
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type UserFeedback = typeof userFeedback.$inferSelect;
+export type InsertUserFeedback = typeof userFeedback.$inferInsert;

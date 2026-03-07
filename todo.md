@@ -777,3 +777,12 @@
 - [x] Bulk PDF ZIP export — /api/billing/pdf/invoices/bulk-zip endpoint + Export ZIP button in Invoices tab
 - [x] Recurring tab added to AdminBilling with link to /billing/recurring
 - [x] deleteRecurringTemplate and generateFromRecurringTemplate tRPC procedures added
+
+
+## User Feedback Form
+
+- [x] Create feedback database table (rating, suggestion, email, created_at)
+- [x] Add tRPC procedure for feedback submission
+- [x] Build FeedbackForm React component with validation
+- [x] Integrate feedback form into Home page footer
+- [x] Write vitest tests for feedback submission

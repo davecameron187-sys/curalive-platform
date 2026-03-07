@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import { eq, desc } from "drizzle-orm";
-import { InsertUser, users, speakerPaceResults, InsertSpeakerPaceResult } from "../drizzle/schema";
+import { InsertUser, users, speakerPaceResults, InsertSpeakerPaceResult, userFeedback, InsertUserFeedback } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -163,3 +163,50 @@ export async function getEventPaceResults(eventId: string) {
 }
 
 // TODO: add feature queries here as your schema grows.
+
+
+// ─── User Feedback helpers ────────────────────────────────────────────────────
+/** Submit user feedback (rating and suggestion). */
+export async function submitFeedback(feedback: InsertUserFeedback) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot submit feedback: database not available");
+    return null;
+  }
+
+  try {
+    const result = await db.insert(userFeedback).values(feedback);
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to submit feedback:", error);
+    throw error;
+  }
+}
+
+/** Get recent feedback (for admin dashboard). */
+export async function getRecentFeedback(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(userFeedback)
+    .orderBy(desc(userFeedback.createdAt))
+    .limit(limit);
+}
+
+/** Get feedback statistics. */
+export async function getFeedbackStats() {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select({
+      totalCount: desc(userFeedback.id),
+      avgRating: desc(userFeedback.rating),
+    })
+    .from(userFeedback)
+    .limit(1);
+
+  return result[0] || null;
+}

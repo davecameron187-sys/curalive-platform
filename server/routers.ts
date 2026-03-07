@@ -5,7 +5,7 @@ import { publicProcedure, adminProcedure, protectedProcedure, router } from "./_
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import { sendEmail, buildIRSummaryEmail, buildRegistrationConfirmationEmail } from "./_core/email";
-import { getDb, listUsers, updateUserRole, getUserById, updateUserProfile } from "./db";
+import { getDb, listUsers, updateUserRole, getUserById, updateUserProfile, submitFeedback, getRecentFeedback } from "./db";
 import { storagePut } from "./storage";
 import { attendeeRegistrations, events, irContacts, webcastEvents } from "../drizzle/schema";
 import { generateUniquePin } from "./directAccess";
@@ -793,6 +793,43 @@ Recipients: ${allEmails.join(", ")}
         }).catch(() => {});
 
         return { success: true, notified };
+      }),
+  }),
+  // ─── User Feedback ───────────────────────────────────────────────────────────
+  feedback: router({
+    submit: publicProcedure
+      .input(z.object({
+        rating: z.number().int().min(1).max(5),
+        suggestion: z.string().max(1000).optional(),
+        email: z.string().email().optional(),
+        pageUrl: z.string().url().optional().default("/"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          await submitFeedback({
+            rating: input.rating,
+            suggestion: input.suggestion || null,
+            email: input.email || null,
+            userId: ctx.user?.id || null,
+            pageUrl: input.pageUrl,
+            ipAddress: ctx.req?.ip || null,
+          });
+          return { success: true };
+        } catch (error) {
+          console.error("[Feedback] Submission failed:", error);
+          return { success: false, error: "Failed to submit feedback" };
+        }
+      }),
+
+    getRecent: adminProcedure
+      .query(async () => {
+        try {
+          const feedback = await getRecentFeedback(50);
+          return feedback;
+        } catch (error) {
+          console.error("[Feedback] Failed to fetch recent feedback:", error);
+          return [];
+        }
       }),
   }),
 });

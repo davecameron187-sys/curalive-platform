@@ -211,6 +211,13 @@
       "when": 1772867147731,
       "tag": "0029_milky_eddie_brock",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "5",
+      "when": 1772880463535,
+      "tag": "0030_goofy_bastion",
+      "breakpoints": true
     }
   ]
 }
