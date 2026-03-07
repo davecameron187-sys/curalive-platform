@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint, json } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -1367,3 +1367,109 @@ export const operatorPreferences = mysqlTable("operator_preferences", {
 });
 export type OperatorPreferences = typeof operatorPreferences.$inferSelect;
 export type InsertOperatorPreferences = typeof operatorPreferences.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI TRANSCRIPTION & SUMMARIZATION TABLES
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * OCC Recall Bots — tracks Recall.ai bot instances for each conference
+ */
+export const occRecallBots = mysqlTable("occ_recall_bots", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: int("conference_id").notNull(),
+  botId: varchar("bot_id", { length: 255 }).notNull().unique(),
+  platform: mysqlEnum("platform", ["zoom", "teams", "webex", "rtmp", "pstn"]).notNull(),
+  status: mysqlEnum("status", ["active", "stopped", "failed"]).default("active").notNull(),
+  recordingUrl: text("recording_url"), // URL to recording once available
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  stoppedAt: timestamp("stopped_at"),
+});
+export type OccRecallBot = typeof occRecallBots.$inferSelect;
+export type InsertOccRecallBot = typeof occRecallBots.$inferInsert;
+
+/**
+ * OCC Transcription Segments — stores individual speech segments with speaker info
+ */
+export const occTranscriptionSegments = mysqlTable("occ_transcription_segments", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  conferenceId: int("conference_id").notNull(),
+  participantId: int("participant_id"), // References occ_participants
+  speakerName: varchar("speaker_name", { length: 255 }).notNull(),
+  speakerRole: mysqlEnum("speaker_role", ["moderator", "participant", "operator"])
+    .default("participant")
+    .notNull(),
+  text: text("text").notNull(), // The transcribed speech
+  startTime: int("start_time").notNull(), // Milliseconds from call start
+  endTime: int("end_time").notNull(),
+  confidence: int("confidence").default(95).notNull(), // 0-100 confidence percentage
+  language: varchar("language", { length: 10 }).default("en").notNull(),
+  isFinal: boolean("is_final").default(false).notNull(), // Whether segment is finalized
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type OccTranscriptionSegment = typeof occTranscriptionSegments.$inferSelect;
+export type InsertOccTranscriptionSegment = typeof occTranscriptionSegments.$inferInsert;
+
+/**
+ * OCC Transcriptions — stores full transcription metadata and summary
+ */
+export const occTranscriptions = mysqlTable("occ_transcriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: int("conference_id").notNull().unique(),
+  fullTranscript: longtext("full_transcript"), // Complete transcript as single text
+  summary: text("summary"), // AI-generated executive summary
+  keyPoints: json("key_points").$type<string[]>(), // Array of key points
+  actionItems: json("action_items").$type<string[]>(), // Array of action items
+  speakers: json("speakers").$type<Array<{ name: string; role: string; speakTime: number }>>(), // Speaker stats
+  duration: int("duration").notNull(), // Total duration in milliseconds
+  language: varchar("language", { length: 10 }).default("en").notNull(),
+  wordCount: int("word_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type OccTranscription = typeof occTranscriptions.$inferSelect;
+export type InsertOccTranscription = typeof occTranscriptions.$inferInsert;
+
+/**
+ * OCC Transcript Edits — audit trail for transcript corrections by operators
+ */
+export const occTranscriptEdits = mysqlTable("occ_transcript_edits", {
+  id: int("id").autoincrement().primaryKey(),
+  transcriptionSegmentId: bigint("transcription_segment_id", { mode: "number" }).notNull(),
+  conferenceId: int("conference_id").notNull(),
+  operatorId: int("operator_id").notNull(), // User ID of operator making edit
+  originalText: text("original_text").notNull(),
+  correctedText: text("corrected_text").notNull(),
+  editType: mysqlEnum("edit_type", ["correction", "deletion", "merge", "split"])
+    .default("correction")
+    .notNull(),
+  reason: varchar("reason", { length: 255 }), // Why the edit was made
+  approved: boolean("approved").default(false).notNull(),
+  approvedBy: int("approved_by"), // User ID of approver
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type OccTranscriptEdit = typeof occTranscriptEdits.$inferSelect;
+export type InsertOccTranscriptEdit = typeof occTranscriptEdits.$inferInsert;
+
+/**
+ * OCC Transcript Audit Log — comprehensive audit trail for compliance
+ */
+export const occTranscriptAuditLog = mysqlTable("occ_transcript_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: int("conference_id").notNull(),
+  action: mysqlEnum("action", [
+    "transcription_started",
+    "transcription_completed",
+    "segment_added",
+    "segment_edited",
+    "segment_deleted",
+    "transcript_finalized",
+    "transcript_exported",
+  ]).notNull(),
+  userId: int("user_id"), // User who performed action
+  details: json("details").$type<Record<string, any>>(), // Additional context
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+export type OccTranscriptAuditLog = typeof occTranscriptAuditLog.$inferSelect;
+export type InsertOccTranscriptAuditLog = typeof occTranscriptAuditLog.$inferInsert;
