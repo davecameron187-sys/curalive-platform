@@ -431,7 +431,7 @@ export default function OCC() {
       try {
         const Ably = await import("ably");
         if (!ablyClientRef.current) {
-          ablyClientRef.current = new (Ably.default as any).Realtime({ key: undefined, authUrl: "/api/trpc/ably.tokenRequest" });
+          ablyClientRef.current = new (Ably.default as any).Realtime({ key: undefined, authUrl: "/api/ably-token" });
         }
         const client = ablyClientRef.current;
         const overviewChan = client.channels.get("occ:overview");
@@ -474,7 +474,7 @@ export default function OCC() {
         const Ably = await import("ably");
         // Re-use existing client or create a new one
         if (!ablyClientRef.current) {
-          ablyClientRef.current = new (Ably.default as any).Realtime({ key: undefined, authUrl: "/api/trpc/ably.tokenRequest" });
+          ablyClientRef.current = new (Ably.default as any).Realtime({ key: undefined, authUrl: "/api/ably-token" });
         }
         const client = ablyClientRef.current;
 

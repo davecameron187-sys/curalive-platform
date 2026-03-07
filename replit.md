@@ -72,3 +72,11 @@ The OCC is a world-class conference control centre built to the technical brief.
 - **Q&A Queue tab**: Submitted text questions with approve/reject/pin/answer moderation + raised hands panel
 - **Actions sidebar**: Call, Op Join, Join, Hold, TL/Mon, Disconnect, Voting, Q&A
 - **Dev auth bypass**: `DEV_BYPASS = true` in `server/_core/trpc.ts` when `NODE_ENV=development` — disable before production
+
+## Ably Integration
+
+- Ably token auth is served at `GET /api/ably-token` (plain REST endpoint in `server/_core/index.ts`)
+- Uses the Ably JS SDK (`new Ably.Rest(apiKey).auth.createTokenRequest(...)`) to generate signed token requests — avoids manual HMAC signing issues
+- Capability grants `occ:*`, `curalive-event-*`, and `*` channel access
+- OCC.tsx uses `authUrl: "/api/ably-token"` for both Ably client instances
+- The old tRPC `ably.tokenRequest` procedure (in `server/routers.ts`) is still present but not used by OCC — it required tRPC input format which Ably SDK cannot send

@@ -434,6 +434,31 @@ async function startServer() {
   // Recall.ai webhook (raw body, HMAC-verified)
   registerRecallWebhookRoute(app);
   registerBillingPdfRoutes(app);
+
+  // Ably token endpoint — uses Ably SDK to create a signed token request
+  app.get("/api/ably-token", async (req, res) => {
+    const apiKey = process.env.ABLY_API_KEY;
+    if (!apiKey) { res.status(503).json({ error: "Ably not configured" }); return; }
+    try {
+      const clientId = (req.query.clientId as string) || "occ-operator";
+      const Ably = await import("ably");
+      const client = new Ably.Rest(apiKey);
+      const tokenRequest = await client.auth.createTokenRequest({
+        clientId,
+        capability: {
+          "occ:*": ["subscribe", "publish", "presence", "history"],
+          "curalive-event-*": ["subscribe", "publish", "presence", "history"],
+          "*": ["subscribe", "publish", "presence", "history"],
+        },
+        ttl: 3600000,
+      });
+      res.json(tokenRequest);
+    } catch (e) {
+      console.error("[Ably token]", e);
+      res.status(500).json({ error: "Token generation failed" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
