@@ -111,7 +111,7 @@ export default function Home() {
             {/* Left: headline + CTAs */}
             <div>
               <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-6">
-                <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — CuraLive Inc.
+                <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Live Platform — CuraLive Inc.
               </div>
               <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight mb-6">
                 The Intelligence Layer<br /><span className="text-primary">for Every Meeting</span>
