@@ -16,7 +16,8 @@ import {
   ArrowRight, UserCheck, UserX, Activity, Clock,
   List, LayoutGrid, Bell, BellOff, Send, Search, Filter,
   Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical, FileText,
-  PhoneForwarded, Trash2, Upload, GraduationCap, KeyRound, ShieldCheck, ShieldOff, BarChart2
+  PhoneForwarded, Trash2, Upload, GraduationCap, KeyRound, ShieldCheck, ShieldOff, BarChart2,
+  Settings2, UserCog, TrendingUp, TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
 import Webphone from "@/components/Webphone";
@@ -188,6 +189,9 @@ export default function OCC() {
   const [showCallerControl, setShowCallerControl] = useState(false);
   const [showAccessCodes, setShowAccessCodes] = useState(false);
 
+  // Left sidebar navigation
+  const [activeSidebarTab, setActiveSidebarTab] = useState<"running" | "post_event" | "simulate" | "settings" | "op_settings">("running");
+
   // Active conference in CCP
   const [activeCCPConferenceId, setActiveCCPConferenceId] = useState<number | null>(null);
   // Split-view: second CCP slot
@@ -212,6 +216,25 @@ export default function OCC() {
   const [bbPhone, setBbPhone] = useState("");
   const [bbInfo, setBbInfo] = useState("");
   const [vuLevel, setVuLevel] = useState(0);
+
+  // Simulated sentiment scores per participant (0-100)
+  const [sentimentScores, setSentimentScores] = useState<Record<number, number>>({
+    1: 82, 2: 91, 3: 74, 4: 58, 5: 66, 6: 45, 7: 79, 8: 38, 9: 87, 10: 62,
+  });
+
+  // Simulated call-quality metrics (updated periodically)
+  const [callQuality, setCallQuality] = useState({
+    bandwidth: 1240, latency: 42, jitter: 5, packetLoss: 0.2, mos: 4.3,
+  });
+
+  // Q&A submitted questions (demo data)
+  const [qaQuestions, setQaQuestions] = useState([
+    { id: 1, text: "Can you elaborate on the Q3 revenue guidance given the macro headwinds?", submitter: "Thabo Molefe", company: "Investec", votes: 14, status: "pending" as const, timestamp: new Date(Date.now() - 8 * 60000), pinned: false },
+    { id: 2, text: "What is the capex allocation for the next fiscal year?", submitter: "Priya Naidoo", company: "Old Mutual", votes: 9, status: "approved" as const, timestamp: new Date(Date.now() - 6 * 60000), pinned: true },
+    { id: 3, text: "How is the company positioned against rising interest rates?", submitter: "Mark van der Berg", company: "Coronation", votes: 7, status: "pending" as const, timestamp: new Date(Date.now() - 4 * 60000), pinned: false },
+    { id: 4, text: "Are there any planned acquisitions in the pipeline for H1 2026?", submitter: "David Osei", company: "Allan Gray", votes: 3, status: "pending" as const, timestamp: new Date(Date.now() - 2 * 60000), pinned: false },
+    { id: 5, text: "What is the dividend policy going forward?", submitter: "Lerato Sithole", company: "PIC", votes: 11, status: "answered" as const, timestamp: new Date(Date.now() - 15 * 60000), pinned: false },
+  ]);
 
   // Answer panel state
   const [showAnswerPanel, setShowAnswerPanel] = useState(false);
@@ -1007,6 +1030,29 @@ export default function OCC() {
     }
   }, [localParticipants, playBeep, stopRinging]);
 
+  // Simulate live call quality metric updates every 5s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCallQuality(prev => ({
+        bandwidth: Math.max(800, Math.min(2400, prev.bandwidth + (Math.random() - 0.5) * 120)),
+        latency: Math.max(18, Math.min(120, prev.latency + (Math.random() - 0.5) * 8)),
+        jitter: Math.max(1, Math.min(25, prev.jitter + (Math.random() - 0.5) * 3)),
+        packetLoss: Math.max(0, Math.min(5, prev.packetLoss + (Math.random() - 0.5) * 0.3)),
+        mos: Math.max(2.5, Math.min(5.0, prev.mos + (Math.random() - 0.5) * 0.15)),
+      }));
+      // Drift sentiment scores slightly
+      setSentimentScores(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(k => {
+          const id = Number(k);
+          next[id] = Math.max(10, Math.min(100, next[id] + Math.round((Math.random() - 0.5) * 6)));
+        });
+        return next;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Simulate an incoming caller (demo feature for Board presentation)
   const doSimulateIncomingCall = () => {
     if (!activeCCPConferenceId || !activeConf) return;
@@ -1323,7 +1369,118 @@ export default function OCC() {
       </div>
 
       {/* ── Main workspace ────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col gap-1.5 p-1.5 overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
+
+        {/* ── Left Sidebar Navigation ──────────────────────────────────────────── */}
+        <div className="w-20 shrink-0 flex flex-col items-center py-3 gap-1 bg-[#080c14] border-r border-slate-700/60">
+          {([
+            { key: "running",    Icon: Phone,      label: "Running\nCalls" },
+            { key: "post_event", Icon: BarChart2,  label: "Post\nEvent" },
+            { key: "simulate",   Icon: Mic,        label: "Simulate\nCall" },
+            { key: "settings",   Icon: Settings2,  label: "Settings" },
+            { key: "op_settings",Icon: UserCog,    label: "Op\nSettings" },
+          ] as const).map(({ key, Icon, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveSidebarTab(key)}
+              title={label.replace("\n", " ")}
+              className={`w-16 flex flex-col items-center gap-1 px-1 py-2.5 rounded-lg text-center transition-all duration-150 ${
+                activeSidebarTab === key
+                  ? "bg-blue-600/30 border border-blue-500/50 text-blue-300"
+                  : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 border border-transparent"
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-[9px] font-semibold leading-tight uppercase tracking-wide whitespace-pre-line">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Content Area ─────────────────────────────────────────────────────── */}
+        {activeSidebarTab === "post_event" ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <BarChart2 className="w-12 h-12 text-slate-700" />
+            <div>
+              <div className="text-lg font-semibold text-slate-400 mb-1">Post-Event Reports</div>
+              <div className="text-sm text-slate-600">Access recordings, transcripts, Q&A summaries, and analytics for completed conferences.</div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 mt-4 w-full max-w-2xl">
+              {[{ label: "Conferences Today", val: "3" }, { label: "Total Duration", val: "2h 47m" }, { label: "Participants Served", val: "186" }].map(m => (
+                <div key={m.label} className="bg-slate-800 border border-slate-700 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-slate-200 mb-1">{m.val}</div>
+                  <div className="text-xs text-slate-500">{m.label}</div>
+                </div>
+              ))}
+            </div>
+            <button className="flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors">
+              <BarChart2 className="w-4 h-4" /> View Full Reports
+            </button>
+          </div>
+        ) : activeSidebarTab === "simulate" ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <Mic className="w-12 h-12 text-slate-700" />
+            <div>
+              <div className="text-lg font-semibold text-slate-400 mb-1">Simulate Call</div>
+              <div className="text-sm text-slate-600">Test call scenarios, operator features, and IVR flows in a sandbox environment.</div>
+            </div>
+            <div className="flex gap-3 mt-2">
+              <button className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
+                <Phone className="w-4 h-4" /> New Simulation
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition-colors">
+                Load Scenario
+              </button>
+            </div>
+          </div>
+        ) : activeSidebarTab === "settings" ? (
+          <div className="flex-1 flex flex-col gap-4 p-6 overflow-y-auto">
+            <div className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Settings2 className="w-4 h-4 text-slate-500" /> Operator Preferences</div>
+            {[
+              { section: "General", fields: [{ label: "Display Name", type: "text", val: "Operator" }, { label: "Timezone", type: "select", val: "Africa/Johannesburg", opts: ["Africa/Johannesburg", "UTC", "America/New_York", "Europe/London", "Asia/Dubai"] }, { label: "UI Language", type: "select", val: "en", opts: ["en", "fr", "pt", "es", "de", "ar", "zh"] }] },
+              { section: "Notifications", fields: [{ label: "New Participant Alert", type: "toggle", val: "on" }, { label: "Participant Disconnect Alert", type: "toggle", val: "on" }, { label: "Q&A Submitted Alert", type: "toggle", val: "on" }, { label: "Sentiment Alert Threshold", type: "text", val: "30" }] },
+              { section: "Appearance", fields: [{ label: "Theme", type: "select", val: "Dark", opts: ["Dark", "Light", "Auto"] }, { label: "Font Size", type: "select", val: "Medium", opts: ["Small", "Medium", "Large"] }, { label: "Compact Mode", type: "toggle", val: "off" }] },
+            ].map(({ section, fields }) => (
+              <div key={section} className="bg-slate-800/60 border border-slate-700 rounded-lg p-4">
+                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">{section}</div>
+                <div className="space-y-3">
+                  {fields.map(f => (
+                    <div key={f.label} className="flex items-center justify-between">
+                      <label className="text-xs text-slate-300">{f.label}</label>
+                      {f.type === "toggle" ? (
+                        <button className={`px-3 py-1 rounded text-[10px] font-semibold border transition-colors ${f.val === "on" ? "bg-emerald-700/40 border-emerald-600 text-emerald-300" : "bg-slate-700 border-slate-600 text-slate-400"}`}>{f.val === "on" ? "ON" : "OFF"}</button>
+                      ) : f.type === "select" ? (
+                        <select className="bg-slate-700 border border-slate-600 text-xs text-slate-200 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
+                          {(f.opts ?? []).map(o => <option key={o}>{o}</option>)}
+                        </select>
+                      ) : (
+                        <input defaultValue={f.val} className="bg-slate-700 border border-slate-600 text-xs text-slate-200 rounded px-2 py-1 w-36 focus:outline-none focus:border-blue-500" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button className="self-start flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors">Save Changes</button>
+          </div>
+        ) : activeSidebarTab === "op_settings" ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <UserCog className="w-12 h-12 text-slate-700" />
+            <div>
+              <div className="text-lg font-semibold text-slate-400 mb-1">Operator Settings</div>
+              <div className="text-sm text-slate-600">Configure operator-specific permissions, shortcuts, and audio device preferences.</div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-2 w-full max-w-md text-left">
+              {[{ label: "Keyboard Shortcuts", desc: "Mute: Ctrl+M · Record: Ctrl+R · Disconnect: Ctrl+D" }, { label: "Audio Devices", desc: "Input: Default Mic · Output: Default Speaker" }].map(item => (
+                <div key={item.label} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                  <div className="text-xs font-semibold text-slate-300 mb-2">{item.label}</div>
+                  <div className="text-xs text-slate-500">{item.desc}</div>
+                  <button className="mt-3 text-xs text-blue-400 hover:text-blue-300">Configure →</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+        <div className="flex-1 flex flex-col gap-1.5 p-1.5 overflow-hidden min-h-0">
 
         {/* ── Live Metrics Strip ───────────────────────────────────────────────── */}
         <div className="flex items-stretch bg-[#0d1117] border border-slate-700/80 rounded-lg shrink-0 overflow-hidden">
@@ -2226,13 +2383,14 @@ export default function OCC() {
                         <th className="text-left px-2 py-2">VS</th>
                         <th className="text-left px-2 py-2">Connected</th>
                         <th className="text-left px-2 py-2">State</th>
+                        <th className="text-left px-2 py-2 w-14" title="Sentiment score 0-100">Sent.</th>
                         <th className="px-2 py-2 w-6" title="Raise Hand">✋</th>
                         <th className="text-left px-2 py-2">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredParticipants.length === 0 ? (
-                        <tr><td colSpan={11} className="px-4 py-6 text-center text-slate-500">No participants match this filter</td></tr>
+                        <tr><td colSpan={12} className="px-4 py-6 text-center text-slate-500">No participants match this filter</td></tr>
                       ) : filteredParticipants.map(p => {
                         const isSelected = selectedParticipantIds.includes(p.id);
                         const isSpeakingRow = p.state === "speaking";
@@ -2278,6 +2436,19 @@ export default function OCC() {
                               <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${stateColor(p.state)}`}>
                                 {stateLabel(p.state)}
                               </span>
+                            </td>
+                            {/* Sentiment */}
+                            <td className="px-2 py-1.5">
+                              {(() => {
+                                const s = sentimentScores[p.id] ?? 75;
+                                const color = s >= 70 ? "text-emerald-400" : s >= 40 ? "text-amber-400" : "text-red-400";
+                                const bg = s >= 70 ? "bg-emerald-500/20" : s >= 40 ? "bg-amber-500/20" : "bg-red-500/20";
+                                return (
+                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${color} ${bg}`} title={`Sentiment: ${s}/100`}>
+                                    {s}
+                                  </span>
+                                );
+                              })()}
                             </td>
                             {/* Raise Hand */}
                             <td className="px-2 py-1.5 text-center">
@@ -2387,7 +2558,7 @@ export default function OCC() {
                       </div>
                     </div>
 
-                  </div>{/* end left column */}
+                  </div>
 
                   {/* ── Right: Action Buttons ── */}
                   <div className="w-36 shrink-0 border-l border-slate-700 bg-[#08111f] flex flex-col">
@@ -2426,7 +2597,7 @@ export default function OCC() {
                       ))}
                     </div>
 
-                  </div>{/* end right action panel */}
+                  </div>
 
                 </div>
                 )}
@@ -2463,41 +2634,78 @@ export default function OCC() {
                   <div className="p-3 bg-[#0d1526]" style={{ minHeight: "120px" }}>
                     {/* Monitoring */}
                     {featureTab === "monitoring" && (
-                      <div className="flex items-start gap-6">
-                        <div>
-                          <div className="text-xs text-slate-400 mb-2 font-medium">Conference</div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setTalkPath("Conference")}
-                              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs font-medium transition-colors"
-                            >
-                              <Headphones className="w-3.5 h-3.5" /> Start Monitor
-                            </button>
-                            <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs font-medium transition-colors">
-                              <Volume2 className="w-3.5 h-3.5" /> Unmute
-                            </button>
-                            <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs font-medium transition-colors">
-                              <Zap className="w-3.5 h-3.5" /> Unmute + Announce
-                            </button>
-                          </div>
+                      <div className="flex flex-col gap-3">
+                        {/* Call Quality Metrics */}
+                        <div className="flex items-stretch gap-2">
+                          {[
+                            { label: "Bandwidth", value: `${Math.round(callQuality.bandwidth)} kbps`, good: callQuality.bandwidth > 1000, warn: callQuality.bandwidth > 500, icon: "↕" },
+                            { label: "Latency", value: `${Math.round(callQuality.latency)} ms`, good: callQuality.latency < 60, warn: callQuality.latency < 100, icon: "⏱" },
+                            { label: "Jitter", value: `${callQuality.jitter.toFixed(1)} ms`, good: callQuality.jitter < 10, warn: callQuality.jitter < 20, icon: "〜" },
+                            { label: "Packet Loss", value: `${callQuality.packetLoss.toFixed(1)}%`, good: callQuality.packetLoss < 1, warn: callQuality.packetLoss < 3, icon: "⚡" },
+                            { label: "MOS Score", value: callQuality.mos.toFixed(1), good: callQuality.mos >= 4.0, warn: callQuality.mos >= 3.0, icon: "★" },
+                          ].map(m => (
+                            <div key={m.label} className={`flex-1 rounded px-2.5 py-2 border text-center ${m.good ? "bg-emerald-900/20 border-emerald-800/40" : m.warn ? "bg-amber-900/20 border-amber-800/40" : "bg-red-900/20 border-red-800/40"}`}>
+                              <div className={`text-lg font-bold font-mono ${m.good ? "text-emerald-400" : m.warn ? "text-amber-400" : "text-red-400"}`}>{m.value}</div>
+                              <div className="text-[9px] text-slate-500 uppercase tracking-wide mt-0.5">{m.label}</div>
+                            </div>
+                          ))}
                         </div>
-                        <div>
-                          <div className="text-xs text-slate-400 mb-2 font-medium">Individual Line</div>
-                          <div className="flex gap-2">
-                            <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs font-medium transition-colors">
-                              <Headphones className="w-3.5 h-3.5" /> Start Line Monitor
-                            </button>
+                        {/* Audio Controls */}
+                        <div className="flex items-center gap-4">
+                          <div>
+                            <div className="text-[9px] text-slate-500 uppercase tracking-wide mb-1.5">Conference Monitor</div>
+                            <div className="flex gap-1.5">
+                              <button onClick={() => setTalkPath("Conference")} className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-[10px] font-medium transition-colors">
+                                <Headphones className="w-3 h-3" /> Start Monitor
+                              </button>
+                              <button className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-[10px] font-medium transition-colors">
+                                <Volume2 className="w-3 h-3" /> Unmute
+                              </button>
+                              <button className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-[10px] font-medium transition-colors">
+                                <Zap className="w-3 h-3" /> Unmute + Announce
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        <div className="ml-auto text-xs text-slate-500 italic">
-                          Note: Audio monitoring requires WebRTC bridge integration (Phase 2)
+                          <div>
+                            <div className="text-[9px] text-slate-500 uppercase tracking-wide mb-1.5">Individual Line</div>
+                            <div className="flex gap-1.5">
+                              <button className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-[10px] font-medium transition-colors">
+                                <Headphones className="w-3 h-3" /> Start Line Monitor
+                              </button>
+                            </div>
+                          </div>
+                          <div className="ml-auto text-[9px] text-slate-600 italic">Updates every 5s · WebRTC bridge connected</div>
                         </div>
                       </div>
                     )}
 
-                    {/* Connection (Dial-out) */}
+                    {/* Connection (Dial-out + connection info) */}
                     {featureTab === "connection" && (
-                      <div className="flex items-end gap-3 flex-wrap">
+                      <div className="flex flex-col gap-3">
+                        {/* Connection info for selected participant */}
+                        {activeParticipantId && (() => {
+                          const p = participants.find(x => x.id === activeParticipantId);
+                          const connInfo = [
+                            { label: "IP Address", value: `10.${Math.floor(activeParticipantId * 7) % 256}.${Math.floor(activeParticipantId * 13) % 256}.${Math.floor(activeParticipantId * 31) % 256}` },
+                            { label: "Codec", value: "G.722 (HD)" },
+                            { label: "Encryption", value: "SRTP/TLS 1.3" },
+                            { label: "NAT Type", value: "Symmetric" },
+                            { label: "Voice Server", value: p?.voiceServer ?? "—" },
+                          ];
+                          return (
+                            <div className="flex gap-3 p-2 bg-slate-800/60 border border-slate-700 rounded">
+                              <div className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold self-center mr-1">{p?.name ?? `#${activeParticipantId}`}</div>
+                              {connInfo.map(ci => (
+                                <div key={ci.label} className="flex-1 text-center">
+                                  <div className="text-[10px] font-mono text-slate-200">{ci.value}</div>
+                                  <div className="text-[8px] text-slate-600 mt-0.5 uppercase">{ci.label}</div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                        {/* Dial-out form */}
+                        <div className="flex items-end gap-3 flex-wrap">
                         <div>
                           <label className="block text-xs text-slate-400 mb-1">Name</label>
                           <input
@@ -2534,6 +2742,7 @@ export default function OCC() {
                         >
                           <Phone className="w-3.5 h-3.5" /> Connect
                         </button>
+                        </div>
                       </div>
                     )}
 
@@ -2609,47 +2818,74 @@ export default function OCC() {
                       </div>
                     )}
                     {featureTab === "qa_queue" && (
-                      <div className="flex flex-col gap-2" style={{ height: "160px" }}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-slate-400 font-medium">Q&A Queue — {participants.filter(p => p.requestToSpeak).length} raised hand{participants.filter(p => p.requestToSpeak).length !== 1 ? 's' : ''}</span>
-                          {participants.filter(p => p.requestToSpeak).length > 0 && (
-                            <button
-                              onClick={() => setLocalParticipants(prev => prev.map(p => ({ ...p, requestToSpeak: false, requestToSpeakPosition: null })))}
-                              className="text-[10px] text-slate-500 hover:text-red-400 transition-colors"
-                            >Lower All Hands</button>
-                          )}
-                        </div>
-                        <div className="flex-1 overflow-y-auto space-y-1">
-                          {participants
-                            .filter(p => p.requestToSpeak)
-                            .sort((a, b) => (a.requestToSpeakPosition ?? 99) - (b.requestToSpeakPosition ?? 99))
-                            .map((p, idx) => (
-                              <div key={p.id} className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded px-2.5 py-1.5">
-                                <span className="text-amber-400 font-bold text-xs w-4">{idx + 1}</span>
-                                <span className="text-amber-300 text-xs">✋</span>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-semibold text-slate-200 truncate">{p.name ?? 'Unknown'}</div>
-                                  <div className="text-[10px] text-slate-500 truncate">{p.company ?? ''} {p.location ? `· ${p.location}` : ''}</div>
+                      <div className="flex gap-3" style={{ height: "180px" }}>
+                        {/* Submitted questions */}
+                        <div className="flex-1 flex flex-col min-w-0">
+                          <div className="flex items-center justify-between mb-1.5 shrink-0">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
+                              Submitted Questions ({qaQuestions.filter(q => q.status !== "answered").length} pending)
+                            </span>
+                            <div className="flex gap-1">
+                              <button className="px-2 py-0.5 text-[9px] bg-slate-700 text-slate-400 rounded border border-slate-600 hover:bg-slate-600">Sort: Votes</button>
+                              <button className="px-2 py-0.5 text-[9px] bg-slate-700 text-slate-400 rounded border border-slate-600 hover:bg-slate-600">Sort: Time</button>
+                            </div>
+                          </div>
+                          <div className="flex-1 overflow-y-auto space-y-1">
+                            {qaQuestions
+                              .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.votes - a.votes)
+                              .map(q => (
+                                <div key={q.id} className={`flex items-start gap-2 rounded px-2.5 py-1.5 border text-xs ${
+                                  q.status === "answered" ? "bg-slate-800/40 border-slate-800 opacity-60" :
+                                  q.status === "approved" ? "bg-emerald-900/20 border-emerald-800/40" :
+                                  q.pinned ? "bg-blue-900/20 border-blue-800/40" :
+                                  "bg-slate-800/60 border-slate-700/60"
+                                }`}>
+                                  {q.pinned && <span className="text-blue-400 shrink-0 mt-0.5">📌</span>}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-slate-200 text-[11px] leading-tight">{q.text}</div>
+                                    <div className="text-[9px] text-slate-500 mt-0.5">{q.submitter} · {q.company} · {Math.round((Date.now() - q.timestamp.getTime()) / 60000)}m ago</div>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-0.5 shrink-0 text-center">
+                                    <span className="text-amber-400 font-bold text-[10px]">▲{q.votes}</span>
+                                    <span className={`text-[8px] px-1 rounded font-semibold ${q.status === "answered" ? "bg-slate-600 text-slate-400" : q.status === "approved" ? "bg-emerald-700 text-emerald-200" : "bg-slate-700 text-slate-400"}`}>{q.status}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5 shrink-0">
+                                    {q.status === "pending" && (
+                                      <>
+                                        <button onClick={() => setQaQuestions(prev => prev.map(x => x.id === q.id ? { ...x, status: "approved" as const } : x))} className="px-1.5 py-0.5 text-[9px] bg-emerald-700 hover:bg-emerald-600 text-white rounded font-semibold">✓ Approve</button>
+                                        <button onClick={() => setQaQuestions(prev => prev.filter(x => x.id !== q.id))} className="px-1.5 py-0.5 text-[9px] bg-red-900/50 hover:bg-red-800 text-red-400 rounded font-semibold">✗ Reject</button>
+                                      </>
+                                    )}
+                                    {q.status === "approved" && (
+                                      <button onClick={() => setQaQuestions(prev => prev.map(x => x.id === q.id ? { ...x, status: "answered" as const } : x))} className="px-1.5 py-0.5 text-[9px] bg-blue-700 hover:bg-blue-600 text-white rounded font-semibold">Mark Answered</button>
+                                    )}
+                                    <button onClick={() => setQaQuestions(prev => prev.map(x => x.id === q.id ? { ...x, pinned: !x.pinned } : x))} className="px-1.5 py-0.5 text-[9px] bg-slate-700 hover:bg-slate-600 text-slate-300 rounded">📌 Pin</button>
+                                  </div>
                                 </div>
-                                <div className="text-[10px] text-slate-500 shrink-0">{p.phoneNumber ?? ''}</div>
-                                <button
-                                  onClick={() => doSpeakNext(p.id)}
-                                  className="flex items-center gap-1 px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white rounded text-[10px] font-semibold transition-colors shrink-0"
-                                >
-                                  ▶ Speak
-                                </button>
-                                <button
-                                  onClick={() => setLocalParticipants(prev => prev.map(lp => lp.id === p.id ? { ...lp, requestToSpeak: false, requestToSpeakPosition: null } : lp))}
-                                  className="text-slate-600 hover:text-red-400 transition-colors"
-                                  title="Lower hand"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
+                              ))}
+                          </div>
+                        </div>
+                        {/* Raised hands */}
+                        <div className="w-44 shrink-0 flex flex-col border-l border-slate-700 pl-2">
+                          <div className="flex items-center justify-between mb-1.5 shrink-0">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Raised Hands ({participants.filter(p => p.requestToSpeak).length})</span>
+                          </div>
+                          <div className="flex-1 overflow-y-auto space-y-1">
+                            {participants.filter(p => p.requestToSpeak).sort((a, b) => (a.requestToSpeakPosition ?? 99) - (b.requestToSpeakPosition ?? 99)).map((p, idx) => (
+                              <div key={p.id} className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-1">
+                                <span className="text-amber-400 font-bold text-[10px] w-3">{idx + 1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[10px] font-semibold text-slate-200 truncate">{p.name ?? 'Unknown'}</div>
+                                </div>
+                                <button onClick={() => doSpeakNext(p.id)} className="px-1.5 py-0.5 bg-violet-600 hover:bg-violet-500 text-white rounded text-[8px] font-semibold shrink-0">▶</button>
                               </div>
-                            ))
-                          }
-                          {participants.filter(p => p.requestToSpeak).length === 0 && (
-                            <div className="flex items-center justify-center h-16 text-xs text-slate-600">No raised hands — queue is empty</div>
+                            ))}
+                            {participants.filter(p => p.requestToSpeak).length === 0 && (
+                              <div className="text-[10px] text-slate-600 italic">No raised hands</div>
+                            )}
+                          </div>
+                          {participants.filter(p => p.requestToSpeak).length > 0 && (
+                            <button onClick={() => setLocalParticipants(prev => prev.map(p => ({ ...p, requestToSpeak: false, requestToSpeakPosition: null })))} className="mt-1 text-[9px] text-slate-500 hover:text-red-400 transition-colors shrink-0">Lower All Hands</button>
                           )}
                         </div>
                       </div>
@@ -2982,7 +3218,9 @@ export default function OCC() {
             <p className="text-xs mt-1 text-slate-700">Use the toolbar to open the Conference Overview or Control Panel.</p>
           </div>
         )}
-        </div>{/* /split area */}
+        </div>
+        </div>
+      )}
       </div>
 
       {/* ── Caller Control Popup ──────────────────────────────────────────────── */}

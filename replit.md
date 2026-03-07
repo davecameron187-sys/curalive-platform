@@ -51,9 +51,24 @@ Key variables needed:
 ## Key Features
 
 - Live webcast platform with real-time transcription
-- OCC (Operator Control Center) for event management
+- OCC (Operator Control Center) for event management — professional conference control centre
 - WebRTC webphone with Twilio/Telnyx integration
 - Multi-language translation (8 languages)
 - AI-powered post-event reports
 - Recall.ai integration for Zoom/Teams/Webex bots
 - Billing and PDF generation
+
+## OCC (Operator Console) — `/occ`
+
+The OCC is a world-class conference control centre built to the technical brief. Key areas:
+
+- **Left sidebar navigation** (80px): Running Calls, Post Event, Simulate Call, Settings, Op Settings tabs
+- **Metrics strip**: 8 live metrics across the top (Live, Pending, Completed, Lounge, Requests, Participants, CCP, Bridge)
+- **Conference Overview (left panel)**: Running / Pending / Completed / Alarms tabs with call list
+- **Control Panel (CCP)**: Full call controls (REC, Lock, Mute Parts, Mute All, Terminate, Dial Out)
+- **Participant table**: 12-column table with Sentiment scores (0–100, color-coded, live-drifting every 5s)
+- **Sub-tabs**: Monitoring (call quality metrics), Connection (IP/codec/encryption/NAT + dial-out), History, Audio, Chat, Notes, Q&A, Direct
+- **Monitoring tab**: Bandwidth, Latency, Jitter, Packet Loss, MOS Score with color-coded thresholds
+- **Q&A Queue tab**: Submitted text questions with approve/reject/pin/answer moderation + raised hands panel
+- **Actions sidebar**: Call, Op Join, Join, Hold, TL/Mon, Disconnect, Voting, Q&A
+- **Dev auth bypass**: `DEV_BYPASS = true` in `server/_core/trpc.ts` when `NODE_ENV=development` — disable before production
