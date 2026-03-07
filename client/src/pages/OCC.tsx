@@ -1800,30 +1800,6 @@ export default function OCC() {
                   >
                     <Phone className="w-3 h-3" /> Dial Out
                   </button>
-                  {/* +15min — extend conference duration */}
-                  <button
-                    onClick={async () => {
-                      const newEnd = new Date(Date.now() + 15 * 60 * 1000);
-                      setLocalConferences(prev => prev.map(c =>
-                        c.id === activeCCPConferenceId
-                          ? { ...c, scheduledEnd: newEnd }
-                          : c
-                      ));
-                      try {
-                        if (ablyConferenceChanRef.current) {
-                          await ablyConferenceChanRef.current.publish("conference.extend", {
-                            conferenceId: activeCCPConferenceId,
-                            newEndTime: newEnd.toISOString(),
-                            extendedBy: 15,
-                          });
-                        }
-                      } catch { /* demo mode */ }
-                    }}
-                    title="Extend conference by 15 minutes"
-                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-colors"
-                  >
-                    <Clock className="w-3 h-3" /> +15min
-                  </button>
                   {/* Capacity warning */}
                   {(() => {
                     const limit = activeConf.participantLimitEnabled ? (activeConf.participantLimit ?? 500) : 500;
