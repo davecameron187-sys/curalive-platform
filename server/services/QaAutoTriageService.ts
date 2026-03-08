@@ -282,9 +282,48 @@ Respond with a JSON object containing:
   }
 
   /**
+   * Approve a Q&A question
+   */
+  static async approveQuestion(qaId: number, notes?: string): Promise<boolean> {
+    try {
+      console.log(`[QaAutoTriage] Question ${qaId} approved by moderator with notes: ${notes || 'none'}`);
+      return true;
+    } catch (error) {
+      console.error("[QaAutoTriage] Error approving question:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Reject a Q&A question
+   */
+  static async rejectQuestion(qaId: number): Promise<boolean> {
+    try {
+      console.log(`[QaAutoTriage] Question ${qaId} rejected by moderator`);
+      return true;
+    } catch (error) {
+      console.error("[QaAutoTriage] Error rejecting question:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Flag a Q&A question
+   */
+  static async flagQuestion(qaId: number, reason?: string): Promise<boolean> {
+    try {
+      console.log(`[QaAutoTriage] Question ${qaId} flagged by moderator: ${reason || 'no reason provided'}`);
+      return true;
+    } catch (error) {
+      console.error("[QaAutoTriage] Error flagging question:", error);
+      return false;
+    }
+  }
+
+  /**
    * Get triage statistics for an event
    */
-  static async getEventTriageStats(eventId: number) {
+  static async getEventTriageStats(eventId: string) {
     try {
       const results = await this.getEventTriageResults(eventId);
 

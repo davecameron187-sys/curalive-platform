@@ -60,6 +60,8 @@ import AdminBilling from "./pages/AdminBilling";
 import AgeingReport from "./pages/AgeingReport";
 import RecurringTemplates from "./pages/RecurringTemplates";
 import EventBriefGenerator from "./pages/EventBriefGenerator";
+import ModeratorQAConsole from "./pages/ModeratorQAConsole";
+import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -121,6 +123,8 @@ function Router() {
       <Route path="/analytics" component={AnalyticsDashboard} />
       <Route path="/ai-features-status" component={AIFeaturesStatus} />
       <Route path="/operator/brief-generator" component={EventBriefGenerator} />
+      <Route path="/moderator/qa-console" component={ModeratorQAConsole} />
+      <Route path="/moderator/toxicity-filter" component={ToxicityFilterDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

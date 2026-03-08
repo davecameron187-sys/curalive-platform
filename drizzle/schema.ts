@@ -1867,3 +1867,137 @@ export const eventBriefResults = mysqlTable("event_brief_results", {
 
 export type EventBriefResult = typeof eventBriefResults.$inferSelect;
 export type InsertEventBriefResult = typeof eventBriefResults.$inferInsert;
+
+
+/**
+ * Silence & Anomaly Detector Results — tracks audio gaps and anomalies during events
+ */
+export const silenceAnomalyDetectorResults = mysqlTable("silence_anomaly_detector_results", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  conferenceId: int("conference_id").notNull(),
+  
+  // Silence detection
+  silenceDetected: boolean("silence_detected").notNull(),
+  silenceDurationSeconds: int("silence_duration_seconds"),
+  silenceStartTime: bigint("silence_start_time", { mode: "number" }),
+  silenceEndTime: bigint("silence_end_time", { mode: "number" }),
+  
+  // Anomaly detection
+  anomalyType: mysqlEnum("anomaly_type", ["silence", "background_noise", "echo", "distortion", "connection_loss"]).notNull(),
+  anomalySeverity: mysqlEnum("anomaly_severity", ["low", "medium", "high", "critical"]).notNull(),
+  anomalyConfidence: int("anomaly_confidence").notNull(), // 0-100
+  
+  // Recovery suggestions
+  suggestedActions: json("suggested_actions").$type<string[]>(),
+  
+  // Operator response
+  operatorAlerted: boolean("operator_alerted").default(false).notNull(),
+  operatorResponse: varchar("operator_response", { length: 255 }),
+  resolvedAt: timestamp("resolved_at"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type SilenceAnomalyDetectorResult = typeof silenceAnomalyDetectorResults.$inferSelect;
+export type InsertSilenceAnomalyDetectorResult = typeof silenceAnomalyDetectorResults.$inferInsert;
+
+/**
+ * Press Release Draft Results — SENS/RNS-style press releases generated from event transcripts
+ */
+export const pressReleaseDraftResults = mysqlTable("press_release_draft_results", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  conferenceId: int("conference_id").notNull(),
+  
+  // Release content
+  releaseTitle: varchar("release_title", { length: 255 }).notNull(),
+  releaseSummary: text("release_summary").notNull(),
+  releaseBody: longtext("release_body").notNull(),
+  
+  // Structured data
+  keyHighlights: json("key_highlights").$type<Array<{ title: string; description: string }>>(),
+  financialMetrics: json("financial_metrics").$type<Array<{ metric: string; value: string; context?: string }>>(),
+  speakerQuotes: json("speaker_quotes").$type<Array<{ speaker: string; quote: string; context?: string }>>(),
+  
+  // Compliance
+  sensCompliant: boolean("sens_compliant").default(true).notNull(),
+  rnsCompliant: boolean("rns_compliant").default(true).notNull(),
+  complianceNotes: text("compliance_notes"),
+  
+  // Generation metadata
+  generationModel: varchar("generation_model", { length: 100 }).default("gpt-4").notNull(),
+  generationConfidence: int("generation_confidence").notNull(), // 0-100
+  
+  // Operator approval
+  operatorApproved: boolean("operator_approved").default(false).notNull(),
+  operatorNotes: text("operator_notes"),
+  approvedAt: timestamp("approved_at"),
+  
+  // Publishing
+  published: boolean("published").default(false).notNull(),
+  publishedAt: timestamp("published_at"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type PressReleaseDraftResult = typeof pressReleaseDraftResults.$inferSelect;
+export type InsertPressReleaseDraftResult = typeof pressReleaseDraftResults.$inferInsert;
+
+/**
+ * Follow-Up Email Draft Results — personalized follow-up emails per IR contact
+ */
+export const followupEmailDraftResults = mysqlTable("followup_email_draft_results", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  conferenceId: int("conference_id").notNull(),
+  contactId: int("contact_id").notNull(),
+  
+  // Contact info
+  contactName: varchar("contact_name", { length: 255 }).notNull(),
+  contactEmail: varchar("contact_email", { length: 320 }).notNull(),
+  contactCompany: varchar("contact_company", { length: 255 }),
+  contactRole: varchar("contact_role", { length: 255 }),
+  
+  // Email content
+  emailSubject: varchar("email_subject", { length: 255 }).notNull(),
+  emailBody: longtext("email_body").notNull(),
+  
+  // Personalization
+  personalizationLevel: mysqlEnum("personalization_level", ["generic", "basic", "advanced", "premium"]).default("advanced").notNull(),
+  sentimentTone: mysqlEnum("sentiment_tone", ["formal", "friendly", "enthusiastic", "neutral"]).default("friendly").notNull(),
+  
+  // Content elements
+  eventHighlights: json("event_highlights").$type<string[]>(),
+  callToAction: varchar("call_to_action", { length: 255 }),
+  
+  // A/B Testing
+  variantId: varchar("variant_id", { length: 64 }),
+  variantType: mysqlEnum("variant_type", ["control", "variant_a", "variant_b"]).default("control"),
+  
+  // Generation metadata
+  generationModel: varchar("generation_model", { length: 100 }).default("gpt-4").notNull(),
+  generationConfidence: int("generation_confidence").notNull(), // 0-100
+  
+  // Operator approval
+  operatorApproved: boolean("operator_approved").default(false).notNull(),
+  operatorNotes: text("operator_notes"),
+  approvedAt: timestamp("approved_at"),
+  
+  // Sending
+  sent: boolean("sent").default(false).notNull(),
+  sentAt: timestamp("sent_at"),
+  
+  // Engagement tracking
+  opened: boolean("opened").default(false).notNull(),
+  openedAt: timestamp("opened_at"),
+  clicked: boolean("clicked").default(false).notNull(),
+  clickedAt: timestamp("clicked_at"),
+  replied: boolean("replied").default(false).notNull(),
+  repliedAt: timestamp("replied_at"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type FollowupEmailDraftResult = typeof followupEmailDraftResults.$inferSelect;
+export type InsertFollowupEmailDraftResult = typeof followupEmailDraftResults.$inferInsert;

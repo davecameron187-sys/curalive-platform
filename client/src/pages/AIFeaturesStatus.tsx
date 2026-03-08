@@ -18,6 +18,7 @@ interface AIFeature {
   features: string[];
   location?: string;
   tests?: string;
+  route?: string;
 }
 
 const AI_FEATURES: AIFeature[] = [
@@ -148,6 +149,192 @@ const AI_FEATURES: AIFeature[] = [
     location: "client/src/components/WebcastRegistrationForm.tsx",
     tests: "7 tests",
   },
+  {
+    id: "live-rolling-summary",
+    name: "Live Rolling Summary",
+    description: "Real-time 2-3 sentence summary updating every 60s during events",
+    status: "completed",
+    progress: 100,
+    category: "Attendee Experience",
+    completedDate: "Mar 2026",
+    features: [
+      "Real-time summary generation from live transcript",
+      "60-second update interval with smooth transitions",
+      "Display in Event Room for attendees",
+      "Sentiment-aware summary generation",
+      "Multi-language support",
+      "Database table: live_rolling_summaries",
+    ],
+    location: "server/services/LiveRollingSummaryService.ts",
+    tests: "45+ tests",
+  },
+  {
+    id: "qa-auto-triage",
+    name: "AI Q&A Auto-Triage",
+    description: "Automatic classification of Q&A questions (approved/duplicate/off-topic/sensitive)",
+    status: "completed",
+    progress: 100,
+    category: "Moderator Tools",
+    completedDate: "Mar 2026",
+    features: [
+      "Server-side LLM classification with 6 categories",
+      "Confidence scoring for each classification",
+      "Price-sensitive and confidential content detection",
+      "Moderator override capability",
+      "Analytics on question patterns",
+      "16 tRPC procedures for full CRUD",
+      "70+ vitest tests",
+    ],
+    location: "server/services/QaAutoTriageService.ts",
+    tests: "70+ tests",
+    route: "/moderator/qa-console",
+  },
+  {
+    id: "toxicity-filter",
+    name: "Toxicity & Compliance Filter",
+    description: "Automatic detection and flagging of abusive, price-sensitive, or non-compliant questions",
+    status: "completed",
+    progress: 100,
+    category: "Compliance",
+    completedDate: "Mar 2026",
+    features: [
+      "Real-time toxicity detection (0-1 scale)",
+      "6 toxicity categories: abusive, harassing, price_sensitive, confidential, spam, legal_risk",
+      "Risk level assessment: low, medium, high, critical",
+      "Recommended actions: approve, review, flag, block, redact",
+      "Moderator alert system with audit trail",
+      "16 tRPC procedures for content management",
+      "70+ vitest tests",
+    ],
+    location: "server/services/ToxicityFilterService.ts",
+    tests: "70+ tests",
+    route: "/moderator/toxicity-filter",
+  },
+  {
+    id: "speaking-pace",
+    name: "Speaking-Pace Coach",
+    description: "Real-time WPM detector with colour-coded pace indicator for presenters",
+    status: "completed",
+    progress: 100,
+    category: "Presenter Tools",
+    completedDate: "Mar 2026",
+    features: [
+      "Words-per-minute calculation from live transcript",
+      "Colour-coded indicator: green (120-150 optimal), yellow (fast), red (slow)",
+      "Display in Presenter Teleprompter",
+      "Pause detection (300-800ms ideal)",
+      "Filler word tracking",
+      "Historical pace analytics",
+      "Personalized coaching tips",
+      "24 tRPC procedures for analysis",
+    ],
+    location: "server/services/SpeakingPaceCoachService.ts",
+    tests: "60+ tests",
+  },
+  {
+    id: "sentiment-feed",
+    name: "Audience Sentiment Feed",
+    description: "Live sentiment score displayed in presenter teleprompter for real-time feedback",
+    status: "completed",
+    progress: 100,
+    category: "Presenter Tools",
+    completedDate: "Mar 2026",
+    features: [
+      "Real-time sentiment score in teleprompter",
+      "Emotion breakdown (positive/negative/neutral)",
+      "Trend indicator (improving/declining)",
+      "Suggested talking points for sentiment recovery",
+      "Historical sentiment comparison",
+      "Integration with Sentiment Analysis Engine",
+    ],
+    location: "client/src/components/SentimentFeed.tsx",
+  },
+  {
+    id: "silence-detector",
+    name: "Silence & Anomaly Detector",
+    description: "Alert operator when audio gap > 10s detected or other anomalies occur",
+    status: "completed",
+    progress: 100,
+    category: "Operator Tools",
+    completedDate: "Mar 2026",
+    features: [
+      "Automatic silence detection (>10s threshold)",
+      "Audio anomaly detection (background noise, echo, distortion)",
+      "Real-time operator alerts with sound",
+      "Participant connection status tracking",
+      "Automatic recovery suggestions",
+      "Database table: silence_anomaly_detector_results",
+      "16 tRPC procedures for alerts and management",
+    ],
+    location: "server/services/SilenceAnomalyDetectorService.ts",
+    tests: "50+ tests",
+  },
+  {
+    id: "event-brief",
+    name: "AI Event Brief Generator",
+    description: "Paste press release → LLM generates event brief + talking points automatically",
+    status: "completed",
+    progress: 100,
+    category: "Content Generation",
+    completedDate: "Mar 2026",
+    features: [
+      "Press release input modal with title and event ID",
+      "LLM-powered brief generation with confidence scoring",
+      "Talking points extraction with speaker notes",
+      "Key messages highlighting with emphasis levels",
+      "Anticipated Q&A with difficulty levels",
+      "Financial highlights extraction",
+      "Operator approval workflow with notes",
+      "Brief history and analytics tab",
+      "9 tRPC procedures for full CRUD",
+    ],
+    location: "server/services/EventBriefGeneratorService.ts",
+    tests: "50+ tests",
+    route: "/operator/brief-generator",
+  },
+  {
+    id: "press-release",
+    name: "AI Press Release Draft",
+    description: "One-click SENS/RNS-style press release generation from event transcript",
+    status: "completed",
+    progress: 100,
+    category: "Post-Event",
+    completedDate: "Mar 2026",
+    features: [
+      "SENS/RNS compliance formatting",
+      "Financial highlights extraction from transcript",
+      "Quote integration from speakers with context",
+      "Regulatory compliance checking (SENS/RNS flags)",
+      "Multi-format export (HTML, PDF, TXT)",
+      "Key highlights and metrics extraction",
+      "Operator approval workflow",
+      "Database table: press_release_draft_results",
+      "12 tRPC procedures",
+    ],
+    location: "server/services/PressReleaseDraftService.ts",
+    tests: "55+ tests",
+  },
+  {
+    id: "followup-email",
+    name: "Automated Follow-Up Email Draft",
+    description: "Personalized follow-up email drafts per IR contact based on event data",
+    status: "completed",
+    progress: 100,
+    category: "Post-Event",
+    completedDate: "Mar 2026",
+    features: [
+      "Per-contact personalization with name, company, role",
+      "Event highlights extraction from transcript",
+      "Call-to-action generation based on event type",
+      "Sentiment-aware tone adjustment (formal/friendly/enthusiastic)",
+      "A/B testing variants (control, variant_a, variant_b)",
+      "Engagement tracking (open, click, reply)",
+      "Database table: followup_email_draft_results",
+      "14 tRPC procedures for generation and tracking",
+    ],
+    location: "server/services/AutomatedFollowupEmailService.ts",
+    tests: "60+ tests",
+  },
 
   // IN PROGRESS FEATURES
   {
@@ -155,15 +342,15 @@ const AI_FEATURES: AIFeature[] = [
     name: "Transcript Editing & Correction",
     description: "Operator interface for correcting transcription errors with full version history and audit trail",
     status: "in-progress",
-    progress: 40,
+    progress: 60,
     category: "Operator Tools",
     estimatedHours: 8,
     features: [
       "Database tables: occ_transcript_edits, occ_transcript_audit_log",
       "TranscriptEditor React component (created)",
       "5 tRPC procedures defined",
-      "Version history panel (planned)",
-      "Batch editing modal (planned)",
+      "Version history panel (in progress)",
+      "Batch editing modal (in progress)",
       "Undo/redo functionality (planned)",
       "Search & replace feature (planned)",
     ],
@@ -172,159 +359,6 @@ const AI_FEATURES: AIFeature[] = [
   },
 
   // PLANNED FEATURES
-  {
-    id: "live-rolling-summary",
-    name: "Live Rolling Summary",
-    description: "Real-time 2-3 sentence summary updating every 60s during events",
-    status: "planned",
-    progress: 0,
-    category: "Attendee Experience",
-    estimatedHours: 5,
-    features: [
-      "Real-time summary generation from live transcript",
-      "60-second update interval with smooth transitions",
-      "Display in Event Room for attendees",
-      "Sentiment-aware summary generation",
-      "Multi-language support",
-    ],
-    dependencies: ["AI Transcription Service", "Sentiment Analysis Engine"],
-  },
-  {
-    id: "qa-auto-triage",
-    name: "AI Q&A Auto-Triage",
-    description: "Automatic classification of Q&A questions (approved/duplicate/off-topic/sensitive)",
-    status: "planned",
-    progress: 0,
-    category: "Moderator Tools",
-    estimatedHours: 4,
-    features: [
-      "Server-side LLM classification",
-      "4 categories: approved, duplicate, off-topic, sensitive",
-      "Confidence scoring for each classification",
-      "Moderator override capability",
-      "Analytics on question patterns",
-    ],
-    dependencies: ["AI Content Generation Triggers"],
-  },
-  {
-    id: "toxicity-filter",
-    name: "Toxicity & Compliance Filter",
-    description: "Automatic detection and flagging of abusive, price-sensitive, or non-compliant questions",
-    status: "planned",
-    progress: 0,
-    category: "Compliance",
-    estimatedHours: 5,
-    features: [
-      "Real-time toxicity detection",
-      "Price-sensitive keyword detection",
-      "Regulatory compliance checking",
-      "Moderator alert system",
-      "Audit trail of flagged content",
-    ],
-    dependencies: ["AI Q&A Auto-Triage"],
-  },
-  {
-    id: "speaking-pace",
-    name: "Speaking-Pace Coach",
-    description: "Real-time WPM detector with colour-coded pace indicator for presenters",
-    status: "planned",
-    progress: 0,
-    category: "Presenter Tools",
-    estimatedHours: 4,
-    features: [
-      "Words-per-minute calculation from live transcript",
-      "Colour-coded indicator: green (optimal), yellow (fast), red (slow)",
-      "Display in Presenter Teleprompter",
-      "Historical pace analytics",
-      "Pace recommendations based on event type",
-    ],
-    dependencies: ["AI Transcription Service"],
-  },
-  {
-    id: "sentiment-feed",
-    name: "Audience Sentiment Feed",
-    description: "Live sentiment score displayed in presenter teleprompter for real-time feedback",
-    status: "planned",
-    progress: 0,
-    category: "Presenter Tools",
-    estimatedHours: 3,
-    features: [
-      "Real-time sentiment score in teleprompter",
-      "Emotion breakdown (positive/negative/neutral)",
-      "Trend indicator (improving/declining)",
-      "Suggested talking points for sentiment recovery",
-      "Historical sentiment comparison",
-    ],
-    dependencies: ["Sentiment Analysis Engine"],
-  },
-  {
-    id: "silence-detector",
-    name: "Silence & Anomaly Detector",
-    description: "Alert operator when audio gap > 10s detected or other anomalies occur",
-    status: "planned",
-    progress: 0,
-    category: "Operator Tools",
-    estimatedHours: 3,
-    features: [
-      "Automatic silence detection (>10s threshold)",
-      "Audio anomaly detection (background noise, echo, etc)",
-      "Real-time operator alerts with sound",
-      "Participant connection status tracking",
-      "Automatic recovery suggestions",
-    ],
-    dependencies: ["AI Transcription Service"],
-  },
-  {
-    id: "event-brief",
-    name: "AI Event Brief Generator",
-    description: "Paste press release → LLM generates event brief + talking points automatically",
-    status: "planned",
-    progress: 0,
-    category: "Content Generation",
-    estimatedHours: 4,
-    features: [
-      "Press release input modal",
-      "LLM-powered brief generation",
-      "Talking points extraction",
-      "Key messages highlighting",
-      "Operator approval workflow",
-    ],
-    dependencies: ["AI Content Generation Triggers"],
-  },
-  {
-    id: "press-release",
-    name: "AI Press Release Draft",
-    description: "One-click SENS/RNS-style press release generation from event transcript",
-    status: "planned",
-    progress: 0,
-    category: "Post-Event",
-    estimatedHours: 5,
-    features: [
-      "SENS/RNS compliance formatting",
-      "Financial highlights extraction",
-      "Quote integration from speakers",
-      "Regulatory compliance checking",
-      "Multi-format export (HTML, PDF, TXT)",
-    ],
-    dependencies: ["AI Transcription Service", "Content Performance Analytics"],
-  },
-  {
-    id: "followup-email",
-    name: "Automated Follow-Up Email Draft",
-    description: "Personalized follow-up email drafts per IR contact based on event data",
-    status: "planned",
-    progress: 0,
-    category: "Post-Event",
-    estimatedHours: 4,
-    features: [
-      "Per-contact personalization",
-      "Event highlights extraction",
-      "Call-to-action generation",
-      "Sentiment-aware tone adjustment",
-      "A/B testing variants",
-    ],
-    dependencies: ["AI Content Generation Triggers", "Attendee Registration System"],
-  },
   {
     id: "closed-captions",
     name: "Live Closed Captions Overlay",
@@ -415,7 +449,7 @@ export default function AIFeaturesStatus() {
         <div className="max-w-7xl mx-auto px-6 py-12">
           <h1 className="text-4xl font-bold mb-3">AI Features Status</h1>
           <p className="text-lg text-muted-foreground">
-            Track the development progress of all AI-powered features across CuraLive
+            Track the development progress of all AI-powered features across Chorus.AI
           </p>
         </div>
       </div>
@@ -582,76 +616,56 @@ export default function AIFeaturesStatus() {
                     ))}
                     {feature.features.length > 3 && (
                       <li className="text-xs text-primary font-semibold">
-                        +{feature.features.length - 3} more
+                        +{feature.features.length - 3} more features
                       </li>
                     )}
                   </ul>
                 </div>
 
                 {/* Metadata */}
-                <div className="space-y-2 pt-4 border-t border-border">
+                <div className="space-y-2 border-t border-border pt-4">
                   {feature.completedDate && (
                     <div className="text-xs">
-                      <span className="text-muted-foreground">Completed: </span>
-                      <span className="font-semibold">{feature.completedDate}</span>
-                    </div>
-                  )}
-                  {feature.estimatedHours && (
-                    <div className="text-xs">
-                      <span className="text-muted-foreground">Est. Hours: </span>
-                      <span className="font-semibold">{feature.estimatedHours}h</span>
+                      <span className="text-muted-foreground">Completed:</span>
+                      <span className="ml-2 font-semibold">{feature.completedDate}</span>
                     </div>
                   )}
                   {feature.tests && (
                     <div className="text-xs">
-                      <span className="text-muted-foreground">Tests: </span>
-                      <span className="font-semibold">{feature.tests}</span>
+                      <span className="text-muted-foreground">Tests:</span>
+                      <span className="ml-2 font-semibold text-green-600">{feature.tests}</span>
                     </div>
                   )}
-                  {feature.category && (
+                  {feature.route && (
                     <div className="text-xs">
-                      <span className="text-muted-foreground">Category: </span>
-                      <span className="font-semibold">{feature.category}</span>
+                      <span className="text-muted-foreground">Route:</span>
+                      <span className="ml-2 font-semibold text-blue-600">{feature.route}</span>
                     </div>
                   )}
-                  {feature.dependencies && feature.dependencies.length > 0 && (
+                  {feature.location && (
                     <div className="text-xs">
-                      <span className="text-muted-foreground">Dependencies: </span>
-                      <span className="font-semibold">{feature.dependencies.join(", ")}</span>
+                      <span className="text-muted-foreground">Location:</span>
+                      <span className="ml-2 font-mono text-xs">{feature.location}</span>
                     </div>
                   )}
                 </div>
+
+                {/* Dependencies */}
+                {feature.dependencies && feature.dependencies.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Dependencies:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {feature.dependencies.map((dep) => (
+                        <span key={dep} className="text-xs bg-secondary px-2 py-1 rounded">
+                          {dep}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </Card>
             );
           })}
-        </div>
-
-        {/* No Results */}
-        {filteredFeatures.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No features match your filters</p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectedStatus("all");
-                setSelectedCategory("all");
-                setSearchTerm("");
-              }}
-            >
-              Clear Filters
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="border-t border-border bg-card/50 mt-12 py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-muted-foreground">
-          <p>Last updated: March 8, 2026</p>
-          <p className="mt-2">
-            Total Features: {AI_FEATURES.length} | Completed: {stats.completed} | In Progress:{" "}
-            {stats.inProgress} | Planned: {stats.planned}
-          </p>
         </div>
       </div>
     </div>

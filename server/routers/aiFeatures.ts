@@ -20,7 +20,7 @@ export const aiFeaturesRouter = router({
     triageQuestion: protectedProcedure
       .input(
         z.object({
-          qaId: z.number().int().positive(),
+          qaId: z.string().min(1),
           question: z.string().min(1).max(5000),
           eventTitle: z.string().optional(),
           previousQuestions: z.array(z.string()).optional(),
@@ -28,7 +28,7 @@ export const aiFeaturesRouter = router({
       )
       .mutation(async ({ input }) => {
         const result = await QaAutoTriageService.triageQuestion(
-          input.qaId,
+          parseInt(input.qaId),
           input.question,
           {
             eventTitle: input.eventTitle,
@@ -343,6 +343,135 @@ export const aiFeaturesRouter = router({
           input.notes,
           input.userId || ctx.user?.id
         );
+        return { success };
+      }),
+
+    /**
+     * Get toxicity filter results for an event
+     */
+    getEventToxicityResults: protectedProcedure
+      .input(z.object({ eventId: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const results = await ToxicityFilterService.getFlaggedContent(parseInt(input.eventId));
+        return results;
+      }),
+
+    /**
+     * Get toxicity statistics for an event
+     */
+    getToxicityStats: protectedProcedure
+      .input(z.object({ eventId: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const stats = await ToxicityFilterService.getConferenceFilterStats(parseInt(input.eventId));
+        return stats;
+      }),
+
+    /**
+     * Approve a toxicity flag
+     */
+    approveToxicityFlag: protectedProcedure
+      .input(z.object({ flagId: z.number().int().positive(), notes: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const success = await ToxicityFilterService.markAsReviewed(
+          input.flagId,
+          "approved",
+          input.notes
+        );
+        return { success };
+      }),
+
+    /**
+     * Reject a toxicity flag
+     */
+    rejectToxicityFlag: protectedProcedure
+      .input(z.object({ flagId: z.number().int().positive(), notes: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const success = await ToxicityFilterService.markAsReviewed(
+          input.flagId,
+          "rejected",
+          input.notes
+        );
+        return { success };
+      }),
+
+    /**
+     * Block toxic content
+     */
+    blockToxicContent: protectedProcedure
+      .input(z.object({ contentId: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        const success = await ToxicityFilterService.markAsReviewed(
+          input.contentId,
+          "escalated"
+        );
+        return { success };
+      }),
+
+    /**
+     * Redact toxic content
+     */
+    redactToxicContent: protectedProcedure
+      .input(z.object({ contentId: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        const success = await ToxicityFilterService.markAsReviewed(
+          input.contentId,
+          "redacted"
+        );
+        return { success };
+      }),
+  }),
+
+  /**
+   * Q&A Auto-Triage Moderator Procedures
+   */
+  qaAutoTriageModeration: router({
+    /**
+     * Get Q&A triage results for an event
+     */
+    getEventQATriageResults: protectedProcedure
+      .input(z.object({ eventId: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const results = await QaAutoTriageService.getEventTriageResults(parseInt(input.eventId));
+        return results;
+      }),
+
+    /**
+     * Get Q&A triage statistics for an event
+     */
+    getQATriageStats: protectedProcedure
+      .input(z.object({ eventId: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const stats = await QaAutoTriageService.getEventTriageStats(parseInt(input.eventId));
+        return stats;
+      }),
+
+    /**
+     * Approve a Q&A question
+     */
+    approveQAQuestion: protectedProcedure
+      .input(z.object({ questionId: z.number().int().positive(), notes: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const success = await QaAutoTriageService.approveQuestion(input.questionId, input.notes);
+        return { success };
+      }),
+
+    /**
+     * Reject a Q&A question
+     */
+    rejectQAQuestion: protectedProcedure
+      .input(z.object({ questionId: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        const success = await QaAutoTriageService.rejectQuestion(input.questionId);
+        return { success };
+      }),
+
+    /**
+     * Flag a Q&A question
+     */
+    flagQAQuestion: protectedProcedure
+      .input(z.object({ questionId: z.number().int().positive(), reason: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const success = await QaAutoTriageService.flagQuestion(input.questionId, input.reason);
         return { success };
       }),
   }),
