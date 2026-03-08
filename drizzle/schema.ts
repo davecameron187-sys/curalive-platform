@@ -1796,3 +1796,74 @@ export const toxicityFilterResults = mysqlTable("toxicity_filter_results", {
 });
 export type ToxicityFilterResult = typeof toxicityFilterResults.$inferSelect;
 export type InsertToxicityFilterResult = typeof toxicityFilterResults.$inferInsert;
+
+
+/**
+ * Event Brief Generator Results
+ * Stores AI-generated event briefs from press releases
+ */
+export const eventBriefResults = mysqlTable("event_brief_results", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Context
+  conferenceId: int("conference_id").notNull(),
+  eventId: varchar("event_id", { length: 128 }),
+  operatorId: int("operator_id"), // User ID of operator who generated brief
+  
+  // Input
+  pressRelease: text("press_release").notNull(), // Original press release text
+  pressReleaseTitle: varchar("press_release_title", { length: 255 }),
+  
+  // Generated Brief
+  briefTitle: varchar("brief_title", { length: 255 }).notNull(),
+  briefSummary: text("brief_summary").notNull(), // 2-3 sentence executive summary
+  
+  // Key Messages (3-5 main points)
+  keyMessages: json("key_messages").$type<Array<{
+    title: string;
+    description: string;
+    emphasis: "high" | "medium" | "low";
+  }>>().notNull(),
+  
+  // Talking Points (structured for presenter delivery)
+  talkingPoints: json("talking_points").$type<Array<{
+    topic: string;
+    points: string[];
+    speakerNotes?: string;
+  }>>().notNull(),
+  
+  // Q&A Preparation
+  anticipatedQuestions: json("anticipated_questions").$type<Array<{
+    question: string;
+    suggestedAnswer: string;
+    difficulty: "easy" | "medium" | "hard";
+  }>>().notNull(),
+  
+  // Financial Highlights (if applicable)
+  financialHighlights: json("financial_highlights").$type<Array<{
+    metric: string;
+    value: string;
+    context?: string;
+  }>>(),
+  
+  // Metadata
+  briefModel: varchar("brief_model", { length: 100 }).default("gpt-4").notNull(),
+  briefVersion: varchar("brief_version", { length: 50 }).default("1.0").notNull(),
+  generationConfidence: int("generation_confidence").notNull(), // 0-100 confidence in generation
+  generationTimestamp: bigint("generation_timestamp", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  
+  // Operator feedback
+  operatorApproved: boolean("operator_approved").default(false).notNull(),
+  operatorNotes: text("operator_notes"),
+  approvedAt: timestamp("approved_at"),
+  
+  // Usage tracking
+  usedInEvent: boolean("used_in_event").default(false).notNull(),
+  usedAt: timestamp("used_at"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EventBriefResult = typeof eventBriefResults.$inferSelect;
+export type InsertEventBriefResult = typeof eventBriefResults.$inferInsert;
