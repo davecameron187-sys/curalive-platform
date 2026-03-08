@@ -65,6 +65,8 @@ import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
 import RedactionWorkflow from "./pages/RedactionWorkflow";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
 import DevelopmentDashboard from "./pages/DevelopmentDashboard";
+import AdminPanel from "./pages/AdminPanel";
+import FeatureFlagsDashboard from "./pages/FeatureFlagsDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -131,6 +133,8 @@ function Router() {
       <Route path="/moderator/toxicity-filter" component={ToxicityFilterDashboard} />
       <Route path="/operator/redaction" component={RedactionWorkflow} />
       <Route path="/compliance" component={ComplianceDashboard} />
+      <Route path="/admin" component={AdminPanel} />
+      <Route path="/feature-flags" component={FeatureFlagsDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
