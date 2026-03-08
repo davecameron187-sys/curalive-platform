@@ -173,7 +173,7 @@ export class AblyRealtimeService {
 
     const presenceHandler = () => {
       try {
-        channel.presence.get((err: any, members: any) => {
+        channel.presence.get((err: any, members?: any) => {
           if (err) {
             console.error("[Ably] Error getting presence:", err);
             return;

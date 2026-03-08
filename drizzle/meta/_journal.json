@@ -309,6 +309,20 @@
       "when": 1772975411920,
       "tag": "0043_freezing_joshua_kane",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "5",
+      "when": 1772991010525,
+      "tag": "0044_thankful_baron_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "5",
+      "when": 1772991590260,
+      "tag": "0045_redundant_paladin",
+      "breakpoints": true
     }
   ]
 }

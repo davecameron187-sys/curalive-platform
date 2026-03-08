@@ -19,14 +19,21 @@ import { toast } from "sonner";
 
 interface FlaggedContent {
   id: number;
-  contentText: string;
+  content: string;
+  contentType: "qa_question" | "spoken_segment" | "chat_message";
   toxicityScore: number;
-  toxicityCategory: "abusive" | "harassing" | "price_sensitive" | "confidential" | "spam" | "legal_risk";
-  riskLevel: "low" | "medium" | "high" | "critical";
-  recommendedAction: "approve" | "review" | "flag" | "block" | "redact";
+  toxicityLabel: "safe" | "mild" | "moderate" | "severe";
+  riskLevel: "safe" | "low" | "medium" | "high" | "critical";
+  recommendedAction: "approve" | "review" | "flag_moderator" | "block" | "redact";
+  isFlagged: boolean;
+  isPriceSensitive: boolean;
+  isConfidential: boolean;
+  isLegalRisk: boolean;
+  isAbusive: boolean;
+  isSpam: boolean;
   moderatorReviewed?: boolean;
-  moderatorDecision?: "approved" | "rejected" | "flagged";
-  createdAt: string;
+  moderatorAction?: "approved" | "rejected" | "redacted" | "escalated";
+  createdAt: Date;
 }
 
 export default function ToxicityFilterDashboard() {
@@ -38,13 +45,13 @@ export default function ToxicityFilterDashboard() {
   const [showReviewModal, setShowReviewModal] = useState(false);
 
   // tRPC queries and mutations
-  const flaggedContentQuery = trpc.aiFeatures.toxicityFilter.getEventToxicityResults.useQuery(
-    { eventId: eventId || "" },
+  const flaggedContentQuery = trpc.aiFeatures.toxicityFilter.getFlaggedContent.useQuery(
+    { conferenceId: parseInt(eventId) || 0 },
     { enabled: !!eventId }
   );
 
-  const toxicityStatsQuery = trpc.aiFeatures.toxicityFilter.getToxicityStats.useQuery(
-    { eventId: eventId || "" },
+  const toxicityStatsQuery = trpc.aiFeatures.toxicityFilter.getConferenceStats.useQuery(
+    { conferenceId: parseInt(eventId) || 0 },
     { enabled: !!eventId }
   );
 
@@ -85,7 +92,7 @@ export default function ToxicityFilterDashboard() {
   const filteredContent = useMemo(() => {
     return flaggedContent.filter((c) => {
       const riskMatch = selectedRiskLevel === "all" || c.riskLevel === selectedRiskLevel;
-      const searchMatch = searchTerm === "" || c.contentText.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchMatch = searchTerm === "" || c.content.toLowerCase().includes(searchTerm.toLowerCase());
       return riskMatch && searchMatch;
     });
   }, [flaggedContent, selectedRiskLevel, searchTerm]);
@@ -177,15 +184,15 @@ export default function ToxicityFilterDashboard() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <Card className="p-4 border-border">
                 <p className="text-xs text-muted-foreground mb-1">Flagged Items</p>
-                <p className="text-2xl font-bold">{stats.totalFlagged}</p>
+                <p className="text-2xl font-bold">{stats?.flagged || 0}</p>
               </Card>
               <Card className="p-4 border-border">
-                <p className="text-xs text-muted-foreground mb-1">Critical</p>
-                <p className="text-2xl font-bold text-red-600">{stats.criticalCount}</p>
+                <p className="text-xs text-muted-foreground mb-1">Price Sensitive</p>
+                <p className="text-2xl font-bold text-red-600">{stats?.priceSensitive || 0}</p>
               </Card>
               <Card className="p-4 border-border">
-                <p className="text-xs text-muted-foreground mb-1">Blocked</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.blockedCount}</p>
+                <p className="text-xs text-muted-foreground mb-1">Abusive</p>
+                <p className="text-2xl font-bold text-orange-600">{stats?.abusive || 0}</p>
               </Card>
               <Card className="p-4 border-border">
                 <p className="text-xs text-muted-foreground mb-1">Avg Toxicity</p>
@@ -239,8 +246,10 @@ export default function ToxicityFilterDashboard() {
                 </Card>
               ) : (
                 filteredContent.map((content) => {
-                  const categoryConfig_ = categoryConfig[content.toxicityCategory];
-                  const riskConfig = riskLevelConfig[content.riskLevel];
+                  const categoryKey = (content.isAbusive ? "abusive" : content.isPriceSensitive ? "price_sensitive" : content.isConfidential ? "confidential" : content.isLegalRisk ? "legal_risk" : content.isSpam ? "spam" : "harassing") as keyof typeof categoryConfig;
+                  const categoryConfig_ = categoryConfig[categoryKey];
+                  const riskKey = content.riskLevel as keyof typeof riskLevelConfig;
+                  const riskConfig = riskLevelConfig[riskKey] || riskLevelConfig.low;
                   return (
                     <Card
                       key={content.id}

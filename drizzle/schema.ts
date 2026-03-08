@@ -1451,8 +1451,8 @@ export const occTranscriptEdits = mysqlTable("occ_transcript_edits", {
     .notNull(),
   reason: varchar("reason", { length: 255 }), // Why the edit was made
   approved: boolean("approved").default(false).notNull(),
-  approvedBy: int("approved_by"), // User ID of approver (nullable)
-  approvedAt: timestamp("approved_at"), // When approved (nullable)
+  approvedBy: int("approved_by").notNull().default(0), // User ID of approver (0 = not approved)
+  approvedAt: timestamp("approved_at").defaultNow(), // When approved (nullable)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type OccTranscriptEdit = typeof occTranscriptEdits.$inferSelect;
@@ -1506,8 +1506,8 @@ export const aiGeneratedContent = mysqlTable("ai_generated_content", {
   recipients: json("recipients").$type<string[]>(), // Array of email addresses to send to
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
   generatedBy: int("generated_by"), // User ID of who triggered generation
-  approvedAt: timestamp("approved_at"),
-  approvedBy: int("approved_by"), // User ID of operator who approved (nullable)
+  approvedAt: timestamp("approved_at").defaultNow(),
+  approvedBy: int("approved_by").notNull().default(0), // User ID of operator who approved (0 = not approved)
   rejectedAt: timestamp("rejected_at"),
   rejectionReason: varchar("rejection_reason", { length: 500 }),
   sentAt: timestamp("sent_at"),
@@ -2017,8 +2017,8 @@ export const transcriptEdits = mysqlTable("transcript_edits", {
   operatorId: int("operator_id").notNull(), // User who made the edit
   operatorName: varchar("operator_name", { length: 255 }).notNull(),
   approved: boolean("approved").default(false).notNull(), // Requires approval before publishing
-  approvedBy: int("approved_by"), // Admin who approved (nullable)
-  approvedAt: timestamp("approved_at"),
+  approvedBy: int("approved_by").notNull().default(0), // Admin who approved (0 = not approved)
+  approvedAt: timestamp("approved_at").defaultNow(),
   confidence: int("confidence").default(95).notNull(), // 0-100 confidence in correction
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),

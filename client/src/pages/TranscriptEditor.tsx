@@ -17,8 +17,8 @@ interface TranscriptEdit {
   correctedText: string;
   editType: "correction" | "clarification" | "redaction" | "speaker_correction";
   approved: boolean;
-  approvedBy?: number;
-  approvedAt?: Date;
+  approvedBy: number; // 0 = not approved, otherwise user ID
+  approvedAt: Date;
   createdAt: Date;
 }
 
