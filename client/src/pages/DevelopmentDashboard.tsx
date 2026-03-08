@@ -30,6 +30,7 @@ export default function DevelopmentDashboard() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedPlatformTest, setSelectedPlatformTest] = useState("audio-bridge");
 
   // Development Metrics
   const metrics = [
@@ -286,10 +287,11 @@ export default function DevelopmentDashboard() {
           {/* Tabs Section */}
           <section>
             <Tabs defaultValue="features" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="features">Features</TabsTrigger>
                 <TabsTrigger value="deployments">Deployments</TabsTrigger>
                 <TabsTrigger value="docs">Documentation</TabsTrigger>
+                <TabsTrigger value="platform-testing">Platform Testing</TabsTrigger>
               </TabsList>
               
               <TabsContent value="features" className="mt-4">
@@ -363,6 +365,102 @@ export default function DevelopmentDashboard() {
                         {title}
                       </Button>
                     ))}
+                  </div>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="platform-testing" className="mt-4">
+                <Card className="p-6">
+                  <h3 className="font-semibold mb-4">Platform Testing</h3>
+                  <div className="space-y-4">
+                    {/* Platform Test Selector */}
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { id: "audio-bridge", label: "Audio Bridge" },
+                        { id: "video", label: "Video" },
+                        { id: "roadshow", label: "Roadshow" },
+                        { id: "video-webcast", label: "Video Webcast" },
+                        { id: "audio-webcast", label: "Audio Webcast" },
+                      ].map(({ id, label }) => (
+                        <Button
+                          key={id}
+                          onClick={() => setSelectedPlatformTest(id)}
+                          variant={selectedPlatformTest === id ? "default" : "outline"}
+                          className="text-sm"
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Test Content */}
+                    <div className="mt-6 p-4 bg-secondary/50 rounded-lg border border-border">
+                      {selectedPlatformTest === "audio-bridge" && (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold">Audio Bridge Testing</h4>
+                          <div className="text-sm text-muted-foreground space-y-2">
+                            <p>• Test PSTN dial-in functionality across regions</p>
+                            <p>• Verify audio quality and latency metrics</p>
+                            <p>• Check transcription accuracy for various accents</p>
+                            <p>• Test conference bridge capacity limits</p>
+                            <p>• Validate call recording and playback</p>
+                          </div>
+                          <Button className="mt-4" size="sm">Start Audio Bridge Test</Button>
+                        </div>
+                      )}
+                      {selectedPlatformTest === "video" && (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold">Video Platform Testing</h4>
+                          <div className="text-sm text-muted-foreground space-y-2">
+                            <p>• Test video stream ingestion and encoding</p>
+                            <p>• Verify multi-bitrate adaptive streaming</p>
+                            <p>• Check video quality at various bandwidth levels</p>
+                            <p>• Test camera switching and presenter detection</p>
+                            <p>• Validate video recording and replay functionality</p>
+                          </div>
+                          <Button className="mt-4" size="sm">Start Video Test</Button>
+                        </div>
+                      )}
+                      {selectedPlatformTest === "roadshow" && (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold">Roadshow Testing</h4>
+                          <div className="text-sm text-muted-foreground space-y-2">
+                            <p>• Test multi-location simultaneous broadcasts</p>
+                            <p>• Verify synchronization across venues</p>
+                            <p>• Check local and remote Q&A integration</p>
+                            <p>• Test audience polling and engagement features</p>
+                            <p>• Validate post-event analytics collection</p>
+                          </div>
+                          <Button className="mt-4" size="sm">Start Roadshow Test</Button>
+                        </div>
+                      )}
+                      {selectedPlatformTest === "video-webcast" && (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold">Video Webcast Testing</h4>
+                          <div className="text-sm text-muted-foreground space-y-2">
+                            <p>• Test live video broadcast to large audiences</p>
+                            <p>• Verify CDN distribution and edge caching</p>
+                            <p>• Check viewer engagement metrics (watch time, drop-off)</p>
+                            <p>• Test interactive features (chat, polls, Q&A)</p>
+                            <p>• Validate VOD (video-on-demand) generation and playback</p>
+                          </div>
+                          <Button className="mt-4" size="sm">Start Video Webcast Test</Button>
+                        </div>
+                      )}
+                      {selectedPlatformTest === "audio-webcast" && (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold">Audio Webcast Testing</h4>
+                          <div className="text-sm text-muted-foreground space-y-2">
+                            <p>• Test audio-only broadcast infrastructure</p>
+                            <p>• Verify codec compatibility and bitrate optimization</p>
+                            <p>• Check listener connection and reconnection handling</p>
+                            <p>• Test real-time transcription accuracy</p>
+                            <p>• Validate podcast/archive generation and distribution</p>
+                          </div>
+                          <Button className="mt-4" size="sm">Start Audio Webcast Test</Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </Card>
               </TabsContent>
