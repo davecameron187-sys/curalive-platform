@@ -56,6 +56,10 @@ import InvoiceView from "./pages/InvoiceView";
 import AdminBilling from "./pages/AdminBilling";
 import AgeingReport from "./pages/AgeingReport";
 import RecurringTemplates from "./pages/RecurringTemplates";
+import TrainingModeConsole from "./pages/TrainingModeConsole";
+import OperatorAnalytics from "./pages/OperatorAnalytics";
+import DevelopmentDashboard from "./pages/DevelopmentDashboard";
+import AIFeaturesStatus from "./pages/AIFeaturesStatus";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -64,6 +68,7 @@ function Router() {
       <Route path="/event/:id" component={EventRoom} />
       <Route path="/moderator/:id" component={Moderator} />
       <Route path="/presenter/:id" component={Presenter} />
+      <Route path="/operator/analytics" component={OperatorAnalytics} />
       <Route path="/operator/:id" component={OperatorConsole} />
       <Route path="/register/:id" component={Registration} />
       <Route path="/demo-registration" component={DemoRegistration} />
@@ -112,6 +117,9 @@ function Router() {
       <Route path="/invoice/:token" component={InvoiceView} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
+      <Route path="/training-mode" component={TrainingModeConsole} />
+      <Route path="/dev-dashboard" component={DevelopmentDashboard} />
+      <Route path="/ai-features" component={AIFeaturesStatus} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

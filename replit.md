@@ -52,6 +52,10 @@ Key variables needed:
 
 - Live webcast platform with real-time transcription
 - OCC (Operator Control Center) for event management — professional conference control centre
+- Training Mode Console — isolated operator training environment (`/training-mode`)
+- Operator Analytics dashboard with performance scoring (`/operator/analytics`)
+- Development Dashboard with feature status & platform testing tools (`/dev-dashboard`)
+- AI Features Status overview of all intelligence capabilities (`/ai-features`)
 - WebRTC webphone with Twilio/Telnyx integration
 - Multi-language translation (8 languages)
 - AI-powered post-event reports
@@ -88,10 +92,20 @@ The OCC is a world-class conference control centre built to the technical brief.
 - tRPC procedures: `occ.getAudioFiles`, `occ.addAudioFile`, `occ.deleteAudioFile`, `occ.setAudioPlayState`
 - Frontend: Audio tab in OCC.tsx reads from DB, supports upload/play/pause/delete with HTML5 Audio API
 
+## Training Mode System
+
+- 6 dedicated DB tables: `training_mode_sessions`, `training_conferences`, `training_participants`, `training_lounge`, `training_call_logs`, `training_performance_metrics`
+- tRPC router at `server/routers/trainingMode.ts` — 8 procedures: `createSession`, `startConference`, `logCall`, `recordMetrics`, `completeSession`, `getSessionMetrics`, `getOperatorSessions`, `getActiveSessions`
+- All training data is isolated — zero production data is read or written
+- Frontend at `client/src/pages/TrainingModeConsole.tsx` — 3 tabs: My Sessions, New Session, Performance
+- Performance scoring 0–5 across 5 dimensions; mentor notes; ready-for-production flag
+- 11 vitest unit tests in `server/trainingMode.test.ts`
+
 ## Database (MySQL via Drizzle)
 
 - `DATABASE_URL` secret is set and the schema is fully pushed — all tables exist
 - Demo data seeded: conference CC-9921 (Q4 2025 Earnings Call) with 10 participants
+- All training tables created and verified
 - `pnpm db:push` runs `drizzle-kit generate && drizzle-kit migrate` if schema changes are needed
 
 ## Auth

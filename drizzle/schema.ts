@@ -1320,3 +1320,105 @@ export const billingRecurringTemplates = mysqlTable("billing_recurring_templates
 
 export type BillingRecurringTemplate = typeof billingRecurringTemplates.$inferSelect;
 export type InsertBillingRecurringTemplate = typeof billingRecurringTemplates.$inferInsert;
+
+// ─── Training Mode Tables ─────────────────────────────────────────────────────
+
+export const trainingModeSessions = mysqlTable("training_mode_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  operatorId: int("operator_id").notNull(),
+  operatorName: varchar("operator_name", { length: 255 }).notNull(),
+  sessionName: varchar("session_name", { length: 255 }).notNull(),
+  scenario: varchar("scenario", { length: 64 }).notNull(),
+  mentorId: int("mentor_id"),
+  status: mysqlEnum("status", ["active", "completed", "paused"]).default("active").notNull(),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TrainingModeSession = typeof trainingModeSessions.$inferSelect;
+export type InsertTrainingModeSession = typeof trainingModeSessions.$inferInsert;
+
+export const trainingConferences = mysqlTable("training_conferences", {
+  id: int("id").autoincrement().primaryKey(),
+  trainingSessionId: int("training_session_id").notNull(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  callId: varchar("call_id", { length: 128 }).notNull(),
+  subject: varchar("subject", { length: 512 }).notNull(),
+  product: varchar("product", { length: 128 }),
+  status: mysqlEnum("status", ["pending", "active", "completed"]).default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TrainingConference = typeof trainingConferences.$inferSelect;
+export type InsertTrainingConference = typeof trainingConferences.$inferInsert;
+
+export const trainingParticipants = mysqlTable("training_participants", {
+  id: int("id").autoincrement().primaryKey(),
+  trainingConferenceId: int("training_conference_id").notNull(),
+  lineNumber: int("line_number").notNull(),
+  role: varchar("role", { length: 64 }),
+  name: varchar("name", { length: 255 }).notNull(),
+  company: varchar("company", { length: 255 }),
+  phoneNumber: varchar("phone_number", { length: 32 }),
+  state: mysqlEnum("state", ["incoming", "connected", "disconnected"]).default("incoming").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type TrainingParticipant = typeof trainingParticipants.$inferSelect;
+export type InsertTrainingParticipant = typeof trainingParticipants.$inferInsert;
+
+export const trainingLounge = mysqlTable("training_lounge", {
+  id: int("id").autoincrement().primaryKey(),
+  trainingSessionId: int("training_session_id").notNull(),
+  participantName: varchar("participant_name", { length: 255 }).notNull(),
+  waitingSince: timestamp("waiting_since").defaultNow().notNull(),
+  status: mysqlEnum("status", ["waiting", "admitted", "left"]).default("waiting").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type TrainingLoungeEntry = typeof trainingLounge.$inferSelect;
+export type InsertTrainingLoungeEntry = typeof trainingLounge.$inferInsert;
+
+export const trainingCallLogs = mysqlTable("training_call_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  trainingSessionId: int("training_session_id").notNull(),
+  trainingConferenceId: int("training_conference_id").notNull(),
+  operatorId: int("operator_id").notNull(),
+  participantName: varchar("participant_name", { length: 255 }).notNull(),
+  callDuration: int("call_duration").default(0).notNull(),
+  callQuality: mysqlEnum("call_quality", ["poor", "fair", "good", "excellent"]).default("good").notNull(),
+  operatorPerformance: text("operator_performance"),
+  participantFeedback: text("participant_feedback"),
+  recordingUrl: varchar("recording_url", { length: 1024 }),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  endedAt: timestamp("ended_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type TrainingCallLog = typeof trainingCallLogs.$inferSelect;
+export type InsertTrainingCallLog = typeof trainingCallLogs.$inferInsert;
+
+export const trainingPerformanceMetrics = mysqlTable("training_performance_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  trainingSessionId: int("training_session_id").notNull(),
+  operatorId: int("operator_id").notNull(),
+  totalCallsHandled: int("total_calls_handled").default(0).notNull(),
+  averageCallDuration: int("average_call_duration").default(0).notNull(),
+  callQualityScore: varchar("call_quality_score", { length: 8 }).default("0").notNull(),
+  averageParticipantSatisfaction: varchar("average_participant_satisfaction", { length: 8 }).default("0").notNull(),
+  communicationScore: varchar("communication_score", { length: 8 }).default("0").notNull(),
+  problemSolvingScore: varchar("problem_solving_score", { length: 8 }).default("0").notNull(),
+  professionalism: varchar("professionalism", { length: 8 }).default("0").notNull(),
+  overallScore: varchar("overall_score", { length: 8 }).default("0").notNull(),
+  readyForProduction: boolean("ready_for_production").default(false).notNull(),
+  mentorNotes: text("mentor_notes"),
+  evaluatedAt: timestamp("evaluated_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TrainingPerformanceMetric = typeof trainingPerformanceMetrics.$inferSelect;
+export type InsertTrainingPerformanceMetric = typeof trainingPerformanceMetrics.$inferInsert;
