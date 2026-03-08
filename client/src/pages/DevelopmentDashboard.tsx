@@ -287,11 +287,12 @@ export default function DevelopmentDashboard() {
           {/* Tabs Section */}
           <section>
             <Tabs defaultValue="features" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="features">Features</TabsTrigger>
                 <TabsTrigger value="deployments">Deployments</TabsTrigger>
                 <TabsTrigger value="docs">Documentation</TabsTrigger>
                 <TabsTrigger value="platform-testing">Platform Testing</TabsTrigger>
+                <TabsTrigger value="operator-console">Operator Console</TabsTrigger>
               </TabsList>
               
               <TabsContent value="features" className="mt-4">
@@ -460,6 +461,46 @@ export default function DevelopmentDashboard() {
                           <Button className="mt-4" size="sm">Start Audio Webcast Test</Button>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="operator-console" className="mt-4">
+                <Card className="p-6">
+                  <h3 className="font-semibold mb-4">Operator Console (OCC v1.0)</h3>
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Access the advanced Operator Control Console for managing live events, participants, and conference controls.
+                    </p>
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={() => window.open('https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/occ', '_blank')}
+                        className="bg-primary hover:bg-primary/90"
+                      >
+                        Open Operator Console
+                      </Button>
+                      <Button 
+                        onClick={() => navigate('/operator/q4-earnings-2026')}
+                        variant="outline"
+                      >
+                        Open in Manus
+                      </Button>
+                    </div>
+                    <div className="mt-6 p-4 bg-secondary/50 rounded-lg border border-border">
+                      <h4 className="font-semibold mb-3">Console Features</h4>
+                      <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                        <div className="space-y-2">
+                          <p><strong>Conference Management:</strong> Control active calls, manage participants, record sessions</p>
+                          <p><strong>Participant Control:</strong> Mute/unmute, park, disconnect, transfer participants</p>
+                          <p><strong>Q&A Management:</strong> Monitor and manage participant questions in real-time</p>
+                        </div>
+                        <div className="space-y-2">
+                          <p><strong>Audio Monitoring:</strong> Track bandwidth, latency, jitter, and packet loss metrics</p>
+                          <p><strong>Multi-Dial:</strong> Dial multiple participants simultaneously into the conference</p>
+                          <p><strong>Green Room:</strong> Pre-event speaker preparation and coordination space</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </Card>
