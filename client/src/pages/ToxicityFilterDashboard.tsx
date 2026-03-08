@@ -83,11 +83,12 @@ export default function ToxicityFilterDashboard() {
   };
 
   const riskLevelConfig = {
+    safe: { color: "bg-green-500/10", textColor: "text-green-600", label: "Safe" },
     low: { color: "bg-green-500/10", textColor: "text-green-600", label: "Low" },
     medium: { color: "bg-yellow-500/10", textColor: "text-yellow-600", label: "Medium" },
     high: { color: "bg-orange-500/10", textColor: "text-orange-600", label: "High" },
     critical: { color: "bg-red-500/10", textColor: "text-red-600", label: "Critical" },
-  };
+  }
 
   const filteredContent = useMemo(() => {
     return flaggedContent.filter((c) => {
@@ -367,9 +368,14 @@ export default function ToxicityFilterDashboard() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Category</p>
-                    <Badge className={`${categoryConfig[selectedContent.toxicityCategory].color}`}>
-                      {categoryConfig[selectedContent.toxicityCategory].label}
-                    </Badge>
+                    {(() => {
+                      const categoryKey = (selectedContent.isAbusive ? "abusive" : selectedContent.isPriceSensitive ? "price_sensitive" : selectedContent.isConfidential ? "confidential" : selectedContent.isLegalRisk ? "legal_risk" : selectedContent.isSpam ? "spam" : "harassing") as keyof typeof categoryConfig;
+                      return (
+                        <Badge className={`${categoryConfig[categoryKey].color}`}>
+                          {categoryConfig[categoryKey].label}
+                        </Badge>
+                      );
+                    })()}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Toxicity Score</p>
