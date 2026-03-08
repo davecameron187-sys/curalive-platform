@@ -281,6 +281,13 @@
       "when": 1772968627444,
       "tag": "0039_legal_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1772969631058,
+      "tag": "0040_tidy_hedge_knight",
+      "breakpoints": true
     }
   ]
 }

@@ -1656,3 +1656,143 @@ export const occLiveRollingSummaries = mysqlTable(
 );
 export type OccLiveRollingSummary = typeof occLiveRollingSummaries.$inferSelect;
 export type InsertOccLiveRollingSummary = typeof occLiveRollingSummaries.$inferInsert;
+
+// ─── Q&A Auto-Triage ────────────────────────────────────────────────────────
+/**
+ * QA Auto-Triage Results — stores AI classification of Q&A questions
+ * Helps moderators prioritize and filter questions automatically
+ */
+export const qaAutoTriageResults = mysqlTable("qa_auto_triage_results", {
+  id: int("id").primaryKey().autoincrement(),
+  qaId: int("qa_id").notNull(), // References webcast_qa.id
+  conferenceId: int("conference_id"), // References occ_conferences.id (optional, for OCC questions)
+  classification: mysqlEnum("classification", [
+    "approved",
+    "duplicate",
+    "off_topic",
+    "spam",
+    "unclear",
+    "sensitive",
+  ]).notNull(),
+  confidence: int("confidence").notNull(), // 0-100 confidence score
+  reason: text("reason"), // Explanation for the classification
+  suggestedCategory: varchar("suggested_category", { length: 100 }), // AI-suggested category
+  isDuplicate: boolean("is_duplicate").default(false).notNull(),
+  duplicateOf: int("duplicate_of"), // References another qa_id if duplicate
+  isSensitive: boolean("is_sensitive").default(false).notNull(), // Price-sensitive, compliance-related
+  sensitivityFlags: json("sensitivity_flags").$type<string[]>(), // Array of flags: ["price_sensitive", "confidential", "legal"]
+  triageScore: int("triage_score").notNull(), // 0-100 overall triage quality score
+  triageModel: varchar("triage_model", { length: 100 }).default("gpt-4").notNull(),
+  triageVersion: varchar("triage_version", { length: 50 }).default("1.0").notNull(),
+  triageTimestamp: bigint("triage_timestamp", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type QaAutoTriageResult = typeof qaAutoTriageResults.$inferSelect;
+export type InsertQaAutoTriageResult = typeof qaAutoTriageResults.$inferInsert;
+
+// ─── Speaking-Pace Coach ────────────────────────────────────────────────────
+/**
+ * Speaking Pace Analysis — real-time WPM detection and coaching for speakers
+ * Tracks words per minute, pause patterns, filler words, and provides feedback
+ */
+export const speakingPaceAnalysis = mysqlTable("speaking_pace_analysis", {
+  id: int("id").primaryKey().autoincrement(),
+  conferenceId: int("conference_id").notNull(), // References occ_conferences.id
+  participantId: int("participant_id"), // References occ_participants.id
+  speakerName: varchar("speaker_name", { length: 255 }).notNull(),
+  speakerRole: mysqlEnum("speaker_role", ["moderator", "participant", "presenter"]).default("participant").notNull(),
+  
+  // Pace metrics
+  wpm: int("wpm").notNull(), // Words per minute
+  paceLabel: mysqlEnum("pace_label", ["too_slow", "slow", "normal", "fast", "too_fast"]).notNull(),
+  paceScore: int("pace_score").notNull(), // 0-100 score (100 = ideal pace)
+  
+  // Pause analysis
+  averagePauseMs: int("average_pause_ms").notNull(), // Average pause duration in milliseconds
+  pauseCount: int("pause_count").notNull(), // Number of pauses detected
+  pauseScore: int("pause_score").notNull(), // 0-100 score for pause patterns
+  
+  // Filler words
+  fillerWordCount: int("filler_word_count").notNull(), // Count of "um", "uh", "like", "you know"
+  fillerWords: json("filler_words").$type<Array<{ word: string; count: number }>>(), // Breakdown by word
+  fillerScore: int("filler_score").notNull(), // 0-100 score (100 = no fillers)
+  
+  // Overall coaching
+  overallScore: int("overall_score").notNull(), // 0-100 composite score
+  coachingTip: text("coaching_tip"), // AI-generated coaching suggestion
+  coachingLevel: mysqlEnum("coaching_level", ["excellent", "good", "needs_improvement", "critical"]).notNull(),
+  
+  // Time window
+  windowStartTime: bigint("window_start_time", { mode: "number" }).notNull(), // Milliseconds from call start
+  windowEndTime: bigint("window_end_time", { mode: "number" }).notNull(),
+  durationMs: int("duration_ms").notNull(), // Duration of analysis window
+  
+  // Metadata
+  analysisModel: varchar("analysis_model", { length: 100 }).default("whisper-pace-v1").notNull(),
+  analysisVersion: varchar("analysis_version", { length: 50 }).default("1.0").notNull(),
+  analysisTimestamp: bigint("analysis_timestamp", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type SpeakingPaceAnalysis = typeof speakingPaceAnalysis.$inferSelect;
+export type InsertSpeakingPaceAnalysis = typeof speakingPaceAnalysis.$inferInsert;
+
+// ─── Toxicity & Compliance Filter ───────────────────────────────────────────
+/**
+ * Toxicity Filter Results — flags abusive, price-sensitive, and compliance-risky content
+ * Helps moderators identify problematic questions before they reach the queue
+ */
+export const toxicityFilterResults = mysqlTable("toxicity_filter_results", {
+  id: int("id").primaryKey().autoincrement(),
+  qaId: int("qa_id"), // References webcast_qa.id (for Q&A questions)
+  transcriptionSegmentId: bigint("transcription_segment_id", { mode: "number" }), // References occ_transcription_segments.id (for spoken content)
+  conferenceId: int("conference_id"), // References occ_conferences.id
+  
+  // Content
+  contentType: mysqlEnum("content_type", ["qa_question", "spoken_segment", "chat_message"]).notNull(),
+  content: text("content").notNull(), // The actual text analyzed
+  
+  // Toxicity scores
+  toxicityScore: int("toxicity_score").notNull(), // 0-100 toxicity level
+  toxicityLabel: mysqlEnum("toxicity_label", ["safe", "mild", "moderate", "severe"]).notNull(),
+  isFlagged: boolean("is_flagged").default(false).notNull(), // Whether to flag for review
+  
+  // Compliance flags
+  isPriceSensitive: boolean("is_price_sensitive").default(false).notNull(), // Contains price/financial data
+  isConfidential: boolean("is_confidential").default(false).notNull(), // Potential confidential info
+  isLegalRisk: boolean("is_legal_risk").default(false).notNull(), // Legal/compliance risk
+  isAbusive: boolean("is_abusive").default(false).notNull(), // Abusive language detected
+  isSpam: boolean("is_spam").default(false).notNull(), // Spam/promotional content
+  
+  // Detailed analysis
+  detectedIssues: json("detected_issues").$type<Array<{
+    type: "profanity" | "harassment" | "hate_speech" | "price_sensitive" | "confidential" | "legal_risk" | "spam";
+    severity: "low" | "medium" | "high";
+    phrase: string;
+  }>>(), // Specific issues found
+  
+  riskLevel: mysqlEnum("risk_level", ["safe", "low", "medium", "high", "critical"]).notNull(),
+  recommendedAction: mysqlEnum("recommended_action", [
+    "approve",
+    "review",
+    "flag_moderator",
+    "block",
+    "redact",
+  ]).notNull(),
+  
+  // Metadata
+  filterModel: varchar("filter_model", { length: 100 }).default("perspective-api-v2").notNull(),
+  filterVersion: varchar("filter_version", { length: 50 }).default("1.0").notNull(),
+  filterConfidence: int("filter_confidence").notNull(), // 0-100 confidence in the classification
+  filterTimestamp: bigint("filter_timestamp", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  
+  // Moderator action
+  moderatorReviewed: boolean("moderator_reviewed").default(false).notNull(),
+  moderatorAction: mysqlEnum("moderator_action", ["approved", "rejected", "redacted", "escalated"]),
+  moderatorNotes: text("moderator_notes"),
+  reviewedBy: int("reviewed_by"), // User ID of moderator
+  reviewedAt: timestamp("reviewed_at"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ToxicityFilterResult = typeof toxicityFilterResults.$inferSelect;
+export type InsertToxicityFilterResult = typeof toxicityFilterResults.$inferInsert;
