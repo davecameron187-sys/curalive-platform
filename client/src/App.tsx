@@ -1,4 +1,4 @@
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
@@ -59,6 +59,8 @@ import InvoiceView from "./pages/InvoiceView";
 import AdminBilling from "./pages/AdminBilling";
 import AgeingReport from "./pages/AgeingReport";
 import RecurringTemplates from "./pages/RecurringTemplates";
+import EventBriefGenerator from "./pages/EventBriefGenerator";
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -118,6 +120,7 @@ function Router() {
       <Route path="/ai-dashboard" component={AIDashboard} />
       <Route path="/analytics" component={AnalyticsDashboard} />
       <Route path="/ai-features-status" component={AIFeaturesStatus} />
+      <Route path="/operator/brief-generator" component={EventBriefGenerator} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

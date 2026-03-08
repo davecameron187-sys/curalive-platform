@@ -35,6 +35,10 @@
 - [x] #5 AI Q&A Auto-Triage — Moderator: server LLM pass to auto-classify questions (approved/duplicate/off-topic)
 - [x] #6 Toxicity/Compliance Filter — Moderator: flag abusive/price-sensitive questions before queue
 - [x] #14 AI Event Brief Generator — Operator: paste press release → LLM generates event brief + talking points
+  - [x] Backend service with LLM integration
+  - [x] Database schema (event_brief_results)
+  - [x] tRPC procedures (9 endpoints)
+  - [x] Operator console UI (EventBriefGenerator.tsx)
 - [ ] #19 AI Press Release Draft — PostEvent: one-click SENS/RNS-style press release from transcript
 - [ ] #25 Automated Follow-Up Email Draft — PostEvent: draft personalised follow-up emails per IR contact
 
