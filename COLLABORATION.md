@@ -22,6 +22,33 @@ This document is for **Manus**, **Replit Agent**, and the **project owner** to s
 - **Do NOT write implementation code** — Replit Agent handles all code
 - Do NOT push to `client/`, `server/`, `drizzle/`, or any TypeScript/TSX files
 - After completing a spec, update `docs/specs/STATUS.md` with the feature name and status `spec-ready`
+- **At the top of every spec file, include a REPLIT SUMMARY block** (see format below) — the project owner will copy-paste this block directly into the Replit chat to kick off implementation
+
+### Spec file format (Manus must follow this)
+
+Every spec file in `docs/specs/` must start with this block at the very top:
+
+```
+---
+REPLIT SUMMARY — copy and paste this block into the Replit chat
+---
+Feature: <short feature name>
+Route(s): <e.g. /occ, /training-mode>
+Priority: <high | medium | low>
+Depends on: <list any features that must exist first, or "none">
+
+What to build:
+- <bullet 1: one clear task>
+- <bullet 2: one clear task>
+- <bullet 3: one clear task>
+
+DB changes needed: <yes/no — if yes, describe tables/columns>
+New tRPC procedures: <yes/no — if yes, list procedure names>
+New pages/routes: <yes/no — if yes, list them>
+---
+```
+
+Below this block, Manus can write the full detailed spec in any format.
 
 ### Replit Agent's role
 - Read Manus specs from `docs/specs/` at the start of each session
@@ -61,12 +88,16 @@ Owner confirms → session complete
 
 ## Session Start Checklist (for Project Owner)
 
-Before each Replit session, say:
+**Step 1** — Open the Replit chat and say:
 > "Check GitHub for any new Manus specs or unimplemented work"
 
-Replit Agent will run `node scripts/github-sync-check.mjs` and report:
+Replit Agent will run the sync check and report:
 - Files on GitHub not yet in Replit
 - Any `docs/specs/` files with status `spec-ready` (pending implementation)
+
+**Step 2** — If Manus has a new spec file, open it in GitHub. Copy the **REPLIT SUMMARY block** at the very top of the file (the section between the `---` lines) and paste it into the Replit chat. That gives Replit Agent everything it needs to start building.
+
+**Step 3** — After Replit Agent finishes, say "push to GitHub" to sync the code back.
 
 ---
 
