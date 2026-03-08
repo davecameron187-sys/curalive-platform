@@ -867,10 +867,20 @@
 
 ## Round 6.5 — AI Content Approval Dashboard
 
-- [ ] AI Dashboard schema: ai_generated_content table (id, eventId, contentType, title, content, status, createdAt, approvedAt, approvedBy, sentAt, sentTo)
-- [ ] tRPC procedures: getAIContent, updateAIContent, approveAndSendAIContent, rejectAIContent
-- [ ] AI Dashboard UI page: /ai-dashboard with content review interface
-- [ ] Content editor modal: edit AI-generated summaries, press releases, follow-up emails before approval
-- [ ] Approval workflow: operator reviews → edits → approves → sends to recipients
-- [ ] Email integration: send approved content via Resend to IR contacts
-- [ ] Vitest tests for approval workflow and email sending
+- [x] AI Dashboard schema: ai_generated_content table (id, eventId, contentType, title, content, status, createdAt, approvedAt, approvedBy, sentAt, sentTo)
+- [x] tRPC procedures: getAIContent, updateAIContent, approveAndSendAIContent, rejectAIContent
+- [x] AI Dashboard UI page: /ai-dashboard with content review interface
+- [x] Content editor modal: edit AI-generated summaries, press releases, follow-up emails before approval
+- [x] Approval workflow: operator reviews → edits → approves → sends to recipients
+- [x] Email integration: send approved content via Resend to IR contacts
+- [x] Vitest tests for approval workflow and email sending
+
+## Round 6.6 — AI Content Generation Triggers
+
+- [x] ContentGenerationTriggerService: automatic content generation for event completion
+- [x] Support 6 content types: event_summary, press_release, follow_up_email, talking_points, qa_analysis, sentiment_report
+- [x] tRPC procedures: triggerEventCompletion, generateContentType, regenerateAllContent
+- [x] ContentGenerationTrigger UI component: manual trigger with content type selection
+- [x] LLM-powered content generation with context-aware prompts
+- [x] Vitest tests for trigger service (359 tests passing)
+- [x] Integration with AI Dashboard approval workflow
