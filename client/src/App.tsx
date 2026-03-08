@@ -65,6 +65,7 @@ import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
 import RedactionWorkflow from "./pages/RedactionWorkflow";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
 import DevelopmentDashboard from "./pages/DevelopmentDashboard";
+import OperatorAnalytics from "./pages/OperatorAnalytics";
 import AdminPanel from "./pages/AdminPanel";
 import FeatureFlagsDashboard from "./pages/FeatureFlagsDashboard";
 
@@ -132,6 +133,7 @@ function Router() {
       <Route path="/moderator/qa-console" component={ModeratorQAConsole} />
       <Route path="/moderator/toxicity-filter" component={ToxicityFilterDashboard} />
       <Route path="/operator/redaction" component={RedactionWorkflow} />
+      <Route path="/operator/analytics" component={OperatorAnalytics} />
       <Route path="/compliance" component={ComplianceDashboard} />
       <Route path="/admin" component={AdminPanel} />
       <Route path="/feature-flags" component={FeatureFlagsDashboard} />

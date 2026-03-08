@@ -31,6 +31,8 @@ export default function DevelopmentDashboard() {
   const { user, isAuthenticated, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedPlatformTest, setSelectedPlatformTest] = useState("audio-bridge");
+  const [trainingModeEnabled, setTrainingModeEnabled] = useState(false);
+  const [showOperatorAnalytics, setShowOperatorAnalytics] = useState(false);
 
   // Development Metrics
   const metrics = [
@@ -467,43 +469,108 @@ export default function DevelopmentDashboard() {
               </TabsContent>
 
               <TabsContent value="operator-console" className="mt-4">
-                <Card className="p-6">
-                  <h3 className="font-semibold mb-4">Operator Console (OCC v1.0)</h3>
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Access the advanced Operator Control Console for managing live events, participants, and conference controls.
-                    </p>
-                    <div className="flex gap-3">
-                      <Button 
-                        onClick={() => window.open('https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/occ', '_blank')}
-                        className="bg-primary hover:bg-primary/90"
-                      >
-                        Open Operator Console
-                      </Button>
-                      <Button 
-                        onClick={() => navigate('/operator/q4-earnings-2026')}
-                        variant="outline"
-                      >
-                        Open in Manus
-                      </Button>
-                    </div>
-                    <div className="mt-6 p-4 bg-secondary/50 rounded-lg border border-border">
-                      <h4 className="font-semibold mb-3">Console Features</h4>
-                      <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                        <div className="space-y-2">
-                          <p><strong>Conference Management:</strong> Control active calls, manage participants, record sessions</p>
-                          <p><strong>Participant Control:</strong> Mute/unmute, park, disconnect, transfer participants</p>
-                          <p><strong>Q&A Management:</strong> Monitor and manage participant questions in real-time</p>
-                        </div>
-                        <div className="space-y-2">
-                          <p><strong>Audio Monitoring:</strong> Track bandwidth, latency, jitter, and packet loss metrics</p>
-                          <p><strong>Multi-Dial:</strong> Dial multiple participants simultaneously into the conference</p>
-                          <p><strong>Green Room:</strong> Pre-event speaker preparation and coordination space</p>
-                        </div>
+                <div className="space-y-4">
+                  {/* Real-time Operator Status */}
+                  <Card className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold">Real-Time Operator Status</h3>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="text-xs text-muted-foreground">Live</span>
                       </div>
                     </div>
-                  </div>
-                </Card>
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <div className="p-3 bg-secondary/50 rounded-lg border border-border">
+                        <div className="text-sm text-muted-foreground mb-1">Active Operators</div>
+                        <div className="text-2xl font-bold">3</div>
+                        <div className="text-xs text-green-500 mt-1">+1 this hour</div>
+                      </div>
+                      <div className="p-3 bg-secondary/50 rounded-lg border border-border">
+                        <div className="text-sm text-muted-foreground mb-1">Active Calls</div>
+                        <div className="text-2xl font-bold">12</div>
+                        <div className="text-xs text-muted-foreground mt-1">Avg 4 min</div>
+                      </div>
+                      <div className="p-3 bg-secondary/50 rounded-lg border border-border">
+                        <div className="text-sm text-muted-foreground mb-1">System Health</div>
+                        <div className="text-2xl font-bold">99.8%</div>
+                        <div className="text-xs text-green-500 mt-1">Optimal</div>
+                      </div>
+                      <div className="p-3 bg-secondary/50 rounded-lg border border-border">
+                        <div className="text-sm text-muted-foreground mb-1">Avg Response Time</div>
+                        <div className="text-2xl font-bold">1.2s</div>
+                        <div className="text-xs text-green-500 mt-1">Within SLA</div>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Training Mode & Controls */}
+                  <Card className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold">Operator Console Controls</h3>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg border border-border">
+                          <div>
+                            <div className="font-medium text-sm">Training Mode</div>
+                            <div className="text-xs text-muted-foreground">Practice environment for operators</div>
+                          </div>
+                          <button 
+                            onClick={() => setTrainingModeEnabled(!trainingModeEnabled)}
+                            className={`px-3 py-1 text-xs rounded transition-colors ${
+                              trainingModeEnabled 
+                                ? 'bg-green-500/20 text-green-500 hover:bg-green-500/30' 
+                                : 'bg-primary/20 text-primary hover:bg-primary/30'
+                            }`}
+                          >
+                            {trainingModeEnabled ? 'Disable' : 'Enable'}
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg border border-border">
+                          <div>
+                            <div className="font-medium text-sm">Operator Performance</div>
+                            <div className="text-xs text-muted-foreground">View analytics dashboard</div>
+                          </div>
+                          <button onClick={() => navigate('/operator/analytics')} className="px-3 py-1 text-xs rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors">
+                            View
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <Button 
+                          onClick={() => window.open('https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/occ', '_blank')}
+                          className="w-full bg-primary hover:bg-primary/90"
+                        >
+                          Open Operator Console
+                        </Button>
+                        <Button 
+                          onClick={() => navigate('/operator/q4-earnings-2026')}
+                          variant="outline"
+                          className="w-full"
+                        >
+                          Open in Manus
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Console Features */}
+                  <Card className="p-6">
+                    <h3 className="font-semibold mb-4">Console Features</h3>
+                    <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                      <div className="space-y-2">
+                        <p><strong>Conference Management:</strong> Control active calls, manage participants, record sessions</p>
+                        <p><strong>Participant Control:</strong> Mute/unmute, park, disconnect, transfer participants</p>
+                        <p><strong>Q&A Management:</strong> Monitor and manage participant questions in real-time</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p><strong>Audio Monitoring:</strong> Track bandwidth, latency, jitter, and packet loss metrics</p>
+                        <p><strong>Multi-Dial:</strong> Dial multiple participants simultaneously into the conference</p>
+                        <p><strong>Green Room:</strong> Pre-event speaker preparation and coordination space</p>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
               </TabsContent>
             </Tabs>
           </section>
