@@ -48,6 +48,7 @@ import OperatorGuide from "./pages/OperatorGuide";
 import DemoRegistration from "./pages/DemoRegistration";
 import TwilioDirectGuide from "./pages/TwilioDirectGuide";
 import BillingPreview from "./pages/BillingPreview";
+import TrainingModeConsole from "./pages/TrainingModeConsole";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import AIFeaturesStatus from "./pages/AIFeaturesStatus";
 import AIDashboard from "./pages/AIDashboard";
@@ -134,6 +135,7 @@ function Router() {
       <Route path="/moderator/toxicity-filter" component={ToxicityFilterDashboard} />
       <Route path="/operator/redaction" component={RedactionWorkflow} />
       <Route path="/operator/analytics" component={OperatorAnalytics} />
+      <Route path="/training-mode" component={TrainingModeConsole} />
       <Route path="/compliance" component={ComplianceDashboard} />
       <Route path="/admin" component={AdminPanel} />
       <Route path="/feature-flags" component={FeatureFlagsDashboard} />

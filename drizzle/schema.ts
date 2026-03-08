@@ -2064,3 +2064,172 @@ export const transcriptEditAuditLog = mysqlTable("transcript_edit_audit_log", {
 });
 export type TranscriptEditAuditLog = typeof transcriptEditAuditLog.$inferSelect;
 export type InsertTranscriptEditAuditLog = typeof transcriptEditAuditLog.$inferInsert;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TRAINING MODE TABLES — Isolated data for operator practice sessions
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Training Mode Sessions — tracks each operator training session with mode flag.
+ * Separates training data from production for data isolation and analytics.
+ */
+export const trainingModeSessions = mysqlTable("training_mode_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // references users.id
+  operatorName: varchar("operatorName", { length: 255 }).notNull(),
+  sessionName: varchar("sessionName", { length: 255 }).notNull(), // e.g., "Q4 Earnings Practice"
+  status: mysqlEnum("status", ["active", "paused", "completed"]).default("active").notNull(),
+  // Training context
+  trainingScenario: varchar("trainingScenario", { length: 128 }), // e.g., "earnings-call", "webcast", "roadshow"
+  mentorId: int("mentorId"), // references users.id of supervising mentor
+  // Metrics
+  callsHandled: int("callsHandled").default(0).notNull(),
+  totalDuration: int("totalDuration").default(0).notNull(), // in seconds
+  averageCallDuration: int("averageCallDuration").default(0).notNull(), // in seconds
+  participantsSatisfaction: decimal("participantsSatisfaction", { precision: 3, scale: 2 }), // 0.0-5.0
+  // Timestamps
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  pausedAt: timestamp("pausedAt"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TrainingModeSession = typeof trainingModeSessions.$inferSelect;
+export type InsertTrainingModeSession = typeof trainingModeSessions.$inferInsert;
+
+/**
+ * Training Conferences — practice conference records isolated from production.
+ * Mirrors occConferences structure but tagged as training.
+ */
+export const trainingConferences = mysqlTable("training_conferences", {
+  id: int("id").autoincrement().primaryKey(),
+  trainingSessionId: int("trainingSessionId").notNull(), // references trainingModeSessions.id
+  eventId: varchar("eventId", { length: 128 }).notNull(), // references events.eventId (can be demo event)
+  callId: varchar("callId", { length: 64 }).notNull().unique(), // e.g., "TC-9921"
+  subject: varchar("subject", { length: 255 }).notNull(),
+  product: varchar("product", { length: 128 }).default("Training Conference").notNull(),
+  status: mysqlEnum("status", ["pending", "running", "completed", "alarm"]).default("pending").notNull(),
+  isLocked: boolean("isLocked").default(false).notNull(),
+  isRecording: boolean("isRecording").default(false).notNull(),
+  participantCount: int("participantCount").default(0).notNull(),
+  // Timestamps
+  scheduledStart: timestamp("scheduledStart"),
+  actualStart: timestamp("actualStart"),
+  endedAt: timestamp("endedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TrainingConference = typeof trainingConferences.$inferSelect;
+export type InsertTrainingConference = typeof trainingConferences.$inferInsert;
+
+/**
+ * Training Participants — practice participants in training conferences.
+ * Mirrors occParticipants structure but linked to training data.
+ */
+export const trainingParticipants = mysqlTable("training_participants", {
+  id: int("id").autoincrement().primaryKey(),
+  trainingConferenceId: int("trainingConferenceId").notNull(), // references trainingConferences.id
+  lineNumber: int("lineNumber").notNull(),
+  role: mysqlEnum("role", ["moderator", "participant", "operator", "host"]).default("participant").notNull(),
+  name: varchar("name", { length: 255 }),
+  company: varchar("company", { length: 255 }),
+  phoneNumber: varchar("phoneNumber", { length: 32 }),
+  // State
+  state: mysqlEnum("state", [
+    "free",
+    "incoming",
+    "connected",
+    "muted",
+    "parked",
+    "speaking",
+    "waiting_operator",
+    "web_participant",
+    "dropped",
+  ]).default("incoming").notNull(),
+  isSpeaking: boolean("isSpeaking").default(false).notNull(),
+  requestToSpeak: boolean("requestToSpeak").default(false).notNull(),
+  // Timestamps
+  connectedAt: timestamp("connectedAt"),
+  disconnectedAt: timestamp("disconnectedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TrainingParticipant = typeof trainingParticipants.$inferSelect;
+export type InsertTrainingParticipant = typeof trainingParticipants.$inferInsert;
+
+/**
+ * Training Lounge — practice participants waiting to be admitted.
+ * Mirrors occLounge structure for training scenarios.
+ */
+export const trainingLounge = mysqlTable("training_lounge", {
+  id: int("id").autoincrement().primaryKey(),
+  trainingConferenceId: int("trainingConferenceId").notNull(),
+  callId: varchar("callId", { length: 64 }).notNull(),
+  phoneNumber: varchar("phoneNumber", { length: 32 }),
+  name: varchar("name", { length: 255 }),
+  company: varchar("company", { length: 255 }),
+  status: mysqlEnum("status", ["waiting", "picked", "admitted", "dropped"]).default("waiting").notNull(),
+  arrivedAt: timestamp("arrivedAt").defaultNow().notNull(),
+  pickedAt: timestamp("pickedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TrainingLounge = typeof trainingLounge.$inferSelect;
+export type InsertTrainingLounge = typeof trainingLounge.$inferInsert;
+
+/**
+ * Training Call Logs — detailed logs of training calls for review and coaching.
+ */
+export const trainingCallLogs = mysqlTable("training_call_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  trainingSessionId: int("trainingSessionId").notNull(),
+  trainingConferenceId: int("trainingConferenceId").notNull(),
+  operatorId: int("operatorId").notNull(), // references users.id
+  participantName: varchar("participantName", { length: 255 }),
+  callDuration: int("callDuration").notNull(), // in seconds
+  callQuality: varchar("callQuality", { length: 32 }), // "excellent", "good", "fair", "poor"
+  operatorPerformance: text("operatorPerformance"), // JSON feedback
+  participantFeedback: text("participantFeedback"), // JSON feedback
+  recordingUrl: text("recordingUrl"), // URL to call recording for review
+  // Timestamps
+  startedAt: timestamp("startedAt").notNull(),
+  endedAt: timestamp("endedAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TrainingCallLog = typeof trainingCallLogs.$inferSelect;
+export type InsertTrainingCallLog = typeof trainingCallLogs.$inferInsert;
+
+/**
+ * Training Performance Metrics — aggregated metrics for operator training progress.
+ */
+export const trainingPerformanceMetrics = mysqlTable("training_performance_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  trainingSessionId: int("trainingSessionId").notNull(),
+  operatorId: int("operatorId").notNull(),
+  // Call metrics
+  totalCallsHandled: int("totalCallsHandled").default(0).notNull(),
+  averageCallDuration: int("averageCallDuration").default(0).notNull(), // in seconds
+  callQualityScore: decimal("callQualityScore", { precision: 3, scale: 2 }).default("0.00"), // 0.0-5.0
+  // Participant feedback
+  averageParticipantSatisfaction: decimal("averageParticipantSatisfaction", { precision: 3, scale: 2 }).default("0.00"), // 0.0-5.0
+  // Operator skills assessment
+  communicationScore: decimal("communicationScore", { precision: 3, scale: 2 }).default("0.00"), // 0.0-5.0
+  problemSolvingScore: decimal("problemSolvingScore", { precision: 3, scale: 2 }).default("0.00"), // 0.0-5.0
+  professionalism: decimal("professionalism", { precision: 3, scale: 2 }).default("0.00"), // 0.0-5.0
+  // Overall assessment
+  overallScore: decimal("overallScore", { precision: 3, scale: 2 }).default("0.00"), // 0.0-5.0
+  readyForProduction: boolean("readyForProduction").default(false).notNull(),
+  mentorNotes: text("mentorNotes"),
+  // Timestamps
+  evaluatedAt: timestamp("evaluatedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TrainingPerformanceMetrics = typeof trainingPerformanceMetrics.$inferSelect;
+export type InsertTrainingPerformanceMetrics = typeof trainingPerformanceMetrics.$inferInsert;

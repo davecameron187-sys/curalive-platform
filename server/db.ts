@@ -210,3 +210,208 @@ export async function getFeedbackStats() {
 
   return result[0] || null;
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TRAINING MODE DATABASE HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+import {
+  trainingModeSessions,
+  trainingConferences,
+  trainingParticipants,
+  trainingLounge,
+  trainingCallLogs,
+  trainingPerformanceMetrics,
+  InsertTrainingModeSession,
+  InsertTrainingConference,
+  InsertTrainingParticipant,
+  InsertTrainingCallLog,
+  InsertTrainingPerformanceMetrics,
+} from "../drizzle/schema";
+
+/**
+ * Create a new training mode session for an operator.
+ */
+export async function createTrainingSession(
+  userId: number,
+  operatorName: string,
+  sessionName: string,
+  trainingScenario: string,
+  mentorId?: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(trainingModeSessions).values({
+    userId,
+    operatorName,
+    sessionName,
+    trainingScenario,
+    mentorId,
+    status: "active",
+  });
+
+  return result;
+}
+
+/**
+ * Get all training sessions for a specific operator.
+ */
+export async function getOperatorTrainingSessions(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .select()
+    .from(trainingModeSessions)
+    .where(eq(trainingModeSessions.userId, userId))
+    .orderBy(desc(trainingModeSessions.createdAt));
+}
+
+/**
+ * Get a specific training session with all related data.
+ */
+export async function getTrainingSessionDetails(sessionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .select()
+    .from(trainingModeSessions)
+    .where(eq(trainingModeSessions.id, sessionId));
+}
+
+/**
+ * Create a training conference within a training session.
+ */
+export async function createTrainingConference(
+  data: InsertTrainingConference
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db.insert(trainingConferences).values(data);
+}
+
+/**
+ * Get all training conferences for a training session.
+ */
+export async function getTrainingConferencesBySession(sessionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .select()
+    .from(trainingConferences)
+    .where(eq(trainingConferences.trainingSessionId, sessionId))
+    .orderBy(desc(trainingConferences.createdAt));
+}
+
+/**
+ * Add a participant to a training conference.
+ */
+export async function addTrainingParticipant(
+  data: InsertTrainingParticipant
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db.insert(trainingParticipants).values(data);
+}
+
+/**
+ * Log a training call for review and coaching.
+ */
+export async function logTrainingCall(data: InsertTrainingCallLog) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db.insert(trainingCallLogs).values(data);
+}
+
+/**
+ * Get all training call logs for a session.
+ */
+export async function getTrainingCallLogs(sessionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .select()
+    .from(trainingCallLogs)
+    .where(eq(trainingCallLogs.trainingSessionId, sessionId))
+    .orderBy(desc(trainingCallLogs.createdAt));
+}
+
+/**
+ * Update or create training performance metrics for an operator.
+ */
+export async function upsertTrainingPerformanceMetrics(
+  data: InsertTrainingPerformanceMetrics
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .insert(trainingPerformanceMetrics)
+    .values(data)
+    .onDuplicateKeyUpdate({
+      set: {
+        totalCallsHandled: data.totalCallsHandled,
+        averageCallDuration: data.averageCallDuration,
+        callQualityScore: data.callQualityScore,
+        averageParticipantSatisfaction: data.averageParticipantSatisfaction,
+        communicationScore: data.communicationScore,
+        problemSolvingScore: data.problemSolvingScore,
+        professionalism: data.professionalism,
+        overallScore: data.overallScore,
+        readyForProduction: data.readyForProduction,
+        mentorNotes: data.mentorNotes,
+        evaluatedAt: data.evaluatedAt,
+        updatedAt: new Date(),
+      },
+    });
+}
+
+/**
+ * Get training performance metrics for an operator.
+ */
+export async function getTrainingPerformanceMetrics(
+  trainingSessionId: number,
+  operatorId: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .select()
+    .from(trainingPerformanceMetrics)
+    .where(
+      eq(trainingPerformanceMetrics.trainingSessionId, trainingSessionId)
+    )
+    .where(eq(trainingPerformanceMetrics.operatorId, operatorId));
+}
+
+/**
+ * Complete a training session and mark as ready for production if metrics are met.
+ */
+export async function completeTrainingSession(
+  sessionId: number,
+  finalMetrics: InsertTrainingPerformanceMetrics
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Update session status
+  await db
+    .update(trainingModeSessions)
+    .set({
+      status: "completed",
+      completedAt: new Date(),
+    })
+    .where(eq(trainingModeSessions.id, sessionId));
+
+  // Update performance metrics
+  return await upsertTrainingPerformanceMetrics(finalMetrics);
+}
