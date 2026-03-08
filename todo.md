@@ -13,8 +13,8 @@
 
 ## Round 6 — Database, Email & Security
 
-- [ ] Attendee registration persisted to database (name, email, company, event, joined_at)
-- [ ] Operator Console shows real attendee list from database
+- [x] Attendee registration persisted to database (name, email, company, event, joined_at)
+- [x] Operator Console shows real attendee list from database (tRPC procedures added)
 - [ ] Send AI Summary to IR Contacts (server-side email via notification API)
 - [ ] Event password protection (access code on Registration + server-side validation)
 

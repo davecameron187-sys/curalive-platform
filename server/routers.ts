@@ -7,7 +7,7 @@ import { notifyOwner } from "./_core/notification";
 import { sendEmail, buildIRSummaryEmail, buildRegistrationConfirmationEmail } from "./_core/email";
 import { getDb, listUsers, updateUserRole, getUserById, updateUserProfile, submitFeedback, getRecentFeedback } from "./db";
 import { storagePut } from "./storage";
-import { attendeeRegistrations, events, irContacts, webcastEvents } from "../drizzle/schema";
+import { attendeeRegistrations, events, irContacts, webcastEvents, webcastRegistrations } from "../drizzle/schema";
 import { generateUniquePin } from "./directAccess";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
@@ -559,6 +559,91 @@ Produce a JSON response with this exact structure:
             eq(attendeeRegistrations.email, input.email)
           ));
         return { success: true };
+      }),
+
+    // Register attendee for webcast event
+    registerForWebcast: publicProcedure
+      .input(z.object({
+        eventId: z.number().min(1),
+        firstName: z.string().min(1).max(100),
+        lastName: z.string().min(1).max(100),
+        email: z.string().email(),
+        company: z.string().max(200).optional(),
+        jobTitle: z.string().max(200).optional(),
+        phone: z.string().max(50).optional(),
+        country: z.string().max(100).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { success: false, error: "Database unavailable" };
+
+        // Verify event exists
+        const events = await db.select().from(webcastEvents)
+          .where(eq(webcastEvents.id, input.eventId)).limit(1);
+        if (events.length === 0) {
+          return { success: false, error: "Event not found" };
+        }
+
+        // Create registration
+        await db.insert(webcastRegistrations).values({
+          eventId: input.eventId,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+          company: input.company || null,
+          jobTitle: input.jobTitle || null,
+          phone: input.phone || null,
+          country: input.country || null,
+          registrationSource: "direct",
+          registeredAt: Date.now(),
+        });
+
+        return { success: true, message: "Registration successful" };
+      }),
+
+    // Get webcast registrations for an event
+    getWebcastRegistrations: protectedProcedure
+      .input(z.object({ eventId: z.number().min(1) }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { total: 0, registrations: [] };
+
+        const registrations = await db.select().from(webcastRegistrations)
+          .where(eq(webcastRegistrations.eventId, input.eventId));
+
+        return {
+          total: registrations.length,
+          registrations: registrations.map((reg) => ({
+            id: reg.id,
+            name: `${reg.firstName} ${reg.lastName}`,
+            email: reg.email,
+            company: reg.company,
+            jobTitle: reg.jobTitle,
+            phone: reg.phone,
+            country: reg.country,
+            registeredAt: new Date(reg.registeredAt),
+            attended: reg.attended,
+            joinedAt: reg.joinedAt ? new Date(reg.joinedAt) : null,
+            watchTimeSeconds: reg.watchTimeSeconds,
+            engagementScore: reg.engagementScore,
+          })),
+        };
+      }),
+
+    // Get live attendee count for webcast
+    getWebcastLiveCount: publicProcedure
+      .input(z.object({ eventId: z.number().min(1) }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { liveCount: 0, totalRegistered: 0 };
+
+        const registrations = await db.select().from(webcastRegistrations)
+          .where(eq(webcastRegistrations.eventId, input.eventId));
+
+        return {
+          liveCount: registrations.filter((r) => r.joinedAt).length,
+          totalRegistered: registrations.length,
+        };
       }),
   }),
 
