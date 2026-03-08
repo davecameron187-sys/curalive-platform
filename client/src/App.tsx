@@ -48,6 +48,7 @@ import OperatorGuide from "./pages/OperatorGuide";
 import DemoRegistration from "./pages/DemoRegistration";
 import TwilioDirectGuide from "./pages/TwilioDirectGuide";
 import BillingPreview from "./pages/BillingPreview";
+import AIDashboard from "./pages/AIDashboard";
 import MyEvents from "./pages/MyEvents";
 import QuoteBuilder from "./pages/QuoteBuilder";
 import InvoiceViewer from "./pages/InvoiceViewer";
@@ -112,6 +113,7 @@ function Router() {
       <Route path="/invoice/:token" component={InvoiceView} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
+      <Route path="/ai-dashboard" component={AIDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

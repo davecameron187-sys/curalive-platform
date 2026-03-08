@@ -1479,3 +1479,42 @@ export const occTranscriptAuditLog = mysqlTable("occ_transcript_audit_log", {
 });
 export type OccTranscriptAuditLog = typeof occTranscriptAuditLog.$inferSelect;
 export type InsertOccTranscriptAuditLog = typeof occTranscriptAuditLog.$inferInsert;
+
+
+/**
+ * AI Generated Content — stores AI-generated content awaiting operator approval
+ * Supports summaries, press releases, follow-up emails, and other AI outputs
+ */
+export const aiGeneratedContent = mysqlTable("ai_generated_content", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("event_id").notNull(),
+  contentType: mysqlEnum("content_type", [
+    "event_summary",
+    "press_release",
+    "follow_up_email",
+    "talking_points",
+    "qa_analysis",
+    "sentiment_report",
+  ])
+    .notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: longtext("content").notNull(), // Full AI-generated content
+  editedContent: longtext("edited_content"), // Operator-edited version
+  status: mysqlEnum("status", ["generated", "approved", "rejected", "sent"])
+    .default("generated")
+    .notNull(),
+  recipients: json("recipients").$type<string[]>(), // Array of email addresses to send to
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  generatedBy: int("generated_by"), // User ID of who triggered generation
+  approvedAt: timestamp("approved_at"),
+  approvedBy: int("approved_by"), // User ID of operator who approved
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: varchar("rejection_reason", { length: 500 }),
+  sentAt: timestamp("sent_at"),
+  sentTo: json("sent_to").$type<string[]>(), // Array of emails actually sent to
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AiGeneratedContent = typeof aiGeneratedContent.$inferSelect;
+export type InsertAiGeneratedContent = typeof aiGeneratedContent.$inferInsert;

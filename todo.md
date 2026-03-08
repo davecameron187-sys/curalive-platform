@@ -864,3 +864,13 @@
 - [ ] Create transcript correction analytics dashboard
 - [ ] Test editing across all export formats (PDF, SRT, VTT)
 - [ ] Deploy to production and monitor
+
+## Round 6.5 — AI Content Approval Dashboard
+
+- [ ] AI Dashboard schema: ai_generated_content table (id, eventId, contentType, title, content, status, createdAt, approvedAt, approvedBy, sentAt, sentTo)
+- [ ] tRPC procedures: getAIContent, updateAIContent, approveAndSendAIContent, rejectAIContent
+- [ ] AI Dashboard UI page: /ai-dashboard with content review interface
+- [ ] Content editor modal: edit AI-generated summaries, press releases, follow-up emails before approval
+- [ ] Approval workflow: operator reviews → edits → approves → sends to recipients
+- [ ] Email integration: send approved content via Resend to IR contacts
+- [ ] Vitest tests for approval workflow and email sending

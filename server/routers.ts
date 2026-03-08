@@ -24,6 +24,7 @@ import { webphoneRouter } from "./routers/webphoneRouter";
 import { customisationRouter } from "./routers/customisationRouter";
 import { transcriptionRouter } from "./routers/transcription";
 import { sentimentRouter } from "./routers/sentiment";
+import { aiDashboardRouter } from "./routers/aiDashboard";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -52,6 +53,7 @@ export const appRouter = router({
   webcast: webcastRouter,
   transcription: transcriptionRouter,
   sentiment: sentimentRouter,
+  aiDashboard: aiDashboardRouter,
   recall: recallRouter,
   mux: muxRouter,
   billing: billingRouter,
