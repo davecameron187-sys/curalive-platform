@@ -438,6 +438,95 @@ async function startServer() {
   registerRecallWebhookRoute(app);
   registerBillingPdfRoutes(app);
 
+  // Checklist download — serves the project owner collaboration checklist as HTML
+  app.get("/download/checklist", (_req, res) => {
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CuraLive — Project Owner Checklist</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f7fa; color: #1a1a2e; padding: 40px 20px; }
+  .page { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); padding: 48px; }
+  h1 { font-size: 26px; font-weight: 700; color: #1a1a2e; border-bottom: 3px solid #6c3fc5; padding-bottom: 12px; margin-bottom: 32px; }
+  h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6c3fc5; margin: 32px 0 12px; }
+  ul { list-style: none; padding: 0; }
+  ul li { padding: 7px 0 7px 28px; position: relative; border-bottom: 1px solid #f0f0f5; font-size: 14px; line-height: 1.5; }
+  ul li:last-child { border-bottom: none; }
+  ul li::before { content: "☐"; position: absolute; left: 0; color: #6c3fc5; font-size: 16px; }
+  .rule { background: #6c3fc5; color: #fff; padding: 16px 20px; border-radius: 8px; font-size: 15px; font-weight: 600; text-align: center; margin: 32px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  th { background: #f0ebff; color: #6c3fc5; font-weight: 600; text-align: left; padding: 10px 12px; }
+  td { padding: 9px 12px; border-bottom: 1px solid #f0f0f5; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .phrase-box { background: #f8f7ff; border-left: 3px solid #6c3fc5; padding: 10px 14px; margin: 6px 0; border-radius: 0 6px 6px 0; font-size: 13px; }
+  .phrase-box strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #6c3fc5; margin-bottom: 4px; }
+  .print-btn { display: block; margin: 32px auto 0; padding: 12px 32px; background: #6c3fc5; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  @media print { .print-btn { display: none; } body { background: #fff; padding: 0; } .page { box-shadow: none; border-radius: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>CuraLive — Project Owner Checklist</h1>
+
+  <h2>Starting a Replit Session</h2>
+  <ul>
+    <li>Say: "Check GitHub for new Manus specs"</li>
+    <li>Review what Replit Agent reports — note any spec-ready features</li>
+    <li>If Manus has a new spec → open the file on GitHub, copy the REPLIT SUMMARY block, paste it into the Replit chat</li>
+  </ul>
+
+  <h2>Starting a Manus Session</h2>
+  <ul>
+    <li>Tell Manus which features to spec next</li>
+    <li>Remind Manus: spec files only in docs/specs/ — no code files</li>
+    <li>Remind Manus: every spec needs a REPLIT SUMMARY block at the top</li>
+    <li>Ask Manus to update docs/specs/STATUS.md when done (mark as spec-ready)</li>
+  </ul>
+
+  <h2>Ending a Replit Session</h2>
+  <ul>
+    <li>Say: "Push to GitHub"</li>
+    <li>Confirm the push succeeded (Replit Agent will confirm with a commit ID)</li>
+    <li>Tell Manus which features are now implemented so they don't re-spec them</li>
+  </ul>
+
+  <h2>Ending a Manus Session</h2>
+  <ul>
+    <li>Check that Manus committed to docs/specs/ only (not client/ or server/)</li>
+    <li>Check that docs/specs/STATUS.md is updated to spec-ready</li>
+    <li>You are ready to start a Replit session</li>
+  </ul>
+
+  <div class="rule">The one-line rule: Manus writes → you copy the summary → Replit builds → you say push.</div>
+
+  <h2>Warning Signs</h2>
+  <table>
+    <tr><th>What you see</th><th>What to do</th></tr>
+    <tr><td>Manus says "I already built that"</td><td>Remind them: specs only, no code</td></tr>
+    <tr><td>Sync check shows unexpected GitHub files</td><td>Tell Replit Agent — it will fix it</td></tr>
+    <tr><td>Push fails</td><td>Tell Replit Agent — it will diagnose</td></tr>
+    <tr><td>Unsure what's built</td><td>Ask Replit Agent: "What's currently implemented?"</td></tr>
+    <tr><td>Unsure what Manus is working on</td><td>Ask Manus directly</td></tr>
+  </table>
+
+  <h2>Copy-Paste Phrases</h2>
+  <div class="phrase-box"><strong>To Replit at session start</strong>Check GitHub for any new Manus specs or unimplemented work</div>
+  <div class="phrase-box"><strong>To Replit at session end</strong>Push to GitHub</div>
+  <div class="phrase-box"><strong>To Manus when requesting a spec</strong>Please write a spec for [feature name] and save it to docs/specs/ with a REPLIT SUMMARY block at the top. Mark it spec-ready in STATUS.md when done.</div>
+  <div class="phrase-box"><strong>To Manus as a reminder</strong>Please do not push any code files — specs only in docs/specs/. Replit Agent handles all implementation.</div>
+
+  <button class="print-btn" onclick="window.print()">Save as PDF / Print</button>
+</div>
+</body>
+</html>`;
+    res.setHeader("Content-Type", "text/html");
+    res.setHeader("Content-Disposition", "inline; filename=curalive-checklist.html");
+    res.send(html);
+  });
+
   // Ably token endpoint — uses Ably SDK to create a signed token request
   app.get("/api/ably-token", async (req, res) => {
     const apiKey = process.env.ABLY_API_KEY;
