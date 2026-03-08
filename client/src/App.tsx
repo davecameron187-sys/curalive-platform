@@ -64,12 +64,14 @@ import ModeratorQAConsole from "./pages/ModeratorQAConsole";
 import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
 import RedactionWorkflow from "./pages/RedactionWorkflow";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
+import DevelopmentDashboard from "./pages/DevelopmentDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={DevelopmentDashboard} />
+      <Route path="/home" component={Home} />
       <Route path="/event/:id" component={EventRoom} />
       <Route path="/moderator/:id" component={Moderator} />
       <Route path="/presenter/:id" component={Presenter} />
