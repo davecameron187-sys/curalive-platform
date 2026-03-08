@@ -17,7 +17,7 @@ import {
   List, LayoutGrid, Bell, BellOff, Send, Search, Filter,
   Maximize2, Minimize2, PhoneMissed, UserPlus, Zap, MoreVertical, FileText,
   PhoneForwarded, Trash2, Upload, GraduationCap, KeyRound, ShieldCheck, ShieldOff, BarChart2,
-  Settings2, UserCog, TrendingUp, TrendingDown, Download
+  Settings2, UserCog, TrendingUp, TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
 import Webphone from "@/components/Webphone";
@@ -1416,15 +1416,6 @@ export default function OCC() {
             </div>
             <span className="text-xs text-slate-400">({operatorStateLabel(operatorState)})</span>
           </div>
-          <a
-            href="/operator-console-preview.html"
-            download="CuraLive-Operator-Console.html"
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded border border-slate-600 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
-            title="Download OCC design as HTML"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Download
-          </a>
           <button
             onClick={() => setOperatorState(s => s === "present" ? "break" : "present")}
             className="flex items-center gap-1.5 px-2 py-1.5 rounded border border-slate-600 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
