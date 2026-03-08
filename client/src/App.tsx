@@ -62,6 +62,8 @@ import RecurringTemplates from "./pages/RecurringTemplates";
 import EventBriefGenerator from "./pages/EventBriefGenerator";
 import ModeratorQAConsole from "./pages/ModeratorQAConsole";
 import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
+import RedactionWorkflow from "./pages/RedactionWorkflow";
+import ComplianceDashboard from "./pages/ComplianceDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -125,6 +127,8 @@ function Router() {
       <Route path="/operator/brief-generator" component={EventBriefGenerator} />
       <Route path="/moderator/qa-console" component={ModeratorQAConsole} />
       <Route path="/moderator/toxicity-filter" component={ToxicityFilterDashboard} />
+      <Route path="/operator/redaction" component={RedactionWorkflow} />
+      <Route path="/compliance" component={ComplianceDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
