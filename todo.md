@@ -917,3 +917,12 @@
 - [ ] Write vitest tests for summarization service (30+ tests)
 - [ ] Integration testing with live event simulation
 - [ ] Deploy to production and monitor
+
+## Round 10 — Transcript Management & Editing
+
+- [x] Transcript Editing & Correction — Operator: edit, correct, and manage live transcripts with version control
+  - [x] Database schema (transcript_edits, transcript_versions, edit_audit_log)
+  - [x] TranscriptEditorService with edit history and version control
+  - [x] tRPC procedures (14 endpoints: create, approve, version, revert, export, audit, suggestions)
+  - [ ] Transcript Editor UI component with diff view and version timeline
+  - [x] Comprehensive tests (70+ test cases)

@@ -30,6 +30,7 @@ import { analyticsRouter } from "./routers/analytics";
 import { liveRollingSummaryRouter } from "./routers/liveRollingSummary";
 import { aiFeaturesRouter } from "./routers/aiFeatures";
 import { eventBriefRouter } from "./routers/eventBriefRouter";
+import { transcriptEditorRouter } from "./routers/transcriptEditorRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -64,6 +65,7 @@ export const appRouter = router({
   liveRollingSummary: liveRollingSummaryRouter,
   aiFeatures: aiFeaturesRouter,
   eventBrief: eventBriefRouter,
+  transcriptEditor: transcriptEditorRouter,
   recall: recallRouter,
   mux: muxRouter,
   billing: billingRouter,

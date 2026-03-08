@@ -264,7 +264,7 @@ export default function ToxicityFilterDashboard() {
                               {(content.toxicityScore * 100).toFixed(0)}% toxicity
                             </span>
                           </div>
-                          <p className="text-sm font-medium text-foreground break-words">{content.contentText}</p>
+                          <p className="text-sm font-medium text-foreground break-words">{content.content}</p>
 
                           <div className="mt-2 text-xs text-muted-foreground">
                             <span className="font-semibold">Recommended:</span> {content.recommendedAction}

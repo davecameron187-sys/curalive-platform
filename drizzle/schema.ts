@@ -2001,3 +2001,66 @@ export const followupEmailDraftResults = mysqlTable("followup_email_draft_result
 });
 export type FollowupEmailDraftResult = typeof followupEmailDraftResults.$inferSelect;
 export type InsertFollowupEmailDraftResult = typeof followupEmailDraftResults.$inferInsert;
+
+
+/**
+ * Transcript Edits — stores individual corrections and edits made to transcription segments
+ */
+export const transcriptEdits = mysqlTable("transcript_edits", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  transcriptionSegmentId: bigint("transcription_segment_id", { mode: "number" }).notNull(),
+  conferenceId: int("conference_id").notNull(),
+  originalText: text("original_text").notNull(), // Original transcribed text
+  correctedText: text("corrected_text").notNull(), // Corrected text
+  editType: mysqlEnum("edit_type", ["correction", "clarification", "redaction", "speaker_correction"]).notNull(),
+  reason: varchar("reason", { length: 500 }), // Why the edit was made
+  operatorId: int("operator_id").notNull(), // User who made the edit
+  operatorName: varchar("operator_name", { length: 255 }).notNull(),
+  approved: boolean("approved").default(false).notNull(), // Requires approval before publishing
+  approvedBy: int("approved_by"), // Admin who approved
+  approvedAt: timestamp("approved_at"),
+  confidence: int("confidence").default(95).notNull(), // 0-100 confidence in correction
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type TranscriptEdit = typeof transcriptEdits.$inferSelect;
+export type InsertTranscriptEdit = typeof transcriptEdits.$inferInsert;
+
+/**
+ * Transcript Versions — stores complete transcript snapshots for version control
+ */
+export const transcriptVersions = mysqlTable("transcript_versions", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  conferenceId: int("conference_id").notNull(),
+  versionNumber: int("version_number").notNull(), // 1, 2, 3, etc.
+  fullTranscript: longtext("full_transcript").notNull(), // Complete transcript at this version
+  editCount: int("edit_count").notNull(), // Number of edits in this version
+  createdBy: int("created_by").notNull(), // User who triggered version creation
+  createdByName: varchar("created_by_name", { length: 255 }).notNull(),
+  changeDescription: varchar("change_description", { length: 500 }), // Summary of changes
+  isPublished: boolean("is_published").default(false).notNull(), // Whether this version is published
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type TranscriptVersion = typeof transcriptVersions.$inferSelect;
+export type InsertTranscriptVersion = typeof transcriptVersions.$inferInsert;
+
+/**
+ * Transcript Edit Audit Log — comprehensive audit trail for compliance and tracking
+ */
+export const transcriptEditAuditLog = mysqlTable("transcript_edit_audit_log", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  conferenceId: int("conference_id").notNull(),
+  editId: bigint("edit_id", { mode: "number" }), // References transcript_edits.id
+  versionId: bigint("version_id", { mode: "number" }), // References transcript_versions.id
+  action: mysqlEnum("action", ["created", "edited", "approved", "rejected", "published", "reverted", "deleted"]).notNull(),
+  userId: int("user_id").notNull(),
+  userName: varchar("user_name", { length: 255 }).notNull(),
+  userRole: mysqlEnum("user_role", ["operator", "admin", "moderator"]).notNull(),
+  details: text("details"), // JSON or text description of what changed
+  ipAddress: varchar("ip_address", { length: 45 }), // IPv4 or IPv6
+  userAgent: varchar("user_agent", { length: 500 }), // Browser/client info
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+export type TranscriptEditAuditLog = typeof transcriptEditAuditLog.$inferSelect;
+export type InsertTranscriptEditAuditLog = typeof transcriptEditAuditLog.$inferInsert;
