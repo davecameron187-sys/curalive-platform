@@ -884,3 +884,15 @@
 - [x] LLM-powered content generation with context-aware prompts
 - [x] Vitest tests for trigger service (359 tests passing)
 - [x] Integration with AI Dashboard approval workflow
+
+
+## Round 6.7 — Content Performance Analytics
+
+- [x] Analytics schema: 4 tables (content_performance_metrics, content_type_performance, event_performance_summary, content_engagement_events)
+- [x] Analytics service: ContentPerformanceAnalyticsService with 8 methods for metrics calculation and aggregation
+- [x] tRPC procedures: getContentMetrics, getContentTypePerformance, getAllContentTypePerformance, getEventAnalytics, generateEventReport, recordEngagementEvent, calculateEventSummary
+- [x] Analytics Dashboard UI: /analytics page with content type performance cards, event analytics, improvement areas
+- [x] Content type comparison: ranking by approval rate, open rate, click-through rate, quality score
+- [x] Event performance summary: best/worst performing content types, approval rates, engagement metrics
+- [x] Improvement recommendations: automated suggestions based on performance data
+- [x] Vitest tests: 30+ tests covering all analytics calculations and aggregations

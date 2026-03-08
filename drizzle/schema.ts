@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint, json } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint, json, decimal } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -1518,3 +1518,124 @@ export const aiGeneratedContent = mysqlTable("ai_generated_content", {
 
 export type AiGeneratedContent = typeof aiGeneratedContent.$inferSelect;
 export type InsertAiGeneratedContent = typeof aiGeneratedContent.$inferInsert;
+
+
+// ─── Content Performance Analytics ────────────────────────────────────────
+export const contentPerformanceMetrics = mysqlTable(
+  "content_performance_metrics",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    contentId: int("content_id").notNull(),
+    eventId: int("event_id").notNull(),
+    contentType: varchar("content_type", { length: 50 }).notNull(),
+    
+    approvalStatus: mysqlEnum("approval_status", ["approved", "rejected", "pending"]).default("pending").notNull(),
+    approvalTime: int("approval_time"),
+    approvalScore: decimal("approval_score", { precision: 3, scale: 2 }),
+    
+    recipientCount: int("recipient_count").default(0),
+    sentCount: int("sent_count").default(0),
+    openCount: int("open_count").default(0),
+    clickCount: int("click_count").default(0),
+    responseCount: int("response_count").default(0),
+    
+    openRate: decimal("open_rate", { precision: 3, scale: 2 }).default("0"),
+    clickThroughRate: decimal("click_through_rate", { precision: 3, scale: 2 }).default("0"),
+    responseRate: decimal("response_rate", { precision: 3, scale: 2 }).default("0"),
+    engagementScore: decimal("engagement_score", { precision: 3, scale: 2 }).default("0"),
+    
+    qualityScore: decimal("quality_score", { precision: 3, scale: 2 }),
+    relevanceScore: decimal("relevance_score", { precision: 3, scale: 2 }),
+    professionalismScore: decimal("professionalism_score", { precision: 3, scale: 2 }),
+    
+    editsCount: int("edits_count").default(0),
+    rejectionReason: varchar("rejection_reason", { length: 500 }),
+    notes: longtext("notes"),
+    
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  }
+);
+export type ContentPerformanceMetrics = typeof contentPerformanceMetrics.$inferSelect;
+export type InsertContentPerformanceMetrics = typeof contentPerformanceMetrics.$inferInsert;
+
+export const contentTypePerformance = mysqlTable(
+  "content_type_performance",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    contentType: varchar("content_type", { length: 50 }).notNull().unique(),
+    
+    totalGenerated: int("total_generated").default(0),
+    totalApproved: int("total_approved").default(0),
+    totalRejected: int("total_rejected").default(0),
+    approvalRate: decimal("approval_rate", { precision: 3, scale: 2 }).default("0"),
+    avgApprovalTime: int("avg_approval_time"),
+    
+    totalSent: int("total_sent").default(0),
+    totalOpens: int("total_opens").default(0),
+    totalClicks: int("total_clicks").default(0),
+    totalResponses: int("total_responses").default(0),
+    avgOpenRate: decimal("avg_open_rate", { precision: 3, scale: 2 }).default("0"),
+    avgClickThroughRate: decimal("avg_click_through_rate", { precision: 3, scale: 2 }).default("0"),
+    avgResponseRate: decimal("avg_response_rate", { precision: 3, scale: 2 }).default("0"),
+    
+    avgQualityScore: decimal("avg_quality_score", { precision: 3, scale: 2 }).default("0"),
+    avgRelevanceScore: decimal("avg_relevance_score", { precision: 3, scale: 2 }).default("0"),
+    avgProfessionalismScore: decimal("avg_professionalism_score", { precision: 3, scale: 2 }).default("0"),
+    
+    performanceRank: int("performance_rank"),
+    trendDirection: mysqlEnum("trend_direction", ["improving", "stable", "declining"]).default("stable"),
+    
+    lastUpdated: timestamp("last_updated").defaultNow().onUpdateNow().notNull(),
+  }
+);
+export type ContentTypePerformance = typeof contentTypePerformance.$inferSelect;
+export type InsertContentTypePerformance = typeof contentTypePerformance.$inferInsert;
+
+export const eventPerformanceSummary = mysqlTable(
+  "event_performance_summary",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    eventId: int("event_id").notNull().unique(),
+    
+    contentItemsGenerated: int("content_items_generated").default(0),
+    contentItemsApproved: int("content_items_approved").default(0),
+    contentItemsRejected: int("content_items_rejected").default(0),
+    overallApprovalRate: decimal("overall_approval_rate", { precision: 3, scale: 2 }).default("0"),
+    avgTimeToApproval: int("avg_time_to_approval"),
+    
+    totalContentSent: int("total_content_sent").default(0),
+    totalEngagements: int("total_engagements").default(0),
+    avgEngagementRate: decimal("avg_engagement_rate", { precision: 3, scale: 2 }).default("0"),
+    
+    bestPerformingType: varchar("best_performing_type", { length: 50 }),
+    bestPerformingScore: decimal("best_performing_score", { precision: 3, scale: 2 }).default("0"),
+    
+    worstPerformingType: varchar("worst_performing_type", { length: 50 }),
+    worstPerformingScore: decimal("worst_performing_score", { precision: 3, scale: 2 }).default("0"),
+    
+    avgContentQuality: decimal("avg_content_quality", { precision: 3, scale: 2 }).default("0"),
+    operatorSatisfaction: decimal("operator_satisfaction", { precision: 2, scale: 1 }),
+    
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  }
+);
+export type EventPerformanceSummary = typeof eventPerformanceSummary.$inferSelect;
+export type InsertEventPerformanceSummary = typeof eventPerformanceSummary.$inferInsert;
+
+export const contentEngagementEvents = mysqlTable(
+  "content_engagement_events",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    contentId: int("content_id").notNull(),
+    recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
+    
+    eventType: mysqlEnum("event_type", ["sent", "opened", "clicked", "responded", "bounced", "unsubscribed"]).notNull(),
+    eventData: json("event_data"),
+    
+    timestamp: timestamp("timestamp").defaultNow().notNull(),
+  }
+);
+export type ContentEngagementEvent = typeof contentEngagementEvents.$inferSelect;
+export type InsertContentEngagementEvent = typeof contentEngagementEvents.$inferInsert;

@@ -48,6 +48,7 @@ import OperatorGuide from "./pages/OperatorGuide";
 import DemoRegistration from "./pages/DemoRegistration";
 import TwilioDirectGuide from "./pages/TwilioDirectGuide";
 import BillingPreview from "./pages/BillingPreview";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import AIDashboard from "./pages/AIDashboard";
 import MyEvents from "./pages/MyEvents";
 import QuoteBuilder from "./pages/QuoteBuilder";
@@ -114,6 +115,7 @@ function Router() {
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
       <Route path="/ai-dashboard" component={AIDashboard} />
+      <Route path="/analytics" component={AnalyticsDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
