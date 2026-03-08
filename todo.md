@@ -924,5 +924,7 @@
   - [x] Database schema (transcript_edits, transcript_versions, edit_audit_log)
   - [x] TranscriptEditorService with edit history and version control
   - [x] tRPC procedures (14 endpoints: create, approve, version, revert, export, audit, suggestions)
-  - [ ] Transcript Editor UI component with diff view and version timeline
   - [x] Comprehensive tests (70+ test cases)
+  - [x] Transcript Editor UI component with diff view and version timeline
+  - [x] Real-Time Collaboration with Ably WebSocket for multi-operator editing
+  - [x] Redaction Workflow service and UI for sensitive content masking
