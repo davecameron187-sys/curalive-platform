@@ -28,7 +28,7 @@
 
 ## Round 8 — Top Quick Win AI Features
 
-- [ ] #1 Live Rolling Summary — EventRoom: rolling 2–3 sentence "what you missed" summary updating every 60s
+- [x] #1 Live Rolling Summary — EventRoom: rolling 2–3 sentence "what you missed" summary updating every 60s
 - [ ] #10 Speaking-Pace Coach — Presenter: WPM detector with colour-coded pace indicator
 - [ ] #13 Audience Sentiment Feed — Presenter: live sentiment score shown in teleprompter
 - [ ] #15 Silence/Anomaly Detector — Operator: alert when audio gap > 10s detected
@@ -896,3 +896,20 @@
 - [x] Event performance summary: best/worst performing content types, approval rates, engagement metrics
 - [x] Improvement recommendations: automated suggestions based on performance data
 - [x] Vitest tests: 30+ tests covering all analytics calculations and aggregations
+
+
+## Round 8 — Live Rolling Summary Feature
+
+- [ ] Create LiveRollingSummaryService with LLM-powered summarization — IN PROGRESS
+- [ ] Add database schema for storing summary history
+- [ ] Implement 60-second rolling window for summary generation
+- [ ] Add tRPC procedures: startLiveRollingSummary, stopLiveRollingSummary, getLiveRollingSummary, getSummaryHistory
+- [ ] Implement WebSocket support for real-time summary updates to operators
+- [ ] Build Live Rolling Summary UI component for operator console
+- [ ] Add summary display in teleprompter view for presenters
+- [ ] Implement summary export to post-event report
+- [ ] Add operator controls: pause/resume, regenerate, adjust summary length
+- [ ] Create summary analytics: track summary quality, operator feedback
+- [ ] Write vitest tests for summarization service (30+ tests)
+- [ ] Integration testing with live event simulation
+- [ ] Deploy to production and monitor

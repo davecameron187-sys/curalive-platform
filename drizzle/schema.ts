@@ -1639,3 +1639,20 @@ export const contentEngagementEvents = mysqlTable(
 );
 export type ContentEngagementEvent = typeof contentEngagementEvents.$inferSelect;
 export type InsertContentEngagementEvent = typeof contentEngagementEvents.$inferInsert;
+
+
+export const occLiveRollingSummaries = mysqlTable(
+  "occ_live_rolling_summaries",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    conferenceId: int("conference_id").notNull(),
+    summary: text("summary").notNull(),
+    windowStartTime: bigint("window_start_time", { mode: "number" }).notNull(),
+    windowEndTime: bigint("window_end_time", { mode: "number" }).notNull(),
+    segmentCount: int("segment_count").notNull(),
+    generatedAt: timestamp("generated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  }
+);
+export type OccLiveRollingSummary = typeof occLiveRollingSummaries.$inferSelect;
+export type InsertOccLiveRollingSummary = typeof occLiveRollingSummaries.$inferInsert;

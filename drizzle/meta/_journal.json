@@ -274,6 +274,13 @@
       "when": 1772962383073,
       "tag": "0038_oval_butterfly",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "5",
+      "when": 1772968627444,
+      "tag": "0039_legal_blue_shield",
+      "breakpoints": true
     }
   ]
 }
