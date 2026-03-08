@@ -499,8 +499,8 @@
 - [x] Set TWILIO_CALLER_ID environment variable to +27110108353
 - [x] Register POST /api/webphone/twiml endpoint in server (was missing — Twilio could not route outbound calls)
 - [x] Register POST /api/webphone/telnyx endpoint in server for Telnyx webhook events
-- [x] Configure TwiML App Voice URL in Twilio dashboard to https://chorusai-mdu4k2ib.manus.space/api/webphone/twiml
-- [x] Configure Telnyx webhook URL to https://chorusai-mdu4k2ib.manus.space/api/webphone/telnyx
+- [x] Configure TwiML App Voice URL in Twilio dashboard to https://curalive.manus.space/api/webphone/twiml
+- [x] Configure Telnyx webhook URL to https://curalive.manus.space/api/webphone/telnyx
 - [x] Verified: token generation SUCCESS, caller ID format valid, TwiML XML generation SUCCESS
 
 ## Round 63 — Webphone Completion & Polish
@@ -947,7 +947,7 @@
   - [x] All features integrated and tested
   - [x] Ready for Publish button click
   - [x] Production build configured
-  - [x] Domains configured (chorusai-mdu4k2ib.manus.space)
+  - [x] Domains configured (curalive.manus.space)
 
 - [x] Operator Onboarding Materials
   - [x] OPERATOR_ONBOARDING_RUNBOOK.md (1200+ lines)

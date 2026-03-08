@@ -1,8 +1,8 @@
-# Chorus.AI Operator Training Guide
+# CuraLive Operator Training Guide
 
 ## Overview
 
-Chorus.AI is a live event intelligence platform that provides real-time transcription, AI-powered content moderation, sentiment analysis, and comprehensive event management tools. This guide covers all operator console features and best practices.
+CuraLive is a live event intelligence platform that provides real-time transcription, AI-powered content moderation, sentiment analysis, and comprehensive event management tools. This guide covers all operator console features and best practices.
 
 ---
 
@@ -25,7 +25,7 @@ Chorus.AI is a live event intelligence platform that provides real-time transcri
 
 ### Accessing the Operator Console
 
-1. Navigate to `https://chorusai-mdu4k2ib.manus.space/operator/:eventId`
+1. Navigate to your CuraLive operator console (provided during onboarding)
 2. Log in with your Manus account credentials
 3. Select your event from the dashboard
 
@@ -473,10 +473,10 @@ Enable multiple operators to edit transcripts simultaneously with conflict detec
 
 ### Getting Help
 
-- **Technical Support**: support@chorusai.com
-- **Training**: training@chorusai.com
-- **Compliance**: compliance@chorusai.com
-- **Urgent Issues**: emergency@chorusai.com
+- **Technical Support**: support@curalive.io
+- **Training**: training@curalive.io
+- **Compliance**: compliance@curalive.io
+- **Urgent Issues**: emergency@curalive.io
 
 ---
 
@@ -500,7 +500,7 @@ Enable multiple operators to edit transcripts simultaneously with conflict detec
 
 ### API Integration
 
-For developers integrating with Chorus.AI:
+For developers integrating with CuraLive:
 
 - **Q&A API**: `/api/trpc/aiFeatures.getEventQATriageResults`
 - **Toxicity API**: `/api/trpc/aiFeatures.getEventToxicityResults`
@@ -536,8 +536,8 @@ For developers integrating with Chorus.AI:
 
 - **Last Updated**: 2026-03-08
 - **Version**: 1.0
-- **Author**: Chorus.AI Training Team
+- **Author**: CuraLive Training Team
 - **Status**: Active
 - **Next Review**: 2026-06-08
 
-For updates and corrections, contact training@chorusai.com
+For updates and corrections, contact training@curalive.io

@@ -1,10 +1,10 @@
-# Chorus.AI Operator Onboarding Runbook
+# CuraLive Operator Onboarding Runbook
 
 ## Quick Start (First 30 Minutes)
 
 ### 1. Account Setup (5 min)
 ```
-1. Go to https://chorusai-mdu4k2ib.manus.space
+1. Go to https://curalive.manus.space
 2. Click "Sign In" → Use Manus credentials
 3. Complete profile setup
 4. Enable 2FA for security
@@ -299,9 +299,9 @@
 
 **Support Resources**:
 - **Slack Channel**: #chorus-ai-operators
-- **Email**: operators@chorusai.com
-- **Docs**: https://docs.chorusai.com
-- **Video Tutorials**: https://videos.chorusai.com
+- **Email**: operators@curalive.io
+- **Docs**: https://docs.curalive.io
+- **Video Tutorials**: https://videos.curalive.io
 - **Live Chat**: Available 24/7
 
 ---
@@ -408,9 +408,9 @@ Access at: `/operator/performance`
 - Plan prevention
 
 ### Escalation Contacts
-- **Level 1**: Team Lead (ops-lead@chorusai.com)
-- **Level 2**: Engineering (engineering@chorusai.com)
-- **Level 3**: Executive (cto@chorusai.com)
+- **Level 1**: Team Lead (ops-lead@curalive.io)
+- **Level 2**: Engineering (engineering@curalive.io)
+- **Level 3**: Executive (cto@curalive.io)
 
 ---
 
@@ -418,9 +418,9 @@ Access at: `/operator/performance`
 
 ### Documentation
 - **Main Guide**: OPERATOR_TRAINING_GUIDE.md
-- **API Docs**: https://docs.chorusai.com/api
-- **Video Tutorials**: https://videos.chorusai.com
-- **FAQ**: https://faq.chorusai.com
+- **API Docs**: https://docs.curalive.io/api
+- **Video Tutorials**: https://videos.curalive.io
+- **FAQ**: https://faq.curalive.io
 
 ### Training Materials
 - Sample press releases
@@ -431,10 +431,10 @@ Access at: `/operator/performance`
 
 ### Support Channels
 - **Slack**: #chorus-ai-operators
-- **Email**: operators@chorusai.com
+- **Email**: operators@curalive.io
 - **Phone**: +1-555-CHORUS-AI
-- **Chat**: https://chat.chorusai.com
-- **Ticket System**: https://tickets.chorusai.com
+- **Chat**: https://chat.curalive.io
+- **Ticket System**: https://tickets.curalive.io
 
 ---
 
@@ -465,11 +465,11 @@ Access at: `/operator/performance`
 
 - **Last Updated**: 2026-03-08
 - **Version**: 1.0
-- **Author**: Chorus.AI Training Team
+- **Author**: CuraLive Training Team
 - **Status**: Active
 - **Next Review**: 2026-06-08
 
-For updates and corrections, contact training@chorusai.com
+For updates and corrections, contact training@curalive.io
 
 ---
 
@@ -507,7 +507,7 @@ For updates and corrections, contact training@chorusai.com
 
 ---
 
-**Welcome to the Chorus.AI team! 🎉**
+**Welcome to the CuraLive team! 🎉**
 
 We're excited to have you on board. This runbook is your guide to success. Don't hesitate to reach out if you have questions or need additional support.
 

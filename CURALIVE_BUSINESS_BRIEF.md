@@ -99,7 +99,7 @@ A world where every live event is intelligent, transparent, and optimized — wh
 | **Microsoft Teams** | Enterprise integration | Closed ecosystem | Works with any platform |
 | **Recall.ai** | Universal bot | Limited operator controls | Operator-centric design |
 | **Otter.ai** | Transcription quality | No real-time sentiment | Real-time sentiment + Q&A |
-| **Chorus.ai** (competitor) | Call recording | Limited to sales calls | Broader use cases (IR, comms, etc.) |
+| **Chorus.ai** (legacy competitor) | Call recording | Limited to sales calls | Broader use cases (IR, comms, etc.) |
 
 **Our Unique Position:** We are the only platform that combines real-time transcription, sentiment analysis, Q&A management, and operator controls in a single, platform-agnostic solution.
 

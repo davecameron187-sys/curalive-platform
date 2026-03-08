@@ -53,7 +53,7 @@
 |---|---|---|---|
 | Phone number purchase | Purchasing US/ZA phone number on Telnyx and Twilio for real dial-in. Webphone and OCC UI fully built. | Yes — Manus can wire this | 1 build round |
 | Attendee reminder emails | 24h and 1h pre-event reminder emails via Resend. Infrastructure wired; trigger and template need building. | Yes — Manus can build this | 1 build round |
-| Custom domain | Platform runs on chorusai-mdu4k2ib.manus.space. Custom domain (e.g., app.choruscall.ai) via Settings → Domains. | Yes — self-service in UI | 30 minutes |
+| Custom domain | Platform runs on curalive.manus.space. Custom domain (e.g., app.choruscall.ai) via Settings → Domains. | Yes — self-service in UI | 30 minutes |
 | Zoom RTMS account | Requires Zoom Developer Pack (enterprise agreement). Recall.ai covers Zoom without RTMS and is already live. | Business task — no code required | 1-2 weeks (sales cycle) |
 
 ## 2c. Nice-to-Have — Growth Features (3-6 months)

@@ -574,7 +574,7 @@ export default function AIFeaturesStatus() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">AI Features Status</h1>
           <p className="text-muted-foreground">
-            Track the development progress of all AI-powered features across Chorus.AI
+            Track the development progress of all AI-powered features across CuraLive
           </p>
         </div>
 
