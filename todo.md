@@ -932,6 +932,13 @@
 ## Round 11 — Redaction UI, Ably Integration, and Compliance
 
 - [x] Redaction UI Component with approval workflow
+- [x] Ably API Key Configuration and Integration
+- [x] Comprehensive Operator Training Guide (OPERATOR_TRAINING_GUIDE.md)
+- [x] Fixed TypeScript errors in aiFeatures.ts and QaAutoTriageService.ts
+
+## Round 12 — Final Deployment and Documentation
+
+- [x] Redaction UI Component with approval workflow
   - [x] RedactionWorkflow.tsx (500+ lines) with detect, batch, history, compliance tabs
   - [x] Sensitive content detection and preview
   - [x] Batch redaction processing

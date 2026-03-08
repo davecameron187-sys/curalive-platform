@@ -439,9 +439,9 @@ export const aiFeaturesRouter = router({
      * Get Q&A triage statistics for an event
      */
     getQATriageStats: protectedProcedure
-      .input(z.object({ eventId: z.string().min(1) }))
+      .input(z.object({ eventId: z.number().int().positive() }))
       .query(async ({ input }) => {
-        const stats = await QaAutoTriageService.getEventTriageStats(parseInt(input.eventId));
+        const stats = await QaAutoTriageService.getEventTriageStats(input.eventId);
         return stats;
       }),
 

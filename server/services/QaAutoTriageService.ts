@@ -323,7 +323,7 @@ Respond with a JSON object containing:
   /**
    * Get triage statistics for an event
    */
-  static async getEventTriageStats(eventId: string) {
+  static async getEventTriageStats(eventId: number) {
     try {
       const results = await this.getEventTriageResults(eventId);
 
