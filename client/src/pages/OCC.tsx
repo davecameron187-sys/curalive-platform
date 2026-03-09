@@ -1041,6 +1041,9 @@ export default function OCC() {
 
     setActiveCCPConferenceId(SIM_CONF_ID);
     setShowCCP(true);
+    setActiveSidebarTab("running");
+    setShowOverview(true);
+    setOverviewTab("running");
     setSimRunning(true);
     simProgressRef.current = 0;
     simQAIndexRef.current = 0;
@@ -1065,7 +1068,7 @@ export default function OCC() {
         phoneNumber: `+27 ${60 + ((idx + 2) % 30)} 555 ${String(idx + 2).padStart(4, "0")}`,
         dialInNumber: scenario.dialIn,
         voiceServer: `VS-SIM-${Math.floor((idx + 2) / 4) + 1}`,
-        state: "connected" as const,
+        state: "incoming" as const,
         isSpeaking: false,
         isWebParticipant: idx % 5 === 0,
         requestToSpeak: false,
@@ -1081,6 +1084,11 @@ export default function OCC() {
       setLocalParticipants(prev => [...prev, newP]);
       simProgressRef.current += 1;
       setSimProgress(p => p + 1);
+      setTimeout(() => {
+        setLocalParticipants(prev => prev.map(p =>
+          p.id === newP.id && p.state === "incoming" ? { ...p, state: "connected" as const } : p
+        ));
+      }, 1400);
 
       if (Math.random() < 0.25) {
         const newState = Math.random() < 0.5 ? "muted" as const : "speaking" as const;
@@ -2128,6 +2136,22 @@ export default function OCC() {
                 </button>
               ))}
             </div>
+            {/* Simulation status bar */}
+            {simRunning && overviewTab === "running" && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-violet-950/60 border-b border-violet-800/50">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse shrink-0" />
+                <span className="text-[10px] text-violet-300 font-semibold flex-1">
+                  SIMULATION — {Math.min(simProgress + 2, simCount)}/{simCount} participants joined
+                </span>
+                <div className="w-20 h-1 bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(((simProgress + 2) / simCount) * 100, 100)}%` }} />
+                </div>
+                <button
+                  onClick={stopSimulation}
+                  className="ml-1 text-[10px] text-red-400 hover:text-red-300 font-semibold border border-red-800 hover:border-red-600 rounded px-1.5 py-0.5 transition-colors shrink-0"
+                >Stop</button>
+              </div>
+            )}
             {/* Table */}
             <div className="flex-1 overflow-auto min-h-0">
               <table className="w-full text-xs">
