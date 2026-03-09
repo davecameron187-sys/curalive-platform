@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { complianceFlags, complianceAuditLog } from "../../drizzle/schema";
+import { complianceFlags, complianceAuditLog, complianceCertificates } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 async function callForgeAI(prompt: string): Promise<string> {
@@ -119,6 +119,20 @@ Focus on: earnings guidance, forward-looking statements, material facts, selecti
       return { approved: true };
     }),
 
+  rejectStatement: protectedProcedure
+    .input(z.object({ flagId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      await db.update(complianceFlags).set({
+        complianceStatus: "disclosed", // Using "disclosed" as a placeholder for rejected/handled status based on existing enum
+        reviewedBy: ctx.user.id,
+        reviewedAt: new Date(),
+      }).where(eq(complianceFlags.id, input.flagId));
+      await logAudit(db, null, "disclosed", ctx.user.id, `Flag ID ${input.flagId} marked as disclosed/handled`);
+      return { rejected: true };
+    }),
+
   generateComplianceCertificate: protectedProcedure
     .input(z.object({ eventId: z.string(), eventTitle: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
@@ -126,10 +140,21 @@ Focus on: earnings guidance, forward-looking statements, material facts, selecti
       if (!db) throw new Error("Database not available");
       const flags = await db.select().from(complianceFlags)
         .where(eq(complianceFlags.eventId, input.eventId));
+
+      const certId = `CERT-${input.eventId}-${Date.now()}`;
+      await db.insert(complianceCertificates).values({
+        eventId: input.eventId,
+        certificateId: certId,
+        pdfUrl: `/api/compliance/certificates/${certId}.pdf`, // Mock URL
+        generatedBy: ctx.user.id,
+        generatedAt: new Date(),
+      });
+
       await logAudit(db, input.eventId, "certificate_generated", ctx.user.id, `Certificate generated for ${input.eventTitle ?? input.eventId}`);
       const cert = {
         generatedAt: new Date().toISOString(),
         eventId: input.eventId,
+        certificateId: certId,
         eventTitle: input.eventTitle ?? input.eventId,
         generatedBy: ctx.user.id,
         totalFlags: flags.length,

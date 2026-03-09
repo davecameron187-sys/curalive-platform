@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { BarChart2, Plus, Play, Square, Trash2, Loader2, ChevronDown, CheckCircle2, Clock } from "lucide-react";
@@ -22,10 +22,17 @@ export default function PollManager({ eventId, className = "" }: Props) {
   const [options, setOptions] = useState(["", ""]);
 
   const { data: polls, refetch } = trpc.polls.listForEvent.useQuery({ eventId });
+  
+  const [activePollResultsId, setActivePollResultsId] = useState<number | null>(null);
   const { data: results } = trpc.polls.getResults.useQuery(
-    { pollId: polls?.find(p => p.status === "closed" || p.status === "active")?.id ?? 0 },
-    { enabled: !!(polls?.some(p => p.status === "closed" || p.status === "active")) }
+    { pollId: activePollResultsId ?? 0 },
+    { enabled: !!activePollResultsId, refetchInterval: 3000 }
   );
+
+  useEffect(() => {
+    const active = polls?.find(p => p.status === "active");
+    if (active) setActivePollResultsId(active.id);
+  }, [polls]);
 
   const create = trpc.polls.create.useMutation({
     onSuccess: () => { toast.success("Poll created"); refetch(); setShowCreate(false); setQuestion(""); setOptions(["", ""]); },
@@ -113,7 +120,7 @@ export default function PollManager({ eventId, className = "" }: Props) {
             <button
               onClick={() => {
                 if (!question.trim()) { toast.error("Enter a question"); return; }
-                const filteredOpts = pollType === "multiple_choice" ? options.filter(o => o.trim()) : undefined;
+                const filteredOpts = pollType === "multiple_choice" || pollType === "yes_no" ? options.filter(o => o.trim()) : undefined;
                 if (pollType === "multiple_choice" && (filteredOpts?.length ?? 0) < 2) { toast.error("Add at least 2 options"); return; }
                 create.mutate({ eventId, question, pollType, options: filteredOpts });
               }}
@@ -135,18 +142,39 @@ export default function PollManager({ eventId, className = "" }: Props) {
         {polls?.map((poll) => (
           <div key={poll.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-xs text-white leading-snug flex-1">{poll.question}</p>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${statusColor[poll.status] ?? statusColor.draft}`}>
+              <p className="text-xs text-white leading-snug flex-1 font-medium">{poll.question}</p>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex-shrink-0 ${statusColor[poll.status] ?? statusColor.draft}`}>
                 {poll.status}
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-1 mb-2">{POLL_TYPES.find(t => t.value === poll.pollType)?.label}</p>
+            <p className="text-[10px] text-slate-500 mt-1 mb-2 uppercase tracking-wide">{POLL_TYPES.find(t => t.value === poll.pollType)?.label}</p>
+            
+            {poll.status === "active" && results && results.options.length > 0 && (
+              <div className="mb-3 space-y-1">
+                {results.options.map(opt => {
+                   const pct = results.totalVotes > 0 ? Math.round((opt.votes / results.totalVotes) * 100) : 0;
+                   return (
+                     <div key={opt.id}>
+                        <div className="flex justify-between text-[10px] mb-0.5">
+                           <span className="text-slate-400 truncate">{opt.optionText}</span>
+                           <span className="text-teal-400 font-bold">{pct}%</span>
+                        </div>
+                        <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
+                           <div className="h-full bg-teal-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                        </div>
+                     </div>
+                   );
+                })}
+                <div className="text-[9px] text-slate-500 text-right mt-1">{results.totalVotes} votes total</div>
+              </div>
+            )}
+
             <div className="flex gap-1.5">
               {poll.status === "draft" && (
                 <button
                   onClick={() => launch.mutate({ pollId: poll.id })}
                   disabled={launch.isPending}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-emerald-700/40 hover:bg-emerald-700/70 border border-emerald-600/30 rounded text-xs text-emerald-300 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 bg-emerald-700/40 hover:bg-emerald-700/70 border border-emerald-600/30 rounded text-[10px] font-bold text-emerald-300 transition-colors uppercase tracking-wider"
                 >
                   <Play className="w-3 h-3" /> Launch
                 </button>
@@ -155,7 +183,7 @@ export default function PollManager({ eventId, className = "" }: Props) {
                 <button
                   onClick={() => close.mutate({ pollId: poll.id })}
                   disabled={close.isPending}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-amber-700/40 hover:bg-amber-700/70 border border-amber-600/30 rounded text-xs text-amber-300 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 bg-amber-700/40 hover:bg-amber-700/70 border border-amber-600/30 rounded text-[10px] font-bold text-amber-300 transition-colors uppercase tracking-wider"
                 >
                   <Square className="w-3 h-3" /> Close
                 </button>
@@ -163,12 +191,41 @@ export default function PollManager({ eventId, className = "" }: Props) {
               {(poll.status === "draft" || poll.status === "closed") && (
                 <button
                   onClick={() => deletePoll.mutate({ pollId: poll.id })}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-red-700/20 hover:bg-red-700/40 border border-red-600/20 rounded text-xs text-red-400 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 bg-red-700/20 hover:bg-red-700/40 border border-red-600/20 rounded text-[10px] font-bold text-red-400 transition-colors"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
               )}
+              {poll.status === "closed" && (
+                <button
+                   onClick={() => setActivePollResultsId(activePollResultsId === poll.id ? null : poll.id)}
+                   className={`flex items-center gap-1 px-2.5 py-1 border rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                     activePollResultsId === poll.id ? "bg-teal-700/40 border-teal-600/30 text-teal-300" : "bg-slate-700/40 border-slate-600/30 text-slate-300"
+                   }`}
+                >
+                   <BarChart2 className="w-3 h-3" /> {activePollResultsId === poll.id ? "Hide Results" : "Show Results"}
+                </button>
+              )}
             </div>
+            {poll.status === "closed" && activePollResultsId === poll.id && results && (
+               <div className="mt-3 space-y-1 pt-3 border-t border-slate-700/50">
+                  {results.options.map(opt => {
+                     const pct = results.totalVotes > 0 ? Math.round((opt.votes / results.totalVotes) * 100) : 0;
+                     return (
+                       <div key={opt.id}>
+                          <div className="flex justify-between text-[10px] mb-0.5">
+                             <span className="text-slate-400 truncate">{opt.optionText}</span>
+                             <span className="text-slate-300 font-bold">{pct}%</span>
+                          </div>
+                          <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
+                             <div className="h-full bg-slate-400 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                          </div>
+                       </div>
+                     );
+                  })}
+                  <div className="text-[9px] text-slate-500 text-right mt-1">{results.totalVotes} votes total</div>
+               </div>
+            )}
           </div>
         ))}
       </div>

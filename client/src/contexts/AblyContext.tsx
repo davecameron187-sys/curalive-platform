@@ -87,6 +87,8 @@ export type CuraLiveMessage =
   | { type: "poll.pushed"; data: Poll }
   | { type: "poll.vote"; data: { pollId: string; optionId: string } }
   | { type: "poll.closed"; data: { pollId: string } }
+  | { type: "poll.launched"; data: { poll: any; options: any[] } }
+  | { type: "poll.updated"; data: { pollId: number; results: any } }
   | { type: "presence.join"; data: PresenceUser }
   | { type: "presence.leave"; data: { id: string } }
   | { type: "hand.raise"; data: RaisedHand }
@@ -261,6 +263,37 @@ export function AblyProvider({ eventId, children }: { eventId: string; children:
           break;
         case "poll.closed":
           setPolls((prev) => prev.map((p) => p.id === msg.data.pollId ? { ...p, status: "closed" } : p));
+          break;
+        case "poll.launched":
+          setPolls((prev) => {
+            const pollData = msg.data.poll;
+            const options = msg.data.options.map((o: any) => ({
+              id: o.id.toString(),
+              label: o.optionText,
+              votes: 0
+            }));
+            const newPoll: Poll = {
+              id: pollData.id.toString(),
+              question: pollData.question,
+              options,
+              status: "live",
+              createdAt: new Date(pollData.createdAt).getTime()
+            };
+            const exists = prev.find((p) => p.id === newPoll.id);
+            if (exists) return prev.map((p) => p.id === newPoll.id ? newPoll : p);
+            return [...prev, newPoll];
+          });
+          break;
+        case "poll.updated":
+          setPolls((prev) => prev.map((p) => p.id === msg.data.pollId.toString()
+            ? {
+                ...p,
+                options: p.options.map((o) => {
+                  const result = msg.data.results.options.find((ro: any) => ro.id.toString() === o.id);
+                  return result ? { ...o, votes: result.votes } : o;
+                })
+              }
+            : p));
           break;
         case "presence.join":
           setPresenceCount((c) => c + 1);

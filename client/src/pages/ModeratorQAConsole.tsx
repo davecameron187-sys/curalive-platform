@@ -20,18 +20,25 @@ import {
 import { toast } from "sonner";
 
 interface TriagedQuestion {
-  id: number;
-  questionText: string;
-  triageCategory: "approved" | "duplicate" | "off_topic" | "spam" | "unclear" | "sensitive";
-  confidenceScore: number;
-  riskFlags: string[];
+  triageId: number;
+  qaId: number;
+  question: string;
+  classification: "approved" | "duplicate" | "off_topic" | "spam" | "unclear" | "sensitive";
+  confidence: number | null;
+  reason: string | null;
+  isSensitive: number;
+  sensitivityFlags: string | null;
+  triageScore: number | null;
+  triageTimestamp: any;
   operatorApproved?: boolean;
   approvalNotes?: string;
-  createdAt: string;
 }
+
+import PollManager from "@/components/PollManager";
 
 export default function ModeratorQAConsole() {
   const [eventId, setEventId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState("qa");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQuestion, setSelectedQuestion] = useState<TriagedQuestion | null>(null);
@@ -40,13 +47,13 @@ export default function ModeratorQAConsole() {
 
   // tRPC queries and mutations
   const eventQuestionsQuery = trpc.aiFeatures.qaAutoTriageModeration.getEventQATriageResults.useQuery(
-    { eventId: eventId || "" },
+    { eventId: eventId || "0" },
     { enabled: !!eventId }
   );
 
   const qaStatsQuery = trpc.aiFeatures.qaAutoTriageModeration.getQATriageStats.useQuery(
-    { eventId: eventId || "" },
-    { enabled: !!eventId }
+    { eventId: parseInt(eventId) || 0 },
+    { enabled: !!eventId && !isNaN(parseInt(eventId)) }
   );
 
   const approveQuestionMutation = trpc.aiFeatures.qaAutoTriageModeration.approveQAQuestion.useMutation();
@@ -67,8 +74,8 @@ export default function ModeratorQAConsole() {
 
   const filteredQuestions = useMemo(() => {
     return questions.filter((q) => {
-      const categoryMatch = selectedCategory === "all" || q.triageCategory === selectedCategory;
-      const searchMatch = searchTerm === "" || q.questionText.toLowerCase().includes(searchTerm.toLowerCase());
+      const categoryMatch = selectedCategory === "all" || q.classification === selectedCategory;
+      const searchMatch = searchTerm === "" || q.question.toLowerCase().includes(searchTerm.toLowerCase());
       return categoryMatch && searchMatch;
     });
   }, [questions, selectedCategory, searchTerm]);
@@ -114,8 +121,9 @@ export default function ModeratorQAConsole() {
     }
   };
 
-  const getRiskBadges = (riskFlags: string[]) => {
-    return riskFlags.map((flag) => {
+  const getRiskBadges = (sensitivityFlags: string | null) => {
+    if (!sensitivityFlags) return null;
+    return sensitivityFlags.split(",").map((flag) => {
       let variant: "default" | "secondary" | "destructive" = "secondary";
       if (flag.includes("price") || flag.includes("confidential")) variant = "destructive";
       if (flag.includes("legal")) variant = "destructive";
@@ -154,154 +162,187 @@ export default function ModeratorQAConsole() {
         </Card>
 
         {eventId && stats && (
-          <>
-            {/* Statistics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <Card className="p-4 border-border">
-                <p className="text-xs text-muted-foreground mb-1">Total Questions</p>
-                <p className="text-2xl font-bold">{stats.totalQuestions}</p>
-              </Card>
-              <Card className="p-4 border-border">
-                <p className="text-xs text-muted-foreground mb-1">Approved</p>
-                <p className="text-2xl font-bold text-green-600">{stats.approvedCount}</p>
-              </Card>
-              <Card className="p-4 border-border">
-                <p className="text-xs text-muted-foreground mb-1">Flagged</p>
-                <p className="text-2xl font-bold text-red-600">{stats.flaggedCount}</p>
-              </Card>
-              <Card className="p-4 border-border">
-                <p className="text-xs text-muted-foreground mb-1">Avg Confidence</p>
-                <p className="text-2xl font-bold">{stats.averageConfidence}%</p>
-              </Card>
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="qa">Q&A Moderation</TabsTrigger>
+              <TabsTrigger value="polls">Live Polling</TabsTrigger>
+            </TabsList>
 
-            {/* Filters */}
-            <div className="mb-6 space-y-4">
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant={selectedCategory === "all" ? "default" : "outline"}
-                  onClick={() => setSelectedCategory("all")}
-                  size="sm"
-                >
-                  All ({questions.length})
-                </Button>
-                {Object.entries(categoryConfig).map(([key, config]) => (
-                  <Button
-                    key={key}
-                    variant={selectedCategory === key ? "default" : "outline"}
-                    onClick={() => setSelectedCategory(key)}
-                    size="sm"
-                    className={selectedCategory === key ? "" : "border-border"}
-                  >
-                    {config.label}
-                  </Button>
-                ))}
-              </div>
-
-              <div className="relative">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search questions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            {/* Questions List */}
-            <div className="space-y-3">
-              {filteredQuestions.length === 0 ? (
-                <Card className="p-8 text-center border-border">
-                  <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-50" />
-                  <p className="text-muted-foreground">No questions found</p>
+            <TabsContent value="qa">
+              {/* Statistics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <Card className="p-4 border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Total Questions</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
                 </Card>
-              ) : (
-                filteredQuestions.map((question) => {
-                  const config = categoryConfig[question.triageCategory];
-                  return (
-                    <Card
-                      key={question.id}
-                      className={`p-4 border-l-4 cursor-pointer transition-all hover:border-primary ${config.color}`}
-                      style={{ borderLeftColor: config.textColor }}
-                      onClick={() => {
-                        setSelectedQuestion(question);
-                        setShowApprovalModal(true);
-                      }}
+                <Card className="p-4 border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Approved</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
+                </Card>
+                <Card className="p-4 border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Flagged</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.flagged}</p>
+                </Card>
+                <Card className="p-4 border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Avg Confidence</p>
+                  <p className="text-2xl font-bold">{stats.averageConfidence}%</p>
+                </Card>
+              </div>
+
+              {/* Filters */}
+              <div className="mb-6 space-y-4">
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    variant={selectedCategory === "all" ? "default" : "outline"}
+                    onClick={() => setSelectedCategory("all")}
+                    size="sm"
+                  >
+                    All ({questions.length})
+                  </Button>
+                  {Object.entries(categoryConfig).map(([key, config]) => (
+                    <Button
+                      key={key}
+                      variant={selectedCategory === key ? "default" : "outline"}
+                      onClick={() => setSelectedCategory(key)}
+                      size="sm"
+                      className={selectedCategory === key ? "" : "border-border"}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge className={`${config.color} ${config.textColor} border-0`}>
-                              {config.label}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {question.confidenceScore}% confidence
-                            </span>
-                          </div>
-                          <p className="text-sm font-medium text-foreground break-words">{question.questionText}</p>
+                      {config.label}
+                    </Button>
+                  ))}
+                </div>
 
-                          {question.riskFlags.length > 0 && (
-                            <div className="flex gap-1 mt-2 flex-wrap">{getRiskBadges(question.riskFlags)}</div>
-                          )}
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search questions..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
 
-                          {question.operatorApproved && (
-                            <div className="mt-2 text-xs text-green-600 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Approved by moderator
+              {/* Questions List */}
+              <div className="space-y-3">
+                {filteredQuestions.length === 0 ? (
+                  <Card className="p-8 text-center border-border">
+                    <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-50" />
+                    <p className="text-muted-foreground">No questions found</p>
+                  </Card>
+                ) : (
+                  filteredQuestions.map((question) => {
+                    const config = categoryConfig[question.classification as keyof typeof categoryConfig];
+                    return (
+                      <Card
+                        key={question.triageId}
+                        className={`p-4 border-l-4 cursor-pointer transition-all hover:border-primary ${config.color}`}
+                        style={{ borderLeftColor: config.textColor }}
+                        onClick={() => {
+                          setSelectedQuestion(question);
+                          setShowApprovalModal(true);
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={`${config.color} ${config.textColor} border-0`}>
+                                {config.label}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {question.confidence}% confidence
+                              </span>
                             </div>
-                          )}
-                        </div>
+                            <p className="text-sm font-medium text-foreground break-words">{question.question}</p>
 
-                        <div className="flex gap-2 flex-shrink-0">
-                          {!question.operatorApproved && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleApproveQuestion(question.id);
-                                }}
-                                disabled={approveQuestionMutation.isPending}
-                                className="border-green-500/20 text-green-600 hover:bg-green-500/10"
-                              >
+                            {question.sensitivityFlags && (
+                              <div className="flex gap-1 mt-2 flex-wrap">{getRiskBadges(question.sensitivityFlags)}</div>
+                            )}
+
+                            {question.operatorApproved && (
+                              <div className="mt-2 text-xs text-green-600 flex items-center gap-1">
                                 <CheckCircle2 className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRejectQuestion(question.id);
-                                }}
-                                disabled={rejectQuestionMutation.isPending}
-                                className="border-red-500/20 text-red-600 hover:bg-red-500/10"
-                              >
-                                <XCircle className="w-3 h-3" />
-                              </Button>
-                            </>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleFlagQuestion(question.id);
-                            }}
-                            disabled={flagQuestionMutation.isPending}
-                            className="border-amber-500/20 text-amber-600 hover:bg-amber-500/10"
-                          >
-                            <Flag className="w-3 h-3" />
-                          </Button>
+                                Approved by moderator
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2 flex-shrink-0">
+                            {!question.operatorApproved && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApproveQuestion(question.triageId);
+                                  }}
+                                  disabled={approveQuestionMutation.isPending}
+                                  className="border-green-500/20 text-green-600 hover:bg-green-500/10"
+                                >
+                                  <CheckCircle2 className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRejectQuestion(question.triageId);
+                                  }}
+                                  disabled={rejectQuestionMutation.isPending}
+                                  className="border-red-500/20 text-red-600 hover:bg-red-500/10"
+                                >
+                                  <XCircle className="w-3 h-3" />
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFlagQuestion(question.triageId);
+                              }}
+                              disabled={flagQuestionMutation.isPending}
+                              className="border-amber-500/20 text-amber-600 hover:bg-amber-500/10"
+                            >
+                              <Flag className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    </Card>
-                  );
-                })
-              )}
-            </div>
-          </>
+                      </Card>
+                    );
+                  })
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="polls">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2 border-border">
+                  <CardHeader>
+                    <CardTitle>Poll Management</CardTitle>
+                    <CardDescription>Create and manage live polls for your audience</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <PollManager eventId={eventId} />
+                  </CardContent>
+                </Card>
+                
+                <Card className="border-border">
+                  <CardHeader>
+                    <CardTitle>Polling Guidelines</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm text-muted-foreground">
+                    <p>• Keep questions clear and concise for mobile users.</p>
+                    <p>• Use "Rating Scale" for sentiment or satisfaction checks.</p>
+                    <p>• Use "Word Cloud" for open-ended brainstorming sessions.</p>
+                    <p>• Only one poll can be "Live" at any given time.</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
 
         {/* Approval Modal */}
@@ -316,7 +357,7 @@ export default function ModeratorQAConsole() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-2">Question</p>
                   <p className="text-foreground p-3 bg-card rounded border border-border">
-                    {selectedQuestion.questionText}
+                    {selectedQuestion.question}
                   </p>
                 </div>
 
@@ -324,19 +365,19 @@ export default function ModeratorQAConsole() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Category</p>
                     <Badge className="w-fit">
-                      {categoryConfig[selectedQuestion.triageCategory].label}
+                      {categoryConfig[selectedQuestion.classification as keyof typeof categoryConfig].label}
                     </Badge>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Confidence</p>
-                    <p className="text-foreground font-semibold">{selectedQuestion.confidenceScore}%</p>
+                    <p className="text-foreground font-semibold">{selectedQuestion.confidence}%</p>
                   </div>
                 </div>
 
-                {selectedQuestion.riskFlags.length > 0 && (
+                {selectedQuestion.sensitivityFlags && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Risk Flags</p>
-                    <div className="flex gap-2 flex-wrap">{getRiskBadges(selectedQuestion.riskFlags)}</div>
+                    <div className="flex gap-2 flex-wrap">{getRiskBadges(selectedQuestion.sensitivityFlags)}</div>
                   </div>
                 )}
 

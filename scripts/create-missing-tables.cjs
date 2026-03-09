@@ -1,4 +1,4 @@
-import { getDb } from "../server/db";
+const { getDb } = require("../server/db");
 
 const tables = [
   `CREATE TABLE IF NOT EXISTS ai_generated_content (

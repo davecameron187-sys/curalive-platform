@@ -1703,6 +1703,7 @@ export const sentimentSnapshots = mysqlTable("sentiment_snapshots", {
   neutralCount: int("neutral_count").default(0).notNull(),
   bearishCount: int("bearish_count").default(0).notNull(),
   topSentimentDrivers: text("top_sentiment_drivers"),
+  perSpeakerSentiment: text("per_speaker_sentiment"), // JSON array
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -1877,3 +1878,99 @@ export const eventPerformanceSummary = mysqlTable("event_performance_summary", {
   bestPerformingType: varchar("best_performing_type", { length: 64 }),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });
+
+/**
+ * report_key_moments — Key moments extracted from an event for the post-event report.
+ */
+export const reportKeyMoments = mysqlTable("report_key_moments", {
+  id: int("id").autoincrement().primaryKey(),
+  reportId: int("report_id").notNull(),
+  timestampSeconds: int("timestamp_seconds").notNull(),
+  momentType: mysqlEnum("moment_type", ["insight", "action_item", "question", "highlight", "disclaimer"]).notNull(),
+  content: text("content").notNull(),
+  speaker: varchar("speaker", { length: 255 }),
+  severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).default("low"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ReportKeyMoment = typeof reportKeyMoments.$inferSelect;
+export type InsertReportKeyMoment = typeof reportKeyMoments.$inferInsert;
+
+/**
+ * compliance_certificates — Regulatory compliance certificates generated for events.
+ */
+export const complianceCertificates = mysqlTable("compliance_certificates", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  certificateId: varchar("certificate_id", { length: 64 }).notNull().unique(),
+  pdfUrl: text("pdf_url").notNull(),
+  generatedBy: int("generated_by"),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  signedBy: int("signed_by"),
+  signedAt: timestamp("signed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ComplianceCertificate = typeof complianceCertificates.$inferSelect;
+export type InsertComplianceCertificate = typeof complianceCertificates.$inferInsert;
+
+/**
+ * push_subscriptions — Browser push notification subscriptions for users.
+ */
+export const pushSubscriptions = mysqlTable("push_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"), // null for anonymous attendees
+  eventId: varchar("event_id", { length: 128 }),
+  endpoint: text("endpoint").notNull(),
+  p256dhKey: varchar("p256dh_key", { length: 255 }).notNull(),
+  authKey: varchar("auth_key", { length: 255 }).notNull(),
+  deviceType: mysqlEnum("device_type", ["mobile", "desktop", "tablet"]).default("mobile"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+
+/**
+ * white_label_clients — Enterprise clients with custom branded portals.
+ */
+export const whiteLabelClients = mysqlTable("white_label_clients", {
+  id: int("id").autoincrement().primaryKey(),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 128 }).notNull().unique(),
+  logoUrl: text("logo_url"),
+  primaryColor: varchar("primary_color", { length: 7 }).default("#000000"),
+  secondaryColor: varchar("secondary_color", { length: 7 }).default("#ffffff"),
+  accentColor: varchar("accent_color", { length: 7 }).default("#007bff"),
+  customDomain: varchar("custom_domain", { length: 255 }),
+  contactEmail: varchar("contact_email", { length: 320 }),
+  contactName: varchar("contact_name", { length: 255 }),
+  billingTier: mysqlEnum("billing_tier", ["starter", "professional", "enterprise"]).default("starter").notNull(),
+  maxConcurrentEvents: int("max_concurrent_events").default(1),
+  maxMonthlyEvents: int("max_monthly_events").default(5),
+  featuresEnabled: text("features_enabled"), // JSON array of enabled feature keys
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WhiteLabelClient = typeof whiteLabelClients.$inferSelect;
+export type InsertWhiteLabelClient = typeof whiteLabelClients.$inferInsert;
+
+/**
+ * client_event_assignments — Maps events to white-label client portals.
+ */
+export const clientEventAssignments = mysqlTable("client_event_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  eventId: int("event_id").notNull(), // maps to events.id
+  displayOrder: int("display_order").default(0).notNull(),
+  isFeatured: boolean("is_featured").default(false).notNull(),
+  customTitle: varchar("custom_title", { length: 255 }),
+  customDescription: text("custom_description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ClientEventAssignment = typeof clientEventAssignments.$inferSelect;
+export type InsertClientEventAssignment = typeof clientEventAssignments.$inferInsert;

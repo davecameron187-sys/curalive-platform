@@ -4,8 +4,18 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
   Mail, ArrowLeft, Loader2, RefreshCw, Send, CheckCircle2,
-  Clock, XCircle, Building2, User, MessageSquare, Edit3, ExternalLink
+  Clock, XCircle, Building2, User, MessageSquare, Edit3, ExternalLink,
+  Eye, Calendar, CheckCircle
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 const STATUS_STYLES: Record<string, { color: string; icon: any; label: string }> = {
   pending: { color: "bg-amber-500/15 text-amber-300 border-amber-500/30", icon: Clock, label: "Pending" },
@@ -21,6 +31,11 @@ export default function InvestorFollowUps() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedTemplate, setEditedTemplate] = useState("");
   const [sendingId, setSendingId] = useState<number | null>(null);
+  
+  // New state for Send Email Modal
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [selectedFollowup, setSelectedFollowup] = useState<any>(null);
+  const [emailBody, setEmailBody] = useState("");
 
   const { data: followups, refetch } = trpc.followups.getFollowupsByEvent.useQuery(
     { eventId: eventId ?? "" },
@@ -49,7 +64,12 @@ export default function InvestorFollowUps() {
 
   const sendEmail = trpc.followups.sendFollowupEmail.useMutation({
     onMutate: (vars) => setSendingId(vars.followupId),
-    onSuccess: () => { toast.success("Follow-up sent"); refetch(); setSendingId(null); },
+    onSuccess: () => { 
+      toast.success("Follow-up email sent"); 
+      refetch(); 
+      setSendingId(null);
+      setEmailModalOpen(false);
+    },
     onError: (e) => { toast.error(e.message); setSendingId(null); },
   });
 
@@ -59,6 +79,21 @@ export default function InvestorFollowUps() {
   });
 
   const list = followups ?? [];
+
+  const handleOpenEmailModal = (f: any) => {
+    setSelectedFollowup(f);
+    setEmailBody(f.emailTemplate ?? "");
+    setEmailModalOpen(true);
+  };
+
+  const handleSendEmail = () => {
+    if (!selectedFollowup || !selectedFollowup.investorEmail) return;
+    sendEmail.mutate({
+      followupId: selectedFollowup.id,
+      emailBody: emailBody,
+      recipientEmail: selectedFollowup.investorEmail
+    });
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0d14] text-slate-200">
@@ -85,7 +120,7 @@ export default function InvestorFollowUps() {
         </button>
       </div>
 
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-6 max-w-5xl mx-auto">
         <div className="grid grid-cols-4 gap-3 mb-6">
           {(["pending", "contacted", "resolved", "dismissed"] as const).map(status => {
             const { color, icon: Icon, label } = STATUS_STYLES[status];
@@ -112,6 +147,9 @@ export default function InvestorFollowUps() {
               const { color, icon: StatusIcon, label } = STATUS_STYLES[f.followUpStatus] ?? STATUS_STYLES.pending;
               const isEditing = editingId === f.id;
               const isSending = sendingId === f.id;
+              
+              const latestEmail = f.emails && f.emails.length > 0 ? f.emails[0] : null;
+
               return (
                 <div key={f.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
@@ -131,90 +169,176 @@ export default function InvestorFollowUps() {
                         </p>
                       )}
                     </div>
-                    <span className={`flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}`}>
-                      <StatusIcon className="w-3 h-3" /> {label}
-                    </span>
-                  </div>
-
-                  {f.questionText && (
-                    <div className="bg-slate-900/50 rounded p-3 border-l-2 border-violet-500/30">
-                      <p className="text-xs text-slate-500 mb-1 flex items-center gap-1">
-                        <MessageSquare className="w-3 h-3" /> Question
-                      </p>
-                      <p className="text-sm text-slate-300">{f.questionText}</p>
-                    </div>
-                  )}
-
-                  {f.commitmentText && (
-                    <div className="bg-emerald-500/5 rounded p-3 border-l-2 border-emerald-500/30">
-                      <p className="text-xs text-slate-500 mb-1">Company Commitment</p>
-                      <p className="text-sm text-slate-300">{f.commitmentText}</p>
-                    </div>
-                  )}
-
-                  {f.emailTemplate && (
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-slate-500">Email Template</p>
-                        <button onClick={() => { setEditingId(isEditing ? null : f.id); setEditedTemplate(f.emailTemplate ?? ""); }}
-                          className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300">
-                          <Edit3 className="w-3 h-3" /> {isEditing ? "Cancel" : "Edit"}
-                        </button>
-                      </div>
-                      {isEditing ? (
-                        <div className="space-y-2">
-                          <textarea
-                            value={editedTemplate}
-                            onChange={(e) => setEditedTemplate(e.target.value)}
-                            rows={6}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-violet-500"
-                          />
-                          <button onClick={() => saveTemplate.mutate({ followupId: f.id, template: editedTemplate })}
-                            className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 rounded text-xs text-white font-medium transition-colors">
-                            Save Template
-                          </button>
-                        </div>
-                      ) : (
-                        <pre className="text-xs text-slate-400 bg-slate-900/40 rounded p-3 whitespace-pre-wrap font-mono">{f.emailTemplate}</pre>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}`}>
+                        <StatusIcon className="w-3 h-3" /> {label}
+                      </span>
+                      {f.emailSentAt && (
+                        <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                          <Calendar className="w-2.5 h-2.5" /> Sent: {new Date(f.emailSentAt).toLocaleDateString()}
+                        </span>
                       )}
                     </div>
-                  )}
+                  </div>
 
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {f.followUpStatus === "pending" && f.investorEmail && (
-                      <button
-                        onClick={() => sendEmail.mutate({ followupId: f.id, emailBody: f.emailTemplate ?? "", recipientEmail: f.investorEmail! })}
-                        disabled={isSending}
-                        className="flex items-center gap-1.5 px-2.5 py-1 bg-violet-700/50 hover:bg-violet-700 border border-violet-600/30 rounded text-xs text-violet-200 transition-colors"
-                      >
-                        {isSending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-                        Send Email
-                      </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {f.questionText && (
+                      <div className="bg-slate-900/50 rounded p-3 border-l-2 border-violet-500/30">
+                        <p className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                          <MessageSquare className="w-3 h-3" /> Question
+                        </p>
+                        <p className="text-sm text-slate-300 line-clamp-3">{f.questionText}</p>
+                      </div>
                     )}
-                    {f.followUpStatus !== "resolved" && (
-                      <button onClick={() => updateStatus.mutate({ followupId: f.id, status: "resolved" })}
-                        className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-700/30 hover:bg-emerald-700/50 border border-emerald-600/30 rounded text-xs text-emerald-300 transition-colors">
-                        <CheckCircle2 className="w-3 h-3" /> Resolve
-                      </button>
-                    )}
-                    {!f.crmContactId && (
-                      <button onClick={() => syncCRM.mutate({ followupId: f.id })}
-                        className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded text-xs text-slate-300 transition-colors">
-                        <ExternalLink className="w-3 h-3" /> Sync to CRM
-                      </button>
-                    )}
-                    {f.crmContactId && (
-                      <span className="flex items-center gap-1 text-xs text-emerald-400">
-                        <CheckCircle2 className="w-3 h-3" /> CRM synced
-                      </span>
+
+                    {f.commitmentText && (
+                      <div className="bg-emerald-500/5 rounded p-3 border-l-2 border-emerald-500/30">
+                        <p className="text-xs text-slate-500 mb-1">Company Commitment</p>
+                        <p className="text-sm text-slate-300 line-clamp-3">{f.commitmentText}</p>
+                      </div>
                     )}
                   </div>
+
+                  {latestEmail && (
+                    <div className="bg-slate-900/30 rounded p-3 border border-slate-700/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Latest Email Status</p>
+                        <div className="flex gap-3">
+                          <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+                            <Send className="w-2.5 h-2.5" /> Sent
+                          </span>
+                          {latestEmail.openedAt && (
+                            <span className="flex items-center gap-1 text-[10px] text-blue-400">
+                              <Eye className="w-2.5 h-2.5" /> Opened
+                            </span>
+                          )}
+                          {latestEmail.clickedAt && (
+                            <span className="flex items-center gap-1 text-[10px] text-violet-400">
+                              <ExternalLink className="w-2.5 h-2.5" /> Clicked
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-500">
+                        To: {latestEmail.recipientEmail} • {new Date(latestEmail.sentAt).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-700/30">
+                    <div className="flex flex-wrap gap-2">
+                      {f.followUpStatus === "pending" && f.investorEmail && (
+                        <button
+                          onClick={() => handleOpenEmailModal(f)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-700/50 hover:bg-violet-700 border border-violet-600/30 rounded text-xs text-violet-200 transition-colors"
+                        >
+                          <Mail className="w-3 h-3" />
+                          Review & Send
+                        </button>
+                      )}
+                      {f.followUpStatus !== "resolved" && (
+                        <button onClick={() => updateStatus.mutate({ followupId: f.id, status: "resolved" })}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700/30 hover:bg-emerald-700/50 border border-emerald-600/30 rounded text-xs text-emerald-300 transition-colors">
+                          <CheckCircle2 className="w-3 h-3" /> Resolve
+                        </button>
+                      )}
+                      {!f.crmContactId ? (
+                        <button onClick={() => syncCRM.mutate({ followupId: f.id })}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded text-xs text-slate-300 transition-colors">
+                          <ExternalLink className="w-3 h-3" /> Sync to CRM
+                        </button>
+                      ) : (
+                        <span className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-xs text-emerald-400">
+                          <CheckCircle className="w-3 h-3" /> CRM Synced
+                        </span>
+                      )}
+                    </div>
+                    
+                    <button 
+                      onClick={() => { setEditingId(isEditing ? null : f.id); setEditedTemplate(f.emailTemplate ?? ""); }}
+                      className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      {isEditing ? "Close Editor" : "Edit Template"}
+                    </button>
+                  </div>
+
+                  {isEditing && (
+                    <div className="space-y-2 mt-3 p-3 bg-slate-900/40 rounded border border-slate-700/50 animate-in fade-in slide-in-from-top-2">
+                      <textarea
+                        value={editedTemplate}
+                        onChange={(e) => setEditedTemplate(e.target.value)}
+                        rows={8}
+                        className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-violet-500"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button 
+                          onClick={() => setEditingId(null)}
+                          className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-xs text-white"
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          onClick={() => saveTemplate.mutate({ followupId: f.id, template: editedTemplate })}
+                          disabled={saveTemplate.isPending}
+                          className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 rounded text-xs text-white font-medium transition-colors flex items-center gap-2"
+                        >
+                          {saveTemplate.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                          Save Changes
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Send Email Modal */}
+      <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-200 sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Mail className="w-5 h-5 text-violet-400" />
+              Follow-Up Email
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label className="text-right text-xs text-slate-400">Recipient</label>
+              <div className="col-span-3 text-sm font-medium text-white bg-slate-800/50 px-3 py-2 rounded border border-slate-700">
+                {selectedFollowup?.investorName} &lt;{selectedFollowup?.investorEmail}&gt;
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-xs text-slate-400">Email Body</label>
+              <Textarea
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                className="min-h-[300px] bg-slate-800 border-slate-700 text-slate-200 font-mono text-xs focus:ring-violet-500"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEmailModalOpen(false)} className="text-slate-400 hover:text-white hover:bg-slate-800">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSendEmail} 
+              disabled={sendingId === selectedFollowup?.id}
+              className="bg-violet-600 hover:bg-violet-500 text-white gap-2"
+            >
+              {sendingId === selectedFollowup?.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Send Follow-Up
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

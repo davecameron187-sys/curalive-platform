@@ -58,12 +58,15 @@ Key variables needed:
 - AI Features Status overview of all intelligence capabilities (`/ai-features`)
 - WebRTC webphone with Twilio/Telnyx integration
 - Multi-language translation (8 languages)
-- **Post-Event AI Report** — comprehensive AI intelligence report per event (`/post-event/:eventId`)
-- **Complete AI Transcription** — Forge AI live + OpenAI Whisper post-event; `TranscriptViewer` component
-- **Live Polling & Audience Interaction** — real-time polls with Ably; `PollWidget` (attendee) + `PollManager` (moderator)
-- **Event Scheduling & Calendar** — scheduler form, month/list calendar view, templates, resource allocation (`/events/schedule`, `/events/calendar`)
-- **Attendee Mobile Experience** — mobile-first swipeable room with video/transcript/Q&A/polls tabs (`/m/:eventId`)
-- **White-Label Client Portal** — multi-tenant branded event portals; admin management (`/portal/:clientSlug`, `/admin/clients`)
+- **Post-Event AI Report** — 8-tab AI report: Executive Summary, Key Moments timeline, Sentiment chart, Q&A Log, Engagement Metrics, Compliance Flags, Transcript, Replay (`/post-event/:eventId`)
+- **Real-Time Investor Sentiment Dashboard** — SVG gauge, Ably live updates, spike alerts, per-speaker breakdown (`/operator/:eventId/sentiment`)
+- **Automated Investor Follow-Up Workflow** — Forge AI extracts commitments from transcripts, email + CRM sync (`/post-event/:eventId/followups`)
+- **Compliance Audit Trail** — AI statement flagging, review/approve/reject workflow, certificate generation, cross-event audit log (`/compliance/audit-log`)
+- **Complete AI Transcription** — `TranscriptViewer` with 12-language support, RTL, search, SRT/VTT/JSON export (`/post-event/:id/transcript`)
+- **White-Label Client Portal** — multi-tenant branded portals with CSS var theme engine; admin management (`/portal/:clientSlug`, `/admin/clients`)
+- **Attendee Mobile Experience** — 5-panel swipeable room (Video/Transcript/Q&A/Polls/Info), push notifications (`/m/:eventId`)
+- **Live Polling & Audience Interaction** — 4 poll types, `LivePoll` + `PollManager` + `PollResults`, real-time Ably vote broadcasting
+- **Event Scheduling & Calendar** — 6-step wizard with template/platform/feature/operator selection; 3-view calendar (month/week/day) (`/events/schedule`, `/events/calendar`)
 - Recall.ai integration for Zoom/Teams/Webex bots
 - Billing and PDF generation
 
@@ -114,6 +117,7 @@ The OCC is a world-class conference control centre built to the technical brief.
 - **NEVER use `pnpm db:push`** — fails with "table already exists" on training_call_logs. Use `pnpm exec tsx scripts/create-missing-tables.ts` or direct SQL with `CREATE TABLE IF NOT EXISTS` for new tables
 - **New tables (from 6 Manus specs)**: `post_event_reports`, `transcription_jobs`, `polls`, `poll_options`, `poll_votes`, `event_schedules`, `operator_availability`, `resource_allocations`, `event_templates`, `clients`, `client_portals`
 - **AI/transcript tables (14 new)**: `ai_generated_content`, `occ_transcription_segments`, `occ_live_rolling_summaries`, `qa_auto_triage_results`, `speaking_pace_analysis`, `toxicity_filter_results`, `transcript_edits`, `transcript_versions`, `transcript_edit_audit_log`, `event_brief_results`, `content_engagement_events`, `content_performance_metrics`, `content_type_performance`, `event_performance_summary`
+- **Spec feature tables (5 new, March 2026)**: `report_key_moments`, `compliance_certificates`, `push_subscriptions`, `white_label_clients`, `client_event_assignments`
 
 ## Auth
 

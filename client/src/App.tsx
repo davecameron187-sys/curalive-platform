@@ -80,6 +80,8 @@ import ModeratorQAConsole from "./pages/ModeratorQAConsole";
 import RedactionWorkflow from "./pages/RedactionWorkflow";
 import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
 import TranscriptEditor from "./pages/TranscriptEditor";
+import TranscriptPage from "./pages/TranscriptPage";
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -145,6 +147,7 @@ function Router() {
       <Route path="/events/calendar" component={EventCalendar} />
       <Route path="/m/:eventId" component={AttendeeRoom} />
       <Route path="/portal/:clientSlug" component={ClientPortal} />
+      <Route path="/portal/:clientSlug/event/:id" component={EventRoom} />
       <Route path="/admin/clients" component={AdminClients} />
       <Route path="/post-event/:id/compliance" component={ComplianceReport} />
       <Route path="/post-event/:id/followups" component={InvestorFollowUps} />
@@ -161,6 +164,7 @@ function Router() {
       <Route path="/post-event/:id/redaction" component={RedactionWorkflow} />
       <Route path="/admin/toxicity" component={ToxicityFilterDashboard} />
       <Route path="/transcript/:id/edit" component={TranscriptEditor} />
+      <Route path="/post-event/:id/transcript" component={TranscriptPage} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

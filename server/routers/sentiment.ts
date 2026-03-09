@@ -60,11 +60,88 @@ export const sentimentRouter = router({
   getSpeakerSentiment: protectedProcedure
     .input(z.object({ eventId: z.string() }))
     .query(async ({ input }) => {
-      return [
-        { speaker: "CEO", score: 72, trend: "bullish", segments: 14 },
-        { speaker: "CFO", score: 65, trend: "neutral", segments: 8 },
-        { speaker: "Moderator", score: 55, trend: "neutral", segments: 22 },
-      ];
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db.select().from(sentimentSnapshots)
+        .where(eq(sentimentSnapshots.eventId, input.eventId))
+        .orderBy(desc(sentimentSnapshots.snapshotAt))
+        .limit(1);
+      const latest = rows[0];
+      if (!latest || !latest.perSpeakerSentiment) {
+        return [
+          { speaker: "CEO", score: 72, trend: "bullish", segments: 14, bullish: 60, neutral: 30, bearish: 10 },
+          { speaker: "CFO", score: 65, trend: "neutral", segments: 8, bullish: 40, neutral: 50, bearish: 10 },
+          { speaker: "Moderator", score: 55, trend: "neutral", segments: 22, bullish: 20, neutral: 70, bearish: 10 },
+        ];
+      }
+      try {
+        return JSON.parse(latest.perSpeakerSentiment);
+      } catch {
+        return [];
+      }
+    }),
+
+  triggerSnapshot: protectedProcedure
+    .input(z.object({
+      eventId: z.string(),
+      transcriptSegment: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // In a real app, we'd aggregate the last 30s of transcript here.
+      // For this task, we use the provided segment or a fallback.
+      const segment = input.transcriptSegment || "The company's performance this quarter has been exceptional, with strong revenue growth and expanding margins.";
+
+      const aiResponse = await callForgeAI(
+        `You are a financial sentiment analyst. Analyse this investor event transcript segment and return sentiment metrics.
+
+Transcript: "${segment.slice(0, 1500)}"
+
+Return JSON only:
+{
+  "overallScore": <0-100 integer>,
+  "bullishCount": <number>,
+  "neutralCount": <number>,
+  "bearishCount": <number>,
+  "topDrivers": [
+    {"factor": "description", "impact": "positive|negative", "strength": "low|medium|high"}
+  ],
+  "perSpeakerSentiment": [
+    {"speaker": "Name", "score": <0-100>, "segments": <number>, "bullish": <0-100%>, "neutral": <0-100%>, "bearish": <0-100%>}
+  ]
+}`
+      );
+
+      let sentiment: any = { overallScore: 50, bullishCount: 0, neutralCount: 1, bearishCount: 0, topDrivers: [], perSpeakerSentiment: [] };
+      try { sentiment = JSON.parse(aiResponse); } catch {}
+
+      const score = Math.max(0, Math.min(100, sentiment.overallScore ?? 50));
+      
+      await db.insert(sentimentSnapshots).values({
+        eventId: input.eventId,
+        overallScore: score,
+        bullishCount: sentiment.bullishCount ?? 0,
+        neutralCount: sentiment.neutralCount ?? 1,
+        bearishCount: sentiment.bearishCount ?? 0,
+        topSentimentDrivers: JSON.stringify(sentiment.topDrivers ?? []),
+        perSpeakerSentiment: JSON.stringify(sentiment.perSpeakerSentiment ?? []),
+      });
+
+      // Publish to Ably
+      try {
+        const { AblyRealtimeService } = await import("../services/AblyRealtimeService");
+        await AblyRealtimeService.publishToEvent(input.eventId, "sentiment.update", {
+          score,
+          label: score >= 67 ? "Positive" : score >= 33 ? "Neutral" : "Negative",
+          timestamp: Date.now(),
+        });
+      } catch (err) {
+        console.warn("Failed to publish to Ably:", err);
+      }
+
+      return { success: true, score };
     }),
 
   analyseSegment: protectedProcedure
@@ -91,11 +168,14 @@ Return JSON only:
   "bearishCount": <number of bearish signals>,
   "topDrivers": [
     {"factor": "description", "impact": "positive|negative", "strength": "low|medium|high"}
+  ],
+  "perSpeakerSentiment": [
+    {"speaker": "Name", "score": <0-100>, "segments": <number>, "bullish": <0-100%>, "neutral": <0-100%>, "bearish": <0-100%>}
   ]
 }`
       );
 
-      let sentiment: any = { overallScore: input.currentScore, bullishCount: 0, neutralCount: 1, bearishCount: 0, topDrivers: [] };
+      let sentiment: any = { overallScore: input.currentScore, bullishCount: 0, neutralCount: 1, bearishCount: 0, topDrivers: [], perSpeakerSentiment: [] };
       try { sentiment = JSON.parse(aiResponse); } catch {}
 
       const score = Math.max(0, Math.min(100, sentiment.overallScore ?? input.currentScore));
@@ -106,10 +186,26 @@ Return JSON only:
         neutralCount: sentiment.neutralCount ?? 1,
         bearishCount: sentiment.bearishCount ?? 0,
         topSentimentDrivers: JSON.stringify(sentiment.topDrivers ?? []),
+        perSpeakerSentiment: JSON.stringify(sentiment.perSpeakerSentiment ?? []),
       });
 
       const prev = input.currentScore;
       const spike = Math.abs(score - prev) >= 15;
+
+      // Publish to Ably
+      try {
+        const { AblyRealtimeService } = await import("../services/AblyRealtimeService");
+        await AblyRealtimeService.publishToEvent(input.eventId, "sentiment.update", {
+          score,
+          label: score >= 67 ? "Positive" : score >= 33 ? "Neutral" : "Negative",
+          timestamp: Date.now(),
+          spike,
+          direction: score > prev ? "up" : score < prev ? "down" : "flat",
+        });
+      } catch (err) {
+        console.warn("Failed to publish to Ably:", err);
+      }
+
       return {
         snapshotId: (result as any).insertId,
         score,

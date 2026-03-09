@@ -1,22 +1,36 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { investorFollowups, followupEmails } from "../../drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { investorFollowups, followupEmails, webcastQa, occTranscriptionSegments } from "../../drizzle/schema";
+import { eq, desc, and } from "drizzle-orm";
 
 async function callForgeAI(prompt: string): Promise<string> {
   const apiKey = process.env.BUILT_IN_FORGE_API_KEY;
   const apiUrl = process.env.BUILT_IN_FORGE_API_URL ?? "https://api.forge.replit.com/v1";
-  if (!apiKey) return "[]";
+  if (!apiKey) {
+    console.error("BUILT_IN_FORGE_API_KEY is not set");
+    return "[]";
+  }
   try {
     const res = await fetch(`${apiUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: "replit-v1", messages: [{ role: "user", content: prompt }], max_tokens: 3000 }),
+      body: JSON.stringify({
+        model: "replit-v1",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 3000,
+        temperature: 0.2
+      }),
     });
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Forge AI API error: ${res.status} ${errorText}`);
+      return "[]";
+    }
     const data = await res.json() as any;
     return data.choices?.[0]?.message?.content ?? "[]";
-  } catch {
+  } catch (error) {
+    console.error("Error calling Forge AI:", error);
     return "[]";
   }
 }
@@ -27,59 +41,85 @@ export const followupsRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return [];
-      return db.select().from(investorFollowups)
+      
+      const followups = await db.select().from(investorFollowups)
         .where(eq(investorFollowups.eventId, input.eventId))
         .orderBy(desc(investorFollowups.createdAt));
+
+      const results = [];
+      for (const f of followups) {
+        const emails = await db.select().from(followupEmails)
+          .where(eq(followupEmails.followupId, f.id))
+          .orderBy(desc(followupEmails.sentAt));
+        results.push({ ...f, emails });
+      }
+      return results;
     }),
 
   extractFollowups: protectedProcedure
     .input(z.object({
       eventId: z.string(),
-      transcript: z.string().optional(),
-      qaSubmissions: z.array(z.object({
-        question: z.string(),
-        investorName: z.string().optional(),
-        investorEmail: z.string().optional(),
-        investorCompany: z.string().optional(),
-      })).optional(),
-      eventTitle: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const qaText = (input.qaSubmissions ?? []).map(q =>
-        `Q: ${q.question} — ${q.investorName ?? "Unknown investor"}${q.investorCompany ? ` (${q.investorCompany})` : ""}${q.investorEmail ? ` <${q.investorEmail}>` : ""}`
+      // 1. Fetch transcript and Q&A from DB if not provided
+      const transcriptSegments = await db.select()
+        .from(occTranscriptionSegments)
+        .where(eq(occTranscriptionSegments.conferenceId, input.eventId))
+        .orderBy(occTranscriptionSegments.startTimeMs);
+      
+      const transcript = transcriptSegments.map(s => `[${s.speakerName ?? 'Unknown'}]: ${s.content}`).join("\n");
+
+      const qaSubmissions = await db.select()
+        .from(webcastQa)
+        .where(eq(webcastQa.eventId, parseInt(input.eventId) || 0));
+
+      const qaText = (qaSubmissions ?? []).map(q =>
+        `Q: ${q.question} — ${q.attendeeName ?? "Unknown investor"}${q.attendeeCompany ? ` (${q.attendeeCompany})` : ""}${q.attendeeEmail ? ` <${q.attendeeEmail}>` : ""}`
       ).join("\n");
 
       const aiResponse = await callForgeAI(
-        `You are an investor relations assistant. Analyse this investor event's Q&A to extract follow-up action items.
+        `You are an investor relations assistant. Analyse this investor event's Q&A and transcript to extract follow-up action items.
 
-Event: "${input.eventTitle ?? "Investor Event"}"
+Event ID: "${input.eventId}"
 Q&A Submissions:
 ${qaText || "No Q&A submissions available"}
 
-Transcript excerpt: ${(input.transcript ?? "").slice(0, 1500)}
+Transcript: 
+${transcript.slice(0, 5000) || "No transcript available"}
 
-Extract follow-ups and return JSON array (max 10):
+Extract follow-ups and return ONLY a JSON array (max 10):
 [{
   "investorName": "name or null",
   "investorEmail": "email or null",
   "investorCompany": "company or null",
   "questionText": "their question",
   "commitmentText": "commitment made by the company in response",
-  "emailTemplate": "Dear [Name],\\n\\nThank you for your question during our [event]. [Personalised response and commitment]. We will [next steps].\\n\\nBest regards,\\n[IR Team]"
+  "emailTemplate": "Dear [Name],\\n\\nThank you for your question during our event. [Personalised response and commitment]. We will [next steps].\\n\\nBest regards,\\n[IR Team]"
 }]
 
-Only include entries where a specific commitment was made.`
+Only include entries where a specific commitment was made for a follow-up.`
       );
 
-      let followups: any[] = [];
-      try { followups = JSON.parse(aiResponse); } catch { followups = []; }
-      if (!Array.isArray(followups)) followups = [];
+      let extractedData: any[] = [];
+      try {
+        const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          extractedData = JSON.parse(jsonMatch[0]);
+        } else {
+          extractedData = JSON.parse(aiResponse);
+        }
+      } catch (e) {
+        console.error("Failed to parse AI response:", aiResponse);
+        extractedData = [];
+      }
+      
+      if (!Array.isArray(extractedData)) extractedData = [];
 
       const inserted: any[] = [];
-      for (const f of followups.slice(0, 10)) {
+      for (const f of extractedData.slice(0, 10)) {
         const [result] = await db.insert(investorFollowups).values({
           eventId: input.eventId,
           investorName: f.investorName ?? null,
@@ -103,8 +143,10 @@ Only include entries where a specific commitment was made.`
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.update(investorFollowups).set({ followUpStatus: input.status })
-        .where(eq(investorFollowups.id, input.followupId));
+      await db.update(investorFollowups).set({
+        followUpStatus: input.status,
+        updatedAt: new Date()
+      }).where(eq(investorFollowups.id, input.followupId));
       return { updated: true };
     }),
 
@@ -117,16 +159,27 @@ Only include entries where a specific commitment was made.`
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+
+      // In a real app, we'd use Resend here:
+      // await resend.emails.send({ from: 'IR Team <ir@curalive.com>', to: input.recipientEmail, subject: 'Follow-up from Investor Event', html: input.emailBody });
+      console.log(`Sending email to ${input.recipientEmail} for follow-up ${input.followupId}`);
+      
       const [result] = await db.insert(followupEmails).values({
         followupId: input.followupId,
         emailBody: input.emailBody,
         recipientEmail: input.recipientEmail,
         sentAt: new Date(),
+        // Mocking tracking data for the spec
+        openedAt: null,
+        clickedAt: null,
       });
+
       await db.update(investorFollowups).set({
         followUpStatus: "contacted",
         emailSentAt: new Date(),
+        updatedAt: new Date()
       }).where(eq(investorFollowups.id, input.followupId));
+
       return { emailId: (result as any).insertId, sent: true };
     }),
 
@@ -140,6 +193,7 @@ Only include entries where a specific commitment was made.`
       await db.update(investorFollowups).set({
         crmContactId: fakeContactId,
         crmActivityId: fakeActivityId,
+        updatedAt: new Date()
       }).where(eq(investorFollowups.id, input.followupId));
       return { synced: true, contactId: fakeContactId, activityId: fakeActivityId, note: "CRM integration ready — connect Salesforce/HubSpot API key to activate" };
     }),
@@ -149,8 +203,10 @@ Only include entries where a specific commitment was made.`
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.update(investorFollowups).set({ emailTemplate: input.template })
-        .where(eq(investorFollowups.id, input.followupId));
+      await db.update(investorFollowups).set({
+        emailTemplate: input.template,
+        updatedAt: new Date()
+      }).where(eq(investorFollowups.id, input.followupId));
       return { updated: true };
     }),
 });

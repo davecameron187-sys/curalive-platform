@@ -31,6 +31,7 @@ import { clientPortalRouter } from "./routers/clientPortal";
 import { complianceRouter } from "./routers/compliance";
 import { followupsRouter } from "./routers/followups";
 import { sentimentRouter } from "./routers/sentiment";
+import { mobileNotificationsRouter } from "./routers/mobileNotifications";
 import { aiDashboardRouter } from "./routers/aiDashboard";
 import { aiFeaturesRouter } from "./routers/aiFeatures";
 import { analyticsRouter } from "./routers/analytics";
@@ -79,6 +80,7 @@ export const appRouter = router({
   compliance: complianceRouter,
   followups: followupsRouter,
   sentiment: sentimentRouter,
+  mobileNotifications: mobileNotificationsRouter,
   aiDashboard: aiDashboardRouter,
   aiFeatures: aiFeaturesRouter,
   analytics: analyticsRouter,
