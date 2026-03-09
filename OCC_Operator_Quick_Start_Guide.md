@@ -1,5 +1,5 @@
-# Chorus.AI OCC — Operator Quick-Start Guide
-**For experienced conference operators transitioning to the Chorus.AI platform**
+# CuraLive OCC — Operator Quick-Start Guide
+**For experienced conference operators transitioning to the CuraLive platform**
 *Version 2.0 · March 2026*
 
 ---
@@ -8,7 +8,7 @@
 
 You already know how to run a conference. This guide is not about that. It is about where to find things in the new console and what is different from the systems you have used before. Read it once, keep it open on a second screen for your first few calls, and you will be comfortable within a session.
 
-**Platform URL:** [https://chorusai-mdu4k2ib.manus.space/occ](https://chorusai-mdu4k2ib.manus.space/occ)
+**Platform URL:** [https://curalive.manus.space/occ](https://curalive.manus.space/occ)
 
 ---
 
@@ -165,12 +165,12 @@ Open Settings from the gear icon in the CCP header.
 
 | Destination | Link |
 |---|---|
-| OCC Dashboard | [https://chorusai-mdu4k2ib.manus.space/occ](https://chorusai-mdu4k2ib.manus.space/occ) |
-| Full Training Guide | [https://chorusai-mdu4k2ib.manus.space/training](https://chorusai-mdu4k2ib.manus.space/training) |
-| Post-Event Reports | [https://chorusai-mdu4k2ib.manus.space/post-event](https://chorusai-mdu4k2ib.manus.space/post-event) |
-| Tech Handover | [https://chorusai-mdu4k2ib.manus.space/tech-handover](https://chorusai-mdu4k2ib.manus.space/tech-handover) |
+| OCC Dashboard | [https://curalive.manus.space/occ](https://curalive.manus.space/occ) |
+| Full Training Guide | [https://curalive.manus.space/training](https://curalive.manus.space/training) |
+| Post-Event Reports | [https://curalive.manus.space/post-event](https://curalive.manus.space/post-event) |
+| Tech Handover | [https://curalive.manus.space/tech-handover](https://curalive.manus.space/tech-handover) |
 
 ---
 
-*Chorus.AI OCC Operator Quick-Start Guide · v2.0 · March 2026*
+*CuraLive OCC Operator Quick-Start Guide · v2.0 · March 2026*
 *For support, contact your platform administrator or refer to the full training guide at the link above.*

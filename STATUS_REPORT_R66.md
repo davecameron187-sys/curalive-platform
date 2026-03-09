@@ -1,4 +1,4 @@
-# Chorus.AI — Platform Status Report
+# CuraLive — Platform Status Report
 ## Round 66 | March 4, 2026
 
 ---

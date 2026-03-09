@@ -135,9 +135,15 @@ async function main() {
     console.log(`\n  Fetching diff...`);
     files = await getChangedFiles(lastPulledSha, tip.sha);
   } else {
+    // First-time pull: compare manus vs main so we only fetch what Manus actually changed,
+    // not the entire repo tree (which is already present in Replit from main).
     console.log(`  Last pulled:  (never — first pull)`);
-    console.log(`\n  Fetching full file list...`);
-    files = await getAllFiles(branch);
+    console.log(`\n  Fetching diff vs main branch...`);
+    const mainRes = await connectors.proxy("github", `/repos/${REPO}/commits?sha=main&per_page=1`, { method: "GET" });
+    const mainCommits = await mainRes.json();
+    const mainSha = mainCommits[0]?.sha;
+    if (!mainSha) throw new Error("Could not get main branch HEAD to compute diff");
+    files = await getChangedFiles(mainSha, tip.sha);
   }
 
   const filteredFiles = files.filter(f => !shouldIgnore(f.filename));
