@@ -14,7 +14,7 @@ export const schedulingRouter = router({
       platform: z.string().default("pstn"),
       operatorId: z.string().optional(),
       templateId: z.string().optional(),
-      features: z.record(z.boolean()).optional(),
+      features: z.record(z.string(), z.boolean()).optional(),
       setupMinutes: z.number().default(30),
       teardownMinutes: z.number().default(15),
       recurrenceRule: z.string().optional(),
