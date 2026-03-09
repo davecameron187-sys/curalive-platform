@@ -1358,11 +1358,6 @@ export default function OCC() {
             <span className="font-bold text-white text-xs tracking-wide">CuraLive<span className="text-blue-400">.OCC</span></span>
             <span className="text-[9px] text-slate-700 font-mono uppercase tracking-widest hidden lg:block">v1.0</span>
           </div>
-          <div className="hidden md:flex items-center border-l border-slate-700/60 pl-3 gap-0 text-[11px]">
-            {["File", "Conference", "Participants", "Utility", "Setup", "Help"].map(m => (
-              <button key={m} className="px-2.5 py-1 text-slate-500 hover:text-slate-200 hover:bg-slate-700/40 rounded transition-colors">{m}</button>
-            ))}
-          </div>
         </div>
 
         {/* Centre: Window launcher icons */}
@@ -2551,13 +2546,11 @@ export default function OCC() {
                     {/* Action buttons */}
                     <div className="flex flex-col gap-px flex-1 overflow-y-auto p-1.5">
                       {([
-                        { label: "Call",       color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("connection"),                                                                 checkbox: null },
-                        { label: "Op Join",    color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("monitoring"),                                                                 checkbox: null },
+                        { label: "Dial Out",   color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("connection"),                                                                 checkbox: null },
+                        { label: "Monitor",    color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("monitoring"),                                                                 checkbox: null },
                         { label: "Join",       color: "bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300",  action: () => { if (activeParticipantId) doParticipantAction("connected", [activeParticipantId]); },     checkbox: null },
                         { label: "Hold",       color: "bg-amber-900/50 hover:bg-amber-800 text-amber-300",        action: () => { if (activeParticipantId) doParticipantAction("parked",   [activeParticipantId]); },     checkbox: null },
-                        { label: "TL/Mon",     color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("monitoring"),                                                                 checkbox: null },
                         { label: "Disconnect", color: "bg-red-900/60 hover:bg-red-800 text-red-300",              action: () => { if (activeParticipantId) doParticipantAction("dropped",  [activeParticipantId]); },     checkbox: null },
-                        { label: "Voting",     color: "bg-slate-700/80 hover:bg-slate-600 text-slate-100",        action: () => setFeatureTab("qa_queue"),                                                                   checkbox: null },
                         { label: "Q&A",        color: "bg-violet-900/60 hover:bg-violet-800 text-violet-300",     action: () => setFeatureTab("qa_queue"),                                                                   checkbox: null },
                       ] as const).map(({ label, color, action, checkbox }) => (
                         <div key={label} className="flex items-center gap-1">
