@@ -5,7 +5,7 @@
 **Feature**: Complete AI Transcription Pipeline  
 **Route**: No new route — enhances existing transcript views across `/event/:eventId`, `/moderator/:eventId`, `/presenter/:eventId`, and `/post-event/:eventId`  
 **Priority**: High  
-**Status**: spec-ready  
+**Status**: implemented  
 **Dependencies**: Recall.ai Bot Recording (implemented), Mux Live Streaming (implemented), Ably Real-Time Channels (implemented)  
 
 **What to build**: Complete the AI transcription pipeline by integrating OpenAI Whisper for high-accuracy post-event transcription alongside the existing Forge AI live transcription. The system should support dual-mode transcription: Forge AI for real-time display during live events (already partially implemented), and Whisper for high-accuracy post-event processing. Add speaker diarization, language detection, multi-language transcription (12 languages including Arabic RTL), and transcript editing/correction tools.

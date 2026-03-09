@@ -1,56 +1,65 @@
-# Spec Implementation Status
+# CuraLive Feature Status Tracker
 
-Last updated: 2026-03-09
+This file is the single source of truth for what has been specced by Manus and what has been implemented by Replit Agent.
 
-## Batch 1 — Original 6 Specs
+**Manus**: When you complete a spec, add a row below with status `spec-ready`.  
+**Replit Agent**: When implementation is done, update status to `implemented`.
 
-| Spec | Status | Route | Files |
+---
+
+## Feature Status
+
+| Feature | Spec File | Status | Notes |
 |---|---|---|---|
-| Post-Event AI Report | ✅ implemented | `/post-event/:eventId` | PostEventReport.tsx, postEventReport.ts |
-| Complete AI Transcription | ✅ implemented | enhances existing routes | TranscriptViewer.tsx, transcription.ts |
-| White-Label Client Portal | ✅ implemented | `/portal/:clientSlug`, `/admin/clients` | ClientPortal.tsx, AdminClients.tsx, clientPortal.ts |
-| Attendee Mobile Experience | ✅ implemented | `/m/:eventId` | AttendeeRoom.tsx |
-| Live Polling & Audience Interaction | ✅ implemented | embedded in event room | PollWidget.tsx, PollManager.tsx, polls.ts |
-| Event Scheduling & Calendar | ✅ implemented | `/events/schedule`, `/events/calendar` | EventScheduler.tsx, EventCalendar.tsx, scheduling.ts |
+| OCC Operator Console | — | implemented | `/occ` — ~5000 line production console |
+| Training Mode Console | — | implemented | `/training-mode` — isolated training env |
+| Operator Analytics | — | implemented | `/operator/analytics` |
+| Development Dashboard | — | implemented | `/dev-dashboard` — 7-tab internal tool |
+| AI Features Status | — | implemented | `/ai-features` |
+| Live Webcasting | — | implemented | `/live-video/webcast/*` |
+| Roadshow Suite | — | implemented | `/live-video/roadshow/*` |
+| Enterprise Billing | — | implemented | Quotes, invoices, PDF export |
+| Recall.ai Bot Recording | — | implemented | Zoom/Teams/Webex bots |
+| Mux Live Streaming | — | implemented | RTMP/HLS |
+| Ably Real-Time Channels | — | implemented | All OCC channels live |
+| Twilio/Telnyx Webphone | — | implemented | Audio bridge |
+| Compliance Dashboard | — | implemented | `/compliance/dashboard` |
+| Investor Follow-Up Workflow | — | implemented | `/post-event/:id` tab |
+| Sentiment Analysis | — | implemented | Real-time + historical |
+| Post-Event AI Report | post-event-ai-report.md | implemented | `/post-event/:eventId` — 8-tab report with AI generation, key moments timeline, PDF export |
+| Real-Time Investor Sentiment Dashboard | realtime-investor-sentiment-dashboard.md | implemented | `/operator/:eventId/sentiment` — live SVG gauge, Ably subscription, spike alerts |
+| Automated Investor Follow-Up Workflow | automated-investor-followup-workflow.md | implemented | `/post-event/:eventId/followups` — LLM extraction, email templates, CRM sync |
+| Compliance Audit Trail & Regulatory Reporting | compliance-audit-trail-regulatory-reporting.md | implemented | `/post-event/:eventId/compliance`, `/compliance/audit-log` — review workflow, certificate generation |
+| Complete AI Transcription | complete-ai-transcription.md | implemented | `TranscriptViewer` component, `/post-event/:id/transcript`, 12-language + RTL, SRT/VTT/JSON export |
+| White-Label Client Portal | white-label-client-portal.md | implemented | `/portal/:clientSlug`, `/admin/clients` — CSS var theme engine, event assignment, admin panel |
+| Attendee Mobile Experience | attendee-mobile-experience.md | implemented | `/m/:eventId` — swipeable 5-panel layout, push notifications, offline resilience |
+| Live Polling & Audience Interaction | live-polling-audience-interaction.md | implemented | `LivePoll`, `PollManager`, `PollResults` — 4 poll types, Ably real-time vote broadcasting |
+| Event Scheduling & Calendar | event-scheduling-calendar.md | implemented | `/events/schedule` 6-step wizard + `/events/calendar` month/week/day views, conflict detection |
 
-## Batch 2 — 3 New Specs
-
-| Spec | Status | Route | Files |
-|---|---|---|---|
-| Compliance Audit Trail & Regulatory Reporting | ✅ implemented | `/post-event/:id/compliance`, `/compliance/audit-log` | ComplianceReport.tsx, ComplianceAuditLog.tsx, compliance.ts |
-| Automated Investor Follow-Up Workflow | ✅ implemented | `/post-event/:id/followups` | InvestorFollowUps.tsx, followups.ts |
-| Real-Time Investor Sentiment Dashboard | ✅ implemented | `/operator/:eventId/sentiment` | SentimentDashboard.tsx, sentiment.ts |
-
-## Batch 3 — Development Dashboard
-
-| Spec | Status | Route | Files |
-|---|---|---|---|
-| Development Dashboard | ✅ implemented | `/dev-dashboard` | DevelopmentDashboard.tsx (7 tabs: Dashboard, Features, Dev Tools, Platform Testing, Operator Console, API Integration, Webhook Testing) |
-
-## New DB Tables (All Batches)
-
-| Table | Feature |
-|---|---|
-| post_event_reports | Post-Event AI Report |
-| transcription_jobs | AI Transcription Pipeline |
-| polls | Live Polling |
-| poll_options | Live Polling |
-| poll_votes | Live Polling |
-| event_schedules | Event Scheduling |
-| operator_availability | Event Scheduling |
-| resource_allocations | Event Scheduling |
-| event_templates | Event Scheduling |
-| clients | White-Label Portals |
-| client_portals | White-Label Portals |
-| compliance_flags | Compliance Audit Trail |
-| compliance_audit_log | Compliance Audit Trail |
-| investor_followups | Investor Follow-Up Workflow |
-| followup_emails | Investor Follow-Up Workflow |
-| sentiment_snapshots | Real-Time Sentiment Dashboard |
+---
 
 ## Summary
 
-- **Total Specs Implemented:** 10 (6 + 3 + 1)
-- **Total DB Tables Added:** 16
-- **Total tRPC Routers Added:** 8
-- **All specs on `manus/specs` branch marked as implemented**
+- **Total Features**: 25
+- **Implemented**: 25 (100%)
+- **In Progress**: 0
+- **Planned**: 0
+
+All 9 specification-ready features fully implemented on March 9, 2026.
+
+---
+
+## How to Add a New Spec (Manus)
+
+1. Write your spec as `docs/specs/your-feature-name.md`
+2. Add a row to this table with status `spec-ready`
+3. Commit to branch `manus/specs` (not `main`)
+4. Notify project owner — they will relay to Replit Agent
+
+## How to Implement a Spec (Replit Agent)
+
+1. At session start, run: `node scripts/github-sync-check.mjs`
+2. Read any `spec-ready` files from `docs/specs/`
+3. Implement the feature in Replit
+4. Update this table to `implemented`
+5. Push to GitHub: `node scripts/github-push-manual.mjs`

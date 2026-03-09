@@ -5,7 +5,7 @@
 **Feature**: Attendee Mobile Experience  
 **Route**: `/m/:eventId` (mobile-optimized event room)  
 **Priority**: Medium  
-**Status**: spec-ready  
+**Status**: implemented  
 **Dependencies**: Ably Real-Time Channels (implemented), Mux Live Streaming (implemented), Twilio/Telnyx Webphone (implemented)  
 
 **What to build**: A mobile-first event experience optimized for attendees joining from smartphones and tablets. The current event room is desktop-optimized and difficult to use on small screens. This feature creates a dedicated mobile layout with swipeable panels for video, transcript, Q&A, and polls. It includes push notification support for event reminders and Q&A alerts, a mobile-optimized Q&A submission flow, and PSTN dial-in integration for audio-only participants.
