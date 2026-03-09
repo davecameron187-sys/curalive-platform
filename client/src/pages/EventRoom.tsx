@@ -109,6 +109,9 @@ function getStaticTranslation(seg: { id: string; text: string }, langCode: strin
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+import LivePoll from "@/components/LivePoll";
+import PollResults from "@/components/PollResults";
+
 function PlatformBadge({ platform }: { platform: string }) {
   const colors: Record<string, string> = { "Zoom": "bg-blue-600", "Microsoft Teams": "bg-purple-600", "Webex": "bg-slate-600" };
   return <span className={`text-[10px] font-bold text-white px-2 py-1 rounded ${colors[platform] ?? "bg-slate-600"}`}>{platform}</span>;
@@ -449,6 +452,7 @@ function EventRoomInner({ eventId }: { eventId: string }) {
   const [activePollOverlay, setActivePollOverlay] = useState<typeof livePolls[0] | null>(null);
   const [votedPolls, setVotedPolls] = useState<Set<string>>(new Set());
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [activePollResultsId, setActivePollResultsId] = useState<string | null>(null);
   const prevPollCount = useRef(0);
 
   // Auto-show overlay when a new live poll arrives
@@ -1253,53 +1257,48 @@ function EventRoomInner({ eventId }: { eventId: string }) {
 
             {/* ── Polls Tab ── */}
             {activeTab === "polls" && (
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {polls.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
-                    <BarChart3 className="w-8 h-8 mb-2 opacity-30" />
-                    No polls yet. The moderator will push one soon.
+              <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                {livePolls.length > 0 ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BarChart3 className="w-5 h-5 text-primary" />
+                      <h2 className="text-lg font-bold">Active Polls</h2>
+                    </div>
+                    {livePolls.map((poll) => (
+                      <div key={poll.id} className="bg-card border border-primary/20 rounded-2xl p-6 shadow-lg">
+                        <LivePoll
+                          poll={poll}
+                          onVote={(pollId, optionId) => handlePollVote(pollId, optionId)}
+                          votedOptionId={votedPolls.has(poll.id) ? "voted" : null}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center opacity-40">
+                      <BarChart3 className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">No active polls</h3>
+                      <p className="text-sm text-muted-foreground max-w-[240px] mx-auto mt-1">Polls will appear here when launched by the moderator.</p>
+                    </div>
                   </div>
                 )}
-                {polls.map((poll) => {
-                  const totalVotes = poll.options.reduce((a, b) => a + b.votes, 0);
-                  return (
-                    <div key={poll.id} className="bg-card border border-border rounded-xl p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="font-semibold text-sm">{poll.question}</p>
-                        <span className={`text-xs font-semibold ${poll.status === "live" ? "text-emerald-400" : "text-muted-foreground"}`}>
-                          {poll.status === "live" ? "● Live" : "Closed"} · {totalVotes} votes
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        {poll.options.map((opt, i) => {
-                          const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
-                          return (
-                            <div key={opt.id}>
-                              <div className="flex justify-between text-xs mb-1" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                <span>{opt.label}</span>
-                                <span className="font-semibold">{pct}%</span>
-                              </div>
-                              <div className="h-2 bg-border rounded-full overflow-hidden">
-                                <div className="h-full rounded-full sentiment-bar-fill" style={{ width: `${pct}%`, backgroundColor: POLL_COLORS[i % POLL_COLORS.length] }} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {poll.status === "live" && (
-                        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
-                          {poll.options.map((opt, i) => (
-                            <button key={opt.id} onClick={() => handlePollVote(poll.id, opt.id)}
-                              className="text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
-                              style={{ fontFamily: "'Inter', sans-serif" }}>
-                              Vote: {opt.label}
-                            </button>
-                          ))}
+
+                {polls.filter(p => p.status === "closed").length > 0 && (
+                  <div className="space-y-4 pt-8 border-t border-border">
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Recent Poll Results</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {polls.filter(p => p.status === "closed").map(poll => (
+                        <div key={poll.id} className="bg-card border border-border rounded-xl p-4">
+                          <h3 className="text-sm font-semibold leading-snug mb-4">{poll.question}</h3>
+                          <PollResults options={poll.options} totalVotes={poll.options.reduce((a, b) => a + b.votes, 0)} />
                         </div>
-                      )}
+                      ))}
                     </div>
-                  );
-                })}
+                  </div>
+                )}
               </div>
             )}
 
