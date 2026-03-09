@@ -58,7 +58,12 @@ Key variables needed:
 - AI Features Status overview of all intelligence capabilities (`/ai-features`)
 - WebRTC webphone with Twilio/Telnyx integration
 - Multi-language translation (8 languages)
-- AI-powered post-event reports
+- **Post-Event AI Report** — comprehensive AI intelligence report per event (`/post-event/:eventId`)
+- **Complete AI Transcription** — Forge AI live + OpenAI Whisper post-event; `TranscriptViewer` component
+- **Live Polling & Audience Interaction** — real-time polls with Ably; `PollWidget` (attendee) + `PollManager` (moderator)
+- **Event Scheduling & Calendar** — scheduler form, month/list calendar view, templates, resource allocation (`/events/schedule`, `/events/calendar`)
+- **Attendee Mobile Experience** — mobile-first swipeable room with video/transcript/Q&A/polls tabs (`/m/:eventId`)
+- **White-Label Client Portal** — multi-tenant branded event portals; admin management (`/portal/:clientSlug`, `/admin/clients`)
 - Recall.ai integration for Zoom/Teams/Webex bots
 - Billing and PDF generation
 
@@ -107,6 +112,7 @@ The OCC is a world-class conference control centre built to the technical brief.
 - Demo data seeded: conference CC-9921 (Q4 2025 Earnings Call) with 10 participants
 - All training tables created and verified
 - `pnpm db:push` runs `drizzle-kit generate && drizzle-kit migrate` if schema changes are needed
+- **New tables (from 6 Manus specs)**: `post_event_reports`, `transcription_jobs`, `polls`, `poll_options`, `poll_votes`, `event_schedules`, `operator_availability`, `resource_allocations`, `event_templates`, `clients`, `client_portals` — all created directly via SQL (migration system in mixed state; use direct SQL CREATE TABLE IF NOT EXISTS for new tables)
 
 ## Auth
 

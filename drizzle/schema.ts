@@ -1422,3 +1422,203 @@ export const trainingPerformanceMetrics = mysqlTable("training_performance_metri
 
 export type TrainingPerformanceMetric = typeof trainingPerformanceMetrics.$inferSelect;
 export type InsertTrainingPerformanceMetric = typeof trainingPerformanceMetrics.$inferInsert;
+
+// ─── Post-Event AI Report ─────────────────────────────────────────────────────
+
+export const postEventReports = mysqlTable("post_event_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  generatedBy: int("generated_by").notNull(),
+  reportType: mysqlEnum("report_type", ["full", "executive", "compliance"]).default("full").notNull(),
+  status: mysqlEnum("status", ["generating", "completed", "failed"]).default("generating").notNull(),
+  aiSummary: longtext("ai_summary"),
+  keyMoments: longtext("key_moments"),
+  sentimentOverview: longtext("sentiment_overview"),
+  qaSummary: longtext("qa_summary"),
+  engagementMetrics: longtext("engagement_metrics"),
+  complianceFlags: longtext("compliance_flags"),
+  fullTranscriptUrl: text("full_transcript_url"),
+  pdfUrl: text("pdf_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PostEventReport = typeof postEventReports.$inferSelect;
+export type InsertPostEventReport = typeof postEventReports.$inferInsert;
+
+// ─── Transcription Jobs ───────────────────────────────────────────────────────
+
+export const transcriptionJobs = mysqlTable("transcription_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  source: mysqlEnum("source", ["forge_ai", "whisper", "manual"]).default("forge_ai").notNull(),
+  status: mysqlEnum("status", ["queued", "processing", "completed", "failed"]).default("queued").notNull(),
+  languageDetected: varchar("language_detected", { length: 16 }),
+  languagesRequested: text("languages_requested"),
+  audioUrl: text("audio_url"),
+  durationSeconds: int("duration_seconds"),
+  wordCount: int("word_count"),
+  confidenceScore: varchar("confidence_score", { length: 8 }),
+  speakerCount: int("speaker_count"),
+  errorMessage: text("error_message"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TranscriptionJob = typeof transcriptionJobs.$inferSelect;
+export type InsertTranscriptionJob = typeof transcriptionJobs.$inferInsert;
+
+// ─── Live Polling ─────────────────────────────────────────────────────────────
+
+export const polls = mysqlTable("polls", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  createdBy: int("created_by").notNull(),
+  question: text("question").notNull(),
+  pollType: mysqlEnum("poll_type", ["multiple_choice", "rating_scale", "word_cloud", "yes_no"]).default("multiple_choice").notNull(),
+  status: mysqlEnum("status", ["draft", "active", "closed", "archived"]).default("draft").notNull(),
+  allowMultiple: boolean("allow_multiple").default(false).notNull(),
+  isAnonymous: boolean("is_anonymous").default(true).notNull(),
+  scheduledAt: timestamp("scheduled_at"),
+  openedAt: timestamp("opened_at"),
+  closedAt: timestamp("closed_at"),
+  displayOrder: int("display_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Poll = typeof polls.$inferSelect;
+export type InsertPoll = typeof polls.$inferInsert;
+
+export const pollOptions = mysqlTable("poll_options", {
+  id: int("id").autoincrement().primaryKey(),
+  pollId: int("poll_id").notNull(),
+  optionText: varchar("option_text", { length: 512 }).notNull(),
+  optionOrder: int("option_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type PollOption = typeof pollOptions.$inferSelect;
+export type InsertPollOption = typeof pollOptions.$inferInsert;
+
+export const pollVotes = mysqlTable("poll_votes", {
+  id: int("id").autoincrement().primaryKey(),
+  pollId: int("poll_id").notNull(),
+  optionId: int("option_id"),
+  voterId: int("voter_id"),
+  voterSession: varchar("voter_session", { length: 128 }),
+  textResponse: text("text_response"),
+  ratingValue: int("rating_value"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type PollVote = typeof pollVotes.$inferSelect;
+export type InsertPollVote = typeof pollVotes.$inferInsert;
+
+// ─── Event Scheduling & Calendar ─────────────────────────────────────────────
+
+export const eventSchedules = mysqlTable("event_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  scheduledStart: timestamp("scheduled_start").notNull(),
+  scheduledEnd: timestamp("scheduled_end").notNull(),
+  timezone: varchar("timezone", { length: 64 }).default("Africa/Johannesburg").notNull(),
+  recurrenceRule: varchar("recurrence_rule", { length: 512 }),
+  parentScheduleId: int("parent_schedule_id"),
+  setupMinutes: int("setup_minutes").default(30).notNull(),
+  teardownMinutes: int("teardown_minutes").default(15).notNull(),
+  status: mysqlEnum("status", ["tentative", "confirmed", "cancelled"]).default("tentative").notNull(),
+  createdBy: int("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EventSchedule = typeof eventSchedules.$inferSelect;
+export type InsertEventSchedule = typeof eventSchedules.$inferInsert;
+
+export const operatorAvailability = mysqlTable("operator_availability", {
+  id: int("id").autoincrement().primaryKey(),
+  operatorId: int("operator_id").notNull(),
+  dayOfWeek: int("day_of_week").notNull(),
+  startTime: varchar("start_time", { length: 8 }).notNull(),
+  endTime: varchar("end_time", { length: 8 }).notNull(),
+  isAvailable: boolean("is_available").default(true).notNull(),
+  overrideDate: varchar("override_date", { length: 16 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OperatorAvailability = typeof operatorAvailability.$inferSelect;
+export type InsertOperatorAvailability = typeof operatorAvailability.$inferInsert;
+
+export const resourceAllocations = mysqlTable("resource_allocations", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  resourceType: mysqlEnum("resource_type", ["dial_in_number", "rtmp_key", "mux_stream", "recall_bot", "ably_channel"]).notNull(),
+  resourceIdentifier: varchar("resource_identifier", { length: 256 }).notNull(),
+  allocatedAt: timestamp("allocated_at").defaultNow().notNull(),
+  releasedAt: timestamp("released_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ResourceAllocation = typeof resourceAllocations.$inferSelect;
+export type InsertResourceAllocation = typeof resourceAllocations.$inferInsert;
+
+export const eventTemplates = mysqlTable("event_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  templateName: varchar("template_name", { length: 255 }).notNull(),
+  createdBy: int("created_by").notNull(),
+  eventType: mysqlEnum("event_type", ["earnings_call", "investor_day", "roadshow", "webcast", "audio_bridge", "board_briefing"]).notNull(),
+  defaultDurationMinutes: int("default_duration_minutes").default(60).notNull(),
+  defaultSetupMinutes: int("default_setup_minutes").default(30).notNull(),
+  defaultFeatures: text("default_features"),
+  defaultPlatform: mysqlEnum("default_platform", ["zoom", "teams", "webex", "rtmp", "pstn"]).default("pstn").notNull(),
+  dialInCountries: text("dial_in_countries"),
+  maxAttendees: int("max_attendees").default(500).notNull(),
+  requiresRegistration: boolean("requires_registration").default(true).notNull(),
+  complianceEnabled: boolean("compliance_enabled").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EventTemplate = typeof eventTemplates.$inferSelect;
+export type InsertEventTemplate = typeof eventTemplates.$inferInsert;
+
+// ─── White-Label Client Portal ────────────────────────────────────────────────
+
+export const clients = mysqlTable("clients", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 64 }).notNull().unique(),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  logoUrl: text("logo_url"),
+  primaryColor: varchar("primary_color", { length: 16 }).default("#6c3fc5").notNull(),
+  secondaryColor: varchar("secondary_color", { length: 16 }).default("#1a1a2e").notNull(),
+  customDomain: varchar("custom_domain", { length: 255 }),
+  contactEmail: varchar("contact_email", { length: 320 }),
+  billingTier: mysqlEnum("billing_tier", ["starter", "professional", "enterprise"]).default("professional").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Client = typeof clients.$inferSelect;
+export type InsertClient = typeof clients.$inferInsert;
+
+export const clientPortals = mysqlTable("client_portals", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  isPublished: boolean("is_published").default(false).notNull(),
+  customTitle: varchar("custom_title", { length: 512 }),
+  customDescription: text("custom_description"),
+  passwordProtected: boolean("password_protected").default(false).notNull(),
+  accessCode: varchar("access_code", { length: 64 }),
+  viewCount: int("view_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ClientPortal = typeof clientPortals.$inferSelect;
+export type InsertClientPortal = typeof clientPortals.$inferInsert;

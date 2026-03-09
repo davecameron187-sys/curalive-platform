@@ -218,6 +218,13 @@
       "when": 1772998318992,
       "tag": "0030_light_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "5",
+      "when": 1773027470365,
+      "tag": "0031_silent_gauntlet",
+      "breakpoints": true
     }
   ]
 }

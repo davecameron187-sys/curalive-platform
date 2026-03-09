@@ -60,6 +60,12 @@ import TrainingModeConsole from "./pages/TrainingModeConsole";
 import OperatorAnalytics from "./pages/OperatorAnalytics";
 import DevelopmentDashboard from "./pages/DevelopmentDashboard";
 import AIFeaturesStatus from "./pages/AIFeaturesStatus";
+import PostEventReport from "./pages/PostEventReport";
+import EventScheduler from "./pages/EventScheduler";
+import EventCalendar from "./pages/EventCalendar";
+import AttendeeRoom from "./pages/AttendeeRoom";
+import ClientPortal from "./pages/ClientPortal";
+import AdminClients from "./pages/AdminClients";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -120,6 +126,12 @@ function Router() {
       <Route path="/training-mode" component={TrainingModeConsole} />
       <Route path="/dev-dashboard" component={DevelopmentDashboard} />
       <Route path="/ai-features" component={AIFeaturesStatus} />
+      <Route path="/post-event/:id" component={PostEventReport} />
+      <Route path="/events/schedule" component={EventScheduler} />
+      <Route path="/events/calendar" component={EventCalendar} />
+      <Route path="/m/:eventId" component={AttendeeRoom} />
+      <Route path="/portal/:clientSlug" component={ClientPortal} />
+      <Route path="/admin/clients" component={AdminClients} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
