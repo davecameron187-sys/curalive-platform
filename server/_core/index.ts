@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
@@ -38,6 +39,30 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  const isProd = process.env.NODE_ENV === "production";
+
+  const apiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: isProd ? 120 : 500,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests, please slow down." },
+    skip: (req) => req.path.startsWith("/api/ably-token"),
+  });
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isProd ? 20 : 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many auth attempts, please try again later." },
+  });
+
+  app.use("/api/trpc", apiLimiter);
+  app.use("/api/oauth", authLimiter);
+  app.use("/api/auth", authLimiter);
+
   // Twilio TwiML voice endpoint — Twilio calls this URL when a WebRTC call is placed.
   // Must use urlencoded body (Twilio sends application/x-www-form-urlencoded).
   app.post("/api/webphone/twiml", express.urlencoded({ extended: false }), (req, res) => {

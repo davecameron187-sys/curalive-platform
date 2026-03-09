@@ -124,3 +124,9 @@ The OCC is a world-class conference control centre built to the technical brief.
 - Dev: `NODE_ENV=development` (set in dev workflow) bypasses all auth — intentional for testing
 - Production: `AUTH_BYPASS=false` set as production env var — full JWT auth enforced on deployment
 - Controlled by `const DEV_BYPASS = process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development'` in `server/_core/trpc.ts`
+
+## Phase 1 Hardening (March 2026)
+
+- **Rate limiting** (`express-rate-limit`): `/api/trpc` — 120 req/min prod / 500 dev; `/api/oauth` + `/api/auth` — 20/15min prod / 200 dev. Ably token endpoint is exempt.
+- **Operator Hub** (`/operator-hub`): Single landing page for all operator training. 4-step learning path, full call-type guides (Audio Bridge / Audio Webcast / Video Webcast) with step-by-step setup, warnings, tips, operating tips, Quick Reference panel, and links to all training resources.
+- OCC "Training" button (line 1383) now navigates to `/operator-hub` instead of `/training`.

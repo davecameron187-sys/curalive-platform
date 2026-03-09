@@ -1377,7 +1377,7 @@ export default function OCC() {
             { icon: Activity, label: "CCP", count: null, color: showCCP ? "text-emerald-400" : "text-slate-400", onClick: () => setShowCCP(v => !v) },
             { icon: List, label: "Access Codes", count: null, color: showAccessCodesModal ? "text-blue-400" : "text-slate-400", onClick: () => setShowAccessCodesModal(v => !v) },
             { icon: Phone, label: "Webphone", count: null, color: showWebphone ? "text-emerald-400" : "text-slate-400", onClick: () => setShowWebphone(v => !v) },
-            { icon: GraduationCap, label: "Training", count: null, color: "text-violet-400", onClick: () => navigate("/training") },
+            { icon: GraduationCap, label: "Training", count: null, color: "text-violet-400", onClick: () => navigate("/operator-hub") },
             { icon: FileText, label: "Quick Guide", count: null, color: "text-cyan-400", onClick: () => navigate("/operator-guide") },
           ].map(({ icon: Icon, label, count, color, onClick }) => (
             <button

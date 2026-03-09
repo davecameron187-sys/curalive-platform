@@ -81,6 +81,7 @@ import RedactionWorkflow from "./pages/RedactionWorkflow";
 import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
 import TranscriptEditor from "./pages/TranscriptEditor";
 import TranscriptPage from "./pages/TranscriptPage";
+import OperatorHub from "./pages/OperatorHub";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -165,6 +166,7 @@ function Router() {
       <Route path="/admin/toxicity" component={ToxicityFilterDashboard} />
       <Route path="/transcript/:id/edit" component={TranscriptEditor} />
       <Route path="/post-event/:id/transcript" component={TranscriptPage} />
+      <Route path="/operator-hub" component={OperatorHub} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
