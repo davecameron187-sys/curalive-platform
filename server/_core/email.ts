@@ -11,7 +11,7 @@
 import { Resend } from "resend";
 import { ENV } from "./env";
 
-const FROM_ADDRESS = "CuraLive <noreply@pulselive.events>";
+const FROM_ADDRESS = "CuraLive <noreply@curalive.cc>";
 const FROM_ADDRESS_FALLBACK = "CuraLive <onboarding@resend.dev>"; // Resend's shared domain for testing
 
 function getResend() {

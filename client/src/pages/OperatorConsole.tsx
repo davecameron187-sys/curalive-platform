@@ -144,8 +144,8 @@ export default function OperatorConsole() {
   });
 
   const rtmpKey = "evt_q4_2026_xK9mNpQ3";
-  const rtmpUrl = `rtmp://ingest.pulselive.events/live/${rtmpKey}`;
-  const webhookUrl = `https://pulselive.events/api/webhooks/recall`;
+  const rtmpUrl = `rtmp://ingest.curalive.cc/live/${rtmpKey}`;
+  const webhookUrl = `https://curalive.cc/api/webhooks/recall`;
 
   // Silence detector
   useEffect(() => {
@@ -324,53 +324,25 @@ export default function OperatorConsole() {
                 </p>
               </div>
 
-              {/* Metric cards - Enhanced Replit Design */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase text-slate-500">Live Attendees</span>
-                    <Users className="w-4 h-4 text-red-400" />
-                  </div>
-                  <div className="text-3xl font-bold text-red-400 mb-1">{attendeeList?.length ?? 1}</div>
-                  <p className="text-xs text-slate-600">Registered & joined</p>
-                </div>
-                <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5 flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase text-slate-500">Q&A Pending</span>
-                    <MessageSquare className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="text-3xl font-bold text-blue-400 mb-1">{pendingQ.length}</div>
-                  <p className="text-xs text-slate-600">{approvedQ.length} approved</p>
-                </div>
-                <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-5 flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase text-slate-500">Sentiment Score</span>
-                    <TrendingUp className="w-4 h-4 text-green-400" />
-                  </div>
-                  <div className="text-3xl font-bold text-green-400 mb-1">{sentimentScore}%</div>
-                  <p className="text-xs text-slate-600">Positive tone</p>
-                </div>
-                <div className="rounded-xl border border-slate-500/20 bg-slate-500/5 p-5 flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase text-slate-500">Duration</span>
-                    <Clock className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <div className="text-3xl font-bold text-slate-400 mb-1">{eventStarted ? formatTime(elapsedSeconds) : "—"}</div>
-                  <p className="text-xs text-slate-600">{eventStarted ? "Elapsed" : "Not started"}</p>
-                </div>
+              {/* Metric cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <MetricCard icon={Users} label="Live Attendees" value={attendeeList?.length ?? 1247} sub="Registered & joined" accent />
+                <MetricCard icon={MessageSquare} label="Q&A Pending" value={pendingQ.length} sub={`${approvedQ.length} approved`} />
+                <MetricCard icon={TrendingUp} label="Sentiment Score" value={`${sentimentScore}%`} sub="Positive tone" />
+                <MetricCard icon={Clock} label="Duration" value={eventStarted ? formatTime(elapsedSeconds) : "—"} sub={eventStarted ? "Elapsed" : "Not started"} />
               </div>
 
-              {/* Signal health - Enhanced with better status indicators */}
+              {/* Signal health */}
               <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
                 <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Signal Health</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { label: "Bot Connection", value: botStatus === "live" ? "Connected" : botStatus === "connecting" ? "Connecting..." : "No signal", ok: botStatus === "live", icon: Wifi },
-                    { label: "Audio Feed", value: botStatus === "live" ? `${audioLevel}% level` : "Idle", ok: botStatus === "live" && !isMuted, icon: Mic },
-                    { label: "Transcription", value: botStatus === "live" ? "Active" : "Standby", ok: botStatus === "live", icon: FileText },
+                    { label: "Bot Connection", value: botStatus === "live" ? "Connected" : "Offline", ok: botStatus === "live", icon: Wifi },
+                    { label: "Audio Feed", value: botStatus === "live" ? `${audioLevel}% level` : "No signal", ok: botStatus === "live" && !isMuted, icon: Mic },
+                    { label: "Transcription", value: botStatus === "live" ? "Active" : "Idle", ok: botStatus === "live", icon: FileText },
                     { label: "AI Analysis", value: botStatus === "live" ? "Running" : "Standby", ok: botStatus === "live", icon: Activity },
                   ].map(({ label, value, ok, icon: Icon }) => (
-                    <div key={label} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                    <div key={label} className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${ok ? "bg-emerald-950/60" : "bg-white/5"}`}>
                         <Icon className={`w-4 h-4 ${ok ? "text-emerald-400" : "text-slate-600"}`} />
                       </div>
@@ -725,7 +697,7 @@ export default function OperatorConsole() {
               <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
                 <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">OBS Studio Setup</div>
                 <div className="space-y-2 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {[["Service", "Custom…"], ["Server", "rtmp://ingest.pulselive.events/live"], ["Stream Key", rtmpKey], ["Audio Bitrate", "128 kbps (mono)"], ["Video Bitrate", "2500–4000 kbps"]].map(([k, v]) => (
+                  {[["Service", "Custom…"], ["Server", "rtmp://ingest.curalive.cc/live"], ["Stream Key", rtmpKey], ["Audio Bitrate", "128 kbps (mono)"], ["Video Bitrate", "2500–4000 kbps"]].map(([k, v]) => (
                     <div key={k} className="flex justify-between border-b border-white/5 pb-2">
                       <span className="text-slate-500">{k}</span>
                       <span className="font-mono text-xs text-slate-300">{v}</span>

@@ -8,7 +8,7 @@ const WEBHOOK_EVENTS = [
   { event: "qa.question_submitted", payload: `{ "question": "Can you provide detail on Q4 revenue?", "submittedBy": "Goldman Sachs", "priority": "high", "votes": 47, "eventId": "q4-earnings-2026" }`, when: "On each Q&A submission" },
   { event: "event.started", payload: `{ "eventId": "q4-earnings-2026", "title": "Q4 2025 Earnings Call", "startedAt": "2026-03-01T14:00:00Z" }`, when: "When host starts event" },
   { event: "event.ended", payload: `{ "eventId": "q4-earnings-2026", "endedAt": "2026-03-01T14:18:32Z" }`, when: "When host ends event" },
-  { event: "event.summary_ready", payload: `{ "summaryUrl": "https://pulselive.events/api/events/q4-earnings-2026/summary", "eventId": "q4-earnings-2026" }`, when: "~30s after event ends" },
+  { event: "event.summary_ready", payload: `{ "summaryUrl": "https://curalive.cc/api/events/q4-earnings-2026/summary", "eventId": "q4-earnings-2026" }`, when: "~30s after event ends" },
 ];
 
 const REST_ENDPOINTS = [
@@ -45,7 +45,7 @@ app.post('/webhook/curalive', express.raw({ type: '*/*' }), (req, res) => {
   const isValid = verifyWebhookSignature(
     req.body.toString(),
     signature,
-    process.env.CHORUS_WEBHOOK_SECRET!
+    process.env.CURALIVE_WEBHOOK_SECRET!
   );
   if (!isValid) return res.status(401).send('Invalid signature');
   
@@ -110,8 +110,8 @@ export default function PartnerAPI() {
             <div>
               <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Base URL</div>
               <div className="bg-background border border-border rounded-lg px-3 py-2 font-mono text-muted-foreground flex items-center justify-between">
-                <span>https://api.pulselive.events/v1</span>
-                <button onClick={() => handleCopy("https://api.pulselive.events/v1", "base")} className="text-muted-foreground hover:text-foreground transition-colors ml-2">
+                <span>https://api.curalive.cc/v1</span>
+                <button onClick={() => handleCopy("https://api.curalive.cc/v1", "base")} className="text-muted-foreground hover:text-foreground transition-colors ml-2">
                   {copied === "base" ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>

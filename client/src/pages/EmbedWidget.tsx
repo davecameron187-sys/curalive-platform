@@ -169,7 +169,7 @@ export default function EmbedWidget() {
 
   const embedCode = `<!-- CuraLive Embedded Widget -->
 <script
-  src="https://cdn.pulselive.events/widget.js"
+  src="https://cdn.curalive.cc/widget.js"
   data-event-id="${eventId}"
   data-api-key="ck_live_your_api_key"
   data-theme="dark"
