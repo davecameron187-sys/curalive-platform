@@ -70,6 +70,16 @@ import ComplianceReport from "./pages/ComplianceReport";
 import ComplianceAuditLog from "./pages/ComplianceAuditLog";
 import InvestorFollowUps from "./pages/InvestorFollowUps";
 import SentimentDashboard from "./pages/SentimentDashboard";
+import AIDashboard from "./pages/AIDashboard";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import AdminPanel from "./pages/AdminPanel";
+import ComplianceDashboard from "./pages/ComplianceDashboard";
+import EventBriefGenerator from "./pages/EventBriefGenerator";
+import FeatureFlagsDashboard from "./pages/FeatureFlagsDashboard";
+import ModeratorQAConsole from "./pages/ModeratorQAConsole";
+import RedactionWorkflow from "./pages/RedactionWorkflow";
+import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
+import TranscriptEditor from "./pages/TranscriptEditor";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -140,6 +150,17 @@ function Router() {
       <Route path="/post-event/:id/followups" component={InvestorFollowUps} />
       <Route path="/compliance/audit-log" component={ComplianceAuditLog} />
       <Route path="/operator/:eventId/sentiment" component={SentimentDashboard} />
+      <Route path="/ai-dashboard" component={AIDashboard} />
+      <Route path="/analytics" component={AnalyticsDashboard} />
+      <Route path="/admin/panel" component={AdminPanel} />
+      <Route path="/compliance/dashboard" component={ComplianceDashboard} />
+      <Route path="/event-brief/:id" component={EventBriefGenerator} />
+      <Route path="/event-brief" component={EventBriefGenerator} />
+      <Route path="/admin/feature-flags" component={FeatureFlagsDashboard} />
+      <Route path="/operator/:eventId/qa" component={ModeratorQAConsole} />
+      <Route path="/post-event/:id/redaction" component={RedactionWorkflow} />
+      <Route path="/admin/toxicity" component={ToxicityFilterDashboard} />
+      <Route path="/transcript/:id/edit" component={TranscriptEditor} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
+import { boolean, int, float, tinyint, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -1708,3 +1708,172 @@ export const sentimentSnapshots = mysqlTable("sentiment_snapshots", {
 
 export type SentimentSnapshot = typeof sentimentSnapshots.$inferSelect;
 export type InsertSentimentSnapshot = typeof sentimentSnapshots.$inferInsert;
+
+export const aiGeneratedContent = mysqlTable("ai_generated_content", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("event_id").notNull(),
+  contentType: varchar("content_type", { length: 64 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  editedContent: text("edited_content"),
+  status: varchar("status", { length: 32 }).default("generated").notNull(),
+  recipients: text("recipients"),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  generatedBy: int("generated_by"),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: int("approved_by"),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  sentAt: timestamp("sent_at"),
+  sentTo: text("sent_to"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type AiGeneratedContent = typeof aiGeneratedContent.$inferSelect;
+export type InsertAiGeneratedContent = typeof aiGeneratedContent.$inferInsert;
+
+export const occTranscriptionSegments = mysqlTable("occ_transcription_segments", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: varchar("conference_id", { length: 128 }).notNull(),
+  speakerName: varchar("speaker_name", { length: 255 }),
+  speakerRole: varchar("speaker_role", { length: 64 }),
+  content: text("content").notNull(),
+  startTimeMs: int("start_time_ms"),
+  endTimeMs: int("end_time_ms"),
+  confidence: float("confidence"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const occLiveRollingSummaries = mysqlTable("occ_live_rolling_summaries", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: varchar("conference_id", { length: 128 }).notNull(),
+  summary: text("summary").notNull(),
+  segmentCount: int("segment_count").default(0).notNull(),
+  fromTimeMs: int("from_time_ms"),
+  toTimeMs: int("to_time_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const qaAutoTriageResults = mysqlTable("qa_auto_triage_results", {
+  id: int("id").autoincrement().primaryKey(),
+  qaId: int("qa_id").notNull(),
+  conferenceId: int("conference_id"),
+  classification: varchar("classification", { length: 32 }).notNull(),
+  confidence: float("confidence"),
+  reason: text("reason"),
+  isSensitive: tinyint("is_sensitive").default(0).notNull(),
+  sensitivityFlags: text("sensitivity_flags"),
+  triageScore: float("triage_score"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const speakingPaceAnalysis = mysqlTable("speaking_pace_analysis", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: varchar("conference_id", { length: 128 }).notNull(),
+  segmentId: int("segment_id"),
+  speakerName: varchar("speaker_name", { length: 255 }),
+  wordsPerMinute: float("words_per_minute"),
+  fillerWordCount: int("filler_word_count").default(0).notNull(),
+  pauseCount: int("pause_count").default(0).notNull(),
+  coachingFeedback: text("coaching_feedback"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const toxicityFilterResults = mysqlTable("toxicity_filter_results", {
+  id: int("id").autoincrement().primaryKey(),
+  contentId: int("content_id").notNull(),
+  contentType: varchar("content_type", { length: 32 }).default("qa").notNull(),
+  toxicityScore: float("toxicity_score").default(0),
+  categories: text("categories"),
+  flagged: tinyint("flagged").default(0).notNull(),
+  actionTaken: varchar("action_taken", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const transcriptEdits = mysqlTable("transcript_edits", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: int("conference_id").notNull(),
+  segmentId: int("segment_id").notNull(),
+  operatorId: int("operator_id").notNull(),
+  originalText: text("original_text").notNull(),
+  correctedText: text("corrected_text").notNull(),
+  editType: varchar("edit_type", { length: 64 }).notNull(),
+  reason: text("reason"),
+  confidence: float("confidence"),
+  status: varchar("status", { length: 32 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const transcriptVersions = mysqlTable("transcript_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: int("conference_id").notNull(),
+  versionNumber: int("version_number").notNull(),
+  fullTranscript: text("full_transcript").notNull(),
+  editCount: int("edit_count").default(0),
+  changeDescription: text("change_description"),
+  createdBy: int("created_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const transcriptEditAuditLog = mysqlTable("transcript_edit_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  editId: int("edit_id").notNull(),
+  action: varchar("action", { length: 64 }).notNull(),
+  actorId: int("actor_id"),
+  actorName: varchar("actor_name", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const eventBriefResults = mysqlTable("event_brief_results", {
+  id: int("id").autoincrement().primaryKey(),
+  conferenceId: varchar("conference_id", { length: 128 }),
+  eventId: int("event_id"),
+  briefType: varchar("brief_type", { length: 64 }).notNull(),
+  content: text("content").notNull(),
+  operatorApproved: tinyint("operator_approved").default(0),
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const contentEngagementEvents = mysqlTable("content_engagement_events", {
+  id: int("id").autoincrement().primaryKey(),
+  contentId: int("content_id").notNull(),
+  recipientEmail: varchar("recipient_email", { length: 255 }),
+  eventType: varchar("event_type", { length: 64 }).notNull(),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const contentPerformanceMetrics = mysqlTable("content_performance_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  contentId: int("content_id").notNull(),
+  openRate: float("open_rate").default(0),
+  clickRate: float("click_rate").default(0),
+  engagementScore: float("engagement_score").default(0),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+
+export const contentTypePerformance = mysqlTable("content_type_performance", {
+  id: int("id").autoincrement().primaryKey(),
+  contentType: varchar("content_type", { length: 64 }).notNull(),
+  totalGenerated: int("total_generated").default(0),
+  approvalRate: varchar("approval_rate", { length: 16 }).default("0"),
+  avgOpenRate: varchar("avg_open_rate", { length: 16 }).default("0"),
+  avgClickThroughRate: varchar("avg_click_through_rate", { length: 16 }).default("0"),
+  performanceRank: int("performance_rank").default(0),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+
+export const eventPerformanceSummary = mysqlTable("event_performance_summary", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("event_id").notNull(),
+  contentItemsGenerated: int("content_items_generated").default(0),
+  contentItemsApproved: int("content_items_approved").default(0),
+  contentItemsRejected: int("content_items_rejected").default(0),
+  overallApprovalRate: varchar("overall_approval_rate", { length: 16 }).default("0"),
+  totalEngagements: int("total_engagements").default(0),
+  avgEngagementRate: varchar("avg_engagement_rate", { length: 16 }).default("0"),
+  bestPerformingType: varchar("best_performing_type", { length: 64 }),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});

@@ -31,6 +31,13 @@ import { clientPortalRouter } from "./routers/clientPortal";
 import { complianceRouter } from "./routers/compliance";
 import { followupsRouter } from "./routers/followups";
 import { sentimentRouter } from "./routers/sentiment";
+import { aiDashboardRouter } from "./routers/aiDashboard";
+import { aiFeaturesRouter } from "./routers/aiFeatures";
+import { analyticsRouter } from "./routers/analytics";
+import { contentTriggersRouter } from "./routers/contentTriggers";
+import { eventBriefRouter } from "./routers/eventBriefRouter";
+import { liveRollingSummaryRouter } from "./routers/liveRollingSummary";
+import { transcriptEditorRouter } from "./routers/transcriptEditorRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -72,6 +79,13 @@ export const appRouter = router({
   compliance: complianceRouter,
   followups: followupsRouter,
   sentiment: sentimentRouter,
+  aiDashboard: aiDashboardRouter,
+  aiFeatures: aiFeaturesRouter,
+  analytics: analyticsRouter,
+  contentTriggers: contentTriggersRouter,
+  eventBrief: eventBriefRouter,
+  liveRollingSummary: liveRollingSummaryRouter,
+  transcriptEditor: transcriptEditorRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
