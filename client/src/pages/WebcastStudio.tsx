@@ -128,9 +128,37 @@ function NewPollForm({ onSubmit, onCancel }: { onSubmit: (q: string, opts: strin
   );
 }
 
+// ─── Webcast Simulation Data ──────────────────────────────────────────────────
+
+const WEBCAST_SIM_QA_POOL = [
+  { question: "Can you provide more colour on the Q4 revenue beat relative to guidance?", author: "Goldman Sachs" },
+  { question: "What is the timeline for the Microsoft Teams native integration?", author: "JP Morgan" },
+  { question: "How does the Recall.ai partnership affect the gross margin profile?", author: "Morgan Stanley" },
+  { question: "What drove the margin expansion this quarter — was it largely mix shift?", author: "Barclays Capital" },
+  { question: "Are there any planned acquisitions or strategic partnerships in H1 2026?", author: "UBS" },
+  { question: "Can you walk us through the capex allocation and free cash flow outlook?", author: "Deutsche Bank" },
+  { question: "What is the current net cash position and the target for year-end?", author: "Citigroup" },
+  { question: "How confident is management in achieving the full-year revenue guidance range?", author: "HSBC" },
+  { question: "What is the competitive response to new entrants in the enterprise segment?", author: "Jefferies" },
+  { question: "Can you elaborate on the churn trends in the mid-market vs enterprise cohorts?", author: "RBC Capital" },
+];
+
+const WEBCAST_SIM_CHAT_POOL = [
+  { author: "James O.", text: "Very impressive quarter. Thank you for the detailed breakdown." },
+  { author: "Amara D.", text: "Strong margin expansion — well done to the whole team." },
+  { author: "Sipho K.", text: "The AI integration commentary is very encouraging from a strategy perspective." },
+  { author: "Priya N.", text: "Guidance sounds slightly conservative. Are there upside levers not yet factored in?" },
+  { author: "Mark B.", text: "When will the full roadshow schedule for Q2 be published?" },
+  { author: "Fatima I.", text: "Excellent quarter. Really looking forward to the Q&A session." },
+  { author: "David O.", text: "The ESG reporting framework — any updates on the Scope 3 target?" },
+  { author: "Lerato S.", text: "Solid cash generation this quarter. The balance sheet looks very healthy." },
+  { author: "Jennifer W.", text: "What is the current net promoter score trend for enterprise accounts?" },
+];
+
 // ─── Inner studio (uses AblyProvider context) ─────────────────────────────────
 function WebcastStudioInner({ slug }: { slug: string }) {
   const [, navigate] = useLocation();
+  const simulateParam = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("simulate") === "1";
   const [activeTab, setActiveTab] = useState<StudioTab>("qa");
 
   // Operator profile
@@ -139,12 +167,23 @@ function WebcastStudioInner({ slug }: { slug: string }) {
   const [micOn, setMicOn] = useState(true);
   const [videoOn, setVideoOn] = useState(true);
   const [showWebphone, setShowWebphone] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(2478);
+  const [elapsedSeconds, setElapsedSeconds] = useState(simulateParam ? 0 : 2478);
   const [chatInput, setChatInput] = useState("");
-  const [chat, setChat] = useState<ChatMessage[]>(SEED_CHAT);
-  const [peakAttendees, setPeakAttendees] = useState(487);
+  const [chat, setChat] = useState<ChatMessage[]>(simulateParam ? [] : SEED_CHAT);
+  const [peakAttendees, setPeakAttendees] = useState(simulateParam ? 0 : 487);
   const [showNewPoll, setShowNewPoll] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // ── Simulation state ────────────────────────────────────────────────────────
+  const [simActive, setSimActive] = useState(false);
+  const [simViewerCount, setSimViewerCount] = useState<number | null>(simulateParam ? 0 : null);
+  const simViewerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const simQATimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const simChatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const simQAIdxRef = useRef(0);
+  const simChatIdxRef = useRef(0);
+  const simQAIdRef = useRef(7000);
+  const simViewerCountRef = useRef(0);
 
   // ── Publish Recording state ─────────────────────────────────────────────────
   const [recordingUrlInput, setRecordingUrlInput] = useState("");
@@ -243,6 +282,87 @@ function WebcastStudioInner({ slug }: { slug: string }) {
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
+  // ── Simulation engine ───────────────────────────────────────────────────────
+
+  const stopSimulation = useCallback(() => {
+    if (simViewerTimerRef.current) { clearInterval(simViewerTimerRef.current); simViewerTimerRef.current = null; }
+    if (simQATimerRef.current) { clearInterval(simQATimerRef.current); simQATimerRef.current = null; }
+    if (simChatTimerRef.current) { clearInterval(simChatTimerRef.current); simChatTimerRef.current = null; }
+    setSimActive(false);
+  }, []);
+
+  const startSimulation = useCallback(() => {
+    stopSimulation();
+    setSimActive(true);
+    setSimViewerCount(0);
+    simViewerCountRef.current = 0;
+    simQAIdxRef.current = 0;
+    simChatIdxRef.current = 0;
+
+    simViewerTimerRef.current = setInterval(() => {
+      const current = simViewerCountRef.current;
+      const increment = current < 200 ? Math.floor(Math.random() * 30 + 20)
+        : current < 600 ? Math.floor(Math.random() * 15 + 8)
+        : Math.floor(Math.random() * 4 + 1);
+      const next = Math.min(current + increment, 1200);
+      simViewerCountRef.current = next;
+      setSimViewerCount(next);
+      setPeakAttendees(p => Math.max(p, next));
+      if (next >= 1200) {
+        clearInterval(simViewerTimerRef.current!);
+        simViewerTimerRef.current = null;
+      }
+    }, 2000);
+
+    simQATimerRef.current = setInterval(() => {
+      const idx = simQAIdxRef.current;
+      if (idx >= WEBCAST_SIM_QA_POOL.length) {
+        clearInterval(simQATimerRef.current!); simQATimerRef.current = null; return;
+      }
+      const entry = WEBCAST_SIM_QA_POOL[idx];
+      publish({
+        type: "qa.submitted",
+        data: {
+          id: `sim-qa-${simQAIdRef.current++}`,
+          question: entry.question,
+          author: entry.author,
+          votes: Math.floor(Math.random() * 20) + 1,
+          status: "pending",
+          submittedAt: Date.now(),
+        },
+      });
+      simQAIdxRef.current += 1;
+    }, 18000);
+
+    setTimeout(() => {
+      if (simChatTimerRef.current) return;
+      simChatTimerRef.current = setInterval(() => {
+        const idx = simChatIdxRef.current;
+        if (idx >= WEBCAST_SIM_CHAT_POOL.length) {
+          clearInterval(simChatTimerRef.current!); simChatTimerRef.current = null; return;
+        }
+        const entry = WEBCAST_SIM_CHAT_POOL[idx];
+        setChat(prev => [...prev, {
+          id: `sim-chat-${Date.now()}`,
+          author: entry.author,
+          text: entry.text,
+          time: formatElapsed(elapsedSeconds),
+          isOperator: false,
+        }]);
+        simChatIdxRef.current += 1;
+      }, 12000);
+    }, 5000);
+  }, [stopSimulation, publish, elapsedSeconds]);
+
+  useEffect(() => {
+    if (simulateParam) startSimulation();
+    return () => {
+      if (simViewerTimerRef.current) clearInterval(simViewerTimerRef.current);
+      if (simQATimerRef.current) clearInterval(simQATimerRef.current);
+      if (simChatTimerRef.current) clearInterval(simChatTimerRef.current);
+    };
+  }, []);
+
   // ── Q&A moderation via Ably ─────────────────────────────────────────────────
   const handleApproveQ = useCallback((id: string) => {
     publish({ type: "qa.status", data: { id, status: "approved" } });
@@ -304,7 +424,7 @@ function WebcastStudioInner({ slug }: { slug: string }) {
   const livePolls = polls.filter(p => p.status === "live");
   const eventTitle = event?.title || "CEO All-Hands Town Hall — Q1 2026";
   const eventHost = event?.hostName || "David Cameron, CEO";
-  const liveAttendees = presenceCount > 0 ? presenceCount : 412;
+  const liveAttendees = simViewerCount !== null ? simViewerCount : (presenceCount > 0 ? presenceCount : 412);
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -335,6 +455,12 @@ function WebcastStudioInner({ slug }: { slug: string }) {
             }`}>
               {mode === "ably" ? "⚡ Ably Live" : "Demo Mode"}
             </span>
+            {simActive && (
+              <span className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-violet-300 bg-violet-500/10 border-violet-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                Simulation
+              </span>
+            )}
           </div>
 
           {/* Center: elapsed + attendees */}
@@ -389,6 +515,23 @@ function WebcastStudioInner({ slug }: { slug: string }) {
                 className="flex items-center gap-1.5 bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-600 transition-colors"
               >
                 <Radio className="w-3.5 h-3.5" /> Go Live
+              </button>
+            )}
+            {!simActive ? (
+              <button
+                onClick={startSimulation}
+                title="Start webcast simulation"
+                className="flex items-center gap-1.5 bg-violet-500/10 text-violet-400 border border-violet-500/20 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-violet-500/20 transition-colors"
+              >
+                <Zap className="w-3.5 h-3.5" /> Simulate
+              </button>
+            ) : (
+              <button
+                onClick={stopSimulation}
+                title="Stop simulation"
+                className="flex items-center gap-1.5 bg-violet-800/30 text-violet-300 border border-violet-700/40 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-900/30 hover:text-red-300 hover:border-red-700/40 transition-colors"
+              >
+                <StopCircle className="w-3.5 h-3.5" /> Stop Sim
               </button>
             )}
             <button

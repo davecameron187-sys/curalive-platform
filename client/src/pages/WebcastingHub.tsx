@@ -337,6 +337,34 @@ export default function WebcastingHub() {
         </div>
       </section>
 
+      {/* ── Demo Studio Banner ── */}
+      <section className="border-b border-border bg-violet-950/20 py-6">
+        <div className="container">
+          <div className="flex items-center justify-between gap-6 flex-wrap">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 text-violet-400" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm font-semibold text-foreground">Demo Studio</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-violet-300 bg-violet-500/10 border-violet-500/20">Simulation</span>
+                </div>
+                <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Test the production studio with simulated attendees, live Q&A, polls, and chat — no real stream or event required.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate("/live-video/webcast/demo?simulate=1")}
+              className="flex items-center gap-2 bg-violet-700 hover:bg-violet-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shrink-0"
+            >
+              <Play className="w-3.5 h-3.5" /> Launch Demo Studio
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* ── Event Types Grid ── */}
       <section className="border-b border-border py-12">
         <div className="container">
