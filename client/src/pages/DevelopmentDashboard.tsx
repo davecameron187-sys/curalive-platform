@@ -119,6 +119,8 @@ export default function DevelopmentDashboard() {
     { id: "devtools", label: "Dev Tools", icon: Wrench },
     { id: "testing", label: "Platform Testing", icon: TestTube },
     { id: "occ", label: "Operator Console", icon: Monitor },
+    { id: "api", label: "API Integration", icon: Globe },
+    { id: "webhooks", label: "Webhook Testing", icon: Radio },
   ] as const;
 
   return (
@@ -170,6 +172,29 @@ export default function DevelopmentDashboard() {
               ))}
             </div>
 
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-white">Feature Status Overview</h3>
+                <button
+                  onClick={() => setActiveTab("features")}
+                  className="text-xs text-orange-400 hover:text-orange-300 transition-colors"
+                >
+                  View Detailed Status →
+                </button>
+              </div>
+              <div className="flex h-2.5 rounded-full overflow-hidden mb-3">
+                <div className="bg-emerald-500" style={{ width: "64%" }} />
+                <div className="bg-amber-500" style={{ width: "4%" }} />
+                <div className="bg-slate-600" style={{ width: "32%" }} />
+              </div>
+              <div className="flex items-center gap-6 text-xs text-slate-400">
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />Completed: 16 (64%)</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block" />In Progress: 1 (4%)</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-slate-600 inline-block" />Planned: 8 (32%)</span>
+                <span className="ml-auto text-slate-500">25 total</span>
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-5">
                 <h3 className="text-sm font-semibold text-white mb-3">Quick Actions</h3>
@@ -199,6 +224,33 @@ export default function DevelopmentDashboard() {
                   <p>✓ Ably channels all connected</p>
                   <p>✓ DB seeded — CC-9921 live</p>
                 </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-5">
+              <h3 className="text-sm font-semibold text-white mb-4">Team Statistics</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: "Operators Trained", value: 8, target: 12, unit: "" },
+                  { label: "Certification Pass Rate", value: 94, target: 90, unit: "%" },
+                  { label: "Feature Adoption", value: 78, target: 80, unit: "%" },
+                  { label: "API Calls/Day", value: 12400, target: 10000, unit: "" },
+                ].map(({ label, value, target, unit }) => {
+                  const pct = Math.min(100, Math.round((value / target) * 100));
+                  const met = value >= target;
+                  return (
+                    <div key={label} className="space-y-1.5">
+                      <p className="text-xs text-slate-400">{label}</p>
+                      <p className={`text-lg font-bold ${met ? "text-emerald-400" : "text-amber-400"}`}>
+                        {value.toLocaleString()}{unit}
+                        <span className="text-xs font-normal text-slate-500 ml-1">/ {target.toLocaleString()}{unit}</span>
+                      </p>
+                      <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${met ? "bg-emerald-500" : "bg-amber-500"}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -397,6 +449,76 @@ export default function DevelopmentDashboard() {
                   Open Training Console
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "api" && (
+          <div className="space-y-6">
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-8 text-center">
+              <Globe className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-white mb-2">API Integration</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto mb-5">
+                Full REST and tRPC API documentation, sandbox testing, and SDK generation.
+                Connect your systems directly to CuraLive's investor events platform.
+              </p>
+              <button
+                onClick={() => navigate("/partner-api")}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded text-sm font-medium text-white transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Open Partner API Docs
+              </button>
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              {[
+                { label: "REST Endpoints", value: "60+", desc: "Full CRUD across all resources", color: "text-blue-400" },
+                { label: "tRPC Procedures", value: "80+", desc: "Type-safe server interactions", color: "text-violet-400" },
+                { label: "Webhooks", value: "12", desc: "Event-driven integrations", color: "text-emerald-400" },
+              ].map(({ label, value, desc, color }) => (
+                <div key={label} className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                  <p className="text-xs text-slate-400 mb-1">{label}</p>
+                  <p className={`text-2xl font-bold ${color} mb-1`}>{value}</p>
+                  <p className="text-xs text-slate-500">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "webhooks" && (
+          <div className="space-y-6">
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-8 text-center">
+              <Radio className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-white mb-2">Webhook Testing</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Test and debug inbound webhook events from Mux, Recall.ai, Ably, and other
+                integrated services. Inspect payloads and verify event handling.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              {[
+                { label: "Mux Video", events: ["video.live_stream.active", "video.live_stream.idle", "video.asset.ready"], status: "configured" },
+                { label: "Recall.ai", events: ["bot.joining_call", "bot.in_waiting_room", "bot.recording_done"], status: "configured" },
+                { label: "Ably Realtime", events: ["channel.presence", "channel.message", "connection.state"], status: "configured" },
+                { label: "Stripe / Billing", events: ["invoice.payment_succeeded", "customer.subscription.updated"], status: "placeholder" },
+              ].map(({ label, events, status }) => (
+                <div key={label} className="bg-slate-800/50 border border-slate-700 rounded-lg p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-white">{label}</h4>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      status === "configured" ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-600/40 text-slate-400"
+                    }`}>
+                      {status}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {events.map(e => (
+                      <p key={e} className="text-xs text-slate-500 font-mono">{e}</p>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
