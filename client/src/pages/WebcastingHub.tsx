@@ -348,7 +348,7 @@ export default function WebcastingHub() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {EVENT_TYPES.map((type) => (
-              <div key={type.id + type.label} className={`group bg-card border rounded-xl p-5 transition-all cursor-pointer ${type.border} ${type.bg}`}>
+              <div key={type.id + type.label} onClick={() => navigate(`/live-video/webcast/create?type=${type.id}`)} className={`group bg-card border rounded-xl p-5 transition-all cursor-pointer ${type.border} ${type.bg}`}>
                 <type.icon className={`w-5 h-5 ${type.color} mb-3`} />
                 <div className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">{type.label}</div>
                 <div className="text-xs text-muted-foreground leading-relaxed mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>{type.desc}</div>

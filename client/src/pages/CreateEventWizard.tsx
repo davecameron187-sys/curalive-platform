@@ -3,8 +3,8 @@
  * 6-step guided flow: Event Type → Details → Branding → Agenda & Speakers → Registration → Publish
  * Operators can self-serve new webcasts, webinars, virtual events, and hybrid events.
  */
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -636,9 +636,19 @@ function StepReview({ state }: { state: WizardState }) {
 // ─── Main Wizard Component ────────────────────────────────────────────────────
 export default function CreateEventWizard() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [state, setState] = useState<WizardState>(DEFAULT_STATE);
+
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const typeParam = params.get("type");
+    if (typeParam) {
+      setState(s => ({ ...s, eventType: typeParam }));
+    }
+  }, [search]);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
