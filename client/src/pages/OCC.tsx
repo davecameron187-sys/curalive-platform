@@ -169,6 +169,110 @@ const DEMO_HISTORY: any[] = [
   { id: 4, conferenceId: 1, participantId: 5, event: "request_to_speak" as const, triggeredBy: "participant" as const, operatorId: null, note: null, occurredAt: new Date(Date.now() - 5 * 60000), createdAt: new Date() },
 ];
 
+// ─── Simulation Engine Constants ─────────────────────────────────────────────
+
+const SIM_CONF_ID = 9001;
+const SIM_PARTICIPANT_BASE_ID = 9100;
+
+const SIM_PARTICIPANT_POOL = [
+  { name: "Sarah Nkosi",           company: "CuraLive Inc.",                    location: "Johannesburg",  role: "moderator"   as const },
+  { name: "James Dlamini",         company: "CuraLive Inc.",                    location: "Cape Town",     role: "host"        as const },
+  { name: "Thabo Molefe",          company: "Investec Asset Management",        location: "Sandton",       role: "participant" as const },
+  { name: "Priya Naidoo",          company: "Old Mutual Investments",           location: "Durban",        role: "participant" as const },
+  { name: "Mark van der Berg",     company: "Coronation Fund Managers",         location: "Cape Town",     role: "participant" as const },
+  { name: "Fatima Ismail",         company: "Sanlam Investment Management",     location: "Bellville",     role: "participant" as const },
+  { name: "David Osei",            company: "Allan Gray",                       location: "Cape Town",     role: "participant" as const },
+  { name: "Sipho Khumalo",         company: "Nedbank Capital",                  location: "Sandton",       role: "participant" as const },
+  { name: "Lerato Sithole",        company: "Public Investment Corporation",    location: "Pretoria",      role: "participant" as const },
+  { name: "Andrew Smith",          company: "London Capital Group",             location: "London",        role: "participant" as const },
+  { name: "Jennifer Walsh",        company: "Goldman Sachs Asset Management",   location: "New York",      role: "participant" as const },
+  { name: "Michael Chen",          company: "BlackRock",                        location: "New York",      role: "participant" as const },
+  { name: "Aisha Patel",           company: "Fidelity International",           location: "London",        role: "participant" as const },
+  { name: "Kofi Asante",           company: "Absa Capital",                     location: "Johannesburg",  role: "participant" as const },
+  { name: "Nadia Fredericks",      company: "RMB Morgan Stanley",               location: "Cape Town",     role: "participant" as const },
+  { name: "John Botha",            company: "Momentum Investments",             location: "Centurion",     role: "participant" as const },
+  { name: "Thandeka Dube",         company: "Argon Asset Management",           location: "Johannesburg",  role: "participant" as const },
+  { name: "Ruan Swanepoel",        company: "PSG Konsult",                      location: "Stellenbosch",  role: "participant" as const },
+  { name: "Brigitte Mueller",      company: "DWS Investments",                  location: "Frankfurt",     role: "participant" as const },
+  { name: "Carlos Reyes",          company: "UBS Asset Management",             location: "Zurich",        role: "participant" as const },
+  { name: "Zanele Mokoena",        company: "Eskom Pension Fund",               location: "Johannesburg",  role: "participant" as const },
+  { name: "Peter van Zyl",         company: "Liberty Holdings",                 location: "Sandton",       role: "participant" as const },
+  { name: "Amina Hassan",          company: "Afar Capital",                     location: "Nairobi",       role: "participant" as const },
+  { name: "Brendan O'Sullivan",    company: "Barings",                          location: "Dublin",        role: "participant" as const },
+  { name: "Yuki Tanaka",           company: "Nomura Asset Management",          location: "Tokyo",         role: "participant" as const },
+  { name: "Francesca Bianchi",     company: "Mediobanca",                       location: "Milan",         role: "participant" as const },
+  { name: "Mohammed Al-Rashid",    company: "Abu Dhabi Investment Authority",   location: "Abu Dhabi",     role: "participant" as const },
+  { name: "Claudette Rousseau",    company: "BNP Paribas Asset Management",     location: "Paris",         role: "participant" as const },
+  { name: "Lucas de Oliveira",     company: "Itaú Asset Management",            location: "São Paulo",     role: "participant" as const },
+  { name: "Ivan Petrov",           company: "East Capital",                     location: "Stockholm",     role: "participant" as const },
+];
+
+type SimScenario = {
+  id: string; label: string; subject: string; callId: string;
+  dialIn: string; modCode: string; partCode: string; qaQuestions: string[];
+};
+
+const SIM_SCENARIOS: SimScenario[] = [
+  {
+    id: "earnings_call", label: "Earnings Call", subject: "Q4 2025 Earnings Call", callId: "SIM-001",
+    dialIn: "+27 11 535 0000", modCode: "4872", partCode: "9341",
+    qaQuestions: [
+      "Can you elaborate on the Q4 revenue miss relative to guidance?",
+      "What is the capex allocation for FY2026?",
+      "How is the company positioned against rising interest rates?",
+      "Are there any planned acquisitions in H1 2026?",
+      "What drove the margin compression this quarter?",
+      "Can you provide more colour on the geographic revenue split?",
+      "What is the current cash conversion cycle?",
+      "How confident are you in the FY2026 EBITDA guidance?",
+    ],
+  },
+  {
+    id: "investor_day", label: "Investor Day", subject: "Annual Investor Day 2026", callId: "SIM-002",
+    dialIn: "+27 11 535 0001", modCode: "5511", partCode: "8823",
+    qaQuestions: [
+      "What is the long-term strategic growth target?",
+      "How will you fund the 5-year investment plan?",
+      "What is the board's view on the dividend payout ratio?",
+      "Can management discuss the competitive moat in the core business?",
+      "What are the key ESG targets for 2030?",
+      "How does the new operating model impact head count?",
+    ],
+  },
+  {
+    id: "board_briefing", label: "Board Briefing", subject: "Board Strategy Briefing", callId: "SIM-003",
+    dialIn: "+27 11 535 0002", modCode: "3301", partCode: "6612",
+    qaQuestions: [
+      "What is the risk appetite framework for the new strategy?",
+      "Can you walk us through the succession plan?",
+      "What regulatory changes are being closely monitored?",
+      "How is the governance framework evolving post the audit findings?",
+    ],
+  },
+  {
+    id: "agm", label: "AGM", subject: "Annual General Meeting 2026", callId: "SIM-004",
+    dialIn: "+27 11 535 0003", modCode: "7701", partCode: "4429",
+    qaQuestions: [
+      "Why has CEO compensation increased 40% while EPS declined?",
+      "What is the plan to address the audit committee's findings?",
+      "Can the board explain the related-party transaction in note 34?",
+      "What is the status of the broad-based empowerment deal?",
+      "How is the board evaluating the share buyback programme?",
+    ],
+  },
+  {
+    id: "roadshow", label: "Credit Roadshow", subject: "Debt Roadshow — Series B Notes", callId: "SIM-005",
+    dialIn: "+27 11 535 0004", modCode: "9912", partCode: "3358",
+    qaQuestions: [
+      "What is the expected use of proceeds from the issuance?",
+      "Can you walk us through the covenant package?",
+      "What is the refinancing risk on the 2027 maturities?",
+      "How is the issuer rated by S&P versus Moody's?",
+      "What is the net leverage target post-issuance?",
+    ],
+  },
+];
+
 // ─── Main OCC Component ───────────────────────────────────────────────────────
 
 export default function OCC() {
@@ -603,6 +707,18 @@ export default function OCC() {
   const [localChat, setLocalChat] = useState(DEMO_CHAT);
   const [localHistory] = useState(DEMO_HISTORY);
 
+  // ─── Simulation state ──────────────────────────────────────────────────────
+  const [simRunning, setSimRunning] = useState(false);
+  const [simScenario, setSimScenario] = useState("earnings_call");
+  const [simCount, setSimCount] = useState(15);
+  const [simJoinRate, setSimJoinRate] = useState<"fast" | "normal" | "slow">("normal");
+  const [simProgress, setSimProgress] = useState(0);
+  const simIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const simQAIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const simProgressRef = useRef(0);
+  const simQAIndexRef = useRef(0);
+  const simQAIdRef = useRef(8000);
+
   // Audio library state
   const [playingAudioId, setPlayingAudioId] = useState<number | null>(null);
   const [showAudioUpload, setShowAudioUpload] = useState(false);
@@ -858,6 +974,170 @@ export default function OCC() {
       default: return true;
     }
   });
+
+  // ── Simulation functions ────────────────────────────────────────────────────
+
+  const stopSimulation = useCallback(() => {
+    if (simIntervalRef.current) { clearInterval(simIntervalRef.current); simIntervalRef.current = null; }
+    if (simQAIntervalRef.current) { clearInterval(simQAIntervalRef.current); simQAIntervalRef.current = null; }
+    setSimRunning(false);
+    setSimProgress(0);
+    simProgressRef.current = 0;
+    simQAIndexRef.current = 0;
+    setLocalConferences(prev => prev.filter(c => c.id !== SIM_CONF_ID));
+    setLocalParticipants(prev => prev.filter(p => p.conferenceId !== SIM_CONF_ID));
+    setActiveCCPConferenceId(prev => prev === SIM_CONF_ID ? null : prev);
+  }, []);
+
+  const startSimulation = useCallback(() => {
+    stopSimulation();
+
+    const scenario = SIM_SCENARIOS.find(s => s.id === simScenario) || SIM_SCENARIOS[0];
+    const rateMs = simJoinRate === "fast" ? 1500 : simJoinRate === "slow" ? 7000 : 3000;
+
+    const simConf = {
+      id: SIM_CONF_ID, eventId: `sim-${Date.now()}`, callId: scenario.callId,
+      subject: `[SIM] ${scenario.subject}`,
+      reseller: "CuraLive Inc.", product: "Event Conference",
+      moderatorCode: scenario.modCode, participantCode: scenario.partCode, securityCode: null as string | null,
+      dialInNumber: scenario.dialIn, status: "running" as const,
+      isLocked: false, isRecording: true, waitingMusicEnabled: true, requestsToSpeakEnabled: true, autoAdmitEnabled: true,
+      scheduledStart: new Date(Date.now() - 60000), actualStart: new Date(),
+      endedAt: null, participantLimit: 500, participantLimitEnabled: false, webAccessCode: null,
+      createdAt: new Date(), updatedAt: new Date(),
+    };
+    setLocalConferences(prev => [...prev.filter(c => c.id !== SIM_CONF_ID), simConf]);
+
+    const makeParticipant = (poolIdx: number, lineIdx: number) => {
+      const entry = SIM_PARTICIPANT_POOL[poolIdx];
+      return {
+        ...entry,
+        id: SIM_PARTICIPANT_BASE_ID + lineIdx,
+        conferenceId: SIM_CONF_ID,
+        lineNumber: lineIdx + 1,
+        phoneNumber: `+27 ${60 + (lineIdx % 30)} 555 ${String(lineIdx).padStart(4, "0")}`,
+        dialInNumber: scenario.dialIn,
+        voiceServer: `VS-SIM-${Math.floor(lineIdx / 4) + 1}`,
+        state: "connected" as const,
+        isSpeaking: poolIdx === 1,
+        isWebParticipant: poolIdx > 2 && poolIdx % 5 === 0,
+        requestToSpeak: false,
+        requestToSpeakPosition: null,
+        subconferenceId: null,
+        isMonitored: false,
+        monitoringOperatorId: null,
+        connectedAt: new Date(),
+        disconnectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    };
+
+    setLocalParticipants(prev => [
+      ...prev.filter(p => p.conferenceId !== SIM_CONF_ID),
+      { ...makeParticipant(0, 0), state: "connected" as const },
+      { ...makeParticipant(1, 1), state: "speaking" as const },
+    ]);
+
+    setActiveCCPConferenceId(SIM_CONF_ID);
+    setShowCCP(true);
+    setSimRunning(true);
+    simProgressRef.current = 0;
+    simQAIndexRef.current = 0;
+    setSimProgress(0);
+
+    const participantPool = SIM_PARTICIPANT_POOL.slice(2);
+    const totalToJoin = simCount - 2;
+
+    simIntervalRef.current = setInterval(() => {
+      const idx = simProgressRef.current;
+      if (idx >= totalToJoin) {
+        clearInterval(simIntervalRef.current!);
+        simIntervalRef.current = null;
+        return;
+      }
+      const poolEntry = participantPool[idx % participantPool.length];
+      const newP = {
+        ...poolEntry,
+        id: SIM_PARTICIPANT_BASE_ID + 2 + idx,
+        conferenceId: SIM_CONF_ID,
+        lineNumber: 3 + idx,
+        phoneNumber: `+27 ${60 + ((idx + 2) % 30)} 555 ${String(idx + 2).padStart(4, "0")}`,
+        dialInNumber: scenario.dialIn,
+        voiceServer: `VS-SIM-${Math.floor((idx + 2) / 4) + 1}`,
+        state: "connected" as const,
+        isSpeaking: false,
+        isWebParticipant: idx % 5 === 0,
+        requestToSpeak: false,
+        requestToSpeakPosition: null,
+        subconferenceId: null,
+        isMonitored: false,
+        monitoringOperatorId: null,
+        connectedAt: new Date(),
+        disconnectedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      setLocalParticipants(prev => [...prev, newP]);
+      simProgressRef.current += 1;
+      setSimProgress(p => p + 1);
+
+      if (Math.random() < 0.25) {
+        const newState = Math.random() < 0.5 ? "muted" as const : "speaking" as const;
+        setLocalParticipants(prev => {
+          const confPs = prev.filter(p => p.conferenceId === SIM_CONF_ID && p.role === "participant");
+          if (confPs.length === 0) return prev;
+          const target = confPs[Math.floor(Math.random() * confPs.length)];
+          return prev.map(p => p.id === target.id ? { ...p, state: newState, isSpeaking: newState === "speaking" } : p);
+        });
+      }
+
+      if (Math.random() < 0.12) {
+        setLocalParticipants(prev => {
+          const confPs = prev.filter(p => p.conferenceId === SIM_CONF_ID && p.role === "participant" && !p.requestToSpeak);
+          if (confPs.length === 0) return prev;
+          const target = confPs[Math.floor(Math.random() * confPs.length)];
+          const rtsCount = prev.filter(p => p.conferenceId === SIM_CONF_ID && p.requestToSpeak).length;
+          return prev.map(p => p.id === target.id ? { ...p, requestToSpeak: true, requestToSpeakPosition: rtsCount + 1 } : p);
+        });
+      }
+    }, rateMs);
+
+    setTimeout(() => {
+      if (simQAIntervalRef.current) return;
+      simQAIntervalRef.current = setInterval(() => {
+        const qaPool = scenario.qaQuestions;
+        const qaIdx = simQAIndexRef.current;
+        if (qaIdx >= qaPool.length) {
+          clearInterval(simQAIntervalRef.current!);
+          simQAIntervalRef.current = null;
+          return;
+        }
+        const submitter = participantPool[qaIdx % participantPool.length];
+        setQaQuestions(prev => [
+          ...prev,
+          {
+            id: simQAIdRef.current++,
+            text: qaPool[qaIdx],
+            submitter: submitter.name,
+            company: submitter.company,
+            votes: Math.floor(Math.random() * 12) + 1,
+            status: "pending" as const,
+            timestamp: new Date(),
+            pinned: false,
+          },
+        ]);
+        simQAIndexRef.current += 1;
+      }, rateMs * 3);
+    }, 8000);
+  }, [simScenario, simCount, simJoinRate, stopSimulation]);
+
+  useEffect(() => {
+    return () => {
+      if (simIntervalRef.current) clearInterval(simIntervalRef.current);
+      if (simQAIntervalRef.current) clearInterval(simQAIntervalRef.current);
+    };
+  }, []);
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
@@ -1474,19 +1754,117 @@ export default function OCC() {
             </button>
           </div>
         ) : activeSidebarTab === "simulate" ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
-            <Mic className="w-12 h-12 text-slate-700" />
-            <div>
-              <div className="text-lg font-semibold text-slate-400 mb-1">Simulate Call</div>
-              <div className="text-sm text-slate-600">Test call scenarios, operator features, and IVR flows in a sandbox environment.</div>
+          <div className="flex-1 flex flex-col overflow-y-auto">
+            {/* Header */}
+            <div className="px-4 pt-4 pb-3 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <Mic className="w-4 h-4 text-violet-400" />
+                <span className="text-sm font-semibold text-slate-200">Simulate Call</span>
+                {simRunning && (
+                  <span className="ml-auto flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />LIVE
+                  </span>
+                )}
+              </div>
+              <div className="text-[11px] text-slate-500">Test operator workflows in a sandbox — no real calls placed.</div>
             </div>
-            <div className="flex gap-3 mt-2">
-              <button className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
-                <Phone className="w-4 h-4" /> New Simulation
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition-colors">
-                Load Scenario
-              </button>
+
+            {/* Scenario selector */}
+            <div className="px-4 py-3 border-b border-slate-800 shrink-0">
+              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Scenario</div>
+              <div className="flex flex-col gap-1.5">
+                {SIM_SCENARIOS.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => !simRunning && setSimScenario(s.id)}
+                    disabled={simRunning}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left text-xs transition-colors ${simScenario === s.id ? "bg-violet-900/40 border-violet-700 text-violet-200" : "bg-slate-800/60 border-slate-700/60 text-slate-400 hover:border-slate-600 hover:text-slate-300"} ${simRunning ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${simScenario === s.id ? "bg-violet-400" : "bg-slate-600"}`} />
+                    <span className="font-medium">{s.label}</span>
+                    <span className="ml-auto text-[9px] text-slate-600 shrink-0 truncate max-w-[90px]">{s.subject}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Count + Speed */}
+            <div className="px-4 py-3 border-b border-slate-800 shrink-0 space-y-3">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Participants</div>
+                  <div className="text-xs font-semibold text-slate-300">{simCount}</div>
+                </div>
+                <input
+                  type="range" min={5} max={30} value={simCount}
+                  onChange={e => !simRunning && setSimCount(Number(e.target.value))}
+                  disabled={simRunning}
+                  className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-violet-500 disabled:opacity-40"
+                />
+                <div className="flex justify-between text-[9px] text-slate-600 mt-0.5"><span>5</span><span>30</span></div>
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1.5">Join Rate</div>
+                <div className="flex gap-1.5">
+                  {(["fast", "normal", "slow"] as const).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => !simRunning && setSimJoinRate(r)}
+                      disabled={simRunning}
+                      className={`flex-1 py-1 rounded text-[10px] font-semibold border transition-colors capitalize ${simJoinRate === r ? "bg-violet-800/50 border-violet-600 text-violet-200" : "bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-300"} ${simRunning ? "opacity-40 cursor-not-allowed" : ""}`}
+                    >{r}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Progress bar (when running) */}
+            {simRunning && (
+              <div className="px-4 py-3 border-b border-slate-800 shrink-0">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Progress</div>
+                  <div className="text-[10px] text-slate-400">{Math.min(simProgress + 2, simCount)} / {simCount} joined</div>
+                </div>
+                <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-violet-500 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(((simProgress + 2) / simCount) * 100, 100)}%` }}
+                  />
+                </div>
+                <div className="text-[9px] text-slate-600 mt-1.5 text-center">
+                  {simProgress + 2 >= simCount
+                    ? "All participants joined — CCP is active"
+                    : `Next join in ~${simJoinRate === "fast" ? "1.5" : simJoinRate === "slow" ? "7" : "3"}s`}
+                </div>
+              </div>
+            )}
+
+            {/* Start / Stop button */}
+            <div className="px-4 py-3 shrink-0">
+              {!simRunning ? (
+                <button
+                  onClick={startSimulation}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-violet-700 hover:bg-violet-600 text-white rounded-lg text-sm font-semibold transition-colors"
+                >
+                  <Phone className="w-4 h-4" /> Start Simulation
+                </button>
+              ) : (
+                <button
+                  onClick={stopSimulation}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-900/60 hover:bg-red-800 text-red-300 rounded-lg text-sm font-semibold border border-red-800/50 transition-colors"
+                >
+                  <PhoneOff className="w-4 h-4" /> Stop Simulation
+                </button>
+              )}
+            </div>
+
+            {/* Hint */}
+            <div className="px-4 pb-3 shrink-0">
+              <div className="text-[10px] text-slate-600 leading-relaxed">
+                {simRunning
+                  ? "Conference opened in the CCP. Use mute, disconnect, dial-out, Q&A and all other controls exactly as in a real call."
+                  : "Starts a fake conference in the CCP with participants joining over time. All controls work as in a real call — nothing is sent to any bridge."}
+              </div>
             </div>
           </div>
         ) : activeSidebarTab === "settings" ? (
