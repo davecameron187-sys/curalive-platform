@@ -144,8 +144,8 @@ export default function OperatorConsole() {
   });
 
   const rtmpKey = "evt_q4_2026_xK9mNpQ3";
-  const rtmpUrl = `rtmp://ingest.pulselive.events/live/${rtmpKey}`;
-  const webhookUrl = `https://pulselive.events/api/webhooks/recall`;
+  const rtmpUrl = `rtmp://ingest.curalive.cc/live/${rtmpKey}`;
+  const webhookUrl = `https://curalive.cc/api/webhooks/recall`;
 
   // Silence detector
   useEffect(() => {
@@ -697,7 +697,7 @@ export default function OperatorConsole() {
               <div className="bg-[#0f1629] border border-white/8 rounded-xl p-5">
                 <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">OBS Studio Setup</div>
                 <div className="space-y-2 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {[["Service", "Custom…"], ["Server", "rtmp://ingest.pulselive.events/live"], ["Stream Key", rtmpKey], ["Audio Bitrate", "128 kbps (mono)"], ["Video Bitrate", "2500–4000 kbps"]].map(([k, v]) => (
+                  {[["Service", "Custom…"], ["Server", "rtmp://ingest.curalive.cc/live"], ["Stream Key", rtmpKey], ["Audio Bitrate", "128 kbps (mono)"], ["Video Bitrate", "2500–4000 kbps"]].map(([k, v]) => (
                     <div key={k} className="flex justify-between border-b border-white/5 pb-2">
                       <span className="text-slate-500">{k}</span>
                       <span className="font-mono text-xs text-slate-300">{v}</span>

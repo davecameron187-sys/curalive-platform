@@ -303,7 +303,7 @@ export default function Demo() {
           <div className="grid sm:grid-cols-3 gap-4 mb-8">
             {[
               { icon: Calendar, label: "Book a Demo", desc: "30-min live walkthrough", action: "Schedule Now" },
-              { icon: Mail, label: "Email Us", desc: "demo@pulselive.events", action: "Send Email" },
+              { icon: Mail, label: "Email Us", desc: "demo@curalive.cc", action: "Send Email" },
               { icon: PhoneCall, label: "Call Us", desc: "+27 11 000 0000", action: "Call Now" },
             ].map(({ icon: Icon, label, desc, action }) => (
               <div key={label} className="bg-card border border-border rounded-xl p-5 text-center">

@@ -97,7 +97,7 @@ export const occConferences = mysqlTable("occ_conferences", {
   eventId: varchar("eventId", { length: 128 }).notNull(), // references events.eventId
   callId: varchar("callId", { length: 64 }).notNull().unique(), // e.g. "CC-9921"
   subject: varchar("subject", { length: 255 }).notNull(),
-  reseller: varchar("reseller", { length: 128 }).default("Chorus Call Inc.").notNull(),
+  reseller: varchar("reseller", { length: 128 }).default("CuraLive").notNull(),
   product: varchar("product", { length: 128 }).default("Event Conference").notNull(),
   moderatorCode: varchar("moderatorCode", { length: 32 }),
   participantCode: varchar("participantCode", { length: 32 }),
@@ -732,7 +732,7 @@ export const recallBots = mysqlTable("recall_bots", {
   // The meeting URL the bot joined
   meetingUrl: text("meeting_url").notNull(),
   // Bot display name shown in the meeting
-  botName: varchar("bot_name", { length: 200 }).default("PulseLive"),
+  botName: varchar("bot_name", { length: 200 }).default("CuraLive"),
   // Recall.ai bot status: created, joining, in_call, done, failed
   status: varchar("status", { length: 50 }).notNull().default("created"),
   // Ably channel name this bot publishes transcripts to
@@ -867,7 +867,7 @@ export const eventCustomisation = mysqlTable("event_customisation", {
   eventId: varchar("event_id", { length: 128 }).notNull().unique(), // references events.eventId or webcast slug
 
   // ── Brand Identity ──────────────────────────────────────────────────────────
-  clientName: varchar("client_name", { length: 200 }).notNull().default("PulseLive"),
+  clientName: varchar("client_name", { length: 200 }).notNull().default("CuraLive"),
   logoUrl: varchar("logo_url", { length: 500 }),
   primaryColor: varchar("primary_color", { length: 20 }).default("#c8a96e"),
   accentColor: varchar("accent_color", { length: 20 }).default("#10b981"),
@@ -908,7 +908,7 @@ export const eventCustomisation = mysqlTable("event_customisation", {
   bookButtonLabel: varchar("book_button_label", { length: 100 }).default("Submit Booking Request"),
 
   // ── Email Branding ──────────────────────────────────────────────────────────
-  emailSenderName: varchar("email_sender_name", { length: 200 }).default("PulseLive"),
+  emailSenderName: varchar("email_sender_name", { length: 200 }).default("CuraLive"),
   emailSenderAddress: varchar("email_sender_address", { length: 320 }),
   emailHeaderColor: varchar("email_header_color", { length: 20 }).default("#0f172a"),
   emailButtonColor: varchar("email_button_color", { length: 20 }).default("#3b82f6"),

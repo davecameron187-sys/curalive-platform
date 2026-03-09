@@ -298,7 +298,7 @@
 6. Start event with confidence
 
 **Support Resources**:
-- **Slack Channel**: #chorus-ai-operators
+- **Slack Channel**: #curalive-operators
 - **Email**: operators@curalive.io
 - **Docs**: https://docs.curalive.io
 - **Video Tutorials**: https://videos.curalive.io
@@ -388,7 +388,7 @@ Access at: `/operator/performance`
 - Check error logs
 
 **Step 2: Notify Team** (1 min)
-- Post in #chorus-ai-incidents
+- Post in #curalive-incidents
 - Tag on-call lead
 - Provide context
 
@@ -430,9 +430,9 @@ Access at: `/operator/performance`
 - Edge case examples
 
 ### Support Channels
-- **Slack**: #chorus-ai-operators
-- **Email**: operators@curalive.io
-- **Phone**: +1-555-CHORUS-AI
+- **Slack**: #curalive-operators
+- **Email**: operators@curalive.cc
+- **Phone**: +27 11 000 0000
 - **Chat**: https://chat.curalive.io
 - **Ticket System**: https://tickets.curalive.io
 

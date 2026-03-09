@@ -266,7 +266,7 @@ export default function PostEvent() {
     if (!summary) return;
 
     const content = [
-      "CHORUS.AI — POST-EVENT EXECUTIVE SUMMARY",
+      "CuraLive — POST-EVENT EXECUTIVE SUMMARY",
       "=========================================",
       "",
       "Q4 2025 Earnings Call — CuraLive Inc.",
@@ -310,7 +310,7 @@ export default function PostEvent() {
 
   const handleDownloadTranscript = () => {
     const lines = TRANSCRIPT.map(t => `[${t.time}] ${t.speaker}: ${t.text}`).join("\n\n");
-    const content = `CHORUS.AI — FULL TRANSCRIPT\nQ4 2025 Earnings Call — CuraLive Inc.\nGenerated: ${new Date().toLocaleString()}\n\n${'='.repeat(60)}\n\n${lines}\n\n${'='.repeat(60)}\nTranscribed by Whisper AI · Speaker-diarized by Recall.ai\nProduced by CuraLive — CuraLive Inc.`;
+    const content = `CuraLive — FULL TRANSCRIPT\nQ4 2025 Earnings Call — CuraLive Inc.\nGenerated: ${new Date().toLocaleString()}\n\n${'='.repeat(60)}\n\n${lines}\n\n${'='.repeat(60)}\nTranscribed by Whisper AI · Speaker-diarized by Recall.ai\nProduced by CuraLive — CuraLive Inc.`;
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -880,7 +880,7 @@ export default function PostEvent() {
                 <button
                   onClick={() => {
                     const lines = [
-                      `CHORUS.AI — OPERATOR REPORT`,
+                      `CuraLive — OPERATOR REPORT`,
                       `Conference: ${occData.subject} (${occData.callId})`,
                       `Exported: ${new Date(occData.exportedAt).toLocaleString()}`,
                       ``,
