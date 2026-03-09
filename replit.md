@@ -111,8 +111,9 @@ The OCC is a world-class conference control centre built to the technical brief.
 - `DATABASE_URL` secret is set and the schema is fully pushed — all tables exist
 - Demo data seeded: conference CC-9921 (Q4 2025 Earnings Call) with 10 participants
 - All training tables created and verified
-- `pnpm db:push` runs `drizzle-kit generate && drizzle-kit migrate` if schema changes are needed
-- **New tables (from 6 Manus specs)**: `post_event_reports`, `transcription_jobs`, `polls`, `poll_options`, `poll_votes`, `event_schedules`, `operator_availability`, `resource_allocations`, `event_templates`, `clients`, `client_portals` — all created directly via SQL (migration system in mixed state; use direct SQL CREATE TABLE IF NOT EXISTS for new tables)
+- **NEVER use `pnpm db:push`** — fails with "table already exists" on training_call_logs. Use `pnpm exec tsx scripts/create-missing-tables.ts` or direct SQL with `CREATE TABLE IF NOT EXISTS` for new tables
+- **New tables (from 6 Manus specs)**: `post_event_reports`, `transcription_jobs`, `polls`, `poll_options`, `poll_votes`, `event_schedules`, `operator_availability`, `resource_allocations`, `event_templates`, `clients`, `client_portals`
+- **AI/transcript tables (14 new)**: `ai_generated_content`, `occ_transcription_segments`, `occ_live_rolling_summaries`, `qa_auto_triage_results`, `speaking_pace_analysis`, `toxicity_filter_results`, `transcript_edits`, `transcript_versions`, `transcript_edit_audit_log`, `event_brief_results`, `content_engagement_events`, `content_performance_metrics`, `content_type_performance`, `event_performance_summary`
 
 ## Auth
 
