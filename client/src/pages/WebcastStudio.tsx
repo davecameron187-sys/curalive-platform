@@ -1134,10 +1134,30 @@ function WebcastStudioInner({ slug }: { slug: string }) {
             {/* ── Mux RTMP Stream Panel + Publish Recording ── */}
             {activeTab === "stream" && (
               <div className="p-4 space-y-4">
-                <MuxStreamPanel
-                  eventId={event?.id}
-                  eventLabel={event?.title ?? slug}
-                />
+                {simulateParam ? (
+                  <div className="rounded-xl border border-border bg-muted/30 p-5 space-y-3">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Video className="w-4 h-4" />
+                      <span className="font-semibold text-sm">RTMP Streams</span>
+                      <span className="ml-auto text-xs bg-muted px-2 py-0.5 rounded-full">Demo Mode</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      RTMP stream management is disabled in simulation mode. In a live event, operators can create and manage ingest streams here, copy stream keys into OBS or vMix, and monitor stream health in real time.
+                    </p>
+                    <div className="rounded-lg border border-border bg-card p-3 space-y-1 opacity-50 pointer-events-none select-none">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono text-muted-foreground">rtmps://global-live.mux.com:443/app</span>
+                        <span className="text-xs text-emerald-400 font-semibold">● idle</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground font-mono truncate">Stream key: ••••••••••••••••••••</div>
+                    </div>
+                  </div>
+                ) : (
+                  <MuxStreamPanel
+                    eventId={event?.id}
+                    eventLabel={event?.title ?? slug}
+                  />
+                )}
 
                 {/* ── Publish Recording ── */}
                 <div className="border border-border rounded-xl overflow-hidden">
