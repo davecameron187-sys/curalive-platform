@@ -212,9 +212,7 @@ export default function OCC() {
   const [ccpView, setCcpView] = useState<"standard" | "group" | "super">("standard");
   const [ccpPartyTab, setCcpPartyTab] = useState<"parties" | "operators" | "alarms">("parties");
   const [activeParticipantId, setActiveParticipantId] = useState<number | null>(null);
-  const [bbName, setBbName] = useState("");
-  const [bbPhone, setBbPhone] = useState("");
-  const [bbInfo, setBbInfo] = useState("");
+
   const [vuLevel, setVuLevel] = useState(0);
 
   // Simulated sentiment scores per participant (0-100)
@@ -872,7 +870,6 @@ export default function OCC() {
     setCcpView("standard");
     setCcpPartyTab("parties");
     setActiveParticipantId(null);
-    setBbName(""); setBbPhone(""); setBbInfo("");
   }, []);
 
   const toggleParticipantSelect = (id: number) => {
@@ -2413,7 +2410,7 @@ export default function OCC() {
                         return (
                           <tr
                             key={p.id}
-                            onClick={() => { setActiveParticipantId(p.id); setBbName(p.name ?? ""); setBbPhone(p.phoneNumber ?? ""); setBbInfo(p.company ?? ""); }}
+                            onClick={() => setActiveParticipantId(p.id)}
                             className={`border-b border-slate-800/60 transition-colors cursor-pointer ${
                               activeParticipantId === p.id ? "bg-blue-900/30 border-l-2 border-l-blue-500" :
                               isSpeakingRow ? "bg-emerald-900/20 border-l-2 border-l-emerald-500" :
@@ -2540,38 +2537,6 @@ export default function OCC() {
                   </table>
                 </div>
 
-                    {/* Bottom Action Bar */}
-                    <div className="shrink-0 border-t border-slate-700 bg-[#0a0f1e]">
-                      <div className="flex items-center gap-1 px-2 py-1.5 flex-wrap">
-                        <div className="flex items-center gap-1">
-                          <input value={bbName} onChange={e => setBbName(e.target.value)} placeholder="Name" className="w-24 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500" />
-                          <input value={bbPhone} onChange={e => setBbPhone(e.target.value)} placeholder="Phone" className="w-24 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 font-mono" />
-                          <input value={bbInfo} onChange={e => setBbInfo(e.target.value)} placeholder="Add'l Info" className="w-20 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500" />
-                        </div>
-                        <div className="flex items-center gap-0.5 flex-wrap">
-                          {[
-                            { label: "Find", action: () => { if (bbName) setParticipantSearch(bbName); else if (bbPhone) setParticipantSearch(bbPhone); } },
-                            { label: "Edit", action: () => {} },
-                            { label: "Gain", action: () => {} },
-                            { label: "Details", action: () => {} },
-                            { label: "Play", action: () => setFeatureTab("audio") },
-                            { label: "Add Preset", action: () => {} },
-                          ].map(({ label, action }) => (
-                            <button key={label} onClick={action} className="px-2 py-1 text-[10px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition-colors whitespace-nowrap">{label}</button>
-                          ))}
-                          <div className="w-px h-3 bg-slate-700 mx-0.5" />
-                          {[
-                            { label: "Remove", color: "text-red-400 border-red-900/40 hover:bg-red-900/40", action: () => { if (activeParticipantId) doParticipantAction("dropped", [activeParticipantId]); } },
-                            { label: "Dir", color: "", action: () => {} },
-                            { label: "Xfer", color: "", action: () => {} },
-                            { label: "Transcribe", color: "", action: () => {} },
-                            { label: "Record", color: activeConf?.isRecording ? "text-red-400 border-red-900/40 bg-red-900/20" : "", action: () => doToggleRecord() },
-                          ].map(({ label, color, action }) => (
-                            <button key={label} onClick={action} className={`px-2 py-1 text-[10px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition-colors whitespace-nowrap ${color}`}>{label}</button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
 
                   </div>
 
