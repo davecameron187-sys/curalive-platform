@@ -28,6 +28,9 @@ import { transcriptionRouter } from "./routers/transcription";
 import { pollsRouter } from "./routers/polls";
 import { schedulingRouter } from "./routers/scheduling";
 import { clientPortalRouter } from "./routers/clientPortal";
+import { complianceRouter } from "./routers/compliance";
+import { followupsRouter } from "./routers/followups";
+import { sentimentRouter } from "./routers/sentiment";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -66,6 +69,9 @@ export const appRouter = router({
   polls: pollsRouter,
   scheduling: schedulingRouter,
   clientPortal: clientPortalRouter,
+  compliance: complianceRouter,
+  followups: followupsRouter,
+  sentiment: sentimentRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

@@ -1622,3 +1622,89 @@ export const clientPortals = mysqlTable("client_portals", {
 
 export type ClientPortal = typeof clientPortals.$inferSelect;
 export type InsertClientPortal = typeof clientPortals.$inferInsert;
+
+// ─── Compliance Audit Trail ───────────────────────────────────────────────────
+
+export const complianceFlags = mysqlTable("compliance_flags", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  statementText: text("statement_text").notNull(),
+  timestamp: varchar("timestamp", { length: 16 }),
+  speakerName: varchar("speaker_name", { length: 255 }),
+  riskLevel: mysqlEnum("risk_level", ["low", "medium", "high"]).default("low").notNull(),
+  flagReason: text("flag_reason"),
+  complianceStatus: mysqlEnum("compliance_status", ["flagged", "reviewed", "approved", "disclosed"]).default("flagged").notNull(),
+  reviewedBy: int("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  approvedBy: int("approved_by"),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ComplianceFlag = typeof complianceFlags.$inferSelect;
+export type InsertComplianceFlag = typeof complianceFlags.$inferInsert;
+
+export const complianceAuditLog = mysqlTable("compliance_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }),
+  action: mysqlEnum("action", ["flagged", "reviewed", "approved", "disclosed", "certificate_generated", "exported"]).notNull(),
+  userId: int("user_id"),
+  details: text("details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ComplianceAuditLogEntry = typeof complianceAuditLog.$inferSelect;
+export type InsertComplianceAuditLogEntry = typeof complianceAuditLog.$inferInsert;
+
+// ─── Investor Follow-Up Workflow ──────────────────────────────────────────────
+
+export const investorFollowups = mysqlTable("investor_followups", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  investorName: varchar("investor_name", { length: 255 }),
+  investorEmail: varchar("investor_email", { length: 320 }),
+  investorCompany: varchar("investor_company", { length: 255 }),
+  questionText: text("question_text"),
+  commitmentText: text("commitment_text"),
+  followUpStatus: mysqlEnum("follow_up_status", ["pending", "contacted", "resolved", "dismissed"]).default("pending").notNull(),
+  crmContactId: varchar("crm_contact_id", { length: 128 }),
+  crmActivityId: varchar("crm_activity_id", { length: 128 }),
+  emailTemplate: text("email_template"),
+  emailSentAt: timestamp("email_sent_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type InvestorFollowup = typeof investorFollowups.$inferSelect;
+export type InsertInvestorFollowup = typeof investorFollowups.$inferInsert;
+
+export const followupEmails = mysqlTable("followup_emails", {
+  id: int("id").autoincrement().primaryKey(),
+  followupId: int("followup_id").notNull(),
+  emailBody: text("email_body"),
+  recipientEmail: varchar("recipient_email", { length: 320 }),
+  sentAt: timestamp("sent_at"),
+  openedAt: timestamp("opened_at"),
+  clickedAt: timestamp("clicked_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type FollowupEmail = typeof followupEmails.$inferSelect;
+export type InsertFollowupEmail = typeof followupEmails.$inferInsert;
+
+// ─── Real-Time Investor Sentiment ─────────────────────────────────────────────
+
+export const sentimentSnapshots = mysqlTable("sentiment_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  snapshotAt: timestamp("snapshot_at").defaultNow().notNull(),
+  overallScore: int("overall_score").default(50).notNull(),
+  bullishCount: int("bullish_count").default(0).notNull(),
+  neutralCount: int("neutral_count").default(0).notNull(),
+  bearishCount: int("bearish_count").default(0).notNull(),
+  topSentimentDrivers: text("top_sentiment_drivers"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type SentimentSnapshot = typeof sentimentSnapshots.$inferSelect;
+export type InsertSentimentSnapshot = typeof sentimentSnapshots.$inferInsert;

@@ -66,6 +66,10 @@ import EventCalendar from "./pages/EventCalendar";
 import AttendeeRoom from "./pages/AttendeeRoom";
 import ClientPortal from "./pages/ClientPortal";
 import AdminClients from "./pages/AdminClients";
+import ComplianceReport from "./pages/ComplianceReport";
+import ComplianceAuditLog from "./pages/ComplianceAuditLog";
+import InvestorFollowUps from "./pages/InvestorFollowUps";
+import SentimentDashboard from "./pages/SentimentDashboard";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -132,6 +136,10 @@ function Router() {
       <Route path="/m/:eventId" component={AttendeeRoom} />
       <Route path="/portal/:clientSlug" component={ClientPortal} />
       <Route path="/admin/clients" component={AdminClients} />
+      <Route path="/post-event/:id/compliance" component={ComplianceReport} />
+      <Route path="/post-event/:id/followups" component={InvestorFollowUps} />
+      <Route path="/compliance/audit-log" component={ComplianceAuditLog} />
+      <Route path="/operator/:eventId/sentiment" component={SentimentDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
