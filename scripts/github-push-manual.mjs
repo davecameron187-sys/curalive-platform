@@ -64,7 +64,7 @@ async function main() {
     return;
   }
 
-  let githubHead = state?.githubHead ?? await getRemoteHead();
+  let githubHead = await getRemoteHead();
   const lastLocalHead = state?.localHead;
   const commitMsg = execSync("git log --format=%s -1").toString().trim();
 
