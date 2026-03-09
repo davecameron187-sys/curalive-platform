@@ -109,6 +109,33 @@ export class AblyRealtimeService {
   }
 
   /**
+   * Publish a message to an event channel (used for live audience features)
+   */
+  static async publishToEvent(eventId: string, type: string, data: any): Promise<void> {
+    if (!this.client) {
+      const apiKey = process.env.ABLY_API_KEY;
+      if (!apiKey) {
+        console.warn("[Ably] ABLY_API_KEY not set, skipping publishToEvent");
+        return;
+      }
+      this.initialize(apiKey);
+    }
+    
+    const channelName = `curalive-event-${eventId}`;
+    const channel = this.client!.channels.get(channelName);
+    
+    try {
+      await channel.publish({
+        name: "curalive",
+        data: JSON.stringify({ type, data }),
+      });
+    } catch (error) {
+      console.error("[Ably] Failed to publish to event:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Enter presence for a user
    */
   static async enterPresence(

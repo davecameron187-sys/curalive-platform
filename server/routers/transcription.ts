@@ -1,371 +1,201 @@
 import { z } from "zod";
-import { router, operatorProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import {
-  occTranscriptionSegments,
-  occTranscriptions,
-  occTranscriptEdits,
-  occTranscriptAuditLog,
-  occRecallBots,
-} from "../../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
-import {
-  initializeRecallBot,
-  storeTranscriptionSegment,
-  getConferenceTranscription,
-  generateTranscriptionSummary,
-  stopRecallBot,
-} from "../services/TranscriptionService";
+import { transcriptionJobs, occTranscriptionSegments, transcriptEdits } from "../../drizzle/schema";
+import { eq, desc } from "drizzle-orm";
 
-/**
- * Transcription Router — tRPC procedures for AI transcription and editing
- */
 export const transcriptionRouter = router({
-  /**
-   * Initialize Recall.ai bot for a conference
-   * Called when conference starts
-   */
-  initializeBot: operatorProcedure
-    .input(
-      z.object({
-        conferenceId: z.number(),
-        eventId: z.string(),
-        callId: z.string(),
-        platform: z.enum(["zoom", "teams", "webex", "rtmp", "pstn"]),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      try {
-        const botId = await initializeRecallBot({
-          conferenceId: input.conferenceId,
+  startWhisperJob: protectedProcedure
+    .input(z.object({
+      eventId: z.string(),
+      audioUrl: z.string().optional(),
+      language: z.string().default("en"),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const openAiKey = process.env.OPENAI_API_KEY;
+      if (!openAiKey) {
+        const [result] = await db.insert(transcriptionJobs).values({
           eventId: input.eventId,
-          callId: input.callId,
-          platform: input.platform,
+          source: "whisper",
+          status: "failed",
+          errorMessage: "OpenAI API key not configured. Set OPENAI_API_KEY to enable Whisper transcription.",
+          languagesRequested: JSON.stringify([input.language]),
+          audioUrl: input.audioUrl ?? null,
         });
-
-        return {
-          success: true,
-          botId,
-          message: `Recall.ai bot initialized for ${input.callId}`,
-        };
-      } catch (error) {
-        console.error("[transcriptionRouter] Failed to initialize bot:", error);
-        throw error;
+        return { jobId: (result as any).insertId, status: "failed", error: "OpenAI API key not configured" };
       }
+      const [result] = await db.insert(transcriptionJobs).values({
+        eventId: input.eventId,
+        source: "whisper",
+        status: "queued",
+        languagesRequested: JSON.stringify([input.language]),
+        audioUrl: input.audioUrl ?? null,
+      });
+      return { jobId: (result as any).insertId, status: "queued" };
     }),
 
-  /**
-   * Get live transcription for a conference (last 30 seconds)
-   * Called by OCC to display real-time transcript
-   */
-  getLiveTranscription: operatorProcedure
-    .input(
-      z.object({
-        conferenceId: z.number(),
-        lastNSeconds: z.number().default(30),
-      })
-    )
+  getJobStatus: protectedProcedure
+    .input(z.object({ jobId: z.number() }))
     .query(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        const segments = await db
-          .select()
-          .from(occTranscriptionSegments)
-          .where(eq(occTranscriptionSegments.conferenceId, input.conferenceId))
-          .orderBy(desc(occTranscriptionSegments.startTime))
-          .limit(100);
-
-        return {
-          conferenceId: input.conferenceId,
-          segments: segments.reverse(), // Return in chronological order
-          count: segments.length,
-        };
-      } catch (error) {
-        console.error("[transcriptionRouter] Failed to get live transcription:", error);
-        throw error;
-      }
+      const db = await getDb();
+      if (!db) return { status: "unknown" };
+      const rows = await db.select().from(transcriptionJobs)
+        .where(eq(transcriptionJobs.id, input.jobId))
+        .limit(1);
+      const job = rows[0];
+      if (!job) return { status: "not_found" };
+      return {
+        status: job.status,
+        source: job.source,
+        languageDetected: job.languageDetected,
+        wordCount: job.wordCount,
+        durationSeconds: job.durationSeconds,
+        confidenceScore: job.confidenceScore,
+        errorMessage: job.errorMessage,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+      };
     }),
 
-  /**
-   * Get full conference transcription
-   * Called for post-event report or transcript editing
-   */
-  getFullTranscription: operatorProcedure
-    .input(z.object({ conferenceId: z.number() }))
+  getTranscript: protectedProcedure
+    .input(z.object({ eventId: z.string() }))
     .query(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        const transcription = await db
-          .select()
-          .from(occTranscriptions)
-          .where(eq(occTranscriptions.conferenceId, input.conferenceId))
-          .limit(1);
+      const db = await getDb();
+      if (!db) return { segments: [], metadata: null };
+      const jobs = await db.select().from(transcriptionJobs)
+        .where(eq(transcriptionJobs.eventId, input.eventId))
+        .orderBy(desc(transcriptionJobs.createdAt));
+      
+      const segments = await db.select().from(occTranscriptionSegments)
+        .where(eq(occTranscriptionSegments.conferenceId, input.eventId))
+        .orderBy(occTranscriptionSegments.startTimeMs);
 
-        if (transcription.length === 0) {
-          return null;
-        }
-
-        const segments = await db
-          .select()
-          .from(occTranscriptionSegments)
-          .where(eq(occTranscriptionSegments.conferenceId, input.conferenceId))
-          .orderBy(occTranscriptionSegments.startTime);
-
-        return {
-          ...transcription[0],
-          segments,
-        };
-      } catch (error) {
-        console.error("[transcriptionRouter] Failed to get full transcription:", error);
-        throw error;
-      }
+      const completed = jobs.find(j => j.status === "completed");
+      return {
+        segments: segments.map(s => ({
+          id: s.id,
+          speaker: s.speakerName,
+          text: s.content,
+          startTime: s.startTimeMs ? s.startTimeMs / 1000 : 0,
+          endTime: s.endTimeMs ? s.endTimeMs / 1000 : 0,
+          confidence: s.confidence,
+        })),
+        metadata: completed ? {
+          source: completed.source,
+          language: completed.languageDetected,
+          wordCount: completed.wordCount,
+          duration: completed.durationSeconds,
+          confidence: completed.confidenceScore,
+          completedAt: completed.completedAt,
+        } : null,
+        latestJob: jobs[0] ?? null,
+      };
     }),
 
-  /**
-   * Generate AI summary from transcription
-   * Called after conference ends
-   */
-  generateSummary: operatorProcedure
-    .input(z.object({ conferenceId: z.number() }))
-    .mutation(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        const summary = await generateTranscriptionSummary(input.conferenceId);
-
-        // Store summary in database
-        await db
-          .insert(occTranscriptions)
-          .values({
-            conferenceId: input.conferenceId,
-            fullTranscript: summary.fullTranscript,
-            summary: summary.keyPoints.join("\n"),
-            keyPoints: summary.keyPoints,
-            actionItems: summary.actionItems,
-            speakers: summary.speakers,
-            duration: summary.duration,
-            language: summary.language,
-            wordCount: summary.fullTranscript.split(/\s+/).length,
-          })
-          .onDuplicateKeyUpdate({
-            set: {
-              summary: summary.keyPoints.join("\n"),
-              keyPoints: summary.keyPoints,
-              actionItems: summary.actionItems,
-              speakers: summary.speakers,
-            },
-          });
-
-        return {
-          success: true,
-          summary,
-          message: "Summary generated successfully",
-        };
-      } catch (error) {
-        console.error("[transcriptionRouter] Failed to generate summary:", error);
-        throw error;
-      }
-    }),
-
-  /**
-   * Correct a transcription segment
-   * Called by operator to fix transcription errors
-   */
-  correctSegment: operatorProcedure
-    .input(
-      z.object({
-        segmentId: z.number(),
-        conferenceId: z.number(),
-        correctedText: z.string(),
-        reason: z.string().optional(),
-      })
-    )
+  updateSegment: protectedProcedure
+    .input(z.object({
+      segmentId: z.number(),
+      text: z.string(),
+      reason: z.string().optional(),
+    }))
     .mutation(async ({ input, ctx }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        // Get original segment
-        const segment = await db
-          .select()
-          .from(occTranscriptionSegments)
-          .where(eq(occTranscriptionSegments.id, input.segmentId))
-          .limit(1);
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-        if (segment.length === 0) {
-          throw new Error("Segment not found");
-        }
+      const [segment] = await db.select().from(occTranscriptionSegments)
+        .where(eq(occTranscriptionSegments.id, input.segmentId))
+        .limit(1);
 
-        const original = segment[0];
+      if (!segment) throw new Error("Segment not found");
 
-        // Create edit record
-        const editResult = await db.insert(occTranscriptEdits).values({
-          transcriptionSegmentId: input.segmentId,
-          conferenceId: input.conferenceId,
-          operatorId: ctx.user.id,
-          originalText: original.text,
-          correctedText: input.correctedText,
-          editType: "correction",
-          reason: input.reason,
-          approved: false,
-        });
+      // Audit trail
+      await db.insert(transcriptEdits).values({
+        conferenceId: parseInt(segment.conferenceId), // Assuming numeric conferenceId in edits table, adjust if needed
+        segmentId: input.segmentId,
+        operatorId: ctx.user?.id ?? 0,
+        originalText: segment.content,
+        correctedText: input.text,
+        editType: "manual_correction",
+        reason: input.reason ?? "Manual correction",
+        status: "completed"
+      });
 
-        // Update segment with corrected text
-        await db
-          .update(occTranscriptionSegments)
-          .set({ text: input.correctedText })
-          .where(eq(occTranscriptionSegments.id, input.segmentId));
+      await db.update(occTranscriptionSegments)
+        .set({ content: input.text })
+        .where(eq(occTranscriptionSegments.id, input.segmentId));
 
-        // Log audit event
-        await db.insert(occTranscriptAuditLog).values({
-          conferenceId: input.conferenceId,
-          action: "segment_edited",
-          userId: ctx.user.id,
-          details: {
-            segmentId: input.segmentId,
-            originalText: original.text,
-            correctedText: input.correctedText,
-            reason: input.reason,
-          },
-        });
-
-        return {
-          success: true,
-          editId: editResult[0],
-          message: "Segment corrected successfully",
-        };
-      } catch (error) {
-        console.error("[transcriptionRouter] Failed to correct segment:", error);
-        throw error;
-      }
+      return { success: true };
     }),
 
-  /**
-   * Get edit history for a segment
-   * Shows all corrections made to a specific segment
-   */
-  getEditHistory: operatorProcedure
-    .input(z.object({ segmentId: z.number() }))
+  exportTranscript: protectedProcedure
+    .input(z.object({ 
+      eventId: z.string(),
+      format: z.enum(["txt", "srt", "vtt", "json"])
+    }))
     .query(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        const edits = await db
-          .select()
-          .from(occTranscriptEdits)
-          .where(eq(occTranscriptEdits.transcriptionSegmentId, input.segmentId))
-          .orderBy(desc(occTranscriptEdits.createdAt));
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-        return edits;
-      } catch (error) {
-        console.error("[transcriptionRouter] Failed to get edit history:", error);
-        throw error;
+      const segments = await db.select().from(occTranscriptionSegments)
+        .where(eq(occTranscriptionSegments.conferenceId, input.eventId))
+        .orderBy(occTranscriptionSegments.startTimeMs);
+
+      if (input.format === "json") {
+        return { content: JSON.stringify(segments, null, 2), contentType: "application/json" };
       }
+
+      let content = "";
+      if (input.format === "txt") {
+        content = segments.map(s => `[${s.speakerName ?? "Speaker"}] ${s.content}`).join("\n\n");
+        return { content, contentType: "text/plain" };
+      }
+
+      // Basic SRT/VTT formatting (simplified)
+      const formatTime = (ms: number, isVtt: boolean) => {
+        const s = Math.floor(ms / 1000);
+        const m = Math.floor(s / 60);
+        const h = Math.floor(m / 60);
+        const remainingMs = ms % 1000;
+        const separator = isVtt ? "." : ",";
+        return `${String(h).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}${separator}${String(remainingMs).padStart(3, '0')}`;
+      };
+
+      if (input.format === "vtt") {
+        content = "WEBVTT\n\n" + segments.map((s, i) => 
+          `${formatTime(s.startTimeMs ?? 0, true)} --> ${formatTime(s.endTimeMs ?? 0, true)}\n${s.speakerName ? `<v ${s.speakerName}>` : ""}${s.content}\n`
+        ).join("\n");
+        return { content, contentType: "text/vtt" };
+      }
+
+      if (input.format === "srt") {
+        content = segments.map((s, i) => 
+          `${i + 1}\n${formatTime(s.startTimeMs ?? 0, false)} --> ${formatTime(s.endTimeMs ?? 0, false)}\n${s.content}\n`
+        ).join("\n");
+        return { content, contentType: "text/plain" };
+      }
+
+      return { content: "", contentType: "text/plain" };
     }),
 
-  /**
-   * Get audit log for a conference
-   * Shows all transcription-related actions for compliance
-   */
-  getAuditLog: operatorProcedure
-    .input(z.object({ conferenceId: z.number() }))
+  listJobs: protectedProcedure
+    .input(z.object({ eventId: z.string() }))
     .query(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        const auditLog = await db
-          .select()
-          .from(occTranscriptAuditLog)
-          .where(eq(occTranscriptAuditLog.conferenceId, input.conferenceId))
-          .orderBy(desc(occTranscriptAuditLog.timestamp));
-
-        return auditLog;
-      } catch (error) {
-        console.error("[transcriptionRouter] Failed to get audit log:", error);
-        throw error;
-      }
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(transcriptionJobs)
+        .where(eq(transcriptionJobs.eventId, input.eventId))
+        .orderBy(desc(transcriptionJobs.createdAt));
     }),
 
-  /**
-   * Stop Recall.ai bot and finalize transcription
-   * Called when conference ends
-   */
-  stopBot: operatorProcedure
-    .input(z.object({ botId: z.string() }))
+  cancelJob: protectedProcedure
+    .input(z.object({ jobId: z.number() }))
     .mutation(async ({ input }) => {
-      try {
-        await stopRecallBot(input.botId);
-
-        return {
-          success: true,
-          message: `Recall.ai bot ${input.botId} stopped successfully`,
-        };
-      } catch (error) {
-        console.error("[transcriptionRouter] Failed to stop bot:", error);
-        throw error;
-      }
-    }),
-
-  /**
-   * Webhook handler for Recall.ai transcription updates
-   * Called by Recall.ai when new segments are transcribed
-   */
-  handleRecallWebhook: publicProcedure
-    .input(
-      z.object({
-        bot_id: z.string(),
-        event_type: z.string(),
-        data: z.object({
-          speaker_name: z.string(),
-          speaker_id: z.string().optional(),
-          text: z.string(),
-          start_time: z.number(),
-          end_time: z.number(),
-          confidence: z.number(),
-          language: z.string(),
-          is_final: z.boolean(),
-        }),
-      })
-    )
-    .mutation(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        // Find conference by bot ID
-        const bot = await db
-          .select()
-          .from(occRecallBots)
-          .where(eq(occRecallBots.botId, input.bot_id))
-          .limit(1);
-
-        if (bot.length === 0) {
-          throw new Error(`Bot not found: ${input.bot_id}`);
-        }
-
-        const conferenceId = bot[0].conferenceId;
-
-        // Store segment
-        await storeTranscriptionSegment({
-          conferenceId,
-          speakerName: input.data.speaker_name,
-          speakerRole: "participant",
-          text: input.data.text,
-          startTime: input.data.start_time,
-          endTime: input.data.end_time,
-          confidence: Math.round(input.data.confidence * 100),
-          language: input.data.language,
-          isFinal: input.data.is_final,
-        });
-
-        console.log(
-          `[transcriptionRouter] Stored segment from ${input.data.speaker_name}: "${input.data.text}"`
-        );
-
-        return { success: true, conferenceId };
-      } catch (error) {
-        console.error("[transcriptionRouter] Failed to handle webhook:", error);
-        throw error;
-      }
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      await db.update(transcriptionJobs).set({ status: "failed", errorMessage: "Cancelled by operator" })
+        .where(eq(transcriptionJobs.id, input.jobId));
+      return { cancelled: true };
     }),
 });

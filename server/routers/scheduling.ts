@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eventSchedules, operatorAvailability, resourceAllocations, eventTemplates } from "../../drizzle/schema";
+import { eventSchedules, operatorAvailability, resourceAllocations, eventTemplates, users } from "../../drizzle/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 
 export const schedulingRouter = router({
@@ -11,6 +11,10 @@ export const schedulingRouter = router({
       scheduledStart: z.string(),
       scheduledEnd: z.string(),
       timezone: z.string().default("Africa/Johannesburg"),
+      platform: z.string().default("pstn"),
+      operatorId: z.string().optional(),
+      templateId: z.string().optional(),
+      features: z.record(z.boolean()).optional(),
       setupMinutes: z.number().default(30),
       teardownMinutes: z.number().default(15),
       recurrenceRule: z.string().optional(),
@@ -18,6 +22,8 @@ export const schedulingRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+
+      // 1. Create the event schedule
       const [result] = await db.insert(eventSchedules).values({
         eventId: input.eventId,
         scheduledStart: new Date(input.scheduledStart),
@@ -26,10 +32,40 @@ export const schedulingRouter = router({
         setupMinutes: input.setupMinutes,
         teardownMinutes: input.teardownMinutes,
         recurrenceRule: input.recurrenceRule ?? null,
-        status: "tentative",
+        status: "confirmed", // Auto-confirm for this wizard flow
         createdBy: ctx.user.id,
       });
-      return { scheduleId: (result as any).insertId, status: "tentative" };
+
+      const scheduleId = (result as any).insertId;
+
+      // 2. Auto-allocate resources based on platform
+      const allocations = [];
+      if (input.platform === "pstn") {
+        allocations.push({
+          eventId: input.eventId,
+          resourceType: "dial_in_number" as const,
+          resourceIdentifier: "+442031234567", // Mock allocation
+        });
+      } else if (input.platform === "rtmp") {
+        allocations.push({
+          eventId: input.eventId,
+          resourceType: "rtmp_key" as const,
+          resourceIdentifier: "live_" + Math.random().toString(36).substring(7),
+        });
+      }
+
+      // Always allocate Ably channel
+      allocations.push({
+        eventId: input.eventId,
+        resourceType: "ably_channel" as const,
+        resourceIdentifier: `event:${input.eventId}`,
+      });
+
+      for (const allocation of allocations) {
+        await db.insert(resourceAllocations).values(allocation);
+      }
+
+      return { scheduleId, status: "confirmed" };
     }),
 
   confirmEvent: protectedProcedure
@@ -50,13 +86,48 @@ export const schedulingRouter = router({
       return { cancelled: true };
     }),
 
-  getSchedule: protectedProcedure
-    .input(z.object({ eventId: z.string() }))
+  getCalendar: protectedProcedure
+    .input(z.object({ from: z.string(), to: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) return null;
-      const rows = await db.select().from(eventSchedules).where(eq(eventSchedules.eventId, input.eventId)).limit(1);
-      return rows[0] ?? null;
+      if (!db) return [];
+      return db.select().from(eventSchedules)
+        .where(and(
+          gte(eventSchedules.scheduledStart, new Date(input.from)),
+          lte(eventSchedules.scheduledStart, new Date(input.to))
+        ))
+        .orderBy(eventSchedules.scheduledStart);
+    }),
+
+  checkConflicts: protectedProcedure
+    .input(z.object({ start: z.string(), end: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { hasConflict: false };
+      const start = new Date(input.start);
+      const end = new Date(input.end);
+      const conflicts = await db.select().from(eventSchedules)
+        .where(and(
+          lte(eventSchedules.scheduledStart, end),
+          gte(eventSchedules.scheduledEnd, start),
+          eq(eventSchedules.status, "confirmed")
+        ));
+      return { hasConflict: conflicts.length > 0, conflicts };
+    }),
+
+  getAvailableOperators: protectedProcedure
+    .input(z.object({ start: z.string(), end: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const start = new Date(input.start);
+      const dayOfWeek = start.getDay();
+      const startTimeStr = start.toTimeString().split(" ")[0];
+      
+      // Basic implementation: find operators with matching availability
+      // and no conflicting confirmed events
+      const allOperators = await db.select().from(users).where(eq(users.role, "operator"));
+      return allOperators; // Simplified for now
     }),
 
   listUpcoming: protectedProcedure

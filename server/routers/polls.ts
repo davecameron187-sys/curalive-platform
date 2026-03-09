@@ -59,10 +59,23 @@ export const pollsRouter = router({
 
   launch: protectedProcedure
     .input(z.object({ pollId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+      const [poll] = await db.select().from(polls).where(eq(polls.id, input.pollId)).limit(1);
+      if (!poll) throw new Error("Poll not found");
+
       await db.update(polls).set({ status: "active", openedAt: new Date() }).where(eq(polls.id, input.pollId));
+
+      const options = await db.select().from(pollOptions).where(eq(pollOptions.pollId, input.pollId));
+
+      // Publish to Ably
+      const { AblyRealtimeService } = await import("../services/AblyRealtimeService");
+      await AblyRealtimeService.publishToEvent(poll.eventId, "poll:launched", {
+        poll: { ...poll, status: "active", openedAt: new Date() },
+        options
+      });
+
       return { launched: true, openedAt: new Date() };
     }),
 
@@ -71,7 +84,26 @@ export const pollsRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+      const [poll] = await db.select().from(polls).where(eq(polls.id, input.pollId)).limit(1);
+      if (!poll) throw new Error("Poll not found");
+
       await db.update(polls).set({ status: "closed", closedAt: new Date() }).where(eq(polls.id, input.pollId));
+
+      // Get final results
+      const options = await db.select().from(pollOptions).where(eq(pollOptions.pollId, input.pollId));
+      const votes = await db.select().from(pollVotes).where(eq(pollVotes.pollId, input.pollId));
+      const tallies = options.map(opt => ({
+        ...opt,
+        votes: votes.filter(v => v.optionId === opt.id).length,
+      }));
+
+      // Publish to Ably
+      const { AblyRealtimeService } = await import("../services/AblyRealtimeService");
+      await AblyRealtimeService.publishToEvent(poll.eventId, "poll:closed", {
+        pollId: input.pollId,
+        results: { options: tallies, totalVotes: votes.length }
+      });
+
       return { closed: true, closedAt: new Date() };
     }),
 
@@ -86,10 +118,15 @@ export const pollsRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+
+      const [poll] = await db.select().from(polls).where(eq(polls.id, input.pollId)).limit(1);
+      if (!poll || poll.status !== "active") return { voted: false, reason: "poll_not_active" };
+
       const existing = await db.select().from(pollVotes)
         .where(and(eq(pollVotes.pollId, input.pollId), eq(pollVotes.voterSession, input.voterSession)))
         .limit(1);
       if (existing.length > 0) return { voted: false, reason: "already_voted" };
+
       await db.insert(pollVotes).values({
         pollId: input.pollId,
         optionId: input.optionId ?? null,
@@ -97,6 +134,22 @@ export const pollsRouter = router({
         textResponse: input.textResponse ?? null,
         ratingValue: input.ratingValue ?? null,
       });
+
+      // Get updated results
+      const options = await db.select().from(pollOptions).where(eq(pollOptions.pollId, input.pollId));
+      const votes = await db.select().from(pollVotes).where(eq(pollVotes.pollId, input.pollId));
+      const tallies = options.map(opt => ({
+        ...opt,
+        votes: votes.filter(v => v.optionId === opt.id).length,
+      }));
+
+      // Publish to Ably
+      const { AblyRealtimeService } = await import("../services/AblyRealtimeService");
+      await AblyRealtimeService.publishToEvent(poll.eventId, "poll:updated", {
+        pollId: input.pollId,
+        results: { options: tallies, totalVotes: votes.length }
+      });
+
       return { voted: true };
     }),
 
