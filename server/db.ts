@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import { eq, desc } from "drizzle-orm";
-import { InsertUser, users, speakerPaceResults, InsertSpeakerPaceResult, userFeedback, InsertUserFeedback } from "../drizzle/schema";
+import { InsertUser, users, speakerPaceResults, InsertSpeakerPaceResult } from "../drizzle/schema";
+// TODO: userFeedback table not found in schema
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
