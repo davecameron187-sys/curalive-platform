@@ -215,120 +215,22 @@
     {
       "idx": 30,
       "version": "5",
-      "when": 1772880463535,
-      "tag": "0030_goofy_bastion",
+      "when": 1772998318992,
+      "tag": "0030_light_bloodaxe",
       "breakpoints": true
     },
     {
       "idx": 31,
       "version": "5",
-      "when": 1772882236494,
-      "tag": "0031_chilly_shinko_yamashiro",
+      "when": 1773027470365,
+      "tag": "0031_silent_gauntlet",
       "breakpoints": true
     },
     {
       "idx": 32,
       "version": "5",
-      "when": 1772882701340,
-      "tag": "0032_white_the_leader",
-      "breakpoints": true
-    },
-    {
-      "idx": 33,
-      "version": "5",
-      "when": 1772882786618,
-      "tag": "0033_gigantic_giant_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 34,
-      "version": "5",
-      "when": 1772922362886,
-      "tag": "0034_overrated_obadiah_stane",
-      "breakpoints": true
-    },
-    {
-      "idx": 35,
-      "version": "5",
-      "when": 1772922630509,
-      "tag": "0035_useful_ender_wiggin",
-      "breakpoints": true
-    },
-    {
-      "idx": 36,
-      "version": "5",
-      "when": 1772923251483,
-      "tag": "0036_misty_cyclops",
-      "breakpoints": true
-    },
-    {
-      "idx": 37,
-      "version": "5",
-      "when": 1772961685160,
-      "tag": "0037_married_siren",
-      "breakpoints": true
-    },
-    {
-      "idx": 38,
-      "version": "5",
-      "when": 1772962383073,
-      "tag": "0038_oval_butterfly",
-      "breakpoints": true
-    },
-    {
-      "idx": 39,
-      "version": "5",
-      "when": 1772968627444,
-      "tag": "0039_legal_blue_shield",
-      "breakpoints": true
-    },
-    {
-      "idx": 40,
-      "version": "5",
-      "when": 1772969631058,
-      "tag": "0040_tidy_hedge_knight",
-      "breakpoints": true
-    },
-    {
-      "idx": 41,
-      "version": "5",
-      "when": 1772970509236,
-      "tag": "0041_melted_centennial",
-      "breakpoints": true
-    },
-    {
-      "idx": 42,
-      "version": "5",
-      "when": 1772972129744,
-      "tag": "0042_little_mandarin",
-      "breakpoints": true
-    },
-    {
-      "idx": 43,
-      "version": "5",
-      "when": 1772975411920,
-      "tag": "0043_freezing_joshua_kane",
-      "breakpoints": true
-    },
-    {
-      "idx": 44,
-      "version": "5",
-      "when": 1772991010525,
-      "tag": "0044_thankful_baron_zemo",
-      "breakpoints": true
-    },
-    {
-      "idx": 45,
-      "version": "5",
-      "when": 1772991590260,
-      "tag": "0045_redundant_paladin",
-      "breakpoints": true
-    },
-    {
-      "idx": 46,
-      "version": "5",
-      "when": 1772995069577,
-      "tag": "0046_polite_preak",
+      "when": 1773035530967,
+      "tag": "0032_bumpy_gladiator",
       "breakpoints": true
     }
   ]

@@ -5,7 +5,7 @@
 **Feature**: Live Polling and Audience Interaction  
 **Route**: `/event/:eventId` (embedded in event room), `/moderator/:eventId` (poll management in moderator console)  
 **Priority**: Medium  
-**Status**: spec-ready  
+**Status**: implemented  
 **Dependencies**: Ably Real-Time Channels (implemented), OCC Operator Console (implemented)  
 
 **What to build**: A real-time polling system that allows operators and moderators to create, launch, and manage live polls during events. Attendees vote in real time with results displayed instantly via Ably channels. Supports multiple poll types (multiple choice, rating scale, word cloud, yes/no), scheduled polls, and post-event poll analytics. Integrates with the Moderator Console for poll creation and the Event Room for attendee voting.

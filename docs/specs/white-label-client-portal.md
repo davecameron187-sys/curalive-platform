@@ -5,7 +5,7 @@
 **Feature**: White-Label Client Portal  
 **Route**: `/portal/:clientSlug` (public-facing), `/admin/clients` (admin management)  
 **Priority**: Medium  
-**Status**: spec-ready  
+**Status**: implemented  
 **Dependencies**: Enterprise Billing (implemented), Ably Real-Time Channels (implemented), Mux Live Streaming (implemented)  
 
 **What to build**: A multi-tenant white-label system that allows CuraLive's enterprise clients to offer branded event portals to their own audiences. Each client gets a customizable portal with their logo, colors, domain, and event listings. The admin panel allows CuraLive operators to manage client configurations, assign events to clients, and monitor usage. This is a revenue-critical feature for the enterprise billing tier.

@@ -5,7 +5,7 @@
 **Feature**: Event Scheduling and Calendar Integration  
 **Route**: `/events/schedule` (scheduling dashboard), `/events/calendar` (calendar view)  
 **Priority**: Medium  
-**Status**: spec-ready  
+**Status**: implemented  
 **Dependencies**: Enterprise Billing (implemented), OCC Operator Console (implemented), Twilio/Telnyx Webphone (implemented)  
 
 **What to build**: A comprehensive event scheduling system with calendar views, recurring event templates, operator assignment, resource allocation (dial-in numbers, RTMP keys, Mux streams), and external calendar integration (Google Calendar, Outlook/Exchange via iCal). The scheduler allows event hosts to book events in advance, operators to manage their availability, and the system to automatically provision technical resources for each event.
