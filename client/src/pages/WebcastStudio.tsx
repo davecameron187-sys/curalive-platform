@@ -184,6 +184,9 @@ function WebcastStudioInner({ slug }: { slug: string }) {
   const simChatIdxRef = useRef(0);
   const simQAIdRef = useRef(7000);
   const simViewerCountRef = useRef(0);
+  const [simActivityLog, setSimActivityLog] = useState<{ id: string; kind: "viewer" | "qa" | "chat"; text: string }[]>([]);
+  const simActivityLogRef = useRef<{ id: string; kind: "viewer" | "qa" | "chat"; text: string }[]>([]);
+  const simLastMilestoneRef = useRef(0);
 
   // ── Publish Recording state ─────────────────────────────────────────────────
   const [recordingUrlInput, setRecordingUrlInput] = useState("");
@@ -289,15 +292,45 @@ function WebcastStudioInner({ slug }: { slug: string }) {
     if (simQATimerRef.current) { clearInterval(simQATimerRef.current); simQATimerRef.current = null; }
     if (simChatTimerRef.current) { clearInterval(simChatTimerRef.current); simChatTimerRef.current = null; }
     setSimActive(false);
+    simActivityLogRef.current = [];
+    setSimActivityLog([]);
+  }, []);
+
+  const pushActivity = useCallback((kind: "viewer" | "qa" | "chat", text: string) => {
+    const entry = { id: `act-${Date.now()}-${Math.random()}`, kind, text };
+    simActivityLogRef.current = [entry, ...simActivityLogRef.current].slice(0, 30);
+    setSimActivityLog([...simActivityLogRef.current]);
   }, []);
 
   const startSimulation = useCallback(() => {
     stopSimulation();
+    setActiveTab("qa");
     setSimActive(true);
     setSimViewerCount(0);
     simViewerCountRef.current = 0;
     simQAIdxRef.current = 0;
     simChatIdxRef.current = 0;
+    simLastMilestoneRef.current = 0;
+    simActivityLogRef.current = [];
+    setSimActivityLog([]);
+
+    setTimeout(() => {
+      const firstQ = WEBCAST_SIM_QA_POOL[0];
+      if (!firstQ) return;
+      publish({
+        type: "qa.submitted",
+        data: {
+          id: `sim-qa-${simQAIdRef.current++}`,
+          question: firstQ.question,
+          author: firstQ.author,
+          votes: Math.floor(Math.random() * 20) + 1,
+          status: "pending",
+          submittedAt: Date.now(),
+        },
+      });
+      pushActivity("qa", `Question from ${firstQ.author}`);
+      simQAIdxRef.current = 1;
+    }, 2000);
 
     simViewerTimerRef.current = setInterval(() => {
       const current = simViewerCountRef.current;
@@ -308,6 +341,12 @@ function WebcastStudioInner({ slug }: { slug: string }) {
       simViewerCountRef.current = next;
       setSimViewerCount(next);
       setPeakAttendees(p => Math.max(p, next));
+      const milestones = [50, 100, 200, 300, 500, 750, 1000, 1200];
+      const crossed = milestones.find(m => m > simLastMilestoneRef.current && next >= m);
+      if (crossed) {
+        simLastMilestoneRef.current = crossed;
+        pushActivity("viewer", `${crossed.toLocaleString()} viewers watching`);
+      }
       if (next >= 1200) {
         clearInterval(simViewerTimerRef.current!);
         simViewerTimerRef.current = null;
@@ -331,6 +370,7 @@ function WebcastStudioInner({ slug }: { slug: string }) {
           submittedAt: Date.now(),
         },
       });
+      pushActivity("qa", `Question from ${entry.author}`);
       simQAIdxRef.current += 1;
     }, 18000);
 
@@ -349,10 +389,11 @@ function WebcastStudioInner({ slug }: { slug: string }) {
           time: formatElapsed(elapsedSeconds),
           isOperator: false,
         }]);
+        pushActivity("chat", `${entry.author}: ${entry.text.length > 40 ? entry.text.slice(0, 40) + "…" : entry.text}`);
         simChatIdxRef.current += 1;
       }, 12000);
     }, 5000);
-  }, [stopSimulation, publish, elapsedSeconds]);
+  }, [stopSimulation, publish, elapsedSeconds, pushActivity]);
 
   useEffect(() => {
     if (simulateParam) startSimulation();
@@ -665,6 +706,29 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               </div>
             </div>
           </div>
+
+          {/* Live Activity Feed — simulation only */}
+          {simActive && (
+            <div className="border-t border-violet-800/40 bg-violet-950/30 shrink-0 max-h-36 overflow-y-auto">
+              <div className="flex items-center justify-between px-4 py-1.5 border-b border-violet-800/30 sticky top-0 bg-violet-950/60 backdrop-blur-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-300">Live Activity</span>
+                </div>
+                <span className="text-[9px] text-violet-500">{simActivityLog.length} events</span>
+              </div>
+              <div className="p-2 space-y-1">
+                {simActivityLog.length === 0 ? (
+                  <p className="text-[10px] text-violet-500 italic px-2 py-1">Waiting for activity…</p>
+                ) : simActivityLog.map(evt => (
+                  <div key={evt.id} className="flex items-center gap-2 px-2 py-0.5">
+                    <span className={`w-1 h-1 rounded-full shrink-0 ${evt.kind === "viewer" ? "bg-blue-400" : evt.kind === "qa" ? "bg-amber-400" : "bg-emerald-400"}`} />
+                    <span className={`text-[10px] ${evt.kind === "viewer" ? "text-blue-300" : evt.kind === "qa" ? "text-amber-300" : "text-emerald-300"}`}>{evt.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Right: Control Panels ── */}
@@ -702,6 +766,23 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               </button>
             ))}
           </div>
+
+          {/* Simulation status strip */}
+          {simActive && (
+            <div className="flex items-center gap-3 px-3 py-1.5 bg-violet-950/60 border-b border-violet-800/40 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse shrink-0" />
+              <span className="text-[10px] text-violet-300 font-semibold">SIMULATION</span>
+              <div className="flex items-center gap-3 flex-1 text-[10px] text-violet-400">
+                <span className="flex items-center gap-1"><Users className="w-3 h-3" />{(simViewerCount ?? 0).toLocaleString()} viewers</span>
+                <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{qaItems.length} Q&amp;A</span>
+                <span className="flex items-center gap-1"><Send className="w-3 h-3" />{chat.length} messages</span>
+              </div>
+              <button
+                onClick={stopSimulation}
+                className="text-[10px] text-red-400 hover:text-red-300 font-semibold border border-red-800 hover:border-red-600 rounded px-1.5 py-0.5 transition-colors shrink-0"
+              >Stop</button>
+            </div>
+          )}
 
           {/* Panel content */}
           <div className="flex-1 overflow-y-auto">
