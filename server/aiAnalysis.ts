@@ -249,6 +249,47 @@ export async function triageQuestion(
 
 // ─── 4. AI Event Brief Generator ─────────────────────────────────────────────
 
+/** Fallback brief built from the press release text when no LLM key is configured. */
+function buildFallbackBrief(pressRelease: string, eventTitle: string, companyName: string): EventBrief {
+  const sentences = pressRelease.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+  const headline = sentences[0]?.replace(/^.{0,40}\s/, s => s) ?? `${companyName} — ${eventTitle}`;
+
+  const FINANCIAL_TERMS = /revenue|growth|profit|margin|earnings|EPS|EBITDA|forecast|outlook|guidance|acquisition|dividend|dividend|strategy|expand|launch|partner|deal|agreement/i;
+  const keyMessages = sentences
+    .filter(s => FINANCIAL_TERMS.test(s) && s.length > 30 && s.length < 200)
+    .slice(0, 4)
+    .map(s => s.length > 150 ? s.slice(0, 150) + "…" : s);
+
+  if (keyMessages.length === 0) {
+    keyMessages.push(...sentences.slice(1, 4).map(s => s.length > 150 ? s.slice(0, 150) + "…" : s));
+  }
+
+  const co = companyName || "the company";
+  const ev = eventTitle || "this event";
+
+  const talkingPoints = [
+    `Welcome to ${ev} — today we will outline our strategic priorities and financial performance.`,
+    `${co} remains committed to delivering sustainable shareholder value through disciplined capital allocation.`,
+    `Our balance sheet remains robust and we are well-positioned to navigate current market conditions.`,
+    `We continue to execute on our strategic roadmap with clear milestones and measurable outcomes.`,
+    `Management is available for questions following the prepared remarks and will be transparent about risks and opportunities.`,
+  ];
+
+  const anticipatedQuestions = [
+    `Can management provide more colour on the near-term revenue outlook and key drivers of growth?`,
+    `How is ${co} thinking about capital allocation — specifically dividends versus share buybacks versus M&A?`,
+    `What are the biggest macro or sector risks management is monitoring, and how is the business positioned against them?`,
+  ];
+
+  return {
+    headline: headline.length > 200 ? headline.slice(0, 200) + "…" : headline,
+    keyMessages,
+    talkingPoints,
+    anticipatedQuestions,
+    disclaimer: "This document contains forward-looking statements that involve risks and uncertainties. Actual results may differ materially from those projected. Past performance is not a guarantee of future results.",
+  };
+}
+
 /**
  * Generates an event brief and talking points from a press release or event description.
  */
@@ -257,6 +298,11 @@ export async function generateEventBrief(
   eventTitle: string,
   companyName: string
 ): Promise<EventBrief> {
+  if (!process.env.BUILT_IN_FORGE_API_KEY && !process.env.AI_INTEGRATIONS_OPENAI_API_KEY && !process.env.OPENAI_API_KEY) {
+    return buildFallbackBrief(pressRelease, eventTitle, companyName);
+  }
+
+  try {
   const response = await invokeLLM({
     messages: [
       {
@@ -310,6 +356,10 @@ export async function generateEventBrief(
   const raw = response.choices?.[0]?.message?.content;
   if (!raw) throw new Error("Empty LLM response for event brief");
   return JSON.parse(extractContent(raw));
+  } catch (err) {
+    console.warn("[generateEventBrief] LLM failed, using fallback:", err instanceof Error ? err.message : err);
+    return buildFallbackBrief(pressRelease, eventTitle, companyName);
+  }
 }
 
 // ─── 5. AI Press Release Draft ────────────────────────────────────────────────
