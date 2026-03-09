@@ -1708,3 +1708,26 @@ export const sentimentSnapshots = mysqlTable("sentiment_snapshots", {
 
 export type SentimentSnapshot = typeof sentimentSnapshots.$inferSelect;
 export type InsertSentimentSnapshot = typeof sentimentSnapshots.$inferInsert;
+
+export const aiGeneratedContent = mysqlTable("ai_generated_content", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("event_id").notNull(),
+  contentType: varchar("content_type", { length: 64 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  editedContent: text("edited_content"),
+  status: varchar("status", { length: 32 }).default("generated").notNull(),
+  recipients: text("recipients"),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  generatedBy: int("generated_by"),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: int("approved_by"),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  sentAt: timestamp("sent_at"),
+  sentTo: text("sent_to"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type AiGeneratedContent = typeof aiGeneratedContent.$inferSelect;
+export type InsertAiGeneratedContent = typeof aiGeneratedContent.$inferInsert;
