@@ -259,12 +259,15 @@ export const webcastRouter = router({
       hostName: z.string().optional(),
       hostOrganization: z.string().optional(),
       tags: z.string().optional(),
+      selectedAIApplications: z.array(z.string()).optional(),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
+      const { selectedAIApplications, ...eventData } = input;
       await db.insert(webcastEvents).values({
-        ...input,
+        ...eventData,
+        aiApplicationIds: selectedAIApplications ? JSON.stringify(selectedAIApplications) : null,
         status: "draft",
         createdAt: Date.now(),
         updatedAt: Date.now(),
