@@ -298,7 +298,7 @@ export async function generateEventBrief(
   eventTitle: string,
   companyName: string
 ): Promise<EventBrief> {
-  if (!process.env.BUILT_IN_FORGE_API_KEY && !process.env.OPENAI_API_KEY) {
+  if (!process.env.BUILT_IN_FORGE_API_KEY && !process.env.AI_INTEGRATIONS_OPENAI_API_KEY && !process.env.OPENAI_API_KEY) {
     return buildFallbackBrief(pressRelease, eventTitle, companyName);
   }
 

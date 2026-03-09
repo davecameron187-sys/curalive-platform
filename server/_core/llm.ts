@@ -209,12 +209,15 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
+const isForgeMode = () =>
+  !!(process.env.BUILT_IN_FORGE_API_KEY || (process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_URL.trim()));
+
 const resolveApiUrl = () => {
-  if (ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0) {
-    return `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`;
+  if (process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_URL.trim()) {
+    return `${process.env.BUILT_IN_FORGE_API_URL.replace(/\/$/, "")}/v1/chat/completions`;
   }
-  if (process.env.BUILT_IN_FORGE_API_KEY) {
-    return "https://forge.manus.im/v1/chat/completions";
+  if (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.trim()) {
+    return `${process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.replace(/\/$/, "")}/chat/completions`;
   }
   return "https://api.openai.com/v1/chat/completions";
 };
@@ -284,9 +287,9 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     response_format,
   } = params;
 
-  const isForge = !!(process.env.BUILT_IN_FORGE_API_KEY || (ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0));
+  const forge = isForgeMode();
   const payload: Record<string, unknown> = {
-    model: isForge ? "gemini-2.5-flash" : "gpt-4o",
+    model: forge ? "gemini-2.5-flash" : "gpt-4o",
     messages: messages.map(normalizeMessage),
   };
 
@@ -302,8 +305,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = isForge ? 32768 : 4096;
-  if (isForge) {
+  payload.max_tokens = forge ? 32768 : 4096;
+  if (forge) {
     payload.thinking = { budget_tokens: 128 };
   }
 
