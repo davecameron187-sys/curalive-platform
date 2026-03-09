@@ -1,4 +1,4 @@
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
@@ -19,7 +19,7 @@ import Demo from "./pages/Demo";
 import TestGuide from "./pages/TestGuide";
 import TechHandover from "./pages/TechHandover";
 import SummitConsole from "./pages/SummitConsole";
-import OCC from "./pages/OCC_CORRECTED";
+import OCC from "./pages/OCC";
 import AdminUsers from "./pages/AdminUsers";
 import EventPass from "./pages/EventPass";
 import LiveVideoMeetings from "./pages/LiveVideoMeetings";
@@ -48,10 +48,6 @@ import OperatorGuide from "./pages/OperatorGuide";
 import DemoRegistration from "./pages/DemoRegistration";
 import TwilioDirectGuide from "./pages/TwilioDirectGuide";
 import BillingPreview from "./pages/BillingPreview";
-import TrainingModeConsole from "./pages/TrainingModeConsole";
-import AnalyticsDashboard from "./pages/AnalyticsDashboard";
-import AIFeaturesStatus from "./pages/AIFeaturesStatus";
-import AIDashboard from "./pages/AIDashboard";
 import MyEvents from "./pages/MyEvents";
 import QuoteBuilder from "./pages/QuoteBuilder";
 import InvoiceViewer from "./pages/InvoiceViewer";
@@ -60,25 +56,29 @@ import InvoiceView from "./pages/InvoiceView";
 import AdminBilling from "./pages/AdminBilling";
 import AgeingReport from "./pages/AgeingReport";
 import RecurringTemplates from "./pages/RecurringTemplates";
-import EventBriefGenerator from "./pages/EventBriefGenerator";
-import ModeratorQAConsole from "./pages/ModeratorQAConsole";
-import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
-import RedactionWorkflow from "./pages/RedactionWorkflow";
-import ComplianceDashboard from "./pages/ComplianceDashboard";
-import DevelopmentDashboard from "./pages/DevelopmentDashboard";
+import TrainingModeConsole from "./pages/TrainingModeConsole";
 import OperatorAnalytics from "./pages/OperatorAnalytics";
-import AdminPanel from "./pages/AdminPanel";
-import FeatureFlagsDashboard from "./pages/FeatureFlagsDashboard";
-
+import DevelopmentDashboard from "./pages/DevelopmentDashboard";
+import AIFeaturesStatus from "./pages/AIFeaturesStatus";
+import PostEventReport from "./pages/PostEventReport";
+import EventScheduler from "./pages/EventScheduler";
+import EventCalendar from "./pages/EventCalendar";
+import AttendeeRoom from "./pages/AttendeeRoom";
+import ClientPortal from "./pages/ClientPortal";
+import AdminClients from "./pages/AdminClients";
+import ComplianceReport from "./pages/ComplianceReport";
+import ComplianceAuditLog from "./pages/ComplianceAuditLog";
+import InvestorFollowUps from "./pages/InvestorFollowUps";
+import SentimentDashboard from "./pages/SentimentDashboard";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path="/" component={DevelopmentDashboard} />
-      <Route path="/home" component={Home} />
+      <Route path="/" component={Home} />
       <Route path="/event/:id" component={EventRoom} />
       <Route path="/moderator/:id" component={Moderator} />
       <Route path="/presenter/:id" component={Presenter} />
+      <Route path="/operator/analytics" component={OperatorAnalytics} />
       <Route path="/operator/:id" component={OperatorConsole} />
       <Route path="/register/:id" component={Registration} />
       <Route path="/demo-registration" component={DemoRegistration} />
@@ -92,7 +92,7 @@ function Router() {
       <Route path="/test-guide" component={TestGuide} />
       <Route path="/tech-handover" component={TechHandover} />
       <Route path="/summit-console" component={SummitConsole} />
-      <Route path="/occ" component={OCC} /> {/* Corrected layout with conference table, participant details, and quick actions */}
+      <Route path="/occ" component={OCC} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/live-video" component={LiveVideoMeetings} />
       <Route path="/live-video/roadshow/:roadshowId" component={RoadshowDetail} />
@@ -127,18 +127,19 @@ function Router() {
       <Route path="/invoice/:token" component={InvoiceView} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
-      <Route path="/ai-dashboard" component={AIDashboard} />
-      <Route path="/analytics" component={AnalyticsDashboard} />
-      <Route path="/ai-features-status" component={AIFeaturesStatus} />
-      <Route path="/operator/brief-generator" component={EventBriefGenerator} />
-      <Route path="/moderator/qa-console" component={ModeratorQAConsole} />
-      <Route path="/moderator/toxicity-filter" component={ToxicityFilterDashboard} />
-      <Route path="/operator/redaction" component={RedactionWorkflow} />
-      <Route path="/operator/analytics" component={OperatorAnalytics} />
       <Route path="/training-mode" component={TrainingModeConsole} />
-      <Route path="/compliance" component={ComplianceDashboard} />
-      <Route path="/admin" component={AdminPanel} />
-      <Route path="/feature-flags" component={FeatureFlagsDashboard} />
+      <Route path="/dev-dashboard" component={DevelopmentDashboard} />
+      <Route path="/ai-features" component={AIFeaturesStatus} />
+      <Route path="/post-event/:id" component={PostEventReport} />
+      <Route path="/events/schedule" component={EventScheduler} />
+      <Route path="/events/calendar" component={EventCalendar} />
+      <Route path="/m/:eventId" component={AttendeeRoom} />
+      <Route path="/portal/:clientSlug" component={ClientPortal} />
+      <Route path="/admin/clients" component={AdminClients} />
+      <Route path="/post-event/:id/compliance" component={ComplianceReport} />
+      <Route path="/post-event/:id/followups" component={InvestorFollowUps} />
+      <Route path="/compliance/audit-log" component={ComplianceAuditLog} />
+      <Route path="/operator/:eventId/sentiment" component={SentimentDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
