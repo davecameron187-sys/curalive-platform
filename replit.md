@@ -42,6 +42,17 @@ Key variables needed:
 - `OAUTH_SERVER_URL` — OAuth server URL
 - `OWNER_OPEN_ID` — OpenID of the admin user
 
+## Agentic Event Brain (March 2026 — Acquisition-Ready AI)
+
+- **Route**: `/agentic-brain` — 3-question wizard → scoring algorithm → OpenAI action plan → ROI projection
+- **Algorithm**: `score = (role_match×0.3) + (challenge_weight×0.4) + (event_factor×0.3) + (data_pattern×0.2)` + alignment bonus
+- **Server router**: `server/routers/agenticEventBrainRouter.ts` — `agenticBrain.runAnalysis`, `agenticBrain.getHistory`
+- **DB table**: `agentic_analyses` — logs every analysis with score, bundle, AI action, ROI preview, interconnections
+- **AI**: Calls `invokeLLM` (GPT-4o) for live bundle optimization recommendations
+- **Interconnections**: Auto-maps which bundles trigger each other (IR → Compliance, Operations → Marketing, etc.)
+- **Migration**: `scripts/create-agentic-brain-table.ts`
+- **OperatorLinks card**: Added to Interconnection Analytics & Workflows section
+
 ## Recent Additions (March 2026 — v2.0 AI Interconnection Release)
 
 - **OperatorLinks** (`/operator-links`) — Full operator links directory with a floating "Run Demo Simulation" button that plays a 14-step, 37-second animated walkthrough of a complete Q4 Earnings Call. Each step shows live status and links to the relevant page. Panel includes progress bar, replay, and toast notifications.

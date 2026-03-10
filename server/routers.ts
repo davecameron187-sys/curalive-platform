@@ -44,6 +44,7 @@ import { socialMediaRouter } from "./routers/socialMedia";
 import { interconnectionAnalyticsRouter } from "./routers/interconnectionAnalytics";
 import { virtualStudioRouter } from "./routers/virtualStudioRouter";
 import { operatorLinksRouter } from "./routers/operatorLinksRouter";
+import { agenticEventBrainRouter } from "./routers/agenticEventBrainRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -98,6 +99,7 @@ export const appRouter = router({
   interconnectionAnalytics: interconnectionAnalyticsRouter,
   virtualStudio: virtualStudioRouter,
   operatorLinks: operatorLinksRouter,
+  agenticBrain: agenticEventBrainRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

@@ -85,6 +85,7 @@ import TranscriptPage from "./pages/TranscriptPage";
 import OperatorHub from "./pages/OperatorHub";
 import AIShop from "./pages/AIShop";
 import AIOnboarding from "./pages/AIOnboarding";
+import AgenticBrain from "./pages/AgenticBrain";
 import SocialMediaPage from "./pages/SocialMediaPage";
 import PodcastConverter from "./pages/PodcastConverter";
 import SustainabilityDashboard from "./pages/SustainabilityDashboard";
@@ -186,6 +187,7 @@ function Router() {
       <Route path="/operator-hub" component={OperatorHub} />
       <Route path="/ai-shop" component={AIShop} />
       <Route path="/ai-onboarding" component={AIOnboarding} />
+      <Route path="/agentic-brain" component={AgenticBrain} />
       <Route path="/social" component={SocialMediaPage} />
       <Route path="/podcast-converter" component={PodcastConverter} />
       <Route path="/sustainability" component={SustainabilityDashboard} />

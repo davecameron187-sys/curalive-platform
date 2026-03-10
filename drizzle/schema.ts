@@ -2237,3 +2237,21 @@ export const operatorLinksMetadata = mysqlTable("operator_links_metadata", {
 
 export type OperatorLinksMetadatum = typeof operatorLinksMetadata.$inferSelect;
 export type InsertOperatorLinksMetadatum = typeof operatorLinksMetadata.$inferInsert;
+
+export const agenticAnalyses = mysqlTable("agentic_analyses", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("session_id", { length: 128 }),
+  q1Role: varchar("q1_role", { length: 64 }).notNull(),
+  q2Challenge: varchar("q2_challenge", { length: 64 }).notNull(),
+  q3EventType: varchar("q3_event_type", { length: 64 }).notNull(),
+  primaryBundle: varchar("primary_bundle", { length: 64 }).notNull(),
+  bundleLetter: varchar("bundle_letter", { length: 4 }).notNull(),
+  score: float("score").notNull(),
+  aiAction: longtext("ai_action"),
+  roiPreview: varchar("roi_preview", { length: 255 }),
+  interconnections: text("interconnections"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AgenticAnalysis = typeof agenticAnalyses.$inferSelect;
+export type InsertAgenticAnalysis = typeof agenticAnalyses.$inferInsert;
