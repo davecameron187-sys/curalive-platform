@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { db } from "../db";
+import { getDb } from "../db";
 import { complianceViolations } from "../../drizzle/schema";
 import { detectViolation, createViolationAlert } from "../_core/compliance";
 import { publishAlertToAbly } from "../_core/aiAmAblyChannels";
@@ -125,9 +125,8 @@ async function handleTranscriptSegment(payload: RecallWebhookPayload, eventId: s
     // Create violation record
     const violationRecord = await createViolationAlert(
       eventId,
-      violation.violationType,
-      violation.severity,
-      violation.confidenceScore,
+      undefined, // conferenceId not available from Recall webhook
+      violation,
       segment.speaker_name,
       segment.speaker_role,
       segment.text,
@@ -177,6 +176,11 @@ async function handleTranscriptComplete(payload: RecallWebhookPayload, eventId: 
   console.log("[AI-AM] Transcript complete for event:", eventId);
 
   try {
+    const db = await getDb();
+    if (!db) {
+      console.error("[AI-AM] Database unavailable for transcript complete");
+      return;
+    }
     // Get all violations for this event
     const violations = await db.query.complianceViolations.findMany({
       where: (v: any) => v.eventId === eventId,

@@ -1132,3 +1132,35 @@
 - Redis for caching and deduplication
 - Database: MySQL/TiDB via Drizzle ORM
 - Operator Console infrastructure (already built in Round 13)
+
+
+## Phase 2 — AI Automated Moderator Auto-Muting System
+
+### Core Implementation
+- [x] Phase 2 auto-muting logic with configurable thresholds (aiAmPhase2AutoMuting.ts)
+- [x] 8 tRPC procedures for muting control (getMutingConfig, configureMuting, evaluateSpeaker, etc.)
+- [x] MutingControlPanel UI component with real-time violation tracking
+- [x] Integration tests for Recall.ai webhook → auto-muting flow (10 tests, 100% passing)
+
+### Operator Console Integration
+- [x] Add "Muting Control" tab to operator dashboard
+- [x] Display speaker violation counts and muting status
+- [x] Manual soft/hard mute controls with operator override
+
+### Database & Schema
+- [ ] Fix database schema: remove ai_application_ids from webcast_events table
+- [ ] Fix TranscriptionService type mismatches (text/startTime/endTime fields)
+- [ ] Run pnpm db:push to sync schema migrations
+
+### Testing & Validation
+- [ ] Test Recall.ai webhook integration live in staging environment
+- [ ] Verify end-to-end flow: transcript → violation detection → auto-muting
+- [ ] Load test with rapid-fire violations from multiple speakers
+- [ ] Validate soft mute auto-unmute timing (30s default)
+
+### Beta Deployment
+- [ ] Create Beta Deployment Guide (installation, configuration, monitoring)
+- [ ] Prepare Pilot Customer Onboarding materials (5 enterprise customers)
+- [ ] Document muting threshold recommendations by industry vertical
+- [ ] Set up monitoring/alerting for auto-muting events
+- [ ] Create operator training guide for Phase 2 features

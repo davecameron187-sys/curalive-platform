@@ -145,10 +145,23 @@ export async function getConferenceTranscription(
     const segments = await db
       .select()
       .from(occTranscriptionSegments)
-      .where(eq(occTranscriptionSegments.conferenceId, conferenceId))
-      .orderBy(occTranscriptionSegments.startTime);
+      .where(eq(occTranscriptionSegments.conferenceId, conferenceId.toString()))
+      .orderBy(occTranscriptionSegments.startTimeMs);
 
-    return segments as TranscriptionSegment[];
+    return segments.map((seg) => ({
+      id: seg.id,
+      conferenceId: parseInt(seg.conferenceId, 10), // Convert string to number
+      participantId: undefined, // Not available in schema
+      speakerName: seg.speakerName || "Unknown",
+      speakerRole: (seg.speakerRole as "moderator" | "participant" | "operator") || "participant",
+      text: seg.content, // Map 'content' DB field to 'text' interface field
+      startTime: seg.startTimeMs || 0,
+      endTime: seg.endTimeMs || 0,
+      confidence: seg.confidence || 0,
+      language: "en", // Default language
+      isFinal: true, // Assume final for stored segments
+      createdAt: seg.createdAt,
+    })) as TranscriptionSegment[];
   } catch (error) {
     console.error("[TranscriptionService] Failed to get transcription:", error);
     throw error;
@@ -170,11 +183,24 @@ export async function getLiveTranscription(
     const segments = await db
       .select()
       .from(occTranscriptionSegments)
-      .where(eq(occTranscriptionSegments.conferenceId, conferenceId))
+      .where(eq(occTranscriptionSegments.conferenceId, conferenceId.toString()))
       .orderBy(desc(occTranscriptionSegments.startTimeMs))
       .limit(100);
 
-    return segments as TranscriptionSegment[];
+    return segments.map((seg) => ({
+      id: seg.id,
+      conferenceId: parseInt(seg.conferenceId, 10), // Convert string to number
+      participantId: undefined, // Not available in schema
+      speakerName: seg.speakerName || "Unknown",
+      speakerRole: (seg.speakerRole as "moderator" | "participant" | "operator") || "participant",
+      text: seg.content, // Map 'content' DB field to 'text' interface field
+      startTime: seg.startTimeMs || 0,
+      endTime: seg.endTimeMs || 0,
+      confidence: seg.confidence || 0,
+      language: "en", // Default language
+      isFinal: true, // Assume final for stored segments
+      createdAt: seg.createdAt,
+    })) as TranscriptionSegment[];
   } catch (error) {
     console.error("[TranscriptionService] Failed to get live transcription:", error);
     throw error;
