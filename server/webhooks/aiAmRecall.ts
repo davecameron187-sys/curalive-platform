@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { getDb } from "../db";
-import { complianceViolations } from "../../drizzle/schema";
+import { complianceFlags } from "../../drizzle/schema";
 import { detectViolation, createViolationAlert } from "../_core/compliance";
 import { publishAlertToAbly } from "../_core/aiAmAblyChannels";
 import { isDuplicate, cacheViolation } from "../_core/aiAmDeduplication";
@@ -182,7 +182,7 @@ async function handleTranscriptComplete(payload: RecallWebhookPayload, eventId: 
       return;
     }
     // Get all violations for this event
-    const violations = await db.query.complianceViolations.findMany({
+    const violations = await db.query.complianceFlags.findMany({
       where: (v: any) => v.eventId === eventId,
     });
 
