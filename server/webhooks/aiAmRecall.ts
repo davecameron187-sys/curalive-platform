@@ -180,18 +180,18 @@ async function handleTranscriptComplete(payload: RecallWebhookPayload, eventId: 
   try {
     // Get all violations for this event
     const violations = await db.query.complianceViolations.findMany({
-      where: (v) => v.eventId === eventId,
+      where: (v: any) => v.eventId === eventId,
     });
 
     // Generate summary
     const summary = {
       totalViolations: violations.length,
-      unacknowledged: violations.filter((v) => !v.acknowledged).length,
+      unacknowledged: violations.filter((v: any) => !v.acknowledged).length,
       bySeverity: {
-        critical: violations.filter((v) => v.severity === "critical").length,
-        high: violations.filter((v) => v.severity === "high").length,
-        medium: violations.filter((v) => v.severity === "medium").length,
-        low: violations.filter((v) => v.severity === "low").length,
+        critical: violations.filter((v: any) => v.severity === "critical").length,
+        high: violations.filter((v: any) => v.severity === "high").length,
+        medium: violations.filter((v: any) => v.severity === "medium").length,
+        low: violations.filter((v: any) => v.severity === "low").length,
       },
     };
 

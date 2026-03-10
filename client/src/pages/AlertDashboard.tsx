@@ -391,3 +391,5 @@ export function AlertDashboard({ eventId }: AlertDashboardProps) {
     </div>
   );
 }
+
+export default AlertDashboard;

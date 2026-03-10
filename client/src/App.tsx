@@ -82,6 +82,9 @@ import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
 import TranscriptEditor from "./pages/TranscriptEditor";
 import TranscriptPage from "./pages/TranscriptPage";
 import OperatorHub from "./pages/OperatorHub";
+import AlertDashboard from "./pages/AlertDashboard";
+import OperatorPreferences from "./pages/OperatorPreferences";
+import OnboardingFlow from "./pages/OnboardingFlow";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -92,6 +95,9 @@ function Router() {
       <Route path="/moderator/:id" component={Moderator} />
       <Route path="/presenter/:id" component={Presenter} />
       <Route path="/operator/analytics" component={OperatorAnalytics} />
+      <Route path="/operator/alerts" component={AlertDashboard} />
+      <Route path="/operator/preferences" component={OperatorPreferences} />
+      <Route path="/operator/onboarding" component={OnboardingFlow} />
       <Route path="/operator/:id" component={OperatorConsole} />
       <Route path="/register/:id" component={Registration} />
       <Route path="/demo-registration" component={DemoRegistration} />
