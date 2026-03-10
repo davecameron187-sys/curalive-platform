@@ -2131,3 +2131,76 @@ export const webcastAnalyticsExpanded = mysqlTable("webcast_analytics_expanded",
 
 export type WebcastAnalyticsExpanded = typeof webcastAnalyticsExpanded.$inferSelect;
 export type InsertWebcastAnalyticsExpanded = typeof webcastAnalyticsExpanded.$inferInsert;
+
+export const interconnectionActivations = mysqlTable("interconnection_activations", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }),
+  userId: int("user_id").default(0).notNull(),
+  featureId: varchar("feature_id", { length: 64 }).notNull(),
+  connectedFeatureId: varchar("connected_feature_id", { length: 64 }).notNull(),
+  activationSource: varchar("activation_source", { length: 32 }).default("manual").notNull(),
+  roiMultiplier: float("roi_multiplier").default(1.0).notNull(),
+  activatedAt: timestamp("activated_at").defaultNow().notNull(),
+});
+
+export type InterconnectionActivation = typeof interconnectionActivations.$inferSelect;
+export type InsertInterconnectionActivation = typeof interconnectionActivations.$inferInsert;
+
+export const interconnectionAnalytics = mysqlTable("interconnection_analytics", {
+  id: int("id").autoincrement().primaryKey(),
+  date: varchar("date", { length: 16 }).notNull(),
+  totalActivations: int("total_activations").default(0).notNull(),
+  uniqueFeatures: int("unique_features").default(0).notNull(),
+  avgConnectionsPerUser: float("avg_connections_per_user").default(0).notNull(),
+  topFeatureId: varchar("top_feature_id", { length: 64 }),
+  roiRealized: float("roi_realized").default(0).notNull(),
+  workflowCompletionRate: float("workflow_completion_rate").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type InterconnectionAnalyticsRow = typeof interconnectionAnalytics.$inferSelect;
+export type InsertInterconnectionAnalytics = typeof interconnectionAnalytics.$inferInsert;
+
+export const virtualStudios = mysqlTable("virtual_studios", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  bundleId: varchar("bundle_id", { length: 8 }).notNull(),
+  studioName: varchar("studio_name", { length: 255 }).default("My Virtual Studio").notNull(),
+  avatarStyle: varchar("avatar_style", { length: 32 }).default("professional").notNull(),
+  primaryLanguage: varchar("primary_language", { length: 8 }).default("en").notNull(),
+  dubbingLanguages: text("dubbing_languages"),
+  esgEnabled: boolean("esg_enabled").default(false).notNull(),
+  replayEnabled: boolean("replay_enabled").default(true).notNull(),
+  overlaysConfig: longtext("overlays_config"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VirtualStudio = typeof virtualStudios.$inferSelect;
+export type InsertVirtualStudio = typeof virtualStudios.$inferInsert;
+
+export const esgStudioFlags = mysqlTable("esg_studio_flags", {
+  id: int("id").autoincrement().primaryKey(),
+  studioId: int("studio_id").notNull(),
+  flagType: varchar("flag_type", { length: 64 }).notNull(),
+  description: text("description").notNull(),
+  severity: varchar("severity", { length: 16 }).default("medium").notNull(),
+  contentSnippet: text("content_snippet"),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type EsgStudioFlag = typeof esgStudioFlags.$inferSelect;
+export type InsertEsgStudioFlag = typeof esgStudioFlags.$inferInsert;
+
+export const studioInterconnections = mysqlTable("studio_interconnections", {
+  id: int("id").autoincrement().primaryKey(),
+  studioId: int("studio_id").notNull(),
+  featureId: varchar("feature_id", { length: 64 }).notNull(),
+  connectedFeatureId: varchar("connected_feature_id", { length: 64 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  activeAt: timestamp("active_at").defaultNow().notNull(),
+});
+
+export type StudioInterconnection = typeof studioInterconnections.$inferSelect;
+export type InsertStudioInterconnection = typeof studioInterconnections.$inferInsert;

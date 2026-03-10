@@ -1,22 +1,9 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, Zap } from "lucide-react";
-
-interface FeatureNode {
-  id: string;
-  label: string;
-  bundle: string;
-  bundleColor: string;
-  x: number;
-  y: number;
-  description: string;
-}
-
-interface FeatureEdge {
-  from: string;
-  to: string;
-  label: string;
-}
+import { ChevronLeft, Zap, Filter } from "lucide-react";
+import InterconnectionGraph, { GraphNode, GraphEdge } from "@/components/InterconnectionGraph";
+import InterconnectionModal from "@/components/InterconnectionModal";
+import WorkflowSteps, { WorkflowStep } from "@/components/WorkflowSteps";
 
 const BUNDLE_COLORS: Record<string, string> = {
   A: "#3b82f6",
@@ -27,7 +14,16 @@ const BUNDLE_COLORS: Record<string, string> = {
   F: "#ec4899",
 };
 
-const NODES: FeatureNode[] = [
+const BUNDLE_LEGEND = [
+  { bundle: "A", label: "Investor Relations" },
+  { bundle: "B", label: "Compliance & Risk" },
+  { bundle: "C", label: "Operations" },
+  { bundle: "D", label: "Content & Marketing" },
+  { bundle: "E", label: "Premium / New" },
+  { bundle: "F", label: "Social Amplification" },
+];
+
+const NODES: GraphNode[] = [
   { id: "transcription", label: "Live Transcription", bundle: "C", bundleColor: BUNDLE_COLORS.C, x: 50, y: 50, description: "Real-time speech-to-text" },
   { id: "sentiment", label: "Sentiment Analysis", bundle: "A", bundleColor: BUNDLE_COLORS.A, x: 220, y: 50, description: "Live investor mood tracking" },
   { id: "qa-triage", label: "Q&A Auto-Triage", bundle: "C", bundleColor: BUNDLE_COLORS.C, x: 50, y: 160, description: "Smart question categorisation" },
@@ -46,7 +42,7 @@ const NODES: FeatureNode[] = [
   { id: "lead-scoring", label: "Lead Scoring", bundle: "A", bundleColor: BUNDLE_COLORS.A, x: 560, y: 380, description: "Hot/Warm/Cold investor signals" },
 ];
 
-const EDGES: FeatureEdge[] = [
+const EDGES: GraphEdge[] = [
   { from: "transcription", to: "sentiment", label: "feeds" },
   { from: "transcription", to: "qa-triage", label: "filters" },
   { from: "transcription", to: "toxicity", label: "screens" },
@@ -69,27 +65,38 @@ const EDGES: FeatureEdge[] = [
   { from: "sustainability", to: "broadcaster", label: "ESG insight" },
 ];
 
-const NODE_W = 130;
-const NODE_H = 52;
-const CANVAS_W = 730;
-const CANVAS_H = 470;
-
-function getCenter(node: FeatureNode) {
-  return { x: node.x + NODE_W / 2, y: node.y + NODE_H / 2 };
-}
-
-const bundleLegend = [
-  { bundle: "A", label: "Investor Relations" },
-  { bundle: "B", label: "Compliance & Risk" },
-  { bundle: "C", label: "Operations" },
-  { bundle: "D", label: "Content & Marketing" },
-  { bundle: "E", label: "Premium / New Features" },
-  { bundle: "F", label: "Social Amplification" },
-];
+const RECOMMENDED_WORKFLOWS: Record<string, WorkflowStep[]> = {
+  A: [
+    { id: "1", label: "Event Brief", description: "Prepare AI briefing pack before event", status: "completed", duration: "T-2h" },
+    { id: "2", label: "Sentiment Analysis", description: "Monitor live investor mood", status: "active", duration: "Live", roiNote: "2.1× ROI" },
+    { id: "3", label: "Investor Follow-Ups", description: "Personalised post-event outreach", status: "locked", duration: "T+1h", roiNote: "2.6× ROI" },
+    { id: "4", label: "Lead Scoring", description: "Hot/Warm/Cold investor signals", status: "locked", duration: "T+24h", roiNote: "2.8× ROI" },
+  ],
+  B: [
+    { id: "1", label: "Toxicity Filter", description: "Screen all Q&A and chat content", status: "completed", duration: "Always on" },
+    { id: "2", label: "Compliance Check", description: "Flag regulatory risk statements", status: "active", duration: "Live", roiNote: "2.9× ROI" },
+    { id: "3", label: "Q&A Auto-Triage", description: "Route sensitive questions for review", status: "locked", duration: "Live", roiNote: "1.6× ROI" },
+  ],
+  C: [
+    { id: "1", label: "Live Transcription", description: "Foundation for all AI features", status: "completed", duration: "Always on" },
+    { id: "2", label: "Pace Coach", description: "Real-time presenter coaching", status: "active", duration: "Live" },
+    { id: "3", label: "Q&A Auto-Triage", description: "Smart question routing", status: "locked", duration: "Live" },
+  ],
+  D: [
+    { id: "1", label: "Rolling Summary", description: "Live 60s summaries from transcript", status: "completed", duration: "Live" },
+    { id: "2", label: "Press Release", description: "AI-drafted SENS/RNS from summaries", status: "active", duration: "T+30min", roiNote: "2.2× ROI" },
+    { id: "3", label: "Podcast Converter", description: "Full episode from event transcript", status: "locked", duration: "T+1h" },
+    { id: "4", label: "AI Video Recap", description: "Top moments highlight reel", status: "locked", duration: "T+2h", roiNote: "2.1× ROI" },
+  ],
+};
 
 export default function FeatureMap() {
   const [, navigate] = useLocation();
-  const [hovered, setHovered] = useState<string | null>(null);
+  const [selectedBundle, setSelectedBundle] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  const selectedNode = NODES.find(n => n.id === selectedNodeId);
+  const workflow = RECOMMENDED_WORKFLOWS[selectedBundle ?? "A"];
 
   return (
     <div className="min-h-screen bg-[#0a0d1a] text-white">
@@ -106,99 +113,76 @@ export default function FeatureMap() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex flex-wrap gap-3 mb-6">
-          {bundleLegend.map(({ bundle, label }) => (
-            <div key={bundle} className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: BUNDLE_COLORS[bundle] }} />
-              <span className="text-slate-400">Bundle {bundle}: {label}</span>
-            </div>
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 mr-1">
+            <Filter className="w-3.5 h-3.5" /> Filter:
+          </div>
+          <button
+            onClick={() => setSelectedBundle(null)}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${!selectedBundle ? "bg-slate-700 border-slate-600 text-white" : "border-slate-700 text-slate-400 hover:border-slate-600"}`}
+          >
+            All Bundles
+          </button>
+          {BUNDLE_LEGEND.map(({ bundle, label }) => (
+            <button
+              key={bundle}
+              onClick={() => setSelectedBundle(selectedBundle === bundle ? null : bundle)}
+              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
+                selectedBundle === bundle ? "text-white border-current" : "border-slate-700 text-slate-400 hover:border-slate-600"
+              }`}
+              style={selectedBundle === bundle ? { borderColor: BUNDLE_COLORS[bundle], backgroundColor: `${BUNDLE_COLORS[bundle]}15` } : {}}
+            >
+              <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: BUNDLE_COLORS[bundle] }} />
+              {bundle}: {label}
+            </button>
           ))}
         </div>
 
         <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4 overflow-x-auto">
-          <svg width={CANVAS_W} height={CANVAS_H} viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} className="min-w-[730px]">
-            <defs>
-              <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-                <path d="M0,0 L0,6 L8,3 z" fill="#475569" />
-              </marker>
-            </defs>
-
-            {EDGES.map((edge, i) => {
-              const fromNode = NODES.find(n => n.id === edge.from);
-              const toNode = NODES.find(n => n.id === edge.to);
-              if (!fromNode || !toNode) return null;
-              const from = getCenter(fromNode);
-              const to = getCenter(toNode);
-              const isActive = hovered === edge.from || hovered === edge.to;
-              return (
-                <g key={i}>
-                  <line
-                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                    stroke={isActive ? "#8b5cf6" : "#334155"}
-                    strokeWidth={isActive ? 2 : 1}
-                    strokeDasharray={isActive ? "none" : "4,4"}
-                    markerEnd="url(#arrow)"
-                    opacity={isActive ? 1 : 0.5}
-                  />
-                  {isActive && (
-                    <text
-                      x={(from.x + to.x) / 2}
-                      y={(from.y + to.y) / 2 - 4}
-                      textAnchor="middle"
-                      fill="#a78bfa"
-                      fontSize="9"
-                      className="pointer-events-none"
-                    >
-                      {edge.label}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-
-            {NODES.map((node) => {
-              const isActive = hovered === node.id;
-              return (
-                <g
-                  key={node.id}
-                  transform={`translate(${node.x}, ${node.y})`}
-                  onMouseEnter={() => setHovered(node.id)}
-                  onMouseLeave={() => setHovered(null)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <rect
-                    width={NODE_W}
-                    height={NODE_H}
-                    rx={8}
-                    fill={isActive ? `${node.bundleColor}25` : "#1e293b"}
-                    stroke={node.bundleColor}
-                    strokeWidth={isActive ? 2 : 1}
-                    opacity={isActive ? 1 : 0.85}
-                  />
-                  <rect
-                    width={4}
-                    height={NODE_H}
-                    rx={2}
-                    fill={node.bundleColor}
-                    opacity={0.8}
-                  />
-                  <text x={14} y={22} fill="#e2e8f0" fontSize="11" fontWeight={isActive ? "bold" : "normal"}>
-                    {node.label}
-                  </text>
-                  <text x={14} y={38} fill="#64748b" fontSize="9">
-                    {node.description}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
+          <div className="min-w-[760px]">
+            <InterconnectionGraph
+              nodes={NODES}
+              edges={EDGES}
+              onNodeClick={id => setSelectedNodeId(id)}
+              highlightBundle={selectedBundle}
+              width={760}
+              height={480}
+            />
+          </div>
         </div>
 
-        <div className="mt-4 text-xs text-slate-500 text-center">
-          Hover over any feature to see its connections. Dashed lines show data flow between features.
+        <div className="text-xs text-slate-500 text-center">
+          Click any feature to see its connections and activation sequence.{" "}
+          {selectedBundle && (
+            <span style={{ color: BUNDLE_COLORS[selectedBundle] }}>
+              Showing Bundle {selectedBundle} only.
+            </span>
+          )}
         </div>
+
+        {workflow && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+            <h3 className="text-sm font-semibold text-white mb-4">
+              Recommended Activation Sequence —{" "}
+              <span style={{ color: BUNDLE_COLORS[selectedBundle ?? "A"] }}>
+                Bundle {selectedBundle ?? "A"}: {BUNDLE_LEGEND.find(b => b.bundle === (selectedBundle ?? "A"))?.label}
+              </span>
+            </h3>
+            <WorkflowSteps steps={workflow} orientation="horizontal" />
+          </div>
+        )}
       </div>
+
+      {selectedNodeId && selectedNode && (
+        <InterconnectionModal
+          featureId={selectedNodeId}
+          featureLabel={selectedNode.label}
+          nodes={NODES}
+          edges={EDGES}
+          onClose={() => setSelectedNodeId(null)}
+        />
+      )}
     </div>
   );
 }

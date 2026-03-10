@@ -1,13 +1,13 @@
 # CuraLive — Full Tech Stack & Project Reference
 
 > Upload this file to Manus at the start of every session to stay in sync with the Replit environment.
-> Last updated: March 2026 | GitHub HEAD: `e5c5ea7` (main branch — Session 4 push pending)
+> Last updated: March 2026 | GitHub HEAD: `0036edd` (main branch — Session 5 complete)
 
 ---
 
 ## 1. Project Overview
 
-**CuraLive** is a real-time investor events platform for earnings calls, webcasts, and board briefings. It provides live transcription, AI summarisation, sentiment analysis, Q&A management, compliance tools, social media amplification, multi-platform broadcasting, and the full **Intelligent Broadcaster** webcast enhancement suite.
+**CuraLive** is a real-time investor events platform for earnings calls, webcasts, and board briefings. It provides live transcription, AI summarisation, sentiment analysis, Q&A management, compliance tools, social media amplification, multi-platform broadcasting, the full **Intelligent Broadcaster** webcast enhancement suite, and a complete **Interconnection Mapping + Virtual Studio** system.
 
 - **Dev server**: port `5000` (Express serves both API and Vite-built frontend)
 - **Repo**: `davecameron187-sys/curalive-platform` (GitHub, `main` branch)
@@ -172,7 +172,9 @@ curalive/
 | `/integration-hub` | `IntegrationHub.tsx` | Third-party integrations |
 | `/podcast-converter` | `PodcastConverter.tsx` | **NEW** Video Podcast Converter |
 | `/sustainability` | `SustainabilityDashboard.tsx` | **NEW** ESG / Carbon savings dashboard |
-| `/feature-map` | `FeatureMap.tsx` | **NEW** AI feature interconnection map |
+| `/feature-map` | `FeatureMap.tsx` | AI feature interconnection map (interactive graph) |
+| `/admin/interconnection-analytics` | `InterconnectionAnalytics.tsx` | **NEW** Adoption, ROI & workflow metrics dashboard |
+| `/virtual-studio` | `VirtualStudio.tsx` | **NEW** Bundle-customised broadcast studio |
 
 ---
 
@@ -212,6 +214,8 @@ All routers are wired in `server/routers.ts`. tRPC endpoint: `/api/trpc/`
 | `transcription.ts` | Live transcription |
 | `webcastRouter.ts` | **Webcast management + 10 new enhancement procedures** |
 | `webphoneRouter.ts` | Telnyx/Twilio webphone |
+| `interconnectionAnalytics.ts` | **NEW** Interconnection adoption, ROI, workflow, segment metrics |
+| `virtualStudioRouter.ts` | **NEW** Virtual studio CRUD, avatar/language config, ESG flags, replay |
 
 ### webcastRouter.ts — Enhancement Procedures (Session 4)
 `adaptContent`, `applyXROverlays`, `convertPodcast`, `dubLanguage`, `optimizeSustainability`, `integrateAds`, `enhanceAudio`, `generateRecap`, `getEnhancementConfig`, `getWebcastAnalytics`
@@ -244,6 +248,7 @@ All routers are wired in `server/routers.ts`. tRPC endpoint: `/api/trpc/`
 | `TranscriptEditorService.ts` | Collaborative transcript editing |
 | `TranscriptionService.ts` | Live transcription processing |
 | `WebcastRecapService.ts` | **NEW** Top moments + key quotes + sentiment arc + CTA suggestions |
+| `VirtualStudioService.ts` | **NEW** Studio CRUD, bundle overlay config, ESG content flagging (LLM), ESG report |
 
 ---
 
@@ -267,6 +272,13 @@ All routers are wired in `server/routers.ts`. tRPC endpoint: `/api/trpc/`
 ### Webcast Enhancement Tables (added Session 4)
 - `webcast_enhancements` — enhancement config per event (personalization, XR, dubbing, sustainability, ads, noise, podcast/recap timestamps)
 - `webcast_analytics_expanded` — ROI/sustainability analytics (engagement, ROI uplift, carbon footprint, ad revenue, podcast listens, recap views)
+
+### Interconnection & Virtual Studio Tables (added Session 5)
+- `interconnection_activations` — log of feature pair activations (eventId, userId, featureId, connectedFeatureId, activationSource, roiMultiplier)
+- `interconnection_analytics` — daily rollup (totalActivations, uniqueFeatures, avgConnectionsPerUser, topFeatureId, roiRealized, workflowCompletionRate)
+- `virtual_studios` — studio config per event (bundleId, studioName, avatarConfig JSON, languageConfig JSON, esgEnabled, replayEnabled)
+- `esg_studio_flags` — ESG content flags per studio (flagType, description, severity, resolvedAt)
+- `studio_interconnections` — active feature pairs per studio
 
 ### Other Key Tables
 - `users`, `sessions` — auth
@@ -317,7 +329,7 @@ OAuth callback URL pattern: `/api/social/oauth/callback/[platform]`
 |---|---|---|
 | `/podcast-converter` | `PodcastConverter.tsx` | Convert webcast to investor podcast episode |
 | `/sustainability` | `SustainabilityDashboard.tsx` | Carbon savings + ESG certificate + green score |
-| `/feature-map` | `FeatureMap.tsx` | Visual AI feature interconnection map |
+| `/feature-map` | `FeatureMap.tsx` | AI feature interconnection map (now uses InterconnectionGraph) |
 
 ### New components
 | Component | Location | Description |
@@ -345,7 +357,40 @@ The `WebcastStudio.tsx` tab type now includes:
 
 ---
 
-## 10. AI Shop (`/ai-shop`)
+## 10. Interconnection Mapping + Virtual Studio (Session 5)
+
+### New pages
+| Route | Component | Description |
+|---|---|---|
+| `/admin/interconnection-analytics` | `InterconnectionAnalytics.tsx` | KPI cards, adoption trend, top connections bar chart, ROI breakdown, segment table |
+| `/virtual-studio` | `VirtualStudio.tsx` | Bundle-customised studio: avatar config, 12-language dubbing, ESG flags, interconnection overlays, replay |
+
+### New components
+| Component | Location | Description |
+|---|---|---|
+| `InterconnectionGraph.tsx` | `client/src/components/` | Interactive SVG graph — hover highlights, clickable nodes, animated dashed edges, colour-coded by bundle |
+| `WorkflowSteps.tsx` | `client/src/components/` | Timeline stepper — numbered steps, icons, labels, descriptions, completion state, connector lines |
+| `InterconnectionModal.tsx` | `client/src/components/` | Full modal — connected features list, recommended activation sequence (WorkflowSteps), ROI multiplier, Activate Together CTA |
+
+### AIShop.tsx updates (Session 5)
+- **AppCard "See Connections" button** — connection badge (↔ N connections) + button opens `InterconnectionModal` for that app's feature node
+- **FEATURE_NODES / FEATURE_EDGES / APP_TO_FEATURE_ID** constants defined at top of `AIShop.tsx` to map each app to the interconnection graph
+
+### FeatureMap.tsx updates (Session 5)
+- Now renders `<InterconnectionGraph>` (SVG) instead of a static grid
+- Bundle filter buttons + "Zoom to Bundle" focus
+- Node click opens `<InterconnectionModal>` for that feature
+- Recommended Workflow section at bottom using `<WorkflowSteps>`
+
+### interconnectionAnalytics.ts tRPC procedures
+`getAdoptionMetrics`, `getTopInterconnections`, `getROIMetrics`, `getWorkflowMetrics`, `getSegmentMetrics`, `recordActivation`
+
+### virtualStudioRouter.ts tRPC procedures
+`createStudio`, `getStudio`, `updateAvatarConfig`, `updateLanguageConfig`, `toggleESG`, `getESGFlags`, `resolveESGFlag`, `generateReplay`
+
+---
+
+## 11. AI Shop (`/ai-shop`)
 
 6 role-based bundles:
 | ID | Name | Price |
@@ -359,7 +404,7 @@ The `WebcastStudio.tsx` tab type now includes:
 
 ---
 
-## 11. Critical Development Rules
+## 12. Critical Development Rules
 
 ### Toast notifications
 **Use `sonner` only — never shadcn `useToast`.**
@@ -406,7 +451,7 @@ Run `node scripts/github-push-manual.mjs` from workspace root. Uses `@replit/con
 
 ---
 
-## 12. Environment Secrets (already configured in Replit)
+## 13. Environment Secrets (already configured in Replit)
 
 | Secret | Used for |
 |---|---|
@@ -419,7 +464,7 @@ Replit integrations installed:
 
 ---
 
-## 13. Key Scripts
+## 14. Key Scripts
 
 ```bash
 pnpm dev                          # Start dev server (port 5000)
