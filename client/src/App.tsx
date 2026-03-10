@@ -84,6 +84,7 @@ import TranscriptPage from "./pages/TranscriptPage";
 import OperatorHub from "./pages/OperatorHub";
 import AIShop from "./pages/AIShop";
 import AIOnboarding from "./pages/AIOnboarding";
+import SocialMediaPage from "./pages/SocialMediaPage";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -171,6 +172,7 @@ function Router() {
       <Route path="/operator-hub" component={OperatorHub} />
       <Route path="/ai-shop" component={AIShop} />
       <Route path="/ai-onboarding" component={AIOnboarding} />
+      <Route path="/social" component={SocialMediaPage} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

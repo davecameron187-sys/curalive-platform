@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft, Sparkles, Search, Brain, ShieldCheck, Zap, Megaphone,
   Star, ChevronDown, ChevronUp, Clock, TrendingUp, CheckCircle2,
-  ArrowRight, Users, BarChart2, FileText, Mic, Globe, Lock, Lightbulb,
+  ArrowRight, Users, BarChart2, FileText, Mic, Globe, Lock, Lightbulb, Share2,
 } from "lucide-react";
 
 // ─── Bundle definitions ────────────────────────────────────────────────────────
@@ -125,6 +125,23 @@ const BUNDLES: Bundle[] = [
     price: "Custom",
     appIds: [],
     quickWins: [],
+  },
+  {
+    id: "social-amplification",
+    letter: "F",
+    name: "Social Amplification",
+    target: "IR teams, marketing, communications leads",
+    tagline: "Turn every event into a multi-platform social campaign",
+    roi: "+40% post-event reach · 3x investor follow-on engagement",
+    color: "from-violet-500 to-pink-600",
+    icon: Share2,
+    price: "$199/mo",
+    appIds: ["event-echo-pipeline", "social-compliance-moderator", "social-analytics", "ai-post-generator", "multi-platform-publisher"],
+    quickWins: [
+      "Generate LinkedIn post from earnings call in <5s",
+      "Auto-compliance check before every publish",
+      "Track social ROI back to event outcomes",
+    ],
   },
 ];
 
@@ -336,7 +353,7 @@ export default function AIShop() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-white">AI Shop</h1>
-            <p className="text-xs text-slate-400">28 AI applications · 5 role-based bundles</p>
+            <p className="text-xs text-slate-400">28 AI applications · 6 role-based bundles</p>
           </div>
         </div>
         <button

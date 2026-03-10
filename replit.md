@@ -42,6 +42,27 @@ Key variables needed:
 - `OAUTH_SERVER_URL` — OAuth server URL
 - `OWNER_OPEN_ID` — OpenID of the admin user
 
+## Key Features
+
+- **AI Shop** (`/ai-shop`) — 6 role-based AI bundles (A-F) + 28 individual AI applications browser
+- **AI Onboarding Quiz** (`/ai-onboarding`) — 4-question guided quiz with bundle recommendation
+- **Social Command Center** (`/social`) — Event Echo pipeline: live event → AI-generated social posts → compliance check → multi-platform publish → ROI analytics
+  - 12 tRPC procedures in `server/routers/socialMedia.ts`
+  - Event Echo Pipeline: `server/services/EventEchoPipeline.ts`
+  - Compliance Moderator: `server/services/ComplianceModerator.ts`
+  - Social Media Service: `server/services/SocialMediaService.ts`
+  - OAuth config for 5 platforms: `server/_core/socialOAuth.ts`
+  - DB tables: `social_media_accounts`, `social_posts`, `social_post_platforms`, `social_metrics`, `social_audit_log`
+- **Bundle F** — "Social Amplification" at $199/mo added to AI Shop
+
+### Social OAuth Setup (To Go Live)
+Set these env vars + matching secrets to enable live OAuth publishing:
+- `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET`
+- `TWITTER_CLIENT_ID` / `TWITTER_CLIENT_SECRET`
+- `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET`
+- `INSTAGRAM_APP_ID` / `INSTAGRAM_APP_SECRET`
+- `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET`
+
 ## Deployment
 
 - **Target**: Autoscale
