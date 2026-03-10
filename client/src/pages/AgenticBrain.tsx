@@ -7,7 +7,7 @@ import {
   Brain, Zap, TrendingUp, ShieldCheck, Settings, Megaphone,
   Star, ArrowRight, ArrowLeft, RotateCcw, CheckCircle2,
   Activity, BarChart2, GitBranch, Sparkles, ChevronRight,
-  Clock, Award, Target,
+  Clock, Award, Target, Database, Cpu,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -131,6 +131,11 @@ export default function AgenticBrain() {
 
   const analysisMutation = trpc.agenticBrain.runAnalysis.useMutation();
   const historyQuery = trpc.agenticBrain.getHistory.useQuery();
+  const result = analysisMutation.data;
+  const memoryQuery = trpc.autonomousIntervention.getMemoryForBrain.useQuery(
+    { bundleLetter: result?.bundle.letter ?? "A", q1Role: answers.q1Role ?? "ir" },
+    { enabled: step === "results" && result != null }
+  );
 
   const questions = [
     { key: "q1Role" as keyof Answer, title: "What's your primary role?", subtitle: "The Brain calibrates bundle weights to your function", options: ROLES.map(r => ({ id: r.id, label: r.label, sub: r.desc, icon: r.icon, color: r.color })) },
@@ -186,7 +191,6 @@ export default function AgenticBrain() {
     analysisMutation.reset();
   };
 
-  const result = analysisMutation.data;
   const colors = result ? (BUNDLE_COLORS[result.bundle.color] ?? BUNDLE_COLORS.violet) : BUNDLE_COLORS.violet;
 
   return (
@@ -405,6 +409,34 @@ export default function AgenticBrain() {
               <p className="text-2xl font-black text-violet-200">{result.bundle.roi}</p>
               <p className="text-xs text-slate-500 mt-2 font-mono">Based on aggregate data from {Math.floor(result.score * 847 + 120)} similar deployments</p>
             </div>
+
+            {/* Cross-Event Memory */}
+            {memoryQuery.data && (
+              <div className="rounded-2xl bg-slate-900/70 border border-indigo-500/20 p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Database className="w-4 h-4 text-indigo-400" />
+                  <span className="text-sm font-bold text-slate-200 uppercase tracking-wide">Cross-Event Memory</span>
+                  <div className="ml-auto flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+                    <Cpu className="w-3 h-3" /> {memoryQuery.data.analysisCount} analyses loaded
+                  </div>
+                </div>
+                <p className="text-slate-300 text-sm leading-relaxed mb-4">{memoryQuery.data.insight}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: "Analyses", value: memoryQuery.data.analysisCount.toString(), sub: "Total runs" },
+                    { label: "Avg Confidence", value: `${Math.round(memoryQuery.data.avgScore * 100)}%`, sub: "Mean score" },
+                    { label: "Peak Score", value: `${Math.round(memoryQuery.data.peakScore * 100)}%`, sub: "Best run" },
+                    { label: "Top Challenge", value: memoryQuery.data.dominantChallenge.replace("_", " "), sub: "Most common" },
+                  ].map(m => (
+                    <div key={m.label} className="p-3 rounded-lg bg-slate-800/60 border border-slate-700/40">
+                      <div className="text-[10px] text-slate-500 font-mono uppercase tracking-wide">{m.label}</div>
+                      <div className="text-sm font-bold text-indigo-300 mt-0.5 capitalize">{m.value}</div>
+                      <div className="text-[10px] text-slate-600">{m.sub}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex flex-wrap gap-3">

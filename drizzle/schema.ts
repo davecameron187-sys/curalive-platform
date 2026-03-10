@@ -2255,3 +2255,23 @@ export const agenticAnalyses = mysqlTable("agentic_analyses", {
 
 export type AgenticAnalysis = typeof agenticAnalyses.$inferSelect;
 export type InsertAgenticAnalysis = typeof agenticAnalyses.$inferInsert;
+
+export const autonomousInterventions = mysqlTable("autonomous_interventions", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }),
+  conferenceId: varchar("conference_id", { length: 128 }),
+  ruleId: varchar("rule_id", { length: 64 }).notNull(),
+  ruleName: varchar("rule_name", { length: 255 }).notNull(),
+  triggerValue: float("trigger_value"),
+  threshold: float("threshold"),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("warning").notNull(),
+  bundleTriggered: varchar("bundle_triggered", { length: 64 }),
+  actionTaken: text("action_taken").notNull(),
+  acknowledged: boolean("acknowledged").default(false).notNull(),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  outcome: text("outcome"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AutonomousIntervention = typeof autonomousInterventions.$inferSelect;
+export type InsertAutonomousIntervention = typeof autonomousInterventions.$inferInsert;

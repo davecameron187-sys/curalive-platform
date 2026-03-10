@@ -4,7 +4,8 @@ import {
   ExternalLink, ChevronDown, ChevronRight, CheckCircle2,
   HelpCircle, Play, X, ChevronRight as ChevRight,
   Radio, Users, AlertTriangle, BarChart3, FileText,
-  Mic, Star, Clock, Loader2
+  Mic, Star, Clock, Loader2, Rocket, MapPin, Circle,
+  TrendingUp, ShieldCheck, Database, Activity,
 } from "lucide-react";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
@@ -78,6 +79,7 @@ const SECTIONS: Section[] = [
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Interconnection Analytics Dashboard", description: "Real-time adoption metrics, ROI tracking, feature distribution, workflow completion rates, and customer segment analytics.", path: "/admin/interconnection-analytics", actionLabel: "View Analytics" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Recommended Workflows", description: "Pre-configured feature activation sequences for each bundle. Maximize ROI by activating features in the recommended order.", path: "/workflows", actionLabel: "View Workflows" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Agentic Event Brain", description: "CuraLive's proprietary AI scoring engine. Answer 3 questions to get your optimal bundle, AI-generated action plan, and ROI projection.", path: "/agentic-brain", actionLabel: "Activate Brain" },
+      { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Autonomous Intervention Engine", description: "6 live rules that fire automatically during events — sentiment drops, Q&A overload, compliance risks, and more. Agents act without human input.", path: "/autonomous-intervention", actionLabel: "View Engine" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "AI Shop", description: "Browse all 16 AI features with interconnection badges, see related features, and activate new capabilities with one click.", path: "/ai-shop", actionLabel: "Browse Features" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Post-Event Report", description: "AI-generated summaries, full transcripts, sentiment analysis, Q&A highlights, and ROI realization tracking.", path: "/post-event/q4-earnings-2026", actionLabel: "View Reports" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Webcast Recap Generator", description: "Automatically generate video recaps, podcast conversions, and social media content from completed events.", path: "/webcast-recap", actionLabel: "Generate Recap" },
@@ -357,6 +359,113 @@ function SimulationPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Intelligence Roadmap ─────────────────────────────────────────────────────
+
+const ROADMAP_ITEMS = [
+  {
+    phase: "Built",
+    color: "emerald",
+    items: [
+      { title: "Agentic Event Brain", desc: "Proprietary scoring algorithm (patent pending). 3-question wizard → GPT-4o recommendation → ROI preview. Every analysis logged to database.", path: "/agentic-brain", icon: Brain },
+      { title: "Autonomous Intervention Engine", desc: "6 live rules that fire without human input during events. Sentiment drop, Q&A overload, compliance risk, engagement drop, positive spike, high-value event detection.", path: "/autonomous-intervention", icon: Zap },
+      { title: "Cross-Event Memory", desc: "Brain now queries all past analyses for your bundle. Surfaces patterns: average confidence score, dominant challenge, peak performance, last run timestamp.", path: "/agentic-brain", icon: Database },
+      { title: "Bundle Interconnection Map", desc: "Visual map of how all 6 bundles trigger each other automatically. IR → Compliance → Operations → Content chain reaction.", path: "/feature-map", icon: Activity },
+      { title: "Operator Console (OCC)", desc: "Full live event control: CCP, Q&A management, participant states, green room, compliance monitoring, real-time analytics.", path: "/occ", icon: Settings },
+      { title: "Virtual Studio", desc: "Bundle-specific broadcast environments with AI overlays, avatar styles, ESG flags, and real-time preview.", path: "/virtual-studio", icon: Star },
+    ],
+  },
+  {
+    phase: "Next: Building Now",
+    color: "amber",
+    items: [
+      { title: "Investor Persona Profiles", desc: "Brain learns each investor's behaviour across events. How they engage, when they go cold, what topics spike their sentiment. Builds automatically from live event data.", path: null, icon: Users },
+      { title: "Predictive Pre-Event Intelligence", desc: "Before a word is spoken, the Brain scores the call: risk probability, sentiment prediction, recommended setup. Gets sharper with every event run.", path: null, icon: TrendingUp },
+    ],
+  },
+  {
+    phase: "Roadmap: Q3 2026",
+    color: "slate",
+    items: [
+      { title: "Market Signal Integration", desc: "Pull Bloomberg/Reuters data into the Brain. Stock down 4% on earnings day? Brain automatically shifts to defensive compliance mode.", path: null, icon: BarChart3 },
+      { title: "Multi-Event Orchestration", desc: "For roadshows (20+ meetings in 10 cities), the Brain manages the full sequence. Remembers meeting 1 and adjusts briefing for meeting 2 automatically.", path: null, icon: MapPin },
+      { title: "Acquisition Data Dashboard", desc: "Executive view showing cumulative ROI across all events, bundle adoption rates, AI agent intervention frequency, and investor persona coverage — the data room for acquisition due diligence.", path: null, icon: Rocket },
+    ],
+  },
+];
+
+const PHASE_STYLES: Record<string, { border: string; badge: string; dot: string; label: string }> = {
+  emerald: { border: "border-emerald-500/30", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400", label: "✓ Live" },
+  amber:   { border: "border-amber-500/30",   badge: "bg-amber-500/20 text-amber-300 border-amber-500/30",     dot: "bg-amber-400",   label: "In Progress" },
+  slate:   { border: "border-slate-600/40",   badge: "bg-slate-700/60 text-slate-400 border-slate-600/40",     dot: "bg-slate-500",   label: "Planned" },
+};
+
+function IntelligenceRoadmap() {
+  const [, navigate] = useLocation();
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="bg-card border border-violet-500/20 rounded-2xl overflow-hidden mb-5">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-6 py-5 hover:bg-secondary/20 transition-colors text-left"
+      >
+        <div className="flex items-center gap-3">
+          <Rocket className="w-5 h-5 text-violet-400" />
+          <span className="font-bold">Intelligence Roadmap</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border bg-violet-500/20 text-violet-300 border-violet-500/30">Acquisition Strategy</span>
+        </div>
+        {open ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+      </button>
+      {open && (
+        <div className="px-6 pb-6">
+          <p className="text-sm text-muted-foreground mb-6 italic">
+            Tracks what's been built, what's in progress, and what's coming. Each item strengthens the acquisition case. Live items are clickable.
+          </p>
+          <div className="space-y-8">
+            {ROADMAP_ITEMS.map(phase => {
+              const style = PHASE_STYLES[phase.color];
+              return (
+                <div key={phase.phase}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-2.5 h-2.5 rounded-full ${style.dot} shrink-0`} />
+                    <span className="text-xs font-bold uppercase tracking-widest text-slate-300">{phase.phase}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${style.badge}`}>{style.label}</span>
+                    <div className="flex-1 h-px bg-slate-800" />
+                  </div>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {phase.items.map(item => {
+                      const Icon = item.icon;
+                      const clickable = item.path != null;
+                      return (
+                        <div
+                          key={item.title}
+                          onClick={() => clickable && navigate(item.path! + "?from=operator-links")}
+                          className={`p-4 rounded-xl border ${style.border} bg-background/60 transition-all ${clickable ? "cursor-pointer hover:border-violet-400/50 hover:bg-violet-950/20 group" : "opacity-60"}`}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${phase.color === "emerald" ? "bg-emerald-500/15" : phase.color === "amber" ? "bg-amber-500/15" : "bg-slate-700/50"}`}>
+                              <Icon className={`w-3.5 h-3.5 ${phase.color === "emerald" ? "text-emerald-400" : phase.color === "amber" ? "text-amber-400" : "text-slate-500"}`} />
+                            </div>
+                            <span className={`text-xs font-bold ${clickable ? "group-hover:text-violet-300 transition-colors" : "text-slate-400"}`}>{item.title}</span>
+                            {clickable && <ExternalLink className="w-3 h-3 text-slate-600 group-hover:text-violet-400 ml-auto shrink-0 transition-colors" />}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">{item.desc}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-6 p-4 rounded-xl bg-violet-950/40 border border-violet-500/20 text-xs text-violet-300">
+            <strong className="text-violet-200">Acquisition readiness:</strong> 6 of 11 intelligence features live. Cross-event memory and autonomous intervention engine operational. Next milestone: Investor Persona Profiles after first 5 live events.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SectionCard({ section }: { section: Section }) {
   const [, navigate] = useLocation();
   const [open, setOpen] = useState(true);
@@ -454,6 +563,9 @@ export default function OperatorLinks() {
             <SectionCard key={section.id} section={section} />
           ))}
         </div>
+
+        {/* ── Intelligence Roadmap ─────────────────────────────────────────── */}
+        <IntelligenceRoadmap />
 
         <div className="bg-card border border-border rounded-2xl overflow-hidden mb-5">
           <button
