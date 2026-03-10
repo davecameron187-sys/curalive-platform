@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import BackToLinks from "./components/BackToLinks";
 import Home from "./pages/Home";
 import EventRoom from "./pages/EventRoom";
 import OperatorConsole from "./pages/OperatorConsole";
@@ -218,6 +219,7 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
+          <BackToLinks />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

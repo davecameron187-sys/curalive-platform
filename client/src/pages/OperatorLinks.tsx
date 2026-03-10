@@ -310,7 +310,7 @@ function SimulationPanel({ onClose }: { onClose: () => void }) {
                           )}
                           {isDone && step.path && (
                             <button
-                              onClick={() => { onClose(); navigate(step.path!); }}
+                              onClick={() => { onClose(); navigate(step.path! + (step.path!.includes("?") ? "&" : "?") + "from=operator-links"); }}
                               className="flex items-center gap-1 text-xs text-primary hover:underline mt-1.5 font-medium"
                             >
                               {step.linkLabel} <ChevRight className="w-3 h-3" />
@@ -399,7 +399,7 @@ function SectionCard({ section }: { section: Section }) {
                 <h3 className="font-semibold text-sm mb-2 group-hover:text-primary transition-colors">{card.title}</h3>
                 <p className="text-xs text-muted-foreground mb-4 leading-relaxed">{card.description}</p>
                 <button
-                  onClick={() => navigate(card.path)}
+                  onClick={() => navigate(card.path + (card.path.includes("?") ? "&" : "?") + "from=operator-links")}
                   className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
                 >
                   {card.actionLabel} <ExternalLink className="w-3 h-3" />
