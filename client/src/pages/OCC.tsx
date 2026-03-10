@@ -2273,15 +2273,6 @@ export default function OCC() {
                     </button>
                   </>
                 )}
-                {isRinging && (
-                  <button
-                    onClick={stopRinging}
-                    title="Stop the incoming call alert"
-                    className="flex items-center gap-1 px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-[10px] font-semibold animate-pulse transition-colors"
-                  >
-                    <BellOff className="w-3 h-3" /> Stop Ringing
-                  </button>
-                )}
                 {splitViewEnabled && secondaryCCPConferenceId && (
                   <button
                     onClick={() => { setSplitViewEnabled(false); setSecondaryCCPConferenceId(null); }}
