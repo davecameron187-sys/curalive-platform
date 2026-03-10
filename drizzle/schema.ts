@@ -1975,3 +1975,108 @@ export const clientEventAssignments = mysqlTable("client_event_assignments", {
 
 export type ClientEventAssignment = typeof clientEventAssignments.$inferSelect;
 export type InsertClientEventAssignment = typeof clientEventAssignments.$inferInsert;
+
+/**
+ * social_media_accounts — OAuth-linked social platform accounts per user.
+ */
+export const socialMediaAccounts = mysqlTable("social_media_accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  platform: mysqlEnum("platform", ["linkedin", "twitter", "facebook", "instagram", "tiktok"]).notNull(),
+  accountId: varchar("account_id", { length: 255 }).notNull(),
+  accountName: varchar("account_name", { length: 255 }).notNull(),
+  accountHandle: varchar("account_handle", { length: 255 }),
+  avatarUrl: text("avatar_url"),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  linkedEvents: text("linked_events"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SocialMediaAccount = typeof socialMediaAccounts.$inferSelect;
+export type InsertSocialMediaAccount = typeof socialMediaAccounts.$inferInsert;
+
+/**
+ * social_posts — AI-generated or manual posts tied to events.
+ */
+export const socialPosts = mysqlTable("social_posts", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("event_id"),
+  createdBy: int("created_by").notNull(),
+  content: longtext("content").notNull(),
+  aiGenerated: boolean("ai_generated").default(false).notNull(),
+  echoSource: varchar("echo_source", { length: 64 }),
+  contentType: mysqlEnum("content_type", ["text", "image", "video", "link"]).default("text").notNull(),
+  platforms: text("platforms").notNull(),
+  scheduledAt: timestamp("scheduled_at"),
+  publishedAt: timestamp("published_at"),
+  status: mysqlEnum("status", ["draft", "pending_approval", "approved", "scheduled", "published", "failed"]).default("draft").notNull(),
+  moderationStatus: mysqlEnum("moderation_status", ["pending", "approved", "flagged", "rejected"]).default("pending").notNull(),
+  moderationNotes: text("moderation_notes"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SocialPost = typeof socialPosts.$inferSelect;
+export type InsertSocialPost = typeof socialPosts.$inferInsert;
+
+/**
+ * social_post_platforms — Per-platform publish status for each post.
+ */
+export const socialPostPlatforms = mysqlTable("social_post_platforms", {
+  id: int("id").autoincrement().primaryKey(),
+  postId: int("post_id").notNull(),
+  accountId: int("account_id").notNull(),
+  platform: mysqlEnum("platform", ["linkedin", "twitter", "facebook", "instagram", "tiktok"]).notNull(),
+  externalPostId: varchar("external_post_id", { length: 255 }),
+  publishStatus: mysqlEnum("publish_status", ["pending", "published", "failed"]).default("pending").notNull(),
+  publishedAt: timestamp("published_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type SocialPostPlatform = typeof socialPostPlatforms.$inferSelect;
+export type InsertSocialPostPlatform = typeof socialPostPlatforms.$inferInsert;
+
+/**
+ * social_metrics — Engagement metrics per post with event ROI correlation.
+ */
+export const socialMetrics = mysqlTable("social_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  postId: int("post_id").notNull(),
+  accountId: int("account_id").notNull(),
+  platform: mysqlEnum("platform", ["linkedin", "twitter", "facebook", "instagram", "tiktok"]).notNull(),
+  views: int("views").default(0).notNull(),
+  likes: int("likes").default(0).notNull(),
+  shares: int("shares").default(0).notNull(),
+  comments: int("comments").default(0).notNull(),
+  clicks: int("clicks").default(0).notNull(),
+  engagementRate: float("engagement_rate").default(0).notNull(),
+  roiCorrelation: float("roi_correlation").default(0).notNull(),
+  aiInsight: text("ai_insight"),
+  collectedAt: timestamp("collected_at").defaultNow().notNull(),
+});
+
+export type SocialMetric = typeof socialMetrics.$inferSelect;
+export type InsertSocialMetric = typeof socialMetrics.$inferInsert;
+
+/**
+ * social_audit_log — Immutable compliance trail for all social actions.
+ */
+export const socialAuditLog = mysqlTable("social_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  postId: int("post_id"),
+  action: varchar("action", { length: 64 }).notNull(),
+  platform: varchar("platform", { length: 32 }),
+  details: text("details"),
+  ipAddress: varchar("ip_address", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type SocialAuditLogEntry = typeof socialAuditLog.$inferSelect;
+export type InsertSocialAuditLogEntry = typeof socialAuditLog.$inferInsert;
