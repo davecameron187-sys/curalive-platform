@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useSmartBack } from "@/lib/useSmartBack";
 import {
   ArrowLeft, Play, FileText, Headphones, Share2, Download,
   Clock, Users, MessageSquare, Globe, CheckCircle2, Zap,
@@ -85,6 +86,7 @@ const KEY_MOMENTS = [
 
 export default function WebcastRecapPage() {
   const [, navigate] = useLocation();
+  const goBack = useSmartBack("/post-event/q4-earnings-2026");
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
 
@@ -102,9 +104,9 @@ export default function WebcastRecapPage() {
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-40">
         <div className="container flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/post-event/q4-earnings-2026")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={goBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Post-Event Report</span>
+              <span className="text-sm">Back</span>
             </button>
             <span className="text-muted-foreground/40">/</span>
             <span className="text-sm font-medium">Webcast Recap Generator</span>

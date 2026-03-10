@@ -3,6 +3,7 @@ import {
   ArrowLeft, CheckCircle2, ChevronRight, Play, BookOpen,
   Monitor, Zap, Shield, BarChart3, Globe, Settings
 } from "lucide-react";
+import { useSmartBack } from "@/lib/useSmartBack";
 
 const MODULES: Record<string, {
   title: string; subtitle: string; icon: React.ElementType;
@@ -49,6 +50,7 @@ const MODULES: Record<string, {
 
 export default function TrainingSubPage() {
   const [, navigate] = useLocation();
+  const goBack = useSmartBack("/training");
   const params = useParams<{ module: string }>();
   const module = MODULES[params.module || ""] || MODULES["ai-features"];
 
@@ -60,9 +62,9 @@ export default function TrainingSubPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-40">
         <div className="container flex items-center h-14 gap-3">
-          <button onClick={() => navigate("/training")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={goBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Training Hub</span>
+            <span className="text-sm">Back</span>
           </button>
           <span className="text-muted-foreground/40">/</span>
           <span className="text-sm font-medium">{module.title}</span>

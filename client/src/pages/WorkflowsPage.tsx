@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
 import { ArrowLeft, Zap, ChevronRight, TrendingUp, CheckCircle2, ArrowRight } from "lucide-react";
+import { useSmartBack } from "@/lib/useSmartBack";
 import WorkflowSteps from "@/components/WorkflowSteps";
 
 const WORKFLOWS = [
@@ -78,12 +79,13 @@ const WORKFLOWS = [
 
 export default function WorkflowsPage() {
   const [, navigate] = useLocation();
+  const goBack = useSmartBack("/feature-map");
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-40">
         <div className="container flex items-center h-14 gap-3">
-          <button onClick={() => navigate("/feature-map")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={goBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">Back</span>
           </button>

@@ -1,4 +1,5 @@
 import { useLocation, useParams } from "wouter";
+import { useSmartBack } from "@/lib/useSmartBack";
 import {
   ArrowLeft, Zap, TrendingUp, Users, Shield, Mic, BarChart3,
   MessageSquare, Globe, FileText, Radio, MonitorPlay, Leaf,
@@ -178,6 +179,7 @@ const FEATURE_DATA: Record<string, {
 
 export default function FeatureDetail() {
   const [, navigate] = useLocation();
+  const goBack = useSmartBack("/feature-map");
   const params = useParams<{ id: string }>();
   const featureId = params.id || "";
   const feature = FEATURE_DATA[featureId];
@@ -202,9 +204,9 @@ export default function FeatureDetail() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-40">
         <div className="container flex items-center h-14 gap-3">
-          <button onClick={() => navigate("/feature-map")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={goBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Feature Map</span>
+            <span className="text-sm">Back</span>
           </button>
           <span className="text-muted-foreground/40">/</span>
           <span className="text-sm font-medium">{feature.title}</span>
@@ -313,9 +315,9 @@ export default function FeatureDetail() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/feature-map")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={goBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            Back to Feature Map
+            Back
           </button>
           <span className="text-muted-foreground/30">·</span>
           <button onClick={() => navigate("/ai-shop")} className="text-sm text-primary hover:underline">

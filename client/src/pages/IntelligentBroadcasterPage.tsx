@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useSmartBack } from "@/lib/useSmartBack";
 import {
   ArrowLeft, Zap, AlertTriangle, TrendingDown, TrendingUp,
   MessageSquare, Shield, Activity, Bell, CheckCircle2, Clock,
@@ -42,6 +43,7 @@ const METRICS = [
 
 export default function IntelligentBroadcasterPage() {
   const [, navigate] = useLocation();
+  const goBack = useSmartBack("/");
   const [alerts, setAlerts] = useState<BroadcastAlert[]>(INITIAL_ALERTS);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [elapsed, setElapsed] = useState(272);
@@ -80,7 +82,7 @@ export default function IntelligentBroadcasterPage() {
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-40">
         <div className="container flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={goBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2">
