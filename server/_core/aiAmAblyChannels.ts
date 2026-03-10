@@ -166,13 +166,15 @@ export async function enterOperatorPresence(eventId: string, operatorName: strin
 export async function leaveOperatorPresence(eventId: string) {
   try {
     const ably = getAblyClient();
-    const channel = ably.channels.get(`aiAm:alerts:${eventId}`);
-
-    await channel.presence.leave();
-
+    const presence = ably.channels.get(`aiAm:alerts:${eventId}`).presence;
+    await presence.leave();
     console.log(`[AI-AM Ably] Operator left presence for event ${eventId}`);
   } catch (error) {
-    console.error("[AI-AM Ably] Presence leave error:", error);
-    throw error;
+    console.error("[AI-AM Ably] Leave presence error:", error);
   }
 }
+
+/**
+ * Alias for broadcastViolationAlert for backward compatibility
+ */
+export const publishAlertToAbly = broadcastViolationAlert;

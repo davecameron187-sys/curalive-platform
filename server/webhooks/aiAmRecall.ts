@@ -123,18 +123,17 @@ async function handleTranscriptSegment(payload: RecallWebhookPayload, eventId: s
     }
 
     // Create violation record
-    const violationRecord = await createViolationAlert({
+    const violationRecord = await createViolationAlert(
       eventId,
-      conferenceId: payload.meeting_id,
-      violationType: violation.violationType,
-      severity: violation.severity,
-      confidenceScore: violation.confidenceScore,
-      speakerName: segment.speaker_name,
-      speakerRole: segment.speaker_role,
-      transcriptExcerpt: segment.text,
-      startTimeMs: segment.start_time_ms,
-      endTimeMs: segment.end_time_ms,
-    });
+      violation.violationType,
+      violation.severity,
+      violation.confidenceScore,
+      segment.speaker_name,
+      segment.speaker_role,
+      segment.text,
+      segment.start_time_ms,
+      segment.end_time_ms
+    );
 
     // Cache for deduplication
     cacheViolation(
@@ -146,7 +145,7 @@ async function handleTranscriptSegment(payload: RecallWebhookPayload, eventId: s
     );
 
     // Publish to Ably for real-time updates
-    await publishAlertToAbly(eventId, {
+    await publishAlertToAbly({
       violationId: violationRecord.id,
       eventId,
       conferenceId: payload.meeting_id,
@@ -198,9 +197,14 @@ async function handleTranscriptComplete(payload: RecallWebhookPayload, eventId: 
     console.log("[AI-AM] Transcript summary:", summary);
 
     // Publish summary to Ably
-    await publishAlertToAbly(eventId, {
-      type: "transcript_complete",
-      summary,
+    await publishAlertToAbly({
+      violationId: 0,
+      eventId,
+      violationType: "system",
+      severity: "low",
+      confidenceScore: 1.0,
+      transcriptExcerpt: JSON.stringify(summary),
+      detectedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error("[AI-AM] Error handling transcript complete:", error);
@@ -219,9 +223,14 @@ async function handleBotStatusUpdate(payload: RecallWebhookPayload, eventId: str
   if (payload.data.error) {
     console.error("[AI-AM] Bot error:", payload.data.error);
     // Publish error to Ably
-    await publishAlertToAbly(eventId, {
-      type: "bot_error",
-      error: payload.data.error,
+    await publishAlertToAbly({
+      violationId: 0,
+      eventId,
+      violationType: "system_error",
+      severity: "high",
+      confidenceScore: 1.0,
+      transcriptExcerpt: payload.data.error,
+      detectedAt: new Date().toISOString(),
     });
   }
 }
