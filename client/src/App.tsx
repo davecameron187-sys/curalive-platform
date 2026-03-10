@@ -82,9 +82,9 @@ import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
 import TranscriptEditor from "./pages/TranscriptEditor";
 import TranscriptPage from "./pages/TranscriptPage";
 import OperatorHub from "./pages/OperatorHub";
-import AlertDashboard from "./pages/AlertDashboard";
-import OperatorPreferences from "./pages/OperatorPreferences";
-import OnboardingFlow from "./pages/OnboardingFlow";
+import AIShop from "./pages/AIShop";
+import AIOnboarding from "./pages/AIOnboarding";
+import SocialMediaPage from "./pages/SocialMediaPage";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -95,9 +95,6 @@ function Router() {
       <Route path="/moderator/:id" component={Moderator} />
       <Route path="/presenter/:id" component={Presenter} />
       <Route path="/operator/analytics" component={OperatorAnalytics} />
-      <Route path="/operator/alerts" component={AlertDashboard} />
-      <Route path="/operator/preferences" component={OperatorPreferences} />
-      <Route path="/operator/onboarding" component={OnboardingFlow} />
       <Route path="/operator/:id" component={OperatorConsole} />
       <Route path="/register/:id" component={Registration} />
       <Route path="/demo-registration" component={DemoRegistration} />
@@ -173,6 +170,9 @@ function Router() {
       <Route path="/transcript/:id/edit" component={TranscriptEditor} />
       <Route path="/post-event/:id/transcript" component={TranscriptPage} />
       <Route path="/operator-hub" component={OperatorHub} />
+      <Route path="/ai-shop" component={AIShop} />
+      <Route path="/ai-onboarding" component={AIOnboarding} />
+      <Route path="/social" component={SocialMediaPage} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

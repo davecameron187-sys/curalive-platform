@@ -1,4 +1,4 @@
-import { boolean, int, float, tinyint, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint, decimal, index } from "drizzle-orm/mysql-core";
+import { boolean, int, float, tinyint, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -635,6 +635,7 @@ export const webcastEvents = mysqlTable("webcast_events", {
   hostName: varchar("host_name", { length: 200 }),
   hostOrganization: varchar("host_organization", { length: 200 }),
   tags: varchar("tags", { length: 500 }),
+  aiApplicationIds: text("ai_application_ids"), // JSON array of selected AI application IDs
   createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 });
@@ -1975,167 +1976,107 @@ export const clientEventAssignments = mysqlTable("client_event_assignments", {
 export type ClientEventAssignment = typeof clientEventAssignments.$inferSelect;
 export type InsertClientEventAssignment = typeof clientEventAssignments.$inferInsert;
 
+/**
+ * social_media_accounts — OAuth-linked social platform accounts per user.
+ */
+export const socialMediaAccounts = mysqlTable("social_media_accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  platform: mysqlEnum("platform", ["linkedin", "twitter", "facebook", "instagram", "tiktok"]).notNull(),
+  accountId: varchar("account_id", { length: 255 }).notNull(),
+  accountName: varchar("account_name", { length: 255 }).notNull(),
+  accountHandle: varchar("account_handle", { length: 255 }),
+  avatarUrl: text("avatar_url"),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  linkedEvents: text("linked_events"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AI Automated Moderator (AI-AM) — Phase 1: Alert-Only Mode Tables
-// ─────────────────────────────────────────────────────────────────────────────
+export type SocialMediaAccount = typeof socialMediaAccounts.$inferSelect;
+export type InsertSocialMediaAccount = typeof socialMediaAccounts.$inferInsert;
 
 /**
- * compliance_violations — Detected policy violations, abuse, and compliance breaches.
- * Created in real-time as transcript segments are analyzed by GPT-4.
+ * social_posts — AI-generated or manual posts tied to events.
  */
-export const complianceViolations = mysqlTable(
-  "compliance_violations",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    eventId: varchar("event_id", { length: 128 }).notNull(), // references events.eventId
-    conferenceId: varchar("conference_id", { length: 64 }), // references occConferences.callId (optional)
-    violationType: mysqlEnum("violation_type", [
-      "abuse",
-      "forward_looking",
-      "price_sensitive",
-      "insider_info",
-      "policy_breach",
-      "profanity",
-      "harassment",
-      "misinformation",
-    ])
-      .notNull(),
-    severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).default("medium").notNull(),
-    confidenceScore: decimal("confidence_score", { precision: 3, scale: 2 }).notNull(), // 0.00 - 1.00
-    speakerName: varchar("speaker_name", { length: 255 }),
-    speakerRole: varchar("speaker_role", { length: 128 }), // e.g. "CEO", "Analyst", "Attendee"
-    transcriptExcerpt: text("transcript_excerpt").notNull(), // The offending text
-    startTimeMs: int("start_time_ms"), // Timestamp in event (milliseconds)
-    endTimeMs: int("end_time_ms"),
-    detectedAt: timestamp("detected_at").defaultNow().notNull(),
-    acknowledged: boolean("acknowledged").default(false).notNull(),
-    acknowledgedBy: int("acknowledged_by"), // references users.id
-    acknowledgedAt: timestamp("acknowledged_at"),
-    notes: text("notes"), // Operator notes on the violation
-    actionTaken: mysqlEnum("action_taken", ["none", "warning", "muted", "removed"]).default("none").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => ({
-    eventIdIdx: index("idx_event_id").on(table.eventId),
-    conferenceIdIdx: index("idx_conference_id").on(table.conferenceId),
-    severityIdx: index("idx_severity").on(table.severity),
-    createdAtIdx: index("idx_created_at").on(table.createdAt),
-    acknowledgedIdx: index("idx_acknowledged").on(table.acknowledged),
-  })
-);
+export const socialPosts = mysqlTable("social_posts", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("event_id"),
+  createdBy: int("created_by").notNull(),
+  content: longtext("content").notNull(),
+  aiGenerated: boolean("ai_generated").default(false).notNull(),
+  echoSource: varchar("echo_source", { length: 64 }),
+  contentType: mysqlEnum("content_type", ["text", "image", "video", "link"]).default("text").notNull(),
+  platforms: text("platforms").notNull(),
+  scheduledAt: timestamp("scheduled_at"),
+  publishedAt: timestamp("published_at"),
+  status: mysqlEnum("status", ["draft", "pending_approval", "approved", "scheduled", "published", "failed"]).default("draft").notNull(),
+  moderationStatus: mysqlEnum("moderation_status", ["pending", "approved", "flagged", "rejected"]).default("pending").notNull(),
+  moderationNotes: text("moderation_notes"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
 
-export type ComplianceViolation = typeof complianceViolations.$inferSelect;
-export type InsertComplianceViolation = typeof complianceViolations.$inferInsert;
+export type SocialPost = typeof socialPosts.$inferSelect;
+export type InsertSocialPost = typeof socialPosts.$inferInsert;
 
 /**
- * violation_rules — Configurable rules for detecting specific types of violations.
- * Operators can enable/disable rules and customize detection patterns per event.
+ * social_post_platforms — Per-platform publish status for each post.
  */
-export const violationRules = mysqlTable(
-  "violation_rules",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    name: varchar("name", { length: 255 }).notNull(),
-    category: mysqlEnum("category", [
-      "abuse",
-      "forward_looking",
-      "price_sensitive",
-      "insider_info",
-      "policy_breach",
-    ])
-      .notNull(),
-    description: text("description"),
-    pattern: text("pattern"), // Regex or keyword pattern for detection
-    systemPrompt: text("system_prompt"), // Custom system prompt for LLM detection
-    enabled: boolean("enabled").default(true).notNull(),
-    severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).default("medium").notNull(),
-    createdBy: int("created_by").notNull(), // references users.id
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    categoryIdx: index("idx_category").on(table.category),
-    enabledIdx: index("idx_enabled").on(table.enabled),
-  })
-);
+export const socialPostPlatforms = mysqlTable("social_post_platforms", {
+  id: int("id").autoincrement().primaryKey(),
+  postId: int("post_id").notNull(),
+  accountId: int("account_id").notNull(),
+  platform: mysqlEnum("platform", ["linkedin", "twitter", "facebook", "instagram", "tiktok"]).notNull(),
+  externalPostId: varchar("external_post_id", { length: 255 }),
+  publishStatus: mysqlEnum("publish_status", ["pending", "published", "failed"]).default("pending").notNull(),
+  publishedAt: timestamp("published_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
-export type ViolationRule = typeof violationRules.$inferSelect;
-export type InsertViolationRule = typeof violationRules.$inferInsert;
+export type SocialPostPlatform = typeof socialPostPlatforms.$inferSelect;
+export type InsertSocialPostPlatform = typeof socialPostPlatforms.$inferInsert;
 
 /**
- * alert_preferences — Per-operator alert notification settings and quiet hours.
+ * social_metrics — Engagement metrics per post with event ROI correlation.
  */
-export const alertPreferences = mysqlTable(
-  "alert_preferences",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    operatorId: int("operator_id").notNull(), // references users.id
-    eventId: varchar("event_id", { length: 128 }), // null = global preferences
-    enableAlerts: boolean("enable_alerts").default(true).notNull(),
-    notificationMethod: mysqlEnum("notification_method", ["in_app", "email", "sms", "all"]).default("in_app").notNull(),
-    minSeverity: mysqlEnum("min_severity", ["low", "medium", "high", "critical"]).default("medium").notNull(),
-    enabledViolationTypes: text("enabled_violation_types"), // JSON array of violation types to alert on
-    quietHoursStart: varchar("quiet_hours_start", { length: 5 }), // HH:MM format
-    quietHoursEnd: varchar("quiet_hours_end", { length: 5 }),
-    timezone: varchar("timezone", { length: 64 }).default("UTC"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    operatorIdIdx: index("idx_operator_id").on(table.operatorId),
-    eventIdIdx: index("idx_event_id").on(table.eventId),
-  })
-);
+export const socialMetrics = mysqlTable("social_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  postId: int("post_id").notNull(),
+  accountId: int("account_id").notNull(),
+  platform: mysqlEnum("platform", ["linkedin", "twitter", "facebook", "instagram", "tiktok"]).notNull(),
+  views: int("views").default(0).notNull(),
+  likes: int("likes").default(0).notNull(),
+  shares: int("shares").default(0).notNull(),
+  comments: int("comments").default(0).notNull(),
+  clicks: int("clicks").default(0).notNull(),
+  engagementRate: float("engagement_rate").default(0).notNull(),
+  roiCorrelation: float("roi_correlation").default(0).notNull(),
+  aiInsight: text("ai_insight"),
+  collectedAt: timestamp("collected_at").defaultNow().notNull(),
+});
 
-export type AlertPreference = typeof alertPreferences.$inferSelect;
-export type InsertAlertPreference = typeof alertPreferences.$inferInsert;
+export type SocialMetric = typeof socialMetrics.$inferSelect;
+export type InsertSocialMetric = typeof socialMetrics.$inferInsert;
 
 /**
- * alert_history — Audit trail of all alert actions (creation, acknowledgment, etc).
+ * social_audit_log — Immutable compliance trail for all social actions.
  */
-export const alertHistory = mysqlTable(
-  "alert_history",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    violationId: int("violation_id").notNull(), // references complianceViolations.id
-    action: mysqlEnum("action", ["created", "acknowledged", "dismissed", "escalated", "action_taken"]).notNull(),
-    actorId: int("actor_id"), // references users.id (null if system action)
-    details: text("details"), // JSON with additional context
-    timestamp: timestamp("timestamp").defaultNow().notNull(),
-  },
-  (table) => ({
-    violationIdIdx: index("idx_violation_id").on(table.violationId),
-    timestampIdx: index("idx_timestamp").on(table.timestamp),
-  })
-);
+export const socialAuditLog = mysqlTable("social_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  postId: int("post_id"),
+  action: varchar("action", { length: 64 }).notNull(),
+  platform: varchar("platform", { length: 32 }),
+  details: text("details"),
+  ipAddress: varchar("ip_address", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
-export type AlertHistory = typeof alertHistory.$inferSelect;
-export type InsertAlertHistory = typeof alertHistory.$inferInsert;
-
-/**
- * compliance_detection_stats — Aggregated metrics for monitoring AI-AM performance.
- */
-export const complianceDetectionStats = mysqlTable(
-  "compliance_detection_stats",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    eventId: varchar("event_id", { length: 128 }).notNull(),
-    totalViolationsDetected: int("total_violations_detected").default(0).notNull(),
-    violationsByType: text("violations_by_type"), // JSON: { abuse: 5, forward_looking: 3, ... }
-    violationsBySeverity: text("violations_by_severity"), // JSON: { low: 2, medium: 5, high: 1, critical: 0 }
-    avgConfidenceScore: decimal("avg_confidence_score", { precision: 3, scale: 2 }),
-    avgDetectionLatencyMs: int("avg_detection_latency_ms"), // milliseconds from violation to alert
-    falsePositiveRate: decimal("false_positive_rate", { precision: 3, scale: 2 }), // 0.00 - 1.00
-    operatorAcknowledgmentRate: decimal("operator_acknowledgment_rate", { precision: 3, scale: 2 }),
-    avgAcknowledgmentTimeMs: int("avg_acknowledgment_time_ms"),
-    recordedAt: timestamp("recorded_at").defaultNow().notNull(),
-  },
-  (table) => ({
-    eventIdIdx: index("idx_event_id").on(table.eventId),
-    recordedAtIdx: index("idx_recorded_at").on(table.recordedAt),
-  })
-);
-
-export type ComplianceDetectionStats = typeof complianceDetectionStats.$inferSelect;
-export type InsertComplianceDetectionStats = typeof complianceDetectionStats.$inferInsert;
+export type SocialAuditLogEntry = typeof socialAuditLog.$inferSelect;
+export type InsertSocialAuditLogEntry = typeof socialAuditLog.$inferInsert;

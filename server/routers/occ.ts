@@ -24,6 +24,9 @@ import {
   insertOccChatMessage,
   updateChatMessageTranslation,
   getOccAudioFiles,
+  addOccAudioFile,
+  deleteOccAudioFile,
+  setOccAudioPlayState,
   getOccParticipantHistory,
   getOccAccessCodeLog,
 } from "../db.occ";
@@ -488,6 +491,32 @@ export const occRouter = router({
     .input(z.object({ conferenceId: z.number() }))
     .query(async ({ input }) => {
       return getOccAudioFiles(input.conferenceId);
+    }),
+
+  addAudioFile: protectedProcedure
+    .input(z.object({
+      conferenceId: z.number(),
+      name: z.string().min(1).max(255),
+      fileUrl: z.string().url(),
+      fileKey: z.string(),
+      durationSeconds: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return addOccAudioFile(input);
+    }),
+
+  deleteAudioFile: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await deleteOccAudioFile(input.id);
+      return { success: true };
+    }),
+
+  setAudioPlayState: protectedProcedure
+    .input(z.object({ id: z.number(), isPlaying: z.boolean() }))
+    .mutation(async ({ input }) => {
+      await setOccAudioPlayState(input.id, input.isPlaying);
+      return { success: true };
     }),
 
   // ── Participant History ───────────────────────────────────────────────────

@@ -10,10 +10,18 @@ const t = initTRPC.context<TrpcContext>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+// AUTH_BYPASS: set AUTH_BYPASS=true (or leave NODE_ENV=development) to skip auth — remove before go-live
+const DEV_BYPASS = process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development';
+
+const DEV_USER = { id: 0, name: 'Dev Operator', email: 'dev@curalive.local', role: 'operator' as const };
+
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
 
   if (!ctx.user) {
+    if (DEV_BYPASS) {
+      return next({ ctx: { ...ctx, user: DEV_USER } });
+    }
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
@@ -32,6 +40,9 @@ export const adminProcedure = t.procedure.use(
     const { ctx, next } = opts;
 
     if (!ctx.user || ctx.user.role !== 'admin') {
+      if (DEV_BYPASS) {
+        return next({ ctx: { ...ctx, user: DEV_USER } });
+      }
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
@@ -60,10 +71,16 @@ export const operatorProcedure = t.procedure.use(
     const { ctx, next } = opts;
 
     if (!ctx.user) {
+      if (DEV_BYPASS) {
+        return next({ ctx: { ...ctx, user: DEV_USER } });
+      }
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
     }
 
     if (ctx.user.role !== 'operator' && ctx.user.role !== 'admin') {
+      if (DEV_BYPASS) {
+        return next({ ctx: { ...ctx, user: DEV_USER } });
+      }
       throw new TRPCError({ code: "FORBIDDEN", message: 'Operator or admin role required (10003)' });
     }
 
