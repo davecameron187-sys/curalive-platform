@@ -2646,21 +2646,17 @@ export default function OCC() {
                       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
                         {/* Incoming actions */}
                         {[
-                          { label: "Answer",     color: "bg-emerald-700 hover:bg-emerald-600 text-white",      checkbox: null        },
-                          { label: "Join Mon",   color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: answerJoinMon, setCheckbox: setAnswerJoinMon },
-                          { label: "Transfer",   color: "bg-blue-800/60 hover:bg-blue-700/80 text-blue-300",   checkbox: null        },
-                          { label: "Hold",       color: "bg-amber-900/60 hover:bg-amber-800 text-amber-300",   checkbox: null        },
-                          { label: "Recall",     color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: null        },
-                          { label: "Disconnect", color: "bg-red-900/60 hover:bg-red-800 text-red-300",         checkbox: null        },
-                        ].map(({ label, color, checkbox, setCheckbox }) => (
+                          { label: "Answer",     color: "bg-emerald-700 hover:bg-emerald-600 text-white",      checkbox: null,                                    action: () => { setActiveCCPConferenceId(answerSelectedConfId); setShowAnswerPanel(false); } },
+                          { label: "Join Mon",   color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: answerJoinMon, setCheckbox: setAnswerJoinMon, action: () => { setActiveCCPConferenceId(answerSelectedConfId); setShowAnswerPanel(false); } },
+                          { label: "Join T/L",   color: "bg-indigo-800/70 hover:bg-indigo-700/90 text-indigo-200", checkbox: null,                                 action: () => { setActiveCCPConferenceId(answerSelectedConfId); setShowAnswerPanel(false); } },
+                          { label: "Transfer",   color: "bg-blue-800/60 hover:bg-blue-700/80 text-blue-300",   checkbox: null,                                    action: () => { if (answerSelectedConfId) { setActiveCCPConferenceId(answerSelectedConfId); setShowAnswerPanel(false); } } },
+                          { label: "Hold",       color: "bg-amber-900/60 hover:bg-amber-800 text-amber-300",   checkbox: null,                                    action: () => {} },
+                          { label: "Recall",     color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: null,                                    action: () => {} },
+                          { label: "Disconnect", color: "bg-red-900/60 hover:bg-red-800 text-red-300",         checkbox: null,                                    action: () => { setShowAnswerPanel(false); } },
+                        ].map(({ label, color, checkbox, setCheckbox, action }) => (
                           <div key={label} className="flex items-center gap-1">
                             <button
-                              onClick={() => {
-                                if (label === "Transfer" && answerSelectedConfId) {
-                                  setActiveCCPConferenceId(answerSelectedConfId);
-                                  setShowAnswerPanel(false);
-                                }
-                              }}
+                              onClick={action}
                               className={`flex-1 px-3 py-2 text-[11px] font-semibold rounded border border-slate-700/60 transition-colors text-left ${color}`}
                             >{label}</button>
                             {checkbox !== null && setCheckbox && (
