@@ -1,13 +1,13 @@
 # CuraLive — Full Tech Stack & Project Reference
 
 > Upload this file to Manus at the start of every session to stay in sync with the Replit environment.
-> Last updated: March 2026 | GitHub HEAD: `e5c5ea7` (main branch)
+> Last updated: March 2026 | GitHub HEAD: `e5c5ea7` (main branch — Session 4 push pending)
 
 ---
 
 ## 1. Project Overview
 
-**CuraLive** is a real-time investor events platform for earnings calls, webcasts, and board briefings. It provides live transcription, AI summarisation, sentiment analysis, Q&A management, compliance tools, social media amplification, and multi-platform broadcasting.
+**CuraLive** is a real-time investor events platform for earnings calls, webcasts, and board briefings. It provides live transcription, AI summarisation, sentiment analysis, Q&A management, compliance tools, social media amplification, multi-platform broadcasting, and the full **Intelligent Broadcaster** webcast enhancement suite.
 
 - **Dev server**: port `5000` (Express serves both API and Vite-built frontend)
 - **Repo**: `davecameron187-sys/curalive-platform` (GitHub, `main` branch)
@@ -156,10 +156,10 @@ curalive/
 | `/transcript` | `TranscriptPage.tsx` | Transcript viewer |
 | `/transcript-editor` | `TranscriptEditor.tsx` | Transcript editing |
 | `/post-event` | `PostEvent.tsx` | Post-event tools |
-| `/post-event-report` | `PostEventReport.tsx` | Automated report |
+| `/post-event-report` | `PostEventReport.tsx` | Automated report + AI Recap section |
 | `/followups` | `InvestorFollowUps.tsx` | Follow-up emails |
-| `/ai-dashboard` | `AIDashboard.tsx` | AI features overview |
-| `/ai-shop` | `AIShop.tsx` | 6 AI bundles + app marketplace |
+| `/ai-dashboard` | `AIDashboard.tsx` | AI features overview + ROI Metrics tab |
+| `/ai-shop` | `AIShop.tsx` | 6 AI bundles + progressive unlock timeline + app marketplace |
 | `/ai-onboarding` | `AIOnboarding.tsx` | Guided quiz → bundle recommendation |
 | `/social` | `SocialMediaPage.tsx` | Social Command Center |
 | `/billing` | `Billing.tsx` | Billing / subscription |
@@ -170,6 +170,9 @@ curalive/
 | `/roadshow/:id` | `RoadshowDetail.tsx` | Roadshow detail |
 | `/training` | `Training.tsx` | Training mode |
 | `/integration-hub` | `IntegrationHub.tsx` | Third-party integrations |
+| `/podcast-converter` | `PodcastConverter.tsx` | **NEW** Video Podcast Converter |
+| `/sustainability` | `SustainabilityDashboard.tsx` | **NEW** ESG / Carbon savings dashboard |
+| `/feature-map` | `FeatureMap.tsx` | **NEW** AI feature interconnection map |
 
 ---
 
@@ -207,8 +210,11 @@ All routers are wired in `server/routers.ts`. tRPC endpoint: `/api/trpc/`
 | `trainingMode.ts` | Training mode |
 | `transcriptEditorRouter.ts` | Transcript editing |
 | `transcription.ts` | Live transcription |
-| `webcastRouter.ts` | Webcast management |
+| `webcastRouter.ts` | **Webcast management + 10 new enhancement procedures** |
 | `webphoneRouter.ts` | Telnyx/Twilio webphone |
+
+### webcastRouter.ts — Enhancement Procedures (Session 4)
+`adaptContent`, `applyXROverlays`, `convertPodcast`, `dubLanguage`, `optimizeSustainability`, `integrateAds`, `enhanceAudio`, `generateRecap`, `getEnhancementConfig`, `getWebcastAnalytics`
 
 ---
 
@@ -217,21 +223,27 @@ All routers are wired in `server/routers.ts`. tRPC endpoint: `/api/trpc/`
 | Service | Purpose |
 |---|---|
 | `AblyRealtimeService.ts` | Ably pub/sub channels |
+| `AudioEnhancer.ts` | **NEW** Noise gate / echo cancel / auto-gain config per event |
 | `ComplianceModerator.ts` | LLM compliance checks + audit log |
 | `ContentGenerationTriggerService.ts` | Auto-triggers for content generation |
 | `ContentPerformanceAnalyticsService.ts` | Content ROI analytics |
 | `EventBriefGeneratorService.ts` | AI event brief generation |
 | `EventEchoPipeline.ts` | Live event → social posts (AI pipeline) |
+| `LanguageDubber.ts` | **NEW** LLM translation → timed dub script + VTT subtitles |
 | `LiveRollingSummaryService.ts` | Real-time rolling summaries |
+| `PersonalizationEngine.ts` | **NEW** Real-time broadcaster alert engine (sentiment, pace, compliance) |
+| `PodcastConverterService.ts` | **NEW** Transcript → chapters + show notes + episode data |
 | `QaAutoTriageService.ts` | Auto-categorise Q&A submissions |
 | `RealtimeCollaborationService.ts` | Multi-user real-time collaboration |
 | `RedactionWorkflowService.ts` | PII redaction in transcripts |
 | `SentimentAnalysisService.ts` | Sentiment scoring |
 | `SocialMediaService.ts` | Social CRUD, publish, ROI analytics |
 | `SpeakingPaceCoachService.ts` | Real-time presenter coaching |
+| `SustainabilityOptimizer.ts` | **NEW** Carbon savings calc + ESG cert + green suggestions |
 | `ToxicityFilterService.ts` | Toxic content detection |
 | `TranscriptEditorService.ts` | Collaborative transcript editing |
 | `TranscriptionService.ts` | Live transcription processing |
+| `WebcastRecapService.ts` | **NEW** Top moments + key quotes + sentiment arc + CTA suggestions |
 
 ---
 
@@ -251,6 +263,10 @@ All routers are wired in `server/routers.ts`. tRPC endpoint: `/api/trpc/`
 - `social_post_platforms` — per-platform status of each post
 - `social_metrics` — engagement/reach metrics per post
 - `social_audit_log` — compliance moderation audit trail
+
+### Webcast Enhancement Tables (added Session 4)
+- `webcast_enhancements` — enhancement config per event (personalization, XR, dubbing, sustainability, ads, noise, podcast/recap timestamps)
+- `webcast_analytics_expanded` — ROI/sustainability analytics (engagement, ROI uplift, carbon footprint, ad revenue, podcast listens, recap views)
 
 ### Other Key Tables
 - `users`, `sessions` — auth
@@ -294,7 +310,42 @@ OAuth callback URL pattern: `/api/social/oauth/callback/[platform]`
 
 ---
 
-## 9. AI Shop (`/ai-shop`)
+## 9. Intelligent Broadcaster Suite (Session 4)
+
+### New pages
+| Route | Component | Description |
+|---|---|---|
+| `/podcast-converter` | `PodcastConverter.tsx` | Convert webcast to investor podcast episode |
+| `/sustainability` | `SustainabilityDashboard.tsx` | Carbon savings + ESG certificate + green score |
+| `/feature-map` | `FeatureMap.tsx` | Visual AI feature interconnection map |
+
+### New components
+| Component | Location | Description |
+|---|---|---|
+| `IntelligentBroadcasterPanel.tsx` | `client/src/components/` | Real-time AI alert feed, polled every 15s |
+| `WebcastRecapGenerator.tsx` | `client/src/components/` | Top moments + quotes + sentiment arc + CTAs |
+
+### WebcastStudio new tabs (Session 4)
+The `WebcastStudio.tsx` tab type now includes:
+`"qa" | "polls" | "chat" | "captions" | "analytics" | "ai" | "broadcaster" | "bot" | "stream" | "xr" | "ads" | "reminders"`
+
+- **Broadcaster tab** — IntelligentBroadcasterPanel (live AI alerts)
+- **XR tab** — Data overlay config (sentiment gauge, engagement bar, live ticker)
+- **Ads tab** — Ad integration toggle + pre/mid-roll slot management + revenue tracking
+- **Captions tab** — Now includes Audio Enhancement section (noise gate, echo cancel, auto-gain, adaptive volume) + Dubbing sub-tab (12 languages, VTT output)
+
+### AIShop.tsx enhancements (Session 4)
+- **Progressive Unlock Timeline** — "Your Activation Journey" 4-phase visual (Day 1 → Week 1 → Month 1 → Full Power), shown above bundle cards in Bundles tab
+
+### AIDashboard.tsx enhancements (Session 4)
+- **ROI Metrics tab** (5th tab) — per-bundle performance cards + 6 AI ROI metrics (time saved, follow-ups sent, compliance checks, content generated, social posts, podcasts)
+
+### PostEventReport.tsx enhancements (Session 4)
+- **WebcastRecapGenerator** embedded at bottom of post-event report page
+
+---
+
+## 10. AI Shop (`/ai-shop`)
 
 6 role-based bundles:
 | ID | Name | Price |
@@ -308,7 +359,7 @@ OAuth callback URL pattern: `/api/social/oauth/callback/[platform]`
 
 ---
 
-## 10. Critical Development Rules
+## 11. Critical Development Rules
 
 ### Toast notifications
 **Use `sonner` only — never shadcn `useToast`.**
@@ -355,7 +406,7 @@ Run `node scripts/github-push-manual.mjs` from workspace root. Uses `@replit/con
 
 ---
 
-## 11. Environment Secrets (already configured in Replit)
+## 12. Environment Secrets (already configured in Replit)
 
 | Secret | Used for |
 |---|---|
@@ -368,7 +419,7 @@ Replit integrations installed:
 
 ---
 
-## 12. Key Scripts
+## 13. Key Scripts
 
 ```bash
 pnpm dev                          # Start dev server (port 5000)

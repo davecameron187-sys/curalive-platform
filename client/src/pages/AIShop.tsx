@@ -430,6 +430,44 @@ export default function AIShop() {
               </div>
             </div>
 
+            {/* ── Progressive Feature Unlock Journey ── */}
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-5">
+              <h3 className="text-sm font-semibold text-white mb-1 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-violet-400" /> Your Activation Journey
+              </h3>
+              <p className="text-xs text-slate-400 mb-5">Features unlock progressively — master each phase before advancing to the next.</p>
+              <div className="relative">
+                <div className="absolute top-4 left-0 right-0 h-0.5 bg-slate-700 mx-8" />
+                <div className="relative flex justify-between">
+                  {[
+                    { phase: 1, label: "Day 1 Quick Wins", desc: "3 core features activated", icon: "🚀", active: true },
+                    { phase: 2, label: "Week 1 Expansion", desc: "Full bundle unlocked", icon: "⚡", active: false },
+                    { phase: 3, label: "Month 1 Mastery", desc: "Cross-bundle features", icon: "🔥", active: false },
+                    { phase: 4, label: "Full Power", desc: "All 28 apps + add-ons", icon: "💎", active: false },
+                  ].map(({ phase, label, desc, icon, active }) => (
+                    <div key={phase} className="flex flex-col items-center gap-2 w-1/4 px-2">
+                      <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm ${active ? "bg-violet-500 shadow-lg shadow-violet-500/30" : "bg-slate-800 border border-slate-600"}`}>
+                        {active ? <span className="text-white font-bold text-xs">{phase}</span> : <span className="text-xs">{icon}</span>}
+                      </div>
+                      <div className="text-center">
+                        <div className={`text-[10px] font-semibold ${active ? "text-violet-300" : "text-slate-400"}`}>{label}</div>
+                        <div className="text-[9px] text-slate-500">{desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-5 flex items-center justify-between rounded-xl bg-violet-500/10 border border-violet-500/20 px-4 py-3">
+                <div>
+                  <div className="text-xs font-semibold text-violet-300">Currently in Phase 1</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">Choose a bundle below to activate your Day 1 quick wins</div>
+                </div>
+                <button onClick={() => navigate("/ai-onboarding")} className="text-xs px-3 py-1.5 rounded-lg bg-violet-500 text-white hover:bg-violet-600 transition-colors">
+                  Take Quiz
+                </button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {BUNDLES.map(bundle => (
                 <BundleCard key={bundle.id} bundle={bundle} apps={allApps} />
