@@ -115,13 +115,13 @@ async function handleTranscriptionSegment(payload: RecallWebhookPayload): Promis
     }
 
     // Find conference by bot ID
-    const { occRecallBots } = await import("../../drizzle/schema");
+    const { recallBots } = await import("../../drizzle/schema");
     const { eq } = await import("drizzle-orm");
 
     const bot = await db
       .select()
-      .from(occRecallBots)
-      .where(eq(occRecallBots.botId, payload.bot_id))
+      .from(recallBots)
+      .where(eq(recallBots.botId, payload.bot_id))
       .limit(1);
 
     if (bot.length === 0) {

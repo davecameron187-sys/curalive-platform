@@ -711,6 +711,10 @@ function EventRoomInner({ eventId }: { eventId: string }) {
             <Clock className="w-3.5 h-3.5" />
             <span className="font-mono">{formatTime(elapsedSeconds)}</span>
           </div>
+          <div className="hidden md:flex items-center gap-1 text-xs text-primary/70 border border-primary/30 bg-primary/10 px-2.5 py-1 rounded-full">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>AI Enabled</span>
+          </div>
         </div>
         <div className="hidden md:flex items-center gap-1 ml-2">
           <button onClick={() => navigate(`/moderator/${eventId}`)} className="flex items-center gap-1 text-xs text-muted-foreground border border-border px-2.5 py-1.5 rounded-lg hover:bg-secondary transition-colors">

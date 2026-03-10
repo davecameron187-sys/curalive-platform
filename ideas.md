@@ -1,4 +1,4 @@
-# Chorus.AI Event Room — Design Brainstorm
+# CuraLive Event Room — Design Brainstorm
 
 ## Approach A — "Mission Control Dark"
 <response>
@@ -91,4 +91,4 @@
 
 ## Decision: Approach C — "Broadcast Studio Dark"
 
-This design best mirrors the Chorus.AI brand established in the presentation deck (dark slate + coral), feels appropriate for a board demo of a live event platform, and provides the clearest UX for the two-panel Event Room concept.
+This design best mirrors the CuraLive brand established in the presentation deck (dark slate + coral), feels appropriate for a board demo of a live event platform, and provides the clearest UX for the two-panel Event Room concept.

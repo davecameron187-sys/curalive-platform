@@ -7,13 +7,13 @@
 ## PHASE 1 — Getting Started (Modules 01–03)
 
 ### Module 01 — Welcome & Platform Overview
-- Chorus.AI is an AI-powered conference management platform for IR teams, earnings calls, investor days, and board briefings
+- CuraLive is an AI-powered conference management platform for IR teams, earnings calls, investor days, and board briefings
 - The OCC (Operator Control Centre) is the command hub where operators manage live conferences
 - Key roles: Operator (manages calls), Moderator (hosts), Presenter (speaker), Attendee (participant)
 - Platform supports Zoom RTMS, Microsoft Teams Bot, Recall.ai, RTMP, and PSTN dial-in
 
 ### Module 02 — Logging In & Setting Your Status
-- URL: chorusai-mdu4k2ib.manus.space/occ
+- URL: curalive.manus.space/occ
 - Login via Manus OAuth — click "Sign in with Manus"
 - After login: set status to "Present & Ready" in the top-right status bar
 - Status options: Absent (default), Present & Ready, In Call, On Break
@@ -210,7 +210,7 @@ Six habits that separate a good operator from a great one:
 ---
 
 ## Deep Links (App URL)
-Base URL: https://chorusai-mdu4k2ib.manus.space
+Base URL: https://curalive.manus.space
 
 - OCC Dashboard: /occ
 - Conference Overview: /occ (Overview panel)

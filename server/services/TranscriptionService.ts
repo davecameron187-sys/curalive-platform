@@ -171,7 +171,7 @@ export async function getLiveTranscription(
       .select()
       .from(occTranscriptionSegments)
       .where(eq(occTranscriptionSegments.conferenceId, conferenceId))
-      .orderBy(desc(occTranscriptionSegments.startTime))
+      .orderBy(desc(occTranscriptionSegments.startTimeMs))
       .limit(100);
 
     return segments as TranscriptionSegment[];

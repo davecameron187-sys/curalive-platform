@@ -8,6 +8,7 @@ import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { AIApplicationsSection } from "@/components/AIApplicationsSection";
 import {
   Video, Mic, Globe, Users, Calendar, Clock, ChevronRight,
   ChevronLeft, Check, Plus, Trash2, Upload, Palette, FileText,
@@ -84,7 +85,9 @@ type WizardState = {
   requireCompany: boolean;
   requireJobTitle: boolean;
   requirePhone: boolean;
-  // Step 6: Review (no state, just display)
+  // Step 6: AI Applications
+  selectedAIApplications: string[];
+  // Step 7: Review (no state, just display)
 };
 
 const DEFAULT_STATE: WizardState = {
@@ -125,7 +128,8 @@ const STEPS = [
   { id: 3, label: "Branding", icon: Palette },
   { id: 4, label: "Agenda", icon: Calendar },
   { id: 5, label: "Registration", icon: Users },
-  { id: 6, label: "Review & Publish", icon: Check },
+  { id: 6, label: "AI Applications", icon: Zap },
+  { id: 7, label: "Review & Publish", icon: Check },
 ];
 
 const COLOR_PRESETS = [
@@ -553,6 +557,47 @@ function StepRegistration({ state, update }: { state: WizardState; update: (k: k
   );
 }
 
+function StepAIApplications({ state, update }: { state: WizardState; update: (k: keyof WizardState, v: any) => void }) {
+  // Map event type to AI event type format
+  const eventTypeMap: Record<string, string> = {
+    webcast: 'video-webcast',
+    webinar: 'video-webcast',
+    virtual_event: 'video-webcast',
+    hybrid_event: 'video-webcast',
+    simulive: 'video-webcast',
+    audio_conference: 'audio-webcast',
+    on_demand: 'video-webcast',
+    capital_markets: 'earnings-call',
+  };
+
+  // Map industry vertical to AI sector format
+  const sectorMap: Record<string, string> = {
+    financial_services: 'financial-services',
+    corporate_communications: 'corporate',
+    healthcare: 'healthcare',
+    technology: 'technology',
+    professional_services: 'corporate',
+    government: 'government',
+    education: 'education',
+    media_entertainment: 'media-entertainment',
+    general: 'corporate',
+  };
+
+  const aiEventType = eventTypeMap[state.eventType] || 'video-webcast';
+  const aiSector = sectorMap[state.industryVertical] || 'corporate';
+
+  return (
+    <div className="space-y-6">
+      <AIApplicationsSection
+        sector={aiSector}
+        eventType={aiEventType}
+        selectedApplications={state.selectedAIApplications}
+        onSelectionChange={(ids) => update('selectedAIApplications', ids)}
+      />
+    </div>
+  );
+}
+
 function StepReview({ state }: { state: WizardState }) {
   const eventTypeLabel = EVENT_TYPES.find(e => e.id === state.eventType)?.label || state.eventType;
   const verticalLabel = VERTICALS.find(v => v.id === state.industryVertical)?.label || state.industryVertical;
@@ -820,7 +865,8 @@ export default function CreateEventWizard() {
               {step === 3 && "Customise the look of your registration page."}
               {step === 4 && "Build your agenda and add speakers."}
               {step === 5 && "Configure registration and engagement features."}
-              {step === 6 && "Review everything before publishing."}
+              {step === 6 && "Select AI applications to enhance your event."}
+              {step === 7 && "Review everything before publishing."}
             </p>
           </div>
 
@@ -829,7 +875,8 @@ export default function CreateEventWizard() {
           {step === 3 && <StepBranding state={state} update={update} />}
           {step === 4 && <StepAgenda state={state} update={update} />}
           {step === 5 && <StepRegistration state={state} update={update} />}
-          {step === 6 && <StepReview state={state} />}
+          {step === 6 && <StepAIApplications state={state} update={update} />}
+          {step === 7 && <StepReview state={state} />}
 
           {error && (
             <div className="flex items-center gap-2 text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2 mt-4">
