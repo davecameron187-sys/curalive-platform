@@ -2,9 +2,8 @@ import { useLocation } from "wouter";
 import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay, Activity, LogIn, LogOut, User } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { FeedbackForm } from "@/components/FeedbackForm";
 
-const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/curalive-hero-bg-bFr44AaNNWKkv4uMRbTXe8.webp";
+const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-hero-bg-bFr44AaNNWKkv4uMRbTXe8.webp";
 const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/demo_curalive_0cb4c723.mp4";
 
 const DEMO_EVENTS = [
@@ -112,7 +111,7 @@ export default function Home() {
             {/* Left: headline + CTAs */}
             <div>
               <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-6">
-                <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Live Platform — CuraLive Inc.
+                <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — CuraLive Inc.
               </div>
               <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight mb-6">
                 The Intelligence Layer<br /><span className="text-primary">for Every Meeting</span>
@@ -169,27 +168,6 @@ export default function Home() {
               <div key={label} className="text-center">
                 <div className={`text-4xl font-bold mb-1 ${color}`}>{value}</div>
                 <div className="text-xs text-muted-foreground uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Trusted By */}
-      <section className="py-10 border-t border-border">
-        <div className="container">
-          <p className="text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-8" style={{ fontFamily: "'Inter', sans-serif" }}>Trusted by leading financial institutions</p>
-          <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16">
-            {[
-              { name: "Investec", abbr: "INVESTEC", color: "#0057A8" },
-              { name: "JSE", abbr: "JSE", color: "#00843D" },
-              { name: "Standard Bank", abbr: "STANDARD BANK", color: "#0033A0" },
-              { name: "Nedbank", abbr: "NEDBANK", color: "#007A4D" },
-              { name: "FirstRand", abbr: "FIRSTRAND", color: "#C8102E" },
-            ].map(({ name, abbr, color }) => (
-              <div key={name} className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-sm font-bold tracking-widest text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: "0.12em" }}>{abbr}</span>
               </div>
             ))}
           </div>
@@ -358,13 +336,6 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* User Feedback Section */}
-      <section className="py-24 border-t border-border bg-card/30">
-        <div className="container">
-          <FeedbackForm />
         </div>
       </section>
 
