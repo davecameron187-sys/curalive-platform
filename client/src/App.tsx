@@ -82,6 +82,8 @@ import ToxicityFilterDashboard from "./pages/ToxicityFilterDashboard";
 import TranscriptEditor from "./pages/TranscriptEditor";
 import TranscriptPage from "./pages/TranscriptPage";
 import OperatorHub from "./pages/OperatorHub";
+import AIShop from "./pages/AIShop";
+import AIOnboarding from "./pages/AIOnboarding";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -167,6 +169,8 @@ function Router() {
       <Route path="/transcript/:id/edit" component={TranscriptEditor} />
       <Route path="/post-event/:id/transcript" component={TranscriptPage} />
       <Route path="/operator-hub" component={OperatorHub} />
+      <Route path="/ai-shop" component={AIShop} />
+      <Route path="/ai-onboarding" component={AIOnboarding} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
