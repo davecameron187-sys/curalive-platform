@@ -170,8 +170,8 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
-    port: 5000,
-    allowedHosts: "all",
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5000,
+    allowedHosts: true,
     fs: {
       strict: true,
       deny: ["**/.*"],
