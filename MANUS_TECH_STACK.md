@@ -1,7 +1,7 @@
 # CuraLive — Full Tech Stack & Project Reference
 
 > Upload this file to Manus at the start of every session to stay in sync with the Replit environment.
-> Last updated: March 2026 | GitHub HEAD: `a81f15f` (main branch — Session 5 push pending)
+> Last updated: March 2026 | GitHub HEAD: `0036edd` (main branch — Session 5 complete)
 
 ---
 
