@@ -129,7 +129,7 @@ async function handleTranscriptionSegment(payload: RecallWebhookPayload): Promis
       return;
     }
 
-    const conferenceId = bot[0].meetingId;
+    const conferenceId = bot[0].meetingId || 0;
 
     // Store segment
     await storeTranscriptionSegment({
