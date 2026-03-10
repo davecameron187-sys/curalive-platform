@@ -1,4 +1,4 @@
-import { boolean, int, float, tinyint, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
+import { boolean, int, float, tinyint, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint, decimal, index } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -1975,3 +1975,168 @@ export const clientEventAssignments = mysqlTable("client_event_assignments", {
 
 export type ClientEventAssignment = typeof clientEventAssignments.$inferSelect;
 export type InsertClientEventAssignment = typeof clientEventAssignments.$inferInsert;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI Automated Moderator (AI-AM) — Phase 1: Alert-Only Mode Tables
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * compliance_violations — Detected policy violations, abuse, and compliance breaches.
+ * Created in real-time as transcript segments are analyzed by GPT-4.
+ */
+export const complianceViolations = mysqlTable(
+  "compliance_violations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    eventId: varchar("event_id", { length: 128 }).notNull(), // references events.eventId
+    conferenceId: varchar("conference_id", { length: 64 }), // references occConferences.callId (optional)
+    violationType: mysqlEnum("violation_type", [
+      "abuse",
+      "forward_looking",
+      "price_sensitive",
+      "insider_info",
+      "policy_breach",
+      "profanity",
+      "harassment",
+      "misinformation",
+    ])
+      .notNull(),
+    severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).default("medium").notNull(),
+    confidenceScore: decimal("confidence_score", { precision: 3, scale: 2 }).notNull(), // 0.00 - 1.00
+    speakerName: varchar("speaker_name", { length: 255 }),
+    speakerRole: varchar("speaker_role", { length: 128 }), // e.g. "CEO", "Analyst", "Attendee"
+    transcriptExcerpt: text("transcript_excerpt").notNull(), // The offending text
+    startTimeMs: int("start_time_ms"), // Timestamp in event (milliseconds)
+    endTimeMs: int("end_time_ms"),
+    detectedAt: timestamp("detected_at").defaultNow().notNull(),
+    acknowledged: boolean("acknowledged").default(false).notNull(),
+    acknowledgedBy: int("acknowledged_by"), // references users.id
+    acknowledgedAt: timestamp("acknowledged_at"),
+    notes: text("notes"), // Operator notes on the violation
+    actionTaken: mysqlEnum("action_taken", ["none", "warning", "muted", "removed"]).default("none").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    eventIdIdx: index("idx_event_id").on(table.eventId),
+    conferenceIdIdx: index("idx_conference_id").on(table.conferenceId),
+    severityIdx: index("idx_severity").on(table.severity),
+    createdAtIdx: index("idx_created_at").on(table.createdAt),
+    acknowledgedIdx: index("idx_acknowledged").on(table.acknowledged),
+  })
+);
+
+export type ComplianceViolation = typeof complianceViolations.$inferSelect;
+export type InsertComplianceViolation = typeof complianceViolations.$inferInsert;
+
+/**
+ * violation_rules — Configurable rules for detecting specific types of violations.
+ * Operators can enable/disable rules and customize detection patterns per event.
+ */
+export const violationRules = mysqlTable(
+  "violation_rules",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    category: mysqlEnum("category", [
+      "abuse",
+      "forward_looking",
+      "price_sensitive",
+      "insider_info",
+      "policy_breach",
+    ])
+      .notNull(),
+    description: text("description"),
+    pattern: text("pattern"), // Regex or keyword pattern for detection
+    systemPrompt: text("system_prompt"), // Custom system prompt for LLM detection
+    enabled: boolean("enabled").default(true).notNull(),
+    severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).default("medium").notNull(),
+    createdBy: int("created_by").notNull(), // references users.id
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    categoryIdx: index("idx_category").on(table.category),
+    enabledIdx: index("idx_enabled").on(table.enabled),
+  })
+);
+
+export type ViolationRule = typeof violationRules.$inferSelect;
+export type InsertViolationRule = typeof violationRules.$inferInsert;
+
+/**
+ * alert_preferences — Per-operator alert notification settings and quiet hours.
+ */
+export const alertPreferences = mysqlTable(
+  "alert_preferences",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    operatorId: int("operator_id").notNull(), // references users.id
+    eventId: varchar("event_id", { length: 128 }), // null = global preferences
+    enableAlerts: boolean("enable_alerts").default(true).notNull(),
+    notificationMethod: mysqlEnum("notification_method", ["in_app", "email", "sms", "all"]).default("in_app").notNull(),
+    minSeverity: mysqlEnum("min_severity", ["low", "medium", "high", "critical"]).default("medium").notNull(),
+    enabledViolationTypes: text("enabled_violation_types"), // JSON array of violation types to alert on
+    quietHoursStart: varchar("quiet_hours_start", { length: 5 }), // HH:MM format
+    quietHoursEnd: varchar("quiet_hours_end", { length: 5 }),
+    timezone: varchar("timezone", { length: 64 }).default("UTC"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    operatorIdIdx: index("idx_operator_id").on(table.operatorId),
+    eventIdIdx: index("idx_event_id").on(table.eventId),
+  })
+);
+
+export type AlertPreference = typeof alertPreferences.$inferSelect;
+export type InsertAlertPreference = typeof alertPreferences.$inferInsert;
+
+/**
+ * alert_history — Audit trail of all alert actions (creation, acknowledgment, etc).
+ */
+export const alertHistory = mysqlTable(
+  "alert_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    violationId: int("violation_id").notNull(), // references complianceViolations.id
+    action: mysqlEnum("action", ["created", "acknowledged", "dismissed", "escalated", "action_taken"]).notNull(),
+    actorId: int("actor_id"), // references users.id (null if system action)
+    details: text("details"), // JSON with additional context
+    timestamp: timestamp("timestamp").defaultNow().notNull(),
+  },
+  (table) => ({
+    violationIdIdx: index("idx_violation_id").on(table.violationId),
+    timestampIdx: index("idx_timestamp").on(table.timestamp),
+  })
+);
+
+export type AlertHistory = typeof alertHistory.$inferSelect;
+export type InsertAlertHistory = typeof alertHistory.$inferInsert;
+
+/**
+ * compliance_detection_stats — Aggregated metrics for monitoring AI-AM performance.
+ */
+export const complianceDetectionStats = mysqlTable(
+  "compliance_detection_stats",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    eventId: varchar("event_id", { length: 128 }).notNull(),
+    totalViolationsDetected: int("total_violations_detected").default(0).notNull(),
+    violationsByType: text("violations_by_type"), // JSON: { abuse: 5, forward_looking: 3, ... }
+    violationsBySeverity: text("violations_by_severity"), // JSON: { low: 2, medium: 5, high: 1, critical: 0 }
+    avgConfidenceScore: decimal("avg_confidence_score", { precision: 3, scale: 2 }),
+    avgDetectionLatencyMs: int("avg_detection_latency_ms"), // milliseconds from violation to alert
+    falsePositiveRate: decimal("false_positive_rate", { precision: 3, scale: 2 }), // 0.00 - 1.00
+    operatorAcknowledgmentRate: decimal("operator_acknowledgment_rate", { precision: 3, scale: 2 }),
+    avgAcknowledgmentTimeMs: int("avg_acknowledgment_time_ms"),
+    recordedAt: timestamp("recorded_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    eventIdIdx: index("idx_event_id").on(table.eventId),
+    recordedAtIdx: index("idx_recorded_at").on(table.recordedAt),
+  })
+);
+
+export type ComplianceDetectionStats = typeof complianceDetectionStats.$inferSelect;
+export type InsertComplianceDetectionStats = typeof complianceDetectionStats.$inferInsert;
