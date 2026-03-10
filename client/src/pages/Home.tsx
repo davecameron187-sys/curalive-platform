@@ -68,6 +68,8 @@ export default function Home() {
             <button onClick={() => navigate("/podcast-converter")} className="hover:text-foreground transition-colors">Podcast</button>
             <button onClick={() => navigate("/sustainability")} className="hover:text-foreground transition-colors flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>ESG</button>
             <button onClick={() => navigate("/feature-map")} className="hover:text-foreground transition-colors">Feature Map</button>
+            <button onClick={() => navigate("/virtual-studio")} className="hover:text-foreground transition-colors">Virtual Studio</button>
+            <button onClick={() => navigate("/admin/interconnection-analytics")} className="hover:text-foreground transition-colors">Analytics</button>
             <button onClick={() => navigate("/integrations")} className="hover:text-foreground transition-colors">Integrations</button>
             <button onClick={() => navigate("/partner-api")} className="hover:text-foreground transition-colors">Partner API</button>
             <button onClick={() => navigate("/book-demo")} className="text-emerald-400 font-semibold hover:opacity-80 transition-opacity">Book Demo</button>

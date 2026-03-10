@@ -23,14 +23,16 @@ import {
   Send, Play, Pause, StopCircle, Globe,
   Activity, Zap, Clock, Eye, ThumbsUp, AlertCircle, Bot as BotIcon,
   Loader2, Plus, ChevronRight, Share2, CheckCircle2, ExternalLink, Upload,
-  Bell, RefreshCw, Mail, Sparkles, Phone
+  Bell, RefreshCw, Mail, Sparkles, Phone, Layers, DollarSign, Leaf
 } from "lucide-react";
 import RollingSummaryPanel from "@/components/RollingSummaryPanel";
 import EventBriefPanel from "@/components/EventBriefPanel";
 import Webphone from "@/components/Webphone";
+import { IntelligentBroadcasterPanel } from "@/components/IntelligentBroadcasterPanel";
+import { WebcastRecapGenerator } from "@/components/WebcastRecapGenerator";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics" | "ai" | "bot" | "stream" | "reminders";
+type StudioTab = "qa" | "polls" | "chat" | "captions" | "analytics" | "ai" | "broadcaster" | "bot" | "stream" | "xr" | "ads" | "reminders";
 type StreamStatus = "offline" | "connecting" | "live" | "paused";
 
 type ChatMessage = {
@@ -743,8 +745,11 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               { id: "captions" as StudioTab, icon: Globe, label: "Translation", badge: undefined as number | undefined },
               { id: "analytics" as StudioTab, icon: Activity, label: "Analytics", badge: undefined as number | undefined },
               { id: "ai" as StudioTab, icon: Sparkles, label: "AI", badge: undefined as number | undefined },
+              { id: "broadcaster" as StudioTab, icon: Zap, label: "Broadcaster", badge: undefined as number | undefined },
               { id: "bot" as StudioTab, icon: BotIcon, label: "Bot", badge: undefined as number | undefined },
               { id: "stream" as StudioTab, icon: Radio, label: "Stream", badge: undefined as number | undefined },
+              { id: "xr" as StudioTab, icon: Layers, label: "XR", badge: undefined as number | undefined },
+              { id: "ads" as StudioTab, icon: DollarSign, label: "Ads", badge: undefined as number | undefined },
               { id: "reminders" as StudioTab, icon: Bell, label: "Reminders", badge: undefined as number | undefined },
             ]).map(({ id, icon: Icon, label, badge }) => (
               <button
@@ -1293,6 +1298,21 @@ function WebcastStudioInner({ slug }: { slug: string }) {
               </div>
             )}
 
+            {/* ── Intelligent Broadcaster Tab ───────────────────────────── */}
+            {activeTab === "broadcaster" && (
+              <IntelligentBroadcasterPanel eventId={slug} />
+            )}
+
+            {/* ── XR Overlays Tab ───────────────────────────────────────── */}
+            {activeTab === "xr" && (
+              <XROverlayPanel eventId={slug} />
+            )}
+
+            {/* ── Ads Integration Tab ───────────────────────────────────── */}
+            {activeTab === "ads" && (
+              <AdsIntegrationPanel eventId={slug} />
+            )}
+
             {/* ── Reminders Tab ─────────────────────────────────────────── */}
             {activeTab === "reminders" && (
               <div className="p-4 space-y-4">
@@ -1426,6 +1446,115 @@ function WebcastStudioInner({ slug }: { slug: string }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── XR Overlay Panel ────────────────────────────────────────────────────────
+function XROverlayPanel({ eventId }: { eventId: string }) {
+  const [xrEnabled, setXrEnabled] = useState(false);
+  const [overlayConfig, setOverlayConfig] = useState<any>(null);
+  const applyXR = trpc.webcast.applyXROverlays.useMutation({
+    onSuccess: (data) => { setOverlayConfig(data); setXrEnabled(data.enabled); toast.success(data.enabled ? "XR Overlays activated" : "XR Overlays disabled"); },
+    onError: () => toast.error("XR overlay configuration failed"),
+  });
+  const overlays = [
+    { id: "sentiment-gauge", icon: Activity, label: "Sentiment Gauge", desc: "Live sentiment score positioned top-right on stream", color: "text-blue-400" },
+    { id: "engagement-bar", icon: BarChart3, label: "Engagement Bar", desc: "Real-time engagement percentage at bottom-left", color: "text-emerald-400" },
+    { id: "viewer-count", icon: Users, label: "Viewer Counter", desc: "Live viewer count at top-left", color: "text-violet-400" },
+    { id: "qa-ticker", icon: MessageSquare, label: "Q&A Ticker", desc: "Latest questions scrolling at bottom", color: "text-amber-400" },
+  ];
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">XR Data Overlays</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Add live data overlays to your video stream for immersive viewer experience</p>
+        </div>
+        <button
+          onClick={() => applyXR.mutate({ eventId, enabled: !xrEnabled })}
+          disabled={applyXR.isPending}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${xrEnabled ? "bg-violet-500/20 text-violet-300 border border-violet-500/30" : "bg-slate-700 text-slate-300 hover:bg-slate-600"}`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          {xrEnabled ? "Overlays Active" : "Enable XR Overlays"}
+        </button>
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        {overlays.map(o => (
+          <div key={o.id} className={`flex items-center gap-3 p-3 rounded-xl bg-card border ${xrEnabled ? "border-violet-500/30 bg-violet-500/5" : "border-border"}`}>
+            <div className={`w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center`}>
+              <o.icon className={`w-4 h-4 ${xrEnabled ? o.color : "text-muted-foreground"}`} />
+            </div>
+            <div className="flex-1">
+              <div className="text-xs font-medium text-foreground">{o.label}</div>
+              <div className="text-[10px] text-muted-foreground">{o.desc}</div>
+            </div>
+            <div className={`w-2 h-2 rounded-full ${xrEnabled ? "bg-emerald-400" : "bg-slate-600"}`} />
+          </div>
+        ))}
+      </div>
+      {xrEnabled && overlayConfig && (
+        <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-300">
+          XR overlays are live — {overlayConfig.overlays.length} data elements active on your stream
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Ads Integration Panel ────────────────────────────────────────────────────
+function AdsIntegrationPanel({ eventId }: { eventId: string }) {
+  const [adsEnabled, setAdsEnabled] = useState(false);
+  const [preRoll, setPreRoll] = useState(false);
+  const [midRoll, setMidRoll] = useState(false);
+  const [adResult, setAdResult] = useState<any>(null);
+  const integrateAdsMutation = trpc.webcast.integrateAds.useMutation({
+    onSuccess: (data) => { setAdResult(data); toast.success(data.enabled ? "Ad integration enabled" : "Ads disabled"); },
+    onError: () => toast.error("Ad configuration failed"),
+  });
+  const estimatedRevenue = (preRoll ? 12.5 : 0) + (midRoll ? 8.5 : 0);
+  return (
+    <div className="p-4 space-y-4">
+      <div>
+        <h3 className="text-sm font-semibold">Interactive Ad Integration</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">Monetise your webcast with AI-personalised ad slots. Revenue tracked per event.</p>
+      </div>
+      <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Enable Ad Integration</span>
+          <button onClick={() => { setAdsEnabled(!adsEnabled); integrateAdsMutation.mutate({ eventId, enabled: !adsEnabled, preRoll, midRoll }); }}
+            className={`relative w-10 h-5 rounded-full transition-colors ${adsEnabled ? "bg-violet-500" : "bg-slate-600"}`}>
+            <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${adsEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+        {adsEnabled && (
+          <div className="space-y-3 pt-2 border-t border-border">
+            {[
+              { id: "preRoll", label: "Pre-Roll Ad", desc: "30-second ad before event starts", est: "$12.50/viewer", active: preRoll, set: (v: boolean) => { setPreRoll(v); integrateAdsMutation.mutate({ eventId, enabled: adsEnabled, preRoll: v, midRoll }); } },
+              { id: "midRoll", label: "Mid-Roll Ads", desc: "15-second ads at 15min and 30min marks", est: "$8.50/viewer", active: midRoll, set: (v: boolean) => { setMidRoll(v); integrateAdsMutation.mutate({ eventId, enabled: adsEnabled, preRoll, midRoll: v }); } },
+            ].map(slot => (
+              <div key={slot.id} className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-medium text-foreground">{slot.label}</div>
+                  <div className="text-[10px] text-muted-foreground">{slot.desc} · Est. {slot.est}</div>
+                </div>
+                <button onClick={() => slot.set(!slot.active)}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${slot.active ? "bg-emerald-500" : "bg-slate-600"}`}>
+                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${slot.active ? "translate-x-4" : "translate-x-0.5"}`} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {adsEnabled && (
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="text-xs text-muted-foreground mb-1">Estimated Revenue per 1000 Viewers</div>
+          <div className="text-3xl font-bold text-emerald-400">${(estimatedRevenue * 1000).toFixed(0)}</div>
+          <div className="text-xs text-muted-foreground mt-1">Based on active ad slots and CPM rates</div>
+        </div>
+      )}
     </div>
   );
 }

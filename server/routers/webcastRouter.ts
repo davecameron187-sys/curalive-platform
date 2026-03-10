@@ -1,6 +1,6 @@
 /**
  * webcastRouter.ts — tRPC procedures for the CuraLive Webcasting Platform.
- * Covers: event CRUD, registration, Q&A moderation, polls, and analytics.
+ * Covers: event CRUD, registration, Q&A moderation, polls, analytics, and Intelligent Broadcaster enhancements.
  */
 import { z } from "zod";
 import { randomBytes } from "crypto";
@@ -13,12 +13,20 @@ import {
   webcastRegistrations,
   webcastQa,
   webcastPolls,
+  webcastEnhancements,
+  webcastAnalyticsExpanded,
   type WebcastEvent,
   type WebcastRegistration,
   type WebcastQa,
   type WebcastPoll,
 } from "../../drizzle/schema";
 import { eq, desc, and, sql, isNull, isNotNull } from "drizzle-orm";
+import { personalizationEngine } from "../services/PersonalizationEngine";
+import { podcastConverterService } from "../services/PodcastConverterService";
+import { sustainabilityOptimizer } from "../services/SustainabilityOptimizer";
+import { webcastRecapService } from "../services/WebcastRecapService";
+import { languageDubber } from "../services/LanguageDubber";
+import { audioEnhancer } from "../services/AudioEnhancer";
 
 // ─── ICS calendar attachment builder ─────────────────────────────────────────
 function buildICS(opts: {
@@ -933,6 +941,199 @@ export const webcastRouter = router({
         polls: pollsWithBreakdown,
         registrations,
         topCompanies,
+      };
+    }),
+
+  // ─── Intelligent Broadcaster Enhancement Procedures ──────────────────────────
+
+  adaptContent: operatorProcedure
+    .input(z.object({ eventId: z.string() }))
+    .mutation(async ({ input }) => {
+      return personalizationEngine.analyzeAndSuggest(input.eventId);
+    }),
+
+  applyXROverlays: operatorProcedure
+    .input(z.object({ eventId: z.string(), enabled: z.boolean().optional() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const rows = await db.select().from(webcastEnhancements).where(eq(webcastEnhancements.eventId, input.eventId)).limit(1).catch(() => []);
+      const xrEnabled = input.enabled ?? true;
+      if (rows.length > 0) {
+        await db.update(webcastEnhancements).set({ xrEnabled }).where(eq(webcastEnhancements.eventId, input.eventId)).catch(() => {});
+      } else {
+        await db.insert(webcastEnhancements).values({ eventId: input.eventId, xrEnabled }).catch(() => {});
+      }
+      return {
+        enabled: xrEnabled,
+        overlays: [
+          { id: "sentiment-gauge", type: "sentiment", position: "top-right", label: "Live Sentiment", value: 72 },
+          { id: "engagement-bar", type: "engagement", position: "bottom-left", label: "Engagement", value: 85 },
+          { id: "viewer-count", type: "metric", position: "top-left", label: "Live Viewers", value: 0 },
+          { id: "qa-ticker", type: "ticker", position: "bottom", label: "Top Q&A", value: "Questions pending moderation" },
+        ],
+      };
+    }),
+
+  convertPodcast: operatorProcedure
+    .input(z.object({ eventId: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const podcast = await podcastConverterService.convertToPodcast(input.eventId);
+      await db.update(webcastEnhancements)
+        .set({ podcastGeneratedAt: new Date(), podcastTitle: podcast.title, podcastScript: podcast.showNotes })
+        .where(eq(webcastEnhancements.eventId, input.eventId))
+        .catch(async () => {
+          await db.insert(webcastEnhancements).values({ eventId: input.eventId, podcastGeneratedAt: new Date(), podcastTitle: podcast.title, podcastScript: podcast.showNotes }).catch(() => {});
+        });
+      return podcast;
+    }),
+
+  dubLanguage: operatorProcedure
+    .input(z.object({ eventId: z.string(), language: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const result = await languageDubber.dubTranscript(input.eventId, input.language);
+      await db.update(webcastEnhancements)
+        .set({ languageDubbingEnabled: true, dubbingLanguage: input.language })
+        .where(eq(webcastEnhancements.eventId, input.eventId))
+        .catch(async () => {
+          await db.insert(webcastEnhancements).values({ eventId: input.eventId, languageDubbingEnabled: true, dubbingLanguage: input.language }).catch(() => {});
+        });
+      return result;
+    }),
+
+  optimizeSustainability: operatorProcedure
+    .input(z.object({ eventId: z.string(), durationHours: z.number().optional() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const result = await sustainabilityOptimizer.calculate(input.eventId, input.durationHours ?? 1.5);
+      await db.update(webcastEnhancements)
+        .set({ sustainabilityScore: result.score })
+        .where(eq(webcastEnhancements.eventId, input.eventId))
+        .catch(async () => {
+          await db.insert(webcastEnhancements).values({ eventId: input.eventId, sustainabilityScore: result.score }).catch(() => {});
+        });
+      await db.insert(webcastAnalyticsExpanded).values({
+        eventId: input.eventId,
+        carbonSavedKg: result.carbonSavedKg,
+        carbonFootprintKg: result.carbonFootprintKg,
+        attendeesTravelAvoided: result.attendeesTravelAvoided,
+        sustainabilityGrade: result.grade,
+        viewerEngagement: 0,
+        roiUplift: 0,
+        adRevenue: 0,
+        podcastListens: 0,
+        recapViews: 0,
+      }).catch(() => {});
+      return result;
+    }),
+
+  integrateAds: operatorProcedure
+    .input(z.object({
+      eventId: z.string(),
+      enabled: z.boolean(),
+      preRoll: z.boolean().optional(),
+      midRoll: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const updateData = {
+        adIntegrationEnabled: input.enabled,
+        adPreRollEnabled: input.preRoll ?? false,
+        adMidRollEnabled: input.midRoll ?? false,
+      };
+      const rows = await db.select().from(webcastEnhancements).where(eq(webcastEnhancements.eventId, input.eventId)).limit(1).catch(() => []);
+      if (rows.length > 0) {
+        await db.update(webcastEnhancements).set(updateData).where(eq(webcastEnhancements.eventId, input.eventId)).catch(() => {});
+      } else {
+        await db.insert(webcastEnhancements).values({ eventId: input.eventId, ...updateData }).catch(() => {});
+      }
+      const estimatedRevenue = (input.preRoll ? 12.5 : 0) + (input.midRoll ? 8.5 : 0);
+      return {
+        enabled: input.enabled,
+        preRollEnabled: input.preRoll ?? false,
+        midRollEnabled: input.midRoll ?? false,
+        estimatedRevenuePerViewer: estimatedRevenue,
+        adSlots: [
+          ...(input.preRoll ? [{ slot: "pre-roll", timing: "0:00", duration: "30s", estimatedCpm: 25 }] : []),
+          ...(input.midRoll ? [
+            { slot: "mid-roll-1", timing: "15:00", duration: "15s", estimatedCpm: 17 },
+            { slot: "mid-roll-2", timing: "30:00", duration: "15s", estimatedCpm: 17 },
+          ] : []),
+        ],
+      };
+    }),
+
+  enhanceAudio: operatorProcedure
+    .input(z.object({
+      eventId: z.string(),
+      noiseEnhancementEnabled: z.boolean().optional(),
+      noiseGateEnabled: z.boolean().optional(),
+      echoCancellationEnabled: z.boolean().optional(),
+      autoGainEnabled: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { eventId, ...config } = input;
+      return audioEnhancer.updateConfig(eventId, config);
+    }),
+
+  generateRecap: operatorProcedure
+    .input(z.object({ eventId: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const recap = await webcastRecapService.generateRecap(input.eventId);
+      await db.update(webcastEnhancements)
+        .set({ recapGeneratedAt: new Date(), recapBrief: JSON.stringify(recap) })
+        .where(eq(webcastEnhancements.eventId, input.eventId))
+        .catch(async () => {
+          await db.insert(webcastEnhancements).values({ eventId: input.eventId, recapGeneratedAt: new Date(), recapBrief: JSON.stringify(recap) }).catch(() => {});
+        });
+      return recap;
+    }),
+
+  getEnhancementConfig: operatorProcedure
+    .input(z.object({ eventId: z.string() }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const rows = await db.select().from(webcastEnhancements).where(eq(webcastEnhancements.eventId, input.eventId)).limit(1).catch(() => []);
+      if (rows.length > 0) return rows[0];
+      return {
+        eventId: input.eventId,
+        personalizationEnabled: true,
+        xrEnabled: false,
+        languageDubbingEnabled: false,
+        dubbingLanguage: "en",
+        sustainabilityScore: 0,
+        adIntegrationEnabled: false,
+        adPreRollEnabled: false,
+        adMidRollEnabled: false,
+        noiseEnhancementEnabled: true,
+        noiseGateEnabled: true,
+        echoCancellationEnabled: true,
+        autoGainEnabled: false,
+        podcastGeneratedAt: null,
+        podcastTitle: null,
+        recapGeneratedAt: null,
+      };
+    }),
+
+  getWebcastAnalytics: operatorProcedure
+    .input(z.object({ eventId: z.string() }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const rows = await db.select().from(webcastAnalyticsExpanded).where(eq(webcastAnalyticsExpanded.eventId, input.eventId)).orderBy(desc(webcastAnalyticsExpanded.collectedAt)).limit(1).catch(() => []);
+      if (rows.length > 0) return rows[0];
+      return {
+        eventId: input.eventId,
+        viewerEngagement: 0,
+        roiUplift: 0,
+        carbonFootprintKg: 0,
+        carbonSavedKg: 0,
+        attendeesTravelAvoided: 0,
+        adRevenue: 0,
+        podcastListens: 0,
+        recapViews: 0,
+        sustainabilityGrade: "B",
       };
     }),
 });

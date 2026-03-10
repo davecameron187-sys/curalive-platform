@@ -85,9 +85,11 @@ import OperatorHub from "./pages/OperatorHub";
 import AIShop from "./pages/AIShop";
 import AIOnboarding from "./pages/AIOnboarding";
 import SocialMediaPage from "./pages/SocialMediaPage";
-// import PodcastConverter from "./pages/PodcastConverter"; // Removed: file not found
-// import SustainabilityDashboard from "./pages/SustainabilityDashboard"; // Removed: file not found
-// import FeatureMap from "./pages/FeatureMap"; // Removed: file not found
+import PodcastConverter from "./pages/PodcastConverter";
+import SustainabilityDashboard from "./pages/SustainabilityDashboard";
+import FeatureMap from "./pages/FeatureMap";
+import InterconnectionAnalytics from "./pages/InterconnectionAnalytics";
+import VirtualStudio from "./pages/VirtualStudio";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -176,9 +178,11 @@ function Router() {
       <Route path="/ai-shop" component={AIShop} />
       <Route path="/ai-onboarding" component={AIOnboarding} />
       <Route path="/social" component={SocialMediaPage} />
-      {/* <Route path="/podcast-converter" component={PodcastConverter} /> */}
-      {/* <Route path="/sustainability" component={SustainabilityDashboard} /> */}
-      {/* <Route path="/feature-map" component={FeatureMap} /> */}
+      <Route path="/podcast-converter" component={PodcastConverter} />
+      <Route path="/sustainability" component={SustainabilityDashboard} />
+      <Route path="/feature-map" component={FeatureMap} />
+      <Route path="/admin/interconnection-analytics" component={InterconnectionAnalytics} />
+      <Route path="/virtual-studio" component={VirtualStudio} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
