@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { WebcastRecapGenerator } from "@/components/WebcastRecapGenerator";
 import { 
   FileText, Download, RefreshCw, ArrowLeft, Brain, BarChart2, 
   MessageSquare, Clock, Star, Zap, CheckCircle2, AlertCircle, 
@@ -527,6 +528,12 @@ export default function PostEventReport() {
               </div>
             </TabsContent>
           </Tabs>
+        )}
+
+        {eventId && (
+          <div className="mt-6">
+            <WebcastRecapGenerator eventId={eventId} />
+          </div>
         )}
       </div>
     </div>

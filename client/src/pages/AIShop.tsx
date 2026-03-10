@@ -11,8 +11,80 @@ import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft, Sparkles, Search, Brain, ShieldCheck, Zap, Megaphone,
   Star, ChevronDown, ChevronUp, Clock, TrendingUp, CheckCircle2,
-  ArrowRight, Users, BarChart2, FileText, Mic, Globe, Lock, Lightbulb, Share2,
+  ArrowRight, Users, BarChart2, FileText, Mic, Globe, Lock, Lightbulb, Share2, Link2,
 } from "lucide-react";
+import InterconnectionModal from "@/components/InterconnectionModal";
+
+const BUNDLE_COLORS: Record<string, string> = {
+  A: "#3b82f6", B: "#ef4444", C: "#10b981", D: "#f59e0b", E: "#8b5cf6", F: "#ec4899",
+};
+
+const FEATURE_NODES = [
+  { id: "transcription", label: "Live Transcription", bundle: "C", bundleColor: "#10b981", x: 50, y: 50, description: "Real-time speech-to-text" },
+  { id: "sentiment", label: "Sentiment Analysis", bundle: "A", bundleColor: "#3b82f6", x: 220, y: 50, description: "Live investor mood tracking" },
+  { id: "qa-triage", label: "Q&A Auto-Triage", bundle: "C", bundleColor: "#10b981", x: 50, y: 160, description: "Smart question categorisation" },
+  { id: "toxicity", label: "Toxicity Filter", bundle: "B", bundleColor: "#ef4444", x: 220, y: 160, description: "Content safety layer" },
+  { id: "compliance", label: "Compliance Check", bundle: "B", bundleColor: "#ef4444", x: 390, y: 50, description: "Regulatory risk scoring" },
+  { id: "pace-coach", label: "Pace Coach", bundle: "C", bundleColor: "#10b981", x: 390, y: 160, description: "Speaking pace + filler words" },
+  { id: "rolling-summary", label: "Rolling Summary", bundle: "D", bundleColor: "#f59e0b", x: 560, y: 50, description: "Live 60s summaries" },
+  { id: "event-brief", label: "Event Brief", bundle: "A", bundleColor: "#3b82f6", x: 560, y: 160, description: "Pre-event AI briefing pack" },
+  { id: "press-release", label: "Press Release", bundle: "D", bundleColor: "#f59e0b", x: 50, y: 270, description: "AI-generated SENS/RNS drafts" },
+  { id: "follow-ups", label: "Investor Follow-Ups", bundle: "A", bundleColor: "#3b82f6", x: 220, y: 270, description: "Personalised outreach" },
+  { id: "social-echo", label: "Event Echo", bundle: "F", bundleColor: "#ec4899", x: 390, y: 270, description: "AI social post generation" },
+  { id: "broadcaster", label: "Intelligent Broadcaster", bundle: "E", bundleColor: "#8b5cf6", x: 560, y: 270, description: "Unified AI alert panel" },
+  { id: "podcast", label: "Podcast Converter", bundle: "D", bundleColor: "#f59e0b", x: 50, y: 380, description: "Webcast → investor podcast" },
+  { id: "sustainability", label: "Sustainability", bundle: "E", bundleColor: "#8b5cf6", x: 220, y: 380, description: "Carbon footprint + ESG cert" },
+  { id: "recap", label: "AI Video Recap", bundle: "D", bundleColor: "#f59e0b", x: 390, y: 380, description: "Post-event video brief" },
+  { id: "lead-scoring", label: "Lead Scoring", bundle: "A", bundleColor: "#3b82f6", x: 560, y: 380, description: "Hot/Warm/Cold investor signals" },
+];
+
+const FEATURE_EDGES = [
+  { from: "transcription", to: "sentiment", label: "feeds" },
+  { from: "transcription", to: "qa-triage", label: "filters" },
+  { from: "transcription", to: "toxicity", label: "screens" },
+  { from: "transcription", to: "rolling-summary", label: "summarises" },
+  { from: "transcription", to: "podcast", label: "converts" },
+  { from: "sentiment", to: "compliance", label: "flags risk" },
+  { from: "sentiment", to: "broadcaster", label: "triggers alert" },
+  { from: "sentiment", to: "follow-ups", label: "personalises" },
+  { from: "qa-triage", to: "compliance", label: "risk check" },
+  { from: "toxicity", to: "compliance", label: "escalates" },
+  { from: "pace-coach", to: "broadcaster", label: "coach alert" },
+  { from: "rolling-summary", to: "social-echo", label: "generates posts" },
+  { from: "rolling-summary", to: "press-release", label: "drafts" },
+  { from: "rolling-summary", to: "recap", label: "highlights" },
+  { from: "event-brief", to: "broadcaster", label: "pre-loads" },
+  { from: "press-release", to: "follow-ups", label: "distributes" },
+  { from: "social-echo", to: "lead-scoring", label: "engagement" },
+  { from: "follow-ups", to: "lead-scoring", label: "signals" },
+  { from: "recap", to: "social-echo", label: "content" },
+  { from: "sustainability", to: "broadcaster", label: "ESG insight" },
+];
+
+const APP_TO_FEATURE_ID: Record<string, string> = {
+  "Sentiment Analysis": "sentiment",
+  "Live Transcription": "transcription",
+  "Q&A Auto-Triage": "qa-triage",
+  "Toxicity Filter": "toxicity",
+  "Compliance Check": "compliance",
+  "Compliance Monitor": "compliance",
+  "Pace Coach": "pace-coach",
+  "Rolling Summary": "rolling-summary",
+  "Event Brief Generator": "event-brief",
+  "Press Release Generator": "press-release",
+  "Investor Follow-Ups": "follow-ups",
+  "Event Echo": "social-echo",
+  "Social Echo": "social-echo",
+  "Intelligent Broadcaster": "broadcaster",
+  "Podcast Converter": "podcast",
+  "Sustainability Dashboard": "sustainability",
+  "AI Video Recap": "recap",
+  "Lead Scoring": "lead-scoring",
+};
+
+function getConnectionCount(featureId: string): number {
+  return FEATURE_EDGES.filter(e => e.from === featureId || e.to === featureId).length;
+}
 
 // ─── Bundle definitions ────────────────────────────────────────────────────────
 
@@ -162,6 +234,7 @@ const CATEGORY_ICONS: Record<string, any> = {
 // ─── App card ──────────────────────────────────────────────────────────────────
 function AppCard({ app }: { app: any }) {
   const [expanded, setExpanded] = useState(false);
+  const [showConnections, setShowConnections] = useState(false);
   const Icon = CATEGORY_ICONS[app.category] ?? Brain;
   const priorityColors: Record<string, string> = {
     high: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
@@ -169,7 +242,12 @@ function AppCard({ app }: { app: any }) {
     low: "text-slate-400 bg-slate-700/30 border-slate-700",
   };
 
+  const featureId = APP_TO_FEATURE_ID[app.name];
+  const connectionCount = featureId ? getConnectionCount(featureId) : 0;
+  const featureNode = featureId ? FEATURE_NODES.find(n => n.id === featureId) : null;
+
   return (
+    <>
     <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -181,9 +259,16 @@ function AppCard({ app }: { app: any }) {
             <p className="text-xs text-slate-500">{app.category}</p>
           </div>
         </div>
-        <span className={`text-xs px-2 py-0.5 rounded border font-medium ${priorityColors[app.priority]}`}>
-          {app.priority}
-        </span>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {connectionCount > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center gap-1">
+              <Link2 className="w-2.5 h-2.5" />{connectionCount}
+            </span>
+          )}
+          <span className={`text-xs px-2 py-0.5 rounded border font-medium ${priorityColors[app.priority]}`}>
+            {app.priority}
+          </span>
+        </div>
       </div>
 
       <p className="text-xs text-slate-400 leading-relaxed">{app.description}</p>
@@ -195,6 +280,14 @@ function AppCard({ app }: { app: any }) {
         <span className="flex items-center gap-1 text-xs bg-slate-700/40 px-2 py-0.5 rounded text-slate-300">
           <TrendingUp className="w-3 h-3" /> {app.estimatedROI}
         </span>
+        {connectionCount > 0 && (
+          <button
+            onClick={() => setShowConnections(true)}
+            className="flex items-center gap-1 text-xs bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+          >
+            <Link2 className="w-3 h-3" /> See Connections
+          </button>
+        )}
       </div>
 
       {expanded && (
@@ -229,6 +322,16 @@ function AppCard({ app }: { app: any }) {
         {expanded ? "Less detail" : "More detail"}
       </button>
     </div>
+    {showConnections && featureId && featureNode && (
+      <InterconnectionModal
+        featureId={featureId}
+        featureLabel={featureNode.label}
+        nodes={FEATURE_NODES}
+        edges={FEATURE_EDGES}
+        onClose={() => setShowConnections(false)}
+      />
+    )}
+    </>
   );
 }
 
