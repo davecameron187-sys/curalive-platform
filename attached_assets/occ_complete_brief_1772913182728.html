@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuraLive Operator Console — Complete Technical Brief</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.7;
+            color: #1f2937;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        .meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        .content {
+            padding: 60px 40px;
+        }
+        h2 {
+            color: #0f172a;
+            font-size: 1.8em;
+            margin-top: 50px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3b82f6;
+        }
+        h3 {
+            color: #1e293b;
+            font-size: 1.3em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        ul, ol {
+            margin: 20px 0 20px 30px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        th {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        tr:hover {
+            background: #f9fafb;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #d97706;
+        }
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85em;
+            line-height: 1.5;
+            margin: 20px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        .key-point {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        .key-point strong {
+            color: #0f172a;
+        }
+        .section-intro {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #06b6d4;
+        }
+        .checklist {
+            list-style: none;
+            padding-left: 0;
+        }
+        .checklist li {
+            padding-left: 30px;
+            position: relative;
+        }
+        .checklist li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-color: #3b82f6;
+        }
+        .feature-card h4 {
+            color: #3b82f6;
+            margin-top: 0;
+        }
+        .badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        .badge.critical {
+            background: #ef4444;
+        }
+        .footer {
+            background: #0f172a;
+            color: white;
+            padding: 40px;
+            text-align: center;
+            margin-top: 60px;
+        }
+        .footer p {
+            margin-bottom: 10px;
+        }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8em; }
+            .header { padding: 40px 20px; }
+            .content { padding: 30px 20px; }
+            h2 { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎛️ CuraLive Operator Console</h1>
+            <p>Complete Technical Brief for Frontend Development</p>
+            <div class="meta">
+                <div><strong>Version:</strong> 1.0</div>
+                <div><strong>Status:</strong> <span class="badge">Production Specification</span></div>
+                <div><strong>Priority:</strong> <span class="badge critical">CRITICAL</span></div>
+                <div><strong>Quality:</strong> World-Class, 100% Functional</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="key-point">
+                <strong>📌 Executive Summary:</strong> The Operator Console (OCC) is the command centre for managing live events on the CuraLive platform. This comprehensive brief defines every aspect of the frontend interface, user interactions, data flow, and operational requirements to ensure a production-ready, enterprise-grade control centre.
+            </div>
+
+            <h2>🏗️ System Architecture</h2>
+            <div class="section-intro">
+                <p>The Operator Console is built on a modern React frontend with real-time updates via Ably WebSocket and backend API calls via tRPC. The architecture supports 1000+ concurrent participants, 100+ active conferences, and sub-100ms real-time updates.</p>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🎨 Frontend (React)</h4>
+                    <p>React 19 with TypeScript, Tailwind CSS, real-time state management via Context + useReducer</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⚡ Real-Time (Ably)</h4>
+                    <p>WebSocket connections for sub-100ms participant status, sentiment, Q&A, transcription updates</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔌 Backend API (tRPC)</h4>
+                    <p>Type-safe RPC for initial data load, search, filters, actions, audit logging</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💾 Database</h4>
+                    <p>MySQL/TiDB for conference data, participant state, audit trails, operator preferences</p>
+                </div>
+            </div>
+
+            <h2>🎯 Interface Layout & Navigation</h2>
+            
+            <h3>1. Top Navigation Bar (64px)</h3>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Purpose</th>
+                    <th>Details</th>
+                </tr>
+                <tr>
+                    <td>Logo/Branding</td>
+                    <td>Navigation home</td>
+                    <td>CuraLive logo, clickable to return to home</td>
+                </tr>
+                <tr>
+                    <td>Operator Name</td>
+                    <td>User identification</td>
+                    <td>Display current logged-in operator name</td>
+                </tr>
+                <tr>
+                    <td>Window Launcher</td>
+                    <td>Quick access</td>
+                    <td>Access other modules (Moderator, Presenter, etc.)</td>
+                </tr>
+                <tr>
+                    <td>State Indicator</td>
+                    <td>Availability status</td>
+                    <td>Available, In Call, Away, Do Not Disturb</td>
+                </tr>
+                <tr>
+                    <td>Notifications</td>
+                    <td>Alerts</td>
+                    <td>Bell icon with unread count</td>
+                </tr>
+                <tr>
+                    <td>Settings</td>
+                    <td>Preferences</td>
+                    <td>Operator preferences and configuration</td>
+                </tr>
+            </table>
+
+            <h3>2. Left Sidebar Navigation (80-100px width)</h3>
+            <p>Vertical tab-based navigation with 5 primary workflows:</p>
+            <table>
+                <tr>
+                    <th>Tab</th>
+                    <th>Icon</th>
+                    <th>Purpose</th>
+                </tr>
+                <tr>
+                    <td>Running Calls</td>
+                    <td>📞</td>
+                    <td>View active conferences and participants</td>
+                </tr>
+                <tr>
+                    <td>Post Event</td>
+                    <td>📊</td>
+                    <td>Access post-event reports and analytics</td>
+                </tr>
+                <tr>
+                    <td>Simulate Call</td>
+                    <td>🎙️</td>
+                    <td>Test call scenarios and features</td>
+                </tr>
+                <tr>
+                    <td>Settings</td>
+                    <td>⚙️</td>
+                    <td>Operator preferences and configuration</td>
+                </tr>
+                <tr>
+                    <td>Op Settings</td>
+                    <td>👤</td>
+                    <td>Operator-specific settings and permissions</td>
+                </tr>
+            </table>
+
+            <h3>3. Live Call Counter Dashboard (8 Metric Cards)</h3>
+            <p>Provides at-a-glance status of current event:</p>
+            <ul>
+                <li><strong>Active Calls:</strong> Number of running conferences (Blue)</li>
+                <li><strong>Total Participants:</strong> Sum of all participants (Green)</li>
+                <li><strong>Speaking Now:</strong> Participants currently speaking (Amber)</li>
+                <li><strong>Muted Participants:</strong> Count of muted participants (Red)</li>
+                <li><strong>Sentiment Score:</strong> Average sentiment gauge 0-100 (Dynamic)</li>
+                <li><strong>Q&A Submitted:</strong> Pending questions count (Purple)</li>
+                <li><strong>Transcription Status:</strong> Progress % and status (Cyan)</li>
+                <li><strong>Recording Status:</strong> Active recording with timer (Red)</li>
+            </ul>
+
+            <h2>📊 Core Sections</h2>
+
+            <h3>Section 1: Conference Overview</h3>
+            <p>Displays all running, pending, and completed conferences with quick access to controls.</p>
+            <h4>Tabs:</h4>
+            <ul>
+                <li><strong>Running:</strong> Active conferences (default view)</li>
+                <li><strong>Pending:</strong> Upcoming conferences not yet started</li>
+                <li><strong>Completed:</strong> Finished conferences (last 24 hours)</li>
+                <li><strong>Alarms:</strong> Conferences with alerts (high sentiment drop, etc.)</li>
+            </ul>
+            <h4>Key Columns:</h4>
+            <ul>
+                <li>Call-ID, Subject, Reseller, Start Time, Duration, Participants</li>
+                <li>Mod Code, Part Code, Dial-In, Status, Actions</li>
+                <li>Actions: Open CCP, Split View, Details, Export</li>
+            </ul>
+
+            <h3>Section 2: Conference Control Panel (CCP)</h3>
+            <p>Detailed controls and management for the selected conference.</p>
+            <h4>Subsections:</h4>
+            <ul>
+                <li><strong>Conference Bar:</strong> Record, Lock, Mute, Disconnect, Dial Out buttons</li>
+                <li><strong>Search Bar:</strong> Real-time search by name, company, phone, location</li>
+                <li><strong>Filter Bar:</strong> All, Mod, Part, Unmuted, Muted, Parked, Connected, Waiting, Web, Speak Req</li>
+                <li><strong>Participant Table:</strong> Real-time participant list with multi-select</li>
+                <li><strong>Multi-Select Actions:</strong> Bulk operations on selected participants</li>
+            </ul>
+
+            <h3>Section 3: Feature Tabs</h3>
+            <p>Advanced features and detailed information:</p>
+            <ul>
+                <li><strong>Monitoring:</strong> Call quality metrics (bandwidth, latency, jitter, packet loss)</li>
+                <li><strong>Connection:</strong> IP addresses, codec, encryption, NAT info</li>
+                <li><strong>History:</strong> Participant previous calls and notes</li>
+                <li><strong>Audio Files:</strong> Recording download, playback, transcription</li>
+                <li><strong>Chat:</strong> Real-time chat transcript</li>
+                <li><strong>Notes:</strong> Operator notes about participant or call</li>
+                <li><strong>Q&A Queue:</strong> Submitted questions, voting, moderation</li>
+                <li><strong>CuraLive Direct:</strong> Direct messaging to participant</li>
+            </ul>
+
+            <h2>⚡ Real-Time Data Flow (Ably WebSocket)</h2>
+            <table>
+                <tr>
+                    <th>Data Type</th>
+                    <th>Frequency</th>
+                    <th>Latency Target</th>
+                    <th>Channel</th>
+                </tr>
+                <tr>
+                    <td>Participant Status</td>
+                    <td>Real-time</td>
+                    <td>&lt;100ms</td>
+                    <td>participants</td>
+                </tr>
+                <tr>
+                    <td>Sentiment Score</td>
+                    <td>Every 5s</td>
+                    <td>&lt;500ms</td>
+                    <td>sentiment</td>
+                </tr>
+                <tr>
+                    <td>Q&A Updates</td>
+                    <td>Real-time</td>
+                    <td>&lt;100ms</td>
+                    <td>qa</td>
+                </tr>
+                <tr>
+                    <td>Transcription</td>
+                    <td>Streaming</td>
+                    <td>&lt;1s</td>
+                    <td>transcription</td>
+                </tr>
+                <tr>
+                    <td>Conference State</td>
+                    <td>Real-time</td>
+                    <td>&lt;100ms</td>
+                    <td>state</td>
+                </tr>
+                <tr>
+                    <td>Chat Messages</td>
+                    <td>Real-time</td>
+                    <td>&lt;100ms</td>
+                    <td>chat</td>
+                </tr>
+            </table>
+
+            <h2>✨ Feature Specifications</h2>
+
+            <h3>Conference Management</h3>
+            <ul class="checklist">
+                <li>Create new conferences with event type, title, start time, duration</li>
+                <li>Edit conference details (title, description, settings)</li>
+                <li>Delete pending/completed conferences</li>
+                <li>Lock/unlock conferences (prevent new joins)</li>
+                <li>Start/stop recording with confirmation</li>
+                <li>Export conference data as CSV</li>
+            </ul>
+
+            <h3>Participant Management</h3>
+            <ul class="checklist">
+                <li>Add participants via phone or email</li>
+                <li>Mute/unmute individual or bulk participants</li>
+                <li>Park/unpark participants (hold with music)</li>
+                <li>Disconnect participants with confirmation</li>
+                <li>Transfer participants to another operator</li>
+                <li>View participant history and notes</li>
+            </ul>
+
+            <h3>Search & Filtering</h3>
+            <ul class="checklist">
+                <li>Real-time search across name, company, phone, location</li>
+                <li>Multiple active filters with AND logic</li>
+                <li>Save/load filter combinations</li>
+                <li>Filter counts for each category</li>
+                <li>Case-insensitive partial matching</li>
+            </ul>
+
+            <h3>Real-Time Monitoring</h3>
+            <ul class="checklist">
+                <li>Call quality metrics (bandwidth, latency, jitter, packet loss)</li>
+                <li>Participant sentiment scores (0-100, color-coded)</li>
+                <li>Transcription status and progress</li>
+                <li>MOS (Mean Opinion Score) for call quality</li>
+                <li>Alerts for sentiment drops or quality issues</li>
+            </ul>
+
+            <h3>Q&A Management</h3>
+            <ul class="checklist">
+                <li>Display Q&A queue with submitted questions</li>
+                <li>Approve/reject questions</li>
+                <li>Edit question text before approval</li>
+                <li>Pin important questions</li>
+                <li>View vote counts</li>
+                <li>Mark questions as answered</li>
+                <li>Archive answered questions</li>
+            </ul>
+
+            <h2>🔄 State Management</h2>
+            <p>Use React Context + useReducer for global state with Ably for real-time updates. Memoize expensive components with React.memo, useMemo, useCallback. Use react-window for virtual scrolling of 1000+ participant rows.</p>
+
+            <h2>⚙️ Performance & Optimization</h2>
+            <table>
+                <tr>
+                    <th>Optimization</th>
+                    <th>Target</th>
+                    <th>Implementation</th>
+                </tr>
+                <tr>
+                    <td>Virtual Scrolling</td>
+                    <td>1000+ rows at 60 FPS</td>
+                    <td>Use react-window for participant table</td>
+                </tr>
+                <tr>
+                    <td>Memoization</td>
+                    <td>Prevent unnecessary re-renders</td>
+                    <td>React.memo, useMemo, useCallback</td>
+                </tr>
+                <tr>
+                    <td>Code Splitting</td>
+                    <td>Faster initial load</td>
+                    <td>Lazy load feature tabs, settings</td>
+                </tr>
+                <tr>
+                    <td>Bundle Size</td>
+                    <td>&lt;500KB gzipped</td>
+                    <td>Tree-shake, minify, compress</td>
+                </tr>
+                <tr>
+                    <td>Debouncing</td>
+                    <td>Reduce API calls</td>
+                    <td>Search: 300ms, Sentiment: 1s</td>
+                </tr>
+            </table>
+
+            <h2>🔒 Security & Compliance</h2>
+            <ul class="checklist">
+                <li>OAuth 2.0 authentication via Manus</li>
+                <li>Role-based access control (RBAC)</li>
+                <li>Audit trail for all operator actions</li>
+                <li>HTTPS/TLS encryption for all API calls</li>
+                <li>Mask sensitive data (phone, email)</li>
+                <li>GDPR, CCPA, SOC 2, HIPAA compliance</li>
+                <li>Secure WebSocket (WSS) for Ably</li>
+            </ul>
+
+            <h2>🧪 Testing Requirements</h2>
+            <h3>Unit Tests (Coverage &gt; 80%)</h3>
+            <ul>
+                <li>State management (reducer functions)</li>
+                <li>Utility functions (search, filter, format)</li>
+                <li>Component rendering (with mocked data)</li>
+                <li>Event handlers (click, submit, etc.)</li>
+            </ul>
+
+            <h3>Integration Tests</h3>
+            <ul>
+                <li>Select conference → CCP loads</li>
+                <li>Search participant → Table filters</li>
+                <li>Mute participant → State updates real-time</li>
+                <li>Apply filter → Action bar appears</li>
+            </ul>
+
+            <h3>End-to-End Tests (Cypress/Playwright)</h3>
+            <ul>
+                <li>Login → View conferences → Select → Manage participants</li>
+                <li>Search → Mute → Verify state change</li>
+                <li>Multi-select → Disconnect all → Verify removal</li>
+                <li>Real-time updates appear without refresh</li>
+            </ul>
+
+            <h2>✅ Success Criteria</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Functional</h4>
+                    <ul style="margin-left: 20px; padding-left: 0;">
+                        <li>All 5 sidebar tabs functional</li>
+                        <li>Conference Overview displays accurately</li>
+                        <li>Real-time updates &lt;500ms</li>
+                        <li>All action buttons work</li>
+                        <li>Search/filters work correctly</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Performance</h4>
+                    <ul style="margin-left: 20px; padding-left: 0;">
+                        <li>Page load &lt;2s</li>
+                        <li>Interaction &lt;100ms</li>
+                        <li>1000+ rows at 60 FPS</li>
+                        <li>Bundle &lt;500KB</li>
+                        <li>No memory leaks</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Quality</h4>
+                    <ul style="margin-left: 20px; padding-left: 0;">
+                        <li>No TypeScript errors</li>
+                        <li>No console errors</li>
+                        <li>Unit coverage &gt;80%</li>
+                        <li>All E2E tests pass</li>
+                        <li>WCAG 2.1 AA compliant</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h2>📅 Implementation Timeline</h2>
+            <table>
+                <tr>
+                    <th>Phase</th>
+                    <th>Duration</th>
+                    <th>Deliverables</th>
+                </tr>
+                <tr>
+                    <td>Phase 1: Layout & Navigation</td>
+                    <td>1 week</td>
+                    <td>Sidebar, top bar, main layout</td>
+                </tr>
+                <tr>
+                    <td>Phase 2: Conference Overview</td>
+                    <td>1 week</td>
+                    <td>Table, tabs, search, filters</td>
+                </tr>
+                <tr>
+                    <td>Phase 3: Conference Control Panel</td>
+                    <td>2 weeks</td>
+                    <td>Buttons, participant table, actions</td>
+                </tr>
+                <tr>
+                    <td>Phase 4: Real-Time Updates</td>
+                    <td>1 week</td>
+                    <td>Ably integration, real-time state</td>
+                </tr>
+                <tr>
+                    <td>Phase 5: Feature Tabs</td>
+                    <td>1 week</td>
+                    <td>Monitoring, history, Q&A, etc.</td>
+                </tr>
+                <tr>
+                    <td>Phase 6: Testing & Optimization</td>
+                    <td>1 week</td>
+                    <td>Unit tests, E2E tests, performance</td>
+                </tr>
+                <tr>
+                    <td>Phase 7: Deployment & Monitoring</td>
+                    <td>1 week</td>
+                    <td>Staging, production, monitoring</td>
+                </tr>
+            </table>
+            <p style="text-align: center; margin-top: 20px; font-weight: 600;">
+                <strong>Total Duration: 8 weeks</strong>
+            </p>
+
+            <h2>🎯 Key Principles</h2>
+            <ol>
+                <li><strong>User-Centric Design:</strong> Every interaction should be intuitive and efficient</li>
+                <li><strong>Real-Time Performance:</strong> Sub-100ms latency for all real-time updates</li>
+                <li><strong>Reliability:</strong> 100% uptime and graceful error handling</li>
+                <li><strong>Security:</strong> Encryption, authentication, audit trails</li>
+                <li><strong>Scalability:</strong> Support 1000+ participants, 100+ concurrent conferences</li>
+                <li><strong>Accessibility:</strong> WCAG 2.1 AA compliance for all users</li>
+            </ol>
+
+            <div class="key-point" style="margin-top: 40px;">
+                <strong>🎯 Final Note:</strong> The Operator Console is the command centre of CuraLive and must be world-class, reliable, and intuitive. This brief provides comprehensive specifications for the frontend interface, user interactions, data flow, and operational requirements. Follow this brief closely to ensure a production-ready, enterprise-grade control centre.
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>CuraLive Operator Console — Complete Technical Brief</strong></p>
+            <p>Version 1.0 | March 7, 2026 | Author: Manus AI</p>
+            <p>Status: Ready for Implementation | Quality: World-Class, 100% Functional</p>
+        </div>
+    </div>
+</body>
+</html>
