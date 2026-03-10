@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { MutingControlPanel } from "@/components/MutingControlPanel";
+import { useState, useEffect } from "react";
 
 interface DashboardMetrics {
   totalViolations: number;
@@ -195,10 +197,14 @@ export function OperatorDashboard() {
 
         {/* Main Content */}
         <Tabs defaultValue="alerts" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="alerts" className="gap-2">
               <AlertCircle className="w-4 h-4" />
               Live Alerts
+            </TabsTrigger>
+            <TabsTrigger value="muting" className="gap-2">
+              <Zap className="w-4 h-4" />
+              Muting Control
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="w-4 h-4" />
@@ -209,6 +215,26 @@ export function OperatorDashboard() {
               Speakers
             </TabsTrigger>
           </TabsList>
+
+          {/* Muting Control Tab */}
+          <TabsContent value="muting" className="space-y-4">
+            {eventId ? (
+              <MutingControlPanel eventId={eventId} />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Muting Control</CardTitle>
+                  <CardDescription>Select an event to manage speaker muting</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <p className="text-muted-foreground">No event selected</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
           {/* Live Alerts Tab */}
           <TabsContent value="alerts" className="space-y-4">
