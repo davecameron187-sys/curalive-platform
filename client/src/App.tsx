@@ -90,6 +90,14 @@ import SustainabilityDashboard from "./pages/SustainabilityDashboard";
 import FeatureMap from "./pages/FeatureMap";
 import InterconnectionAnalytics from "./pages/InterconnectionAnalytics";
 import VirtualStudio from "./pages/VirtualStudio";
+import FeatureDetail from "./pages/FeatureDetail";
+import BundleDetail from "./pages/BundleDetail";
+import WorkflowsPage from "./pages/WorkflowsPage";
+import IntelligentBroadcasterPage from "./pages/IntelligentBroadcasterPage";
+import WebcastRecapPage from "./pages/WebcastRecapPage";
+import TrainingSubPage from "./pages/TrainingSubPage";
+import OperatorQuickRef from "./pages/OperatorQuickRef";
+import OperatorLinks from "./pages/OperatorLinks";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -183,6 +191,21 @@ function Router() {
       <Route path="/feature-map" component={FeatureMap} />
       <Route path="/admin/interconnection-analytics" component={InterconnectionAnalytics} />
       <Route path="/virtual-studio" component={VirtualStudio} />
+      <Route path="/operator-links" component={OperatorLinks} />
+      <Route path="/features/:id" component={FeatureDetail} />
+      <Route path="/bundles/:id" component={BundleDetail} />
+      <Route path="/workflows" component={WorkflowsPage} />
+      <Route path="/intelligent-broadcaster" component={IntelligentBroadcasterPage} />
+      <Route path="/webcast-recap" component={WebcastRecapPage} />
+      <Route path="/training/:module" component={TrainingSubPage} />
+      <Route path="/support" component={OperatorQuickRef} />
+      <Route path="/docs" component={OperatorQuickRef} />
+      <Route path="/certification" component={OperatorQuickRef} />
+      <Route path="/feedback" component={OperatorQuickRef} />
+      <Route path="/whats-new" component={OperatorQuickRef} />
+      <Route path="/my-dashboard" component={OperatorQuickRef} />
+      <Route path="/live-sentiment">{() => { window.location.replace("/operator/q4-earnings-2026/sentiment"); return null; }}</Route>
+      <Route path="/post-event">{() => { window.location.replace("/post-event/q4-earnings-2026"); return null; }}</Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
