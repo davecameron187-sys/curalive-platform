@@ -23,12 +23,42 @@ const LANGUAGES = [
 ];
 
 const BUNDLES = [
-  { id: "A", label: "Investor Relations", color: "#3b82f6" },
-  { id: "B", label: "Compliance & Risk", color: "#ef4444" },
-  { id: "C", label: "Operations", color: "#10b981" },
-  { id: "D", label: "Content Marketing", color: "#f59e0b" },
-  { id: "E", label: "Premium", color: "#8b5cf6" },
-  { id: "F", label: "Social Amplification", color: "#ec4899" },
+  {
+    id: "A", label: "Investor Relations", color: "#3b82f6", roi: "2.1×–2.8×",
+    description: "Designed for IR teams running earnings calls and investor days.",
+    features: ["Event Brief", "Sentiment Analysis", "Investor Follow-Ups", "Lead Scoring", "Q&A Auto-Triage", "Live Transcription"],
+    overlays: ["sentiment-gauge", "engagement-bar", "compliance-indicator", "investor-ticker"],
+  },
+  {
+    id: "B", label: "Compliance & Risk", color: "#ef4444", roi: "Risk Mitigation",
+    description: "Regulatory monitoring suite for financial services and legal teams.",
+    features: ["Compliance Check", "Toxicity Filter", "Live Transcription", "Sentiment Analysis"],
+    overlays: ["compliance-indicator", "engagement-bar", "ai-insights"],
+  },
+  {
+    id: "C", label: "Operations", color: "#10b981", roi: "60% efficiency",
+    description: "Efficiency tools for operators running high-volume conference calls.",
+    features: ["Live Transcription", "Q&A Auto-Triage", "Pace Coach", "Rolling Summary"],
+    overlays: ["engagement-bar", "ai-insights"],
+  },
+  {
+    id: "D", label: "Content Marketing", color: "#f59e0b", roi: "Content Amplification",
+    description: "Multi-channel content generation from a single live event.",
+    features: ["Press Release", "Event Echo", "Podcast Converter", "AI Video Recap", "Rolling Summary"],
+    overlays: ["social-ticker", "engagement-bar", "investor-ticker"],
+  },
+  {
+    id: "E", label: "Premium", color: "#8b5cf6", roi: "Maximum ROI",
+    description: "All 16 AI features combined for maximum value and insight.",
+    features: ["Event Brief", "Sentiment Analysis", "Q&A Auto-Triage", "Compliance Check", "Lead Scoring", "Investor Follow-Ups", "Rolling Summary", "Press Release", "Event Echo", "Podcast Converter", "Sustainability Tracker", "AI Video Recap", "Toxicity Filter", "Pace Coach", "Intelligent Broadcaster", "Live Transcription"],
+    overlays: ["sentiment-gauge", "engagement-bar", "compliance-indicator", "investor-ticker", "social-ticker", "ai-insights"],
+  },
+  {
+    id: "F", label: "Social Amplification", color: "#ec4899", roi: "Social Reach",
+    description: "Turn every investor event into a multi-platform social campaign.",
+    features: ["Event Echo", "Podcast Converter", "AI Video Recap"],
+    overlays: ["social-ticker", "investor-ticker", "engagement-bar"],
+  },
 ];
 
 const OVERLAY_OPTIONS = [
@@ -143,19 +173,37 @@ export default function VirtualStudio() {
             <div>
               <label className="text-xs font-medium text-slate-400 mb-1.5 block">Bundle</label>
               <div className="space-y-1.5">
-                {BUNDLES.map(b => (
-                  <button
-                    key={b.id}
-                    onClick={() => setBundleId(b.id)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                      bundleId === b.id ? "bg-slate-700 text-white" : "bg-slate-800/60 text-slate-400 hover:bg-slate-800"
-                    }`}
-                  >
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: b.color }} />
-                    <span className="font-medium">{b.id}</span>
-                    <span className="text-xs">{b.label}</span>
-                  </button>
-                ))}
+                {BUNDLES.map(b => {
+                  const isSelected = bundleId === b.id;
+                  return (
+                    <button
+                      key={b.id}
+                      onClick={() => {
+                        setBundleId(b.id);
+                        setActiveOverlays(b.overlays);
+                      }}
+                      className={`w-full flex items-start gap-3 px-3 py-3 rounded-xl text-left transition-all border ${
+                        isSelected ? "border-current shadow-sm" : "border-slate-700/60 hover:border-slate-600"
+                      }`}
+                      style={isSelected ? { borderColor: b.color, backgroundColor: `${b.color}12` } : {}}
+                    >
+                      <div className="flex-shrink-0 mt-0.5">
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                          style={{ backgroundColor: b.color }}
+                        >
+                          {b.id}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-sm font-semibold ${isSelected ? "text-white" : "text-slate-300"}`}>{b.label}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">{b.features.length} AI features · ROI {b.roi}</div>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: b.color }} />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -194,6 +242,12 @@ export default function VirtualStudio() {
                   <span className="text-emerald-400 text-[10px]">✓</span>
                 </div>
               )}
+              <div className="absolute top-3 left-1/2 -translate-x-1/2">
+                <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur rounded-lg px-3 py-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedBundle?.color }} />
+                  <span className="text-[10px] font-semibold text-white">Bundle {selectedBundle?.id}: {selectedBundle?.label}</span>
+                </div>
+              </div>
               <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-500">Studio Preview</div>
             </div>
             <div className="flex border-b border-slate-800">
@@ -214,8 +268,27 @@ export default function VirtualStudio() {
 
             <div className="p-4">
               {activeTab === "config" && (
-                <div className="space-y-3">
-                  <div className="text-xs font-semibold text-slate-300 mb-3">Avatar Style</div>
+                <div className="space-y-4">
+                  <div className="rounded-xl border p-3" style={{ borderColor: `${selectedBundle?.color}40`, backgroundColor: `${selectedBundle?.color}08` }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0" style={{ backgroundColor: selectedBundle?.color }}>
+                        {selectedBundle?.id}
+                      </div>
+                      <span className="text-xs font-bold text-white">Bundle {selectedBundle?.id}: {selectedBundle?.label}</span>
+                      <span className="ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: `${selectedBundle?.color}40` }}>
+                        ROI {selectedBundle?.roi}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mb-2">{selectedBundle?.description}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedBundle?.features.map(f => (
+                        <span key={f} className="text-[10px] px-2 py-0.5 rounded-full border font-medium" style={{ borderColor: `${selectedBundle.color}50`, color: selectedBundle.color }}>
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-xs font-semibold text-slate-300">Avatar Style</div>
                   <div className="grid grid-cols-2 gap-2">
                     {AVATAR_STYLES.map(a => (
                       <button
