@@ -2204,3 +2204,36 @@ export const studioInterconnections = mysqlTable("studio_interconnections", {
 
 export type StudioInterconnection = typeof studioInterconnections.$inferSelect;
 export type InsertStudioInterconnection = typeof studioInterconnections.$inferInsert;
+
+export const operatorLinkAnalytics = mysqlTable("operator_link_analytics", {
+  id: int("id").autoincrement().primaryKey(),
+  operatorId: int("operator_id"),
+  linkPath: varchar("link_path", { length: 255 }).notNull(),
+  linkTitle: varchar("link_title", { length: 255 }),
+  category: varchar("category", { length: 64 }),
+  accessedAt: timestamp("accessed_at").defaultNow().notNull(),
+  timeSpentSeconds: int("time_spent_seconds"),
+  userAgent: text("user_agent"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  sessionId: varchar("session_id", { length: 128 }),
+});
+
+export type OperatorLinkAnalytic = typeof operatorLinkAnalytics.$inferSelect;
+export type InsertOperatorLinkAnalytic = typeof operatorLinkAnalytics.$inferInsert;
+
+export const operatorLinksMetadata = mysqlTable("operator_links_metadata", {
+  id: int("id").autoincrement().primaryKey(),
+  linkPath: varchar("link_path", { length: 255 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 50 }),
+  badgeType: varchar("badge_type", { length: 50 }),
+  sortOrder: int("sort_order").default(0),
+  isActive: boolean("is_active").default(true).notNull(),
+  clickCount: int("click_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OperatorLinksMetadatum = typeof operatorLinksMetadata.$inferSelect;
+export type InsertOperatorLinksMetadatum = typeof operatorLinksMetadata.$inferInsert;
