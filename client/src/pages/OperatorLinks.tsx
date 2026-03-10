@@ -2,10 +2,12 @@ import { useLocation } from "wouter";
 import {
   GraduationCap, Settings, Calendar, Zap, Brain, Package,
   ExternalLink, ChevronDown, ChevronRight, CheckCircle2,
-  Monitor, BarChart3, Radio, HelpCircle, BookOpen, Award,
-  MessageSquare, Star
+  HelpCircle, Play, X, ChevronRight as ChevRight,
+  Radio, Users, AlertTriangle, BarChart3, FileText,
+  Mic, Star, Clock, Loader2
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { toast } from "sonner";
 
 type LinkCard = {
   badge: string; badgeColor: string; title: string;
@@ -138,6 +140,222 @@ const CHECKLIST_SECTIONS = [
   { title: "Post-Event", items: ["Post-Event Report: Review AI-generated summary, sentiment analysis, and Q&A highlights", "ROI Tracking: Monitor ROI realization in Interconnection Analytics dashboard", "Webcast Recap: Generate and distribute video recap, podcast, and social content", "Feedback: Provide feedback on AI feature performance and recommendations"] },
 ];
 
+type SimStep = {
+  id: string;
+  phase: "pre" | "live" | "post";
+  label: string;
+  detail: string;
+  icon: React.ElementType;
+  color: string;
+  path?: string;
+  linkLabel?: string;
+  delayMs: number;
+};
+
+const SIM_STEPS: SimStep[] = [
+  { id: "brief", phase: "pre", label: "AI Event Brief generated", detail: "Investor profiles, talking points, and risk alerts compiled for Q4 Earnings Call", icon: FileText, color: "text-blue-400", path: "/features/event-brief", linkLabel: "View Brief", delayMs: 0 },
+  { id: "studio", phase: "pre", label: "Virtual Studio configured", detail: "Bundle A selected · Professional avatar · ESG overlay active · EN→FR dubbing ready", icon: Radio, color: "text-pink-400", path: "/virtual-studio", linkLabel: "Open Studio", delayMs: 2800 },
+  { id: "esg", phase: "pre", label: "ESG compliance flags set", detail: "Carbon offset certificate linked · TCFD disclosure flag enabled · Sustainability overlay ready", icon: AlertTriangle, color: "text-amber-400", path: "/virtual-studio", linkLabel: "View ESG", delayMs: 5200 },
+  { id: "live", phase: "live", label: "Event LIVE — 847 viewers joined", detail: "OCC open · Webcast stream active · Live transcription running at <1s latency", icon: Mic, color: "text-red-400", path: "/occ", linkLabel: "Open OCC", delayMs: 8000 },
+  { id: "sentiment", phase: "live", label: "Sentiment: 78% Positive", detail: "Investor mood trending upward on guidance commentary · Engagement peak at 14:12", icon: BarChart3, color: "text-emerald-400", path: "/live-sentiment", linkLabel: "View Sentiment", delayMs: 11000 },
+  { id: "qa", phase: "live", label: "Q&A Auto-Triage: 23 questions", detail: "8 IR questions prioritized · 3 compliance-flagged items routed · 2 toxicity blocks", icon: Users, color: "text-cyan-400", path: "/features/qa-triage", linkLabel: "View Q&A", delayMs: 14000 },
+  { id: "compliance", phase: "live", label: "Compliance alert: Revenue guidance", detail: "Forward-looking statement detected · FINRA safe harbour language auto-prepended", icon: AlertTriangle, color: "text-orange-400", path: "/features/compliance", linkLabel: "View Alert", delayMs: 17000 },
+  { id: "pace", phase: "live", label: "Pace Coach: 148 WPM — optimal", detail: "CEO speaking rate in target zone · Filler words: 3 (low) · Audience retention: 92%", icon: Star, color: "text-yellow-400", path: "/features/pace-coach", linkLabel: "View Coaching", delayMs: 20000 },
+  { id: "summary", phase: "live", label: "Rolling Summary updated (14:15)", detail: "\"Q4 revenue guidance raised 12% · Management confident in FY2026 outlook · ESG targets on track\"", icon: FileText, color: "text-indigo-400", path: "/features/rolling-summary", linkLabel: "View Summary", delayMs: 23000 },
+  { id: "report", phase: "post", label: "Post-Event Report generated", detail: "Full transcript · Sentiment analysis · Q&A highlights · Lead scores for 124 attendees", icon: FileText, color: "text-blue-400", path: "/post-event/q4-earnings-2026", linkLabel: "View Report", delayMs: 26000 },
+  { id: "release", phase: "post", label: "Press release drafted", detail: "SENS/RNS-compliant draft ready in 1m 47s · CFO quote auto-inserted · Regulatory language verified", icon: FileText, color: "text-slate-400", path: "/features/press-release", linkLabel: "View Release", delayMs: 28500 },
+  { id: "recap", phase: "post", label: "Webcast Recap + Podcast ready", detail: "3-min video recap generated · Investor podcast episode published to feed · Social clips ready", icon: Zap, color: "text-primary", path: "/webcast-recap", linkLabel: "View Recap", delayMs: 31000 },
+  { id: "followups", phase: "post", label: "47 personalized follow-ups sent", detail: "Hot leads: 12 · Warm: 28 · Scheduled IR calls: 7 · Total estimated pipeline: $2.4M", icon: Users, color: "text-violet-400", path: "/features/follow-ups", linkLabel: "View Follow-Ups", delayMs: 33500 },
+  { id: "roi", phase: "post", label: "ROI realized: 2.7× across all features", detail: "Bundle A workflow completed · Interconnection analytics updated · Ready for next event", icon: BarChart3, color: "text-emerald-400", path: "/admin/interconnection-analytics", linkLabel: "View ROI", delayMs: 36000 },
+];
+
+const PHASE_LABELS = { pre: "Pre-Event", live: "Live Event", post: "Post-Event" };
+const PHASE_COLORS = { pre: "text-blue-400", live: "text-red-400", post: "text-emerald-400" };
+
+function SimulationPanel({ onClose }: { onClose: () => void }) {
+  const [, navigate] = useLocation();
+  const [activeStep, setActiveStep] = useState(-1);
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const [running, setRunning] = useState(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearAllTimers = useCallback(() => {
+    timersRef.current.forEach(t => clearTimeout(t));
+    timersRef.current = [];
+  }, []);
+
+  const startSimulation = useCallback(() => {
+    clearAllTimers();
+    setActiveStep(-1);
+    setCompletedSteps(new Set());
+    setRunning(true);
+    toast.success("Demo simulation starting…");
+
+    SIM_STEPS.forEach((step, idx) => {
+      const t1 = setTimeout(() => {
+        setActiveStep(idx);
+        toast.success(step.label, { duration: 3000 });
+      }, step.delayMs);
+      const t2 = setTimeout(() => {
+        setCompletedSteps(prev => new Set([...prev, step.id]));
+      }, step.delayMs + 2200);
+      timersRef.current.push(t1, t2);
+    });
+
+    const finalDelay = SIM_STEPS[SIM_STEPS.length - 1].delayMs + 3500;
+    const tFinal = setTimeout(() => {
+      setRunning(false);
+      setActiveStep(-1);
+      toast.success("Simulation complete! All 14 steps executed successfully.", { duration: 5000 });
+    }, finalDelay);
+    timersRef.current.push(tFinal);
+  }, [clearAllTimers]);
+
+  const stopSimulation = useCallback(() => {
+    clearAllTimers();
+    setRunning(false);
+    setActiveStep(-1);
+  }, [clearAllTimers]);
+
+  useEffect(() => () => clearAllTimers(), [clearAllTimers]);
+
+  const groupedPhases: Record<string, SimStep[]> = { pre: [], live: [], post: [] };
+  SIM_STEPS.forEach(s => groupedPhases[s.phase].push(s));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full sm:max-w-2xl max-h-[90vh] bg-background border border-border rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-card shrink-0">
+          <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${running ? "bg-red-400 animate-pulse" : "bg-slate-500"}`} />
+            <span className="font-bold text-sm">Q4 Earnings Call — Full Event Simulation</span>
+            {running && <span className="text-xs text-muted-foreground">(~37 seconds)</span>}
+          </div>
+          <div className="flex items-center gap-2">
+            {!running ? (
+              <button
+                onClick={startSimulation}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+              >
+                <Play className="w-3 h-3" />
+                {completedSteps.size > 0 ? "Replay" : "Run Simulation"}
+              </button>
+            ) : (
+              <button
+                onClick={stopSimulation}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-secondary text-foreground text-xs font-semibold hover:bg-secondary/80 transition-colors"
+              >
+                <X className="w-3 h-3" /> Stop
+              </button>
+            )}
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-y-auto flex-1 p-4 space-y-4">
+          {!running && completedSteps.size === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <Play className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm font-medium">Ready to run the full event demo</p>
+              <p className="text-xs mt-1 opacity-60">14 steps · Pre-event → Live → Post-event · ~37 seconds</p>
+              <p className="text-xs mt-3 opacity-50">Covers all 16 AI features and the complete CuraLive operator workflow</p>
+            </div>
+          )}
+
+          {(["pre", "live", "post"] as const).map(phase => {
+            const steps = groupedPhases[phase];
+            const hasAny = steps.some(s => completedSteps.has(s.id) || SIM_STEPS.indexOf(s) === activeStep);
+            if (!hasAny && completedSteps.size === 0 && !running) return null;
+
+            return (
+              <div key={phase}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-bold uppercase tracking-wider ${PHASE_COLORS[phase]}`}>
+                    {PHASE_LABELS[phase]}
+                  </span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+                <div className="space-y-2">
+                  {steps.map(step => {
+                    const stepIdx = SIM_STEPS.indexOf(step);
+                    const isActive = stepIdx === activeStep;
+                    const isDone = completedSteps.has(step.id);
+                    const isWaiting = !isActive && !isDone;
+                    const Icon = step.icon;
+                    return (
+                      <div
+                        key={step.id}
+                        className={`flex items-start gap-3 p-3 rounded-xl border transition-all duration-500 ${
+                          isActive ? "border-primary bg-primary/5 shadow-sm" : isDone ? "border-border bg-card" : "border-border/40 opacity-40"
+                        }`}
+                      >
+                        <div className={`mt-0.5 shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isDone ? "bg-emerald-400/20" : isActive ? "bg-primary/20" : "bg-secondary"}`}>
+                          {isDone
+                            ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            : isActive
+                            ? <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+                            : <Icon className={`w-3.5 h-3.5 ${step.color} opacity-60`} />
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Icon className={`w-3.5 h-3.5 ${step.color} shrink-0`} />
+                            <span className={`text-sm font-semibold ${isActive ? "text-primary" : ""}`}>{step.label}</span>
+                          </div>
+                          {(isDone || isActive) && (
+                            <p className="text-xs text-muted-foreground mt-0.5 italic leading-relaxed">{step.detail}</p>
+                          )}
+                          {isDone && step.path && (
+                            <button
+                              onClick={() => { onClose(); navigate(step.path!); }}
+                              className="flex items-center gap-1 text-xs text-primary hover:underline mt-1.5 font-medium"
+                            >
+                              {step.linkLabel} <ChevRight className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        {isActive && (
+                          <span className="text-[10px] text-primary font-bold uppercase tracking-wider shrink-0 animate-pulse">Live</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {!running && completedSteps.size === SIM_STEPS.length && (
+            <div className="text-center py-4 bg-emerald-400/5 border border-emerald-400/20 rounded-xl">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+              <p className="text-sm font-bold text-emerald-400">Simulation Complete</p>
+              <p className="text-xs text-muted-foreground mt-1">All 14 steps executed · ROI: 2.7× · Bundle A workflow complete</p>
+            </div>
+          )}
+        </div>
+
+        {(running || completedSteps.size > 0) && (
+          <div className="shrink-0 px-5 py-3 border-t border-border bg-card">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>{completedSteps.size} / {SIM_STEPS.length} steps</span>
+              <span>{Math.round((completedSteps.size / SIM_STEPS.length) * 100)}%</span>
+            </div>
+            <div className="w-full bg-secondary rounded-full h-1.5">
+              <div
+                className="bg-primary h-1.5 rounded-full transition-all duration-700"
+                style={{ width: `${(completedSteps.size / SIM_STEPS.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SectionCard({ section }: { section: Section }) {
   const [, navigate] = useLocation();
   const [open, setOpen] = useState(true);
@@ -198,6 +416,7 @@ function SectionCard({ section }: { section: Section }) {
 export default function OperatorLinks() {
   const [, navigate] = useLocation();
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [simOpen, setSimOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -222,10 +441,10 @@ export default function OperatorLinks() {
 
       <div className="container py-8 max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">🎯 CuraLive — Operator Platform Links</h1>
-          <p className="text-muted-foreground">Training, Console Access, Event Setup & New AI Features</p>
+          <h1 className="text-3xl font-bold mb-2">CuraLive — Operator Platform Links</h1>
+          <p className="text-muted-foreground">Training, Console Access, Event Setup &amp; New AI Features</p>
           <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm text-amber-300">
-            <strong>⚠️ Internal Use Only.</strong> All links below are active and connected to the live demo environment. Use the simulate button in the Webcast Studio to run a demo event end-to-end.
+            <strong>Internal Use Only.</strong> All links below are active and connected to the live demo environment. Click <strong>Run Demo Simulation</strong> to walk through a complete Q4 Earnings Call end-to-end.
           </div>
         </div>
 
@@ -270,6 +489,16 @@ export default function OperatorLinks() {
           <br />All features tested and approved for production deployment. Ready for pilot customer deployment.
         </div>
       </div>
+
+      <button
+        onClick={() => setSimOpen(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-2xl hover:bg-primary/90 transition-all hover:scale-105 active:scale-95"
+      >
+        <Play className="w-4 h-4" />
+        Run Demo Simulation
+      </button>
+
+      {simOpen && <SimulationPanel onClose={() => setSimOpen(false)} />}
     </div>
   );
 }
