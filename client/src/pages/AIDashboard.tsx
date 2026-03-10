@@ -229,11 +229,12 @@ export default function AIDashboard() {
 
         {/* Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="generated">Generated</TabsTrigger>
             <TabsTrigger value="approved">Approved</TabsTrigger>
             <TabsTrigger value="sent">Sent</TabsTrigger>
             <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            <TabsTrigger value="roi">ROI Metrics</TabsTrigger>
           </TabsList>
 
           {/* Generated Tab */}
@@ -398,6 +399,47 @@ export default function AIDashboard() {
                 </Card>
               ))
             )}
+          </TabsContent>
+
+          {/* ROI Metrics Tab */}
+          <TabsContent value="roi" className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { bundle: "A", label: "Investor Relations", metric: "+35%", unit: "investor engagement", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+                { bundle: "B", label: "Compliance & Risk", metric: "100%", unit: "audit coverage", color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+                { bundle: "C", label: "Operations", metric: "80%", unit: "manual work reduced", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                { bundle: "D", label: "Content Marketing", metric: "90%", unit: "faster content creation", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+              ].map(({ bundle, label, metric, unit, color, bg }) => (
+                <Card key={bundle} className={`border ${bg}`}>
+                  <CardContent className="pt-4 pb-4">
+                    <div className="text-[10px] text-muted-foreground mb-1">Bundle {bundle} · {label}</div>
+                    <div className={`text-2xl font-bold ${color}`}>{metric}</div>
+                    <div className="text-xs text-muted-foreground">{unit}</div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              {[
+                { title: "Time Saved This Month", value: "47 hours", desc: "vs manual content creation", icon: "⏱️", color: "text-violet-400" },
+                { title: "Follow-ups Sent", value: "128", desc: "AI-personalised investor emails", icon: "📧", color: "text-blue-400" },
+                { title: "Compliance Checks Run", value: "341", desc: "statements auto-moderated", icon: "🛡️", color: "text-emerald-400" },
+                { title: "Content Pieces Generated", value: "89", desc: "summaries, press releases, recaps", icon: "📄", color: "text-amber-400" },
+                { title: "Social Posts Published", value: "23", desc: "via Event Echo pipeline", icon: "📱", color: "text-pink-400" },
+                { title: "Podcasts Generated", value: "4", desc: "investor podcast episodes", icon: "🎙️", color: "text-purple-400" },
+              ].map(({ title, value, desc, icon, color }) => (
+                <Card key={title}>
+                  <CardContent className="pt-4 pb-4 flex items-center gap-4">
+                    <div className="text-2xl">{icon}</div>
+                    <div className="flex-1">
+                      <div className="text-xs text-muted-foreground">{title}</div>
+                      <div className={`text-xl font-bold ${color}`}>{value}</div>
+                      <div className="text-[10px] text-muted-foreground">{desc}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
         </Tabs>
 
