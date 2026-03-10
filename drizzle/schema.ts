@@ -635,7 +635,6 @@ export const webcastEvents = mysqlTable("webcast_events", {
   hostName: varchar("host_name", { length: 200 }),
   hostOrganization: varchar("host_organization", { length: 200 }),
   tags: varchar("tags", { length: 500 }),
-  aiApplicationIds: text("ai_application_ids"), // JSON array of selected AI application IDs
   createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 });
