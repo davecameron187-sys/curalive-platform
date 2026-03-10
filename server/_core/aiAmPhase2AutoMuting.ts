@@ -7,6 +7,10 @@ import { db } from "./index";
 import { complianceViolations } from "../../drizzle/schema";
 import { eq, and, gte } from "drizzle-orm";
 
+// In-memory storage for muting state (in production, use database)
+const mutingState = new Map<string, Map<string, SpeakerViolationCount>>();
+const mutingConfigs = new Map<string, MutingConfig>();
+
 export interface MutingConfig {
   eventId: string;
   enabled: boolean;
@@ -33,18 +37,7 @@ export interface SpeakerViolationCount {
  * Get current muting configuration for an event
  */
 export async function getMutingConfig(eventId: string): Promise<MutingConfig | null> {
-  // In production, fetch from database
-  // For now, return default config
-  return {
-    eventId,
-    enabled: true,
-    softMuteThreshold: 2,
-    hardMuteThreshold: 5,
-    muteDuration: 300, // 5 minutes
-    autoUnmuteAfter: 10,
-    violationTypes: ["abuse", "harassment", "profanity"],
-    operatorOverride: true,
-  };
+  return mutingConfigs.get(eventId) || null;
 }
 
 /**
@@ -69,20 +62,9 @@ export async function evaluateSpeakerForMuting(
     return { shouldMute: false, reason: "Speaker is excluded from auto-muting" };
   }
 
-  // Count violations for this speaker in the last 30 minutes
-  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-  const violations = await db
-    .select()
-    .from(complianceViolations)
-    .where(
-      and(
-        eq(complianceViolations.eventId, eventId),
-        eq(complianceViolations.speaker, speakerName),
-        gte(complianceViolations.createdAt, thirtyMinutesAgo)
-      )
-    );
-
-  const violationCount = violations.length;
+  // Get violation count from in-memory state
+  const speakerViolations = mutingState.get(eventId)?.get(speakerId);
+  const violationCount = speakerViolations?.violationCount || 0;
 
   // Determine mute type
   if (violationCount >= config.hardMuteThreshold) {
@@ -102,6 +84,41 @@ export async function evaluateSpeakerForMuting(
   }
 
   return { shouldMute: false };
+}
+
+/**
+ * Track a violation for a speaker
+ */
+export async function trackSpeakerViolation(
+  eventId: string,
+  speakerId: string,
+  speakerName: string,
+  violationType: string
+): Promise<void> {
+  if (!mutingState.has(eventId)) {
+    mutingState.set(eventId, new Map());
+  }
+
+  const eventViolations = mutingState.get(eventId)!;
+  const existing = eventViolations.get(speakerId);
+
+  if (existing) {
+    existing.violationCount++;
+    existing.lastViolationTime = new Date();
+  } else {
+    eventViolations.set(speakerId, {
+      speakerId,
+      speakerName,
+      violationCount: 1,
+      lastViolationTime: new Date(),
+      isMuted: false,
+    });
+  }
+
+  console.log(
+    `[AI-AM Phase 2] Violation tracked for ${speakerName}: ${violationType}`,
+    eventViolations.get(speakerId)
+  );
 }
 
 /**
@@ -128,6 +145,20 @@ export async function applyMuting(
     };
   }
 
+  // Update in-memory state
+  if (!mutingState.has(eventId)) {
+    mutingState.set(eventId, new Map());
+  }
+
+  const eventViolations = mutingState.get(eventId)!;
+  const speaker = eventViolations.get(speakerId);
+
+  if (speaker) {
+    speaker.isMuted = true;
+    speaker.muteType = muteType;
+    speaker.muteStartTime = new Date();
+  }
+
   const muteStartTime = new Date();
   const estimatedUnmuteTime = config.autoUnmuteAfter
     ? new Date(muteStartTime.getTime() + config.autoUnmuteAfter * 60 * 1000)
@@ -141,8 +172,16 @@ export async function applyMuting(
     operatorId,
   });
 
-  // In production, would integrate with Recall.ai or Zoom API to actually mute the speaker
-  // For now, just log the action
+  // Call Recall.ai API to mute speaker
+  const recallResult = await muteOnRecallAi(eventId, speakerId, muteType);
+  if (!recallResult.success) {
+    console.warn(`[AI-AM Phase 2] Failed to mute on Recall.ai: ${recallResult.error}`);
+  }
+
+  // Schedule auto-unmute for soft mutes
+  if (muteType === "soft" && config.autoUnmuteAfter) {
+    scheduleAutoUnmute(eventId, speakerId, speakerName, config.autoUnmuteAfter);
+  }
 
   return {
     success: true,
@@ -164,14 +203,28 @@ export async function removeMuting(
   success: boolean;
   message: string;
 }> {
+  // Update in-memory state
+  const eventViolations = mutingState.get(eventId);
+  if (eventViolations) {
+    const speaker = eventViolations.get(speakerId);
+    if (speaker) {
+      speaker.isMuted = false;
+      speaker.muteType = undefined;
+      speaker.muteStartTime = undefined;
+    }
+  }
+
   console.log(`[AI-AM Phase 2] Removing mute from ${speakerName}`, {
     eventId,
     speakerId,
     operatorId,
   });
 
-  // In production, would integrate with Recall.ai or Zoom API to unmute
-  // For now, just log the action
+  // Call Recall.ai API to unmute speaker
+  const recallResult = await unmuteOnRecallAi(eventId, speakerId);
+  if (!recallResult.success) {
+    console.warn(`[AI-AM Phase 2] Failed to unmute on Recall.ai: ${recallResult.error}`);
+  }
 
   return {
     success: true,
@@ -180,37 +233,14 @@ export async function removeMuting(
 }
 
 /**
- * Get current speaker violation counts for an event
+ * Get speaker violation counts for an event
  */
 export async function getSpeakerViolationCounts(
   eventId: string
 ): Promise<SpeakerViolationCount[]> {
-  const violations = await db
-    .select()
-    .from(complianceViolations)
-    .where(eq(complianceViolations.eventId, eventId));
-
-  // Group by speaker
-  const speakerMap = new Map<string, SpeakerViolationCount>();
-
-  for (const violation of violations) {
-    const key = violation.speaker;
-    if (!speakerMap.has(key)) {
-      speakerMap.set(key, {
-        speakerId: key,
-        speakerName: violation.speaker,
-        violationCount: 0,
-        lastViolationTime: violation.createdAt,
-        isMuted: false,
-      });
-    }
-
-    const count = speakerMap.get(key)!;
-    count.violationCount += 1;
-    count.lastViolationTime = violation.createdAt;
-  }
-
-  return Array.from(speakerMap.values()).sort(
+  // Use in-memory state for now
+  const speakerViolations = mutingState.get(eventId) || new Map();
+  return Array.from(speakerViolations.values()).sort(
     (a, b) => b.violationCount - a.violationCount
   );
 }
@@ -255,14 +285,131 @@ export async function configureMutingSettings(
   eventId: string,
   config: Partial<MutingConfig>
 ): Promise<MutingConfig> {
-  // In production, would save to database
-  // For now, just return merged config
-  const currentConfig = await getMutingConfig(eventId);
-  return {
-    ...currentConfig!,
+  const existing = mutingConfigs.get(eventId);
+  const defaultConfig: MutingConfig = {
+    eventId,
+    enabled: true,
+    softMuteThreshold: 2,
+    hardMuteThreshold: 5,
+    muteDuration: 300,
+    autoUnmuteAfter: 10,
+    violationTypes: ["abuse", "harassment", "profanity"],
+    operatorOverride: true,
+  };
+
+  const merged: MutingConfig = {
+    ...defaultConfig,
+    ...existing,
     ...config,
     eventId,
   };
+
+  mutingConfigs.set(eventId, merged);
+  return merged;
+}
+
+/**
+ * Mute speaker on Recall.ai
+ */
+async function muteOnRecallAi(
+  eventId: string,
+  speakerId: string,
+  muteType: "soft" | "hard"
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const recallApiUrl = process.env.RECALL_AI_BASE_URL || "https://api.recall.ai/v1";
+    const recallApiKey = process.env.RECALL_AI_API_KEY;
+
+    if (!recallApiKey) {
+      console.warn("[AI-AM Phase 2] RECALL_AI_API_KEY not configured");
+      return { success: true }; // Fail gracefully in dev
+    }
+
+    // Call Recall.ai API to mute speaker
+    const response = await fetch(`${recallApiUrl}/bots/${eventId}/mute`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${recallApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        speakerId,
+        muteType,
+        duration: muteType === "soft" ? 30 : undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      return { success: false, error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[AI-AM Phase 2] Failed to mute on Recall.ai:", error);
+    return { success: false, error: String(error) };
+  }
+}
+
+/**
+ * Unmute speaker on Recall.ai
+ */
+async function unmuteOnRecallAi(
+  eventId: string,
+  speakerId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const recallApiUrl = process.env.RECALL_AI_BASE_URL || "https://api.recall.ai/v1";
+    const recallApiKey = process.env.RECALL_AI_API_KEY;
+
+    if (!recallApiKey) {
+      console.warn("[AI-AM Phase 2] RECALL_AI_API_KEY not configured");
+      return { success: true }; // Fail gracefully in dev
+    }
+
+    // Call Recall.ai API to unmute speaker
+    const response = await fetch(`${recallApiUrl}/bots/${eventId}/unmute`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${recallApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ speakerId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      return { success: false, error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[AI-AM Phase 2] Failed to unmute on Recall.ai:", error);
+    return { success: false, error: String(error) };
+  }
+}
+
+/**
+ * Schedule auto-unmute for soft mutes
+ */
+function scheduleAutoUnmute(
+  eventId: string,
+  speakerId: string,
+  speakerName: string,
+  delayMinutes: number
+): void {
+  const delayMs = delayMinutes * 60 * 1000;
+
+  setTimeout(async () => {
+    console.log(
+      `[AI-AM Phase 2] Auto-unmuting ${speakerName} after ${delayMinutes} minutes`
+    );
+
+    const result = await removeMuting(eventId, speakerId, speakerName, "system");
+    if (!result.success) {
+      console.error(`[AI-AM Phase 2] Failed to auto-unmute: ${result.message}`);
+    }
+  }, delayMs);
 }
 
 /**
@@ -281,10 +428,10 @@ export async function getMutingStatistics(eventId: string): Promise<{
 
   const speakersWithViolations = speakers.filter((s) => s.violationCount > 0).length;
   const softMutedCount = speakers.filter(
-    (s) => config && s.violationCount >= config.softMuteThreshold && s.violationCount < config.hardMuteThreshold
+    (s) => s.isMuted && s.muteType === "soft"
   ).length;
   const hardMutedCount = speakers.filter(
-    (s) => config && s.violationCount >= config.hardMuteThreshold
+    (s) => s.isMuted && s.muteType === "hard"
   ).length;
 
   return {

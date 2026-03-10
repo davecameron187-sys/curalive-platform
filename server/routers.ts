@@ -40,6 +40,7 @@ import { eventBriefRouter } from "./routers/eventBriefRouter";
 import { liveRollingSummaryRouter } from "./routers/liveRollingSummary";
 import { transcriptEditorRouter } from "./routers/transcriptEditorRouter";
 import { aiApplicationsRouter } from "./routers/aiApplications";
+import aiAmPhase2Router from "./routers/aiAmPhase2";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -90,6 +91,7 @@ export const appRouter = router({
   liveRollingSummary: liveRollingSummaryRouter,
   transcriptEditor: transcriptEditorRouter,
   aiApplications: aiApplicationsRouter,
+  aiAmPhase2: aiAmPhase2Router,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
