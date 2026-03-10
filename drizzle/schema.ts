@@ -2080,3 +2080,54 @@ export const socialAuditLog = mysqlTable("social_audit_log", {
 
 export type SocialAuditLogEntry = typeof socialAuditLog.$inferSelect;
 export type InsertSocialAuditLogEntry = typeof socialAuditLog.$inferInsert;
+
+/**
+ * webcast_enhancements — per-event configuration for Intelligent Broadcaster features.
+ */
+export const webcastEnhancements = mysqlTable("webcast_enhancements", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  personalizationEnabled: boolean("personalization_enabled").default(true).notNull(),
+  xrEnabled: boolean("xr_enabled").default(false).notNull(),
+  languageDubbingEnabled: boolean("language_dubbing_enabled").default(false).notNull(),
+  dubbingLanguage: varchar("dubbing_language", { length: 32 }).default("en").notNull(),
+  sustainabilityScore: float("sustainability_score").default(0).notNull(),
+  adIntegrationEnabled: boolean("ad_integration_enabled").default(false).notNull(),
+  adPreRollEnabled: boolean("ad_pre_roll_enabled").default(false).notNull(),
+  adMidRollEnabled: boolean("ad_mid_roll_enabled").default(false).notNull(),
+  noiseEnhancementEnabled: boolean("noise_enhancement_enabled").default(true).notNull(),
+  noiseGateEnabled: boolean("noise_gate_enabled").default(true).notNull(),
+  echoCancellationEnabled: boolean("echo_cancellation_enabled").default(true).notNull(),
+  autoGainEnabled: boolean("auto_gain_enabled").default(false).notNull(),
+  podcastGeneratedAt: timestamp("podcast_generated_at"),
+  podcastTitle: varchar("podcast_title", { length: 512 }),
+  podcastScript: longtext("podcast_script"),
+  recapGeneratedAt: timestamp("recap_generated_at"),
+  recapBrief: longtext("recap_brief"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WebcastEnhancement = typeof webcastEnhancements.$inferSelect;
+export type InsertWebcastEnhancement = typeof webcastEnhancements.$inferInsert;
+
+/**
+ * webcast_analytics — expanded ROI and sustainability analytics per event.
+ */
+export const webcastAnalyticsExpanded = mysqlTable("webcast_analytics_expanded", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  viewerEngagement: float("viewer_engagement").default(0).notNull(),
+  roiUplift: float("roi_uplift").default(0).notNull(),
+  carbonFootprintKg: float("carbon_footprint_kg").default(0).notNull(),
+  carbonSavedKg: float("carbon_saved_kg").default(0).notNull(),
+  attendeesTravelAvoided: int("attendees_travel_avoided").default(0).notNull(),
+  adRevenue: float("ad_revenue").default(0).notNull(),
+  podcastListens: int("podcast_listens").default(0).notNull(),
+  recapViews: int("recap_views").default(0).notNull(),
+  sustainabilityGrade: varchar("sustainability_grade", { length: 4 }).default("B").notNull(),
+  collectedAt: timestamp("collected_at").defaultNow().notNull(),
+});
+
+export type WebcastAnalyticsExpanded = typeof webcastAnalyticsExpanded.$inferSelect;
+export type InsertWebcastAnalyticsExpanded = typeof webcastAnalyticsExpanded.$inferInsert;
