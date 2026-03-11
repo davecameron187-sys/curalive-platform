@@ -2292,3 +2292,26 @@ export const taggedMetrics = mysqlTable("tagged_metrics", {
 
 export type TaggedMetric = typeof taggedMetrics.$inferSelect;
 export type InsertTaggedMetric = typeof taggedMetrics.$inferInsert;
+
+export const shadowSessions = mysqlTable("shadow_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  eventName: varchar("event_name", { length: 255 }).notNull(),
+  eventType: mysqlEnum("event_type", ["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).notNull(),
+  platform: mysqlEnum("platform", ["zoom", "teams", "meet", "webex", "other"]).default("zoom").notNull(),
+  meetingUrl: varchar("meeting_url", { length: 1000 }).notNull(),
+  recallBotId: varchar("recall_bot_id", { length: 255 }),
+  ablyChannel: varchar("ably_channel", { length: 255 }),
+  status: mysqlEnum("status", ["pending", "bot_joining", "live", "processing", "completed", "failed"]).default("pending").notNull(),
+  transcriptSegments: int("transcript_segments").default(0),
+  sentimentAvg: float("sentiment_avg"),
+  complianceFlags: int("compliance_flags").default(0),
+  taggedMetricsGenerated: int("tagged_metrics_generated").default(0),
+  notes: text("notes"),
+  startedAt: bigint("started_at", { mode: "number" }),
+  endedAt: bigint("ended_at", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ShadowSession = typeof shadowSessions.$inferSelect;
+export type InsertShadowSession = typeof shadowSessions.$inferInsert;

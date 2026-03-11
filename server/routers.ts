@@ -47,6 +47,7 @@ import { operatorLinksRouter } from "./routers/operatorLinksRouter";
 import { agenticEventBrainRouter } from "./routers/agenticEventBrainRouter";
 import { autonomousInterventionRouter } from "./routers/autonomousInterventionRouter";
 import { taggedMetricsRouter } from "./routers/taggedMetricsRouter";
+import { shadowModeRouter } from "./routers/shadowModeRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -104,6 +105,7 @@ export const appRouter = router({
   agenticBrain: agenticEventBrainRouter,
   autonomousIntervention: autonomousInterventionRouter,
   taggedMetrics: taggedMetricsRouter,
+  shadowMode: shadowModeRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
