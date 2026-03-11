@@ -90,6 +90,7 @@ import AutonomousIntervention from "./pages/AutonomousIntervention";
 import TaggedMetricsDashboard from "./pages/TaggedMetricsDashboard";
 import ShadowMode from "./pages/ShadowMode";
 import Bastion from "./pages/Bastion";
+import LumiPartner from "./pages/LumiPartner";
 import ArchiveUpload from "./pages/ArchiveUpload";
 import Benchmarks from "./pages/Benchmarks";
 import SocialMediaPage from "./pages/SocialMediaPage";
@@ -198,6 +199,7 @@ function Router() {
       <Route path="/tagged-metrics" component={TaggedMetricsDashboard} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
+      <Route path="/lumi" component={LumiPartner} />
       <Route path="/archive-upload" component={ArchiveUpload} />
       <Route path="/benchmarks" component={Benchmarks} />
       <Route path="/social" component={SocialMediaPage} />

@@ -9,7 +9,7 @@ import {
   CheckCircle2, AlertTriangle, Clock, Loader2,
   Building2, RefreshCw, BarChart3, FileText,
   Upload, Database, ChevronRight, BarChart2,
-  Mic, FileAudio,
+  Mic, FileAudio, Globe,
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -282,6 +282,11 @@ export default function ShadowMode() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <a href="/lumi"
+              className="flex items-center gap-1.5 text-xs text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 px-3 py-1.5 rounded-full hover:bg-cyan-400/20 transition-colors">
+              <Globe className="w-3.5 h-3.5" />
+              Lumi Integration
+            </a>
             <a href="/bastion"
               className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-1.5 rounded-full hover:bg-amber-400/20 transition-colors">
               <Shield className="w-3.5 h-3.5" />
