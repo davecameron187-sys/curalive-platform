@@ -112,6 +112,7 @@ import CommunicationIndex from "./pages/CommunicationIndex";
 import InvestorQuestionIntelligence from "./pages/InvestorQuestionIntelligence";
 import IntelligenceReportPage from "./pages/IntelligenceReport";
 import CallPreparation from "./pages/CallPreparation";
+import IntelligenceTerminal from "./pages/IntelligenceTerminal";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -207,6 +208,7 @@ function Router() {
       <Route path="/investor-questions" component={InvestorQuestionIntelligence} />
       <Route path="/intelligence-report" component={IntelligenceReportPage} />
       <Route path="/call-preparation" component={CallPreparation} />
+      <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
