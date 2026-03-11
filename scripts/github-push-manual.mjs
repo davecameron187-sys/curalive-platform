@@ -15,13 +15,25 @@ const STATE_FILE = resolve(".git/github-push-state.json");
 
 const connectors = new ReplitConnectors();
 
-async function graphql(query, variables) {
+async function graphql(query, variables, attempt = 0) {
   const res = await connectors.proxy("github", "/graphql", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, variables }),
   });
-  const data = await res.json();
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    if (attempt < 4) {
+      const wait = (attempt + 1) * 12000;
+      console.log(`  [rate-limit] Got HTML response, retrying in ${wait / 1000}s...`);
+      await new Promise(r => setTimeout(r, wait));
+      return graphql(query, variables, attempt + 1);
+    }
+    throw new Error(`Unexpected response: ${text.substring(0, 200)}`);
+  }
   if (data.errors) throw new Error(JSON.stringify(data.errors, null, 2));
   return data.data;
 }
@@ -87,9 +99,12 @@ async function main() {
 
   console.log(`[github-push] Pushing ${changedFiles.length} file(s): "${commitMsg}"`);
 
-  const BATCH_SIZE = 800 * 1024;
-  const toAdd = changedFiles.filter(f => f.status !== "D");
-  const toDelete = changedFiles.filter(f => f.status === "D").map(f => ({ path: f.path }));
+  const BATCH_SIZE = 8 * 1024 * 1024;
+  const BINARY_EXTS = /\.(mp3|mp4|mov|wav|m4a|ogg|webm|avi|mkv|pdf|docx|xlsx|pptx|zip|tar|gz|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot|otf)$/i;
+  const toAdd = changedFiles.filter(f => f.status !== "D" && !BINARY_EXTS.test(f.path));
+  const toDelete = changedFiles.filter(f => f.status === "D" && !BINARY_EXTS.test(f.path)).map(f => ({ path: f.path }));
+  const skipped = changedFiles.filter(f => BINARY_EXTS.test(f.path));
+  if (skipped.length > 0) console.log(`  [skip-binary] ${skipped.length} binary file(s) excluded`);
 
   let batch = [], batchSize = 0, batchNum = 1;
   for (const file of toAdd) {
@@ -101,6 +116,7 @@ async function main() {
       githubHead = await pushBatch(batch, batchNum === 1 ? toDelete : [], githubHead, batchNum === 1 ? commitMsg : `${commitMsg} (part ${batchNum})`);
       console.log(`  ✓ Batch ${batchNum}: ${githubHead.substring(0, 7)}`);
       batchNum++; batch = []; batchSize = 0;
+      await new Promise(r => setTimeout(r, 20000));
     }
     batch.push({ path: file.path, contents: b64 });
     batchSize += entrySize;

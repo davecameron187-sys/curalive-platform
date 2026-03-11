@@ -6,9 +6,104 @@ import {
   Shield, Radio, Square, Activity,
   AlertTriangle, CheckCircle2, Clock, Loader2,
   Eye, BarChart3, MessageSquare, Zap,
-  Users, TrendingUp, TrendingDown, Minus, Play,
+  TrendingUp, TrendingDown, Minus, Play,
   Building2, Target, Brain, Lock,
+  FileText, Layers, Search, UserCheck, Mic,
+  ChevronRight, Sparkles, GitMerge, LineChart,
 } from "lucide-react";
+
+const PACKAGE_FEATURES = [
+  {
+    icon: Activity,
+    title: "Live Sentiment Intelligence",
+    desc: "Real-time investor mood tracking throughout earnings calls and corporate events. Sentiment scored every 5 transcript segments and surfaced as a live timeline.",
+    tag: "Real-time",
+    color: "text-emerald-400",
+    bg: "bg-emerald-400/10",
+    border: "border-emerald-400/20",
+  },
+  {
+    icon: Shield,
+    title: "Compliance Risk Detection",
+    desc: "Flags material statements, forward-looking language, insider risk keywords, and Reg FD violations as they occur — before they leave the call.",
+    tag: "Governance",
+    color: "text-red-400",
+    bg: "bg-red-400/10",
+    border: "border-red-400/20",
+  },
+  {
+    icon: Mic,
+    title: "AI Transcript Intelligence",
+    desc: "Full real-time transcription with speaker identification, topic segmentation, and key moment tagging. Persisted for searchable post-event review.",
+    tag: "AI",
+    color: "text-blue-400",
+    bg: "bg-blue-400/10",
+    border: "border-blue-400/20",
+  },
+  {
+    icon: MessageSquare,
+    title: "Q&A Deep Analysis",
+    desc: "Classifies and prioritises analyst questions by investor tier and topic cluster. Surfaces recurring themes and unanswered questions automatically.",
+    tag: "Intelligence",
+    color: "text-violet-400",
+    bg: "bg-violet-400/10",
+    border: "border-violet-400/20",
+  },
+  {
+    icon: UserCheck,
+    title: "Investor Profiling",
+    desc: "Identifies known institutional investors and analysts on the call. Profiles their historical question patterns and sentiment benchmarks.",
+    tag: "Profiling",
+    color: "text-cyan-400",
+    bg: "bg-cyan-400/10",
+    border: "border-cyan-400/20",
+  },
+  {
+    icon: Search,
+    title: "Market Signal Detection",
+    desc: "Scans executive language for hesitation markers, unusual phrasing, and linguistic patterns that may indicate undisclosed material events.",
+    tag: "AI",
+    color: "text-orange-400",
+    bg: "bg-orange-400/10",
+    border: "border-orange-400/20",
+  },
+  {
+    icon: LineChart,
+    title: "Executive Tone Analysis",
+    desc: "Tracks confidence markers, hedging language, and coaching opportunities across calls. Compare CEO tone across quarters to detect drift.",
+    tag: "Analytics",
+    color: "text-pink-400",
+    bg: "bg-pink-400/10",
+    border: "border-pink-400/20",
+  },
+  {
+    icon: FileText,
+    title: "Post-Event Intelligence Report",
+    desc: "AI-generated briefing delivered after every session: engagement arc, sentiment delta, compliance summary, key moments, and executive coaching notes.",
+    tag: "Automated",
+    color: "text-amber-400",
+    bg: "bg-amber-400/10",
+    border: "border-amber-400/20",
+  },
+  {
+    icon: Zap,
+    title: "Event Echo — Content Generation",
+    desc: "Instant content from the meeting transcript — press releases, investor summaries, analyst briefings, and social posts ready within minutes of close.",
+    tag: "Content",
+    color: "text-yellow-400",
+    bg: "bg-yellow-400/10",
+    border: "border-yellow-400/20",
+  },
+  {
+    icon: BarChart3,
+    title: "Industry Benchmark Analytics",
+    desc: "Anonymised intelligence from earnings calls and investor events across CuraLive's full client network. Compare your metrics against sector and peer norms.",
+    tag: "Data",
+    color: "text-indigo-400",
+    bg: "bg-indigo-400/10",
+    border: "border-indigo-400/20",
+  },
+];
 
 const PLATFORM_OPTIONS = [
   { value: "zoom", label: "Zoom" },
@@ -67,6 +162,7 @@ function SentimentBar({ value }: { value: number | null }) {
 export default function Bastion() {
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [activeTab, setActiveTab] = useState<"package" | "sessions">("package");
   const [form, setForm] = useState({
     clientName: "", eventName: "",
     eventType: "earnings_call" as const,
@@ -86,6 +182,7 @@ export default function Bastion() {
       toast.success("Bastion deployed — joining meeting as CuraLive Intelligence");
       setActiveSessionId(data.sessionId);
       setShowForm(false);
+      setActiveTab("sessions");
       setForm({ clientName: "", eventName: "", eventType: "earnings_call", platform: "zoom", meetingUrl: "", notes: "" });
       sessions.refetch();
     },
@@ -160,6 +257,27 @@ export default function Bastion() {
 
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
 
+        {/* Tab navigation */}
+        <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl w-fit">
+          {([
+            { key: "package", label: "Integration Package", icon: Layers },
+            { key: "sessions", label: "Live Intelligence", icon: Brain },
+          ] as const).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === key
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                  : "text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Bastion persona card */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 bg-white/[0.02] border border-amber-500/20 rounded-2xl p-6">
@@ -209,6 +327,72 @@ export default function Bastion() {
             ))}
           </div>
         </div>
+
+        {/* Integration Package tab */}
+        {activeTab === "package" && (
+          <div className="space-y-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white mb-1">Full Intelligence Suite</h2>
+                <p className="text-sm text-slate-400">Every CuraLive AI service available to Bastion Capital Partners across all investor events and corporate calls.</p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-400/[0.08] border border-amber-400/20 px-3 py-1.5 rounded-full shrink-0">
+                <Sparkles className="w-3 h-3" />
+                {PACKAGE_FEATURES.length} services included
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {PACKAGE_FEATURES.map((f) => {
+                const Icon = f.icon;
+                return (
+                  <div
+                    key={f.title}
+                    className="bg-white/[0.02] border border-white/[0.06] hover:border-amber-500/20 rounded-2xl p-5 transition-all group"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`w-10 h-10 rounded-xl ${f.bg} border ${f.border} flex items-center justify-center shrink-0`}>
+                        <Icon className={`w-5 h-5 ${f.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className="text-sm font-semibold text-white">{f.title}</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${f.bg} ${f.color} border ${f.border}`}>
+                            {f.tag}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 leading-relaxed">{f.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="bg-gradient-to-br from-amber-500/[0.06] to-amber-600/[0.03] border border-amber-500/20 rounded-2xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+                  <GitMerge className="w-5 h-5 text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-white mb-1">Deploy Intelligence to Any Event</h3>
+                  <p className="text-xs text-slate-400 mb-4">Bastion joins investor events as a silent observer — all 10 intelligence services activate the moment the call begins.</p>
+                  <Button
+                    onClick={() => { setActiveTab("sessions"); setShowForm(true); }}
+                    className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm h-9 px-4 gap-2"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    Deploy Bastion
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sessions tab */}
+        {activeTab === "sessions" && <>
 
         {/* Deploy form */}
         {showForm && (
@@ -524,6 +708,8 @@ export default function Bastion() {
             </div>
           </div>
         )}
+
+        </>}
 
         {/* Info footer */}
         <div className="bg-white/[0.015] border border-white/[0.05] rounded-2xl p-5">
