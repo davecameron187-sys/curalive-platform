@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { router, publicProcedure } from "../_core/trpc";
+import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import { invokeLLM } from "../_core/llm";
 import { retrieveRelevantEntries, buildContextBlock } from "../services/KnowledgeRetrievalService";
 
-const BASE_SYSTEM_PROMPT = `You are the CuraLive Support Assistant — a professional AI that helps users understand and use the CuraLive investor intelligence platform.
+const BASE_SYSTEM_PROMPT = `You are the CuraLive Support Assistant — a professional AI that helps authenticated users understand and use the CuraLive investor intelligence platform.
 
 CuraLive is a real-time AI platform for investor events (earnings calls, AGMs, analyst briefings). It serves IR teams, executives, listed companies, stock exchanges, and financial professionals.
 
@@ -13,6 +13,7 @@ YOUR ROLE:
 - Answer questions about what CuraLive features do, how to use them, and what they produce
 - Use only the knowledge base context provided — do not infer, speculate, or fabricate answers
 - Be concise but complete — 2-4 sentences is ideal
+- If the user is asking about a specific event or call, tailor your answer to that context
 - If you cannot answer confidently from the provided context, say so clearly and offer to escalate
 
 HARD LIMITS — you must never answer questions about:
@@ -56,29 +57,37 @@ async function rawExecute(sql: string, params: any[] = []) {
 }
 
 export const supportChatRouter = router({
-  ask: publicProcedure
+
+  ask: protectedProcedure
     .input(z.object({
       message: z.string().min(1).max(1000),
       conversationId: z.string().optional(),
       currentPage: z.string().optional(),
+      eventId: z.string().optional(),
+      eventName: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
-      const { message, conversationId, currentPage } = input;
+    .mutation(async ({ input, ctx }) => {
+      const { message, conversationId, currentPage, eventId, eventName } = input;
+      const user = ctx.user;
 
       const pageLabel = currentPage
         ? Object.entries(PAGE_LABELS).find(([key]) => currentPage.startsWith(key))?.[1]
         : null;
 
-      const systemPrompt = pageLabel
-        ? `${BASE_SYSTEM_PROMPT}\n\nCurrent page context: ${pageLabel}`
+      const contextParts: string[] = [];
+      if (user?.name) contextParts.push(`User: ${user.name} (${user.email ?? ""})`);
+      if (pageLabel) contextParts.push(`Current page: ${pageLabel}`);
+      if (eventId) contextParts.push(`Event ID: ${eventId}`);
+      if (eventName) contextParts.push(`Event: "${eventName}"`);
+
+      const systemPrompt = contextParts.length > 0
+        ? `${BASE_SYSTEM_PROMPT}\n\nSession context:\n${contextParts.join("\n")}`
         : BASE_SYSTEM_PROMPT;
 
       const entries = await retrieveRelevantEntries(message, 4);
       const contextBlock = buildContextBlock(entries);
 
-      const messages: any[] = [
-        { role: "system", content: systemPrompt },
-      ];
+      const messages: any[] = [{ role: "system", content: systemPrompt }];
 
       if (contextBlock) {
         messages.push({
@@ -95,7 +104,8 @@ export const supportChatRouter = router({
       try {
         const result = await invokeLLM({ messages, model: "gpt-4o" });
         answer = result.choices?.[0]?.message?.content ?? answer;
-        needsEscalation = answer.toLowerCase().includes("i'll escalate") ||
+        needsEscalation =
+          answer.toLowerCase().includes("i'll escalate") ||
           answer.toLowerCase().includes("escalate this") ||
           answer.toLowerCase().includes("contact the team") ||
           answer.toLowerCase().includes("reach out");
@@ -110,14 +120,18 @@ export const supportChatRouter = router({
       try {
         await rawExecute(
           `INSERT INTO support_queries
-             (conversation_id, user_message, ai_response, needs_escalation, matched_entries)
-           VALUES (?, ?, ?, ?, ?)`,
+             (conversation_id, user_message, ai_response, needs_escalation, matched_entries, user_id, user_email, event_id, event_name)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             conversationId ?? null,
             message,
             answer,
             needsEscalation ? 1 : 0,
             matchedEntryIds || null,
+            user?.id ?? null,
+            user?.email ?? null,
+            eventId ?? null,
+            eventName ?? null,
           ]
         );
       } catch (logErr) {
@@ -127,13 +141,14 @@ export const supportChatRouter = router({
       return { answer, needsEscalation };
     }),
 
-  getRecentQueries: publicProcedure
+  getRecentQueries: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(20) }))
     .query(async ({ input }) => {
       const db = await getDb();
       const conn = (db as any).session?.client ?? (db as any).$client;
       const [rows] = await conn.execute(
-        `SELECT id, conversation_id, user_message, ai_response, needs_escalation, created_at
+        `SELECT id, conversation_id, user_message, ai_response, needs_escalation,
+                user_email, event_id, event_name, created_at
          FROM support_queries
          ORDER BY created_at DESC
          LIMIT ?`,
