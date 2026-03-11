@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "wFOr7C13ODPZHL29DJNAY"
+uri = "file://curalive-update.tar.gz"
+type = "unspecified"
+title = "CuraLive Platform — Full Source Update (no media files)"
