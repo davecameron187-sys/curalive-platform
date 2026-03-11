@@ -9,7 +9,8 @@ import {
   CheckCircle2, AlertTriangle, Clock, Loader2,
   Building2, RefreshCw, BarChart3, FileText,
   Upload, Database, ChevronRight, BarChart2,
-  Mic, FileAudio, Globe,
+  Mic, FileAudio, Globe, Phone, Copy, Hash,
+  KeyRound, CalendarClock, Info,
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -84,7 +85,23 @@ export default function ShadowMode() {
   const goBack = useSmartBack("/operator-links");
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"live" | "archive" | "recording">("live");
+  const [activeTab, setActiveTab] = useState<"live" | "archive" | "recording" | "ccaudio">("live");
+
+  // ── CC Audio Only state ────────────────────────────────────────────────────
+  const [ccForm, setCcForm] = useState({
+    clientName: "", eventName: "",
+    eventType: "earnings_call",
+    dialInNumber: "", conferenceId: "",
+    accessCode: "", hostPin: "",
+    scheduledAt: "", notes: "",
+  });
+  const [ccSessions, setCcSessions] = useState<Array<{
+    id: number; clientName: string; eventName: string; eventType: string;
+    dialInNumber: string; conferenceId: string; accessCode: string;
+    hostPin: string; scheduledAt: string; notes: string; loggedAt: string;
+  }>>([]);
+  const [ccNextId, setCcNextId] = useState(1);
+  const [ccShowForm, setCcShowForm] = useState(false);
 
   // ── Live Intelligence state ────────────────────────────────────────────────
   const [showForm, setShowForm] = useState(false);
@@ -339,6 +356,21 @@ export default function ShadowMode() {
               }`}>
               <Mic className="w-4 h-4" />
               Event Recording
+            </button>
+            <button
+              onClick={() => setActiveTab("ccaudio")}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "ccaudio"
+                  ? "border-orange-400 text-orange-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              <Phone className="w-4 h-4" />
+              CCAudioOnly
+              {ccSessions.length > 0 && (
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400">
+                  {ccSessions.length}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -1121,6 +1153,321 @@ export default function ShadowMode() {
                 </Button>
               </form>
             )}
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════
+            CC AUDIO ONLY TAB
+        ══════════════════════════════════════════════════ */}
+        {activeTab === "ccaudio" && (
+          <>
+            {/* How it works */}
+            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 flex flex-col sm:flex-row items-start gap-4">
+              <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20 shrink-0">
+                <Phone className="w-5 h-5 text-orange-400" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-slate-200 mb-1">CCAudioOnly — telephone conference call intelligence</div>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  For events where participants dial in by telephone — earnings calls, AGMs, board briefings — with no video platform involved. Log the dial-in details here before the call, then record the audio on your end. After the call, upload the recording via <button onClick={() => setActiveTab("recording")} className="text-blue-400 underline hover:text-blue-300">Event Recording</button> to run the full intelligence pipeline: transcription, sentiment, compliance scanning, and database tagging.
+                </p>
+              </div>
+            </div>
+
+            {/* Workflow steps */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              {[
+                { step: "1", icon: Hash, color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/20", title: "Log dial-in details", desc: "Enter the conference number, ID, and access code below before the call." },
+                { step: "2", icon: Phone, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/20", title: "Dial in & record", desc: "Call the conference number, enter credentials, and start your recording software." },
+                { step: "3", icon: Upload, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20", title: "Upload recording", desc: "After the call, go to Event Recording and upload the audio file for processing." },
+                { step: "4", icon: Database, color: "text-violet-400", bg: "bg-violet-400/10", border: "border-violet-400/20", title: "Intelligence delivered", desc: "Transcript, sentiment, compliance flags, and 4 tagged records added to your database." },
+              ].map(({ step, icon: Icon, color, bg, border, title, desc }) => (
+                <div key={step} className={`bg-white/[0.02] border ${border} rounded-xl p-4`}>
+                  <div className={`w-6 h-6 rounded-full ${bg} border ${border} text-[11px] font-bold ${color} flex items-center justify-center mb-3`}>{step}</div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className={`w-3.5 h-3.5 ${color}`} />
+                    <span className="text-xs font-semibold text-slate-200">{title}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Log a call form */}
+            <div className="bg-white/[0.02] border border-orange-500/20 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-orange-400" />
+                  <h3 className="text-sm font-semibold text-white">Log Conference Call Details</h3>
+                </div>
+                {!ccShowForm && (
+                  <Button
+                    onClick={() => setCcShowForm(true)}
+                    size="sm"
+                    className="bg-orange-500 hover:bg-orange-400 text-black font-semibold text-xs gap-1.5"
+                  >
+                    <Phone className="w-3.5 h-3.5" /> New Call
+                  </Button>
+                )}
+              </div>
+
+              {ccShowForm && (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!ccForm.eventName.trim() || !ccForm.dialInNumber.trim()) {
+                      toast.error("Event name and dial-in number are required");
+                      return;
+                    }
+                    const newSession = {
+                      id: ccNextId,
+                      ...ccForm,
+                      loggedAt: new Date().toLocaleString(),
+                    };
+                    setCcSessions(prev => [newSession, ...prev]);
+                    setCcNextId(n => n + 1);
+                    setCcForm({
+                      clientName: "", eventName: "", eventType: "earnings_call",
+                      dialInNumber: "", conferenceId: "", accessCode: "",
+                      hostPin: "", scheduledAt: "", notes: "",
+                    });
+                    setCcShowForm(false);
+                    toast.success("Dial-in details logged");
+                  }}
+                  className="space-y-5"
+                >
+                  {/* Event info */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Client / Company</label>
+                      <input
+                        value={ccForm.clientName}
+                        onChange={e => setCcForm(f => ({ ...f, clientName: e.target.value }))}
+                        placeholder="e.g. Acme Corp"
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Event Name *</label>
+                      <input
+                        value={ccForm.eventName}
+                        onChange={e => setCcForm(f => ({ ...f, eventName: e.target.value }))}
+                        placeholder="e.g. Q3 2025 Earnings Call"
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Event Type</label>
+                      <select
+                        value={ccForm.eventType}
+                        onChange={e => setCcForm(f => ({ ...f, eventType: e.target.value }))}
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/50"
+                      >
+                        <option value="earnings_call">Earnings Call</option>
+                        <option value="agm">AGM (Annual General Meeting)</option>
+                        <option value="capital_markets_day">Capital Markets Day</option>
+                        <option value="board_meeting">Board Meeting</option>
+                        <option value="ceo_town_hall">CEO / Investor Town Hall</option>
+                        <option value="analyst_briefing">Analyst Briefing</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium flex items-center gap-1">
+                        <CalendarClock className="w-3 h-3" /> Scheduled Date & Time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={ccForm.scheduledAt}
+                        onChange={e => setCcForm(f => ({ ...f, scheduledAt: e.target.value }))}
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Dial-in details */}
+                  <div className="bg-white/[0.015] border border-orange-500/10 rounded-xl p-4 space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Phone className="w-3.5 h-3.5 text-orange-400" />
+                      <span className="text-xs font-semibold text-orange-300 uppercase tracking-wide">Telephone Dial-In Details</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1.5 block font-medium flex items-center gap-1">
+                          <Phone className="w-3 h-3" /> Dial-In Number *
+                        </label>
+                        <input
+                          value={ccForm.dialInNumber}
+                          onChange={e => setCcForm(f => ({ ...f, dialInNumber: e.target.value }))}
+                          placeholder="+1 800 555 0100"
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 font-mono"
+                        />
+                        <p className="text-[10px] text-slate-600 mt-1">Include country code. Multiple numbers? List the primary one here.</p>
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1.5 block font-medium flex items-center gap-1">
+                          <Hash className="w-3 h-3" /> Conference ID / Meeting ID
+                        </label>
+                        <input
+                          value={ccForm.conferenceId}
+                          onChange={e => setCcForm(f => ({ ...f, conferenceId: e.target.value }))}
+                          placeholder="e.g. 123 456 789"
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 font-mono"
+                        />
+                        <p className="text-[10px] text-slate-600 mt-1">Enter when prompted after dialling.</p>
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1.5 block font-medium flex items-center gap-1">
+                          <KeyRound className="w-3 h-3" /> Participant Access Code / PIN
+                        </label>
+                        <input
+                          value={ccForm.accessCode}
+                          onChange={e => setCcForm(f => ({ ...f, accessCode: e.target.value }))}
+                          placeholder="e.g. 4892#"
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1.5 block font-medium flex items-center gap-1">
+                          <KeyRound className="w-3 h-3" /> Host PIN <span className="text-slate-600 font-normal">(optional)</span>
+                        </label>
+                        <input
+                          value={ccForm.hostPin}
+                          onChange={e => setCcForm(f => ({ ...f, hostPin: e.target.value }))}
+                          placeholder="e.g. 7731#"
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 font-mono"
+                        />
+                        <p className="text-[10px] text-slate-600 mt-1">Only if joining as host/presenter.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1.5 block font-medium">Notes <span className="text-slate-600">(optional)</span></label>
+                    <input
+                      value={ccForm.notes}
+                      onChange={e => setCcForm(f => ({ ...f, notes: e.target.value }))}
+                      placeholder="e.g. Q&A opens after 30 mins, multiple dial-in regions available"
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCcShowForm(false)}
+                      className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <Button type="submit" className="bg-orange-500 hover:bg-orange-400 text-black font-semibold gap-2">
+                      <Phone className="w-4 h-4" /> Log Call Details
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              {!ccShowForm && ccSessions.length === 0 && (
+                <div className="text-center py-8 text-slate-600">
+                  <Phone className="w-8 h-8 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm text-slate-500 mb-1">No calls logged yet</p>
+                  <p className="text-xs">Click "New Call" to log dial-in details before your next telephone conference</p>
+                </div>
+              )}
+            </div>
+
+            {/* Logged sessions */}
+            {ccSessions.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-2">
+                  <Phone className="w-3.5 h-3.5 text-orange-400" />
+                  Logged Calls ({ccSessions.length})
+                </h3>
+                {ccSessions.map(s => (
+                  <div key={s.id} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5">
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                          <span className="text-sm font-semibold text-white">{s.eventName}</span>
+                          <span className="text-[10px] text-orange-400 bg-orange-400/10 border border-orange-400/20 px-2 py-0.5 rounded-full uppercase font-bold tracking-wide">
+                            {s.eventType.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                        {s.clientName && <p className="text-xs text-slate-500">{s.clientName}</p>}
+                        <p className="text-[10px] text-slate-700 mt-0.5">Logged {s.loggedAt}{s.scheduledAt ? ` · Scheduled ${new Date(s.scheduledAt).toLocaleString()}` : ""}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => setActiveTab("recording")}
+                        className="bg-blue-600/80 hover:bg-blue-500 text-white text-xs gap-1.5 shrink-0"
+                      >
+                        <Upload className="w-3 h-3" /> Upload Recording
+                      </Button>
+                    </div>
+
+                    {/* Dial-in card */}
+                    <div className="bg-orange-500/[0.04] border border-orange-500/20 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Phone className="w-3.5 h-3.5 text-orange-400" />
+                        <span className="text-xs font-semibold text-orange-300 uppercase tracking-wide">Dial-In Details</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[
+                          { label: "Dial-In Number", value: s.dialInNumber, icon: Phone, mono: true },
+                          { label: "Conference ID", value: s.conferenceId || "—", icon: Hash, mono: true },
+                          { label: "Access Code", value: s.accessCode || "—", icon: KeyRound, mono: true },
+                          { label: "Host PIN", value: s.hostPin || "—", icon: KeyRound, mono: true },
+                        ].map(({ label, value, icon: Icon, mono }) => (
+                          <div key={label} className="bg-black/20 rounded-lg p-3">
+                            <div className="flex items-center gap-1 mb-1">
+                              <Icon className="w-3 h-3 text-slate-600" />
+                              <span className="text-[10px] text-slate-600 uppercase tracking-wide">{label}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-1">
+                              <span className={`text-sm text-slate-200 ${mono ? "font-mono" : ""} break-all`}>{value}</span>
+                              {value !== "—" && (
+                                <button
+                                  onClick={() => { navigator.clipboard.writeText(value); toast.success("Copied"); }}
+                                  className="text-slate-600 hover:text-slate-400 transition-colors shrink-0"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {s.notes && (
+                        <div className="mt-3 flex items-start gap-2 text-xs text-slate-500">
+                          <Info className="w-3.5 h-3.5 text-slate-600 shrink-0 mt-0.5" />
+                          {s.notes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tips */}
+            <div className="bg-white/[0.015] border border-white/[0.05] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Info className="w-4 h-4 text-slate-500" />
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Recording tips for telephone calls</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-slate-500">
+                {[
+                  { title: "Speaker mode", desc: "Place your phone on speaker and use a screen recorder or audio capture tool like Audacity to record the full call." },
+                  { title: "Conference bridge recording", desc: "Many enterprise bridge providers (Arkadin, Intercall, West) offer built-in call recording. Ask your provider to enable it." },
+                  { title: "Supported formats", desc: "CuraLive Event Recording accepts MP3, WAV, M4A, MP4, MOV, and other common audio/video formats up to 500 MB." },
+                ].map(({ title, desc }) => (
+                  <div key={title}>
+                    <p className="text-slate-300 font-medium mb-1">{title}</p>
+                    <p>{desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </>
         )}
 
