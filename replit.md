@@ -42,6 +42,33 @@ Key variables needed:
 - `OAUTH_SERVER_URL` — OAuth server URL
 - `OWNER_OPEN_ID` — OpenID of the admin user
 
+## Agentic Event Brain (March 2026 — Acquisition-Ready AI)
+
+- **Route**: `/agentic-brain` — 3-question wizard → scoring algorithm → OpenAI action plan → ROI projection
+- **Algorithm**: `score = (role_match×0.3) + (challenge_weight×0.4) + (event_factor×0.3) + (data_pattern×0.2)` + alignment bonus
+- **Server router**: `server/routers/agenticEventBrainRouter.ts` — `agenticBrain.runAnalysis`, `agenticBrain.getHistory`
+- **DB table**: `agentic_analyses` — logs every analysis with score, bundle, AI action, ROI preview, interconnections
+- **AI**: Calls `invokeLLM` (GPT-4o) for live bundle optimization recommendations
+- **Interconnections**: Auto-maps which bundles trigger each other (IR → Compliance, Operations → Marketing, etc.)
+- **Migration**: `scripts/create-agentic-brain-table.ts`
+- **OperatorLinks card**: Added to Interconnection Analytics & Workflows section
+
+## Recent Additions (March 2026 — v2.0 AI Interconnection Release)
+
+- **OperatorLinks** (`/operator-links`) — Full operator links directory with a floating "Run Demo Simulation" button that plays a 14-step, 37-second animated walkthrough of a complete Q4 Earnings Call. Each step shows live status and links to the relevant page. Panel includes progress bar, replay, and toast notifications.
+- **operatorLinksRouter** — tRPC router with `trackClick`, `getPopularLinks`, `getMyHistory`, `getAllMetadata`, `getMetadataByCategory`, `getAnalyticsSummary`
+- **DB tables** — `operator_link_analytics` + `operator_links_metadata` (50 links seeded). Migration: `scripts/create-operator-link-analytics-tables.ts`
+- **FeatureDetail** (`/features/:slug`) — Detail page for all 16 AI features
+- **BundleDetail** (`/bundles/:slug`) — Detail page for all 6 bundles (A–F)
+- **WorkflowsPage** (`/workflows`) — Recommended feature activation sequences with ROI projections
+- **IntelligentBroadcasterPage** (`/intelligent-broadcaster`) — Real-time AI alert and operator guidance panel demo
+- **WebcastRecapPage** (`/webcast-recap`) — Recap generator: video, podcast, social content
+- **TrainingSubPage** (`/training/virtual-studio`, `/training/ai-features`) — AI and studio training modules
+- **OperatorQuickRef** (`/support`, `/docs`, `/certification`, `/my-dashboard`, `/feedback`, `/whats-new`) — Quick reference pages driven by URL path
+- **Redirects** — `/live-sentiment` → webcast studio, `/post-event` → demo report, `/studio-config` → virtual studio, `/esg-setup` → virtual studio
+- **Handover document** — `MANUS_DEPLOYMENT_STATUS.md` with full route reference, DB schema, tRPC procedures, and demo walkthrough guide
+- **GitHub** — main `9695a98` + manus-demo branch `3dde94d` (30 batches, all files)
+
 ## Key Features
 
 - **AI Shop** (`/ai-shop`) — 6 role-based AI bundles (A-F) + 28 individual AI applications browser

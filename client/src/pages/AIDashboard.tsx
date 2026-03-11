@@ -276,7 +276,7 @@ export default function AIDashboard() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleSelectContent(content)}
+                        onClick={() => handleSelectContent(content as any)}
                       >
                         <Edit2 className="w-4 h-4 mr-2" />
                         Review & Edit
@@ -362,7 +362,7 @@ export default function AIDashboard() {
                     <div className="space-y-2 text-sm">
                       <p>
                         <strong>Sent to:</strong>{" "}
-                        {content.sentTo?.join(", ") || "No recipients"}
+                        {(Array.isArray(content.sentTo) ? content.sentTo.join(", ") : content.sentTo) || "No recipients"}
                       </p>
                       <p className="text-muted-foreground">
                         Sent at: {new Date(content.sentAt || "").toLocaleString()}

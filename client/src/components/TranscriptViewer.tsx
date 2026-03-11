@@ -206,7 +206,7 @@ export default function TranscriptViewer({ eventId, segments = [], isLive = fals
             <p className="text-sm">{allSegments.length === 0 ? "Transcript will appear here once processing starts" : "No results match your search"}</p>
           </div>
         ) : filtered.map((seg, i) => {
-          const isLowConfidence = seg.confidence !== undefined && seg.confidence < 0.8;
+          const isLowConfidence = seg.confidence != null && seg.confidence < 0.8;
           return (
             <div key={seg.id || i} className="group relative">
               <div className={cn(
@@ -271,7 +271,7 @@ export default function TranscriptViewer({ eventId, segments = [], isLive = fals
         <div className="px-4 py-2 bg-slate-800/80 border-t border-slate-700 flex items-center justify-between text-[10px] text-slate-400 font-medium">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" /> {meta.source}</span>
-            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatTime(meta.duration)}</span>
+            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatTime(meta.duration ?? undefined)}</span>
             <span>{meta.wordCount?.toLocaleString()} words</span>
           </div>
           <div className="flex items-center gap-2">

@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import BackToLinks from "./components/BackToLinks";
 import Home from "./pages/Home";
 import EventRoom from "./pages/EventRoom";
 import OperatorConsole from "./pages/OperatorConsole";
@@ -84,12 +85,34 @@ import TranscriptPage from "./pages/TranscriptPage";
 import OperatorHub from "./pages/OperatorHub";
 import AIShop from "./pages/AIShop";
 import AIOnboarding from "./pages/AIOnboarding";
+import AgenticBrain from "./pages/AgenticBrain";
+import AutonomousIntervention from "./pages/AutonomousIntervention";
+import TaggedMetricsDashboard from "./pages/TaggedMetricsDashboard";
+import ShadowMode from "./pages/ShadowMode";
+import Bastion from "./pages/Bastion";
+import LumiPartner from "./pages/LumiPartner";
+import ArchiveUpload from "./pages/ArchiveUpload";
+import Benchmarks from "./pages/Benchmarks";
 import SocialMediaPage from "./pages/SocialMediaPage";
 import PodcastConverter from "./pages/PodcastConverter";
 import SustainabilityDashboard from "./pages/SustainabilityDashboard";
 import FeatureMap from "./pages/FeatureMap";
 import InterconnectionAnalytics from "./pages/InterconnectionAnalytics";
 import VirtualStudio from "./pages/VirtualStudio";
+import FeatureDetail from "./pages/FeatureDetail";
+import BundleDetail from "./pages/BundleDetail";
+import WorkflowsPage from "./pages/WorkflowsPage";
+import IntelligentBroadcasterPage from "./pages/IntelligentBroadcasterPage";
+import WebcastRecapPage from "./pages/WebcastRecapPage";
+import TrainingSubPage from "./pages/TrainingSubPage";
+import OperatorQuickRef from "./pages/OperatorQuickRef";
+import OperatorLinks from "./pages/OperatorLinks";
+import MarketReaction from "./pages/MarketReaction";
+import CommunicationIndex from "./pages/CommunicationIndex";
+import InvestorQuestionIntelligence from "./pages/InvestorQuestionIntelligence";
+import IntelligenceReportPage from "./pages/IntelligenceReport";
+import CallPreparation from "./pages/CallPreparation";
+import IntelligenceTerminal from "./pages/IntelligenceTerminal";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -177,12 +200,41 @@ function Router() {
       <Route path="/operator-hub" component={OperatorHub} />
       <Route path="/ai-shop" component={AIShop} />
       <Route path="/ai-onboarding" component={AIOnboarding} />
+      <Route path="/agentic-brain" component={AgenticBrain} />
+      <Route path="/autonomous-intervention" component={AutonomousIntervention} />
+      <Route path="/tagged-metrics" component={TaggedMetricsDashboard} />
+      <Route path="/market-reaction" component={MarketReaction} />
+      <Route path="/communication-index" component={CommunicationIndex} />
+      <Route path="/investor-questions" component={InvestorQuestionIntelligence} />
+      <Route path="/intelligence-report" component={IntelligenceReportPage} />
+      <Route path="/call-preparation" component={CallPreparation} />
+      <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
+      <Route path="/shadow-mode" component={ShadowMode} />
+      <Route path="/bastion" component={Bastion} />
+      <Route path="/lumi" component={LumiPartner} />
+      <Route path="/archive-upload" component={ArchiveUpload} />
+      <Route path="/benchmarks" component={Benchmarks} />
       <Route path="/social" component={SocialMediaPage} />
       <Route path="/podcast-converter" component={PodcastConverter} />
       <Route path="/sustainability" component={SustainabilityDashboard} />
       <Route path="/feature-map" component={FeatureMap} />
       <Route path="/admin/interconnection-analytics" component={InterconnectionAnalytics} />
       <Route path="/virtual-studio" component={VirtualStudio} />
+      <Route path="/operator-links" component={OperatorLinks} />
+      <Route path="/features/:id" component={FeatureDetail} />
+      <Route path="/bundles/:id" component={BundleDetail} />
+      <Route path="/workflows" component={WorkflowsPage} />
+      <Route path="/intelligent-broadcaster" component={IntelligentBroadcasterPage} />
+      <Route path="/webcast-recap" component={WebcastRecapPage} />
+      <Route path="/training/:module" component={TrainingSubPage} />
+      <Route path="/support" component={OperatorQuickRef} />
+      <Route path="/docs" component={OperatorQuickRef} />
+      <Route path="/certification" component={OperatorQuickRef} />
+      <Route path="/feedback" component={OperatorQuickRef} />
+      <Route path="/whats-new" component={OperatorQuickRef} />
+      <Route path="/my-dashboard" component={OperatorQuickRef} />
+      <Route path="/live-sentiment">{() => { window.location.replace("/operator/q4-earnings-2026/sentiment"); return null; }}</Route>
+      <Route path="/post-event">{() => { window.location.replace("/post-event/q4-earnings-2026"); return null; }}</Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -195,6 +247,7 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
+          <BackToLinks />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

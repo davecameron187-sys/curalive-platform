@@ -71,7 +71,7 @@ export const aiDashboardRouter = router({
         .update(aiGeneratedContent)
         .set({
           editedContent: input.editedContent,
-          recipients: input.recipients,
+          recipients: input.recipients as any,
           updatedAt: new Date(),
         })
         .where(eq(aiGeneratedContent.id, input.contentId));
@@ -129,7 +129,7 @@ export const aiDashboardRouter = router({
           approvedAt: new Date(),
           approvedBy: ctx.user.id,
           sentAt: new Date(),
-          sentTo,
+          sentTo: sentTo as any,
           updatedAt: new Date(),
         })
         .where(eq(aiGeneratedContent.id, input.contentId));
@@ -243,7 +243,7 @@ export const aiDashboardRouter = router({
         title: getTitleForContentType(input.contentType),
         content: generatedContent,
         status: "generated",
-        recipients: input.recipients,
+        recipients: input.recipients as any,
         generatedAt: new Date(),
         generatedBy: ctx.user.id,
       });

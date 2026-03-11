@@ -11,7 +11,7 @@ export function FeedbackForm() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submitFeedbackMutation = trpc.feedback.submit.useMutation();
+  const submitFeedbackMutation = (trpc as any).feedback.submit.useMutation();
   const isLoading = submitFeedbackMutation.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {

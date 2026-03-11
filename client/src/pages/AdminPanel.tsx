@@ -9,7 +9,6 @@ import {
   Users,
   Key,
   Settings,
-  LogBook,
   Plus,
   Edit2,
   Trash2,

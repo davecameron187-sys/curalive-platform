@@ -2258,13 +2258,6 @@ export default function OCC() {
                 {activeCCPConferenceId && (
                   <>
                     <button
-                      onClick={() => { setDialEntries([]); setDialAllStatus("idle"); setDialForm({ name: "", company: "", phone: "", role: "participant" }); setShowMultiDialModal(true); }}
-                      title="Dial multiple participants into this conference"
-                      className="flex items-center gap-1 px-2 py-1 bg-blue-800/40 hover:bg-blue-700/60 text-blue-300 rounded text-[10px] transition-colors"
-                    >
-                      <PhoneForwarded className="w-3 h-3" /> Multi-Dial
-                    </button>
-                    <button
                       onClick={() => setShowGreenRoomPanel(true)}
                       title="Open Speaker Green Room — pre-event sub-conference for speakers"
                       className="flex items-center gap-1 px-2 py-1 bg-emerald-800/40 hover:bg-emerald-700/60 text-emerald-300 rounded text-[10px] transition-colors"
@@ -2279,15 +2272,6 @@ export default function OCC() {
                       <ArrowRight className="w-3 h-3" /> Transfer
                     </button>
                   </>
-                )}
-                {isRinging && (
-                  <button
-                    onClick={stopRinging}
-                    title="Stop the incoming call alert"
-                    className="flex items-center gap-1 px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-[10px] font-semibold animate-pulse transition-colors"
-                  >
-                    <BellOff className="w-3 h-3" /> Stop Ringing
-                  </button>
                 )}
                 {splitViewEnabled && secondaryCCPConferenceId && (
                   <button
@@ -2599,31 +2583,6 @@ export default function OCC() {
 
                       {/* Bottom controls */}
                       <div className="flex gap-2 px-2 py-2 border-t border-slate-700 bg-[#080c14] shrink-0 flex-wrap">
-                        {/* Answer Filter */}
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[9px] text-slate-500 font-semibold uppercase">Answer Filter</span>
-                          <button className="px-3 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Define</button>
-                          <label className="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer"><input type="checkbox" checked={answerActivate} onChange={e => setAnswerActivate(e.target.checked)} className="w-3 h-3 accent-blue-500" />Activate</label>
-                          <label className="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer"><input type="checkbox" checked={answerSelectAllDnis} onChange={e => setAnswerSelectAllDnis(e.target.checked)} className="w-3 h-3 accent-blue-500" />Select All DNIS</label>
-                        </div>
-
-                        {/* Conf actions */}
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[9px] text-slate-500 font-semibold uppercase">Activate Conf</span>
-                          <div className="flex gap-1">
-                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">New Conf</button>
-                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Info</button>
-                          </div>
-                          <div className="flex gap-1">
-                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Activate PC</button>
-                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Details</button>
-                          </div>
-                          <div className="flex gap-1">
-                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Unattended</button>
-                            <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600">Expand</button>
-                          </div>
-                          <button className="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 rounded border border-slate-600 self-start">Schedule</button>
-                        </div>
 
                         {/* Participant Details */}
                         <div className="flex flex-col gap-1 flex-1 min-w-0">
@@ -2668,14 +2627,6 @@ export default function OCC() {
                         </div>
                       </div>
 
-                      {/* DNIS / Description / OK */}
-                      <div className="flex items-center gap-2 px-2 py-1.5 border-t border-slate-700 bg-[#070b12] shrink-0">
-                        <span className="text-[10px] text-slate-500">DNIS:</span>
-                        <input value={answerDnis} onChange={e => setAnswerDnis(e.target.value)} className="w-24 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500 font-mono" />
-                        <span className="text-[10px] text-slate-500 ml-2">Description:</span>
-                        <input value={answerDesc} onChange={e => setAnswerDesc(e.target.value)} className="flex-1 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-[10px] text-slate-200 focus:outline-none focus:border-blue-500" />
-                        <button className="px-3 py-1 text-[10px] font-semibold bg-blue-700 hover:bg-blue-600 text-white rounded border border-blue-600">OK</button>
-                      </div>
                     </div>
 
                     {/* RIGHT — Incoming & Operator Action Buttons */}
@@ -2686,21 +2637,17 @@ export default function OCC() {
                       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
                         {/* Incoming actions */}
                         {[
-                          { label: "Answer",     color: "bg-emerald-700 hover:bg-emerald-600 text-white",      checkbox: null        },
-                          { label: "Join Mon",   color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: answerJoinMon, setCheckbox: setAnswerJoinMon },
-                          { label: "Transfer",   color: "bg-blue-800/60 hover:bg-blue-700/80 text-blue-300",   checkbox: null        },
-                          { label: "Hold",       color: "bg-amber-900/60 hover:bg-amber-800 text-amber-300",   checkbox: null        },
-                          { label: "Recall",     color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: null        },
-                          { label: "Disconnect", color: "bg-red-900/60 hover:bg-red-800 text-red-300",         checkbox: null        },
-                        ].map(({ label, color, checkbox, setCheckbox }) => (
+                          { label: "Answer",     color: "bg-emerald-700 hover:bg-emerald-600 text-white",      checkbox: null,                                    action: () => { setActiveCCPConferenceId(answerSelectedConfId); setShowAnswerPanel(false); } },
+                          { label: "Join Mon",   color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: answerJoinMon, setCheckbox: setAnswerJoinMon, action: () => { setActiveCCPConferenceId(answerSelectedConfId); setShowAnswerPanel(false); } },
+                          { label: "Join T/L",   color: "bg-indigo-800/70 hover:bg-indigo-700/90 text-indigo-200", checkbox: null,                                 action: () => { setActiveCCPConferenceId(answerSelectedConfId); setShowAnswerPanel(false); } },
+                          { label: "Transfer",   color: "bg-blue-800/60 hover:bg-blue-700/80 text-blue-300",   checkbox: null,                                    action: () => { if (answerSelectedConfId) { setActiveCCPConferenceId(answerSelectedConfId); setShowAnswerPanel(false); } } },
+                          { label: "Hold",       color: "bg-amber-900/60 hover:bg-amber-800 text-amber-300",   checkbox: null,                                    action: () => {} },
+                          { label: "Recall",     color: "bg-slate-700 hover:bg-slate-600 text-slate-200",      checkbox: null,                                    action: () => {} },
+                          { label: "Disconnect", color: "bg-red-900/60 hover:bg-red-800 text-red-300",         checkbox: null,                                    action: () => { setShowAnswerPanel(false); } },
+                        ].map(({ label, color, checkbox, setCheckbox, action }) => (
                           <div key={label} className="flex items-center gap-1">
                             <button
-                              onClick={() => {
-                                if (label === "Transfer" && answerSelectedConfId) {
-                                  setActiveCCPConferenceId(answerSelectedConfId);
-                                  setShowAnswerPanel(false);
-                                }
-                              }}
+                              onClick={action}
                               className={`flex-1 px-3 py-2 text-[11px] font-semibold rounded border border-slate-700/60 transition-colors text-left ${color}`}
                             >{label}</button>
                             {checkbox !== null && setCheckbox && (
@@ -4480,304 +4427,6 @@ export default function OCC() {
           </div>
         </div>
       )}
-
-      {/* ── Multi-Party Dial-Out Modal ─────────────────────────────────────── */}
-      {showMultiDialModal && (() => {
-        const multiDialOutMutation = trpc.occ.multiDialOut.useMutation({
-          onSuccess: (data) => {
-            if (data.success) {
-              setDialEntries(prev => prev.map(e => ({ ...e, status: "connected" as const })));
-              setDialAllStatus("done");
-              if (activeCCPConferenceId) participantsQuery.refetch();
-            }
-          },
-        });
-        const addEntry = () => {
-          if (!dialForm.phone.trim()) return;
-          setDialEntries(prev => [...prev, {
-            id: Math.random().toString(36).slice(2),
-            name: dialForm.name,
-            company: dialForm.company,
-            phone: dialForm.phone,
-            role: dialForm.role,
-            status: "pending",
-          }]);
-          setDialForm({ name: "", company: "", phone: "", role: "participant" });
-        };
-        const removeEntry = (id: string) => setDialEntries(prev => prev.filter(e => e.id !== id));
-        const dialAll = () => {
-          if (!activeCCPConferenceId || dialEntries.length === 0) return;
-          setDialAllStatus("dialling");
-          setDialEntries(prev => prev.map(e => ({ ...e, status: "dialling" as const })));
-          multiDialOutMutation.mutate({
-            conferenceId: activeCCPConferenceId,
-            entries: dialEntries.map(e => ({ name: e.name || undefined, company: e.company || undefined, phoneNumber: e.phone, role: e.role })),
-          });
-        };
-
-        // Load IR Contacts
-        const irContactsQuery = trpc.irContacts.getForDial.useQuery(undefined, { enabled: showMultiDialModal });
-        const loadIRContacts = () => {
-          const contacts = irContactsQuery.data ?? [];
-          if (contacts.length === 0) {
-            setCsvImportMsg({ imported: 0, skipped: 0, errors: ["No IR contacts with phone numbers found. Add phone numbers in the IR Contacts page."] });
-            return;
-          }
-          const existingPhones = new Set(dialEntries.map(e => e.phone.replace(/\s/g, "")));
-          let loaded = 0; let skipped = 0;
-          const newEntries: DialEntry[] = [];
-          contacts.forEach(c => {
-            const phone = (c.phoneNumber ?? "").trim();
-            if (!phone || existingPhones.has(phone.replace(/\s/g, ""))) { skipped++; return; }
-            newEntries.push({
-              id: Math.random().toString(36).slice(2),
-              name: c.name,
-              company: c.company ?? "",
-              phone,
-              role: "participant",
-              status: "pending",
-            });
-            existingPhones.add(phone.replace(/\s/g, ""));
-            loaded++;
-          });
-          setDialEntries(prev => [...prev, ...newEntries]);
-          setCsvImportMsg({ imported: loaded, skipped, errors: skipped > 0 ? [`${skipped} contact(s) already in queue — skipped`] : [] });
-        };
-
-        // CSV import
-        const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            const text = ev.target?.result as string;
-            const lines = text.split(/\r?\n/).filter(l => l.trim());
-            if (lines.length < 2) {
-              setCsvImportMsg({ imported: 0, skipped: 0, errors: ["CSV must have a header row and at least one data row."] });
-              return;
-            }
-            // Parse header: name, company, phone, role (case-insensitive, any order)
-            const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/["']/g, ""));
-            const nameIdx = headers.findIndex(h => h === "name");
-            const companyIdx = headers.findIndex(h => h === "company");
-            const phoneIdx = headers.findIndex(h => ["phone", "phone number", "phonenumber", "telephone", "number"].includes(h));
-            const roleIdx = headers.findIndex(h => h === "role");
-            if (phoneIdx === -1) {
-              setCsvImportMsg({ imported: 0, skipped: 0, errors: ["CSV must have a 'phone' column."] });
-              if (csvFileRef.current) csvFileRef.current.value = "";
-              return;
-            }
-            const existingPhones = new Set(dialEntries.map(e => e.phone.replace(/\s/g, "")));
-            let imported = 0; let skipped = 0; const errors: string[] = [];
-            const newEntries: DialEntry[] = [];
-            lines.slice(1).forEach((line, idx) => {
-              const cols = line.split(",").map(c => c.trim().replace(/^["']|["']$/g, ""));
-              const phone = phoneIdx >= 0 ? (cols[phoneIdx] ?? "").trim() : "";
-              if (!phone) { skipped++; errors.push(`Row ${idx + 2}: missing phone number`); return; }
-              if (existingPhones.has(phone.replace(/\s/g, ""))) { skipped++; errors.push(`Row ${idx + 2}: duplicate phone ${phone}`); return; }
-              const rawRole = roleIdx >= 0 ? (cols[roleIdx] ?? "").toLowerCase().trim() : "";
-              const role: "moderator" | "participant" = rawRole === "moderator" ? "moderator" : "participant";
-              newEntries.push({
-                id: Math.random().toString(36).slice(2),
-                name: nameIdx >= 0 ? (cols[nameIdx] ?? "") : "",
-                company: companyIdx >= 0 ? (cols[companyIdx] ?? "") : "",
-                phone,
-                role,
-                status: "pending",
-              });
-              existingPhones.add(phone.replace(/\s/g, ""));
-              imported++;
-            });
-            setDialEntries(prev => [...prev, ...newEntries]);
-            setCsvImportMsg({ imported, skipped, errors });
-            if (csvFileRef.current) csvFileRef.current.value = "";
-          };
-          reader.readAsText(file);
-        };
-
-        const downloadTemplate = () => {
-          const csv = "name,company,phone,role\nJohn Smith,Acme Corp,+27 11 555 0100,participant\nJane Doe,Beta Ltd,+27 11 555 0200,moderator";
-          const blob = new Blob([csv], { type: "text/csv" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a"); a.href = url; a.download = "dial_out_template.csv"; a.click();
-          URL.revokeObjectURL(url);
-        };
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-            <div className="bg-[#0f172a] border border-slate-700 rounded-lg w-[560px] shadow-2xl flex flex-col max-h-[80vh]">
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <PhoneForwarded className="w-4 h-4 text-blue-400" />
-                  <span className="font-semibold text-sm text-slate-200">Multi-Party Dial-Out</span>
-                  {activeCCPConferenceId && <span className="text-xs text-slate-500 ml-1">Conference #{activeCCPConferenceId}</span>}
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Hidden file input */}
-                  <input ref={csvFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvImport} />
-                  {/* Load IR Contacts */}
-                  <button
-                    onClick={loadIRContacts}
-                    disabled={irContactsQuery.isLoading}
-                    title="Load IR contacts with phone numbers into the dial queue"
-                    className="flex items-center gap-1 px-2 py-1 bg-violet-800/40 hover:bg-violet-700/60 disabled:opacity-40 text-violet-300 rounded text-[10px] transition-colors"
-                  >
-                    <Users className="w-3 h-3" />
-                    {irContactsQuery.isLoading ? "Loading…" : `IR Contacts${irContactsQuery.data && irContactsQuery.data.length > 0 ? ` (${irContactsQuery.data.length})` : ""}`}
-                  </button>
-                  <button
-                    onClick={() => csvFileRef.current?.click()}
-                    title="Import participants from a CSV file"
-                    className="flex items-center gap-1 px-2 py-1 bg-emerald-800/40 hover:bg-emerald-700/60 text-emerald-300 rounded text-[10px] transition-colors"
-                  >
-                    <FileText className="w-3 h-3" /> Import CSV
-                  </button>
-                  <button
-                    onClick={downloadTemplate}
-                    title="Download CSV template"
-                    className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 hover:bg-slate-600/70 text-slate-400 rounded text-[10px] transition-colors"
-                  >
-                    Template
-                  </button>
-                  <button onClick={() => { setShowMultiDialModal(false); setDialEntries([]); setDialAllStatus("idle"); setCsvImportMsg(null); }} className="text-slate-400 hover:text-slate-200 ml-1"><X className="w-4 h-4" /></button>
-                </div>
-              </div>
-
-              {/* Add entry form */}
-              <div className="px-4 pt-3 pb-2 border-b border-slate-800 flex-shrink-0">
-                <p className="text-xs text-slate-500 mb-2">Add participants one at a time, then click <span className="text-blue-400 font-semibold">Dial All</span> to connect them simultaneously.</p>
-                <div className="grid grid-cols-12 gap-2">
-                  <input
-                    className="col-span-3 bg-slate-800 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="Name (optional)"
-                    value={dialForm.name}
-                    onChange={e => setDialForm(f => ({ ...f, name: e.target.value }))}
-                    onKeyDown={e => e.key === "Enter" && addEntry()}
-                  />
-                  <input
-                    className="col-span-3 bg-slate-800 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="Company (optional)"
-                    value={dialForm.company}
-                    onChange={e => setDialForm(f => ({ ...f, company: e.target.value }))}
-                    onKeyDown={e => e.key === "Enter" && addEntry()}
-                  />
-                  <input
-                    className="col-span-3 bg-slate-800 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="Phone number *"
-                    value={dialForm.phone}
-                    onChange={e => setDialForm(f => ({ ...f, phone: e.target.value }))}
-                    onKeyDown={e => e.key === "Enter" && addEntry()}
-                  />
-                  <select
-                    className="col-span-2 bg-slate-800 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-blue-500"
-                    value={dialForm.role}
-                    onChange={e => setDialForm(f => ({ ...f, role: e.target.value as "moderator" | "participant" }))}
-                  >
-                    <option value="participant">Participant</option>
-                    <option value="moderator">Moderator</option>
-                  </select>
-                  <button
-                    onClick={addEntry}
-                    disabled={!dialForm.phone.trim()}
-                    className="col-span-1 flex items-center justify-center bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded text-xs font-semibold"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* CSV import result message */}
-              {csvImportMsg && (
-                <div className={`mx-4 mt-2 mb-1 px-3 py-2 rounded text-xs flex-shrink-0 ${
-                  csvImportMsg.errors.length > 0 ? "bg-amber-900/30 border border-amber-700/40 text-amber-300" : "bg-emerald-900/30 border border-emerald-700/40 text-emerald-300"
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <span>
-                      {csvImportMsg.imported > 0 && <span className="font-semibold">{csvImportMsg.imported} imported</span>}
-                      {csvImportMsg.skipped > 0 && <span className="ml-2 text-amber-400">{csvImportMsg.skipped} skipped</span>}
-                    </span>
-                    <button onClick={() => setCsvImportMsg(null)} className="text-slate-500 hover:text-slate-300"><X className="w-3 h-3" /></button>
-                  </div>
-                  {csvImportMsg.errors.length > 0 && (
-                    <ul className="mt-1 space-y-0.5 text-[10px] text-amber-400/80 list-disc list-inside">
-                      {csvImportMsg.errors.slice(0, 5).map((err, i) => <li key={i}>{err}</li>)}
-                      {csvImportMsg.errors.length > 5 && <li>…and {csvImportMsg.errors.length - 5} more</li>}
-                    </ul>
-                  )}
-                </div>
-              )}
-
-              {/* Staged list */}
-              <div className="flex-1 overflow-y-auto px-4 py-2 min-h-[80px]">
-                {dialEntries.length === 0 ? (
-                  <div className="flex items-center justify-center h-16 text-xs text-slate-600">No participants added yet — fill in the form above and click +</div>
-                ) : (
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="text-slate-500 border-b border-slate-800">
-                        <th className="text-left py-1 font-medium">Name</th>
-                        <th className="text-left py-1 font-medium">Company</th>
-                        <th className="text-left py-1 font-medium">Phone</th>
-                        <th className="text-left py-1 font-medium">Role</th>
-                        <th className="text-left py-1 font-medium">Status</th>
-                        <th className="py-1"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dialEntries.map(entry => (
-                        <tr key={entry.id} className="border-b border-slate-800/50 hover:bg-slate-800/30">
-                          <td className="py-1.5 text-slate-300">{entry.name || <span className="text-slate-600">—</span>}</td>
-                          <td className="py-1.5 text-slate-400">{entry.company || <span className="text-slate-600">—</span>}</td>
-                          <td className="py-1.5 text-slate-300 font-mono">{entry.phone}</td>
-                          <td className="py-1.5">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                              entry.role === "moderator" ? "bg-amber-900/40 text-amber-400" : "bg-slate-700 text-slate-400"
-                            }`}>{entry.role}</span>
-                          </td>
-                          <td className="py-1.5">
-                            {entry.status === "pending" && <span className="text-slate-500">Pending</span>}
-                            {entry.status === "dialling" && <span className="text-blue-400 animate-pulse">Dialling…</span>}
-                            {entry.status === "connected" && <span className="text-emerald-400">✓ Connected</span>}
-                            {entry.status === "failed" && <span className="text-red-400">✗ Failed</span>}
-                          </td>
-                          <td className="py-1.5">
-                            {entry.status === "pending" && (
-                              <button onClick={() => removeEntry(entry.id)} className="text-slate-600 hover:text-red-400">
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-
-              {/* Footer */}
-              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-700 flex-shrink-0">
-                <span className="text-xs text-slate-500">{dialEntries.length} participant{dialEntries.length !== 1 ? "s" : ""} queued</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { setDialEntries([]); setDialAllStatus("idle"); }}
-                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 border border-slate-700 rounded"
-                  >
-                    Clear All
-                  </button>
-                  <button
-                    onClick={dialAll}
-                    disabled={dialEntries.length === 0 || !activeCCPConferenceId || dialAllStatus === "dialling"}
-                    className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded"
-                  >
-                    <Phone className="w-3 h-3" />
-                    {dialAllStatus === "dialling" ? "Dialling…" : dialAllStatus === "done" ? "Done" : `Dial All (${dialEntries.length})`}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* ── Speaker Green Room Panel ─────────────────────────────────────────── */}
       {showGreenRoomPanel && activeCCPConferenceId && (

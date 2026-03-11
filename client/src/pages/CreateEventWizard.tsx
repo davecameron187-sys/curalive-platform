@@ -120,6 +120,7 @@ const DEFAULT_STATE: WizardState = {
   requireCompany: true,
   requireJobTitle: false,
   requirePhone: false,
+  selectedAIApplications: [],
 };
 
 const STEPS = [

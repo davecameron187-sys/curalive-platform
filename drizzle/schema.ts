@@ -2204,3 +2204,114 @@ export const studioInterconnections = mysqlTable("studio_interconnections", {
 
 export type StudioInterconnection = typeof studioInterconnections.$inferSelect;
 export type InsertStudioInterconnection = typeof studioInterconnections.$inferInsert;
+
+export const operatorLinkAnalytics = mysqlTable("operator_link_analytics", {
+  id: int("id").autoincrement().primaryKey(),
+  operatorId: int("operator_id"),
+  linkPath: varchar("link_path", { length: 255 }).notNull(),
+  linkTitle: varchar("link_title", { length: 255 }),
+  category: varchar("category", { length: 64 }),
+  accessedAt: timestamp("accessed_at").defaultNow().notNull(),
+  timeSpentSeconds: int("time_spent_seconds"),
+  userAgent: text("user_agent"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  sessionId: varchar("session_id", { length: 128 }),
+});
+
+export type OperatorLinkAnalytic = typeof operatorLinkAnalytics.$inferSelect;
+export type InsertOperatorLinkAnalytic = typeof operatorLinkAnalytics.$inferInsert;
+
+export const operatorLinksMetadata = mysqlTable("operator_links_metadata", {
+  id: int("id").autoincrement().primaryKey(),
+  linkPath: varchar("link_path", { length: 255 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 50 }),
+  badgeType: varchar("badge_type", { length: 50 }),
+  sortOrder: int("sort_order").default(0),
+  isActive: boolean("is_active").default(true).notNull(),
+  clickCount: int("click_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OperatorLinksMetadatum = typeof operatorLinksMetadata.$inferSelect;
+export type InsertOperatorLinksMetadatum = typeof operatorLinksMetadata.$inferInsert;
+
+export const agenticAnalyses = mysqlTable("agentic_analyses", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("session_id", { length: 128 }),
+  q1Role: varchar("q1_role", { length: 64 }).notNull(),
+  q2Challenge: varchar("q2_challenge", { length: 64 }).notNull(),
+  q3EventType: varchar("q3_event_type", { length: 64 }).notNull(),
+  primaryBundle: varchar("primary_bundle", { length: 64 }).notNull(),
+  bundleLetter: varchar("bundle_letter", { length: 4 }).notNull(),
+  score: float("score").notNull(),
+  aiAction: longtext("ai_action"),
+  roiPreview: varchar("roi_preview", { length: 255 }),
+  interconnections: text("interconnections"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AgenticAnalysis = typeof agenticAnalyses.$inferSelect;
+export type InsertAgenticAnalysis = typeof agenticAnalyses.$inferInsert;
+
+export const autonomousInterventions = mysqlTable("autonomous_interventions", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }),
+  conferenceId: varchar("conference_id", { length: 128 }),
+  ruleId: varchar("rule_id", { length: 64 }).notNull(),
+  ruleName: varchar("rule_name", { length: 255 }).notNull(),
+  triggerValue: float("trigger_value"),
+  threshold: float("threshold"),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("warning").notNull(),
+  bundleTriggered: varchar("bundle_triggered", { length: 64 }),
+  actionTaken: text("action_taken").notNull(),
+  acknowledged: boolean("acknowledged").default(false).notNull(),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  outcome: text("outcome"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AutonomousIntervention = typeof autonomousInterventions.$inferSelect;
+export type InsertAutonomousIntervention = typeof autonomousInterventions.$inferInsert;
+
+export const taggedMetrics = mysqlTable("tagged_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 255 }).notNull(),
+  eventTitle: varchar("event_title", { length: 255 }),
+  tagType: mysqlEnum("tag_type", ["sentiment", "compliance", "scaling", "engagement", "qa", "intervention"]).notNull(),
+  metricValue: float("metric_value").notNull(),
+  label: varchar("label", { length: 255 }),
+  detail: text("detail"),
+  bundle: varchar("bundle", { length: 64 }),
+  severity: mysqlEnum("severity", ["positive", "neutral", "negative", "critical"]).default("neutral").notNull(),
+  source: varchar("source", { length: 64 }).default("system"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type TaggedMetric = typeof taggedMetrics.$inferSelect;
+export type InsertTaggedMetric = typeof taggedMetrics.$inferInsert;
+
+export const shadowSessions = mysqlTable("shadow_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  eventName: varchar("event_name", { length: 255 }).notNull(),
+  eventType: mysqlEnum("event_type", ["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).notNull(),
+  platform: mysqlEnum("platform", ["zoom", "teams", "meet", "webex", "other"]).default("zoom").notNull(),
+  meetingUrl: varchar("meeting_url", { length: 1000 }).notNull(),
+  recallBotId: varchar("recall_bot_id", { length: 255 }),
+  ablyChannel: varchar("ably_channel", { length: 255 }),
+  status: mysqlEnum("status", ["pending", "bot_joining", "live", "processing", "completed", "failed"]).default("pending").notNull(),
+  transcriptSegments: int("transcript_segments").default(0),
+  sentimentAvg: float("sentiment_avg"),
+  complianceFlags: int("compliance_flags").default(0),
+  taggedMetricsGenerated: int("tagged_metrics_generated").default(0),
+  notes: text("notes"),
+  startedAt: bigint("started_at", { mode: "number" }),
+  endedAt: bigint("ended_at", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ShadowSession = typeof shadowSessions.$inferSelect;
+export type InsertShadowSession = typeof shadowSessions.$inferInsert;

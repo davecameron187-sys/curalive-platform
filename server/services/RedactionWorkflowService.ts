@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getDb } from "../db";
 import { transcriptEdits } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";

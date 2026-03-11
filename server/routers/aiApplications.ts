@@ -184,7 +184,7 @@ function calculateROIScore(app: any): number {
 
   // Priority scoring
   const priorityScores = { high: 100, medium: 50, low: 25 };
-  score += priorityScores[app.priority] || 0;
+  score += priorityScores[app.priority as keyof typeof priorityScores] || 0;
 
   // Benefits scoring
   score += app.benefits.length * 10;

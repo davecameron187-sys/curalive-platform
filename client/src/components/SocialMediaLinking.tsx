@@ -182,7 +182,7 @@ export function SocialMediaLinking() {
                 {platform.supportsVideo && (
                   <Badge variant="outline" className="text-xs px-1.5 py-0 h-4">Video</Badge>
                 )}
-                {platform.supportsScheduling && (
+                {(platform as any).supportsScheduling && (
                   <Badge variant="outline" className="text-xs px-1.5 py-0 h-4">Scheduling</Badge>
                 )}
               </div>

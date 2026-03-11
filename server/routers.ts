@@ -43,6 +43,19 @@ import { aiApplicationsRouter } from "./routers/aiApplications";
 import { socialMediaRouter } from "./routers/socialMedia";
 import { interconnectionAnalyticsRouter } from "./routers/interconnectionAnalytics";
 import { virtualStudioRouter } from "./routers/virtualStudioRouter";
+import { operatorLinksRouter } from "./routers/operatorLinksRouter";
+import { agenticEventBrainRouter } from "./routers/agenticEventBrainRouter";
+import { autonomousInterventionRouter } from "./routers/autonomousInterventionRouter";
+import { taggedMetricsRouter } from "./routers/taggedMetricsRouter";
+import { shadowModeRouter } from "./routers/shadowModeRouter";
+import { archiveUploadRouter } from "./routers/archiveUploadRouter";
+import { benchmarksRouter } from "./routers/benchmarksRouter";
+import { marketReactionRouter } from "./routers/marketReactionRouter";
+import { communicationIndexRouter } from "./routers/communicationIndexRouter";
+import { investorQuestionsRouter } from "./routers/investorQuestionsRouter";
+import { intelligenceReportRouter } from "./routers/intelligenceReportRouter";
+import { callPrepRouter } from "./routers/callPrepRouter";
+import { intelligenceTerminalRouter } from "./routers/intelligenceTerminalRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -96,6 +109,19 @@ export const appRouter = router({
   socialMedia: socialMediaRouter,
   interconnectionAnalytics: interconnectionAnalyticsRouter,
   virtualStudio: virtualStudioRouter,
+  operatorLinks: operatorLinksRouter,
+  agenticBrain: agenticEventBrainRouter,
+  autonomousIntervention: autonomousInterventionRouter,
+  taggedMetrics: taggedMetricsRouter,
+  shadowMode: shadowModeRouter,
+  archiveUpload: archiveUploadRouter,
+  benchmarks: benchmarksRouter,
+  marketReaction: marketReactionRouter,
+  communicationIndex: communicationIndexRouter,
+  investorQuestions: investorQuestionsRouter,
+  intelligenceReport: intelligenceReportRouter,
+  callPrep: callPrepRouter,
+  intelligenceTerminal: intelligenceTerminalRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

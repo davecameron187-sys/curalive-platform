@@ -29,7 +29,7 @@ export function WebcastRegistrationForm({
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const registerMutation = trpc.registrations.registerForWebcast.useMutation();
+  const registerMutation = (trpc.registrations as any).registerForWebcast.useMutation();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

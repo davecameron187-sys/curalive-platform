@@ -239,7 +239,7 @@ export default function ModeratorQAConsole() {
                         className={`p-4 border-l-4 cursor-pointer transition-all hover:border-primary ${config.color}`}
                         style={{ borderLeftColor: config.textColor }}
                         onClick={() => {
-                          setSelectedQuestion(question);
+                          setSelectedQuestion(question as any);
                           setShowApprovalModal(true);
                         }}
                       >
@@ -259,7 +259,7 @@ export default function ModeratorQAConsole() {
                               <div className="flex gap-1 mt-2 flex-wrap">{getRiskBadges(question.sensitivityFlags)}</div>
                             )}
 
-                            {question.operatorApproved && (
+                            {(question as any).operatorApproved && (
                               <div className="mt-2 text-xs text-green-600 flex items-center gap-1">
                                 <CheckCircle2 className="w-3 h-3" />
                                 Approved by moderator
@@ -268,7 +268,7 @@ export default function ModeratorQAConsole() {
                           </div>
 
                           <div className="flex gap-2 flex-shrink-0">
-                            {!question.operatorApproved && (
+                            {!(question as any).operatorApproved && (
                               <>
                                 <Button
                                   variant="outline"
@@ -406,7 +406,7 @@ export default function ModeratorQAConsole() {
                   <Button
                     variant="destructive"
                     onClick={() => {
-                      handleRejectQuestion(selectedQuestion.id);
+                      handleRejectQuestion((selectedQuestion as any).id);
                       setShowApprovalModal(false);
                       setApprovalNotes("");
                     }}
@@ -415,7 +415,7 @@ export default function ModeratorQAConsole() {
                   </Button>
                   <Button
                     onClick={() => {
-                      handleApproveQuestion(selectedQuestion.id);
+                      handleApproveQuestion((selectedQuestion as any).id);
                       setShowApprovalModal(false);
                     }}
                     disabled={approveQuestionMutation.isPending}
