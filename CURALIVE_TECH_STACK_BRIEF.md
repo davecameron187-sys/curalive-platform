@@ -1,25 +1,4 @@
-# CuraLive — Tech Stack Brief
-**Last updated: March 2026 | Platform version: 1.0.0**
-
----
-
-## Platform Overview
-
-CuraLive is a full-stack, real-time investor events platform built as a single unified monorepo. The frontend and backend share one codebase, one TypeScript config, and one package manager. There is no separate frontend or backend repo.
-
-**Live dev URL:** `https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev`
-**Entry command:** `NODE_ENV=development pnpm exec tsx watch server/_core/index.ts`
-**Port:** 5000 (single port serves both API and client)
-
----
-
-## Monorepo Structure
-
-```
-/
-├── client/               → React frontend
-│   ├── src/
-│   │   ├── pages/        → All page components (~80 pages)
+├── pages/        → All page components (~80 pages)
 │   │   ├── components/   → Shared UI components
 │   │   ├── lib/          → Utilities, trpc client, hooks
 │   │   └── App.tsx       → Router (wouter)
