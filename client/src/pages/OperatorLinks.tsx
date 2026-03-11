@@ -533,6 +533,15 @@ export default function OperatorLinks() {
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [simOpen, setSimOpen] = useState(false);
 
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-40">
