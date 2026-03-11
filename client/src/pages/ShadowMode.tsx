@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -81,13 +82,16 @@ type ArchiveResult = {
 };
 
 export default function ShadowMode() {
+  const [, navigate] = useLocation();
+
   useEffect(() => {
-    window.history.pushState(null, "", window.location.href);
+    window.history.pushState(null, "", "/shadow-mode");
     const handlePopState = () => {
-      window.history.pushState(null, "", window.location.href);
+      navigate("/shadow-mode");
+      window.history.pushState(null, "", "/shadow-mode");
     };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    window.addEventListener("popstate", handlePopState, true);
+    return () => window.removeEventListener("popstate", handlePopState, true);
   }, []);
 
   // Tab state

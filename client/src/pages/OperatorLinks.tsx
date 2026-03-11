@@ -534,12 +534,13 @@ export default function OperatorLinks() {
   const [simOpen, setSimOpen] = useState(false);
 
   useEffect(() => {
-    window.history.pushState(null, "", window.location.href);
+    window.history.pushState(null, "", "/operator-links");
     const handlePopState = () => {
-      window.history.pushState(null, "", window.location.href);
+      navigate("/operator-links");
+      window.history.pushState(null, "", "/operator-links");
     };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    window.addEventListener("popstate", handlePopState, true);
+    return () => window.removeEventListener("popstate", handlePopState, true);
   }, []);
 
   return (
