@@ -64,8 +64,8 @@ async function extractChunk(inputPath: string, outputPath: string, startSec: num
 }
 
 async function callWhisper(buffer: Buffer, filename: string, mimeType: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
+  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OpenAI API key is not configured");
 
   const base = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL?.replace(/\/$/, "")
     ?? "https://api.openai.com/v1";
