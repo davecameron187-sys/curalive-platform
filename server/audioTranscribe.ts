@@ -5,6 +5,8 @@ import { promisify } from "util";
 import { writeFile, readFile, mkdtemp, rm } from "fs/promises";
 import { join, extname } from "path";
 import { tmpdir } from "os";
+import { openai } from "./replit_integrations/audio/client";
+import { toFile } from "openai";
 
 const execFileAsync = promisify(execFile);
 
@@ -63,31 +65,13 @@ async function extractChunk(inputPath: string, outputPath: string, startSec: num
   ]);
 }
 
-async function callWhisper(buffer: Buffer, filename: string, mimeType: string): Promise<string> {
-  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OpenAI API key is not configured");
-
-  const base = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL?.replace(/\/$/, "")
-    ?? "https://api.openai.com/v1";
-  const url = `${base}/audio/transcriptions`;
-
-  const form = new FormData();
-  form.append("file", new Blob([new Uint8Array(buffer)], { type: mimeType }), filename);
-  form.append("model", "whisper-1");
-  form.append("response_format", "text");
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}` },
-    body: form,
+async function callWhisper(buffer: Buffer, filename: string): Promise<string> {
+  const file = await toFile(buffer, filename, { type: "audio/mpeg" });
+  const response = await openai.audio.transcriptions.create({
+    file,
+    model: "gpt-4o-mini-transcribe",
   });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => res.statusText);
-    throw new Error(`Whisper API error (${res.status}): ${detail}`);
-  }
-
-  return (await res.text()).trim();
+  return response.text.trim();
 }
 
 export function registerAudioTranscribeRoute(app: import("express").Express) {
@@ -140,7 +124,7 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
 
         if (compressedMB <= WHISPER_MAX_MB) {
           console.log(`[AudioTranscribe] Sending to Whisper...`);
-          transcript = await callWhisper(compressedBuffer, "recording.mp3", "audio/mpeg");
+          transcript = await callWhisper(compressedBuffer, "recording.mp3");
         } else {
           const totalSecs = await getDurationSeconds(inputPath);
           const chunkSecs = CHUNK_MINUTES * 60;
@@ -155,7 +139,7 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
             const chunkBuf = await readFile(chunkPath);
             const chunkMB = chunkBuf.length / 1024 / 1024;
             console.log(`[AudioTranscribe] Transcribing chunk ${i + 1}/${numChunks} (${chunkMB.toFixed(1)}MB)...`);
-            const part = await callWhisper(chunkBuf, `chunk_${i}.mp3`, "audio/mpeg");
+            const part = await callWhisper(chunkBuf, `chunk_${i}.mp3`);
             parts.push(part);
           }
           transcript = parts.join("\n\n");
