@@ -914,7 +914,7 @@ export default function ShadowMode() {
                   Upload any audio or video recording of an event — from a screen recording, phone capture, or downloaded replay. CuraLive sends the audio to OpenAI Whisper for transcription, then runs the full intelligence pipeline automatically: sentiment scoring, compliance scanning, 4 tagged records added to your database, and one anonymized record added to the industry benchmarks dataset. No manual transcription needed.
                 </p>
                 <p className="text-xs text-slate-600 mt-2">
-                  Supported formats: MP3, MP4, WAV, M4A, WebM, OGG &nbsp;·&nbsp; Max 25MB per file &nbsp;·&nbsp; Tip: record audio-only at 64kbps for best compression
+                  Supported formats: MP3, MP4, WAV, M4A, WebM, OGG &nbsp;·&nbsp; Up to 500MB &nbsp;·&nbsp; Large files are automatically compressed server-side before transcription
                 </p>
               </div>
             </div>
@@ -982,7 +982,7 @@ export default function ShadowMode() {
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
                     {recStatus === "transcribing"
-                      ? "Sending to Whisper AI. This takes 30 seconds to 3 minutes depending on file length."
+                      ? "Compressing audio and sending to Whisper AI. Large files are chunked automatically — allow 3–10 minutes."
                       : "Scoring sentiment, scanning compliance, writing intelligence records..."}
                   </p>
                 </div>
@@ -1061,15 +1061,15 @@ export default function ShadowMode() {
                         <p className="text-xs text-slate-500 mt-1">
                           {(recFile.size / 1024 / 1024).toFixed(1)} MB
                           {recFile.size > 20 * 1024 * 1024 && (
-                            <span className="text-amber-400 ml-2">· Large file — transcription may take 2–3 minutes</span>
+                            <span className="text-amber-400 ml-2">· Large file — server will auto-compress, allow 5–10 min</span>
                           )}
                         </p>
                       </div>
                     ) : (
                       <div>
                         <p className="font-medium text-sm text-slate-300 mb-1">Click to select an audio or video file</p>
-                        <p className="text-xs text-slate-600">MP3, MP4, WAV, M4A, WebM, OGG &nbsp;·&nbsp; Max 25MB</p>
-                        <p className="text-xs text-slate-700 mt-1">For files over 25MB, convert to MP3 at 64kbps first</p>
+                        <p className="text-xs text-slate-600">MP3, MP4, WAV, M4A, WebM, OGG &nbsp;·&nbsp; Up to 500MB</p>
+                        <p className="text-xs text-slate-700 mt-1">Large files auto-compressed server-side — no pre-processing needed</p>
                       </div>
                     )}
                   </div>
