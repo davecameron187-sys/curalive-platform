@@ -6,3 +6,9 @@ id = "wFOr7C13ODPZHL29DJNAY"
 uri = "file://curalive-update.tar.gz"
 type = "unspecified"
 title = "CuraLive Platform — Full Source Update (no media files)"
+
+[[outputs]]
+id = "V07_eZDRy3LgabPhql3C9"
+uri = "file://CURALIVE_TECH_STACK_BRIEF.md"
+type = "text"
+title = "CuraLive Tech Stack Brief — March 2026"
