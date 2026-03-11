@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { shadowSessions, taggedMetrics, recallBots } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
+import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
 
 const RECALL_BASE_URL = process.env.RECALL_AI_BASE_URL ?? "https://eu-central-1.recall.ai/api/v1";
 const RECALL_API_KEY = process.env.RECALL_AI_API_KEY ?? "";
@@ -250,6 +251,20 @@ export const shadowModeRouter = router({
             taggedMetricsGenerated: metricsCount,
           })
           .where(eq(shadowSessions.id, input.sessionId));
+
+        const fullText = transcript.map(s => s.text).join(" ");
+        const complianceKeywords = ["forward-looking", "guidance", "forecast", "predict", "expect", "material", "non-public", "insider"];
+        const liveComplianceFlags = complianceKeywords.filter(k => fullText.toLowerCase().includes(k)).length;
+
+        await writeAnonymizedRecord({
+          eventType: session.eventType ?? "other",
+          sentimentScore: session.sentimentAvg ?? null,
+          segmentCount: transcript.length,
+          complianceFlags: liveComplianceFlags,
+          wordCount: fullText.split(/\s+/).filter(Boolean).length,
+          eventDate: null,
+          sourceType: "live_session",
+        });
 
         return {
           success: true,

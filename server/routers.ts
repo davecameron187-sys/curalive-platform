@@ -49,6 +49,7 @@ import { autonomousInterventionRouter } from "./routers/autonomousInterventionRo
 import { taggedMetricsRouter } from "./routers/taggedMetricsRouter";
 import { shadowModeRouter } from "./routers/shadowModeRouter";
 import { archiveUploadRouter } from "./routers/archiveUploadRouter";
+import { benchmarksRouter } from "./routers/benchmarksRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -108,6 +109,7 @@ export const appRouter = router({
   taggedMetrics: taggedMetricsRouter,
   shadowMode: shadowModeRouter,
   archiveUpload: archiveUploadRouter,
+  benchmarks: benchmarksRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

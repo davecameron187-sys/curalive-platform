@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { taggedMetrics } from "../../drizzle/schema";
 import { invokeLLM } from "../_core/llm";
 import { desc, sql } from "drizzle-orm";
+import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
 
 const COMPLIANCE_KEYWORDS = [
   "forward-looking", "guidance", "forecast", "predict", "expect",
@@ -204,6 +205,16 @@ export const archiveUploadRouter = router({
         `UPDATE archive_events SET status = 'completed', tagged_metrics_generated = ? WHERE id = ?`,
         [metricsCount, archiveId]
       );
+
+      await writeAnonymizedRecord({
+        eventType: input.eventType,
+        sentimentScore: sentimentAvg,
+        segmentCount: rawSegments.length,
+        complianceFlags,
+        wordCount,
+        eventDate: input.eventDate ?? null,
+        sourceType: "archive_upload",
+      });
 
       return {
         success: true,

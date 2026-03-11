@@ -90,6 +90,7 @@ import AutonomousIntervention from "./pages/AutonomousIntervention";
 import TaggedMetricsDashboard from "./pages/TaggedMetricsDashboard";
 import ShadowMode from "./pages/ShadowMode";
 import ArchiveUpload from "./pages/ArchiveUpload";
+import Benchmarks from "./pages/Benchmarks";
 import SocialMediaPage from "./pages/SocialMediaPage";
 import PodcastConverter from "./pages/PodcastConverter";
 import SustainabilityDashboard from "./pages/SustainabilityDashboard";
@@ -196,6 +197,7 @@ function Router() {
       <Route path="/tagged-metrics" component={TaggedMetricsDashboard} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/archive-upload" component={ArchiveUpload} />
+      <Route path="/benchmarks" component={Benchmarks} />
       <Route path="/social" component={SocialMediaPage} />
       <Route path="/podcast-converter" component={PodcastConverter} />
       <Route path="/sustainability" component={SustainabilityDashboard} />
