@@ -436,14 +436,24 @@ export default function ShadowMode() {
                       {Object.entries(EVENT_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
                   </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <label className="text-xs text-slate-500 block mb-1.5">Platform *</label>
-                    <select
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500/50"
-                      value={form.platform}
-                      onChange={e => setForm(f => ({ ...f, platform: e.target.value as typeof form.platform }))}>
-                      {Object.entries(PLATFORM_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                    </select>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(PLATFORM_LABELS).map(([v, l]) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, platform: v as typeof form.platform }))}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                            form.platform === v
+                              ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-300"
+                              : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-200 hover:border-white/20"
+                          }`}
+                        >
+                          {l}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div className="sm:col-span-2">
                     <label className="text-xs text-slate-500 block mb-1.5">Meeting URL * (Zoom / Teams / Meet invite link)</label>
