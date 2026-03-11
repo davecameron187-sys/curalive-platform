@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { useSmartBack } from "@/lib/useSmartBack";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Shield, Radio, Square, Activity,
+  Shield, Radio, Square, Activity,
   AlertTriangle, CheckCircle2, Clock, Loader2,
-  Eye, BarChart3, MessageSquare, Zap, ChevronRight,
+  Eye, BarChart3, MessageSquare, Zap,
   Users, TrendingUp, TrendingDown, Minus, Play,
   Building2, Target, Brain, Lock,
 } from "lucide-react";
@@ -66,8 +65,6 @@ function SentimentBar({ value }: { value: number | null }) {
 }
 
 export default function Bastion() {
-  const goBack = useSmartBack("/shadow-mode");
-
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -130,9 +127,6 @@ export default function Bastion() {
       <div className="border-b border-white/[0.06] bg-[#080b12]/95 sticky top-0 z-20 backdrop-blur">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <button onClick={goBack} className="text-slate-500 hover:text-slate-300 transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
                 <Shield className="w-5 h-5 text-amber-400" />
