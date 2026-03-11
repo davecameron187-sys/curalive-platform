@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
-import { useSmartBack } from "@/lib/useSmartBack";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Radio, Play, Square, Eye, EyeOff,
+  Radio, Play, Square, Eye, EyeOff,
   Activity, Shield, Users, MessageSquare, Tag,
   CheckCircle2, AlertTriangle, Clock, Loader2,
   Building2, RefreshCw, BarChart3, FileText,
@@ -82,8 +81,6 @@ type ArchiveResult = {
 };
 
 export default function ShadowMode() {
-  const goBack = useSmartBack("/operator-links");
-
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
     const handlePopState = () => {
@@ -289,11 +286,6 @@ export default function ShadowMode() {
       <div className="border-b border-white/10 bg-[#0d0d14]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={goBack}
-              className="text-slate-400 hover:text-white gap-2 px-2">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </Button>
-            <div className="w-px h-6 bg-white/10" />
             <div>
               <div className="flex items-center gap-2">
                 <Radio className="w-5 h-5 text-emerald-400" />
