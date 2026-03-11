@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useSmartBack } from "@/lib/useSmartBack";
 import { Button } from "@/components/ui/button";
@@ -83,6 +83,15 @@ type ArchiveResult = {
 
 export default function ShadowMode() {
   const goBack = useSmartBack("/operator-links");
+
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<"live" | "archive" | "recording" | "ccaudio">("live");
