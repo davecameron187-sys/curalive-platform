@@ -30,7 +30,7 @@ async function callWhisper(buffer: Buffer, filename: string, mimeType: string): 
   const url = `${base}/audio/transcriptions`;
 
   const form = new FormData();
-  form.append("file", new Blob([buffer], { type: mimeType }), filename);
+  form.append("file", new Blob([new Uint8Array(buffer)], { type: mimeType }), filename);
   form.append("model", "whisper-1");
   form.append("response_format", "text");
 

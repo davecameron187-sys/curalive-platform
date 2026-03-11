@@ -121,7 +121,7 @@ async function handleTranscriptionSegment(payload: RecallWebhookPayload): Promis
     const bot = await db
       .select()
       .from(recallBots)
-      .where(eq(recallBots.botId, payload.bot_id))
+      .where(eq(recallBots.recallBotId, payload.bot_id))
       .limit(1);
 
     if (bot.length === 0) {
@@ -129,7 +129,7 @@ async function handleTranscriptionSegment(payload: RecallWebhookPayload): Promis
       return;
     }
 
-    const conferenceId = bot[0].conferenceId;
+    const conferenceId = (bot[0] as any).conferenceId ?? bot[0].meetingId;
 
     // Store segment
     await storeTranscriptionSegment({

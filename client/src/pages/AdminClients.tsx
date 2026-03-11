@@ -310,7 +310,7 @@ export default function AdminClients() {
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
               <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors">Cancel</button>
               <button
-                onClick={() => { if (!form.slug || !form.companyName) { toast.error("Slug and company name required"); return; } createClient.mutate(form); }}
+                onClick={() => { if (!form.slug || !(form as any).companyName) { toast.error("Slug and company name required"); return; } createClient.mutate(form); }}
                 disabled={createClient.isPending}
                 className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded text-sm font-bold text-white transition-all shadow-lg shadow-indigo-500/20"
               >
@@ -336,8 +336,8 @@ export default function AdminClients() {
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[60px] pointer-events-none" />
               <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center text-white text-lg font-bold shadow-lg" style={{ background: c.primaryColor }}>
-                  {c.companyName.charAt(0)}
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center text-white text-lg font-bold shadow-lg" style={{ background: c.primaryColor ?? undefined }}>
+                  {((c as any).companyName ?? c.clientName ?? "?").charAt(0)}
                 </div>
                 <div className="flex items-center gap-1">
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${c.isActive ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-700 text-slate-500"}`}>
@@ -346,7 +346,7 @@ export default function AdminClients() {
                 </div>
               </div>
               <div>
-                <h3 className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors">{c.companyName}</h3>
+                <h3 className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors">{(c as any).companyName ?? c.clientName}</h3>
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-xs text-slate-500">/portal/{c.slug}</p>
                   <span className="w-1 h-1 rounded-full bg-slate-700" />

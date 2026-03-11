@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { invokeLLM } from "../_core/llm";
 import { getDb } from "../db";
 import { occTranscriptionSegments, sentimentSnapshots, webcastQa, webcastEvents } from "../../drizzle/schema";

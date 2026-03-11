@@ -80,7 +80,7 @@ const OCC_URL = "https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.p
 
 export default function DevelopmentDashboard() {
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "features" | "devtools" | "testing" | "occ">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "features" | "devtools" | "testing" | "occ" | "api" | "webhooks">("dashboard");
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformType>("audio-bridge");
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [testRunning, setTestRunning] = useState(false);

@@ -163,7 +163,8 @@ export const agenticEventBrainRouter = router({
             },
           ],
         });
-        aiAction = typeof result.content === "string" ? result.content : JSON.stringify(result.content);
+        const raw = result.choices?.[0]?.message?.content;
+        aiAction = typeof raw === "string" ? raw : JSON.stringify(raw ?? "");
       } catch {
         aiAction = `Activate ${bundle.features[0]} and ${bundle.features[1]} immediately — these two features together deliver ${bundle.roi} with no additional configuration required.`;
       }
@@ -172,8 +173,8 @@ export const agenticEventBrainRouter = router({
       const interconnectionsJson = JSON.stringify(interconnections);
 
       try {
-        const db = getDb();
-        await db.insert(agenticAnalyses).values({
+        const db = await getDb();
+        await db!.insert(agenticAnalyses).values({
           sessionId: sessionId ?? null,
           q1Role,
           q2Challenge,
@@ -205,8 +206,8 @@ export const agenticEventBrainRouter = router({
 
   getHistory: publicProcedure.query(async () => {
     try {
-      const db = getDb();
-      const rows = await db
+      const db = await getDb();
+      const rows = await db!
         .select()
         .from(agenticAnalyses)
         .orderBy(desc(agenticAnalyses.createdAt))

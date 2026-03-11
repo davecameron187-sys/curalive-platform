@@ -88,11 +88,11 @@ export function SocialAnalyticsDashboard({ eventId }: Props) {
           </h4>
           <div className="space-y-3">
             {Object.entries(stats.platformBreakdown ?? {})
-              .sort((a, b) => b[1] - a[1])
+              .sort((a, b) => (b[1] as number) - (a[1] as number))
               .map(([platform, count]) => {
                 const Icon = PLATFORM_ICONS[platform];
-                const max = Math.max(...Object.values(stats.platformBreakdown ?? {}));
-                const pct = max > 0 ? Math.round((count / max) * 100) : 0;
+                const max = Math.max(...(Object.values(stats.platformBreakdown ?? {}) as number[]));
+                const pct = max > 0 ? Math.round(((count as number) / max) * 100) : 0;
                 return (
                   <div key={platform} className="flex items-center gap-3">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: (PLATFORM_COLORS[platform] ?? "#888") + "20" }}>
@@ -101,7 +101,7 @@ export function SocialAnalyticsDashboard({ eventId }: Props) {
                     <div className="flex-1">
                       <div className="flex items-center justify-between text-xs mb-1">
                         <span className="capitalize font-medium">{platform === "twitter" ? "X (Twitter)" : platform}</span>
-                        <span className="text-muted-foreground">{count} post{count !== 1 ? "s" : ""}</span>
+                        <span className="text-muted-foreground">{count as number} post{(count as number) !== 1 ? "s" : ""}</span>
                       </div>
                       <div className="h-1.5 bg-border rounded-full overflow-hidden">
                         <div
@@ -168,10 +168,10 @@ export function SocialAnalyticsDashboard({ eventId }: Props) {
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { icon: Eye, label: "Estimated Reach", value: stats.publishedPosts * 1200, color: "text-blue-400" },
-            { icon: Heart, label: "Est. Engagements", value: stats.publishedPosts * 47, color: "text-rose-400" },
-            { icon: Share2, label: "Est. Shares", value: stats.publishedPosts * 12, color: "text-emerald-400" },
-            { icon: MessageCircle, label: "Est. Comments", value: stats.publishedPosts * 8, color: "text-violet-400" },
+            { icon: Eye, label: "Estimated Reach", value: (stats.publishedPosts ?? 0) * 1200, color: "text-blue-400" },
+            { icon: Heart, label: "Est. Engagements", value: (stats.publishedPosts ?? 0) * 47, color: "text-rose-400" },
+            { icon: Share2, label: "Est. Shares", value: (stats.publishedPosts ?? 0) * 12, color: "text-emerald-400" },
+            { icon: MessageCircle, label: "Est. Comments", value: (stats.publishedPosts ?? 0) * 8, color: "text-violet-400" },
           ].map(({ icon: Icon, label, value, color }) => (
             <div key={label} className="text-center">
               <Icon className={`w-5 h-5 mx-auto mb-1.5 ${color}`} />

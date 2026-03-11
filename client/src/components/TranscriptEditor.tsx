@@ -42,20 +42,20 @@ export function TranscriptEditor({ conferenceId, isOpen, onClose }: TranscriptEd
 
   // Fetch live transcription
   const { data: liveData, isLoading: isLoadingLive } =
-    trpc.transcription.getLiveTranscription.useQuery(
+    (trpc.transcription as any).getLiveTranscription.useQuery(
       { conferenceId, lastNSeconds: 300 },
       { enabled: isOpen, refetchInterval: 2000 }
     );
 
   // Fetch full transcription
-  const { data: fullTranscription } = trpc.transcription.getFullTranscription.useQuery(
+  const { data: fullTranscription } = (trpc.transcription as any).getFullTranscription.useQuery(
     { conferenceId },
     { enabled: isOpen && showHistory }
   );
 
   // Correct segment mutation
   const { mutate: correctSegment, isPending: isCorrectingSegment } =
-    trpc.transcription.correctSegment.useMutation({
+    (trpc.transcription as any).correctSegment.useMutation({
       onSuccess: () => {
         setEditingSegmentId(null);
         setEditingText("");
@@ -68,7 +68,7 @@ export function TranscriptEditor({ conferenceId, isOpen, onClose }: TranscriptEd
     });
 
   // Get edit history
-  const { data: editHistory } = trpc.transcription.getEditHistory.useQuery(
+  const { data: editHistory } = (trpc.transcription as any).getEditHistory.useQuery(
     { segmentId: editingSegmentId || 0 },
     { enabled: editingSegmentId !== null }
   );
@@ -324,7 +324,7 @@ export function TranscriptEditor({ conferenceId, isOpen, onClose }: TranscriptEd
                   <div className="mt-3 pt-3 border-t border-slate-700">
                     <p className="text-xs font-semibold text-slate-300 mb-2">Edit History</p>
                     <div className="space-y-2">
-                      {editHistory.map((edit) => (
+                      {(editHistory as any[]).map((edit: any) => (
                         <div key={edit.id} className="text-xs bg-slate-900 p-2 rounded">
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-slate-400">

@@ -177,7 +177,7 @@ export default function IntelligentBroadcasterPage() {
                             )}
                           </div>
                           <button
-                            onClick={() => setDismissed(d => new Set([...d, alert.id]))}
+                            onClick={() => setDismissed(d => new Set([...Array.from(d), alert.id]))}
                             className="text-muted-foreground hover:text-foreground transition-colors shrink-0 text-lg leading-none"
                           >
                             ×

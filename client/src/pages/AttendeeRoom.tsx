@@ -240,8 +240,8 @@ export default function AttendeeRoom() {
             setAutoScroll(isAtBottom);
           }}>
             <div className="space-y-6 pb-20">
-              {transcriptSegments.length > 0 ? (
-                transcriptSegments.map((seg, i) => (
+              {(transcriptSegments as any[]).length > 0 ? (
+                (transcriptSegments as any[]).map((seg: any, i: number) => (
                   <div key={i} className="group animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className={cn(

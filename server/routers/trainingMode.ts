@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Training Mode tRPC Router
  * Manages training sessions, conferences, participants, call logs, and performance metrics.

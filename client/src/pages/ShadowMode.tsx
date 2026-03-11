@@ -519,7 +519,7 @@ export default function ShadowMode() {
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {[
-                          { label: "Transcript Segments", value: liveSession.transcriptSegments ?? 0, icon: MessageSquare, color: "text-blue-400" },
+                          { label: "Transcript Segments", value: Array.isArray(liveSession.transcriptSegments) ? liveSession.transcriptSegments.length : ((liveSession.transcriptSegments as unknown as number) ?? 0), icon: MessageSquare, color: "text-blue-400" },
                           { label: "Avg Sentiment", value: liveSession.sentimentAvg != null ? `${Math.round(liveSession.sentimentAvg)}%` : "—", icon: Activity, color: "text-emerald-400" },
                           { label: "Compliance Flags", value: liveSession.complianceFlags ?? 0, icon: Shield, color: "text-amber-400" },
                           { label: "Metrics Generated", value: liveSession.taggedMetricsGenerated ?? 0, icon: Tag, color: "text-violet-400" },

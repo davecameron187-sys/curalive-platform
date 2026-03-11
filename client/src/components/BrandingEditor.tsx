@@ -97,7 +97,7 @@ export default function BrandingEditor({ roadshowId, roadshowTitle, onClose }: B
         fontFamily: existing.fontFamily ?? "Space Grotesk",
         tagline: existing.tagline ?? "",
         footerText: existing.footerText ?? "",
-        showCuraLiveWatermark: existing.showCuraLiveWatermark !== false,
+        showCuraLiveWatermark: (existing as any).showCuraLiveWatermark !== false,
         customCss: existing.customCss ?? "",
       });
     } else {

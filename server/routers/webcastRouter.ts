@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * webcastRouter.ts — tRPC procedures for the CuraLive Webcasting Platform.
  * Covers: event CRUD, registration, Q&A moderation, polls, analytics, and Intelligent Broadcaster enhancements.

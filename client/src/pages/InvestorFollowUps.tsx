@@ -220,7 +220,7 @@ export default function InvestorFollowUps() {
                         </div>
                       </div>
                       <p className="text-[10px] text-slate-500">
-                        To: {latestEmail.recipientEmail} • {new Date(latestEmail.sentAt).toLocaleString()}
+                        To: {latestEmail.recipientEmail} • {latestEmail.sentAt ? new Date(latestEmail.sentAt).toLocaleString() : "—"}
                       </p>
                     </div>
                   )}

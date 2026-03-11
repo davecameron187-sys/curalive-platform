@@ -204,7 +204,7 @@ function SimulationPanel({ onClose }: { onClose: () => void }) {
         toast.success(step.label, { duration: 3000 });
       }, step.delayMs);
       const t2 = setTimeout(() => {
-        setCompletedSteps(prev => new Set([...prev, step.id]));
+        setCompletedSteps(prev => new Set([...Array.from(prev), step.id]));
       }, step.delayMs + 2200);
       timersRef.current.push(t1, t2);
     });

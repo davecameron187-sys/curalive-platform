@@ -72,7 +72,7 @@ export default function PostEventReport() {
     { eventId: eventId ?? "" },
     { 
       enabled: !!eventId, 
-      refetchInterval: (data) => (!data || data.status === "generating") ? 3000 : false 
+      refetchInterval: (data: any) => (!data || data.status === "generating") ? 3000 : false 
     }
   );
 
@@ -171,7 +171,7 @@ export default function PostEventReport() {
     <div className="min-h-screen bg-[#0a0d14] text-slate-200">
       <div className="border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 bg-[#0a0d14]/80 backdrop-blur-md z-20">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-white transition-colors">
+          <button onClick={() => window.history.back()} className="text-slate-400 hover:text-white transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
