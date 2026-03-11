@@ -281,13 +281,20 @@ export default function ShadowMode() {
               </p>
             </div>
           </div>
-          {activeTab === "live" && (
-            <Button onClick={() => setShowForm(!showForm)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
-              <Play className="w-4 h-4" />
-              New Session
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            <a href="/bastion"
+              className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-1.5 rounded-full hover:bg-amber-400/20 transition-colors">
+              <Shield className="w-3.5 h-3.5" />
+              Bastion Testing
+            </a>
+            {activeTab === "live" && (
+              <Button onClick={() => setShowForm(!showForm)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
+                <Play className="w-4 h-4" />
+                New Session
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
