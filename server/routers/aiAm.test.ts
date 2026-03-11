@@ -1,11 +1,48 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+// Mock LLM to avoid live API calls and quota exhaustion
+vi.mock("../_core/llm", () => ({
+  invokeLLM: vi.fn().mockImplementation(async ({ messages }: { messages: Array<{ role: string; content: string }> }) => {
+    const userMsg = messages.find((m) => m.role === "user")?.content || "";
+    const isViolation =
+      userMsg.includes("offensive") ||
+      userMsg.includes("idiots") ||
+      userMsg.includes("unacceptable") ||
+      userMsg.includes("50% next quarter") ||
+      userMsg.includes("acquisition will close") ||
+      userMsg.includes("major partnership");
+    const violationType = userMsg.includes("idiots") || userMsg.includes("unacceptable") || userMsg.includes("offensive")
+      ? "abuse"
+      : userMsg.includes("acquisition") || userMsg.includes("partnership")
+      ? "price_sensitive"
+      : "forward_looking";
+    return {
+      choices: [{
+        index: 0,
+        message: {
+          role: "assistant",
+          content: JSON.stringify({
+            detected: isViolation,
+            violationType: isViolation ? violationType : null,
+            severity: isViolation ? "medium" : "low",
+            confidenceScore: isViolation ? 0.85 : 0.1,
+            explanation: isViolation ? "Violation detected" : "No violation detected",
+          }),
+        },
+        finish_reason: "stop",
+      }],
+      usage: { prompt_tokens: 200, completion_tokens: 100, total_tokens: 300 },
+    };
+  }),
+}));
+
 import { detectViolation, createViolationAlert, acknowledgeViolation } from "../_core/compliance";
-import {
-  isDuplicate,
+import {  isDuplicate,
   cacheViolation,
   generateViolationHash,
   getCacheStats,
   clearEventCache,
+  clearAllCache,
 } from "../_core/aiAmDeduplication";
 import {
   filterViolations,
@@ -131,6 +168,7 @@ describe("AI Automated Moderator (AI-AM) - Week 3-4 Tests", () => {
     });
 
     it("should track cache statistics", () => {
+      clearAllCache(); // ensure a clean slate before checking totalEvents
       cacheViolation(eventId, 1, "Speaker A", "abuse", "Content 1");
       cacheViolation(eventId, 2, "Speaker B", "forward_looking", "Content 2");
 

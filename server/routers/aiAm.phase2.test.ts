@@ -1,4 +1,30 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+
+// Mock LLM to avoid live API calls and quota exhaustion
+vi.mock("../_core/llm", () => ({
+  invokeLLM: vi.fn().mockImplementation(async ({ messages }: { messages: Array<{ role: string; content: string }> }) => {
+    const userMsg = messages.find((m) => m.role === "user")?.content || "";
+    const isPattern = userMsg.includes("pattern") || userMsg.includes("violation") || userMsg.includes("analyze");
+    return {
+      choices: [{
+        index: 0,
+        message: {
+          role: "assistant",
+          content: JSON.stringify({
+            patternDetected: isPattern,
+            riskLevel: isPattern ? "high" : "low",
+            recommendation: isPattern ? "Consider muting speaker" : "No action needed",
+            violationTypes: isPattern ? ["forward_looking"] : [],
+            confidence: isPattern ? 0.85 : 0.1,
+          }),
+        },
+        finish_reason: "stop",
+      }],
+      usage: { prompt_tokens: 200, completion_tokens: 100, total_tokens: 300 },
+    };
+  }),
+}));
+
 import {
   checkAndApplyAutoMute,
   muteSpeaker,

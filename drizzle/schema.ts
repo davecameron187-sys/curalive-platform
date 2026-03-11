@@ -1736,12 +1736,12 @@ export type InsertAiGeneratedContent = typeof aiGeneratedContent.$inferInsert;
 
 export const occTranscriptionSegments = mysqlTable("occ_transcription_segments", {
   id: int("id").autoincrement().primaryKey(),
-  conferenceId: varchar("conference_id", { length: 128 }).notNull(),
+  conferenceId: int("conference_id").notNull(),
   speakerName: varchar("speaker_name", { length: 255 }),
   speakerRole: varchar("speaker_role", { length: 64 }),
-  content: text("content").notNull(),
-  startTimeMs: int("start_time_ms"),
-  endTimeMs: int("end_time_ms"),
+  text: text("text"),
+  startTime: int("start_time"),
+  endTime: int("end_time"),
   confidence: float("confidence"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -1794,35 +1794,47 @@ export const toxicityFilterResults = mysqlTable("toxicity_filter_results", {
 
 export const transcriptEdits = mysqlTable("transcript_edits", {
   id: int("id").autoincrement().primaryKey(),
-  conferenceId: int("conference_id").notNull(),
-  segmentId: int("segment_id").notNull(),
-  operatorId: int("operator_id").notNull(),
+  conferenceId: int("conference_id"),
+  segmentId: int("segment_id").default(0),
+  transcriptionSegmentId: int("transcription_segment_id"),
+  operatorId: int("operator_id"),
+  operatorName: varchar("operator_name", { length: 255 }),
   originalText: text("original_text").notNull(),
   correctedText: text("corrected_text").notNull(),
   editType: varchar("edit_type", { length: 64 }).notNull(),
   reason: text("reason"),
   confidence: float("confidence"),
+  approved: boolean("approved").default(false),
+  approvedBy: int("approved_by"),
+  approvedAt: timestamp("approved_at"),
   status: varchar("status", { length: 32 }).default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const transcriptVersions = mysqlTable("transcript_versions", {
   id: int("id").autoincrement().primaryKey(),
-  conferenceId: int("conference_id").notNull(),
+  conferenceId: int("conference_id"),
   versionNumber: int("version_number").notNull(),
   fullTranscript: text("full_transcript").notNull(),
   editCount: int("edit_count").default(0),
   changeDescription: text("change_description"),
   createdBy: int("created_by"),
+  createdByName: varchar("created_by_name", { length: 255 }),
+  isPublished: boolean("is_published").default(false),
+  publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const transcriptEditAuditLog = mysqlTable("transcript_edit_audit_log", {
   id: int("id").autoincrement().primaryKey(),
+  conferenceId: int("conference_id"),
   editId: int("edit_id").notNull(),
   action: varchar("action", { length: 64 }).notNull(),
-  actorId: int("actor_id"),
-  actorName: varchar("actor_name", { length: 255 }),
+  userId: int("actor_id"),
+  userName: varchar("actor_name", { length: 255 }),
+  userRole: varchar("user_role", { length: 64 }),
+  details: text("details"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -1841,19 +1853,37 @@ export const eventBriefResults = mysqlTable("event_brief_results", {
 export const contentEngagementEvents = mysqlTable("content_engagement_events", {
   id: int("id").autoincrement().primaryKey(),
   contentId: int("content_id").notNull(),
-  recipientEmail: varchar("recipient_email", { length: 255 }),
-  eventType: varchar("event_type", { length: 64 }).notNull(),
-  metadata: text("metadata"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
+  eventType: mysqlEnum("event_type", ["sent", "opened", "clicked", "responded", "bounced", "unsubscribed"]).notNull(),
+  eventData: text("event_data"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
 export const contentPerformanceMetrics = mysqlTable("content_performance_metrics", {
   id: int("id").autoincrement().primaryKey(),
   contentId: int("content_id").notNull(),
-  openRate: float("open_rate").default(0),
-  clickRate: float("click_rate").default(0),
-  engagementScore: float("engagement_score").default(0),
-  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  eventId: int("event_id").notNull(),
+  contentType: varchar("content_type", { length: 50 }).notNull(),
+  approvalStatus: mysqlEnum("approval_status", ["approved", "rejected", "pending"]).notNull().default("pending"),
+  approvalTime: int("approval_time"),
+  approvalScore: varchar("approval_score", { length: 16 }),
+  recipientCount: int("recipient_count").default(0),
+  sentCount: int("sent_count").default(0),
+  openCount: int("open_count").default(0),
+  clickCount: int("click_count").default(0),
+  responseCount: int("response_count").default(0),
+  openRate: varchar("open_rate", { length: 16 }).default("0"),
+  clickThroughRate: varchar("click_through_rate", { length: 16 }).default("0"),
+  responseRate: varchar("response_rate", { length: 16 }).default("0"),
+  engagementScore: varchar("engagement_score", { length: 16 }).default("0"),
+  qualityScore: varchar("quality_score", { length: 16 }),
+  relevanceScore: varchar("relevance_score", { length: 16 }),
+  professionalismScore: varchar("professionalism_score", { length: 16 }),
+  editsCount: int("edits_count").default(0),
+  rejectionReason: varchar("rejection_reason", { length: 500 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const contentTypePerformance = mysqlTable("content_type_performance", {
@@ -1874,10 +1904,18 @@ export const eventPerformanceSummary = mysqlTable("event_performance_summary", {
   contentItemsApproved: int("content_items_approved").default(0),
   contentItemsRejected: int("content_items_rejected").default(0),
   overallApprovalRate: varchar("overall_approval_rate", { length: 16 }).default("0"),
+  avgTimeToApproval: int("avg_time_to_approval"),
+  totalContentSent: int("total_content_sent").default(0),
   totalEngagements: int("total_engagements").default(0),
   avgEngagementRate: varchar("avg_engagement_rate", { length: 16 }).default("0"),
-  bestPerformingType: varchar("best_performing_type", { length: 64 }),
-  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  bestPerformingType: varchar("best_performing_type", { length: 50 }),
+  bestPerformingScore: varchar("best_performing_score", { length: 16 }),
+  worstPerformingType: varchar("worst_performing_type", { length: 50 }),
+  worstPerformingScore: varchar("worst_performing_score", { length: 16 }),
+  avgContentQuality: varchar("avg_content_quality", { length: 16 }),
+  operatorSatisfaction: varchar("operator_satisfaction", { length: 16 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 /**
@@ -2315,3 +2353,113 @@ export const shadowSessions = mysqlTable("shadow_sessions", {
 
 export type ShadowSession = typeof shadowSessions.$inferSelect;
 export type InsertShadowSession = typeof shadowSessions.$inferInsert;
+
+// ─── User Feedback ────────────────────────────────────────────────────────────
+export const userFeedback = mysqlTable("user_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  rating: int("rating").notNull(),
+  suggestion: text("suggestion"),
+  email: varchar("email", { length: 255 }),
+  userId: int("user_id"),
+  pageUrl: varchar("page_url", { length: 1000 }),
+  ipAddress: varchar("ip_address", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type UserFeedback = typeof userFeedback.$inferSelect;
+export type InsertUserFeedback = typeof userFeedback.$inferInsert;
+
+// ─── AI-AM Compliance Audit Trail ─────────────────────────────────────────────
+// Separate table used by aiAmAuditTrail.ts (different schema from complianceAuditLog)
+export const aiAmAuditLog = mysqlTable("ai_am_audit_log", {
+  id: varchar("id", { length: 36 }).primaryKey(), // UUID
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  action: mysqlEnum("action", [
+    "violation_detected",
+    "violation_acknowledged",
+    "violation_muted",
+    "violation_unmuted",
+    "alert_sent",
+    "rule_updated",
+    "preferences_changed",
+  ]).notNull(),
+  actionBy: varchar("action_by", { length: 128 }).notNull(),
+  actionByRole: varchar("action_by_role", { length: 64 }),
+  targetViolationId: varchar("target_violation_id", { length: 128 }),
+  targetSpeaker: varchar("target_speaker", { length: 255 }),
+  details: text("details"),
+  timestamp: bigint("timestamp", { mode: "number" }).notNull(),
+  ipAddress: varchar("ip_address", { length: 64 }),
+  userAgent: varchar("user_agent", { length: 512 }),
+  hash: varchar("hash", { length: 64 }).notNull(),
+  previousHash: varchar("previous_hash", { length: 64 }),
+});
+export type AiAmAuditLog = typeof aiAmAuditLog.$inferSelect;
+export type InsertAiAmAuditLog = typeof aiAmAuditLog.$inferInsert;
+
+// ─── Compliance Violations ────────────────────────────────────────────────────
+// Used by compliance.ts, aiAmAuditTrail.ts, aiAmAutoMuting.ts, and test files
+export const complianceViolations = mysqlTable("compliance_violations", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  violationId: varchar("violation_id", { length: 128 }),
+  conferenceId: int("conference_id"),
+  violationType: varchar("violation_type", { length: 128 }).notNull(),
+  severity: varchar("severity", { length: 32 }).notNull(),
+  confidence: float("confidence"),
+  confidenceScore: float("confidence_score"),
+  speaker: varchar("speaker", { length: 255 }),
+  speakerName: varchar("speaker_name", { length: 255 }),
+  speakerRole: varchar("speaker_role", { length: 128 }),
+  transcript: text("transcript"),
+  transcriptExcerpt: text("transcript_excerpt"),
+  startTimeMs: int("start_time_ms"),
+  endTimeMs: int("end_time_ms"),
+  acknowledged: tinyint("acknowledged").default(0),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  actionTaken: varchar("action_taken", { length: 64 }).default("none"),
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ComplianceViolation = typeof complianceViolations.$inferSelect;
+export type InsertComplianceViolation = typeof complianceViolations.$inferInsert;
+
+// ─── Alert Preferences ────────────────────────────────────────────────────────
+// Used by aiAmNotificationDispatch.ts and test files
+export const alertPreferences = mysqlTable("alert_preferences", {
+  id: int("id").autoincrement().primaryKey(),
+  operatorId: varchar("operator_id", { length: 128 }).notNull().unique(),
+  eventId: varchar("event_id", { length: 128 }),
+  emailNotificationsEnabled: tinyint("email_notifications_enabled").default(1),
+  smsNotificationsEnabled: tinyint("sms_notifications_enabled").default(0),
+  inAppNotificationsEnabled: tinyint("in_app_notifications_enabled").default(1),
+  emailAddress: varchar("email_address", { length: 320 }),
+  phoneNumber: varchar("phone_number", { length: 32 }),
+  criticalOnly: tinyint("critical_only").default(0),
+  quietHoursEnabled: tinyint("quiet_hours_enabled").default(0),
+  quietHoursStart: varchar("quiet_hours_start", { length: 8 }).default("22:00"),
+  quietHoursEnd: varchar("quiet_hours_end", { length: 8 }).default("08:00"),
+  timezone: varchar("timezone", { length: 64 }).default("UTC"),
+  monitoredViolationTypes: text("monitored_violation_types"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type AlertPreference = typeof alertPreferences.$inferSelect;
+export type InsertAlertPreference = typeof alertPreferences.$inferInsert;
+
+// ─── Alert History ────────────────────────────────────────────────────────────
+// Used by aiAmNotificationDispatch.ts and compliance.ts
+export const alertHistory = mysqlTable("alert_history", {
+  id: int("id").autoincrement().primaryKey(),
+  operatorId: varchar("operator_id", { length: 128 }),
+  eventId: varchar("event_id", { length: 128 }),
+  violationId: varchar("violation_id", { length: 128 }),
+  channel: varchar("channel", { length: 32 }),
+  status: varchar("status", { length: 32 }),
+  action: varchar("action", { length: 64 }),
+  actorId: varchar("actor_id", { length: 128 }),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+  details: text("details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type AlertHistory = typeof alertHistory.$inferSelect;
+export type InsertAlertHistory = typeof alertHistory.$inferInsert;

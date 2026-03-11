@@ -1,4 +1,38 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+
+// Mock LLM to avoid live API calls and quota exhaustion
+vi.mock("../_core/llm", () => ({
+  invokeLLM: vi.fn().mockImplementation(async ({ messages }: { messages: Array<{ role: string; content: string }> }) => {
+    const userMsg = messages.find((m) => m.role === "user")?.content || "";
+    const isViolation =
+      userMsg.includes("50% growth") ||
+      userMsg.includes("offensive") ||
+      userMsg.includes("idiots") ||
+      userMsg.includes("acquisition") ||
+      userMsg.includes("partnership");
+    const violationType = userMsg.includes("50% growth") ? "forward_looking"
+      : userMsg.includes("acquisition") || userMsg.includes("partnership") ? "price_sensitive"
+      : "abuse";
+    return {
+      choices: [{
+        index: 0,
+        message: {
+          role: "assistant",
+          content: JSON.stringify({
+            detected: isViolation,
+            violationType: isViolation ? violationType : null,
+            severity: isViolation ? "high" : "low",
+            confidenceScore: isViolation ? 0.9 : 0.1,
+            explanation: isViolation ? "Violation detected" : "No violation detected",
+          }),
+        },
+        finish_reason: "stop",
+      }],
+      usage: { prompt_tokens: 200, completion_tokens: 100, total_tokens: 300 },
+    };
+  }),
+}));
+
 import { detectViolation, createViolationAlert } from "../_core/compliance";
 import {
   shouldNotify,
@@ -6,7 +40,7 @@ import {
   generateSmsContent,
   notifyOperator,
 } from "../_core/aiAmNotifications";
-import { isDuplicate, cacheViolation } from "../_core/aiAmDeduplication";
+import { isDuplicate, cacheViolation, clearAllCache } from "../_core/aiAmDeduplication";
 import { publishAlertToAbly } from "../_core/aiAmAblyChannels";
 
 describe("AI-AM Integration Tests", () => {
@@ -290,24 +324,23 @@ describe("AI-AM Integration Tests", () => {
       expect(violation).toBeDefined();
       expect(violation?.violationType).toBe("forward_looking");
 
-      // 2. Check for duplicates
+      // 2. Check for duplicates — clear cache first to avoid cross-test pollution
+      clearAllCache();
       const eventId = "event-1";
       const isDup = isDuplicate(eventId, "CEO", violation!.violationType, transcriptText);
       expect(isDup).toBe(false);
 
-      // 3. Create violation record
-      const violationRecord = await createViolationAlert({
+      // 3. Create violation record (conferenceId is int in DB, pass undefined)
+      const violationRecord = await createViolationAlert(
         eventId,
-        conferenceId: "conf-1",
-        violationType: violation!.violationType,
-        severity: violation!.severity,
-        confidenceScore: violation!.confidenceScore,
-        speakerName: "CEO",
-        speakerRole: "Chief Executive",
-        transcriptExcerpt: transcriptText,
-        startTimeMs: 5000,
-        endTimeMs: 6000,
-      });
+        undefined,
+        violation!,
+        "CEO",
+        "Chief Executive",
+        transcriptText,
+        5000,
+        6000
+      );
 
       expect(violationRecord).toBeDefined();
       expect(violationRecord.id).toBeGreaterThan(0);

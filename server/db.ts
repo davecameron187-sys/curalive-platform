@@ -163,3 +163,68 @@ export async function getEventPaceResults(eventId: string) {
 }
 
 // TODO: add feature queries here as your schema grows.
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Synchronous db export — used by modules that import `db` directly.
+// Falls back to a lazy-initialised instance so tests without DATABASE_URL
+// still import without crashing (queries will throw at runtime).
+// ──────────────────────────────────────────────────────────────────────────────
+
+function buildSyncDb() {
+  if (process.env.DATABASE_URL) {
+    try {
+      return drizzle(process.env.DATABASE_URL);
+    } catch {
+      // ignore — tests may not have a real DB
+    }
+  }
+  // Return a proxy that throws a clear error on first use
+  return new Proxy({} as ReturnType<typeof drizzle>, {
+    get(_target, prop) {
+      if (prop === "then") return undefined; // not a Promise
+      throw new Error(
+        `[db] Cannot call db.${String(prop)}() — DATABASE_URL is not set. ` +
+          "Use getDb() for async-safe access."
+      );
+    },
+  });
+}
+
+/** Synchronous Drizzle instance (used by legacy imports). */
+export const db = buildSyncDb();
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Feedback helpers (used by feedback.test.ts)
+// ──────────────────────────────────────────────────────────────────────────────
+import { userFeedback } from "../drizzle/schema";
+
+export async function submitFeedback(input: {
+  rating: number;
+  suggestion?: string | null;
+  email?: string | null;
+  userId?: number | null;
+  pageUrl?: string | null;
+  ipAddress?: string | null;
+}): Promise<{ id: number }> {
+  const dbInstance = await getDb();
+  if (!dbInstance) throw new Error("Database not available");
+  const result = await dbInstance.insert(userFeedback).values({
+    rating: input.rating,
+    suggestion: input.suggestion ?? null,
+    email: input.email ?? null,
+    userId: input.userId ?? null,
+    pageUrl: input.pageUrl ?? null,
+    ipAddress: input.ipAddress ?? null,
+  });
+  return { id: (result as any).insertId ?? 0 };
+}
+
+export async function getRecentFeedback(limit = 20) {
+  const dbInstance = await getDb();
+  if (!dbInstance) return [];
+  return dbInstance
+    .select()
+    .from(userFeedback)
+    .orderBy(desc(userFeedback.createdAt))
+    .limit(limit);
+}

@@ -21,6 +21,7 @@ export interface SpeakerViolationStatus {
   lastViolationTime: Date;
   isMuted: boolean;
   muteReason: string;
+  muteType?: "soft" | "hard";
   muteStartTime?: Date;
   muteEndTime?: Date;
   violationIds: number[];
@@ -70,22 +71,22 @@ export async function checkAndApplyAutoMute(
   speakerName: string,
   violationType: string,
   conferenceId: string
-): Promise<{ shouldMute: boolean; reason?: string }> {
+): Promise<{ shouldMute: boolean; reason: string }> {
   const config = await getMutingConfig(eventId);
 
   // Check if auto-muting is enabled
   if (!config.enabled) {
-    return { shouldMute: false };
+    return { shouldMute: false, reason: 'Auto-muting is disabled for this event' };
   }
 
   // Check if speaker is exempt
   if (config.excludeSpeakers?.includes(speakerName)) {
-    return { shouldMute: false };
+    return { shouldMute: false, reason: `Speaker ${speakerName} is exempt from auto-muting` };
   }
 
   // Check if violation type is excluded
   if (config.excludeViolationTypes?.includes(violationType)) {
-    return { shouldMute: false };
+    return { shouldMute: false, reason: `Violation type '${violationType}' is excluded from auto-muting` };
   }
 
   // Get violation count for this speaker in the time window
@@ -111,7 +112,7 @@ export async function checkAndApplyAutoMute(
 
     // If already muted, don't mute again
     if (existingMute?.isMuted) {
-      return { shouldMute: false };
+      return { shouldMute: false, reason: `Speaker ${speakerName} is already muted` };
     }
 
     // Apply mute
@@ -144,7 +145,7 @@ export async function checkAndApplyAutoMute(
     };
   }
 
-  return { shouldMute: false };
+  return { shouldMute: false, reason: `Violation count (${violationCount}) below threshold (${config.violationThreshold})` };
 }
 
 /**
@@ -170,6 +171,7 @@ export async function muteSpeaker(
     lastViolationTime: new Date(),
     isMuted: true,
     muteReason: reason || `Manually muted by operator (${muteType})`,
+    muteType,
     muteStartTime: new Date(),
     muteEndTime,
     violationIds: [],

@@ -1,4 +1,38 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Mock the LLM to avoid live API calls and quota exhaustion
+vi.mock("./_core/llm", () => ({
+  invokeLLM: vi.fn().mockResolvedValue({
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: "assistant",
+          content: JSON.stringify({
+            headline: "Company Reports 30% Revenue Growth with 70% Gross Margin Expansion",
+            keyPoints: [
+              "Revenue grew 30% this quarter driven by strong product demand",
+              "Gross margin expanded to 70%, reflecting improved operational efficiency",
+            ],
+            financialHighlights: [
+              "Revenue growth: 30% quarter-over-quarter",
+              "Gross margin: 70%",
+            ],
+            sentiment: "Positive",
+            actionItems: ["Follow up on margin expansion drivers in next quarter"],
+            executiveSummary:
+              "The company delivered strong quarterly results with revenue growing 30% and gross margins expanding to 70%. Management attributed the margin improvement to operational efficiencies and favorable product mix.",
+            forwardLookingStatements: ["Management expects continued revenue growth in the next quarter"],
+            regulatoryHighlights: ["Results disclosed in accordance with JSE Listings Requirements"],
+            riskFactors: ["Macroeconomic headwinds could impact revenue growth"],
+          }),
+        },
+        finish_reason: "stop",
+      },
+    ],
+    usage: { prompt_tokens: 400, completion_tokens: 600, total_tokens: 1000 },
+  }),
+}));
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -46,7 +80,7 @@ describe("events.generateSummary", () => {
     expect(Array.isArray(summary.actionItems)).toBe(true);
     expect(typeof summary.executiveSummary).toBe("string");
     expect(summary.executiveSummary.length).toBeGreaterThan(20);
-  }, 30000); // Allow 30s for LLM call
+  });
 
   it("handles empty transcript gracefully", async () => {
     const caller = appRouter.createCaller(createPublicContext());
@@ -61,7 +95,7 @@ describe("events.generateSummary", () => {
     expect(result).toBeDefined();
     expect(typeof result.success).toBe("boolean");
     expect(result.summary).toBeDefined();
-  }, 30000);
+  });
 });
 
 describe("ably.tokenRequest", () => {

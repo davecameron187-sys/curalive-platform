@@ -128,6 +128,13 @@ export function clearEventCache(eventId: string): void {
 }
 
 /**
+ * Clear the entire violation cache (used in tests)
+ */
+export function clearAllCache(): void {
+  violationCache.clear();
+}
+
+/**
  * Get cache statistics for monitoring
  */
 export function getCacheStats(): {

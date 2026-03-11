@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { db } from "@/server/db";
 import { auditTrail } from "@/server/_core/aiAmAuditTrail";
-import { complianceViolations, complianceAuditLog } from "@/drizzle/schema";
+import { complianceViolations, aiAmAuditLog as complianceAuditLog } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 
 describe("AI Automated Moderator - Phase 2 Features", () => {

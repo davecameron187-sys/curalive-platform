@@ -71,7 +71,9 @@ Respond with JSON only.`;
     const content = response.choices[0]?.message?.content;
     if (!content) return null;
 
-    const result = JSON.parse(content);
+    // Strip markdown code fences if the LLM wraps the JSON in ```json ... ```
+    const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const result = JSON.parse(cleaned);
 
     if (!result.detected) return null;
 
@@ -113,14 +115,16 @@ export async function createViolationAlert(
       transcriptExcerpt,
       startTimeMs: startTimeMs || null,
       endTimeMs: endTimeMs || null,
-      acknowledged: false,
+      acknowledged: 0,
       actionTaken: "none",
     });
 
+    // drizzle mysql2 returns [OkPacket, null] — insertId is in result[0]
+    const insertedId = Number((result as any)[0]?.insertId ?? result.insertId ?? 0);
     // Log creation in alert history
-    if (result.insertId) {
+    if (insertedId) {
       await db.insert(alertHistory).values({
-        violationId: Number(result.insertId),
+        violationId: insertedId,
         action: "created",
         actorId: null,
         details: JSON.stringify({
@@ -130,7 +134,7 @@ export async function createViolationAlert(
       });
     }
 
-    return result;
+    return { id: insertedId };
   } catch (error) {
     console.error("[Compliance] Alert creation error:", error);
     throw error;

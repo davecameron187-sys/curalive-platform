@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { complianceAuditLog, complianceViolations } from "@/drizzle/schema";
+import { aiAmAuditLog as complianceAuditLog, complianceViolations } from "@/drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -102,7 +102,7 @@ class ComplianceAuditTrail {
       .select()
       .from(complianceAuditLog)
       .where(eq(complianceAuditLog.targetViolationId, violationId))
-      .orderBy(desc(complianceAuditLog.timestamp));
+      .orderBy(complianceAuditLog.timestamp);
 
     return logs.map((log) => ({
       ...log,
@@ -169,7 +169,7 @@ class ComplianceAuditTrail {
         action: log.action,
         actionBy: log.actionBy,
         timestamp: log.timestamp,
-        details: log.details,
+        details: JSON.parse(log.details || "{}"),
       });
 
       const expectedHash = crypto.createHash("sha256").update(hashInput).digest("hex");
@@ -275,9 +275,8 @@ class ComplianceAuditTrail {
   /**
    * Export audit trail as JSON
    */
-  async exportAuditTrailAsJSON(eventId: string): Promise<string> {
-    const logs = await this.getEventAuditLog(eventId, 10000);
-
+   async exportAuditTrailAsJSON(eventId: string): Promise<string> {
+    const logs = (await this.getEventAuditLog(eventId, 10000)).reverse();
     return JSON.stringify(
       {
         eventId,
@@ -285,7 +284,6 @@ class ComplianceAuditTrail {
         totalRecords: logs.length,
         logs: logs.map((log) => ({
           ...log,
-          details: JSON.parse(log.details || "{}"),
           timestamp: new Date(log.timestamp).toISOString(),
         })),
       },

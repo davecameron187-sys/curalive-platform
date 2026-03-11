@@ -9,6 +9,7 @@ const t = initTRPC.context<TrpcContext>().create({
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
+export const createCallerFactory = t.createCallerFactory;
 
 // AUTH_BYPASS: set AUTH_BYPASS=true (or leave NODE_ENV=development) to skip auth — remove before go-live
 const DEV_BYPASS = process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development';

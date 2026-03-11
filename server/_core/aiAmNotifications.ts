@@ -81,7 +81,8 @@ export async function generateEmailContent(
     low: "ℹ️",
   };
 
-  const subject = `${severityEmoji[alert.severity]} Compliance Alert: ${alert.violationType.replace(/_/g, " ")}`;
+  // Keep violationType in its raw form (with underscores) so callers can reliably match it.
+  const subject = `${severityEmoji[alert.severity]} Compliance Alert: ${alert.violationType}`;
 
   const body = `
 Compliance Violation Detected

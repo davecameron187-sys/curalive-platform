@@ -59,8 +59,9 @@ describe("AI Automated Moderator - Final Features", () => {
     it("should respect quiet hours", async () => {
       const now = new Date();
       const currentHour = now.getHours();
-      const quietStart = (currentHour + 1) % 24;
-      const quietEnd = (currentHour + 2) % 24;
+      // Set quiet window to span the current hour (start 1h before, end 1h after)
+      const quietStart = (currentHour + 23) % 24; // 1 hour before current
+      const quietEnd = (currentHour + 1) % 24;   // 1 hour after current
 
       await db.insert(alertPreferences).values({
         operatorId: testOperatorId,
