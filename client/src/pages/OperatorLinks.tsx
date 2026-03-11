@@ -5,7 +5,7 @@ import {
   HelpCircle, Play, X, ChevronRight as ChevRight,
   Radio, Users, AlertTriangle, BarChart3, FileText,
   Mic, Star, Clock, Loader2, Rocket, MapPin, Circle,
-  TrendingUp, ShieldCheck, Database, Activity,
+  TrendingUp, ShieldCheck, Database, Activity, Tag,
 } from "lucide-react";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
@@ -80,6 +80,7 @@ const SECTIONS: Section[] = [
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Recommended Workflows", description: "Pre-configured feature activation sequences for each bundle. Maximize ROI by activating features in the recommended order.", path: "/workflows", actionLabel: "View Workflows" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Agentic Event Brain", description: "CuraLive's proprietary AI scoring engine. Answer 3 questions to get your optimal bundle, AI-generated action plan, and ROI projection.", path: "/agentic-brain", actionLabel: "Activate Brain" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Autonomous Intervention Engine", description: "6 live rules that fire automatically during events — sentiment drops, Q&A overload, compliance risks, and more. Agents act without human input.", path: "/autonomous-intervention", actionLabel: "View Engine" },
+      { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Tagged Metrics Dashboard", description: "Your proprietary intelligence database. Every sentiment score, compliance flag, scaling event and engagement signal stored and queryable. The data moat that compounds with every event.", path: "/tagged-metrics", actionLabel: "View Dashboard" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "AI Shop", description: "Browse all 16 AI features with interconnection badges, see related features, and activate new capabilities with one click.", path: "/ai-shop", actionLabel: "Browse Features" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Post-Event Report", description: "AI-generated summaries, full transcripts, sentiment analysis, Q&A highlights, and ROI realization tracking.", path: "/post-event/q4-earnings-2026", actionLabel: "View Reports" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Webcast Recap Generator", description: "Automatically generate video recaps, podcast conversions, and social media content from completed events.", path: "/webcast-recap", actionLabel: "Generate Recap" },
@@ -369,6 +370,7 @@ const ROADMAP_ITEMS = [
       { title: "Agentic Event Brain", desc: "Proprietary scoring algorithm (patent pending). 3-question wizard → GPT-4o recommendation → ROI preview. Every analysis logged to database.", path: "/agentic-brain", icon: Brain },
       { title: "Autonomous Intervention Engine", desc: "6 live rules that fire without human input during events. Sentiment drop, Q&A overload, compliance risk, engagement drop, positive spike, high-value event detection.", path: "/autonomous-intervention", icon: Zap },
       { title: "Cross-Event Memory", desc: "Brain now queries all past analyses for your bundle. Surfaces patterns: average confidence score, dominant challenge, peak performance, last run timestamp.", path: "/agentic-brain", icon: Database },
+      { title: "Tagged Metrics Dashboard", desc: "Proprietary intelligence database. Every sentiment score, compliance flag, scaling event and engagement signal stored, tagged and queryable. The data moat that compounds with every event.", path: "/tagged-metrics", icon: Tag },
       { title: "Bundle Interconnection Map", desc: "Visual map of how all 6 bundles trigger each other automatically. IR → Compliance → Operations → Content chain reaction.", path: "/feature-map", icon: Activity },
       { title: "Operator Console (OCC)", desc: "Full live event control: CCP, Q&A management, participant states, green room, compliance monitoring, real-time analytics.", path: "/occ", icon: Settings },
       { title: "Virtual Studio", desc: "Bundle-specific broadcast environments with AI overlays, avatar styles, ESG flags, and real-time preview.", path: "/virtual-studio", icon: Star },

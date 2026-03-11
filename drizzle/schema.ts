@@ -2275,3 +2275,20 @@ export const autonomousInterventions = mysqlTable("autonomous_interventions", {
 
 export type AutonomousIntervention = typeof autonomousInterventions.$inferSelect;
 export type InsertAutonomousIntervention = typeof autonomousInterventions.$inferInsert;
+
+export const taggedMetrics = mysqlTable("tagged_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 255 }).notNull(),
+  eventTitle: varchar("event_title", { length: 255 }),
+  tagType: mysqlEnum("tag_type", ["sentiment", "compliance", "scaling", "engagement", "qa", "intervention"]).notNull(),
+  metricValue: float("metric_value").notNull(),
+  label: varchar("label", { length: 255 }),
+  detail: text("detail"),
+  bundle: varchar("bundle", { length: 64 }),
+  severity: mysqlEnum("severity", ["positive", "neutral", "negative", "critical"]).default("neutral").notNull(),
+  source: varchar("source", { length: 64 }).default("system"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type TaggedMetric = typeof taggedMetrics.$inferSelect;
+export type InsertTaggedMetric = typeof taggedMetrics.$inferInsert;

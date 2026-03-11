@@ -87,6 +87,7 @@ import AIShop from "./pages/AIShop";
 import AIOnboarding from "./pages/AIOnboarding";
 import AgenticBrain from "./pages/AgenticBrain";
 import AutonomousIntervention from "./pages/AutonomousIntervention";
+import TaggedMetricsDashboard from "./pages/TaggedMetricsDashboard";
 import SocialMediaPage from "./pages/SocialMediaPage";
 import PodcastConverter from "./pages/PodcastConverter";
 import SustainabilityDashboard from "./pages/SustainabilityDashboard";
@@ -190,6 +191,7 @@ function Router() {
       <Route path="/ai-onboarding" component={AIOnboarding} />
       <Route path="/agentic-brain" component={AgenticBrain} />
       <Route path="/autonomous-intervention" component={AutonomousIntervention} />
+      <Route path="/tagged-metrics" component={TaggedMetricsDashboard} />
       <Route path="/social" component={SocialMediaPage} />
       <Route path="/podcast-converter" component={PodcastConverter} />
       <Route path="/sustainability" component={SustainabilityDashboard} />
