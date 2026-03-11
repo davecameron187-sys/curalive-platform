@@ -50,6 +50,7 @@ import { taggedMetricsRouter } from "./routers/taggedMetricsRouter";
 import { shadowModeRouter } from "./routers/shadowModeRouter";
 import { archiveUploadRouter } from "./routers/archiveUploadRouter";
 import { benchmarksRouter } from "./routers/benchmarksRouter";
+import { marketReactionRouter } from "./routers/marketReactionRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -110,6 +111,7 @@ export const appRouter = router({
   shadowMode: shadowModeRouter,
   archiveUpload: archiveUploadRouter,
   benchmarks: benchmarksRouter,
+  marketReaction: marketReactionRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

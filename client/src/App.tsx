@@ -107,6 +107,7 @@ import WebcastRecapPage from "./pages/WebcastRecapPage";
 import TrainingSubPage from "./pages/TrainingSubPage";
 import OperatorQuickRef from "./pages/OperatorQuickRef";
 import OperatorLinks from "./pages/OperatorLinks";
+import MarketReaction from "./pages/MarketReaction";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -197,6 +198,7 @@ function Router() {
       <Route path="/agentic-brain" component={AgenticBrain} />
       <Route path="/autonomous-intervention" component={AutonomousIntervention} />
       <Route path="/tagged-metrics" component={TaggedMetricsDashboard} />
+      <Route path="/market-reaction" component={MarketReaction} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
