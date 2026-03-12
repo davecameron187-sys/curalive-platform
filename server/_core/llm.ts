@@ -216,6 +216,11 @@ const resolveApiUrl = () => {
   if (process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_URL.trim()) {
     return `${process.env.BUILT_IN_FORGE_API_URL.replace(/\/$/, "")}/v1/chat/completions`;
   }
+  // If a direct OPENAI_API_KEY is provided, always use the real OpenAI endpoint
+  // regardless of whether the Replit integration base URL is set
+  if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim()) {
+    return "https://api.openai.com/v1/chat/completions";
+  }
   if (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.trim()) {
     return `${process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.replace(/\/$/, "")}/chat/completions`;
   }
