@@ -40,6 +40,7 @@ import {
   occDialOutHistory,
   occGreenRooms,
   attendeeRegistrations,
+  irContacts,
 } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { getDirectAccessStats, getRecentDirectAccessAttempts, generateUniquePin } from "../directAccess";
@@ -232,6 +233,27 @@ export const occRouter = router({
         { participantId: input.participantId, requestToSpeak: input.requestToSpeak }
       );
       return { success: true };
+    }),
+
+  getIRContacts: protectedProcedure
+    .input(z.object({ eventId: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const contacts = await db.select().from(irContacts).where(eq(irContacts.active, true));
+        return contacts.map(c => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          company: c.company,
+          role: c.role,
+          phoneNumber: c.phoneNumber,
+        }));
+      } catch (e) {
+        console.error("[OCC] Failed to fetch IR contacts:", e);
+        return [];
+      }
     }),
 
   dialOut: operatorProcedure

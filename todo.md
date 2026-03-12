@@ -181,8 +181,9 @@
 - [DEFERRED] IR Contacts loading deferred to future sprint
 
 ## IMMEDIATE PRIORITIES
-- [ ] Configure Slack webhook for GitHub Actions CI/CD notifications
-- [ ] Verify TypeScript build succeeds (fix LSP cache issues)
+- [x] Configure Slack webhook for GitHub Actions CI/CD notifications (SLACK_SETUP_GUIDE.md created)
+- [x] Implement IR Contact loading feature (getIRContacts query added to OCC router)
+- [x] Create linting baseline tracking issue (LINTING_BASELINE_ISSUE.md created)
 - [ ] Run full test suite and confirm 760/760 tests passing
 
 ## Round 30 — Edit IR Contact, Dial-Out History, Speaker Green Room, Event Pass
