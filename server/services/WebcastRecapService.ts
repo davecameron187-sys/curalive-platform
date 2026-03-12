@@ -38,10 +38,10 @@ export class WebcastRecapService {
     const db = await getDb();
 
     const [segments, sentiments, qaItems, events] = await Promise.all([
-      db.select().from(occTranscriptionSegments).where(eq(occTranscriptionSegments.conferenceId, eventId)).orderBy(asc(occTranscriptionSegments.createdAt)).limit(150).catch(() => []),
-      db.select().from(sentimentSnapshots).where(eq(sentimentSnapshots.conferenceId, eventId)).orderBy(asc(sentimentSnapshots.createdAt)).limit(30).catch(() => []),
-      db.select().from(webcastQa).where(eq(webcastQa.eventId, eventId)).limit(20).catch(() => []),
-      db.select().from(webcastEvents).where(eq(webcastEvents.id, eventId as any)).limit(1).catch(() => []),
+      db?.select().from(occTranscriptionSegments).where(eq(occTranscriptionSegments.conferenceId, eventId)).orderBy(asc(occTranscriptionSegments.createdAt)).limit(150).catch(() => []) || Promise.resolve([]),
+      db?.select().from(sentimentSnapshots).where(eq(sentimentSnapshots.conferenceId, eventId)).orderBy(asc(sentimentSnapshots.createdAt)).limit(30).catch(() => []) || Promise.resolve([]),
+      db?.select().from(webcastQa).where(eq(webcastQa.eventId, eventId)).limit(20).catch(() => []) || Promise.resolve([]),
+      db?.select().from(webcastEvents).where(eq(webcastEvents.id, eventId as any)).limit(1).catch(() => []) || Promise.resolve([]),
     ]);
 
     const transcript = segments.map((s: any) => s.content).join(" ").slice(0, 5000);

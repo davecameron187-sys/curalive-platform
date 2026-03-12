@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 describe("ContentPerformanceAnalyticsService", () => {
   let testEventId: number;
   let testContentId: number;
+  let transaction: any;
 
   beforeAll(async () => {
     const db = await getDb();
@@ -22,6 +23,13 @@ describe("ContentPerformanceAnalyticsService", () => {
     );
     testEventId = (eventRows as any).insertId;
 
+    // Start a transaction for test isolation — all data will be rolled back after the test
+    try {
+      transaction = await (db as any).$client.promise().beginTransaction();
+    } catch (e) {
+      console.log("Transaction not supported, proceeding without isolation");
+    }
+
     // Create test content (approved_by is required in DB)
     const [contentRows] = await (db as any).$client.promise().query(
       `INSERT INTO ai_generated_content (event_id, content_type, title, content, status, generated_at, approved_by, updated_at)
@@ -35,11 +43,20 @@ describe("ContentPerformanceAnalyticsService", () => {
     const db = await getDb();
     if (!db) return;
 
-    // Cleanup
-    await db
-      .delete(aiGeneratedContent)
-      .where(eq(aiGeneratedContent.id, testContentId));
-    await db.delete(webcastEvents).where(eq(webcastEvents.id, testEventId));
+    // Rollback transaction if it exists (ensures test isolation)
+    if (transaction) {
+      try {
+        await transaction.rollback();
+      } catch (e) {
+        console.log("Transaction already rolled back or completed");
+      }
+    } else {
+      // Fallback cleanup if transaction wasn't used
+      await db
+        .delete(aiGeneratedContent)
+        .where(eq(aiGeneratedContent.id, testContentId));
+      await db.delete(webcastEvents).where(eq(webcastEvents.id, testEventId));
+    }
   });
 
   describe("recordEngagementEvent", () => {

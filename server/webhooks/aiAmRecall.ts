@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { getDb } from "../db";
-import { complianceFlags } from "../../drizzle/schema";
+import { complianceViolations } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { detectViolation, createViolationAlert } from "../_core/compliance";
 import { publishAlertToAbly } from "../_core/aiAmAblyChannels";
@@ -183,14 +183,13 @@ async function handleTranscriptComplete(payload: RecallWebhookPayload, eventId: 
       return;
     }
     // Get all violations for this event
-    const violations = await db.select().from(complianceFlags).where(eq((complianceFlags as any).eventId, eventId));
+    const violations = await db.select().from(complianceViolations).where(eq(complianceViolations.eventId, eventId));
 
     // Generate summary
     const summary = {
       totalViolations: violations.length,
-      unacknowledged: violations.filter((v: any) => !v.acknowledged).length,
+      unreviewed: violations.filter((v: any) => !v.reviewedAt).length,
       bySeverity: {
-        critical: violations.filter((v: any) => v.severity === "critical").length,
         high: violations.filter((v: any) => v.severity === "high").length,
         medium: violations.filter((v: any) => v.severity === "medium").length,
         low: violations.filter((v: any) => v.severity === "low").length,
