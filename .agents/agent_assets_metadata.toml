@@ -54,3 +54,9 @@ id = "-wE_3qlqVzxzfzNjSkGHa"
 uri = "file://public/CuraLive_Patent_CIPC_Submission.docx"
 type = "word_document"
 title = "CuraLive Provisional Patent — CIPC Submission Ready (with Autonomous Evolution)"
+
+[[outputs]]
+id = "zplLVVR7m9BGrlWFQeCUX"
+uri = "file://public/CuraLive_Transition_Strategy.docx"
+type = "word_document"
+title = "CuraLive — Founder Transition Strategy, Shareholding & Patent Timeline"
