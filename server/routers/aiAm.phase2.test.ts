@@ -104,7 +104,7 @@ describe("Phase 2 Features: Dashboard, Auto-Muting, and Reports", () => {
       expect(muteStatus.muteEndTime).toBeDefined();
 
       // Verify mute is active
-      let status = await getSpeakerMuteStatus("event-1", "Speaker1");
+      const status = await getSpeakerMuteStatus("event-1", "Speaker1");
       expect(status?.isMuted).toBe(true);
 
       // In real scenario, wait for expiration

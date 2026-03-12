@@ -183,7 +183,9 @@
 ## IMMEDIATE PRIORITIES
 - [x] Configure Slack webhook for GitHub Actions CI/CD notifications (SLACK_SETUP_GUIDE.md created)
 - [x] Implement IR Contact loading feature (getIRContacts query added to OCC router)
-- [x] Create linting baseline tracking issue (LINTING_BASELINE_ISSUE.md created)
+- [x] Create linting baseline tracking issue (LINTING_TRACKING.md created with sprint plan)
+- [x] Run linting fixes (pnpm lint:fix) - reduced violations from 1,964 to 1,881 (83 auto-fixed)
+- [ ] Add Load IR Contacts button to OCC UI (deferred - needs JSX structure review)
 - [ ] Run full test suite and confirm 760/760 tests passing
 
 ## Round 30 — Edit IR Contact, Dial-Out History, Speaker Green Room, Event Pass

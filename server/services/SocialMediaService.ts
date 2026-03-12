@@ -136,7 +136,7 @@ export class SocialMediaService {
     const db = await getDb();
     if (!db) return [];
 
-    let query = db.select().from(socialPosts).where(eq(socialPosts.createdBy, userId));
+    const query = db.select().from(socialPosts).where(eq(socialPosts.createdBy, userId));
 
     return query.orderBy(desc(socialPosts.createdAt)).limit(options.limit ?? 20);
   }

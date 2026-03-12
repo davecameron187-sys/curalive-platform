@@ -72,7 +72,7 @@ Return JSON:
 
 Maintain the tone and formality of investor relations communications. Keep financial terms accurate.`;
 
-    let translations: Record<number, string> = {};
+    const translations: Record<number, string> = {};
     try {
       const raw = await invokeLLM({ prompt, systemPrompt: `You are a professional translator specialising in financial and investor relations content. Translate accurately to ${languageName}.`, response_format: { type: "json_object" } });
       const parsed = JSON.parse(raw);

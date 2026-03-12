@@ -97,7 +97,7 @@ export const aiAmRouter = router({
     )
     .query(async ({ input }) => {
       try {
-        let query = db.query.complianceViolations.findMany({
+        const query = db.query.complianceViolations.findMany({
           where: eq(complianceViolations.eventId, input.eventId),
           orderBy: [desc(complianceViolations.severity), desc(complianceViolations.createdAt)],
           limit: input.limit,
