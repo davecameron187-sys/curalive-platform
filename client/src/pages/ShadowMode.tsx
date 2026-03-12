@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import LiveQuestionBox from "@/components/LiveQuestionBox";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -285,7 +284,6 @@ export default function ShadowMode() {
   }
 
   return (
-    <>
     <div className="min-h-screen bg-[#0a0a0f] text-white">
 
       {/* Header */}
@@ -1490,7 +1488,5 @@ export default function ShadowMode() {
 
       </div>
     </div>
-    <LiveQuestionBox />
-    </>
   );
 }
