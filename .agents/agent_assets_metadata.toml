@@ -12,3 +12,9 @@ id = "V07_eZDRy3LgabPhql3C9"
 uri = "file://CURALIVE_TECH_STACK_BRIEF.md"
 type = "text"
 title = "CuraLive Tech Stack Brief — March 2026"
+
+[[outputs]]
+id = "D262WME-QJLNAZP0XVN3M"
+uri = "file://public/CuraLive_Platform_Architecture.docx"
+type = "word_document"
+title = "CuraLive — How It All Works"
