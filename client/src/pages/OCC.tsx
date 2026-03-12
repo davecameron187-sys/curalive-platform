@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import Webphone from "@/components/Webphone";
 import WebphoneActivityCard from "@/components/WebphoneActivityCard";
+import { LoadIRContactsButton } from "@/components/LoadIRContactsButton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -3970,8 +3971,18 @@ export default function OCC() {
                 <div className="border border-emerald-800/50 rounded-lg bg-emerald-950/20 p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">Dial-Out Participants ({schedDialOutParticipants.length})</span>
-                    {/* CSV Import */}
-                    <label className="flex items-center gap-1 cursor-pointer bg-emerald-800/40 hover:bg-emerald-700/50 text-emerald-300 text-[10px] font-semibold px-2 py-1 rounded transition-colors">
+                    <div className="flex items-center gap-2">
+                      <LoadIRContactsButton
+                        eventId={activeCCPEventId || ""}
+                        onLoad={(imported) => {
+                          setSchedDialOutParticipants(prev => {
+                            const existing = new Set(prev.map(p => p.phone));
+                            return [...prev, ...imported.filter(c => !existing.has(c.phone))];
+                          });
+                        }}
+                      />
+                      {/* CSV Import */}
+                      <label className="flex items-center gap-1 cursor-pointer bg-emerald-800/40 hover:bg-emerald-700/50 text-emerald-300 text-[10px] font-semibold px-2 py-1 rounded transition-colors">
                       <Upload className="w-3 h-3" />
                       Import CSV
                       <input
@@ -4017,8 +4028,9 @@ export default function OCC() {
                           reader.readAsText(file);
                           e.target.value = "";
                         }}
-                      />
-                    </label>
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   {/* CSV errors */}
