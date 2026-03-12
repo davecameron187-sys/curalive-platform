@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { appRouter } from './routers';
 import type { TrpcContext } from './_core/context';
 
@@ -10,6 +10,7 @@ import type { TrpcContext } from './_core/context';
 
 describe('Integration Tests: Virtual Studio & Interconnection Analytics', () => {
   let caller: any;
+  let transaction: any;
 
   beforeAll(async () => {
     const ctx: TrpcContext = {
@@ -18,6 +19,28 @@ describe('Integration Tests: Virtual Studio & Interconnection Analytics', () => 
       res: { clearCookie: () => {} } as unknown as TrpcContext["res"],
     };
     caller = appRouter.createCaller(ctx);
+
+    // Start transaction for test isolation
+    try {
+      const { getDb } = require('./db');
+      const db = await getDb();
+      if (db) {
+        transaction = await (db as any).$client.promise().beginTransaction();
+      }
+    } catch (e) {
+      console.log("Transaction not supported for integration tests");
+    }
+  });
+
+  afterAll(async () => {
+    // Rollback transaction to clean up test data
+    if (transaction) {
+      try {
+        await transaction.rollback();
+      } catch (e) {
+        console.log("Transaction already rolled back");
+      }
+    }
   });
 
   describe('Virtual Studio Integration', () => {
@@ -256,6 +279,7 @@ describe('Integration Tests: Virtual Studio & Interconnection Analytics', () => 
 
 describe('Performance Benchmarks', () => {
   let caller: any;
+  let transaction: any;
 
   beforeAll(async () => {
     const ctx: TrpcContext = {
@@ -264,6 +288,28 @@ describe('Performance Benchmarks', () => {
       res: { clearCookie: () => {} } as unknown as TrpcContext["res"],
     };
     caller = appRouter.createCaller(ctx);
+
+    // Start transaction for test isolation
+    try {
+      const { getDb } = require('./db');
+      const db = await getDb();
+      if (db) {
+        transaction = await (db as any).$client.promise().beginTransaction();
+      }
+    } catch (e) {
+      console.log("Transaction not supported for performance benchmarks");
+    }
+  });
+
+  afterAll(async () => {
+    // Rollback transaction to clean up test data
+    if (transaction) {
+      try {
+        await transaction.rollback();
+      } catch (e) {
+        console.log("Transaction already rolled back");
+      }
+    }
   });
 
   it('should retrieve adoption metrics within 500ms', async () => {

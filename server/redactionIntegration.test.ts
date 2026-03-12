@@ -39,8 +39,34 @@ vi.mock("./_core/llm", () => ({
 import { RedactionWorkflowService } from "./services/RedactionWorkflowService";
 import { AblyRealtimeService } from "./services/AblyRealtimeService";
 import { RealtimeCollaborationService } from "./services/RealtimeCollaborationService";
+import { beforeAll, afterAll } from "vitest";
 
 describe("Redaction Integration Tests", () => {
+  let transaction: any;
+
+  beforeAll(async () => {
+    // Start transaction for test isolation
+    try {
+      const { getDb } = require('./db');
+      const db = await getDb();
+      if (db) {
+        transaction = await (db as any).$client.promise().beginTransaction();
+      }
+    } catch (e) {
+      console.log("Transaction not supported for redaction tests");
+    }
+  });
+
+  afterAll(async () => {
+    // Rollback transaction to clean up test data
+    if (transaction) {
+      try {
+        await transaction.rollback();
+      } catch (e) {
+        console.log("Transaction already rolled back");
+      }
+    }
+  });
   describe("RedactionWorkflowService", () => {
     it("should detect sensitive financial content", async () => {
       const text = "Our revenue is $5,000,000 with a profit margin of 25%";
