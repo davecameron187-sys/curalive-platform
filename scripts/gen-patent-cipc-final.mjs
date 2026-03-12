@@ -394,6 +394,17 @@ const doc = new Document({
       p("Communication intelligence data may be distributed through APIs or data feeds to external systems including financial analytics platforms, regulatory monitoring systems, or investor relations platforms."),
       p("Communication signals may also be correlated with financial market data, analyst reports, and social sentiment signals to enhance predictive capabilities."),
 
+      sp(80),
+
+      // --- Alternative Implementations ---
+      sH2("14. Alternative Implementations"),
+      p("The systems and methods described in this specification may be implemented using a variety of computational architectures and analytical techniques."),
+      p("The artificial intelligence analysis engines described herein may operate using machine learning models, neural networks, natural language processing systems, large language models, rule-based systems, statistical models, hybrid analytical systems, or equivalent computational mechanisms capable of analysing communication signals."),
+      p("Communication signals may be captured from a variety of communication environments including telephony systems, web conferencing platforms, video conferencing platforms, webcast platforms, messaging platforms, or other communication infrastructures capable of transmitting audio, video, or textual communication."),
+      p("The communication intelligence system may operate within cloud computing environments, distributed computing environments, on-premise computing environments, edge computing environments, or hybrid deployment architectures."),
+      p("The cross-platform bridge connection method may utilise any telephony signaling protocol including but not limited to DTMF, SIP, WebRTC, PSTN, or equivalent signaling mechanisms capable of establishing audio connections to external communication bridges."),
+      p("The specific examples described in this specification are provided for illustrative purposes and should not be interpreted as limiting the scope of the invention to any particular technology, platform, deployment model, or implementation approach."),
+
       pb(),
 
       // ============ CLAIMS ============
@@ -708,5 +719,5 @@ const doc = new Document({
 });
 
 const buf = await Packer.toBuffer(doc);
-writeFileSync(join(__dirname, "../public/CuraLive_Patent_CIPC_Final.docx"), buf);
+writeFileSync(join(__dirname, "../public/CuraLive_Patent_CIPC_Submission.docx"), buf);
 console.log("Done.");

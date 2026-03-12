@@ -48,3 +48,9 @@ id = "PTCQrbiWim-WlWMcdHTAq"
 uri = "file://public/CuraLive_Patent_v2.docx"
 type = "word_document"
 title = "CuraLive Patent Specification v2.0 (Enhanced)"
+
+[[outputs]]
+id = "-wE_3qlqVzxzfzNjSkGHa"
+uri = "file://public/CuraLive_Patent_CIPC_Submission.docx"
+type = "word_document"
+title = "CuraLive Provisional Patent — CIPC Submission Ready"

@@ -527,10 +527,10 @@ async function startServer() {
     });
   });
 
-  // Enhanced Patent Specification download
+  // CIPC Patent Submission download
   app.get("/download/patent", (_req, res) => {
-    const filePath = `${process.cwd()}/public/CuraLive_Patent_v2.docx`;
-    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Patent_v2.docx");
+    const filePath = `${process.cwd()}/public/CuraLive_Patent_CIPC_Submission.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Patent_CIPC_Submission.docx");
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     res.sendFile(filePath, (err) => {
       if (err) res.status(404).send("Document not found.");
