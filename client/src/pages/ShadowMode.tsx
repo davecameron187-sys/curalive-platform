@@ -285,6 +285,7 @@ export default function ShadowMode() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-[#0a0a0f] text-white">
 
       {/* Header */}
@@ -1490,5 +1491,6 @@ export default function ShadowMode() {
       </div>
     </div>
     <LiveQuestionBox />
+    </>
   );
 }
