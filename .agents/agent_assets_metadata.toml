@@ -24,3 +24,9 @@ id = "exVMT7-rSC8e1pNNfKVgp"
 uri = "file://public/CuraLive_ShadowBridge.docx"
 type = "word_document"
 title = "Shadow Bridge — How It All Works (updated)"
+
+[[outputs]]
+id = "VfuKnoru8GhexcwGMbIDy"
+uri = "file://public/CuraLive_Resilience_BYOC.docx"
+type = "word_document"
+title = "CuraLive — Resilience, DR & Bring Your Own Carrier"

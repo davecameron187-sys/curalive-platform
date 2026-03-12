@@ -527,6 +527,16 @@ async function startServer() {
     });
   });
 
+  // Resilience & BYOC doc download
+  app.get("/download/resilience", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_Resilience_BYOC.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Resilience_BYOC.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
   // Shadow Bridge doc download
   app.get("/download/shadowbridge", (_req, res) => {
     const filePath = `${process.cwd()}/public/CuraLive_ShadowBridge.docx`;
