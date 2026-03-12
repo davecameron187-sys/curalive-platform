@@ -113,6 +113,62 @@ export default function ShadowMode() {
   const [ccNextId, setCcNextId] = useState(1);
   const [ccShowForm, setCcShowForm] = useState(false);
 
+  // ── Bridge Dial-Out state ──────────────────────────────────────────────────
+  type BridgeEntry = { callSid: string; status: string; dialing: boolean };
+  const [bridgeCalls, setBridgeCalls] = useState<Record<number, BridgeEntry>>({});
+
+  const dialOutMutation = trpc.shadowMode.dialOutToBridge.useMutation({
+    onSuccess: (data, vars) => {
+      setBridgeCalls(prev => ({
+        ...prev,
+        [vars.sessionId as any]: { callSid: data.callSid, status: data.status, dialing: false },
+      }));
+      toast.success("Dialling bridge — DTMF codes will be sent automatically after answer");
+    },
+    onError: (e) => {
+      toast.error(e.message);
+      // clear dialing flag
+      setBridgeCalls(prev => {
+        const next = { ...prev };
+        for (const k in next) if (next[k].dialing) next[k] = { ...next[k], dialing: false };
+        return next;
+      });
+    },
+  });
+
+  const hangupMutation = trpc.shadowMode.hangupBridgeCall.useMutation({
+    onSuccess: (_data, vars) => {
+      setBridgeCalls(prev => {
+        const next = { ...prev };
+        for (const k in next) if (next[k].callSid === vars.callSid) next[k] = { ...next[k], status: "completed" };
+        return next;
+      });
+      toast.success("Bridge call disconnected");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // Poll status for active bridge calls every 4 seconds
+  useEffect(() => {
+    const active = Object.values(bridgeCalls).filter(b => ["queued","ringing","in-progress","initiated"].includes(b.status));
+    if (active.length === 0) return;
+    const timer = setInterval(async () => {
+      for (const entry of active) {
+        try {
+          const res = await fetch(`/api/shadow/bridge-poll?callSid=${entry.callSid}`).then(r => r.json());
+          if (res.status) {
+            setBridgeCalls(prev => {
+              const next = { ...prev };
+              for (const k in next) if (next[k].callSid === entry.callSid) next[k] = { ...next[k], status: res.status };
+              return next;
+            });
+          }
+        } catch (_) {}
+      }
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [bridgeCalls]);
+
   // ── Live Intelligence state ────────────────────────────────────────────────
   const [showForm, setShowForm] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
@@ -1398,8 +1454,15 @@ export default function ShadowMode() {
                   <Phone className="w-3.5 h-3.5 text-orange-400" />
                   Logged Calls ({ccSessions.length})
                 </h3>
-                {ccSessions.map(s => (
-                  <div key={s.id} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5">
+                {ccSessions.map(s => {
+                  const bridge = bridgeCalls[s.id];
+                  const bridgeStatus = bridge?.status ?? null;
+                  const isConnected = bridgeStatus === "in-progress";
+                  const isRinging = bridgeStatus === "queued" || bridgeStatus === "ringing" || bridgeStatus === "initiated";
+                  const isDone = bridgeStatus === "completed" || bridgeStatus === "failed" || bridgeStatus === "busy" || bridgeStatus === "no-answer";
+
+                  return (
+                  <div key={s.id} className={`bg-white/[0.02] border rounded-xl p-5 transition-all ${isConnected ? "border-emerald-500/40" : bridge?.dialing ? "border-orange-500/30" : "border-white/[0.06]"}`}>
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
@@ -1407,17 +1470,72 @@ export default function ShadowMode() {
                           <span className="text-[10px] text-orange-400 bg-orange-400/10 border border-orange-400/20 px-2 py-0.5 rounded-full uppercase font-bold tracking-wide">
                             {s.eventType.replace(/_/g, " ")}
                           </span>
+                          {isConnected && (
+                            <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold tracking-wide flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                              BRIDGE LIVE
+                            </span>
+                          )}
+                          {isRinging && (
+                            <span className="text-[10px] text-amber-400 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded-full font-bold tracking-wide flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
+                              CONNECTING
+                            </span>
+                          )}
                         </div>
                         {s.clientName && <p className="text-xs text-slate-500">{s.clientName}</p>}
                         <p className="text-[10px] text-slate-700 mt-0.5">Logged {s.loggedAt}{s.scheduledAt ? ` · Scheduled ${new Date(s.scheduledAt).toLocaleString()}` : ""}</p>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => setActiveTab("recording")}
-                        className="bg-blue-600/80 hover:bg-blue-500 text-white text-xs gap-1.5 shrink-0"
-                      >
-                        <Upload className="w-3 h-3" /> Upload Recording
-                      </Button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {!bridge && (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setBridgeCalls(prev => ({ ...prev, [s.id]: { callSid: "", status: "initiating", dialing: true } }));
+                              dialOutMutation.mutate({
+                                sessionId: String(s.id),
+                                eventName: s.eventName,
+                                dialInNumber: s.dialInNumber,
+                                conferenceId: s.conferenceId || undefined,
+                                accessCode: s.accessCode || undefined,
+                                hostPin: s.hostPin || undefined,
+                              });
+                            }}
+                            disabled={bridge?.dialing}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs gap-1.5"
+                          >
+                            <Phone className="w-3 h-3" /> Connect to Bridge
+                          </Button>
+                        )}
+                        {bridge && !isDone && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => bridge.callSid && hangupMutation.mutate({ callSid: bridge.callSid })}
+                            disabled={!bridge.callSid}
+                            className="text-xs gap-1.5"
+                          >
+                            <Square className="w-3 h-3" /> Disconnect
+                          </Button>
+                        )}
+                        {isDone && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setBridgeCalls(prev => { const n = { ...prev }; delete n[s.id]; return n; })}
+                            className="text-xs gap-1.5 border-white/10 text-slate-400"
+                          >
+                            <RefreshCw className="w-3 h-3" /> Reconnect
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => setActiveTab("recording")}
+                          className="bg-blue-600/80 hover:bg-blue-500 text-white text-xs gap-1.5"
+                        >
+                          <Upload className="w-3 h-3" /> Upload Recording
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Dial-in card */}
@@ -1460,7 +1578,8 @@ export default function ShadowMode() {
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
