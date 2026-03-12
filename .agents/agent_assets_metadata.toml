@@ -18,3 +18,9 @@ id = "D262WME-QJLNAZP0XVN3M"
 uri = "file://public/CuraLive_Platform_Architecture.docx"
 type = "word_document"
 title = "CuraLive — Flow Map (AI in OCC)"
+
+[[outputs]]
+id = "exVMT7-rSC8e1pNNfKVgp"
+uri = "file://public/CuraLive_ShadowBridge.docx"
+type = "word_document"
+title = "Shadow Bridge — How It All Works"
