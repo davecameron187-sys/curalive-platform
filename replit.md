@@ -178,3 +178,33 @@ The OCC is a world-class conference control centre built to the technical brief.
 - **Rate limiting** (`express-rate-limit`): `/api/trpc` — 120 req/min prod / 500 dev; `/api/oauth` + `/api/auth` — 20/15min prod / 200 dev. Ably token endpoint is exempt.
 - **Operator Hub** (`/operator-hub`): Single landing page for all operator training. 4-step learning path, full call-type guides (Audio Bridge / Audio Webcast / Video Webcast) with step-by-step setup, warnings, tips, operating tips, Quick Reference panel, and links to all training resources.
 - OCC "Training" button (line 1383) now navigates to `/operator-hub` instead of `/training`.
+
+## Intelligence Terminal (March 2026)
+
+- **Route**: `/intelligence-terminal` — Bloomberg-style financial professional terminal
+- **Router**: `server/routers/intelligenceTerminalRouter.ts` — registered in `server/routers.ts`
+- **4 tabs**: Concern Intelligence, Market Signals, Exec Benchmarks, CICI Index
+- **Filters**: Quarter and sector selectors
+- **Link**: Added to `OperatorLinks.tsx`
+- **Purpose**: Acquisition-readiness intelligence dashboard for financial professionals
+
+## Q&A Support System (March 2026 — Built, Currently Disabled)
+
+The full Q&A support infrastructure is built and working but the UI widget is currently unmounted. Can be re-enabled at any time.
+
+**Infrastructure in place:**
+- `client/src/components/LiveQuestionBox.tsx` — floating support widget, auth-gated, context-aware per page and event
+- `server/routers/supportChatRouter.ts` — tRPC router using `protectedProcedure`; requires auth, accepts `eventId`/`eventName` context, logs all queries
+- `server/services/KnowledgeRetrievalService.ts` — keyword-based RAG retrieval from knowledge base
+- **DB tables**: `knowledge_entries` (20 entries seeded), `support_queries` (columns: `user_id`, `user_email`, `event_id`, `event_name`, `needs_escalation`, `matched_entries`)
+- **Model**: `gpt-4o-mini` (cost-optimised for support use)
+- **IP protection**: System prompt hard limits block all questions about internal algorithms, scoring formulas, model architecture, pipelines, and patent-pending IP
+
+**To re-enable**: Import `LiveQuestionBox` and mount `<LiveQuestionBox />` in any page or in `App.tsx` (for global mounting).
+
+## OpenAI API Key Configuration (March 2026)
+
+- **Priority order** (`server/_core/env.ts`): `OPENAI_API_KEY` → `BUILT_IN_FORGE_API_KEY` → `AI_INTEGRATIONS_OPENAI_API_KEY`
+- **URL routing** (`server/_core/llm.ts`): If `OPENAI_API_KEY` is set, always routes to `https://api.openai.com/v1/chat/completions` directly, bypassing the platform forge proxy entirely
+- **Reason**: The built-in forge API (`forge.manus.ai`) has usage quotas. Setting `OPENAI_API_KEY` as a Replit secret gives full control with no quota ceiling
+- **`isForgeMode()`**: Returns `false` when `OPENAI_API_KEY` is present — ensures GPT-4o is used, not Gemini
