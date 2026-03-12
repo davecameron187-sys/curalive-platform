@@ -102,7 +102,7 @@ export const supportChatRouter = router({
       let needsEscalation = false;
 
       try {
-        const result = await invokeLLM({ messages, model: "gpt-4o" });
+        const result = await invokeLLM({ messages, model: "gpt-4o-mini" });
         answer = result.choices?.[0]?.message?.content ?? answer;
         needsEscalation =
           answer.toLowerCase().includes("i'll escalate") ||
