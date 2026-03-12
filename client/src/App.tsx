@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/sonner";
-import LiveQuestionBox from "./components/LiveQuestionBox";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
@@ -250,7 +249,6 @@ function App() {
           <Toaster />
           <BackToLinks />
           <Router />
-          <LiveQuestionBox />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
