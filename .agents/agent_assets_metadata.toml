@@ -30,3 +30,9 @@ id = "VfuKnoru8GhexcwGMbIDy"
 uri = "file://public/CuraLive_Resilience_BYOC.docx"
 type = "word_document"
 title = "CuraLive — Resilience, DR & Bring Your Own Carrier"
+
+[[outputs]]
+id = "ln-L3zKJhDy8PIZBjt2vu"
+uri = "file://public/CuraLive_Mirroring_Brief.docx"
+type = "word_document"
+title = "CuraLive — Multi-Region Mirroring & Infrastructure Brief"
