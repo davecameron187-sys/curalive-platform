@@ -36,3 +36,9 @@ id = "ln-L3zKJhDy8PIZBjt2vu"
 uri = "file://public/CuraLive_Mirroring_Brief.docx"
 type = "word_document"
 title = "CuraLive — Multi-Region Mirroring & Infrastructure Brief"
+
+[[outputs]]
+id = "sfvb1DcVspcFOS6BpoG3Z"
+uri = "file://public/CuraLive_AI_Reports.docx"
+type = "word_document"
+title = "CuraLive — AI Reports: Storage, Access & Delivery"

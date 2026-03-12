@@ -527,6 +527,16 @@ async function startServer() {
     });
   });
 
+  // AI Reports brief download
+  app.get("/download/ai-reports", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_AI_Reports.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_AI_Reports.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
   // Mirroring & Infrastructure brief download
   app.get("/download/mirroring", (_req, res) => {
     const filePath = `${process.cwd()}/public/CuraLive_Mirroring_Brief.docx`;
