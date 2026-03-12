@@ -209,17 +209,22 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
+// If the user has supplied their own OPENAI_API_KEY, it takes absolute priority
+// over the built-in forge API and the Replit integration.
+const hasDirectOpenAiKey = () =>
+  !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
+
 const isForgeMode = () =>
+  !hasDirectOpenAiKey() &&
   !!(process.env.BUILT_IN_FORGE_API_KEY || (process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_URL.trim()));
 
 const resolveApiUrl = () => {
+  // User's own key always routes directly to OpenAI
+  if (hasDirectOpenAiKey()) {
+    return "https://api.openai.com/v1/chat/completions";
+  }
   if (process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_URL.trim()) {
     return `${process.env.BUILT_IN_FORGE_API_URL.replace(/\/$/, "")}/v1/chat/completions`;
-  }
-  // If a direct OPENAI_API_KEY is provided, always use the real OpenAI endpoint
-  // regardless of whether the Replit integration base URL is set
-  if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim()) {
-    return "https://api.openai.com/v1/chat/completions";
   }
   if (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.trim()) {
     return `${process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.replace(/\/$/, "")}/chat/completions`;
