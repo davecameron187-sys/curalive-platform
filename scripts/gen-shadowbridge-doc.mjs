@@ -128,22 +128,19 @@ const doc = new Document({
 
       arrow("↓          ↓          ↓"),
 
-      // Row 2 — OCC
+      // Row 2 — OCC with AI embedded
       fullBox("⚙️   OCC — Shadow Mode (CCAudioOnly)\nOperator enters bridge number + access code, then clicks Connect", "065F46"),
+      spacer(40),
+      fullBox("🤖   AI embedded within OCC\nLive transcript  ·  Sentiment scoring  ·  Compliance flags — all visible to the operator in real time", "1B4332"),
 
       arrow("↓          ↓          ↓"),
 
-      // Row 3 — Three auto steps
+      // Row 3 — Three auto connection steps
       threeBoxes([
         { text: "📞  Twilio Dials\nOutbound call placed to the bridge number", bg: "1E40AF" },
         { text: "🎹  DTMF Tones\nAccess code entered automatically on the keypad", bg: "92400E" },
-        { text: "🤖  Bot Joins Silently\nCuraLive is inside the external call", bg: "5B21B6" },
+        { text: "🤖  Bot Joins Silently\nCuraLive is inside the external call — AI activates", bg: "5B21B6" },
       ]),
-
-      arrow("↓"),
-
-      // Row 4 — AI capture
-      fullBox("🎙️   AI Captures Everything\nTranscript  ·  Sentiment per speaker  ·  Compliance flags  ·  Full recording", "4C1D95"),
 
       arrow("↓"),
 
