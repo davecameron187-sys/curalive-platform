@@ -517,6 +517,16 @@ async function startServer() {
   registerRecallWebhookRoute(app);
   registerBillingPdfRoutes(app);
 
+  // Architecture doc download — serves the generated Word document
+  app.get("/download/architecture", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_Platform_Architecture.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Platform_Architecture.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
   // Checklist download — serves the project owner collaboration checklist as HTML
   app.get("/download/checklist", (_req, res) => {
     const html = `<!DOCTYPE html>
