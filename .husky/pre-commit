@@ -1,0 +1,24 @@
+#!/bin/sh
+# Pre-commit hook: run linting on staged files
+
+echo "🔍 Linting staged files..."
+
+# Get list of staged TypeScript/JavaScript files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' | grep -v node_modules | grep -v dist)
+
+if [ -z "$STAGED_FILES" ]; then
+  echo "✅ No TypeScript/JavaScript files to lint"
+  exit 0
+fi
+
+# Run ESLint on staged files
+pnpm eslint $STAGED_FILES
+
+if [ $? -ne 0 ]; then
+  echo "❌ Linting failed. Please fix the errors and try again."
+  echo "💡 Tip: Run 'pnpm lint:fix' to automatically fix some issues."
+  exit 1
+fi
+
+echo "✅ Linting passed"
+exit 0
