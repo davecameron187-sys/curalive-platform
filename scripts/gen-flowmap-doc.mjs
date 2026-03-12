@@ -190,8 +190,10 @@ const doc = new Document({
 
       arrowRow("↓          ↓          ↓"),
 
-      // Row 2 — OCC
+      // Row 2 — OCC with AI embedded
       box("⚙️   OCC — OPERATOR CONSOLE\nCentral control room. All events, calls and participants managed here.", "065F46"),
+      spacer(40),
+      box("🤖   AI Intelligence  —  embedded within OCC\nLive transcription  ·  Sentiment scoring  ·  Compliance flags  —  all visible to the operator in real time", "1B4332"),
 
       arrowRow("↓          ↓          ↓"),
 
@@ -204,12 +206,7 @@ const doc = new Document({
 
       arrowRow("↓"),
 
-      // Row 4 — AI
-      box("🤖   AI Intelligence Layer\nTranscription  ·  Sentiment scoring  ·  Compliance monitoring", "4C1D95"),
-
-      arrowRow("↓"),
-
-      // Row 5 — Outputs
+      // Outputs
       twoBoxes([
         { text: "📊  Intelligence Terminal\nTrends, risks & investor signals", bg: "F5F3FF", textColor: "5B21B6", border: "5B21B6" },
         { text: "📄  Reports & Analytics\nPost-event insights & recordings", bg: "F5F3FF", textColor: "5B21B6", border: "5B21B6" },
