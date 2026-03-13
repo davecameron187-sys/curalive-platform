@@ -144,16 +144,40 @@ function MiniCalendar({ selectedDate, onSelectDate }: { selectedDate: Date; onSe
         })}
       </div>
 
+      <div className="mt-3 pt-3 border-t border-white/[0.06]">
+        <button className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-semibold transition-colors mb-2">
+          <Zap className="w-3.5 h-3.5" />
+          Upload Today's Calls to OCC
+        </button>
+        <button className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-gray-400 hover:text-white rounded-lg text-xs font-medium transition-colors border border-white/[0.06]">
+          <Calendar className="w-3.5 h-3.5" />
+          Sync Week to OCC
+        </button>
+      </div>
+
       <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1.5">
-        <div className="flex items-center gap-2 text-[10px] text-gray-500">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          <span>Live events today</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] text-gray-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            <span>Live events</span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-gray-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+            <span>Scheduled</span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-gray-500">
+            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+            <span>Synced</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-gray-500">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-          <span>Scheduled events</span>
+        <div className="mt-2 p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/10">
+          <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium">
+            <CheckCircle2 className="w-3 h-3" />
+            4 of 4 events synced to OCC
+          </div>
+          <div className="text-[10px] text-gray-500 mt-0.5">Last sync: 08:15 AM</div>
         </div>
-        <div className="mt-2 text-xs text-gray-500">
+        <div className="text-xs text-gray-500 mt-1">
           <span className="text-white font-medium">This week:</span> 11 events across 6 days
         </div>
       </div>
