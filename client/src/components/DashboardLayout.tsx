@@ -10,6 +10,9 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -23,7 +26,9 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   LayoutDashboard, LogOut, PanelLeft, Users, Calendar, Mail,
-  Radio, Settings, Brain, BarChart3, Shield, Zap
+  Radio, Settings, Brain, BarChart3, Shield, Zap, Video,
+  GraduationCap, FileText, TrendingUp, Eye, CreditCard,
+  Mic, Globe, Package
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -47,13 +52,16 @@ const menuSections: MenuSection[] = [
       { icon: Calendar, label: "Bookings", path: "/events/calendar" },
       { icon: Mail, label: "Registrations", path: "/mailing-lists" },
       { icon: Radio, label: "Live Events", path: "/occ" },
+      { icon: Video, label: "Webcasting", path: "/live-video/webcasting" },
     ],
   },
   {
     label: "Intelligence",
     items: [
       { icon: Brain, label: "Agentic Brain", path: "/agentic-brain" },
-      { icon: BarChart3, label: "Analytics", path: "/tagged-metrics" },
+      { icon: BarChart3, label: "Tagged Metrics", path: "/tagged-metrics" },
+      { icon: Globe, label: "Terminal", path: "/intelligence-terminal" },
+      { icon: Eye, label: "Shadow Mode", path: "/shadow-mode" },
       { icon: Shield, label: "Health Guardian", path: "/health-guardian" },
     ],
   },
@@ -61,7 +69,10 @@ const menuSections: MenuSection[] = [
     label: "Platform",
     items: [
       { icon: Settings, label: "Operator Console", path: "/operator-links" },
+      { icon: GraduationCap, label: "Training", path: "/operator-hub" },
+      { icon: Package, label: "AI Shop", path: "/ai-shop" },
       { icon: Zap, label: "Integrations", path: "/integrations" },
+      { icon: CreditCard, label: "Billing", path: "/billing" },
       { icon: Users, label: "Admin", path: "/admin/users" },
     ],
   },
@@ -215,40 +226,32 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
+          <SidebarContent>
             {menuSections.map((section, idx) => (
-              <SidebarMenu key={idx} className="px-2 py-1">
-                {section.label && !isCollapsed && (
-                  <li className="px-2 pt-3 pb-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                      {section.label}
-                    </span>
-                  </li>
+              <SidebarGroup key={idx}>
+                {section.label && (
+                  <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
                 )}
-                {isCollapsed && section.label && (
-                  <li className="flex justify-center py-1.5">
-                    <div className="w-4 h-px bg-muted-foreground/20 rounded" />
-                  </li>
-                )}
-                {section.items.map(item => {
-                  const isActive = location === item.path;
-                  return (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => setLocation(item.path)}
-                        tooltip={item.label}
-                        className="h-10 transition-all font-normal"
-                      >
-                        <item.icon
-                          className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                        />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {section.items.map(item => {
+                      const isActive = location === item.path;
+                      return (
+                        <SidebarMenuItem key={item.path}>
+                          <SidebarMenuButton
+                            isActive={isActive}
+                            onClick={() => setLocation(item.path)}
+                            tooltip={item.label}
+                          >
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
             ))}
           </SidebarContent>
 
