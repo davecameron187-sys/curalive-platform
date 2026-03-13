@@ -567,6 +567,15 @@ async function startServer() {
     });
   });
 
+  app.get("/download/mirroring-response", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_Mirroring_Response.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Mirroring_Response_to_Steve.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
   // Resilience & BYOC doc download
   app.get("/download/resilience", (_req, res) => {
     const filePath = `${process.cwd()}/public/CuraLive_Resilience_BYOC.docx`;
