@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuraLive Registrations - Participant Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-btn:hover {
+            background: rgba(96, 165, 250, 0.2);
+            border-color: #60a5fa;
+        }
+
+        .controls {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 4px;
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(96, 165, 250, 0.3);
+        }
+
+        .btn.secondary {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(96, 165, 250, 0.2);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .table-container {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(15, 23, 42, 0.5);
+            border-bottom: 2px solid rgba(96, 165, 250, 0.2);
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            color: #60a5fa;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 13px;
+        }
+
+        tbody tr:hover {
+            background: rgba(96, 165, 250, 0.05);
+        }
+
+        .name {
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .email {
+            color: #94a3b8;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status.registered {
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+        }
+
+        .status.attended {
+            background: rgba(96, 165, 250, 0.2);
+            color: #bfdbfe;
+        }
+
+        .status.no-show {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(96, 165, 250, 0.2);
+        }
+
+        .export-section {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .export-section h2 {
+            color: #60a5fa;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .export-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👥 Registrations - Participant Management</h1>
+            <div class="nav-buttons">
+                <a href="testing-bookings.html" class="nav-btn">← Bookings</a>
+                <a href="operational-testing-v2.html" class="nav-btn">Testing Guide</a>
+                <a href="testing-occ.html" class="nav-btn">OCC →</a>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" placeholder="Search participants by name or email..." id="searchInput" onkeyup="filterTable()">
+            </div>
+            <button class="btn secondary" onclick="sendInvitations()">📧 Send Invitations</button>
+            <button class="btn secondary" onclick="exportReport()">📥 Export Report</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">1,247</div>
+                <div class="stat-label">Total Registrations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">1,156</div>
+                <div class="stat-label">Confirmed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">89</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">2</div>
+                <div class="stat-label">Declined</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="participantsTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Company</th>
+                        <th>Registration Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td class="name">Michael Chen</td>
+                        <td class="email">michael.chen@goldmansachs.com</td>
+                        <td>Goldman Sachs</td>
+                        <td>March 10, 2026</td>
+                        <td><span class="status registered">Registered</span></td>
+                        <td class="actions">
+                            <button class="action-btn" onclick="viewDetails(this)">View</button>
+                            <button class="action-btn" onclick="sendReminder(this)">Remind</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="name">Lisa Wang</td>
+                        <td class="email">lisa.wang@morganstanley.com</td>
+                        <td>Morgan Stanley</td>
+                        <td>March 10, 2026</td>
+                        <td><span class="status registered">Registered</span></td>
+                        <td class="actions">
+                            <button class="action-btn" onclick="viewDetails(this)">View</button>
+                            <button class="action-btn" onclick="sendReminder(this)">Remind</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="name">James Rodriguez</td>
+                        <td class="email">james.rodriguez@jpmorgan.com</td>
+                        <td>JPMorgan</td>
+                        <td>March 11, 2026</td>
+                        <td><span class="status registered">Registered</span></td>
+                        <td class="actions">
+                            <button class="action-btn" onclick="viewDetails(this)">View</button>
+                            <button class="action-btn" onclick="sendReminder(this)">Remind</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="name">Emma Thompson</td>
+                        <td class="email">emma.thompson@barclays.com</td>
+                        <td>Barclays</td>
+                        <td>March 11, 2026</td>
+                        <td><span class="status registered">Registered</span></td>
+                        <td class="actions">
+                            <button class="action-btn" onclick="viewDetails(this)">View</button>
+                            <button class="action-btn" onclick="sendReminder(this)">Remind</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="name">David Park</td>
+                        <td class="email">david.park@citi.com</td>
+                        <td>Citigroup</td>
+                        <td>March 12, 2026</td>
+                        <td><span class="status registered">Registered</span></td>
+                        <td class="actions">
+                            <button class="action-btn" onclick="viewDetails(this)">View</button>
+                            <button class="action-btn" onclick="sendReminder(this)">Remind</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="name">Sophie Martin</td>
+                        <td class="email">sophie.martin@bnpparibas.com</td>
+                        <td>BNP Paribas</td>
+                        <td>March 12, 2026</td>
+                        <td><span class="status registered">Registered</span></td>
+                        <td class="actions">
+                            <button class="action-btn" onclick="viewDetails(this)">View</button>
+                            <button class="action-btn" onclick="sendReminder(this)">Remind</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="export-section">
+            <h2>📊 Export Participant Data</h2>
+            <div class="export-options">
+                <button class="btn secondary" onclick="exportCSV()">📄 Export as CSV</button>
+                <button class="btn secondary" onclick="exportPDF()">📋 Export as PDF</button>
+                <button class="btn secondary" onclick="exportExcel()">📊 Export as Excel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function filterTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('participantsTable');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName('td');
+                let match = false;
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j].textContent.toUpperCase().indexOf(filter) > -1) {
+                        match = true;
+                        break;
+                    }
+                }
+                tr[i].style.display = match ? '' : 'none';
+            }
+        }
+
+        function sendInvitations() {
+            alert('Invitations sent to 89 pending participants');
+        }
+
+        function exportReport() {
+            alert('Report exported as PDF');
+        }
+
+        function viewDetails(btn) {
+            alert('Viewing participant details');
+        }
+
+        function sendReminder(btn) {
+            alert('Reminder sent to participant');
+        }
+
+        function exportCSV() {
+            alert('Participant list exported as CSV');
+        }
+
+        function exportPDF() {
+            alert('Participant list exported as PDF');
+        }
+
+        function exportExcel() {
+            alert('Participant list exported as Excel');
+        }
+    </script>
+</body>
+</html>

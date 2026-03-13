@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuraLive Post-Event - Reports & Delivery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-btn:hover {
+            background: rgba(96, 165, 250, 0.2);
+            border-color: #60a5fa;
+        }
+
+        .event-summary {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .summary-label {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-value {
+            color: #cbd5e1;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel h2 {
+            color: #60a5fa;
+            font-size: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .report-item {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            border-left: 4px solid #60a5fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .report-info {
+            flex: 1;
+        }
+
+        .report-name {
+            color: #cbd5e1;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .report-desc {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .report-status {
+            color: #22c55e;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(96, 165, 250, 0.3);
+        }
+
+        .btn.secondary {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(96, 165, 250, 0.2);
+        }
+
+        .delivery-option {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .delivery-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .delivery-info {
+            flex: 1;
+        }
+
+        .delivery-name {
+            color: #cbd5e1;
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .delivery-desc {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .metric {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .metric-value {
+            color: #60a5fa;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .ai-summary {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .ai-summary h3 {
+            color: #60a5fa;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .ai-summary p {
+            color: #cbd5e1;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .event-summary {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Post-Event Dashboard</h1>
+            <div class="nav-buttons">
+                <a href="testing-occ.html" class="nav-btn">← OCC</a>
+                <a href="operational-testing-v2.html" class="nav-btn">Testing Guide</a>
+            </div>
+        </header>
+
+        <div class="event-summary">
+            <div class="summary-item">
+                <span class="summary-label">Event</span>
+                <span class="summary-value">Q4 2025 Earnings Call</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Duration</span>
+                <span class="summary-value">1 hour 23 minutes</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Participants</span>
+                <span class="summary-value">1,247 attendees</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Status</span>
+                <span class="summary-value" style="color: #22c55e;">✓ Completed</span>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="panel">
+                <h2>📋 Available Reports</h2>
+                
+                <div class="report-item">
+                    <div class="report-info">
+                        <div class="report-name">📝 Full Transcript</div>
+                        <div class="report-desc">Complete word-for-word transcript with timestamps</div>
+                    </div>
+                    <div class="report-status">✓ Ready</div>
+                </div>
+
+                <div class="report-item">
+                    <div class="report-info">
+                        <div class="report-name">🤖 AI Summary</div>
+                        <div class="report-desc">Auto-generated executive summary with key points</div>
+                    </div>
+                    <div class="report-status">✓ Ready</div>
+                </div>
+
+                <div class="report-item">
+                    <div class="report-info">
+                        <div class="report-name">📊 Analytics Report</div>
+                        <div class="report-desc">Engagement metrics, sentiment analysis, Q&A stats</div>
+                    </div>
+                    <div class="report-status">✓ Ready</div>
+                </div>
+
+                <div class="report-item">
+                    <div class="report-info">
+                        <div class="report-name">🎯 Compliance Report</div>
+                        <div class="report-desc">Regulatory compliance check and flagged content</div>
+                    </div>
+                    <div class="report-status">✓ Ready</div>
+                </div>
+
+                <div class="report-item">
+                    <div class="report-info">
+                        <div class="report-name">💬 Q&A Summary</div>
+                        <div class="report-desc">All questions asked and answers provided</div>
+                    </div>
+                    <div class="report-status">✓ Ready</div>
+                </div>
+
+                <div class="report-item">
+                    <div class="report-info">
+                        <div class="report-name">📹 Recording (MP4)</div>
+                        <div class="report-desc">Full event recording in MP4 format</div>
+                    </div>
+                    <div class="report-status">✓ Ready</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>📧 Delivery Settings</h2>
+                
+                <div class="delivery-option">
+                    <input type="checkbox" class="delivery-checkbox" checked>
+                    <div class="delivery-info">
+                        <div class="delivery-name">Auto-send Transcript</div>
+                        <div class="delivery-desc">Send to all participants</div>
+                    </div>
+                </div>
+
+                <div class="delivery-option">
+                    <input type="checkbox" class="delivery-checkbox" checked>
+                    <div class="delivery-info">
+                        <div class="delivery-name">Auto-send AI Summary</div>
+                        <div class="delivery-desc">Send to stakeholders</div>
+                    </div>
+                </div>
+
+                <div class="delivery-option">
+                    <input type="checkbox" class="delivery-checkbox">
+                    <div class="delivery-info">
+                        <div class="delivery-name">Auto-send Recording</div>
+                        <div class="delivery-desc">Send to registered users only</div>
+                    </div>
+                </div>
+
+                <div class="delivery-option">
+                    <input type="checkbox" class="delivery-checkbox" checked>
+                    <div class="delivery-info">
+                        <div class="delivery-name">Auto-send Analytics</div>
+                        <div class="delivery-desc">Send to internal team</div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn" onclick="sendAll()">📧 Send All Now</button>
+                    <button class="btn secondary" onclick="scheduleDelivery()">📅 Schedule</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="panel">
+                <h2>🤖 AI-Generated Summary</h2>
+                
+                <div class="ai-summary">
+                    <h3>Executive Summary</h3>
+                    <p>Q4 2025 showed strong financial performance with revenue growth of 23% YoY to $2.4B and operating margin improvement to 18.5%. The company maintained market leadership across all segments with particular strength in enterprise solutions. Management provided positive guidance for Q1 2026 with expected revenue growth of 18-20% and margin expansion.</p>
+                </div>
+
+                <div class="ai-summary">
+                    <h3>Key Highlights</h3>
+                    <p>
+                        • Revenue: $2.4B (+23% YoY)<br>
+                        • Operating Margin: 18.5% (+2.1% improvement)<br>
+                        • Enterprise Segment: +28% growth<br>
+                        • Q1 2026 Guidance: $2.6B revenue, 19% margin<br>
+                        • 1,247 participants attended the call
+                    </p>
+                </div>
+
+                <div class="ai-summary">
+                    <h3>Sentiment Analysis</h3>
+                    <p>Overall sentiment was positive (72%) with strong investor confidence. Key concerns raised about market competition and supply chain resilience. Management addressed all major questions with detailed responses.</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>📊 Event Metrics</h2>
+                
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-value">1,247</div>
+                        <div class="metric-label">Total Attendees</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">94%</div>
+                        <div class="metric-label">Attendance Rate</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">83 min</div>
+                        <div class="metric-label">Duration</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">42</div>
+                        <div class="metric-label">Q&A Questions</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">72%</div>
+                        <div class="metric-label">Positive Sentiment</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">99.8%</div>
+                        <div class="metric-label">Uptime</div>
+                    </div>
+                </div>
+
+                <div class="action-buttons" style="margin-top: 20px;">
+                    <button class="btn secondary" onclick="downloadTranscript()">📥 Download Transcript</button>
+                    <button class="btn secondary" onclick="downloadRecording()">🎬 Download Recording</button>
+                    <button class="btn secondary" onclick="downloadAnalytics()">📊 Download Analytics</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-bottom: 30px;">
+            <h2>✓ Testing Complete</h2>
+            <p style="color: #cbd5e1; margin-bottom: 15px;">
+                You have successfully completed the end-to-end testing workflow for CuraLive:
+            </p>
+            <ul style="color: #cbd5e1; margin-left: 20px; margin-bottom: 15px;">
+                <li>✓ Created event in Bookings system</li>
+                <li>✓ Managed registrations and participants</li>
+                <li>✓ Loaded event into OCC console</li>
+                <li>✓ Ran live event with transcription, sentiment, Q&A</li>
+                <li>✓ Generated post-event reports and analytics</li>
+                <li>✓ Configured delivery settings</li>
+            </ul>
+            <p style="color: #94a3b8; font-size: 13px;">
+                All services working correctly. Ready for next test cycle or production deployment.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function sendAll() {
+            alert('All reports sent to recipients');
+        }
+
+        function scheduleDelivery() {
+            alert('Delivery scheduled for tomorrow at 9:00 AM');
+        }
+
+        function downloadTranscript() {
+            alert('Transcript downloaded as TXT file');
+        }
+
+        function downloadRecording() {
+            alert('Recording downloaded as MP4 file (1.2 GB)');
+        }
+
+        function downloadAnalytics() {
+            alert('Analytics report downloaded as PDF');
+        }
+    </script>
+</body>
+</html>

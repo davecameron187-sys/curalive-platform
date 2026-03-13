@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuraLive Bookings - Event Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-btn:hover {
+            background: rgba(96, 165, 250, 0.2);
+            border-color: #60a5fa;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .section {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .section h2 {
+            font-size: 20px;
+            color: #60a5fa;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 4px;
+            color: #e2e8f0;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #60a5fa;
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(96, 165, 250, 0.3);
+        }
+
+        .event-card {
+            background: rgba(15, 23, 42, 0.5);
+            border-left: 4px solid #60a5fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .event-card h3 {
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+
+        .event-card p {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .event-card .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+
+        .status.scheduled {
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+        }
+
+        .status.live {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .status.completed {
+            background: rgba(96, 165, 250, 0.2);
+            color: #bfdbfe;
+        }
+
+        .action-links {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .action-link {
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            padding: 4px 8px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .action-link:hover {
+            background: rgba(96, 165, 250, 0.1);
+            border-color: #60a5fa;
+        }
+
+        .success-message {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86efac;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .nav-buttons {
+                width: 100%;
+            }
+
+            .nav-btn {
+                flex: 1;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📅 Bookings - Event Management</h1>
+            <div class="nav-buttons">
+                <a href="operational-testing-v2.html" class="nav-btn">← Back to Testing Guide</a>
+                <a href="testing-registrations.html" class="nav-btn">Registrations →</a>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="section">
+                <h2>📝 Create New Event</h2>
+                <div class="success-message" id="successMsg">✓ Event created successfully! Proceed to Registrations.</div>
+                
+                <form onsubmit="createEvent(event)">
+                    <div class="form-group">
+                        <label>Event Name *</label>
+                        <input type="text" id="eventName" placeholder="e.g., Q4 2025 Earnings Call" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Event Type *</label>
+                        <select id="eventType" required>
+                            <option value="">Select type...</option>
+                            <option value="audio">Audio Conference (Phone)</option>
+                            <option value="video">Video Conference (Zoom/Teams/Webex)</option>
+                            <option value="webcast">Webcast (Live Streaming)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Date & Time *</label>
+                        <input type="datetime-local" id="eventDateTime" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Expected Participants *</label>
+                        <input type="number" id="participantCount" placeholder="e.g., 500" min="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Services to Include</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="transcription" checked>
+                                <label for="transcription">Transcription</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="sentiment" checked>
+                                <label for="sentiment">Sentiment Analysis</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="qa">
+                                <label for="qa">Q&A Moderation</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="recording" checked>
+                                <label for="recording">Recording</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="compliance">
+                                <label for="compliance">Compliance Scan</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="description" placeholder="Event description..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn">✓ Create Event</button>
+                </form>
+            </div>
+
+            <div class="section">
+                <h2>📅 Upcoming Events</h2>
+                <div id="eventsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample events data
+        let events = [
+            {
+                id: 1,
+                name: "Q4 2025 Earnings Call",
+                type: "audio",
+                date: "2026-03-15T14:00",
+                participants: 1247,
+                status: "scheduled",
+                services: ["Transcription", "Sentiment", "Recording"]
+            },
+            {
+                id: 2,
+                name: "Annual Investor Day",
+                type: "video",
+                date: "2026-03-18T10:00",
+                participants: 3500,
+                status: "scheduled",
+                services: ["Transcription", "Sentiment", "Q&A", "Recording"]
+            },
+            {
+                id: 3,
+                name: "Board Strategy Briefing",
+                type: "audio",
+                date: "2026-03-22T15:00",
+                participants: 24,
+                status: "completed",
+                services: ["Transcription", "Recording", "Compliance"]
+            }
+        ];
+
+        function createEvent(e) {
+            e.preventDefault();
+            
+            const newEvent = {
+                id: events.length + 1,
+                name: document.getElementById('eventName').value,
+                type: document.getElementById('eventType').value,
+                date: document.getElementById('eventDateTime').value,
+                participants: parseInt(document.getElementById('participantCount').value),
+                status: 'scheduled',
+                services: []
+            };
+
+            if (document.getElementById('transcription').checked) newEvent.services.push('Transcription');
+            if (document.getElementById('sentiment').checked) newEvent.services.push('Sentiment');
+            if (document.getElementById('qa').checked) newEvent.services.push('Q&A');
+            if (document.getElementById('recording').checked) newEvent.services.push('Recording');
+            if (document.getElementById('compliance').checked) newEvent.services.push('Compliance');
+
+            events.unshift(newEvent);
+            
+            // Show success message
+            const msg = document.getElementById('successMsg');
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 5000);
+
+            // Reset form
+            e.target.reset();
+            renderEvents();
+        }
+
+        function renderEvents() {
+            const list = document.getElementById('eventsList');
+            list.innerHTML = events.map(event => `
+                <div class="event-card">
+                    <h3>${event.name}</h3>
+                    <p>📅 ${new Date(event.date).toLocaleString()}</p>
+                    <p>👥 ${event.participants.toLocaleString()} participants</p>
+                    <p>🎯 Type: ${event.type === 'audio' ? '🔊 Audio' : event.type === 'video' ? '🎥 Video' : '📡 Webcast'}</p>
+                    <p>📋 Services: ${event.services.join(', ')}</p>
+                    <span class="status ${event.status}">${event.status.toUpperCase()}</span>
+                    <div class="action-links">
+                        <a class="action-link" href="testing-registrations.html?eventId=${event.id}">Manage Registrations →</a>
+                        <a class="action-link" href="testing-occ.html?eventId=${event.id}">Load to OCC →</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize
+        renderEvents();
+    </script>
+</body>
+</html>
