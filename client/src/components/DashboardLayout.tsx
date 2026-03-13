@@ -27,8 +27,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import {
   LayoutDashboard, LogOut, PanelLeft, Users, Calendar, Mail,
   Radio, Settings, Brain, BarChart3, Shield, Zap, Video,
-  GraduationCap, FileText, TrendingUp, Eye, CreditCard,
-  Mic, Globe, Package
+  Eye, CreditCard, Globe
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -42,17 +41,14 @@ type MenuSection = {
 
 const menuSections: MenuSection[] = [
   {
-    items: [
-      { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-    ],
-  },
-  {
     label: "Events",
     items: [
+      { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+      { icon: Settings, label: "Operator Console", path: "/operator-links" },
+      { icon: Video, label: "Webcasting", path: "/live-video/webcasting" },
+      { icon: Radio, label: "Video Conferences", path: "/occ" },
       { icon: Calendar, label: "Bookings", path: "/events/calendar" },
       { icon: Mail, label: "Registrations", path: "/mailing-lists" },
-      { icon: Radio, label: "Live Events", path: "/occ" },
-      { icon: Video, label: "Webcasting", path: "/live-video/webcasting" },
     ],
   },
   {
@@ -68,9 +64,6 @@ const menuSections: MenuSection[] = [
   {
     label: "Platform",
     items: [
-      { icon: Settings, label: "Operator Console", path: "/operator-links" },
-      { icon: GraduationCap, label: "Training", path: "/operator-hub" },
-      { icon: Package, label: "AI Shop", path: "/ai-shop" },
       { icon: Zap, label: "Integrations", path: "/integrations" },
       { icon: CreditCard, label: "Billing", path: "/billing" },
       { icon: Users, label: "Admin", path: "/admin/users" },

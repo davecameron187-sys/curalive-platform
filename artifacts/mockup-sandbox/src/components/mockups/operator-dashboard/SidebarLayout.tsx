@@ -16,10 +16,11 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Events",
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "from-blue-500 to-cyan-500", route: null },
+      { id: "operator", label: "Operator Console", icon: Settings, color: "from-gray-500 to-slate-500", route: "/operator-links" },
+      { id: "webcasts", label: "Webcasting", icon: Video, color: "from-purple-500 to-pink-500", route: "/live-video/webcasting" },
+      { id: "occ", label: "Video Conferences", icon: Radio, color: "from-amber-500 to-orange-500", badge: "LIVE", route: "/occ" },
       { id: "bookings", label: "Bookings", icon: Calendar, color: "from-blue-500 to-cyan-500", route: "/events/calendar" },
       { id: "registrations", label: "Registrations", icon: Mail, color: "from-emerald-500 to-teal-500", route: "/mailing-lists" },
-      { id: "occ", label: "Live Events", icon: Radio, color: "from-amber-500 to-orange-500", badge: "LIVE", route: "/occ" },
-      { id: "webcasts", label: "Webcasting", icon: Video, color: "from-purple-500 to-pink-500", route: "/live-video/webcasting" },
     ],
   },
   {
@@ -35,9 +36,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "Platform",
     items: [
-      { id: "operator", label: "Operator Console", icon: Settings, color: "from-gray-500 to-slate-500", route: "/operator-links" },
-      { id: "training", label: "Training", icon: GraduationCap, color: "from-amber-500 to-yellow-500", route: "/operator-hub" },
-      { id: "shop", label: "AI Shop", icon: Package, color: "from-pink-500 to-rose-500", route: "/ai-shop" },
       { id: "integrations", label: "Integrations", icon: Zap, color: "from-blue-500 to-indigo-500", route: "/integrations" },
       { id: "billing", label: "Billing", icon: CreditCard, color: "from-slate-500 to-gray-500", route: "/billing" },
       { id: "admin", label: "Admin", icon: Users, color: "from-gray-500 to-slate-500", route: "/admin/users" },
