@@ -89,6 +89,7 @@ import AgenticBrain from "./pages/AgenticBrain";
 import AutonomousIntervention from "./pages/AutonomousIntervention";
 import TaggedMetricsDashboard from "./pages/TaggedMetricsDashboard";
 import ShadowMode from "./pages/ShadowMode";
+import HealthGuardian from "./pages/HealthGuardian";
 import Bastion from "./pages/Bastion";
 import LumiPartner from "./pages/LumiPartner";
 import ArchiveUpload from "./pages/ArchiveUpload";
@@ -210,6 +211,7 @@ function Router() {
       <Route path="/call-preparation" component={CallPreparation} />
       <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
       <Route path="/shadow-mode" component={ShadowMode} />
+      <Route path="/health-guardian" component={HealthGuardian} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
       <Route path="/archive-upload" component={ArchiveUpload} />
