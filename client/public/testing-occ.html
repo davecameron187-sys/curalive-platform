@@ -5,596 +5,162 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CuraLive OCC - Operator Console</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        header h1 {
-            font-size: 24px;
-            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .status-bar {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        .status-dot.live {
-            background: #ef4444;
-        }
-
-        .status-dot.ready {
-            background: #22c55e;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .nav-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .nav-btn {
-            background: rgba(96, 165, 250, 0.1);
-            color: #60a5fa;
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .nav-btn:hover {
-            background: rgba(96, 165, 250, 0.2);
-            border-color: #60a5fa;
-        }
-
-        .dashboard {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 30px;
-        }
-
-        .main-panel {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 8px;
-            padding: 30px;
-            backdrop-filter: blur(10px);
-        }
-
-        .side-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .panel {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 8px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-        }
-
-        .panel h2 {
-            font-size: 16px;
-            color: #60a5fa;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .section {
-            margin-bottom: 25px;
-        }
-
-        .section h3 {
-            color: #cbd5e1;
-            font-size: 14px;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .live-transcript {
-            background: rgba(15, 23, 42, 0.5);
-            border-left: 4px solid #60a5fa;
-            padding: 15px;
-            margin-bottom: 12px;
-            border-radius: 4px;
-            font-size: 13px;
-            line-height: 1.8;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .transcript-line {
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-        }
-
-        .transcript-line:last-child {
-            border-bottom: none;
-        }
-
-        .speaker-name {
-            color: #60a5fa;
-            font-weight: 500;
-            margin-bottom: 3px;
-        }
-
-        .speaker-text {
-            color: #cbd5e1;
-        }
-
-        .sentiment-meter {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .sentiment-bar {
-            flex: 1;
-            height: 20px;
-            background: rgba(15, 23, 42, 0.5);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .sentiment-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #22c55e 0%, #eab308 50%, #ef4444 100%);
-            width: 65%;
-        }
-
-        .sentiment-label {
-            color: #94a3b8;
-            font-size: 12px;
-            min-width: 50px;
-        }
-
-        .participant-item {
-            background: rgba(15, 23, 42, 0.5);
-            padding: 10px;
-            margin-bottom: 8px;
-            border-radius: 4px;
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .participant-name {
-            color: #cbd5e1;
-        }
-
-        .participant-status {
-            color: #22c55e;
-            font-size: 11px;
-        }
-
-        .qa-item {
-            background: rgba(15, 23, 42, 0.5);
-            padding: 12px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            border-left: 3px solid #eab308;
-        }
-
-        .qa-question {
-            color: #cbd5e1;
-            margin-bottom: 5px;
-        }
-
-        .qa-asker {
-            color: #94a3b8;
-            font-size: 11px;
-        }
-
-        .qa-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .qa-btn {
-            background: rgba(96, 165, 250, 0.1);
-            color: #60a5fa;
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .qa-btn:hover {
-            background: rgba(96, 165, 250, 0.2);
-        }
-
-        .qa-btn.reject {
-            color: #ef4444;
-            border-color: rgba(239, 68, 68, 0.3);
-        }
-
-        .qa-btn.reject:hover {
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(96, 165, 250, 0.3);
-        }
-
-        .btn.danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        }
-
-        .btn.danger:hover {
-            box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
-        }
-
-        .btn.success {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-        }
-
-        .btn.success:hover {
-            box-shadow: 0 8px 16px rgba(34, 197, 94, 0.3);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .event-info {
-            background: rgba(96, 165, 250, 0.1);
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-
-        .event-info h3 {
-            color: #60a5fa;
-            margin-bottom: 10px;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-
-        .info-label {
-            color: #94a3b8;
-        }
-
-        .info-value {
-            color: #cbd5e1;
-            font-weight: 500;
-        }
-
-        @media (max-width: 1024px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-
-            header {
-                flex-direction: column;
-                gap: 15px;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; line-height: 1.6; min-height: 100vh; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(148, 163, 184, 0.2); padding: 20px; border-radius: 8px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        header h1 { font-size: 24px; background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .nav-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .nav-btn { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.3s ease; text-decoration: none; display: inline-block; }
+        .nav-btn:hover { background: rgba(96, 165, 250, 0.2); border-color: #60a5fa; }
+        .content { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .section { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; padding: 25px; backdrop-filter: blur(10px); }
+        .section h2 { font-size: 18px; color: #60a5fa; margin-bottom: 20px; }
+        .event-header { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .event-title { font-size: 16px; font-weight: bold; color: #cbd5e1; margin-bottom: 8px; }
+        .event-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; color: #94a3b8; }
+        .live-status { display: inline-block; padding: 6px 12px; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-radius: 4px; font-size: 12px; font-weight: 600; margin-bottom: 15px; }
+        .controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .control-btn { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 10px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; }
+        .control-btn:hover { background: rgba(96, 165, 250, 0.2); border-color: #60a5fa; }
+        .control-btn.active { background: rgba(96, 165, 250, 0.3); border-color: #60a5fa; }
+        .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .metric { background: rgba(15, 23, 42, 0.5); padding: 12px; border-radius: 6px; }
+        .metric-label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+        .metric-value { font-size: 18px; font-weight: bold; color: #60a5fa; }
+        .transcript-box { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; padding: 12px; height: 250px; overflow-y: auto; font-size: 12px; line-height: 1.6; }
+        .transcript-entry { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
+        .transcript-speaker { color: #60a5fa; font-weight: 600; margin-bottom: 3px; }
+        .transcript-text { color: #cbd5e1; }
+        .sentiment-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .sentiment-positive { background: #86efac; }
+        .sentiment-neutral { background: #94a3b8; }
+        .sentiment-negative { background: #fca5a5; }
+        .qa-item { background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 12px; }
+        .qa-question { color: #cbd5e1; margin-bottom: 4px; }
+        .qa-votes { color: #94a3b8; font-size: 11px; }
+        .sidebar-section { margin-bottom: 20px; }
+        .sidebar-section h3 { font-size: 14px; color: #60a5fa; margin-bottom: 12px; }
+        @media (max-width: 1024px) { .content { grid-template-columns: 1fr; } .controls { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎚️ Operator Console (OCC)</h1>
-            <div class="status-bar">
-                <div class="status-item">
-                    <span class="status-dot ready"></span>
-                    <span id="eventStatus">Ready</span>
-                </div>
-                <div class="status-item">
-                    <span>⏱️ <span id="duration">00:00:00</span></span>
-                </div>
-                <div class="status-item">
-                    <span>👥 <span id="participantCount">0</span> Participants</span>
-                </div>
-            </div>
+            <h1>🎚️ OCC - Operator Console</h1>
             <div class="nav-buttons">
-                <a href="operational-testing-v2.html" class="nav-btn">← Back</a>
+                <a href="testing-registrations.html" class="nav-btn">← Registrations</a>
                 <a href="testing-post-event.html" class="nav-btn">Post-Event →</a>
             </div>
         </header>
 
-        <div class="event-info">
-            <h3>📅 Q4 2025 Earnings Call</h3>
-            <div class="info-item">
-                <span class="info-label">Scheduled:</span>
-                <span class="info-value">March 15, 2026 • 2:00 PM</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Type:</span>
-                <span class="info-value">Audio Conference (Phone)</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Services:</span>
-                <span class="info-value">Transcription • Sentiment • Q&A • Recording</span>
-            </div>
-        </div>
-
-        <div class="controls">
-            <button class="btn success" onclick="startEvent()">▶️ Start Event</button>
-            <button class="btn" onclick="pauseEvent()" id="pauseBtn" disabled>⏸️ Pause</button>
-            <button class="btn danger" onclick="endEvent()" id="endBtn" disabled>⏹️ End Event</button>
-            <button class="btn" onclick="toggleRecording()" id="recordBtn">🔴 Start Recording</button>
-        </div>
-
-        <div class="dashboard">
-            <div class="main-panel">
-                <div class="section">
-                    <h3>📝 Live Transcription</h3>
-                    <div class="live-transcript" id="transcript">
-                        <div class="transcript-line">
-                            <div class="speaker-name">John Smith (CEO)</div>
-                            <div class="speaker-text">Good afternoon everyone. Thank you for joining our Q4 earnings call. We're pleased to share strong results...</div>
-                        </div>
-                        <div class="transcript-line">
-                            <div class="speaker-name">Sarah Johnson (CFO)</div>
-                            <div class="speaker-text">Revenue increased 23% year-over-year to $2.4 billion. Operating margin improved to 18.5%...</div>
-                        </div>
+        <div class="content">
+            <div class="section">
+                <div class="event-header">
+                    <div class="event-title">Q4 2025 Earnings Call</div>
+                    <div class="event-meta">
+                        <div>📅 Mar 15, 2026 • 2:00 PM</div>
+                        <div>👥 1,247 Participants</div>
                     </div>
                 </div>
 
-                <div class="section">
-                    <h3>📊 Sentiment Analysis</h3>
-                    <div class="sentiment-meter">
-                        <div class="sentiment-bar">
-                            <div class="sentiment-fill" style="width: 72%; background: linear-gradient(90deg, #22c55e 0%, #eab308 50%, #ef4444 100%);"></div>
-                        </div>
-                        <span class="sentiment-label">Positive</span>
+                <div class="live-status">● LIVE - 42:18 elapsed</div>
+
+                <h2>🎮 Event Controls</h2>
+                <div class="controls">
+                    <button class="control-btn active">▶ Start Event</button>
+                    <button class="control-btn">⏸ Pause</button>
+                    <button class="control-btn">🔴 Stop Event</button>
+                    <button class="control-btn">📊 Metrics</button>
+                </div>
+
+                <h2>📊 Live Metrics</h2>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-label">Active Participants</div>
+                        <div class="metric-value">1,173</div>
                     </div>
-                    <div style="font-size: 12px; color: #94a3b8;">
-                        Overall sentiment: <strong style="color: #22c55e;">72% Positive</strong> | Neutral: 20% | Negative: 8%
+                    <div class="metric">
+                        <div class="metric-label">Avg Sentiment</div>
+                        <div class="metric-value">+78%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Questions</div>
+                        <div class="metric-value">342</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Compliance Issues</div>
+                        <div class="metric-value">0</div>
                     </div>
                 </div>
 
-                <div class="section">
-                    <h3>💬 Q&A Moderation</h3>
-                    <div id="qaPanel">
-                        <div class="qa-item">
-                            <div class="qa-question">What is your guidance for Q1 2026?</div>
-                            <div class="qa-asker">Asked by: Michael Chen (Goldman Sachs)</div>
-                            <div class="qa-actions">
-                                <button class="qa-btn" onclick="approveQA(this)">✓ Approve</button>
-                                <button class="qa-btn reject" onclick="rejectQA(this)">✗ Reject</button>
-                            </div>
-                        </div>
-                        <div class="qa-item">
-                            <div class="qa-question">Can you break down the regional performance?</div>
-                            <div class="qa-asker">Asked by: Lisa Wang (Morgan Stanley)</div>
-                            <div class="qa-actions">
-                                <button class="qa-btn" onclick="approveQA(this)">✓ Approve</button>
-                                <button class="qa-btn reject" onclick="rejectQA(this)">✗ Reject</button>
-                            </div>
-                        </div>
+                <h2>📝 Live Transcription</h2>
+                <div class="transcript-box">
+                    <div class="transcript-entry">
+                        <div class="transcript-speaker">CEO John Smith:</div>
+                        <div class="transcript-text">Good afternoon everyone. Thank you for joining us for our Q4 2025 earnings call. We're pleased to report strong results across all business segments.</div>
+                    </div>
+                    <div class="transcript-entry">
+                        <div class="transcript-speaker">CFO Sarah Johnson:</div>
+                        <div class="transcript-text">Revenue increased 23% year-over-year to $2.3 billion. Operating margins expanded by 150 basis points to 28%.</div>
+                    </div>
+                    <div class="transcript-entry">
+                        <div class="transcript-speaker">CEO John Smith:</div>
+                        <div class="transcript-text">We're now ready for your questions. Please go ahead.</div>
                     </div>
                 </div>
             </div>
 
-            <div class="side-panel">
-                <div class="panel">
-                    <h2>👥 Participants</h2>
-                    <div id="participantsList">
-                        <div class="participant-item">
-                            <span class="participant-name">John Smith</span>
-                            <span class="participant-status">Speaking</span>
+            <div>
+                <div class="section sidebar-section">
+                    <h2>😊 Sentiment Analysis</h2>
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span class="sentiment-indicator sentiment-positive"></span>
+                            <span>Positive: 68%</span>
                         </div>
-                        <div class="participant-item">
-                            <span class="participant-name">Sarah Johnson</span>
-                            <span class="participant-status">Connected</span>
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span class="sentiment-indicator sentiment-neutral"></span>
+                            <span>Neutral: 28%</span>
                         </div>
-                        <div class="participant-item">
-                            <span class="participant-name">Michael Chen</span>
-                            <span class="participant-status">Connected</span>
-                        </div>
-                        <div class="participant-item">
-                            <span class="participant-name">Lisa Wang</span>
-                            <span class="participant-status">Connected</span>
+                        <div style="display: flex; align-items: center;">
+                            <span class="sentiment-indicator sentiment-negative"></span>
+                            <span>Negative: 4%</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="panel">
-                    <h2>⚙️ Controls</h2>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button class="btn" style="font-size: 12px;" onclick="muteAll()">🔇 Mute All</button>
-                        <button class="btn" style="font-size: 12px;" onclick="toggleShadowMode()">👁️ Shadow Mode</button>
-                        <button class="btn" style="font-size: 12px;" onclick="downloadTranscript()">📥 Download Transcript</button>
+                <div class="section sidebar-section">
+                    <h2>❓ Top Questions</h2>
+                    <div class="qa-item">
+                        <div class="qa-question">What's your guidance for 2026?</div>
+                        <div class="qa-votes">👍 87 votes</div>
+                    </div>
+                    <div class="qa-item">
+                        <div class="qa-question">How will AI impact margins?</div>
+                        <div class="qa-votes">👍 64 votes</div>
+                    </div>
+                    <div class="qa-item">
+                        <div class="qa-question">M&A pipeline status?</div>
+                        <div class="qa-votes">👍 52 votes</div>
                     </div>
                 </div>
 
-                <div class="panel">
-                    <h2>📊 Metrics</h2>
-                    <div class="info-item">
-                        <span class="info-label">Duration:</span>
-                        <span class="info-value" id="metricDuration">12:34</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Participants:</span>
-                        <span class="info-value" id="metricParticipants">47</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Recording:</span>
-                        <span class="info-value" id="metricRecording">Active</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Transcription:</span>
-                        <span class="info-value" id="metricTranscription">Live</span>
-                    </div>
+                <div class="section sidebar-section">
+                    <h2>⚠️ Compliance Alerts</h2>
+                    <div style="color: #86efac; font-size: 12px;">✓ No compliance issues detected</div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let isLive = false;
-        let isRecording = false;
-        let duration = 0;
-        let durationInterval;
-
-        function startEvent() {
-            isLive = true;
-            document.getElementById('eventStatus').textContent = 'LIVE';
-            document.getElementById('eventStatus').parentElement.querySelector('.status-dot').classList.add('live');
-            document.querySelector('.btn.success').disabled = true;
-            document.getElementById('pauseBtn').disabled = false;
-            document.getElementById('endBtn').disabled = false;
-            
-            durationInterval = setInterval(() => {
-                duration++;
-                const hours = Math.floor(duration / 3600);
-                const minutes = Math.floor((duration % 3600) / 60);
-                const seconds = duration % 60;
-                document.getElementById('duration').textContent = 
-                    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                document.getElementById('metricDuration').textContent = 
-                    `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            }, 1000);
-        }
-
-        function pauseEvent() {
-            clearInterval(durationInterval);
-            alert('Event paused');
-        }
-
-        function endEvent() {
-            isLive = false;
-            clearInterval(durationInterval);
-            document.getElementById('eventStatus').textContent = 'Completed';
-            document.getElementById('eventStatus').parentElement.querySelector('.status-dot').classList.remove('live');
-            document.querySelector('.btn.success').disabled = false;
-            document.getElementById('pauseBtn').disabled = true;
-            document.getElementById('endBtn').disabled = true;
-            alert('Event ended. Proceed to Post-Event Dashboard.');
-            setTimeout(() => window.location.href = 'testing-post-event.html', 2000);
-        }
-
-        function toggleRecording() {
-            isRecording = !isRecording;
-            const btn = document.getElementById('recordBtn');
-            if (isRecording) {
-                btn.textContent = '⏹️ Stop Recording';
-                document.getElementById('metricRecording').textContent = 'Recording...';
-            } else {
-                btn.textContent = '🔴 Start Recording';
-                document.getElementById('metricRecording').textContent = 'Stopped';
-            }
-        }
-
-        function approveQA(btn) {
-            btn.parentElement.parentElement.style.opacity = '0.5';
-            btn.parentElement.parentElement.style.borderLeftColor = '#22c55e';
-            btn.textContent = '✓ Approved';
-            btn.disabled = true;
-        }
-
-        function rejectQA(btn) {
-            btn.parentElement.parentElement.style.opacity = '0.3';
-            btn.textContent = '✗ Rejected';
-            btn.disabled = true;
-        }
-
-        function muteAll() {
-            alert('All participants muted');
-        }
-
-        function toggleShadowMode() {
-            alert('Shadow Mode toggled');
-        }
-
-        function downloadTranscript() {
-            alert('Transcript downloaded as TXT file');
-        }
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
     </script>
 </body>
 </html>

@@ -16,6 +16,7 @@
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #e2e8f0;
             line-height: 1.6;
+            min-height: 100vh;
         }
 
         .container {
@@ -34,6 +35,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         header h1 {
@@ -47,6 +50,7 @@
         .nav-buttons {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .nav-btn {
@@ -71,18 +75,19 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 30px;
+            margin-bottom: 30px;
         }
 
         .section {
             background: rgba(30, 41, 59, 0.6);
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 8px;
-            padding: 30px;
+            padding: 25px;
             backdrop-filter: blur(10px);
         }
 
         .section h2 {
-            font-size: 20px;
+            font-size: 18px;
             color: #60a5fa;
             margin-bottom: 20px;
             display: flex;
@@ -91,44 +96,53 @@
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #cbd5e1;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
         }
 
-        input, select, textarea {
+        input[type="text"],
+        input[type="number"],
+        input[type="datetime-local"],
+        select,
+        textarea {
             width: 100%;
-            padding: 12px;
             background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            border-radius: 4px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
             color: #e2e8f0;
-            font-size: 14px;
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            transition: all 0.3s ease;
             font-family: inherit;
         }
 
-        input:focus, select:focus, textarea:focus {
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="datetime-local"]:focus,
+        select:focus,
+        textarea:focus {
             outline: none;
             border-color: #60a5fa;
-            background: rgba(15, 23, 42, 0.7);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
         }
 
         textarea {
             resize: vertical;
-            min-height: 100px;
+            min-height: 80px;
         }
 
         .checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
 
         .checkbox-item {
@@ -137,9 +151,17 @@
             gap: 8px;
         }
 
-        input[type="checkbox"] {
-            width: auto;
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
             cursor: pointer;
+            accent-color: #60a5fa;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
         }
 
         .btn {
@@ -148,8 +170,8 @@
             border: none;
             padding: 12px 24px;
             border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             width: 100%;
@@ -157,45 +179,51 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(96, 165, 250, 0.3);
+            box-shadow: 0 8px 16px rgba(96, 165, 250, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
         }
 
         .event-card {
             background: rgba(15, 23, 42, 0.5);
-            border-left: 4px solid #60a5fa;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 6px;
             padding: 15px;
             margin-bottom: 15px;
-            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .event-card:hover {
+            border-color: #60a5fa;
+            background: rgba(15, 23, 42, 0.7);
         }
 
         .event-card h3 {
             color: #cbd5e1;
+            font-size: 14px;
             margin-bottom: 8px;
         }
 
         .event-card p {
             color: #94a3b8;
-            font-size: 13px;
-            margin-bottom: 5px;
+            font-size: 12px;
+            margin-bottom: 6px;
         }
 
-        .event-card .status {
+        .status {
             display: inline-block;
             padding: 4px 8px;
             border-radius: 3px;
             font-size: 11px;
-            font-weight: 500;
-            margin-top: 10px;
+            font-weight: 600;
+            margin-bottom: 10px;
         }
 
         .status.scheduled {
             background: rgba(34, 197, 94, 0.2);
             color: #86efac;
-        }
-
-        .status.live {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
         }
 
         .status.completed {
@@ -205,19 +233,21 @@
 
         .action-links {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-top: 10px;
+            flex-wrap: wrap;
         }
 
         .action-link {
             color: #60a5fa;
             text-decoration: none;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             border: 1px solid rgba(96, 165, 250, 0.3);
             padding: 4px 8px;
             border-radius: 3px;
             transition: all 0.3s ease;
+            display: inline-block;
         }
 
         .action-link:hover {
@@ -229,14 +259,34 @@
             background: rgba(34, 197, 94, 0.1);
             border: 1px solid rgba(34, 197, 94, 0.3);
             color: #86efac;
-            padding: 15px;
+            padding: 12px 15px;
             border-radius: 4px;
             margin-bottom: 20px;
             display: none;
+            font-size: 13px;
         }
 
         .success-message.show {
             display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #94a3b8;
+            padding: 30px 20px;
+            font-size: 13px;
         }
 
         @media (max-width: 768px) {
@@ -246,16 +296,16 @@
 
             header {
                 flex-direction: column;
-                gap: 15px;
+                text-align: center;
             }
 
             .nav-buttons {
                 width: 100%;
+                justify-content: center;
             }
 
-            .nav-btn {
-                flex: 1;
-                text-align: center;
+            .checkbox-group {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -265,7 +315,7 @@
         <header>
             <h1>📅 Bookings - Event Management</h1>
             <div class="nav-buttons">
-                <a href="operational-testing-v2.html" class="nav-btn">← Back to Testing Guide</a>
+                <a href="operational-testing-v2.html" class="nav-btn">← Back</a>
                 <a href="testing-registrations.html" class="nav-btn">Registrations →</a>
             </div>
         </header>
@@ -285,9 +335,9 @@
                         <label>Event Type *</label>
                         <select id="eventType" required>
                             <option value="">Select type...</option>
-                            <option value="audio">Audio Conference (Phone)</option>
-                            <option value="video">Video Conference (Zoom/Teams/Webex)</option>
-                            <option value="webcast">Webcast (Live Streaming)</option>
+                            <option value="audio">🔊 Audio Conference (Phone)</option>
+                            <option value="video">🎥 Video Conference (Zoom/Teams/Webex)</option>
+                            <option value="webcast">📡 Webcast (Live Streaming)</option>
                         </select>
                     </div>
 
@@ -310,19 +360,15 @@
                             </div>
                             <div class="checkbox-item">
                                 <input type="checkbox" id="sentiment" checked>
-                                <label for="sentiment">Sentiment Analysis</label>
+                                <label for="sentiment">Sentiment</label>
                             </div>
                             <div class="checkbox-item">
                                 <input type="checkbox" id="qa">
-                                <label for="qa">Q&A Moderation</label>
+                                <label for="qa">Q&A</label>
                             </div>
                             <div class="checkbox-item">
                                 <input type="checkbox" id="recording" checked>
                                 <label for="recording">Recording</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="compliance">
-                                <label for="compliance">Compliance Scan</label>
                             </div>
                         </div>
                     </div>
@@ -344,7 +390,6 @@
     </div>
 
     <script>
-        // Sample events data
         let events = [
             {
                 id: 1,
@@ -371,13 +416,19 @@
                 date: "2026-03-22T15:00",
                 participants: 24,
                 status: "completed",
-                services: ["Transcription", "Recording", "Compliance"]
+                services: ["Transcription", "Recording"]
             }
         ];
 
         function createEvent(e) {
             e.preventDefault();
             
+            const services = [];
+            if (document.getElementById('transcription').checked) services.push('Transcription');
+            if (document.getElementById('sentiment').checked) services.push('Sentiment');
+            if (document.getElementById('qa').checked) services.push('Q&A');
+            if (document.getElementById('recording').checked) services.push('Recording');
+
             const newEvent = {
                 id: events.length + 1,
                 name: document.getElementById('eventName').value,
@@ -385,46 +436,43 @@
                 date: document.getElementById('eventDateTime').value,
                 participants: parseInt(document.getElementById('participantCount').value),
                 status: 'scheduled',
-                services: []
+                services: services
             };
-
-            if (document.getElementById('transcription').checked) newEvent.services.push('Transcription');
-            if (document.getElementById('sentiment').checked) newEvent.services.push('Sentiment');
-            if (document.getElementById('qa').checked) newEvent.services.push('Q&A');
-            if (document.getElementById('recording').checked) newEvent.services.push('Recording');
-            if (document.getElementById('compliance').checked) newEvent.services.push('Compliance');
 
             events.unshift(newEvent);
             
-            // Show success message
             const msg = document.getElementById('successMsg');
             msg.classList.add('show');
             setTimeout(() => msg.classList.remove('show'), 5000);
 
-            // Reset form
             e.target.reset();
             renderEvents();
         }
 
         function renderEvents() {
             const list = document.getElementById('eventsList');
+            
+            if (events.length === 0) {
+                list.innerHTML = '<div class="empty-state">No events created yet</div>';
+                return;
+            }
+
             list.innerHTML = events.map(event => `
                 <div class="event-card">
                     <h3>${event.name}</h3>
                     <p>📅 ${new Date(event.date).toLocaleString()}</p>
                     <p>👥 ${event.participants.toLocaleString()} participants</p>
-                    <p>🎯 Type: ${event.type === 'audio' ? '🔊 Audio' : event.type === 'video' ? '🎥 Video' : '📡 Webcast'}</p>
-                    <p>📋 Services: ${event.services.join(', ')}</p>
+                    <p>🎯 ${event.type === 'audio' ? '🔊 Audio' : event.type === 'video' ? '🎥 Video' : '📡 Webcast'}</p>
+                    <p>📋 ${event.services.join(', ')}</p>
                     <span class="status ${event.status}">${event.status.toUpperCase()}</span>
                     <div class="action-links">
-                        <a class="action-link" href="testing-registrations.html?eventId=${event.id}">Manage Registrations →</a>
+                        <a class="action-link" href="testing-registrations.html?eventId=${event.id}">Registrations →</a>
                         <a class="action-link" href="testing-occ.html?eventId=${event.id}">Load to OCC →</a>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Initialize
         renderEvents();
     </script>
 </body>
