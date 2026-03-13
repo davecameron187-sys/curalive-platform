@@ -359,7 +359,7 @@ const doc = new Document({
       sp(80),
 
       // --- Predictive Intelligence ---
-      sH2("10. Predictive Communication Intelligence (refer FIG 3)"),
+      sH2("10. Predictive Communication Intelligence (refer FIG 3, FIG 4)"),
       p("The system may generate predictive analytics by correlating communication intelligence data with external market data."),
       p("Predictive capabilities may include:"),
       b("predicted investor concerns based on historical question patterns and current market conditions"),
