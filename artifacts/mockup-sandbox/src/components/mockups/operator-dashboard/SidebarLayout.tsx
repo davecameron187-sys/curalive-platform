@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Monitor, Phone, Video, Radio, Eye, CreditCard, Shield, Brain,
   Calendar, Users, Clock, ChevronRight, Activity, Mic, Settings,
   Bell, Search, LayoutDashboard, PlayCircle, CheckCircle2, AlertTriangle,
   Headphones, Zap, TrendingUp, FileText, ExternalLink, ArrowUpRight,
-  Sparkles, MoreHorizontal
+  Sparkles, MoreHorizontal, ChevronLeft
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -23,7 +23,147 @@ function StatusDot({ status }: { status: "live" | "ready" | "idle" }) {
   return <span className={`w-2 h-2 rounded-full ${colors[status]}`} />;
 }
 
+const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+const EVENT_DATES: Record<string, { count: number; hasLive: boolean }> = {
+  "2026-03-10": { count: 2, hasLive: false },
+  "2026-03-11": { count: 1, hasLive: false },
+  "2026-03-13": { count: 4, hasLive: true },
+  "2026-03-14": { count: 3, hasLive: false },
+  "2026-03-17": { count: 1, hasLive: false },
+  "2026-03-18": { count: 5, hasLive: false },
+  "2026-03-19": { count: 2, hasLive: false },
+  "2026-03-20": { count: 1, hasLive: false },
+  "2026-03-24": { count: 3, hasLive: false },
+  "2026-03-25": { count: 2, hasLive: false },
+  "2026-03-27": { count: 1, hasLive: false },
+};
+
+function MiniCalendar({ selectedDate, onSelectDate }: { selectedDate: Date; onSelectDate: (d: Date) => void }) {
+  const [viewMonth, setViewMonth] = useState(selectedDate.getMonth());
+  const [viewYear, setViewYear] = useState(selectedDate.getFullYear());
+
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+    const days: { date: number; month: "prev" | "current" | "next"; fullDate: string }[] = [];
+
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const d = daysInPrevMonth - i;
+      const m = viewMonth === 0 ? 11 : viewMonth - 1;
+      const y = viewMonth === 0 ? viewYear - 1 : viewYear;
+      days.push({ date: d, month: "prev", fullDate: `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}` });
+    }
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({ date: i, month: "current", fullDate: `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}` });
+    }
+
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      const m = viewMonth === 11 ? 0 : viewMonth + 1;
+      const y = viewMonth === 11 ? viewYear + 1 : viewYear;
+      days.push({ date: i, month: "next", fullDate: `${y}-${String(m + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}` });
+    }
+
+    return days;
+  }, [viewMonth, viewYear]);
+
+  const todayStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+
+  return (
+    <div className="bg-[#161b28] rounded-xl border border-white/[0.06] p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-white text-sm font-semibold flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-blue-400" />
+          {MONTHS[viewMonth]} {viewYear}
+        </h4>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else setViewMonth(viewMonth - 1); }}
+            className="p-1 text-gray-500 hover:text-white rounded transition-colors hover:bg-white/5"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => { setViewMonth(selectedDate.getMonth()); setViewYear(selectedDate.getFullYear()); }}
+            className="px-2 py-0.5 text-[10px] text-gray-500 hover:text-blue-400 rounded transition-colors hover:bg-white/5"
+          >
+            Today
+          </button>
+          <button
+            onClick={() => { if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); } else setViewMonth(viewMonth + 1); }}
+            className="p-1 text-gray-500 hover:text-white rounded transition-colors hover:bg-white/5"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-0">
+        {DAYS.map((d) => (
+          <div key={d} className="text-center text-[10px] text-gray-600 font-medium py-1">{d}</div>
+        ))}
+        {calendarDays.map((day, i) => {
+          const eventData = EVENT_DATES[day.fullDate];
+          const isToday = day.fullDate === todayStr;
+          const isSelected = day.fullDate === todayStr;
+          const isOtherMonth = day.month !== "current";
+
+          return (
+            <button
+              key={i}
+              onClick={() => {
+                if (day.month === "current") {
+                  onSelectDate(new Date(viewYear, viewMonth, day.date));
+                }
+              }}
+              className={`relative h-8 flex items-center justify-center text-xs rounded-lg transition-all
+                ${isOtherMonth ? "text-gray-700" : "text-gray-400 hover:bg-white/5 hover:text-white"}
+                ${isToday ? "bg-blue-500/20 text-blue-400 font-bold ring-1 ring-blue-500/30" : ""}
+                ${isSelected && !isToday ? "bg-white/10 text-white" : ""}
+              `}
+            >
+              {day.date}
+              {eventData && (
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                  {eventData.hasLive ? (
+                    <span className="w-1 h-1 rounded-full bg-green-400 animate-pulse" />
+                  ) : (
+                    <span className="w-1 h-1 rounded-full bg-blue-400" />
+                  )}
+                  {eventData.count > 1 && <span className="w-1 h-1 rounded-full bg-blue-400/50" />}
+                  {eventData.count > 3 && <span className="w-1 h-1 rounded-full bg-blue-400/30" />}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1.5">
+        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          <span>Live events today</span>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+          <span>Scheduled events</span>
+        </div>
+        <div className="mt-2 text-xs text-gray-500">
+          <span className="text-white font-medium">This week:</span> 11 events across 6 days
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DashboardView({ onNavigate }: { onNavigate: (tabId: string) => void }) {
+  const [selectedDate] = useState(new Date(2026, 2, 13));
+
   const events = [
     { time: "09:00", title: "Q1 2026 Earnings Call — Naspers", platform: "OCC Audio", platformTab: "occ", participants: 1247, status: "live" as const, sentiment: 82 },
     { time: "11:30", title: "Annual Investor Day — Sasol", platform: "Webcast", platformTab: "webcasts", participants: 3500, status: "ready" as const, sentiment: null },
@@ -55,80 +195,84 @@ function DashboardView({ onNavigate }: { onNavigate: (tabId: string) => void }) 
         ))}
       </div>
 
-      <div className="bg-[#161b28] rounded-xl border border-white/[0.06] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-blue-400" />
-            <h3 className="text-white font-semibold text-sm">Daily Schedule</h3>
-            <span className="text-xs text-gray-500 ml-1">March 13, 2026</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
-              <Zap className="w-3 h-3" /> Sync from Booking
-            </button>
-          </div>
-        </div>
-
-        {events.map((event, i) => (
-          <div key={event.title} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors ${i < events.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
-            <div className="w-14 flex-shrink-0">
-              <span className="text-sm font-mono text-gray-500">{event.time}</span>
+      <div className="grid grid-cols-[1fr_280px] gap-4">
+        <div className="bg-[#161b28] rounded-xl border border-white/[0.06] overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-blue-400" />
+              <h3 className="text-white font-semibold text-sm">Daily Schedule</h3>
+              <span className="text-xs text-gray-500 ml-1">March 13, 2026</span>
             </div>
+            <div className="flex items-center gap-2">
+              <button className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
+                <Zap className="w-3 h-3" /> Sync from Booking
+              </button>
+            </div>
+          </div>
 
-            <div className={`w-1 h-10 rounded-full flex-shrink-0 ${
-              event.status === "live" ? "bg-green-500" : event.status === "ready" ? "bg-amber-500/50" : "bg-gray-700"
-            }`} />
+          {events.map((event, i) => (
+            <div key={event.title} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors ${i < events.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
+              <div className="w-14 flex-shrink-0">
+                <span className="text-sm font-mono text-gray-500">{event.time}</span>
+              </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="text-white text-sm font-medium truncate">{event.title}</div>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className={`w-1 h-10 rounded-full flex-shrink-0 ${
+                event.status === "live" ? "bg-green-500" : event.status === "ready" ? "bg-amber-500/50" : "bg-gray-700"
+              }`} />
+
+              <div className="flex-1 min-w-0">
+                <div className="text-white text-sm font-medium truncate">{event.title}</div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <button
+                    onClick={() => onNavigate(event.platformTab)}
+                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-0.5 transition-colors"
+                  >
+                    {event.platform} <ExternalLink className="w-2.5 h-2.5" />
+                  </button>
+                  <span className="text-gray-700">·</span>
+                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <Users className="w-3 h-3" /> {event.participants.toLocaleString()}
+                  </span>
+                  {event.sentiment && (
+                    <>
+                      <span className="text-gray-700">·</span>
+                      <span className="text-xs text-emerald-400 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" /> {event.sentiment}%
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {event.status === "live" ? (
+                  <span className="px-2.5 py-1 bg-green-500/15 text-green-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-green-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> LIVE
+                  </span>
+                ) : event.status === "ready" ? (
+                  <span className="px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded-lg text-xs font-medium border border-amber-500/10">
+                    <CheckCircle2 className="w-3 h-3 inline mr-1" />SYNCED
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 bg-gray-500/10 text-gray-500 rounded-lg text-xs font-medium border border-gray-500/10">
+                    <Clock className="w-3 h-3 inline mr-1" />PENDING
+                  </span>
+                )}
                 <button
                   onClick={() => onNavigate(event.platformTab)}
-                  className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-0.5 transition-colors"
+                  className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 text-white rounded-lg text-xs font-medium transition-colors border border-white/[0.06]"
                 >
-                  {event.platform} <ExternalLink className="w-2.5 h-2.5" />
+                  {event.status === "live" ? "Open Console" : "Launch"}
                 </button>
-                <span className="text-gray-700">·</span>
-                <span className="text-xs text-gray-500 flex items-center gap-1">
-                  <Users className="w-3 h-3" /> {event.participants.toLocaleString()}
-                </span>
-                {event.sentiment && (
-                  <>
-                    <span className="text-gray-700">·</span>
-                    <span className="text-xs text-emerald-400 flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" /> {event.sentiment}%
-                    </span>
-                  </>
-                )}
+                <button className="p-1.5 text-gray-500 hover:text-gray-300 transition-colors">
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
               </div>
             </div>
+          ))}
+        </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {event.status === "live" ? (
-                <span className="px-2.5 py-1 bg-green-500/15 text-green-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-green-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> LIVE
-                </span>
-              ) : event.status === "ready" ? (
-                <span className="px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded-lg text-xs font-medium border border-amber-500/10">
-                  <CheckCircle2 className="w-3 h-3 inline mr-1" />SYNCED
-                </span>
-              ) : (
-                <span className="px-2.5 py-1 bg-gray-500/10 text-gray-500 rounded-lg text-xs font-medium border border-gray-500/10">
-                  <Clock className="w-3 h-3 inline mr-1" />PENDING
-                </span>
-              )}
-              <button
-                onClick={() => onNavigate(event.platformTab)}
-                className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 text-white rounded-lg text-xs font-medium transition-colors border border-white/[0.06]"
-              >
-                {event.status === "live" ? "Open Console" : "Launch"}
-              </button>
-              <button className="p-1.5 text-gray-500 hover:text-gray-300 transition-colors">
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
+        <MiniCalendar selectedDate={selectedDate} onSelectDate={() => {}} />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
