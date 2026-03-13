@@ -184,19 +184,18 @@ function costTotal(label, amount) {
 
 const doc = new Document({
   creator: "CuraLive",
-  title: "CuraLive \u2014 Multi-Region Mirroring & Infrastructure Brief",
+  title: "CuraLive \u2014 Multi-Region Mirroring & Infrastructure Brief v2",
   sections: [{
     properties: { page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } } },
     children: [
 
-      // COVER
-      fullBox("CuraLive\nMulti-Region Mirroring & Infrastructure Brief", "1D4ED8"),
+      fullBox("CuraLive\nMulti-Region Mirroring & Infrastructure Brief\nv2 \u2014 Updated with Partner Feedback", "1D4ED8"),
       spacer(60),
-      plain("Prepared for partner review. This document covers why multi-region mirroring matters for CuraLive, what it involves, how much it costs, and what the platform already has in place to support it.", 20),
+      plain("This document covers why multi-region mirroring matters for CuraLive, what it involves, how much it costs, and what the platform already has in place to support it. Updated to address partner review feedback.", 20),
 
       spacer(200),
 
-      // SECTION 1: WHY MIRRORING MATTERS
+      // SECTION 1
       fullBox("1.  Why Multi-Region Mirroring Matters", "1E3A8A"),
       spacer(80),
 
@@ -205,15 +204,18 @@ const doc = new Document({
       plain("Mirroring the platform in a second region means:"),
       bullet("If the primary server goes down, a backup takes over automatically"),
       bullet("No data is lost \u2014 the database is replicated in real time"),
-      bullet("Telephony (phone calls) continues uninterrupted \u2014 Twilio already operates globally"),
       bullet("Clients in different geographies get faster, lower-latency connections"),
       bullet("Regulatory compliance \u2014 some jurisdictions require data to stay within their borders"),
       spacer(40),
-      plain("For acquisition readiness (Microsoft, Zoom, or similar), demonstrating multi-region resilience is a significant differentiator. It shows the platform is production-grade and ready for enterprise deployment."),
+
+      fullBox("Telephony Independence \u2014 Critical for Enterprise Clients\n\nActive phone calls are managed entirely by Twilio\u2019s global infrastructure and are completely\nindependent of CuraLive\u2019s application servers. A CuraLive server failover does not interrupt\nany call in progress. This is a key differentiator for enterprise clients, especially banks and\nfinancial institutions where call continuity during live investor events is non-negotiable.", "065F46"),
+
+      spacer(40),
+      plain("Multi-region mirroring is not a future nice-to-have \u2014 it is a requirement for enterprise client acquisition. Financial institutions will require documented disaster recovery and business continuity capabilities during their vendor due diligence process."),
 
       spacer(200),
 
-      // SECTION 2: WHAT CURALIVE IS BUILT ON
+      // SECTION 2
       fullBox("2.  What CuraLive Runs On", "065F46"),
       spacer(80),
 
@@ -237,7 +239,7 @@ const doc = new Document({
 
       spacer(100),
 
-      // SECTION 3: HOW MIRRORING WORKS
+      // SECTION 3
       new Paragraph({ children: [new TextRun({ text: "", size: 2 }), new PageBreak()] }),
       fullBox("3.  How Multi-Region Mirroring Works", "B45309"),
       spacer(80),
@@ -251,14 +253,37 @@ const doc = new Document({
 
       heading("What happens during a failover:"),
       step("1", "Primary region goes down (server crash, network outage, data centre issue)"),
-      step("2", "Health check detects the failure within 30\u201360 seconds"),
+      step("2", "Health check detects the failure within 10\u201330 seconds (see Health Monitoring below)"),
       step("3", "DNS automatically routes all traffic to the secondary region"),
       step("4", "Database replica is promoted to primary \u2014 all data is intact, no loss"),
       step("5", "Telephony continues uninterrupted \u2014 Twilio is completely independent of our servers"),
       step("6", "Users reconnect within 1\u20132 minutes without any manual intervention"),
       spacer(60),
 
-      fullBox("Important: phone calls already in progress will not drop.\nTwilio manages call audio independently. Only the OCC dashboard reconnects.", "065F46"),
+      fullBox("Important: phone calls already in progress will not drop.\nTwilio manages call audio independently. Only the OCC dashboard reconnects.\nThis applies to native CuraLive calls, dial-out calls, and Shadow Bridge connections.", "065F46"),
+
+      spacer(100),
+
+      // NEW: HEALTH MONITORING SECTION
+      heading("Health Monitoring \u2014 How Failures Are Detected"),
+      spacer(40),
+      plain("Health checks are performed by the cloud provider\u2019s DNS failover service (e.g. AWS Route 53, Cloudflare). These are polling-based checks that send a request to the application server at regular intervals."),
+      spacer(20),
+      plain("Default configuration:"),
+      bullet("Standard health check interval: every 10\u201330 seconds"),
+      bullet("Configurable down to every 5 seconds for faster detection"),
+      bullet("Checks run from multiple geographic locations simultaneously"),
+      bullet("Failure is confirmed only when multiple check locations agree \u2014 preventing false positives"),
+      spacer(40),
+
+      plain("In addition to basic server health checks, CuraLive supports application-level health monitoring that verifies:"),
+      bullet("Database connectivity \u2014 is the PostgreSQL connection active and responsive?"),
+      bullet("Telephony status \u2014 is the Twilio API reachable and authenticated?"),
+      bullet("AI service availability \u2014 is the OpenAI API responding?"),
+      bullet("Active event status \u2014 are events currently in progress still streaming correctly?"),
+      spacer(40),
+
+      fullBox("Application-level health checks go beyond simple \u201Cis the server up\u201D monitoring.\nThey verify that every critical service the platform depends on is operational.\nThis is the level of monitoring enterprise IT and audit teams expect to see.", "374151"),
 
       spacer(100),
 
@@ -272,7 +297,7 @@ const doc = new Document({
 
       spacer(200),
 
-      // SECTION 4: COST BREAKDOWN
+      // SECTION 4
       new Paragraph({ children: [new TextRun({ text: "", size: 2 }), new PageBreak()] }),
       fullBox("4.  Cost Breakdown", "991B1B"),
       spacer(80),
@@ -307,11 +332,14 @@ const doc = new Document({
       costTotal("ESTIMATED MONTHLY TOTAL", "$500 \u2013 $1,000"),
 
       spacer(80),
-      plain("At enterprise tier with SLA guarantees and active-active: $2,000 \u2013 $5,000/month. This is still very competitive compared to legacy conferencing platforms which charge $10,000\u2013$50,000/month for equivalent setups.", 19),
+      plain("At enterprise tier with SLA guarantees and active-active: $2,000 \u2013 $5,000/month."),
+      spacer(20),
+
+      fullBox("For context: legacy conferencing platforms charge $10,000\u2013$50,000/month\nfor equivalent multi-region setups. CuraLive delivers the same resilience\nat a fraction of the cost. This cost advantage will be critical when\nenterprise clients\u2019 internal IT and audit teams scrutinise the platform\nduring vendor assessment and procurement.", "065F46"),
 
       spacer(200),
 
-      // SECTION 5: TELEPHONY & BYOC
+      // SECTION 5
       new Paragraph({ children: [new TextRun({ text: "", size: 2 }), new PageBreak()] }),
       fullBox("5.  Telephony & Bring Your Own Carrier", "5B21B6"),
       spacer(80),
@@ -339,9 +367,33 @@ const doc = new Document({
       spacer(60),
       fullBox("Twilio also supports BYOC natively \u2014 you can connect your own SIP trunks through Twilio\u2019s platform and keep all existing integrations while benefiting from your own carrier\u2019s rates.", "4C1D95"),
 
+      spacer(100),
+
+      // NEW: CALL QUALITY MONITORING
+      heading("Call Quality Monitoring"),
+      spacer(40),
+      plain("For enterprise operations, visibility into call quality at the network level is essential \u2014 especially when running events for banks and financial institutions where audio quality complaints must be investigated and resolved quickly."),
+      spacer(20),
+
+      plain("CuraLive supports call quality monitoring through the following capabilities:"),
+      spacer(20),
+
+      twoBoxes([
+        { text: "Twilio Insights\n(available now)\n\nPer-call quality metrics\nMOS scores (Mean Opinion Score)\nJitter, packet loss, latency\nPer-participant breakdown\nHistorical call quality trends", bg: "5B21B6" },
+        { text: "BYOC Carrier Dashboards\n(available with BYOC)\n\nReal-time call performance monitoring\nNetwork-level quality metrics\nIndividual participant routing analysis\nLatency rates, buffering, packet loss\nUseful for complaint investigation", bg: "1E40AF" },
+      ]),
+
+      spacer(40),
+      plain("Twilio Insights data can be surfaced directly within the CuraLive OCC, giving operators real-time visibility into call quality alongside the live transcript, sentiment scores, and compliance flags. This means operators can identify and respond to call quality issues during the event, not after."),
+      spacer(20),
+      plain("When BYOC is implemented, equivalent quality dashboards from the carrier (such as Bandwidth\u2019s real-time performance dashboard or similar offerings from other SIP providers) can be integrated alongside Twilio\u2019s metrics, providing comprehensive quality monitoring across all telephony paths."),
+      spacer(20),
+
+      fullBox("Call quality monitoring is an operational necessity for enterprise events.\nThe ability to investigate per-participant call quality in real time\nis what separates a production platform from a prototype.", "374151"),
+
       spacer(200),
 
-      // SECTION 6: WHAT'S ALREADY IN PLACE
+      // SECTION 6
       fullBox("6.  What\u2019s Already in Place", "065F46"),
       spacer(80),
 
@@ -351,6 +403,7 @@ const doc = new Document({
       bullet("Database schema supports replication \u2014 PostgreSQL streaming replication ready", true),
       bullet("AI/Intelligence via cloud APIs (OpenAI) \u2014 no region-specific infrastructure needed", true),
       bullet("Telnyx already referenced as alternative carrier in the codebase", true),
+      bullet("Call quality metrics available via Twilio Insights API", true),
 
       spacer(80),
       heading("What needs to be done to go live with mirroring:"),
@@ -358,15 +411,17 @@ const doc = new Document({
       step("2", "Deploy the application to both regions using containers or VMs"),
       step("3", "Set up managed PostgreSQL with cross-region read replicas"),
       step("4", "Configure DNS failover (Route 53 or Cloudflare)"),
-      step("5", "Set up monitoring and health check alerts"),
-      step("6", "Test failover with a simulated outage"),
+      step("5", "Set up application-level health checks (DB, Twilio, AI, active events)"),
+      step("6", "Configure monitoring and alerting dashboards"),
+      step("7", "Integrate Twilio Insights call quality data into the OCC"),
+      step("8", "Test failover with a simulated outage"),
       spacer(40),
-      plain("Timeline: 2\u20134 weeks for a production-grade deployment with testing. No code changes required \u2014 this is purely infrastructure configuration."),
+      plain("Timeline: 2\u20134 weeks for a production-grade deployment with testing. No code changes required for mirroring \u2014 this is purely infrastructure configuration. Call quality integration is an additional 1\u20132 weeks of development."),
 
       spacer(200),
 
-      // SECTION 7: COMPETITIVE ADVANTAGE
-      fullBox("7.  Why This Matters for the Acquisition Story", "1E3A8A"),
+      // SECTION 7
+      fullBox("7.  Why This Matters for Enterprise Sales", "1E3A8A"),
       spacer(80),
 
       bullet("Enterprise readiness \u2014 multi-region shows the platform is production-grade, not a prototype"),
@@ -375,16 +430,19 @@ const doc = new Document({
       bullet("Cost efficiency \u2014 $500\u2013$1,000/month for global resilience vs $10,000\u2013$50,000 for legacy platforms"),
       bullet("Carrier independence \u2014 not locked to any single vendor, can negotiate rates at scale"),
       bullet("Zero-code migration \u2014 no application changes needed to move between clouds"),
+      bullet("Call quality visibility \u2014 per-participant quality metrics for enterprise-grade operations"),
+      bullet("Audit readiness \u2014 health monitoring, call quality logs, and failover documentation satisfy IT/audit scrutiny"),
 
       spacer(80),
-      fullBox("CuraLive is designed to be acquired.\nThe infrastructure story is as strong as the product story.", "1E3A8A"),
+
+      fullBox("When enterprise clients\u2019 internal IT and audit teams evaluate CuraLive,\nthey will ask about disaster recovery, business continuity, call quality monitoring,\nand data residency. This document answers every one of those questions.\n\nCuraLive is designed to be acquired.\nThe infrastructure story is as strong as the product story.", "1E3A8A"),
 
       spacer(400),
 
       new Paragraph({
         alignment: AlignmentType.CENTER,
         children: [new TextRun({
-          text: `CuraLive  \u2014  Confidential  |  ${new Date().toLocaleDateString("en-ZA")}`,
+          text: `CuraLive  \u2014  Confidential  |  v2 Updated with Partner Feedback  |  ${new Date().toLocaleDateString("en-ZA")}`,
           size: 16, color: "9CA3AF", italics: true,
         })],
       }),
