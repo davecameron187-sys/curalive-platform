@@ -31,6 +31,7 @@ const NAV_SECTIONS: NavSection[] = [
       { id: "terminal", label: "Terminal", icon: Globe, color: "from-cyan-500 to-blue-500", route: "/intelligence-terminal" },
       { id: "shadow", label: "Shadow Mode", icon: Eye, color: "from-indigo-500 to-violet-500", route: "/shadow-mode" },
       { id: "guardian", label: "Health Guardian", icon: Shield, color: "from-cyan-500 to-blue-500", route: "/health-guardian" },
+      { id: "reports", label: "AI Reports", icon: FileText, color: "from-orange-500 to-amber-500", route: "/ai-reports" },
     ],
   },
   {
@@ -457,6 +458,7 @@ function PlatformEmbed({ item }: { item: NavItem }) {
               {item.id === "metrics" && "Tagged metrics — real-time metric tagging, audience engagement tracking"}
               {item.id === "terminal" && "Intelligence terminal — deep search across event transcripts and AI-generated insights"}
               {item.id === "guardian" && "Health guardian — infrastructure monitoring, real-time health checks, incident tracking"}
+              {item.id === "reports" && "AI reports — access post-event transcripts, sentiment summaries, compliance reports, and AI-generated insights"}
               {item.id === "operator" && "Operator console — manage operator links, event controls, and quick access tools"}
               {item.id === "training" && "Training hub — operator onboarding, certifications, and documentation"}
               {item.id === "shop" && "AI shop — browse and activate AI modules for enhanced event intelligence"}

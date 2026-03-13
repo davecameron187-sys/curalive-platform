@@ -27,7 +27,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import {
   LayoutDashboard, LogOut, PanelLeft, Users, Calendar, Mail,
   Radio, Settings, Brain, BarChart3, Shield, Zap, Video,
-  Eye, CreditCard, Globe
+  Eye, CreditCard, Globe, FileText
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -59,6 +59,7 @@ const menuSections: MenuSection[] = [
       { icon: Globe, label: "Terminal", path: "/intelligence-terminal" },
       { icon: Eye, label: "Shadow Mode", path: "/shadow-mode" },
       { icon: Shield, label: "Health Guardian", path: "/health-guardian" },
+      { icon: FileText, label: "AI Reports", path: "/ai-reports" },
     ],
   },
   {
