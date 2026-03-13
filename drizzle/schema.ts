@@ -61,6 +61,7 @@ export const attendeeRegistrations = mysqlTable("attendee_registrations", {
   // CuraLive Direct — unique 5-digit PIN for auto-admit dial-in
   accessPin: varchar("access_pin", { length: 8 }),
   pinUsedAt: timestamp("pin_used_at"),
+  joinMethod: mysqlEnum("join_method", ["phone", "teams", "zoom", "web"]),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -2342,6 +2343,7 @@ export const mailingListEntries = mysqlTable("mailing_list_entries", {
   jobTitle: varchar("job_title", { length: 255 }),
   accessPin: varchar("access_pin", { length: 8 }),
   status: mysqlEnum("status", ["pending", "pin_assigned", "emailed", "clicked", "registered"]).default("pending").notNull(),
+  joinMethod: mysqlEnum("join_method", ["phone", "teams", "zoom", "web"]),
   registrationId: int("registration_id"),
   confirmToken: varchar("confirm_token", { length: 64 }),
   emailSentAt: timestamp("email_sent_at"),

@@ -133,8 +133,18 @@ export function buildRegistrationConfirmationEmail(opts: {
   accessCode?: string;
   attendUrl?: string;
   icsContent?: string;
-  accessPin?: string; // CuraLive Direct — personal dial-in PIN
+  accessPin?: string;
+  joinMethod?: "phone" | "teams" | "zoom" | "web";
 }): string {
+  const joinMethodLabels: Record<string, { label: string; color: string; icon: string; instructions: string }> = {
+    phone: { label: "Phone Dial-In", color: "#8b5cf6", icon: "&#128222;", instructions: "Dial the event number and enter your personal PIN when prompted. You will be connected directly to the conference." },
+    teams: { label: "Microsoft Teams", color: "#6264a7", icon: "&#128187;", instructions: "A Microsoft Teams meeting link will be sent to you before the event. Click the link at the scheduled time to join." },
+    zoom: { label: "Zoom", color: "#2d8cff", icon: "&#127909;", instructions: "A Zoom meeting link will be sent to you before the event. Click the link at the scheduled time to join." },
+    web: { label: "Web Browser", color: "#3b82f6", icon: "&#127760;", instructions: "Join directly from your web browser. A link to the CuraLive web attendee room will be sent before the event." },
+  };
+
+  const method = opts.joinMethod ? joinMethodLabels[opts.joinMethod] : null;
+
   return `
 <!DOCTYPE html>
 <html>
@@ -161,8 +171,22 @@ export function buildRegistrationConfirmationEmail(opts: {
             <td style="padding:32px 40px;">
               <p style="margin:0 0 16px;font-size:15px;color:#94a3b8;">Dear ${opts.firstName} ${opts.lastName},</p>
               <p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">
-                Your registration has been confirmed. Use the button below to join when the event goes live.
+                Your registration has been confirmed. ${method ? `You have chosen to join via <strong style="color:#f1f5f9;">${method.label}</strong>.` : 'Use the details below to join when the event goes live.'}
               </p>
+              ${method ? `
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:10px;border:1px solid ${method.color}40;margin:0 0 24px;">
+                <tr>
+                  <td style="padding:16px 20px;border-bottom:1px solid #1e293b;">
+                    <p style="margin:0;font-size:13px;font-weight:700;color:${method.color};">${method.icon}&nbsp; Your Join Method: ${method.label}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0;font-size:14px;color:#94a3b8;line-height:1.6;">${method.instructions}</p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
               ${opts.attendUrl ? `
               <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
                 <tr>
@@ -413,7 +437,7 @@ export function buildMailingListInvitationEmail(opts: {
             <td style="padding:32px 40px;">
               <p style="margin:0 0 16px;font-size:15px;color:#94a3b8;">Dear ${opts.firstName} ${opts.lastName},</p>
               <p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">
-                You have been invited to attend the upcoming event. Click the button below to confirm your registration and receive your personal access details.
+                You have been invited to attend the upcoming event. Click the button below to choose how you&rsquo;d like to join and confirm your registration.
               </p>
               ${opts.personalMessage ? `
               <div style="background:#0f172a;border-left:3px solid #3b82f6;border-radius:4px;padding:16px 20px;margin:0 0 24px;">
@@ -430,6 +454,9 @@ export function buildMailingListInvitationEmail(opts: {
                   </td>
                 </tr>
               </table>
+              <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-align:center;">
+                Choose how you&rsquo;d like to join — Phone, Microsoft Teams, Zoom, or Web Browser.
+              </p>
               <p style="margin:0 0 24px;font-size:12px;color:#64748b;text-align:center;">
                 One click and you're registered — no forms to fill in.
               </p>
@@ -445,7 +472,7 @@ export function buildMailingListInvitationEmail(opts: {
               </table>
               ` : ''}
               <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">
-                After registering, you will receive a confirmation email with your personal PIN for direct dial-in access — no operator assistance required.
+                After registering, you will receive a confirmation email with your join details based on the method you choose.
               </p>
             </td>
           </tr>

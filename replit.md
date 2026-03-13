@@ -209,8 +209,9 @@ The full Q&A support infrastructure is built and working but the UI widget is cu
 - **Server router**: `server/routers/mailingListRouter.ts` — `mailingList.create`, `mailingList.importCSV`, `mailingList.sendInvitations`, `mailingList.confirmRegistration`
 - **DB tables**: `mailing_lists`, `mailing_list_entries` — migration: `scripts/create-mailing-list-tables.ts`
 - **Email template**: `buildMailingListInvitationEmail` in `server/_core/email.ts` — "Click here to Register" button
-- **Flow**: Upload CSV → auto-generate PINs → send personalised invitation emails → recipient clicks → auto-registered with PIN → confirmation email with dial-in PIN sent
-- **Security**: Confirm tokens are single-use (nulled after registration), PINs are unique per event
+- **Flow**: Upload CSV → auto-generate PINs → send personalised invitation emails → recipient clicks → **chooses join method** (Phone/Teams/Zoom/Web) → registered with method stored → confirmation email with method-specific instructions
+- **Phase 2 (Multi-Mode)**: Confirmation page presents 4 join options — Phone Dial-In (with PIN), Microsoft Teams, Zoom, Web Browser. Join method stored on both `mailing_list_entries.join_method` and `attendee_registrations.join_method`
+- **Security**: Confirm tokens are single-use (nulled after registration), PINs are unique per event, PINs only generated for phone join method
 
 ## OpenAI API Key Configuration (March 2026)
 

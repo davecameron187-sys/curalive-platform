@@ -3,7 +3,8 @@ import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
 import {
   Upload, Mail, Users, CheckCircle2, Clock, Send, Trash2, Plus,
-  FileText, ArrowLeft, RefreshCw, Eye, Download, AlertCircle, MousePointerClick
+  FileText, ArrowLeft, RefreshCw, Eye, Download, AlertCircle, MousePointerClick,
+  Phone, Monitor, Video, Globe
 } from "lucide-react";
 
 type ViewMode = "lists" | "create" | "detail";
@@ -370,6 +371,7 @@ export default function MailingListManager() {
                         <th className="text-left px-5 py-3 font-medium">Email</th>
                         <th className="text-left px-5 py-3 font-medium">Company</th>
                         <th className="text-left px-5 py-3 font-medium">PIN</th>
+                        <th className="text-left px-5 py-3 font-medium">Join Method</th>
                         <th className="text-left px-5 py-3 font-medium">Status</th>
                         <th className="text-right px-5 py-3 font-medium">Actions</th>
                       </tr>
@@ -383,6 +385,19 @@ export default function MailingListManager() {
                           <td className="px-5 py-3">
                             {entry.accessPin ? (
                               <code className="text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded text-xs font-mono">{entry.accessPin}</code>
+                            ) : (
+                              <span className="text-gray-600">—</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3">
+                            {entry.joinMethod ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs">
+                                {entry.joinMethod === "phone" && <Phone className="w-3 h-3 text-violet-400" />}
+                                {entry.joinMethod === "teams" && <Monitor className="w-3 h-3 text-indigo-400" />}
+                                {entry.joinMethod === "zoom" && <Video className="w-3 h-3 text-blue-400" />}
+                                {entry.joinMethod === "web" && <Globe className="w-3 h-3 text-emerald-400" />}
+                                <span className="text-gray-300 capitalize">{entry.joinMethod === "teams" ? "Teams" : entry.joinMethod}</span>
+                              </span>
                             ) : (
                               <span className="text-gray-600">—</span>
                             )}
