@@ -333,8 +333,8 @@
 
                     <div class="form-group">
                         <label>Event Type *</label>
-                        <select id="eventType" required>
-                            <option value="">Select type...</option>
+                        <select id="eventType" required onchange="validateEventType()">
+                            <option value="" disabled selected>Select type...</option>
                             <option value="audio">🔊 Audio Conference (Phone)</option>
                             <option value="video">🎥 Video Conference (Zoom/Teams/Webex)</option>
                             <option value="webcast">📡 Webcast (Live Streaming)</option>
@@ -390,6 +390,16 @@
     </div>
 
     <script>
+        function validateEventType() {
+            const select = document.getElementById('eventType');
+            const form = select.closest('form');
+            if (select.value === '') {
+                select.setCustomValidity('Please select an event type');
+            } else {
+                select.setCustomValidity('');
+            }
+        }
+
         let events = [
             {
                 id: 1,
@@ -421,7 +431,9 @@
         ];
 
         function createEvent(e) {
-            e.preventDefault();
+            if (e && e.preventDefault) {
+                e.preventDefault();
+            }
             
             const services = [];
             if (document.getElementById('transcription').checked) services.push('Transcription');
@@ -445,7 +457,10 @@
             msg.classList.add('show');
             setTimeout(() => msg.classList.remove('show'), 5000);
 
-            e.target.reset();
+            const form = document.querySelector('form');
+            if (form) {
+                form.reset();
+            }
             renderEvents();
         }
 
