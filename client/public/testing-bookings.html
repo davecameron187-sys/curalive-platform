@@ -353,7 +353,7 @@
                 <h2>📝 Create New Event</h2>
                 <div class="success-message" id="successMsg">✓ Event created successfully! Proceed to Registrations.</div>
                 
-                <form onsubmit="createEvent(event)">
+                <form id="eventForm">
                     <div class="form-group">
                         <label>Event Name *</label>
                         <input type="text" id="eventName" placeholder="e.g., Q4 2025 Earnings Call" required>
@@ -455,7 +455,6 @@
     <script>
         function validateEventType() {
             const select = document.getElementById('eventType');
-            const form = select.closest('form');
             if (select.value === '') {
                 select.setCustomValidity('Please select an event type');
             } else {
@@ -493,9 +492,16 @@
             }
         ];
 
-        function createEvent(e) {
-            if (e && e.preventDefault) {
-                e.preventDefault();
+        function createEvent() {
+            // Validate required fields
+            const eventName = document.getElementById('eventName').value.trim();
+            const eventType = document.getElementById('eventType').value;
+            const eventDateTime = document.getElementById('eventDateTime').value;
+            const participantCount = document.getElementById('participantCount').value;
+            
+            if (!eventName || !eventType || !eventDateTime || !participantCount) {
+                alert('Please fill in all required fields');
+                return false;
             }
             
             const services = [];
@@ -506,26 +512,49 @@
 
             const newEvent = {
                 id: events.length + 1,
-                name: document.getElementById('eventName').value,
-                type: document.getElementById('eventType').value,
-                date: document.getElementById('eventDateTime').value,
-                participants: parseInt(document.getElementById('participantCount').value),
+                name: eventName,
+                type: eventType,
+                date: eventDateTime,
+                participants: parseInt(participantCount),
                 status: 'scheduled',
                 services: services
             };
 
+            // Add event to list
             events.unshift(newEvent);
             
-            const msg = document.getElementById('successMsg');
-            msg.classList.add('show');
-            setTimeout(() => msg.classList.remove('show'), 5000);
-
-            const form = document.querySelector('form');
-            if (form) {
-                form.reset();
-            }
+            // Render events immediately
             renderEvents();
+            
+            // Show success message
+            const msg = document.getElementById('successMsg');
+            msg.textContent = `✓ Event "${eventName}" created successfully! Proceed to Registrations.`;
+            msg.classList.add('show');
+            
+            return true;
         }
+        
+        // Initialize form event listener
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('eventForm');
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const success = createEvent();
+                    
+                    if (success) {
+                        setTimeout(() => {
+                            form.reset();
+                            document.getElementById('successMsg').classList.remove('show');
+                        }, 2500);
+                    }
+                    
+                    return false;
+                });
+            }
+        });
 
         function renderEvents() {
             const list = document.getElementById('eventsList');
