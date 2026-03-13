@@ -114,6 +114,8 @@ import InvestorQuestionIntelligence from "./pages/InvestorQuestionIntelligence";
 import IntelligenceReportPage from "./pages/IntelligenceReport";
 import CallPreparation from "./pages/CallPreparation";
 import IntelligenceTerminal from "./pages/IntelligenceTerminal";
+import MailingListManager from "./pages/MailingListManager";
+import MailingListConfirm from "./pages/MailingListConfirm";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -212,6 +214,8 @@ function Router() {
       <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/health-guardian" component={HealthGuardian} />
+      <Route path="/mailing-lists" component={MailingListManager} />
+      <Route path="/register/confirm/:token">{(params: any) => <MailingListConfirm params={params} />}</Route>
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
       <Route path="/archive-upload" component={ArchiveUpload} />

@@ -2315,3 +2315,40 @@ export const shadowSessions = mysqlTable("shadow_sessions", {
 
 export type ShadowSession = typeof shadowSessions.$inferSelect;
 export type InsertShadowSession = typeof shadowSessions.$inferInsert;
+
+export const mailingLists = mysqlTable("mailing_lists", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["draft", "processing", "ready", "sending", "sent"]).default("draft").notNull(),
+  totalEntries: int("total_entries").default(0).notNull(),
+  processedEntries: int("processed_entries").default(0).notNull(),
+  emailedEntries: int("emailed_entries").default(0).notNull(),
+  registeredEntries: int("registered_entries").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MailingList = typeof mailingLists.$inferSelect;
+export type InsertMailingList = typeof mailingLists.$inferInsert;
+
+export const mailingListEntries = mysqlTable("mailing_list_entries", {
+  id: int("id").autoincrement().primaryKey(),
+  mailingListId: int("mailing_list_id").notNull(),
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  company: varchar("company", { length: 255 }),
+  jobTitle: varchar("job_title", { length: 255 }),
+  accessPin: varchar("access_pin", { length: 8 }),
+  status: mysqlEnum("status", ["pending", "pin_assigned", "emailed", "clicked", "registered"]).default("pending").notNull(),
+  registrationId: int("registration_id"),
+  confirmToken: varchar("confirm_token", { length: 64 }),
+  emailSentAt: timestamp("email_sent_at"),
+  clickedAt: timestamp("clicked_at"),
+  registeredAt: timestamp("registered_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type MailingListEntry = typeof mailingListEntries.$inferSelect;
+export type InsertMailingListEntry = typeof mailingListEntries.$inferInsert;

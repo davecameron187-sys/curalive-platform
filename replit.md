@@ -202,6 +202,16 @@ The full Q&A support infrastructure is built and working but the UI widget is cu
 
 **To re-enable**: Import `LiveQuestionBox` and mount `<LiveQuestionBox />` in any page or in `App.tsx` (for global mounting).
 
+## Mailing List & Auto-PIN Registration (March 2026)
+
+- **Route**: `/mailing-lists` — Operator mailing list manager with CSV import, auto-PIN generation, one-click registration emails
+- **Confirm route**: `/register/confirm/:token` — Public one-click registration page (token invalidated after use)
+- **Server router**: `server/routers/mailingListRouter.ts` — `mailingList.create`, `mailingList.importCSV`, `mailingList.sendInvitations`, `mailingList.confirmRegistration`
+- **DB tables**: `mailing_lists`, `mailing_list_entries` — migration: `scripts/create-mailing-list-tables.ts`
+- **Email template**: `buildMailingListInvitationEmail` in `server/_core/email.ts` — "Click here to Register" button
+- **Flow**: Upload CSV → auto-generate PINs → send personalised invitation emails → recipient clicks → auto-registered with PIN → confirmation email with dial-in PIN sent
+- **Security**: Confirm tokens are single-use (nulled after registration), PINs are unique per event
+
 ## OpenAI API Key Configuration (March 2026)
 
 - **Priority order** (`server/_core/env.ts`): `OPENAI_API_KEY` → `BUILT_IN_FORGE_API_KEY` → `AI_INTEGRATIONS_OPENAI_API_KEY`

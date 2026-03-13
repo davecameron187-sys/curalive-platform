@@ -376,3 +376,92 @@ export function buildReminderEmail(opts: ReminderEmailOptions): string {
 </html>
   `.trim();
 }
+
+export function buildMailingListInvitationEmail(opts: {
+  firstName: string;
+  lastName: string;
+  eventTitle: string;
+  company: string;
+  eventDate: string;
+  confirmUrl: string;
+  dialInNumber?: string;
+  personalMessage?: string;
+}): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You're Invited — ${opts.eventTitle}</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0d14;font-family:'Inter',Arial,sans-serif;color:#e2e8f0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0d14;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;border:1px solid #1e293b;">
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#1e3a5f,#0f172a);padding:32px 40px;">
+              <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#60a5fa;">Event Invitation</p>
+              <h1 style="margin:0;font-size:24px;font-weight:700;color:#f1f5f9;line-height:1.3;">${opts.eventTitle}</h1>
+              <p style="margin:8px 0 0;font-size:14px;color:#94a3b8;">${opts.company} · ${opts.eventDate}</p>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px 40px;">
+              <p style="margin:0 0 16px;font-size:15px;color:#94a3b8;">Dear ${opts.firstName} ${opts.lastName},</p>
+              <p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">
+                You have been invited to attend the upcoming event. Click the button below to confirm your registration and receive your personal access details.
+              </p>
+              ${opts.personalMessage ? `
+              <div style="background:#0f172a;border-left:3px solid #3b82f6;border-radius:4px;padding:16px 20px;margin:0 0 24px;">
+                <p style="margin:0;font-size:14px;color:#cbd5e1;line-height:1.6;">${opts.personalMessage}</p>
+              </div>
+              ` : ''}
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${opts.confirmUrl}" style="display:inline-block;background:#3b82f6;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 48px;border-radius:8px;letter-spacing:0.3px;">
+                      Click here to Register for the Event
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 24px;font-size:12px;color:#64748b;text-align:center;">
+                One click and you're registered — no forms to fill in.
+              </p>
+              ${opts.dialInNumber ? `
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:8px;padding:20px;margin:0 0 24px;">
+                <tr>
+                  <td>
+                    <p style="margin:0;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Dial-In Number</p>
+                    <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:#f1f5f9;font-family:monospace;">${opts.dialInNumber}</p>
+                    <p style="margin:8px 0 0;font-size:12px;color:#64748b;">Your personal PIN will be provided after registration.</p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+              <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">
+                After registering, you will receive a confirmation email with your personal PIN for direct dial-in access — no operator assistance required.
+              </p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background:#0f172a;padding:20px 40px;border-top:1px solid #1e293b;">
+              <p style="margin:0;font-size:12px;color:#475569;text-align:center;">
+                CuraLive · Powered by CuraLive Inc.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
