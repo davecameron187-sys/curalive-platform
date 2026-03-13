@@ -289,6 +289,34 @@
             font-size: 13px;
         }
 
+        .success-message {
+            display: none;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86efac;
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .success-message.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @media (max-width: 768px) {
             .content {
                 grid-template-columns: 1fr;
@@ -380,6 +408,41 @@
 
                     <button type="submit" class="btn">✓ Create Event</button>
                 </form>
+            </div>
+
+            <!-- Audio Bridge Settings -->
+            <div class="section" style="grid-column: 1 / -1;">
+                <h2>🔊 Audio Bridge Settings</h2>
+                <div class="success-message" id="bridgeSuccessMsg"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Bridge Provider *</label>
+                        <select id="bridgeProvider">
+                            <option value="">Select provider...</option>
+                            <option value="Twilio">Twilio</option>
+                            <option value="Telnyx">Telnyx</option>
+                            <option value="Vonage">Vonage</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>API Key *</label>
+                        <input type="password" id="bridgeApiKey" placeholder="Enter API key">
+                    </div>
+                    <div class="form-group">
+                        <label>Dial-in Number *</label>
+                        <input type="tel" id="dialInNumber" placeholder="+1-XXX-XXX-XXXX">
+                    </div>
+                </div>
+                <button class="btn" onclick="configureAudioBridge()" style="margin-top: 10px;">Configure Audio Bridge</button>
+            </div>
+
+            <!-- Generate Event Materials -->
+            <div class="section" style="grid-column: 1 / -1;">
+                <h2>📄 Generate Event Materials</h2>
+                <div class="success-message" id="materialsSuccessMsg"></div>
+                <p style="color: #94a3b8; margin-bottom: 15px; font-size: 13px;">Generate calendar invites, email templates, QR codes, and agendas for your event.</p>
+                <button class="btn" onclick="generateMaterials()">Generate Materials</button>
+            </div>
             </div>
 
             <div class="section">
@@ -489,6 +552,44 @@
         }
 
         renderEvents();
+
+        // Audio Bridge Settings
+        function configureAudioBridge() {
+            const provider = document.getElementById('bridgeProvider').value;
+            const apiKey = document.getElementById('bridgeApiKey').value;
+            const dialInNumber = document.getElementById('dialInNumber').value;
+            
+            if (!provider || !apiKey || !dialInNumber) {
+                alert('Please fill in all Audio Bridge settings');
+                return;
+            }
+            
+            const msg = document.getElementById('bridgeSuccessMsg');
+            msg.textContent = `✓ Audio Bridge configured with ${provider} (Dial-in: ${dialInNumber})`;
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 5000);
+        }
+
+        // Generate Event Materials
+        function generateMaterials() {
+            const eventName = document.getElementById('eventName').value || 'Event';
+            if (!eventName) {
+                alert('Please create an event first');
+                return;
+            }
+            
+            const materials = {
+                calendarInvite: `${eventName}_invite.ics`,
+                emailTemplate: `${eventName}_email.html`,
+                qrCode: `${eventName}_qr.png`,
+                agenda: `${eventName}_agenda.pdf`
+            };
+            
+            const msg = document.getElementById('materialsSuccessMsg');
+            msg.innerHTML = `✓ Materials generated:<br>${Object.values(materials).join('<br>')}`;
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 5000);
+        }
     </script>
 </body>
 </html>

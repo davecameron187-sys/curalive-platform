@@ -37,6 +37,18 @@
         .stat-label { font-size: 12px; color: #94a3b8; }
         .export-btn { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 8px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.3s ease; }
         .export-btn:hover { background: rgba(96, 165, 250, 0.2); }
+        .success-message { display: none; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); color: #86efac; padding: 12px 15px; border-radius: 4px; margin-bottom: 15px; font-size: 13px; line-height: 1.5; }
+        .success-message.show { display: block; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; padding: 30px; max-width: 500px; width: 90%; }
+        .modal-header { font-size: 18px; font-weight: 600; margin-bottom: 15px; color: #60a5fa; }
+        .modal-body { margin-bottom: 20px; color: #cbd5e1; font-size: 13px; line-height: 1.6; }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 10px 15px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .modal-btn-primary { background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); color: white; }
+        .modal-btn-secondary { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); }
         @media (max-width: 768px) { .content { grid-template-columns: 1fr; } .stats { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -92,11 +104,61 @@
 
             <div class="section">
                 <h2>📋 Registered Participants</h2>
-                <div style="margin-bottom: 15px;">
+                <div id="inviteSuccessMsg" class="success-message"></div>
+                <div id="reportSuccessMsg" class="success-message"></div>
+                <div style="margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                     <button class="export-btn" onclick="exportCSV()">📥 Export CSV</button>
-                    <button class="export-btn" onclick="sendInvitations()" style="margin-left: 8px;">📧 Send Invitations</button>
+                    <button class="export-btn" onclick="sendInvitations()">📧 Send Invitations</button>
+                    <button class="export-btn" onclick="exportRegistrationReport()">📄 Export Report</button>
                 </div>
                 <div id="participantsList"></div>
+            </div>
+        </div>
+
+        <!-- Send Invitations Modal -->
+        <div id="invitationModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">📧 Send Invitations</div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Email Subject *</label>
+                        <input type="text" id="inviteSubject" placeholder="e.g., You're invited to our Q4 Earnings Call" value="You're invited to our Q4 2025 Earnings Call">
+                    </div>
+                    <div class="form-group">
+                        <label>Message *</label>
+                        <textarea id="inviteMessage" placeholder="Enter invitation message..." style="min-height: 100px;">Dear Participant,
+
+We're excited to invite you to our Q4 2025 Earnings Call. Please join us on March 15, 2026 at 2:00 PM.
+
+Best regards,
+Investor Relations Team</textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-secondary" onclick="closeInvitationModal()">Cancel</button>
+                    <button class="modal-btn modal-btn-primary" onclick="confirmSendInvitations()">Send Invitations</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monitor Status Modal -->
+        <div id="statusModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">📊 Registration Status</div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">Real-time Statistics:</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+                            <div>Total Registered: <strong id="statusTotal">0</strong></div>
+                            <div>Attended: <strong id="statusAttended">0</strong></div>
+                            <div>Pending: <strong id="statusPending">0</strong></div>
+                            <div>Attendance Rate: <strong id="statusRate">0%</strong></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-primary" onclick="closeStatusModal()">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -150,10 +212,85 @@
         }
 
         function sendInvitations() {
-            alert('Invitations sent to ' + participants.length + ' participants');
+            if (participants.length === 0) {
+                alert('No participants to invite');
+                return;
+            }
+            showInvitationModal();
+        }
+
+        function showInvitationModal() {
+            const modal = document.getElementById('invitationModal');
+            modal.classList.add('show');
+        }
+
+        function closeInvitationModal() {
+            const modal = document.getElementById('invitationModal');
+            modal.classList.remove('show');
+        }
+
+        function confirmSendInvitations() {
+            const subject = document.getElementById('inviteSubject').value;
+            const message = document.getElementById('inviteMessage').value;
+            
+            if (!subject || !message) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            // Simulate sending invitations
+            const successMsg = document.getElementById('inviteSuccessMsg');
+            successMsg.textContent = `✓ Invitations sent to ${participants.length} participants`;
+            successMsg.classList.add('show');
+            
+            closeInvitationModal();
+            setTimeout(() => successMsg.classList.remove('show'), 5000);
+        }
+
+        function monitorRegistrationStatus() {
+            updateStatusModalContent();
+            const statusModal = document.getElementById('statusModal');
+            statusModal.classList.add('show');
+        }
+
+        function updateStatusModalContent() {
+            document.getElementById('statusTotal').textContent = participants.length;
+            document.getElementById('statusAttended').textContent = participants.filter(p => p.status === 'attended').length;
+            document.getElementById('statusPending').textContent = participants.filter(p => p.status === 'registered').length;
+            const rate = participants.length > 0 ? Math.round(participants.filter(p => p.status === 'attended').length / participants.length * 100) : 0;
+            document.getElementById('statusRate').textContent = rate + '%';
+        }
+
+        function closeStatusModal() {
+            const statusModal = document.getElementById('statusModal');
+            statusModal.classList.remove('show');
+        }
+
+        function exportRegistrationReport() {
+            const report = `REGISTRATION REPORT\n\nEvent: Q4 2025 Earnings Call\nDate: 3/15/2026\n\nSummary:\n- Total Registered: ${participants.length}\n- Attended: ${participants.filter(p => p.status === 'attended').length}\n- Pending: ${participants.filter(p => p.status === 'registered').length}\n- Attendance Rate: ${Math.round(participants.filter(p => p.status === 'attended').length / participants.length * 100)}%\n\nParticipants:\n${participants.map(p => `${p.name} (${p.email}) - ${p.status.toUpperCase()}`).join('\n')}`;
+            
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'registration_report.txt';
+            a.click();
+            
+            const reportMsg = document.getElementById('reportSuccessMsg');
+            reportMsg.textContent = '✓ Registration report exported successfully';
+            reportMsg.classList.add('show');
+            setTimeout(() => reportMsg.classList.remove('show'), 5000);
         }
 
         renderParticipants();
+
+        // Modal event listeners
+        document.getElementById('invitationModal').addEventListener('click', (e) => {
+            if (e.target.id === 'invitationModal') closeInvitationModal();
+        });
+        document.getElementById('statusModal').addEventListener('click', (e) => {
+            if (e.target.id === 'statusModal') closeStatusModal();
+        });
     </script>
 </body>
 </html>
