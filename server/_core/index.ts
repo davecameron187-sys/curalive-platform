@@ -579,8 +579,8 @@ async function startServer() {
 
   // Shadow Bridge doc download
   app.get("/download/shadowbridge", (_req, res) => {
-    const filePath = `${process.cwd()}/public/CuraLive_ShadowBridge.docx`;
-    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_ShadowBridge.docx");
+    const filePath = `${process.cwd()}/public/CuraLive_Shadow_Bridge_Guide.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Shadow_Bridge_Guide.docx");
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     res.sendFile(filePath, (err) => {
       if (err) res.status(404).send("Document not found.");
