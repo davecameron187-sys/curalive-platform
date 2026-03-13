@@ -4,19 +4,48 @@ import {
   Calendar, Users, Clock, ChevronRight, Activity, Mic, Settings,
   Bell, Search, LayoutDashboard, PlayCircle, CheckCircle2, AlertTriangle,
   Headphones, Zap, TrendingUp, FileText, ExternalLink, ArrowUpRight,
-  Sparkles, MoreHorizontal, ChevronLeft
+  Sparkles, MoreHorizontal, ChevronLeft, Mail, BarChart3, Globe,
+  GraduationCap, Package
 } from "lucide-react";
 
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "from-blue-500 to-cyan-500", route: null },
-  { id: "occ", label: "OCC", icon: Headphones, color: "from-amber-500 to-orange-500", badge: "LIVE", route: "/occ" },
-  { id: "webcasts", label: "Webcasts", icon: Radio, color: "from-purple-500 to-pink-500", route: "/live-video/webcasting" },
-  { id: "video", label: "Video Studio", icon: Video, color: "from-emerald-500 to-teal-500", route: "/virtual-studio" },
-  { id: "shadow", label: "Shadow Bridge", icon: Eye, color: "from-indigo-500 to-violet-500", route: "/shadow-mode" },
-  { id: "ai", label: "AI Intelligence", icon: Brain, color: "from-rose-500 to-pink-500", route: "/ai-dashboard" },
-  { id: "guardian", label: "AI Guardian", icon: Shield, color: "from-cyan-500 to-blue-500", route: "/health-guardian" },
-  { id: "billing", label: "Billing", icon: CreditCard, color: "from-slate-500 to-gray-500", route: "/billing" },
+type NavItem = { id: string; label: string; icon: any; color: string; route: string | null; badge?: string };
+type NavSection = { label: string; items: NavItem[] };
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    label: "Events",
+    items: [
+      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "from-blue-500 to-cyan-500", route: null },
+      { id: "bookings", label: "Bookings", icon: Calendar, color: "from-blue-500 to-cyan-500", route: "/events/calendar" },
+      { id: "registrations", label: "Registrations", icon: Mail, color: "from-emerald-500 to-teal-500", route: "/mailing-lists" },
+      { id: "occ", label: "Live Events", icon: Radio, color: "from-amber-500 to-orange-500", badge: "LIVE", route: "/occ" },
+      { id: "webcasts", label: "Webcasting", icon: Video, color: "from-purple-500 to-pink-500", route: "/live-video/webcasting" },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { id: "ai", label: "Agentic Brain", icon: Brain, color: "from-rose-500 to-pink-500", route: "/agentic-brain" },
+      { id: "metrics", label: "Tagged Metrics", icon: BarChart3, color: "from-violet-500 to-purple-500", route: "/tagged-metrics" },
+      { id: "terminal", label: "Terminal", icon: Globe, color: "from-cyan-500 to-blue-500", route: "/intelligence-terminal" },
+      { id: "shadow", label: "Shadow Mode", icon: Eye, color: "from-indigo-500 to-violet-500", route: "/shadow-mode" },
+      { id: "guardian", label: "Health Guardian", icon: Shield, color: "from-cyan-500 to-blue-500", route: "/health-guardian" },
+    ],
+  },
+  {
+    label: "Platform",
+    items: [
+      { id: "operator", label: "Operator Console", icon: Settings, color: "from-gray-500 to-slate-500", route: "/operator-links" },
+      { id: "training", label: "Training", icon: GraduationCap, color: "from-amber-500 to-yellow-500", route: "/operator-hub" },
+      { id: "shop", label: "AI Shop", icon: Package, color: "from-pink-500 to-rose-500", route: "/ai-shop" },
+      { id: "integrations", label: "Integrations", icon: Zap, color: "from-blue-500 to-indigo-500", route: "/integrations" },
+      { id: "billing", label: "Billing", icon: CreditCard, color: "from-slate-500 to-gray-500", route: "/billing" },
+      { id: "admin", label: "Admin", icon: Users, color: "from-gray-500 to-slate-500", route: "/admin/users" },
+    ],
+  },
 ];
+
+const ALL_NAV_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
 
 function StatusDot({ status }: { status: "live" | "ready" | "idle" }) {
   const colors = { live: "bg-green-400 animate-pulse", ready: "bg-amber-400", idle: "bg-gray-500" };
@@ -379,7 +408,7 @@ function DashboardView({ onNavigate }: { onNavigate: (tabId: string) => void }) 
   );
 }
 
-function PlatformEmbed({ item }: { item: typeof NAV_ITEMS[0] }) {
+function PlatformEmbed({ item }: { item: NavItem }) {
   return (
     <div className="h-full flex flex-col">
       <div className="bg-[#161b28] rounded-xl border border-white/[0.06] p-5 mb-4">
@@ -421,13 +450,21 @@ function PlatformEmbed({ item }: { item: typeof NAV_ITEMS[0] }) {
             </div>
             <h3 className="text-gray-400 text-lg font-semibold mb-2">{item.label}</h3>
             <p className="text-gray-600 text-sm mb-4 max-w-md">
+              {item.id === "bookings" && "Event calendar — manage investor event bookings, schedule earnings calls and presentations"}
+              {item.id === "registrations" && "Mailing lists — import contacts, send registration emails, CRM API management, zero-click registration"}
               {item.id === "occ" && "Live call management — participants, transcript, AI insights, Q&A triage"}
               {item.id === "webcasts" && "Audio & video webcast management — schedule, configure, and launch webcasts"}
-              {item.id === "video" && "Virtual studio — configure broadcast environments, overlays, and avatars"}
-              {item.id === "shadow" && "Shadow bridge — silently connect to external conference calls for AI intelligence capture"}
-              {item.id === "ai" && "AI intelligence dashboard — sentiment analysis, compliance, benchmarking, insights"}
-              {item.id === "guardian" && "Infrastructure monitoring — real-time health checks, incident tracking, root cause analysis"}
+              {item.id === "shadow" && "Shadow mode — silently connect to external conference calls for AI intelligence capture"}
+              {item.id === "ai" && "Agentic brain — AI intelligence dashboard, sentiment analysis, compliance, insights"}
+              {item.id === "metrics" && "Tagged metrics — real-time metric tagging, audience engagement tracking"}
+              {item.id === "terminal" && "Intelligence terminal — deep search across event transcripts and AI-generated insights"}
+              {item.id === "guardian" && "Health guardian — infrastructure monitoring, real-time health checks, incident tracking"}
+              {item.id === "operator" && "Operator console — manage operator links, event controls, and quick access tools"}
+              {item.id === "training" && "Training hub — operator onboarding, certifications, and documentation"}
+              {item.id === "shop" && "AI shop — browse and activate AI modules for enhanced event intelligence"}
+              {item.id === "integrations" && "Integrations — connect CRM, calendar, and third-party services"}
               {item.id === "billing" && "Client billing — invoices, usage tracking, payment management"}
+              {item.id === "admin" && "Admin panel — user management, roles, permissions, and system settings"}
             </p>
             <div className="text-xs text-gray-700 flex items-center justify-center gap-1">
               <span>In the live app, this loads the full</span>
@@ -445,7 +482,7 @@ export function SidebarLayout() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
 
-  const activeItem = NAV_ITEMS.find((n) => n.id === activeTab)!;
+  const activeItem = ALL_NAV_ITEMS.find((n) => n.id === activeTab)!;
 
   const handleNavigate = (tabId: string) => {
     setActiveTab(tabId);
@@ -468,30 +505,40 @@ export function SidebarLayout() {
           </div>
         </div>
 
-        <nav className="flex-1 p-2 space-y-0.5">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                activeTab === item.id
-                  ? "bg-white/10 text-white"
-                  : "text-gray-400 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <item.icon className={`w-[18px] h-[18px] flex-shrink-0 ${activeTab === item.id ? "text-white" : ""}`} />
+        <nav className="flex-1 p-2 space-y-3 overflow-y-auto">
+          {NAV_SECTIONS.map((section) => (
+            <div key={section.label}>
               {!collapsed && (
-                <>
-                  <span className="flex-1 text-left text-[13px]">{item.label}</span>
-                  {item.route && <ExternalLink className="w-3 h-3 text-gray-600" />}
-                  {item.badge && (
-                    <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-bold">
-                      {item.badge}
-                    </span>
-                  )}
-                </>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                  {section.label}
+                </div>
               )}
-            </button>
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                      activeTab === item.id
+                        ? "bg-white/10 text-white"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <item.icon className={`w-[18px] h-[18px] flex-shrink-0 ${activeTab === item.id ? "text-white" : ""}`} />
+                    {!collapsed && (
+                      <>
+                        <span className="flex-1 text-left text-[13px]">{item.label}</span>
+                        {item.badge && (
+                          <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-bold">
+                            {item.badge}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

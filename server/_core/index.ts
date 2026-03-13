@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
+import http from "http";
 import net from "net";
 import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -40,6 +41,26 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   app.set("trust proxy", 1);
+
+  app.use("/__mockup", (req, res) => {
+    const proxyReq = http.request(
+      {
+        hostname: "127.0.0.1",
+        port: 23636,
+        path: "/__mockup" + req.url,
+        method: req.method,
+        headers: req.headers,
+      },
+      (proxyRes) => {
+        res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers);
+        proxyRes.pipe(res, { end: true });
+      },
+    );
+    proxyReq.on("error", () => {
+      res.status(502).send("Mockup sandbox not available");
+    });
+    req.pipe(proxyReq, { end: true });
+  });
 
   const isProd = process.env.NODE_ENV === "production";
 
