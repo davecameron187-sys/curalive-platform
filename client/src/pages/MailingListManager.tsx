@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
+import DashboardLayout from "@/components/DashboardLayout";
 import {
   Upload, Mail, Users, CheckCircle2, Clock, Send, Trash2, Plus,
   FileText, ArrowLeft, RefreshCw, Eye, Download, AlertCircle, MousePointerClick,
@@ -233,6 +234,7 @@ export default function MailingListManager() {
   const hasUnregistered = list?.entries?.some((e: any) => e.status !== "registered");
 
   return (
+    <DashboardLayout>
     <div className="min-h-screen bg-[#0a0d14] text-white">
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
@@ -679,5 +681,6 @@ export default function MailingListManager() {
         )}
       </div>
     </div>
+    </DashboardLayout>
   );
 }

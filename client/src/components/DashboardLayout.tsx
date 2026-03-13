@@ -21,16 +21,53 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import {
+  LayoutDashboard, LogOut, PanelLeft, Users, Calendar, Mail,
+  Radio, Settings, Brain, BarChart3, Shield, Zap
+} from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+type MenuSection = {
+  label?: string;
+  items: { icon: typeof LayoutDashboard; label: string; path: string }[];
+};
+
+const menuSections: MenuSection[] = [
+  {
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+    ],
+  },
+  {
+    label: "Events",
+    items: [
+      { icon: Calendar, label: "Bookings", path: "/events/calendar" },
+      { icon: Mail, label: "Registrations", path: "/mailing-lists" },
+      { icon: Radio, label: "Live Events", path: "/occ" },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { icon: Brain, label: "Agentic Brain", path: "/agentic-brain" },
+      { icon: BarChart3, label: "Analytics", path: "/tagged-metrics" },
+      { icon: Shield, label: "Health Guardian", path: "/health-guardian" },
+    ],
+  },
+  {
+    label: "Platform",
+    items: [
+      { icon: Settings, label: "Operator Console", path: "/operator-links" },
+      { icon: Zap, label: "Integrations", path: "/integrations" },
+      { icon: Users, label: "Admin", path: "/admin/users" },
+    ],
+  },
 ];
+
+const allMenuItems = menuSections.flatMap(s => s.items);
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -112,7 +149,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = allMenuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -179,26 +216,40 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
-                const isActive = location === item.path;
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
+            {menuSections.map((section, idx) => (
+              <SidebarMenu key={idx} className="px-2 py-1">
+                {section.label && !isCollapsed && (
+                  <li className="px-2 pt-3 pb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                      {section.label}
+                    </span>
+                  </li>
+                )}
+                {isCollapsed && section.label && (
+                  <li className="flex justify-center py-1.5">
+                    <div className="w-4 h-px bg-muted-foreground/20 rounded" />
+                  </li>
+                )}
+                {section.items.map(item => {
+                  const isActive = location === item.path;
+                  return (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => setLocation(item.path)}
+                        tooltip={item.label}
+                        className="h-10 transition-all font-normal"
+                      >
+                        <item.icon
+                          className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                        />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            ))}
           </SidebarContent>
 
           <SidebarFooter className="p-3">
