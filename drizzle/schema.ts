@@ -1,4 +1,4 @@
-import { boolean, int, float, tinyint, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
+import { boolean, int, float, tinyint, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint, json } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -2326,6 +2326,9 @@ export const mailingLists = mysqlTable("mailing_lists", {
   processedEntries: int("processed_entries").default(0).notNull(),
   emailedEntries: int("emailed_entries").default(0).notNull(),
   registeredEntries: int("registered_entries").default(0).notNull(),
+  webhookUrl: varchar("webhook_url", { length: 512 }),
+  defaultJoinMethod: mysqlEnum("default_join_method", ["phone", "teams", "zoom", "web"]),
+  preRegistered: boolean("pre_registered").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
@@ -2354,3 +2357,17 @@ export const mailingListEntries = mysqlTable("mailing_list_entries", {
 
 export type MailingListEntry = typeof mailingListEntries.$inferSelect;
 export type InsertMailingListEntry = typeof mailingListEntries.$inferInsert;
+
+export const crmApiKeys = mysqlTable("crm_api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  keyHash: varchar("key_hash", { length: 128 }).notNull(),
+  keyPrefix: varchar("key_prefix", { length: 12 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  eventId: varchar("event_id", { length: 128 }),
+  permissions: json("permissions").notNull(),
+  active: boolean("active").default(true).notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type CrmApiKey = typeof crmApiKeys.$inferSelect;

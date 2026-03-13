@@ -211,7 +211,9 @@ The full Q&A support infrastructure is built and working but the UI widget is cu
 - **Email template**: `buildMailingListInvitationEmail` in `server/_core/email.ts` — "Click here to Register" button
 - **Flow**: Upload CSV → auto-generate PINs → send personalised invitation emails → recipient clicks → **chooses join method** (Phone/Teams/Zoom/Web) → registered with method stored → confirmation email with method-specific instructions
 - **Phase 2 (Multi-Mode)**: Confirmation page presents 4 join options — Phone Dial-In (with PIN), Microsoft Teams, Zoom, Web Browser. Join method stored on both `mailing_list_entries.join_method` and `attendee_registrations.join_method`
-- **Security**: Confirm tokens are single-use (nulled after registration), PINs are unique per event, PINs only generated for phone join method
+- **Phase 3 (CRM API)**: `server/routers/crmApiRouter.ts` — API key auth (SHA-256 hash, `clv_` prefix), endpoints: `createRegistration`, `bulkCreateRegistrations` (up to 500), `getRegistrationStatus`, `listRegistrations`, `getEventStats`. Webhook dispatch on registration events. API key management UI in mailing list detail (generate/revoke keys, webhook URL config). DB table: `crm_api_keys` + `webhook_url` column on `mailing_lists`. Migration: `scripts/create-crm-api-tables.ts`
+- **Phase 4 (Zero-Click)**: `preRegisterAll` mutation in mailingListRouter — registers all unregistered entries with a chosen default join method, sends confirmation emails with join details immediately (no click required). "Pre-Register All" button with join method picker modal in MailingListManager. DB columns: `pre_registered`, `default_join_method` on `mailing_lists`
+- **Security**: Confirm tokens are single-use (nulled after registration), PINs are unique per event, PINs only generated for phone join method. CRM API keys enforce event-scope and permission checks on all endpoints
 
 ## OpenAI API Key Configuration (March 2026)
 

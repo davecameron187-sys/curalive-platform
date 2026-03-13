@@ -4,10 +4,18 @@ import { toast } from "sonner";
 import {
   Upload, Mail, Users, CheckCircle2, Clock, Send, Trash2, Plus,
   FileText, ArrowLeft, RefreshCw, Eye, Download, AlertCircle, MousePointerClick,
-  Phone, Monitor, Video, Globe
+  Phone, Monitor, Video, Globe, Key, Webhook, Zap, Copy, ShieldCheck, X
 } from "lucide-react";
 
 type ViewMode = "lists" | "create" | "detail";
+type JoinMethod = "phone" | "teams" | "zoom" | "web";
+
+const JOIN_METHOD_LABELS: Record<string, { label: string; icon: typeof Phone; color: string }> = {
+  phone: { label: "Phone", icon: Phone, color: "text-violet-400" },
+  teams: { label: "Teams", icon: Monitor, color: "text-indigo-400" },
+  zoom: { label: "Zoom", icon: Video, color: "text-blue-400" },
+  web: { label: "Web", icon: Globe, color: "text-emerald-400" },
+};
 
 export default function MailingListManager() {
   const [view, setView] = useState<ViewMode>("lists");
@@ -18,6 +26,13 @@ export default function MailingListManager() {
   const [personalMessage, setPersonalMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [preRegistering, setPreRegistering] = useState(false);
+  const [preRegMethod, setPreRegMethod] = useState<JoinMethod>("phone");
+  const [showPreRegModal, setShowPreRegModal] = useState(false);
+  const [showApiPanel, setShowApiPanel] = useState(false);
+  const [apiKeyName, setApiKeyName] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState<string | null>(null);
+  const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const listsQuery = trpc.mailingList.getLists.useQuery({});
@@ -26,11 +41,21 @@ export default function MailingListManager() {
     { enabled: !!selectedListId }
   );
 
+  const apiKeysQuery = trpc.crmApi.listKeys.useQuery(
+    { eventId: detailQuery.data?.eventId },
+    { enabled: !!detailQuery.data?.eventId && showApiPanel }
+  );
+
   const createMutation = trpc.mailingList.create.useMutation();
   const importMutation = trpc.mailingList.importCSV.useMutation();
   const sendMutation = trpc.mailingList.sendInvitations.useMutation();
   const deleteMutation = trpc.mailingList.deleteList.useMutation();
   const deleteEntryMutation = trpc.mailingList.deleteEntry.useMutation();
+  const preRegisterMutation = trpc.mailingList.preRegisterAll.useMutation();
+  const generateKeyMutation = trpc.crmApi.generateKey.useMutation();
+  const revokeKeyMutation = trpc.crmApi.revokeKey.useMutation();
+  const deleteKeyMutation = trpc.crmApi.deleteKey.useMutation();
+  const setWebhookMutation = trpc.crmApi.setWebhookUrl.useMutation();
 
   const handleCreate = async () => {
     if (!eventId.trim() || !listName.trim()) {
@@ -54,9 +79,7 @@ export default function MailingListManager() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      setCsvText(ev.target?.result as string);
-    };
+    reader.onload = (ev) => setCsvText(ev.target?.result as string);
     reader.readAsText(file);
   };
 
@@ -103,21 +126,87 @@ export default function MailingListManager() {
     setSending(false);
   };
 
+  const handlePreRegister = async () => {
+    if (!selectedListId) return;
+    setPreRegistering(true);
+    try {
+      const result = await preRegisterMutation.mutateAsync({
+        mailingListId: selectedListId,
+        defaultJoinMethod: preRegMethod,
+      });
+      if (result.success) {
+        toast.success(`Pre-registered ${result.registered} contacts (${result.skipped} already existed)`);
+        detailQuery.refetch();
+        listsQuery.refetch();
+        setShowPreRegModal(false);
+      } else {
+        toast.error(result.error || "Pre-registration failed");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Pre-registration failed");
+    }
+    setPreRegistering(false);
+  };
+
+  const handleGenerateApiKey = async () => {
+    if (!apiKeyName.trim()) {
+      toast.error("Please enter a name for the API key");
+      return;
+    }
+    const result = await generateKeyMutation.mutateAsync({
+      name: apiKeyName.trim(),
+      eventId: detailQuery.data?.eventId,
+    });
+    if (result.success) {
+      setNewApiKey(result.apiKey!);
+      setApiKeyName("");
+      apiKeysQuery.refetch();
+      toast.success("API key generated");
+    }
+  };
+
+  const handleRevokeKey = async (id: number) => {
+    await revokeKeyMutation.mutateAsync({ id });
+    toast.success("API key revoked");
+    apiKeysQuery.refetch();
+  };
+
+  const handleDeleteKey = async (id: number) => {
+    await deleteKeyMutation.mutateAsync({ id });
+    toast.success("API key deleted");
+    apiKeysQuery.refetch();
+  };
+
+  const handleSaveWebhook = async () => {
+    if (!selectedListId) return;
+    const effectiveUrl = webhookUrl !== null ? webhookUrl : ((list as any)?.webhookUrl || "");
+    const result = await setWebhookMutation.mutateAsync({
+      mailingListId: selectedListId,
+      webhookUrl: effectiveUrl.trim(),
+    });
+    if (result.success) {
+      toast.success(effectiveUrl.trim() ? "Webhook URL saved" : "Webhook URL removed");
+      detailQuery.refetch();
+    }
+  };
+
   const handleDeleteList = async (id: number) => {
     if (!confirm("Delete this mailing list and all entries?")) return;
     await deleteMutation.mutateAsync({ id });
     toast.success("Mailing list deleted");
     listsQuery.refetch();
-    if (selectedListId === id) {
-      setSelectedListId(null);
-      setView("lists");
-    }
+    if (selectedListId === id) { setSelectedListId(null); setView("lists"); }
   };
 
   const handleDeleteEntry = async (id: number) => {
     await deleteEntryMutation.mutateAsync({ id });
     toast.success("Entry removed");
     detailQuery.refetch();
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
   };
 
   const statusBadge = (status: string) => {
@@ -141,15 +230,15 @@ export default function MailingListManager() {
   };
 
   const list = detailQuery.data;
+  const hasUnregistered = list?.entries?.some((e: any) => e.status !== "registered");
 
   return (
     <div className="min-h-screen bg-[#0a0d14] text-white">
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             {view !== "lists" && (
-              <button onClick={() => { setView("lists"); setSelectedListId(null); }}
+              <button onClick={() => { setView("lists"); setSelectedListId(null); setShowApiPanel(false); setWebhookUrl(null); setNewApiKey(null); }}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -166,10 +255,15 @@ export default function MailingListManager() {
                 <Plus className="w-4 h-4" /> New Mailing List
               </button>
             )}
+            {view === "detail" && (
+              <button onClick={() => setShowApiPanel(!showApiPanel)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${showApiPanel ? "bg-violet-500/20 text-violet-400 border border-violet-500/40" : "bg-white/5 hover:bg-white/10 border border-white/10"}`}>
+                <Key className="w-4 h-4" /> CRM API
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Create View */}
         {view === "create" && (
           <div className="bg-[#111827] rounded-xl border border-white/10 p-6 max-w-lg">
             <h2 className="text-lg font-semibold mb-4">Create Mailing List</h2>
@@ -195,7 +289,6 @@ export default function MailingListManager() {
           </div>
         )}
 
-        {/* Lists View */}
         {view === "lists" && (
           <div className="space-y-3">
             {listsQuery.data?.length === 0 && (
@@ -219,6 +312,11 @@ export default function MailingListManager() {
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">{ml.name}</span>
                       {statusBadge(ml.status)}
+                      {ml.preRegistered && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase border bg-violet-500/15 text-violet-400 border-violet-500/20">
+                          Zero-Click
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                       <span>Event: {ml.eventId}</span>
@@ -246,16 +344,19 @@ export default function MailingListManager() {
           </div>
         )}
 
-        {/* Detail View */}
         {view === "detail" && list && (
           <div className="space-y-6">
-            {/* List Header */}
             <div className="bg-[#111827] rounded-xl border border-white/10 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-3">
                     <h2 className="text-xl font-bold">{list.name}</h2>
                     {statusBadge(list.status)}
+                    {list.preRegistered && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase border bg-violet-500/15 text-violet-400 border-violet-500/20">
+                        Zero-Click
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-gray-500 mt-1">Event: {list.eventId}</p>
                 </div>
@@ -264,8 +365,6 @@ export default function MailingListManager() {
                   <RefreshCw className={`w-4 h-4 text-gray-400 ${detailQuery.isFetching ? "animate-spin" : ""}`} />
                 </button>
               </div>
-
-              {/* Stats */}
               <div className="grid grid-cols-4 gap-3">
                 {[
                   { label: "Total Contacts", value: list.totalEntries, icon: Users, color: "blue" },
@@ -284,7 +383,124 @@ export default function MailingListManager() {
               </div>
             </div>
 
-            {/* Import CSV Section */}
+            {showApiPanel && (
+              <div className="bg-[#111827] rounded-xl border border-violet-500/30 p-6 space-y-5">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Key className="w-5 h-5 text-violet-400" /> CRM API Integration
+                </h3>
+
+                <div className="bg-[#0a0d14] rounded-lg p-4 border border-white/5">
+                  <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                    <Webhook className="w-4 h-4 text-blue-400" /> Webhook URL
+                  </h4>
+                  <div className="flex gap-2">
+                    <input
+                      value={webhookUrl !== null ? webhookUrl : ((list as any).webhookUrl || "")}
+                      onChange={e => setWebhookUrl(e.target.value)}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500"
+                      placeholder="https://your-crm.com/webhooks/curalive"
+                    />
+                    <button onClick={handleSaveWebhook}
+                      className="px-3 py-2 bg-violet-500 hover:bg-violet-600 rounded-lg text-sm font-semibold transition-colors">
+                      Save
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">Receive POST notifications when participants register for this event.</p>
+                </div>
+
+                <div className="bg-[#0a0d14] rounded-lg p-4 border border-white/5">
+                  <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" /> API Keys
+                  </h4>
+
+                  {newApiKey && (
+                    <div className="mb-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+                      <p className="text-xs text-emerald-400 font-semibold mb-2">New API Key — copy now, it won't be shown again:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 bg-[#0a0d14] px-3 py-2 rounded text-xs font-mono text-emerald-300 break-all">{newApiKey}</code>
+                        <button onClick={() => copyToClipboard(newApiKey)} className="p-2 hover:bg-white/10 rounded transition-colors">
+                          <Copy className="w-4 h-4 text-emerald-400" />
+                        </button>
+                      </div>
+                      <button onClick={() => setNewApiKey(null)} className="mt-2 text-xs text-gray-500 hover:text-gray-300">Dismiss</button>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      value={apiKeyName}
+                      onChange={e => setApiKeyName(e.target.value)}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500"
+                      placeholder="Key name (e.g. Salesforce Prod)"
+                    />
+                    <button onClick={handleGenerateApiKey} disabled={generateKeyMutation.isPending}
+                      className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+                      Generate Key
+                    </button>
+                  </div>
+
+                  {apiKeysQuery.data && apiKeysQuery.data.length > 0 && (
+                    <div className="space-y-2">
+                      {apiKeysQuery.data.map((k: any) => (
+                        <div key={k.id} className={`flex items-center justify-between p-3 rounded-lg border ${k.active ? "border-white/10 bg-white/[0.02]" : "border-red-500/20 bg-red-500/5 opacity-60"}`}>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">{k.name}</span>
+                              <code className="text-xs text-gray-500 font-mono">{k.keyPrefix}...</code>
+                              {!k.active && <span className="text-[10px] text-red-400 font-semibold uppercase">Revoked</span>}
+                            </div>
+                            <p className="text-xs text-gray-600 mt-0.5">
+                              Created {new Date(k.createdAt).toLocaleDateString()}
+                              {k.lastUsedAt && ` · Last used ${new Date(k.lastUsedAt).toLocaleDateString()}`}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {k.active && (
+                              <button onClick={() => handleRevokeKey(k.id)}
+                                className="px-2 py-1 text-xs text-amber-400 hover:bg-amber-500/20 rounded transition-colors">
+                                Revoke
+                              </button>
+                            )}
+                            <button onClick={() => handleDeleteKey(k.id)}
+                              className="p-1.5 hover:bg-red-500/20 rounded transition-colors">
+                              <Trash2 className="w-3.5 h-3.5 text-gray-500 hover:text-red-400" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-[#0a0d14] rounded-lg p-4 border border-white/5">
+                  <h4 className="text-sm font-semibold text-gray-300 mb-2">API Usage</h4>
+                  <p className="text-xs text-gray-500 mb-3">Use these tRPC endpoints from your CRM to push/pull registration data:</p>
+                  <div className="space-y-2 text-xs font-mono">
+                    <div className="bg-white/5 rounded p-2">
+                      <span className="text-emerald-400">crmApi.createRegistration</span>
+                      <span className="text-gray-500"> — Register a single contact</span>
+                    </div>
+                    <div className="bg-white/5 rounded p-2">
+                      <span className="text-emerald-400">crmApi.bulkCreateRegistrations</span>
+                      <span className="text-gray-500"> — Bulk register (up to 500)</span>
+                    </div>
+                    <div className="bg-white/5 rounded p-2">
+                      <span className="text-blue-400">crmApi.getRegistrationStatus</span>
+                      <span className="text-gray-500"> — Check if email is registered</span>
+                    </div>
+                    <div className="bg-white/5 rounded p-2">
+                      <span className="text-blue-400">crmApi.listRegistrations</span>
+                      <span className="text-gray-500"> — List all registrations for event</span>
+                    </div>
+                    <div className="bg-white/5 rounded p-2">
+                      <span className="text-blue-400">crmApi.getEventStats</span>
+                      <span className="text-gray-500"> — Registration stats by join method</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="bg-[#111827] rounded-xl border border-white/10 p-6">
               <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                 <Upload className="w-5 h-5 text-blue-400" /> Import Contacts
@@ -292,15 +508,8 @@ export default function MailingListManager() {
               <p className="text-sm text-gray-500 mb-4">
                 Upload a CSV file with columns: <code className="text-blue-400">firstName, lastName, email</code> (required), plus optional <code className="text-blue-400">company, jobTitle</code>. PINs are generated automatically.
               </p>
-
               <div className="flex gap-3 mb-4">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,.txt"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
+                <input ref={fileInputRef} type="file" accept=".csv,.txt" onChange={handleFileUpload} className="hidden" />
                 <button onClick={() => fileInputRef.current?.click()}
                   className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors">
                   <FileText className="w-4 h-4" /> Choose CSV File
@@ -310,15 +519,11 @@ export default function MailingListManager() {
                   Load sample CSV
                 </button>
               </div>
-
               {csvText && (
                 <div className="space-y-3">
-                  <textarea
-                    value={csvText}
-                    onChange={e => setCsvText(e.target.value)}
+                  <textarea value={csvText} onChange={e => setCsvText(e.target.value)}
                     className="w-full h-32 bg-[#0a0d14] border border-white/10 rounded-lg p-3 text-xs font-mono text-gray-300 focus:outline-none focus:border-blue-500 resize-none"
-                    placeholder="Paste CSV here..."
-                  />
+                    placeholder="Paste CSV here..." />
                   <button onClick={handleImport} disabled={importing}
                     className="flex items-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 rounded-lg text-sm font-semibold transition-colors">
                     {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -328,7 +533,6 @@ export default function MailingListManager() {
               )}
             </div>
 
-            {/* Send Invitations */}
             {list.entries && list.entries.some((e: any) => e.status === "pin_assigned") && (
               <div className="bg-[#111827] rounded-xl border border-blue-500/30 p-6">
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -340,12 +544,9 @@ export default function MailingListManager() {
                 </p>
                 <div className="mb-4">
                   <label className="block text-sm text-gray-400 mb-1.5">Personal Message (optional)</label>
-                  <textarea
-                    value={personalMessage}
-                    onChange={e => setPersonalMessage(e.target.value)}
+                  <textarea value={personalMessage} onChange={e => setPersonalMessage(e.target.value)}
                     className="w-full h-20 bg-[#0a0d14] border border-white/10 rounded-lg p-3 text-sm text-gray-300 focus:outline-none focus:border-blue-500 resize-none"
-                    placeholder="Add a personal note to include in the invitation email..."
-                  />
+                    placeholder="Add a personal note to include in the invitation email..." />
                 </div>
                 <button onClick={handleSend} disabled={sending}
                   className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 rounded-lg text-sm font-bold transition-colors">
@@ -355,7 +556,22 @@ export default function MailingListManager() {
               </div>
             )}
 
-            {/* Entries Table */}
+            {hasUnregistered && list.entries && list.entries.length > 0 && (
+              <div className="bg-[#111827] rounded-xl border border-violet-500/30 p-6">
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-violet-400" /> Zero-Click Pre-Registration
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Pre-register all contacts instantly. They'll receive a confirmation email with their join details — no click required.
+                  Choose a default join method for all contacts.
+                </p>
+                <button onClick={() => setShowPreRegModal(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-violet-500 hover:bg-violet-600 rounded-lg text-sm font-bold transition-colors">
+                  <Zap className="w-4 h-4" /> Pre-Register All Contacts
+                </button>
+              </div>
+            )}
+
             {list.entries && list.entries.length > 0 && (
               <div className="bg-[#111827] rounded-xl border border-white/10 overflow-hidden">
                 <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between">
@@ -377,45 +593,88 @@ export default function MailingListManager() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {list.entries.map((entry: any) => (
-                        <tr key={entry.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="px-5 py-3 font-medium">{entry.firstName} {entry.lastName}</td>
-                          <td className="px-5 py-3 text-gray-400">{entry.email}</td>
-                          <td className="px-5 py-3 text-gray-500">{entry.company || "—"}</td>
-                          <td className="px-5 py-3">
-                            {entry.accessPin ? (
-                              <code className="text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded text-xs font-mono">{entry.accessPin}</code>
-                            ) : (
-                              <span className="text-gray-600">—</span>
-                            )}
-                          </td>
-                          <td className="px-5 py-3">
-                            {entry.joinMethod ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs">
-                                {entry.joinMethod === "phone" && <Phone className="w-3 h-3 text-violet-400" />}
-                                {entry.joinMethod === "teams" && <Monitor className="w-3 h-3 text-indigo-400" />}
-                                {entry.joinMethod === "zoom" && <Video className="w-3 h-3 text-blue-400" />}
-                                {entry.joinMethod === "web" && <Globe className="w-3 h-3 text-emerald-400" />}
-                                <span className="text-gray-300 capitalize">{entry.joinMethod === "teams" ? "Teams" : entry.joinMethod}</span>
-                              </span>
-                            ) : (
-                              <span className="text-gray-600">—</span>
-                            )}
-                          </td>
-                          <td className="px-5 py-3">{statusBadge(entry.status)}</td>
-                          <td className="px-5 py-3 text-right">
-                            <button onClick={() => handleDeleteEntry(entry.id)}
-                              className="p-1.5 hover:bg-red-500/20 rounded transition-colors" title="Remove">
-                              <Trash2 className="w-3.5 h-3.5 text-gray-500 hover:text-red-400" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {list.entries.map((entry: any) => {
+                        const jm = JOIN_METHOD_LABELS[entry.joinMethod];
+                        return (
+                          <tr key={entry.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="px-5 py-3 font-medium">{entry.firstName} {entry.lastName}</td>
+                            <td className="px-5 py-3 text-gray-400">{entry.email}</td>
+                            <td className="px-5 py-3 text-gray-500">{entry.company || "—"}</td>
+                            <td className="px-5 py-3">
+                              {entry.accessPin ? (
+                                <code className="text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded text-xs font-mono">{entry.accessPin}</code>
+                              ) : <span className="text-gray-600">—</span>}
+                            </td>
+                            <td className="px-5 py-3">
+                              {jm ? (
+                                <span className="inline-flex items-center gap-1.5 text-xs">
+                                  <jm.icon className={`w-3 h-3 ${jm.color}`} />
+                                  <span className="text-gray-300">{jm.label}</span>
+                                </span>
+                              ) : <span className="text-gray-600">—</span>}
+                            </td>
+                            <td className="px-5 py-3">{statusBadge(entry.status)}</td>
+                            <td className="px-5 py-3 text-right">
+                              <button onClick={() => handleDeleteEntry(entry.id)}
+                                className="p-1.5 hover:bg-red-500/20 rounded transition-colors" title="Remove">
+                                <Trash2 className="w-3.5 h-3.5 text-gray-500 hover:text-red-400" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {showPreRegModal && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-[#111827] rounded-2xl border border-white/10 w-full max-w-md overflow-hidden">
+              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-violet-400" /> Zero-Click Pre-Registration
+                </h3>
+                <button onClick={() => setShowPreRegModal(false)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-gray-400">
+                  Choose the default join method. All {list?.entries?.filter((e: any) => e.status !== "registered").length || 0} unregistered contacts will be instantly registered and receive a confirmation email.
+                </p>
+                <div className="space-y-2">
+                  {(["phone", "teams", "zoom", "web"] as JoinMethod[]).map(method => {
+                    const m = JOIN_METHOD_LABELS[method];
+                    const Icon = m.icon;
+                    return (
+                      <button key={method} onClick={() => setPreRegMethod(method)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
+                          preRegMethod === method ? "border-violet-500/40 bg-violet-500/10" : "border-white/10 hover:border-white/20"
+                        }`}>
+                        <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center">
+                          <Icon className={`w-5 h-5 ${m.color}`} />
+                        </div>
+                        <span className="font-medium text-sm">{m.label}</span>
+                        {preRegMethod === method && (
+                          <CheckCircle2 className="w-4 h-4 text-violet-400 ml-auto" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="p-6 border-t border-white/10">
+                <button onClick={handlePreRegister} disabled={preRegistering}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 rounded-xl text-sm font-bold transition-colors">
+                  {preRegistering ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                  {preRegistering ? "Pre-Registering..." : `Pre-Register via ${JOIN_METHOD_LABELS[preRegMethod].label}`}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

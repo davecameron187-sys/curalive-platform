@@ -459,6 +459,112 @@ export const mailingListRouter = router({
       return { success: true };
     }),
 
+  preRegisterAll: protectedProcedure
+    .input(z.object({
+      mailingListId: z.number(),
+      defaultJoinMethod: z.enum(["phone", "teams", "zoom", "web"]),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable", registered: 0, skipped: 0 };
+      const conn = (db as any).session?.client ?? (db as any).$client;
+
+      const [list] = await db.select().from(mailingLists).where(eq(mailingLists.id, input.mailingListId)).limit(1);
+      if (!list) return { success: false, error: "Mailing list not found", registered: 0, skipped: 0 };
+
+      const entries = await db.select().from(mailingListEntries)
+        .where(and(
+          eq(mailingListEntries.mailingListId, input.mailingListId),
+          sql`status != 'registered'`
+        ));
+
+      if (entries.length === 0) {
+        return { success: true, registered: 0, skipped: 0, message: "No unregistered entries" };
+      }
+
+      const [event] = await db.select().from(events).where(eq(events.eventId, list.eventId)).limit(1);
+      const eventTitle = event?.title || list.eventId;
+      const company = event?.company || "CuraLive Inc.";
+      const needsPin = input.defaultJoinMethod === "phone";
+
+      let registered = 0;
+      let skipped = 0;
+
+      for (const entry of entries) {
+        const [existingReg] = await db.select({ id: attendeeRegistrations.id, accessPin: attendeeRegistrations.accessPin })
+          .from(attendeeRegistrations)
+          .where(and(eq(attendeeRegistrations.eventId, list.eventId), eq(attendeeRegistrations.email, entry.email)))
+          .limit(1);
+
+        let registrationId: number;
+        let effectivePin: string | null = null;
+
+        if (existingReg) {
+          registrationId = existingReg.id;
+          effectivePin = existingReg.accessPin;
+          if (needsPin && !effectivePin) {
+            effectivePin = await generateUniquePin(list.eventId).catch(() => null);
+          }
+          await conn.execute(
+            `UPDATE attendee_registrations SET join_method = ?, dialIn = ?, access_pin = COALESCE(?, access_pin) WHERE id = ?`,
+            [input.defaultJoinMethod, needsPin ? 1 : 0, effectivePin, registrationId]
+          );
+          skipped++;
+        } else {
+          if (needsPin) {
+            effectivePin = entry.accessPin || await generateUniquePin(list.eventId).catch(() => null);
+          }
+          const [regResult] = await db.insert(attendeeRegistrations).values({
+            eventId: list.eventId,
+            name: `${entry.firstName} ${entry.lastName}`.trim(),
+            email: entry.email,
+            company: entry.company || null,
+            jobTitle: entry.jobTitle || null,
+            language: "English",
+            dialIn: needsPin,
+            accessGranted: true,
+            accessPin: effectivePin,
+            joinMethod: input.defaultJoinMethod,
+          }).$returningId();
+          registrationId = regResult?.id;
+          registered++;
+        }
+
+        await db.update(mailingListEntries).set({
+          status: "registered",
+          joinMethod: input.defaultJoinMethod,
+          registrationId,
+          accessPin: effectivePin,
+          confirmToken: null,
+          registeredAt: new Date(),
+        }).where(eq(mailingListEntries.id, entry.id));
+
+        await sendEmail({
+          to: entry.email,
+          subject: `Registration Confirmed: ${eventTitle}`,
+          html: buildRegistrationConfirmationEmail({
+            firstName: entry.firstName,
+            lastName: entry.lastName,
+            eventTitle,
+            company,
+            eventDate: "See your calendar invite for the date and time",
+            accessPin: needsPin ? (effectivePin || undefined) : undefined,
+            joinMethod: input.defaultJoinMethod,
+          }),
+        }).catch(() => {});
+      }
+
+      const totalTransitioned = registered + skipped;
+      await db.update(mailingLists).set({
+        registeredEntries: sql`registered_entries + ${totalTransitioned}`,
+        preRegistered: true,
+        defaultJoinMethod: input.defaultJoinMethod,
+        status: "sent",
+      }).where(eq(mailingLists.id, input.mailingListId));
+
+      return { success: true, registered, skipped };
+    }),
+
   deleteEntry: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
