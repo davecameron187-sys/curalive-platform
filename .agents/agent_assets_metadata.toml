@@ -66,3 +66,9 @@ id = "z1TvL6TCmBlnDyXGU5VbN"
 uri = "file://public/CuraLive_Mirroring_Response_v2.docx"
 type = "word_document"
 title = "CuraLive Mirroring & Infrastructure Brief — Response to Steve v2"
+
+[[outputs]]
+id = "jn9DE3wh6vTJp3UfMIV2w"
+uri = "file://CuraLive_Mirroring_Response_v3.docx"
+type = "word_document"
+title = "CuraLive Mirroring Response v3 — Updated for Steve"
