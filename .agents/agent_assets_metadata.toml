@@ -60,3 +60,9 @@ id = "zplLVVR7m9BGrlWFQeCUX"
 uri = "file://public/CuraLive_Transition_Strategy.docx"
 type = "word_document"
 title = "CuraLive — Founder Transition Strategy, Shareholding & Patent Timeline"
+
+[[outputs]]
+id = "z1TvL6TCmBlnDyXGU5VbN"
+uri = "file://public/CuraLive_Mirroring_Response_v2.docx"
+type = "word_document"
+title = "CuraLive Mirroring & Infrastructure Brief — Response to Steve v2"
