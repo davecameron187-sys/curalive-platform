@@ -137,6 +137,9 @@ import AutomatedComplianceReporting from "./pages/AutomatedComplianceReporting";
 import SecurityRiskScoring from "./pages/SecurityRiskScoring";
 import IncidentResponsePlaybooks from "./pages/IncidentResponsePlaybooks";
 import SecurityMetricsAPI from "./pages/SecurityMetricsAPI";
+import SecurityGovernanceDashboard from "./pages/SecurityGovernanceDashboard";
+import ContinuousSecurityMonitoring from "./pages/ContinuousSecurityMonitoring";
+import SecurityVendorEcosystem from "./pages/SecurityVendorEcosystem";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -257,6 +260,9 @@ function Router() {
       <Route path="/security/risk-scoring" component={SecurityRiskScoring} />
       <Route path="/security/playbooks" component={IncidentResponsePlaybooks} />
       <Route path="/security/api" component={SecurityMetricsAPI} />
+      <Route path="/security/governance" component={SecurityGovernanceDashboard} />
+      <Route path="/security/monitoring" component={ContinuousSecurityMonitoring} />
+      <Route path="/security/vendors" component={SecurityVendorEcosystem} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
