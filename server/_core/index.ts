@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import { createServer } from "http";
 import http from "http";
 import net from "net";
 import rateLimit from "express-rate-limit";
@@ -39,30 +38,32 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   const app = express();
-  const server = createServer(app);
+  const server = http.createServer(app);
   app.set("trust proxy", 1);
 
-  app.use("/__mockup", (req, res) => {
-    const proxyReq = http.request(
-      {
-        hostname: "127.0.0.1",
-        port: 23636,
-        path: "/__mockup" + req.url,
-        method: req.method,
-        headers: req.headers,
-      },
-      (proxyRes) => {
-        res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers);
-        proxyRes.pipe(res, { end: true });
-      },
-    );
-    proxyReq.on("error", () => {
-      res.status(502).send("Mockup sandbox not available");
-    });
-    req.pipe(proxyReq, { end: true });
-  });
-
   const isProd = process.env.NODE_ENV === "production";
+
+  if (!isProd) {
+    app.use("/__mockup", (req, res) => {
+      const proxyReq = http.request(
+        {
+          hostname: "127.0.0.1",
+          port: 23636,
+          path: "/__mockup" + req.url,
+          method: req.method,
+          headers: req.headers,
+        },
+        (proxyRes) => {
+          res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers);
+          proxyRes.pipe(res, { end: true });
+        },
+      );
+      proxyReq.on("error", () => {
+        res.status(502).send("Mockup sandbox not available");
+      });
+      req.pipe(proxyReq, { end: true });
+    });
+  }
 
   const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
