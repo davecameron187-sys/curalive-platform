@@ -122,6 +122,9 @@ import ExternalToolsIntegration from "./pages/ExternalToolsIntegration";
 import RealTimeAlertingSystem from "./pages/RealTimeAlertingSystem";
 import MLAnomalyDetection from "./pages/MLAnomalyDetection";
 import SecurityMetricsKPIDashboard from "./pages/SecurityMetricsKPIDashboard";
+import SecurityAutomationWorkflows from "./pages/SecurityAutomationWorkflows";
+import ThreatIntelligenceIntegration from "./pages/ThreatIntelligenceIntegration";
+import SecurityPostureBenchmarking from "./pages/SecurityPostureBenchmarking";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -227,6 +230,9 @@ function Router() {
       <Route path="/security/alerting" component={RealTimeAlertingSystem} />
       <Route path="/security/anomaly-detection" component={MLAnomalyDetection} />
       <Route path="/security/metrics-kpi" component={SecurityMetricsKPIDashboard} />
+      <Route path="/security/automation" component={SecurityAutomationWorkflows} />
+      <Route path="/security/threat-intelligence" component={ThreatIntelligenceIntegration} />
+      <Route path="/security/benchmarking" component={SecurityPostureBenchmarking} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
