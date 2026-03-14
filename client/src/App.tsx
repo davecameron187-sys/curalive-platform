@@ -119,6 +119,9 @@ import VendorRiskDashboard from "./pages/VendorRiskDashboard";
 import SecurityAuditAutomation from "./pages/SecurityAuditAutomation";
 import ComplianceReportingDashboard from "./pages/ComplianceReportingDashboard";
 import ExternalToolsIntegration from "./pages/ExternalToolsIntegration";
+import RealTimeAlertingSystem from "./pages/RealTimeAlertingSystem";
+import MLAnomalyDetection from "./pages/MLAnomalyDetection";
+import SecurityMetricsKPIDashboard from "./pages/SecurityMetricsKPIDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -221,6 +224,9 @@ function Router() {
       <Route path="/security/audit-automation" component={SecurityAuditAutomation} />
       <Route path="/security/compliance-reporting" component={ComplianceReportingDashboard} />
       <Route path="/security/external-tools" component={ExternalToolsIntegration} />
+      <Route path="/security/alerting" component={RealTimeAlertingSystem} />
+      <Route path="/security/anomaly-detection" component={MLAnomalyDetection} />
+      <Route path="/security/metrics-kpi" component={SecurityMetricsKPIDashboard} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
