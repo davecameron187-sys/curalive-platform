@@ -56,5 +56,5 @@ externalPort = 3003
 
 [deployment]
 deploymentTarget = "vm"
-run = ["pnpm", "run", "start"]
-build = ["pnpm", "run", "build"]
+run = ["node", "dist/index.js"]
+build = ["pnpm", "install", "--frozen-lockfile"]
