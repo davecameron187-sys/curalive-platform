@@ -2164,6 +2164,6 @@
 
 ## Round 68 — GitHub Sync, MailingList Nav, HealthGuardian Admin
 
-- [ ] Push Manus changes to GitHub davecameron187-sys/curalive-platform
-- [ ] Wire MailingListManager into Operator Console sidebar/nav
-- [ ] Add HealthGuardian status indicator to admin panel header
+- [x] Push Manus changes to GitHub davecameron187-sys/curalive-platform
+- [x] Wire MailingListManager into Operator Console sidebar/nav
+- [x] Add HealthGuardian status indicator to admin panel header

@@ -22,7 +22,7 @@ import {
   Users, Settings, Search, AlertCircle,
   ChevronRight, Shield, DollarSign, FileText,
   RefreshCw, Loader2, UserCheck, Building2,
-  BarChart3, Zap, Lock,
+  BarChart3, Zap, Lock, Activity, ExternalLink,
 } from "lucide-react";
 
 const ROLE_COLORS: Record<string, string> = {
@@ -52,6 +52,27 @@ export default function AdminPanel() {
     { limit: 5 },
     { enabled: user?.role === "admin" }
   );
+
+  // HealthGuardian status for header indicator
+  const { data: healthStatus } = trpc.healthGuardian.currentStatus.useQuery(undefined, {
+    refetchInterval: 30000,
+  });
+  const healthScore = healthStatus?.overall?.score ?? null;
+  const healthColor = healthScore === null
+    ? "text-slate-400"
+    : healthScore >= 90 ? "text-emerald-400"
+    : healthScore >= 70 ? "text-amber-400"
+    : "text-red-400";
+  const healthBg = healthScore === null
+    ? "bg-slate-800/60 border-slate-700/40"
+    : healthScore >= 90 ? "bg-emerald-950/60 border-emerald-500/30"
+    : healthScore >= 70 ? "bg-amber-950/60 border-amber-500/30"
+    : "bg-red-950/60 border-red-500/30";
+  const healthLabel = healthScore === null
+    ? "Checking…"
+    : healthScore >= 90 ? "All Systems OK"
+    : healthScore >= 70 ? "Degraded"
+    : "Disruption";
 
   const updateRole = trpc.admin.updateUserRole.useMutation({
     onSuccess: () => {
@@ -112,6 +133,17 @@ export default function AdminPanel() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* HealthGuardian Status Indicator */}
+          <button
+            onClick={() => navigate("/health-guardian")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-opacity hover:opacity-80 ${healthBg} ${healthColor}`}
+            title="Open HealthGuardian dashboard"
+          >
+            <Activity className="w-3 h-3" />
+            {healthScore !== null && <span className="font-bold">{healthScore}%</span>}
+            <span className="hidden sm:inline">{healthLabel}</span>
+            <ExternalLink className="w-3 h-3 opacity-50" />
+          </button>
           <Button size="sm" variant="outline" onClick={() => refetchUsers()} className="gap-2 text-xs">
             <RefreshCw className="w-3 h-3" /> Refresh
           </Button>
