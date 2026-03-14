@@ -1098,3 +1098,30 @@
 - [ ] Create compliance alert system
 - [ ] Build compliance report generation
 - [ ] Test with various compliance scenarios
+
+
+## Integration Tasks — Phase Implementation
+
+### Task 1: Wire WebSocket to OCC Page
+- [ ] Create useMetricsWebSocket hook in client/src/hooks/
+- [ ] Connect OCC metrics display to WebSocket server
+- [ ] Implement real-time participant count updates
+- [ ] Add live sentiment score updates
+- [ ] Wire Q&A vote counter to WebSocket
+- [ ] Test WebSocket connection and data flow
+
+### Task 2: Integrate Recall.ai Bot Creation
+- [ ] Add "Start Transcription" button to OCC Operator Console
+- [ ] Create bot creation modal with meeting URL input
+- [ ] Implement bot lifecycle management (create, connect, stop)
+- [ ] Wire bot status to OCC display
+- [ ] Add transcription segment streaming
+- [ ] Test bot creation and transcription capture
+
+### Task 3: Build Compliance Dashboard in OCC
+- [ ] Create ComplianceDashboard component
+- [ ] Add compliance violations panel to OCC
+- [ ] Display real-time compliance alerts
+- [ ] Show violation history and severity breakdown
+- [ ] Add compliance score calculation and display
+- [ ] Test compliance rule evaluation and alerting
