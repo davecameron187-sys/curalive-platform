@@ -1067,3 +1067,34 @@
 - [ ] Update .github/workflows/test.yml to include Slack notification step
 - [ ] Test webhook with sample message
 - [ ] Verify Slack channel receives test notifications
+
+
+## NEW FEATURES — Phase Implementation
+
+### Feature 1: Recall.ai SDK Integration
+- [ ] Install Recall.ai SDK package (@recall-ai/sdk)
+- [ ] Add Recall.ai API credentials to environment variables
+- [ ] Create Recall.ai service wrapper in server/_core/recallai.ts
+- [ ] Implement bot creation and meeting join logic
+- [ ] Connect real transcription to OCC page
+- [ ] Add speaker identification from Recall.ai
+- [ ] Test with live meeting simulation
+
+### Feature 2: Real-time Metrics Dashboard with WebSocket
+- [ ] Install WebSocket library (ws)
+- [ ] Create WebSocket server in Express
+- [ ] Implement real-time participant tracking
+- [ ] Add live sentiment score updates
+- [ ] Create real-time Q&A vote counter
+- [ ] Build metrics update broadcast system
+- [ ] Connect frontend to WebSocket events
+- [ ] Test with simulated live event
+
+### Feature 3: Compliance Rule Engine
+- [ ] Define compliance rule schema in database
+- [ ] Create compliance rules management UI
+- [ ] Implement rule evaluation engine
+- [ ] Add real-time rule violation detection
+- [ ] Create compliance alert system
+- [ ] Build compliance report generation
+- [ ] Test with various compliance scenarios

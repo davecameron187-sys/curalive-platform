@@ -202,3 +202,157 @@ export async function getUnacknowledgedViolations(eventId: string) {
     return [];
   }
 }
+
+/**
+ * Compliance Rule Engine for Real-Time Detection
+ */
+
+export interface ComplianceRule {
+  id: string;
+  name: string;
+  category: "financial" | "data_protection" | "content" | "accessibility";
+  condition: (text: string, metadata: Record<string, unknown>) => boolean;
+  severity: "warning" | "error";
+  message: string;
+}
+
+export interface ComplianceViolationAlert {
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  severity: "warning" | "error";
+  message: string;
+  detectedText: string;
+  timestamp: number;
+  speakerId?: string;
+}
+
+class ComplianceRuleEngine {
+  private rules: Map<string, ComplianceRule> = new Map();
+  private violations: Map<string, ComplianceViolationAlert[]> = new Map();
+
+  constructor() {
+    this.initializeDefaultRules();
+  }
+
+  private initializeDefaultRules(): void {
+    // Financial Compliance Rules
+    this.addRule({
+      id: "financial_forward_looking",
+      name: "Forward-Looking Statements",
+      category: "financial",
+      condition: (text) => {
+        const keywords = [
+          "will",
+          "expect",
+          "anticipate",
+          "believe",
+          "estimate",
+          "project",
+          "forecast",
+        ];
+        return keywords.some((keyword) =>
+          text.toLowerCase().includes(keyword)
+        );
+      },
+      severity: "warning",
+      message:
+        "Forward-looking statement detected. Ensure proper disclaimers are included.",
+    });
+
+    // Data Protection Rules
+    this.addRule({
+      id: "data_pii_detection",
+      name: "Personal Information Detection",
+      category: "data_protection",
+      condition: (text) => {
+        const piiPatterns = [
+          /\b\d{3}-\d{2}-\d{4}\b/, // SSN
+          /\b\d{16}\b/, // Credit card
+          /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/, // Email
+        ];
+        return piiPatterns.some((pattern) => pattern.test(text));
+      },
+      severity: "error",
+      message: "Potential personal information detected. Review before sharing.",
+    });
+  }
+
+  addRule(rule: ComplianceRule): void {
+    this.rules.set(rule.id, rule);
+  }
+
+  removeRule(ruleId: string): void {
+    this.rules.delete(ruleId);
+  }
+
+  evaluateText(
+    conferenceId: string,
+    text: string,
+    metadata: Record<string, unknown> = {}
+  ): ComplianceViolationAlert[] {
+    const violations: ComplianceViolationAlert[] = [];
+
+    this.rules.forEach((rule) => {
+      try {
+        if (rule.condition(text, metadata)) {
+          const violation: ComplianceViolationAlert = {
+            id: `violation_${Date.now()}_${Math.random()}`,
+            ruleId: rule.id,
+            ruleName: rule.name,
+            severity: rule.severity,
+            message: rule.message,
+            detectedText: text.substring(0, 100),
+            timestamp: Date.now(),
+            speakerId: (metadata.speakerId as string) || undefined,
+          };
+
+          violations.push(violation);
+
+          const conferenceViolations = this.violations.get(conferenceId) || [];
+          conferenceViolations.push(violation);
+          this.violations.set(conferenceId, conferenceViolations);
+        }
+      } catch (error) {
+        console.error(`[Compliance] Error evaluating rule ${rule.id}:`, error);
+      }
+    });
+
+    return violations;
+  }
+
+  getViolations(conferenceId: string): ComplianceViolationAlert[] {
+    return this.violations.get(conferenceId) || [];
+  }
+
+  generateReport(conferenceId: string): Record<string, unknown> {
+    const violations = this.violations.get(conferenceId) || [];
+    const errorCount = violations.filter((v) => v.severity === "error").length;
+    const warningCount = violations.filter(
+      (v) => v.severity === "warning"
+    ).length;
+
+    return {
+      conferenceId,
+      totalViolations: violations.length,
+      errors: errorCount,
+      warnings: warningCount,
+      complianceScore: Math.max(
+        0,
+        100 - (errorCount * 10 + warningCount * 5)
+      ),
+      violations: violations.slice(-10),
+      timestamp: Date.now(),
+    };
+  }
+
+  clearViolations(conferenceId: string): void {
+    this.violations.delete(conferenceId);
+  }
+
+  getRules(): ComplianceRule[] {
+    return Array.from(this.rules.values());
+  }
+}
+
+export const complianceRuleEngine = new ComplianceRuleEngine();
