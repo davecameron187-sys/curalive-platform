@@ -146,6 +146,9 @@ import SecurityMetricsExport from "./pages/SecurityMetricsExport";
 import IncidentTimeline from "./pages/IncidentTimeline";
 import TrainingPlatform from "./pages/TrainingPlatform";
 import ComplianceGapAnalysis from "./pages/ComplianceGapAnalysis";
+import IncidentResponseAutomation from "./pages/IncidentResponseAutomation";
+import RealTimeAlertsDashboard from "./pages/RealTimeAlertsDashboard";
+import SecurityComplianceAutomation from "./pages/SecurityComplianceAutomation";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -275,6 +278,9 @@ function Router() {
       <Route path="/security/timeline" component={IncidentTimeline} />
       <Route path="/security/training" component={TrainingPlatform} />
       <Route path="/security/gaps" component={ComplianceGapAnalysis} />
+      <Route path="/security/response-automation" component={IncidentResponseAutomation} />
+      <Route path="/security/alerts" component={RealTimeAlertsDashboard} />
+      <Route path="/security/compliance-automation" component={SecurityComplianceAutomation} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
