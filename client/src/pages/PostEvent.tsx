@@ -252,6 +252,28 @@ export default function PostEvent() {
   // Press Release Draft state & mutation
   const [pressReleaseText, setPressReleaseText] = useState<string | null>(null);
   const [showPressRelease, setShowPressRelease] = useState(false);
+
+  // Export Attendees to Mailing List
+  const [exportAttendeesResult, setExportAttendeesResult] = useState<{ imported: number; duplicates: number; mailingListId: number } | null>(null);
+  const exportAttendeesMutation = trpc.mailingList.importFromEvent.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        setExportAttendeesResult({ imported: data.imported, duplicates: data.duplicates, mailingListId: data.mailingListId! });
+        toast.success(`Exported ${data.imported} attendees to mailing list!`);
+      } else {
+        toast.error(data.error ?? "Failed to export attendees");
+      }
+    },
+    onError: () => toast.error("Failed to export attendees to mailing list"),
+  });
+
+  const handleExportAttendees = () => {
+    const id = params.id ?? "q4-earnings-2026";
+    exportAttendeesMutation.mutate({
+      eventId: id,
+      mailingListName: `${id} — Post-Event Attendees`,
+    });
+  };
   const generatePressRelease = trpc.pressRelease.generate.useMutation({
     onSuccess: (data) => {
       setPressReleaseText(data.pressRelease);
@@ -512,8 +534,34 @@ export default function PostEvent() {
                     >
                       {generatePressRelease.isPending ? <><Loader2 className="w-3 h-3 animate-spin" /> Drafting...</> : <><FileText className="w-3 h-3" /> Draft Press Release</>}
                     </button>
+                    <button
+                      onClick={handleExportAttendees}
+                      disabled={exportAttendeesMutation.isPending}
+                      className="flex items-center gap-1.5 text-xs bg-violet-500/10 border border-violet-500/20 text-violet-400 px-3 py-1.5 rounded-lg hover:bg-violet-500/20 transition-colors disabled:opacity-50"
+                    >
+                      {exportAttendeesMutation.isPending ? <><Loader2 className="w-3 h-3 animate-spin" /> Exporting...</> : <><Users className="w-3 h-3" /> Export Attendees</>}
+                    </button>
                   </div>
                 </div>
+
+                {/* Export Attendees Result Banner */}
+                {exportAttendeesResult && (
+                  <div className="mb-4 flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3">
+                    <CheckCircle className="w-4 h-4 text-violet-400 shrink-0" />
+                    <div className="flex-1 text-sm">
+                      <span className="font-semibold text-violet-400">{exportAttendeesResult.imported} attendees</span>
+                      <span className="text-muted-foreground"> exported to mailing list</span>
+                      {exportAttendeesResult.duplicates > 0 && <span className="text-muted-foreground"> ({exportAttendeesResult.duplicates} duplicates skipped)</span>}
+                    </div>
+                    <button
+                      onClick={() => window.location.href = '/mailing-lists'}
+                      className="text-xs text-violet-400 border border-violet-500/30 px-2 py-1 rounded hover:bg-violet-500/10 transition-colors"
+                    >View List</button>
+                    <button onClick={() => setExportAttendeesResult(null)} className="text-muted-foreground hover:text-foreground">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Headline */}
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-5">

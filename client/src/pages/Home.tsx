@@ -1,8 +1,9 @@
 import { useLocation } from "wouter";
-import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay, Activity, LogIn, LogOut, User, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
+import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay, Activity, LogIn, LogOut, User, CheckCircle, AlertTriangle, XCircle, X } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { useState } from "react";
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-hero-bg-bFr44AaNNWKkv4uMRbTXe8.webp";
 const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/demo_curalive_0cb4c723.mp4";
@@ -74,9 +75,16 @@ export default function Home() {
   // The userAuth hooks provides authentication state
   const [, navigate] = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
+  const [bannerDismissed, setBannerDismissed] = useState(() =>
+    typeof window !== "undefined" && localStorage.getItem("setupBannerDismissed") === "1"
+  );
+  // Show first-run CTA if logged in but organisation not yet configured and not dismissed
+  const showSetupCTA = isAuthenticated && user && !(user as { organisation?: string }).organisation && !bannerDismissed;
 
-  // Show first-run CTA if logged in but organisation not yet configured
-  const showSetupCTA = isAuthenticated && user && !(user as { organisation?: string }).organisation;
+  const dismissBanner = () => {
+    localStorage.setItem("setupBannerDismissed", "1");
+    setBannerDismissed(true);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -143,12 +151,21 @@ export default function Home() {
               <span className="font-semibold text-primary">Welcome to CuraLive!</span>
               <span className="text-muted-foreground hidden sm:inline" style={{ fontFamily: "'Inter', sans-serif" }}>Complete your organisation setup to unlock all features.</span>
             </div>
-            <button
-              onClick={() => navigate("/onboarding")}
-              className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity whitespace-nowrap"
-            >
-              Complete setup &rarr;
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate("/onboarding")}
+                className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity whitespace-nowrap"
+              >
+                Complete setup &rarr;
+              </button>
+              <button
+                onClick={dismissBanner}
+                className="flex items-center justify-center w-6 h-6 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                aria-label="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       )}

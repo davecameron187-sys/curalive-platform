@@ -581,4 +581,72 @@ export const mailingListRouter = router({
 
       return { success: true };
     }),
+
+  // Import registered attendees from a completed event into a new mailing list
+  importFromEvent: protectedProcedure
+    .input(z.object({
+      eventId: z.string().min(1),
+      mailingListName: z.string().min(1),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable", imported: 0, duplicates: 0 };
+
+      // Fetch all registrations for the event
+      const registrations = await db.select()
+        .from(attendeeRegistrations)
+        .where(eq(attendeeRegistrations.eventId, input.eventId));
+
+      if (registrations.length === 0) {
+        return { success: false, error: "No attendees found for this event", imported: 0, duplicates: 0 };
+      }
+
+      // Create a new mailing list for this event
+      const [newList] = await db.insert(mailingLists).values({
+        name: input.mailingListName,
+        description: `Attendees imported from event: ${input.eventId}`,
+        eventId: input.eventId,
+        status: "active",
+        totalEntries: 0,
+        processedEntries: 0,
+        registeredEntries: 0,
+        preRegistered: false,
+      }).$returningId();
+      const mailingListId = newList?.id;
+      if (!mailingListId) return { success: false, error: "Failed to create mailing list", imported: 0, duplicates: 0 };
+
+      let imported = 0;
+      let duplicates = 0;
+
+      for (const reg of registrations) {
+        if (!reg.email) continue;
+        // Check for duplicate in this new list
+        const [existing] = await db.select({ id: mailingListEntries.id })
+          .from(mailingListEntries)
+          .where(and(eq(mailingListEntries.mailingListId, mailingListId), eq(mailingListEntries.email, reg.email)))
+          .limit(1);
+        if (existing) { duplicates++; continue; }
+
+        const nameParts = (reg.name || "").split(" ");
+        await db.insert(mailingListEntries).values({
+          mailingListId,
+          firstName: nameParts[0] || reg.name || "",
+          lastName: nameParts.slice(1).join(" ") || "",
+          email: reg.email,
+          company: reg.company || null,
+          jobTitle: reg.jobTitle || null,
+          status: "active",
+          registrationId: reg.id,
+        });
+        imported++;
+      }
+
+      // Update total entries count
+      await db.update(mailingLists).set({
+        totalEntries: sql`total_entries + ${imported}`,
+        processedEntries: sql`processed_entries + ${imported}`,
+      }).where(eq(mailingLists.id, mailingListId));
+
+      return { success: true, imported, duplicates, mailingListId };
+    }),
 });
