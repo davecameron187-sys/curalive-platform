@@ -57,6 +57,7 @@ import { investorQuestionsRouter } from "./routers/investorQuestionsRouter";
 import { intelligenceReportRouter } from "./routers/intelligenceReportRouter";
 import { callPrepRouter } from "./routers/callPrepRouter";
 import { intelligenceTerminalRouter } from "./routers/intelligenceTerminalRouter";
+import { botRouter } from "./routers/bot";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -123,6 +124,7 @@ export const appRouter = router({
   intelligenceReport: intelligenceReportRouter,
   callPrep: callPrepRouter,
   intelligenceTerminal: intelligenceTerminalRouter,
+  bot: botRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

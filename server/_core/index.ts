@@ -16,6 +16,7 @@ import { registerBillingPdfRoutes } from "../billingPdf";
 import { buildTwiMLVoiceResponse } from "../webphone/twilio";
 import { parseTelnyxWebhook } from "../webphone/telnyx";
 import twilio_twiml from "twilio";
+import { MetricsWebSocketServer } from "./metricsWebsocket";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -576,6 +577,10 @@ async function startServer() {
       res.status(500).json({ error: "Token generation failed" });
     }
   });
+
+  // Initialize WebSocket server for real-time metrics
+  new MetricsWebSocketServer(server);
+  console.log("[Metrics WebSocket] Server initialized");
 
   // tRPC API
   app.use(
