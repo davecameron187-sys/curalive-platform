@@ -2641,3 +2641,39 @@ export const crmApiKeys = mysqlTable("crm_api_keys", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type CrmApiKey = typeof crmApiKeys.$inferSelect;
+
+// ─── SOC 2 Controls ──────────────────────────────────────────────────────────
+export const soc2Controls = mysqlTable("soc2_controls", {
+  id: int("id").autoincrement().primaryKey(),
+  controlId: varchar("control_id", { length: 20 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  status: mysqlEnum("status", ["compliant", "partial", "non_compliant", "not_applicable"]).notNull().default("non_compliant"),
+  ownerName: varchar("owner_name", { length: 100 }),
+  notes: text("notes"),
+  testingFrequency: varchar("testing_frequency", { length: 50 }),
+  lastTestedAt: timestamp("last_tested_at"),
+  evidenceUrls: json("evidence_urls"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type Soc2Control = typeof soc2Controls.$inferSelect;
+
+// ─── ISO 27001 Controls ───────────────────────────────────────────────────────
+export const iso27001Controls = mysqlTable("iso27001_controls", {
+  id: int("id").autoincrement().primaryKey(),
+  controlId: varchar("control_id", { length: 20 }).notNull(),
+  clause: varchar("clause", { length: 100 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  status: mysqlEnum("status", ["compliant", "partial", "non_compliant", "not_applicable"]).notNull().default("non_compliant"),
+  ownerName: varchar("owner_name", { length: 100 }),
+  notes: text("notes"),
+  testingFrequency: varchar("testing_frequency", { length: 50 }),
+  lastTestedAt: timestamp("last_tested_at"),
+  evidenceUrls: json("evidence_urls"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type Iso27001Control = typeof iso27001Controls.$inferSelect;

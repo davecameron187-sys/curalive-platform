@@ -1,0 +1,123 @@
+import { z } from "zod";
+import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { soc2Controls } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
+
+const SOC2_SEED = [
+  { controlId: "CC1.1", category: "CC1 - Control Environment", name: "COSO Principles and Integrity", description: "The entity demonstrates a commitment to integrity and ethical values.", status: "compliant" as const, ownerName: "CISO", testingFrequency: "Annual" },
+  { controlId: "CC1.2", category: "CC1 - Control Environment", name: "Board Independence and Oversight", description: "The board of directors demonstrates independence from management.", status: "partial" as const, ownerName: "CEO", testingFrequency: "Annual" },
+  { controlId: "CC1.3", category: "CC1 - Control Environment", name: "Organisational Structure", description: "Management establishes structure, reporting lines, and appropriate authorities.", status: "compliant" as const, ownerName: "COO", testingFrequency: "Annual" },
+  { controlId: "CC1.4", category: "CC1 - Control Environment", name: "Commitment to Competence", description: "The entity demonstrates a commitment to attract, develop, and retain competent individuals.", status: "compliant" as const, ownerName: "HR Director", testingFrequency: "Annual" },
+  { controlId: "CC1.5", category: "CC1 - Control Environment", name: "Accountability and Performance", description: "The entity holds individuals accountable for their internal control responsibilities.", status: "partial" as const, ownerName: "HR Director", testingFrequency: "Annual" },
+  { controlId: "CC2.1", category: "CC2 - Communication and Information", name: "Information Quality", description: "The entity obtains or generates and uses relevant, quality information to support internal control.", status: "compliant" as const, ownerName: "CTO", testingFrequency: "Quarterly" },
+  { controlId: "CC2.2", category: "CC2 - Communication and Information", name: "Internal Communication", description: "The entity internally communicates information, including objectives and responsibilities for internal control.", status: "compliant" as const, ownerName: "COO", testingFrequency: "Quarterly" },
+  { controlId: "CC2.3", category: "CC2 - Communication and Information", name: "External Communication", description: "The entity communicates with external parties regarding matters affecting internal control.", status: "partial" as const, ownerName: "Legal", testingFrequency: "Annual" },
+  { controlId: "CC3.1", category: "CC3 - Risk Assessment", name: "Objective Specification", description: "The entity specifies objectives with sufficient clarity to enable identification and assessment of risks.", status: "compliant" as const, ownerName: "CISO", testingFrequency: "Annual" },
+  { controlId: "CC3.2", category: "CC3 - Risk Assessment", name: "Risk Identification and Analysis", description: "The entity identifies risks to the achievement of its objectives across the entity.", status: "partial" as const, ownerName: "CISO", testingFrequency: "Semi-Annual" },
+  { controlId: "CC3.3", category: "CC3 - Risk Assessment", name: "Fraud Risk Assessment", description: "The entity considers the potential for fraud in assessing risks to the achievement of objectives.", status: "non_compliant" as const, ownerName: "CISO", testingFrequency: "Annual" },
+  { controlId: "CC3.4", category: "CC3 - Risk Assessment", name: "Change Risk Identification", description: "The entity identifies and assesses changes that could significantly impact the system of internal control.", status: "partial" as const, ownerName: "CTO", testingFrequency: "Quarterly" },
+  { controlId: "CC4.1", category: "CC4 - Monitoring Activities", name: "Ongoing and Separate Evaluations", description: "The entity selects, develops, and performs ongoing evaluations to ascertain whether components of internal control are present and functioning.", status: "compliant" as const, ownerName: "Internal Audit", testingFrequency: "Quarterly" },
+  { controlId: "CC4.2", category: "CC4 - Monitoring Activities", name: "Deficiency Evaluation and Communication", description: "The entity evaluates and communicates internal control deficiencies in a timely manner.", status: "partial" as const, ownerName: "Internal Audit", testingFrequency: "Quarterly" },
+  { controlId: "CC5.1", category: "CC5 - Control Activities", name: "Control Selection and Development", description: "The entity selects and develops control activities that contribute to the mitigation of risks.", status: "compliant" as const, ownerName: "CISO", testingFrequency: "Annual" },
+  { controlId: "CC5.2", category: "CC5 - Control Activities", name: "Technology Controls", description: "The entity selects and develops general control activities over technology to support the achievement of objectives.", status: "partial" as const, ownerName: "CTO", testingFrequency: "Quarterly" },
+  { controlId: "CC5.3", category: "CC5 - Control Activities", name: "Policy Deployment", description: "The entity deploys control activities through policies that establish what is expected and procedures that put policies into action.", status: "compliant" as const, ownerName: "CISO", testingFrequency: "Annual" },
+  { controlId: "CC6.1", category: "CC6 - Logical and Physical Access", name: "Logical Access Security", description: "The entity implements logical access security software, infrastructure, and architectures over protected information assets.", status: "compliant" as const, ownerName: "CTO", testingFrequency: "Quarterly" },
+  { controlId: "CC6.2", category: "CC6 - Logical and Physical Access", name: "Access Provisioning", description: "Prior to issuing system credentials, the entity registers and authorizes new internal and external users.", status: "compliant" as const, ownerName: "IT Manager", testingFrequency: "Monthly" },
+  { controlId: "CC6.3", category: "CC6 - Logical and Physical Access", name: "Access Removal", description: "The entity authorizes, modifies, or removes access to data, software, functions, and other protected information assets.", status: "partial" as const, ownerName: "IT Manager", testingFrequency: "Monthly" },
+  { controlId: "CC6.4", category: "CC6 - Logical and Physical Access", name: "Physical Access Restrictions", description: "The entity restricts physical access to facilities and protected information assets to authorized personnel.", status: "compliant" as const, ownerName: "Facilities", testingFrequency: "Annual" },
+  { controlId: "CC6.6", category: "CC6 - Logical and Physical Access", name: "External Threat Protection", description: "The entity implements controls to prevent or detect and act upon the introduction of unauthorized or malicious software.", status: "partial" as const, ownerName: "CTO", testingFrequency: "Monthly" },
+  { controlId: "CC6.7", category: "CC6 - Logical and Physical Access", name: "Transmission Integrity and Confidentiality", description: "The entity restricts the transmission, movement, and removal of information to authorized users and processes.", status: "compliant" as const, ownerName: "CTO", testingFrequency: "Quarterly" },
+  { controlId: "CC6.8", category: "CC6 - Logical and Physical Access", name: "Malware Protection", description: "The entity implements controls to prevent or detect and act upon the introduction of malicious software.", status: "partial" as const, ownerName: "CTO", testingFrequency: "Monthly" },
+  { controlId: "CC7.1", category: "CC7 - System Operations", name: "Vulnerability Detection", description: "The entity uses detection and monitoring procedures to identify changes to configurations or new vulnerabilities.", status: "partial" as const, ownerName: "CTO", testingFrequency: "Monthly" },
+  { controlId: "CC7.2", category: "CC7 - System Operations", name: "Anomaly Monitoring", description: "The entity monitors system components and the operation of those components for anomalies indicative of malicious acts.", status: "partial" as const, ownerName: "CTO", testingFrequency: "Continuous" },
+  { controlId: "CC7.3", category: "CC7 - System Operations", name: "Security Event Evaluation", description: "The entity evaluates security events to determine whether they could or have resulted in a failure to meet its objectives.", status: "non_compliant" as const, ownerName: "CISO", testingFrequency: "Monthly" },
+  { controlId: "CC7.4", category: "CC7 - System Operations", name: "Incident Response", description: "The entity responds to identified security incidents by executing a defined incident response program.", status: "partial" as const, ownerName: "CISO", testingFrequency: "Annual" },
+  { controlId: "CC7.5", category: "CC7 - System Operations", name: "Incident Recovery", description: "The entity identifies, develops, and implements activities to recover from identified security incidents.", status: "non_compliant" as const, ownerName: "CISO", testingFrequency: "Annual" },
+  { controlId: "CC8.1", category: "CC8 - Change Management", name: "Change Management Process", description: "The entity authorizes, designs, develops, configures, documents, tests, approves, and implements changes to infrastructure, data, software, and procedures.", status: "compliant" as const, ownerName: "CTO", testingFrequency: "Continuous" },
+  { controlId: "CC9.1", category: "CC9 - Risk Mitigation", name: "Risk Mitigation Activities", description: "The entity identifies, selects, and develops risk mitigation activities for risks arising from potential business disruptions.", status: "partial" as const, ownerName: "CISO", testingFrequency: "Annual" },
+  { controlId: "CC9.2", category: "CC9 - Risk Mitigation", name: "Vendor Risk Management", description: "The entity assesses and manages risks associated with vendors and business partners.", status: "non_compliant" as const, ownerName: "Legal", testingFrequency: "Annual" },
+  { controlId: "A1.1", category: "A1 - Availability", name: "Availability Capacity Planning", description: "The entity maintains, monitors, and evaluates current processing capacity and use of system components.", status: "compliant" as const, ownerName: "CTO", testingFrequency: "Monthly" },
+  { controlId: "A1.2", category: "A1 - Availability", name: "Environmental Threats", description: "The entity authorizes, designs, develops, implements, operates, approves, maintains, and monitors environmental protections.", status: "compliant" as const, ownerName: "CTO", testingFrequency: "Annual" },
+  { controlId: "A1.3", category: "A1 - Availability", name: "Recovery Plan Testing", description: "The entity tests recovery plan procedures supporting system recovery to meet its objectives.", status: "partial" as const, ownerName: "CTO", testingFrequency: "Annual" },
+  { controlId: "C1.1", category: "C1 - Confidentiality", name: "Confidential Information Identification", description: "The entity identifies and maintains confidential information to meet the entity objectives related to confidentiality.", status: "compliant" as const, ownerName: "Legal", testingFrequency: "Annual" },
+  { controlId: "C1.2", category: "C1 - Confidentiality", name: "Confidential Information Disposal", description: "The entity disposes of confidential information to meet the entity objectives related to confidentiality.", status: "partial" as const, ownerName: "CISO", testingFrequency: "Annual" },
+  { controlId: "PI1.1", category: "PI1 - Processing Integrity", name: "Processing Completeness and Accuracy", description: "The entity obtains or generates, uses, and communicates relevant, quality information to support the functioning of internal control.", status: "compliant" as const, ownerName: "CTO", testingFrequency: "Quarterly" },
+  { controlId: "PI1.2", category: "PI1 - Processing Integrity", name: "System Input Controls", description: "The entity implements policies and procedures over system inputs, including controls over completeness and accuracy.", status: "compliant" as const, ownerName: "CTO", testingFrequency: "Quarterly" },
+  { controlId: "PI1.3", category: "PI1 - Processing Integrity", name: "System Processing Controls", description: "The entity implements policies and procedures over system processing to result in products, services, and reporting to meet the entity objectives.", status: "partial" as const, ownerName: "CTO", testingFrequency: "Quarterly" },
+  { controlId: "P1.1", category: "P - Privacy", name: "Privacy Notice", description: "The entity provides notice to data subjects about its privacy practices.", status: "compliant" as const, ownerName: "Legal", testingFrequency: "Annual" },
+  { controlId: "P2.1", category: "P - Privacy", name: "Consent and Choice", description: "The entity communicates choices available regarding the collection, use, retention, disclosure, and disposal of personal information.", status: "partial" as const, ownerName: "Legal", testingFrequency: "Annual" },
+  { controlId: "P3.1", category: "P - Privacy", name: "Collection Limitation", description: "The entity limits the collection of personal information to that necessary to meet its objectives.", status: "compliant" as const, ownerName: "CISO", testingFrequency: "Annual" },
+  { controlId: "P4.1", category: "P - Privacy", name: "Use, Retention and Disposal", description: "The entity limits the use of personal information to the purposes identified in the notice.", status: "partial" as const, ownerName: "Legal", testingFrequency: "Annual" },
+  { controlId: "P5.1", category: "P - Privacy", name: "Access and Correction", description: "The entity grants identified and authenticated data subjects the ability to access their stored personal information.", status: "compliant" as const, ownerName: "Legal", testingFrequency: "Annual" },
+  { controlId: "P8.1", category: "P - Privacy", name: "Privacy Monitoring and Enforcement", description: "The entity monitors compliance with its privacy objectives and addresses any privacy-related inquiries, complaints, and disputes.", status: "non_compliant" as const, ownerName: "Legal", testingFrequency: "Annual" },
+];
+
+export const soc2Router = router({
+  seedIfEmpty: protectedProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    const existing = await db.select({ id: soc2Controls.id }).from(soc2Controls).limit(1);
+    if (existing.length > 0) return { seeded: false, count: 0 };
+    await db.insert(soc2Controls).values(SOC2_SEED);
+    return { seeded: true, count: SOC2_SEED.length };
+  }),
+
+  getControls: protectedProcedure
+    .input(z.object({ category: z.string().optional() }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db.select().from(soc2Controls);
+      if (input?.category) return rows.filter(r => r.category === input.category);
+      return rows;
+    }),
+
+  getStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { total: 0, compliant: 0, partial: 0, nonCompliant: 0, notApplicable: 0, score: 0 };
+    const rows = await db.select().from(soc2Controls);
+    const total = rows.length;
+    const compliant = rows.filter(r => r.status === "compliant").length;
+    const partial = rows.filter(r => r.status === "partial").length;
+    const nonCompliant = rows.filter(r => r.status === "non_compliant").length;
+    const notApplicable = rows.filter(r => r.status === "not_applicable").length;
+    const applicable = total - notApplicable;
+    const score = applicable > 0 ? Math.round(((compliant + partial * 0.5) / applicable) * 100) : 0;
+    return { total, compliant, partial, nonCompliant, notApplicable, score };
+  }),
+
+  getCategories: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    const rows = await db.select().from(soc2Controls);
+    const map = new Map<string, { category: string; total: number; compliant: number; partial: number; nonCompliant: number }>();
+    for (const r of rows) {
+      if (!map.has(r.category)) map.set(r.category, { category: r.category, total: 0, compliant: 0, partial: 0, nonCompliant: 0 });
+      const entry = map.get(r.category)!;
+      entry.total++;
+      if (r.status === "compliant") entry.compliant++;
+      else if (r.status === "partial") entry.partial++;
+      else if (r.status === "non_compliant") entry.nonCompliant++;
+    }
+    return Array.from(map.values());
+  }),
+
+  updateControl: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(["compliant", "partial", "non_compliant", "not_applicable"]).optional(),
+      ownerName: z.string().optional(),
+      notes: z.string().optional(),
+      testingFrequency: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const { id, ...updates } = input;
+      const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+      if (Object.keys(filtered).length === 0) return { updated: false };
+      await db.update(soc2Controls).set(filtered).where(eq(soc2Controls.id, id));
+      return { updated: true };
+    }),
+});

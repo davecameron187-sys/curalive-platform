@@ -2167,3 +2167,16 @@
 - [x] Push Manus changes to GitHub davecameron187-sys/curalive-platform
 - [x] Wire MailingListManager into Operator Console sidebar/nav
 - [x] Add HealthGuardian status indicator to admin panel header
+
+## Compliance Sprints (SOC + ISO)
+- [x] Sprint A: soc2_controls + iso27001_controls DB tables created via SQL
+- [x] Sprint A: soc2Router.ts — seedIfEmpty, getControls, getStats, getCategories, updateControl
+- [x] Sprint A: iso27001Router.ts — seedIfEmpty, getControls, getStats, getClauses, updateControl
+- [x] Sprint A: Both routers registered in routers.eager.ts
+- [x] Sprint A: SOC2Dashboard.tsx rewritten to use real tRPC data (trpc.soc2.*)
+- [x] Sprint A: ISO27001Dashboard.tsx rewritten to use real tRPC data (trpc.iso27001.*)
+- [x] Sprint B: pdfmake installed; compliancePdf.ts helper created
+- [x] Sprint B: generateComplianceCertificate now generates real PDF, uploads to S3, stores real URL
+- [x] Sprint C: generateGapAnalysis procedure added to compliance router (real DB + LLM)
+- [x] Sprint C: ComplianceGapAnalysis.tsx rewritten to call trpc.compliance.generateGapAnalysis
+- [x] Tests: compliance.soc.iso.test.ts — 13 tests all passing

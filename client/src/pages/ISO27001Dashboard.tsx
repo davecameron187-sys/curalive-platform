@@ -1,498 +1,261 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Shield,
-  Lock,
-  Eye,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  FileText,
-  Users,
-  Database,
-  Network,
-  Key,
-  Zap,
-  BarChart3,
-} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Shield, CheckCircle, AlertTriangle, XCircle, RefreshCw, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
-interface Control {
-  id: string;
-  name: string;
-  category: string;
-  status: "compliant" | "partial" | "non-compliant" | "not-applicable";
-  lastAudit: number;
-  evidence: string[];
-  owner: string;
-  dueDate: number;
-}
+const STATUS_CONFIG = {
+  compliant: { label: "Compliant", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", icon: CheckCircle, iconClass: "text-emerald-400" },
+  partial: { label: "Partial", color: "bg-amber-500/10 text-amber-400 border-amber-500/20", icon: AlertTriangle, iconClass: "text-amber-400" },
+  non_compliant: { label: "Non-Compliant", color: "bg-red-500/10 text-red-400 border-red-500/20", icon: XCircle, iconClass: "text-red-400" },
+  not_applicable: { label: "N/A", color: "bg-slate-500/10 text-slate-400 border-slate-500/20", icon: Shield, iconClass: "text-slate-400" },
+};
 
-/**
- * ISO27001Dashboard Page
- * 
- * ISO 27001 Information Security Management System (ISMS)
- * with access controls, encryption, data classification, and incident tracking.
- */
 export default function ISO27001Dashboard() {
-  const [controls, setControls] = useState<Control[]>([
-    {
-      id: "a.5.1",
-      name: "Information Security Policies",
-      category: "Organization of Information Security",
-      status: "compliant",
-      lastAudit: Date.now() - 604800000,
-      evidence: ["policy-doc-v2.pdf", "board-approval-2026.pdf"],
-      owner: "CISO",
-      dueDate: Date.now() + 7776000000,
+  const [expandedClause, setExpandedClause] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [search, setSearch] = useState("");
+
+  const utils = trpc.useUtils();
+
+  const seedMutation = trpc.iso27001.seedIfEmpty.useMutation({
+    onSuccess: (data) => {
+      if (data.seeded) {
+        toast.success(`Seeded ${data.count} ISO 27001 controls`);
+        utils.iso27001.getControls.invalidate();
+        utils.iso27001.getStats.invalidate();
+        utils.iso27001.getClauses.invalidate();
+      }
     },
-    {
-      id: "a.6.1",
-      name: "Internal Organization",
-      category: "Organization of Information Security",
-      status: "compliant",
-      lastAudit: Date.now() - 604800000,
-      evidence: ["org-chart.pdf", "role-definitions.pdf"],
-      owner: "HR Manager",
-      dueDate: Date.now() + 7776000000,
+  });
+
+  const { data: stats } = trpc.iso27001.getStats.useQuery();
+  const { data: clauses } = trpc.iso27001.getClauses.useQuery();
+  const { data: controls = [], isLoading } = trpc.iso27001.getControls.useQuery(undefined, {
+    onSuccess: (data) => {
+      if (data.length === 0) seedMutation.mutate();
     },
-    {
-      id: "a.7.1",
-      name: "User Access Management",
-      category: "Access Control",
-      status: "compliant",
-      lastAudit: Date.now() - 1209600000,
-      evidence: ["access-log-2026.csv", "user-provisioning-policy.pdf"],
-      owner: "IT Manager",
-      dueDate: Date.now() + 2592000000,
+  });
+
+  const updateMutation = trpc.iso27001.updateControl.useMutation({
+    onSuccess: () => {
+      toast.success("Control updated");
+      utils.iso27001.getControls.invalidate();
+      utils.iso27001.getStats.invalidate();
+      utils.iso27001.getClauses.invalidate();
     },
-    {
-      id: "a.8.1",
-      name: "Cryptography",
-      category: "Cryptography",
-      status: "compliant",
-      lastAudit: Date.now() - 1814400000,
-      evidence: ["encryption-audit-2026.pdf", "tls-cert-validation.pdf"],
-      owner: "Security Engineer",
-      dueDate: Date.now() + 5184000000,
-    },
-    {
-      id: "a.9.1",
-      name: "Physical and Environmental Security",
-      category: "Physical and Environmental Security",
-      status: "compliant",
-      lastAudit: Date.now() - 2419200000,
-      evidence: ["datacenter-audit.pdf", "access-card-log.csv"],
-      owner: "Facilities Manager",
-      dueDate: Date.now() + 7776000000,
-    },
-    {
-      id: "a.10.1",
-      name: "Communications and Operations Management",
-      category: "Communications and Operations",
-      status: "partial",
-      lastAudit: Date.now() - 604800000,
-      evidence: ["incident-response-plan.pdf", "backup-verification.pdf"],
-      owner: "Operations Manager",
-      dueDate: Date.now() + 1209600000,
-    },
-    {
-      id: "a.12.1",
-      name: "Information Systems Acquisition, Development and Maintenance",
-      category: "Information Systems Acquisition",
-      status: "compliant",
-      lastAudit: Date.now() - 1209600000,
-      evidence: ["sdlc-policy.pdf", "code-review-checklist.pdf"],
-      owner: "Development Lead",
-      dueDate: Date.now() + 3888000000,
-    },
-    {
-      id: "a.13.1",
-      name: "Information Security Incident Management",
-      category: "Information Security Incident Management",
-      status: "compliant",
-      lastAudit: Date.now() - 604800000,
-      evidence: ["incident-log-2026.pdf", "response-procedures.pdf"],
-      owner: "Security Manager",
-      dueDate: Date.now() + 2592000000,
-    },
-  ]);
+    onError: (e) => toast.error(e.message),
+  });
 
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [showEvidence, setShowEvidence] = useState<Set<string>>(new Set());
+  const filteredControls = controls.filter(c => {
+    const matchesStatus = filterStatus === "all" || c.status === filterStatus;
+    const matchesSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.controlId.toLowerCase().includes(search.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
-  const categories = [
-    "Organization of Information Security",
-    "Access Control",
-    "Cryptography",
-    "Physical and Environmental Security",
-    "Communications and Operations",
-    "Information Systems Acquisition",
-    "Information Security Incident Management",
-  ];
+  const groupedByClause = filteredControls.reduce((acc, ctrl) => {
+    if (!acc[ctrl.clause]) acc[ctrl.clause] = [];
+    acc[ctrl.clause].push(ctrl);
+    return acc;
+  }, {} as Record<string, typeof controls>);
 
-  const complianceStats = {
-    compliant: controls.filter((c) => c.status === "compliant").length,
-    partial: controls.filter((c) => c.status === "partial").length,
-    nonCompliant: controls.filter((c) => c.status === "non-compliant").length,
-    notApplicable: controls.filter((c) => c.status === "not-applicable").length,
-  };
-
-  const complianceScore = Math.round(
-    ((complianceStats.compliant + complianceStats.partial * 0.5) /
-      controls.length) *
-      100
-  );
-
-  const filteredControls =
-    selectedCategory === "all"
-      ? controls
-      : controls.filter((c) => c.category === selectedCategory);
-
-  const handleToggleEvidence = (id: string) => {
-    const newShowEvidence = new Set(showEvidence);
-    if (newShowEvidence.has(id)) {
-      newShowEvidence.delete(id);
-    } else {
-      newShowEvidence.add(id);
-    }
-    setShowEvidence(newShowEvidence);
-  };
-
-  const handleGenerateReport = () => {
-    const report = {
-      generatedAt: new Date().toISOString(),
-      complianceScore,
-      controls: filteredControls,
-      statistics: complianceStats,
-      certification: {
-        status: "In Progress",
-        auditDate: new Date(Date.now() + 7776000000).toISOString(),
-        auditor: "Big Four Auditing Firm",
-      },
-    };
-
-    const element = document.createElement("a");
-    const file = new Blob([JSON.stringify(report, null, 2)], {
-      type: "application/json",
-    });
-    element.href = URL.createObjectURL(file);
-    element.download = `iso-27001-report-${new Date().toISOString().split("T")[0]}.json`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-
-    toast.success("ISO 27001 report generated");
-  };
+  const scoreColor = !stats ? "text-slate-400" : stats.score >= 80 ? "text-emerald-400" : stats.score >= 60 ? "text-amber-400" : "text-red-400";
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">ISO 27001 Information Security</h1>
-        <p className="text-muted-foreground mt-1">
-          Information Security Management System (ISMS) compliance tracking
-        </p>
-      </div>
-
-      {/* Compliance Score */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Compliance Score</p>
-          <p className="text-3xl font-bold text-green-600">{complianceScore}%</p>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Compliant</p>
-          <p className="text-3xl font-bold text-green-600">
-            {complianceStats.compliant}
-          </p>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Partial</p>
-          <p className="text-3xl font-bold text-yellow-600">
-            {complianceStats.partial}
-          </p>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Non-Compliant</p>
-          <p className="text-3xl font-bold text-red-600">
-            {complianceStats.nonCompliant}
-          </p>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Total Controls</p>
-          <p className="text-3xl font-bold">{controls.length}</p>
-        </Card>
-      </div>
-
-      {/* Controls by Category */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Security Controls
-          </h2>
-          <Button onClick={handleGenerateReport} size="sm">
-            Generate Report
+    <div className="min-h-screen bg-background text-foreground p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-violet-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">ISO 27001 Compliance</h1>
+              <p className="text-sm text-muted-foreground">Annex A Controls — Information Security Management</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              utils.iso27001.getControls.invalidate();
+              utils.iso27001.getStats.invalidate();
+              utils.iso27001.getClauses.invalidate();
+            }}
+            className="gap-2"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </Button>
         </div>
 
-        <div className="mb-4">
-          <label className="text-sm font-medium mb-2 block">
-            Filter by Category
-          </label>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded bg-background text-sm"
-          >
-            <option value="all">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Score Cards */}
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Card className="p-4 col-span-2 md:col-span-1 flex flex-col items-center justify-center bg-card border-border">
+              <div className={`text-4xl font-bold ${scoreColor}`}>{stats.score}%</div>
+              <div className="text-xs text-muted-foreground mt-1">Readiness Score</div>
+            </Card>
+            <Card className="p-4 bg-card border-border">
+              <div className="text-2xl font-bold text-emerald-400">{stats.compliant}</div>
+              <div className="text-xs text-muted-foreground">Compliant</div>
+            </Card>
+            <Card className="p-4 bg-card border-border">
+              <div className="text-2xl font-bold text-amber-400">{stats.partial}</div>
+              <div className="text-xs text-muted-foreground">Partial</div>
+            </Card>
+            <Card className="p-4 bg-card border-border">
+              <div className="text-2xl font-bold text-red-400">{stats.nonCompliant}</div>
+              <div className="text-xs text-muted-foreground">Non-Compliant</div>
+            </Card>
+            <Card className="p-4 bg-card border-border">
+              <div className="text-2xl font-bold text-slate-400">{stats.total}</div>
+              <div className="text-xs text-muted-foreground">Total Controls</div>
+            </Card>
+          </div>
+        )}
 
-        <div className="space-y-3">
-          {filteredControls.map((control) => (
-            <div
-              key={control.id}
-              className="p-4 border border-border rounded-lg hover:bg-secondary/50 transition-colors"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-sm">{control.name}</h4>
-                    <span className="text-xs px-2 py-0.5 bg-secondary rounded font-mono">
-                      {control.id}
-                    </span>
-                    {control.status === "compliant" && (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    )}
-                    {control.status === "partial" && (
-                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                    )}
-                    {control.status === "non-compliant" && (
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
-                    )}
+        {/* Clause Progress */}
+        {clauses && clauses.length > 0 && (
+          <Card className="p-4 bg-card border-border">
+            <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Annex A Clause Breakdown</h2>
+            <div className="grid md:grid-cols-2 gap-2">
+              {clauses.map(cl => {
+                const pct = cl.total > 0 ? Math.round(((cl.compliant + cl.partial * 0.5) / cl.total) * 100) : 0;
+                return (
+                  <div key={cl.clause} className="flex items-center gap-3">
+                    <div className="w-36 text-xs text-muted-foreground truncate">{cl.clause}</div>
+                    <div className="flex-1 bg-secondary rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${pct >= 80 ? "bg-emerald-500" : pct >= 60 ? "bg-amber-500" : "bg-red-500"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground w-10 text-right">{pct}%</div>
+                    <div className="text-xs text-muted-foreground w-12 text-right">{cl.compliant}/{cl.total}</div>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {control.category}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Owner: {control.owner}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p
-                    className={`text-xs font-semibold px-2 py-1 rounded ${
-                      control.status === "compliant"
-                        ? "bg-green-500/20 text-green-600"
-                        : control.status === "partial"
-                        ? "bg-yellow-500/20 text-yellow-600"
-                        : "bg-red-500/20 text-red-600"
-                    }`}
+                );
+              })}
+            </div>
+          </Card>
+        )}
+
+        {/* Search + Filter */}
+        <div className="flex gap-3 flex-wrap items-center">
+          <div className="relative flex-1 min-w-48">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search controls..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8 h-8 text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            {["all", "compliant", "partial", "non_compliant"].map(s => (
+              <Button
+                key={s}
+                variant={filterStatus === s ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterStatus(s)}
+              >
+                {s === "all" ? "All" : s === "non_compliant" ? "Non-Compliant" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Controls by Clause */}
+        {isLoading ? (
+          <div className="text-center py-12 text-muted-foreground">Loading controls...</div>
+        ) : (
+          <div className="space-y-3">
+            {Object.entries(groupedByClause).map(([clause, clauseControls]) => {
+              const isExpanded = expandedClause === clause;
+              return (
+                <Card key={clause} className="bg-card border-border overflow-hidden">
+                  <button
+                    className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors text-left"
+                    onClick={() => setExpandedClause(isExpanded ? null : clause)}
                   >
-                    {control.status}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Last audit:{" "}
-                    {Math.round((Date.now() - control.lastAudit) / 86400000)}d ago
-                  </p>
-                </div>
-              </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-sm">{clause}</span>
+                      <div className="flex gap-1">
+                        {clauseControls.filter(c => c.status === "compliant").length > 0 && (
+                          <span className="text-xs bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded">
+                            {clauseControls.filter(c => c.status === "compliant").length} ✓
+                          </span>
+                        )}
+                        {clauseControls.filter(c => c.status === "partial").length > 0 && (
+                          <span className="text-xs bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded">
+                            {clauseControls.filter(c => c.status === "partial").length} ~
+                          </span>
+                        )}
+                        {clauseControls.filter(c => c.status === "non_compliant").length > 0 && (
+                          <span className="text-xs bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded">
+                            {clauseControls.filter(c => c.status === "non_compliant").length} ✗
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                  </button>
 
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleToggleEvidence(control.id)}
-                  className="flex items-center gap-1"
-                >
-                  <FileText className="h-3 w-3" />
-                  {showEvidence.has(control.id)
-                    ? "Hide Evidence"
-                    : `Show Evidence (${control.evidence.length})`}
-                </Button>
-              </div>
-
-              {showEvidence.has(control.id) && (
-                <div className="mt-3 p-3 bg-secondary rounded text-xs">
-                  <p className="font-semibold mb-2">Evidence:</p>
-                  <ul className="space-y-1">
-                    {control.evidence.map((file, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
-                        <FileText className="h-3 w-3 text-muted-foreground" />
-                        {file}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Key Security Areas */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <Lock className="h-4 w-4" />
-            Access Control
-          </h2>
-
-          <div className="space-y-3 text-sm">
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Role-Based Access Control (RBAC)</p>
-                <p className="text-muted-foreground">
-                  Admin, Operator, Moderator, User roles with granular permissions
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Multi-Factor Authentication</p>
-                <p className="text-muted-foreground">
-                  MFA required for all admin and operator accounts
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Session Management</p>
-                <p className="text-muted-foreground">
-                  Automatic logout after 30 minutes of inactivity
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Privileged Access Management</p>
-                <p className="text-muted-foreground">
-                  All admin actions logged and require approval
-                </p>
-              </div>
-            </div>
+                  {isExpanded && (
+                    <div className="border-t border-border divide-y divide-border">
+                      {clauseControls.map(ctrl => {
+                        const cfg = STATUS_CONFIG[ctrl.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.non_compliant;
+                        const Icon = cfg.icon;
+                        return (
+                          <div key={ctrl.id} className="p-4 flex items-start gap-4">
+                            <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${cfg.iconClass}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-mono text-muted-foreground">{ctrl.controlId}</span>
+                                <span className="text-sm font-medium">{ctrl.name}</span>
+                              </div>
+                              {ctrl.description && (
+                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{ctrl.description}</p>
+                              )}
+                              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                {ctrl.ownerName && (
+                                  <span className="text-xs text-muted-foreground">Owner: {ctrl.ownerName}</span>
+                                )}
+                                {ctrl.testingFrequency && (
+                                  <span className="text-xs text-muted-foreground">Testing: {ctrl.testingFrequency}</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Badge className={`text-xs border ${cfg.color}`}>{cfg.label}</Badge>
+                              <select
+                                className="text-xs bg-secondary border border-border rounded px-2 py-1 text-foreground"
+                                value={ctrl.status}
+                                onChange={(e) => updateMutation.mutate({
+                                  id: ctrl.id,
+                                  status: e.target.value as "compliant" | "partial" | "non_compliant" | "not_applicable",
+                                })}
+                              >
+                                <option value="compliant">Compliant</option>
+                                <option value="partial">Partial</option>
+                                <option value="non_compliant">Non-Compliant</option>
+                                <option value="not_applicable">N/A</option>
+                              </select>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
           </div>
-        </Card>
-
-        <Card className="p-6">
-          <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <Key className="h-4 w-4" />
-            Encryption & Cryptography
-          </h2>
-
-          <div className="space-y-3 text-sm">
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">TLS 1.3 Encryption in Transit</p>
-                <p className="text-muted-foreground">
-                  All data encrypted during transmission
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">AES-256 Encryption at Rest</p>
-                <p className="text-muted-foreground">
-                  Database and file storage encrypted
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Key Management</p>
-                <p className="text-muted-foreground">
-                  Keys rotated annually, stored in HSM
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">HMAC-SHA256 Signatures</p>
-                <p className="text-muted-foreground">
-                  Webhook and API requests signed
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
+        )}
       </div>
-
-      {/* Certification Status */}
-      <Card className="p-6">
-        <h2 className="font-semibold mb-4 flex items-center gap-2">
-          <BarChart3 className="h-4 w-4" />
-          Certification Status
-        </h2>
-
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="p-4 border border-border rounded">
-            <p className="font-semibold mb-2">ISO 27001 Certification</p>
-            <p className="text-sm text-muted-foreground mb-3">
-              Information Security Management System
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-4 w-4 text-yellow-600" />
-              <span className="text-sm font-semibold">In Progress</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Audit scheduled: Q2 2026
-            </p>
-          </div>
-
-          <div className="p-4 border border-border rounded">
-            <p className="font-semibold mb-2">SOC 2 Type II</p>
-            <p className="text-sm text-muted-foreground mb-3">
-              Security, Availability, Processing Integrity
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-4 w-4 text-yellow-600" />
-              <span className="text-sm font-semibold">In Progress</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Audit scheduled: Q3 2026
-            </p>
-          </div>
-
-          <div className="p-4 border border-border rounded">
-            <p className="font-semibold mb-2">GDPR Compliance</p>
-            <p className="text-sm text-muted-foreground mb-3">
-              Data Protection & Privacy
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-semibold">Compliant</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Last audit: Q4 2025
-            </p>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

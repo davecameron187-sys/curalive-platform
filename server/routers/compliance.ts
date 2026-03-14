@@ -3,6 +3,10 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { complianceFlags, complianceAuditLog, complianceCertificates } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { generateComplianceCertificatePdf } from "../compliancePdf";
+import { storagePut } from "../storage";
+import { invokeLLM } from "../_core/llm";
+import { soc2Controls, iso27001Controls } from "../../drizzle/schema";
 
 async function callForgeAI(prompt: string): Promise<string> {
   const apiKey = process.env.BUILT_IN_FORGE_API_KEY;
@@ -142,10 +146,33 @@ Focus on: earnings guidance, forward-looking statements, material facts, selecti
         .where(eq(complianceFlags.eventId, input.eventId));
 
       const certId = `CERT-${input.eventId}-${Date.now()}`;
+
+      // Generate real PDF and upload to S3
+      let pdfUrl = `/api/compliance/certificates/${certId}.pdf`;
+      try {
+        const pdfBuffer = await generateComplianceCertificatePdf({
+          eventId: input.eventId,
+          eventTitle: input.eventTitle ?? input.eventId,
+          eventDate: new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" }),
+          companyName: "Chorus Call Inc.",
+          certType: "REGULATORY",
+          certId,
+          issuedAt: new Date().toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" }),
+          reviewedBy: ctx.user.name ?? String(ctx.user.id),
+          flaggedStatements: flags.length,
+          approvedStatements: flags.filter(f => f.complianceStatus === "approved").length,
+        });
+        const s3Key = `compliance-certs/${certId}.pdf`;
+        const uploaded = await storagePut(s3Key, pdfBuffer, "application/pdf");
+        pdfUrl = uploaded.url;
+      } catch (pdfErr) {
+        console.error("[Compliance] PDF generation failed, using fallback URL:", pdfErr);
+      }
+
       await db.insert(complianceCertificates).values({
         eventId: input.eventId,
         certificateId: certId,
-        pdfUrl: `/api/compliance/certificates/${certId}.pdf`, // Mock URL
+        pdfUrl,
         generatedBy: ctx.user.id,
         generatedAt: new Date(),
       });
@@ -170,6 +197,116 @@ Focus on: earnings guidance, forward-looking statements, material facts, selecti
         })),
       };
       return { certificate: cert };
+    }),
+
+  generateGapAnalysis: protectedProcedure
+    .input(z.object({ frameworks: z.array(z.enum(["SOC2", "ISO27001", "BOTH"])).default(["BOTH"]) }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // Fetch real control data from DB
+      const soc2Rows = await db.select().from(soc2Controls);
+      const iso27001Rows = await db.select().from(iso27001Controls);
+
+      const soc2Stats = {
+        total: soc2Rows.length,
+        compliant: soc2Rows.filter(r => r.status === "compliant").length,
+        partial: soc2Rows.filter(r => r.status === "partial").length,
+        nonCompliant: soc2Rows.filter(r => r.status === "non_compliant").length,
+        gaps: soc2Rows.filter(r => r.status === "non_compliant" || r.status === "partial"),
+      };
+
+      const iso27001Stats = {
+        total: iso27001Rows.length,
+        compliant: iso27001Rows.filter(r => r.status === "compliant").length,
+        partial: iso27001Rows.filter(r => r.status === "partial").length,
+        nonCompliant: iso27001Rows.filter(r => r.status === "non_compliant").length,
+        gaps: iso27001Rows.filter(r => r.status === "non_compliant" || r.status === "partial"),
+      };
+
+      const soc2Score = soc2Stats.total > 0 ? Math.round(((soc2Stats.compliant + soc2Stats.partial * 0.5) / soc2Stats.total) * 100) : 0;
+      const iso27001Score = iso27001Stats.total > 0 ? Math.round(((iso27001Stats.compliant + iso27001Stats.partial * 0.5) / iso27001Stats.total) * 100) : 0;
+
+      // Build gap summary for LLM
+      const soc2GapSummary = soc2Stats.gaps.slice(0, 15).map(g =>
+        `[${g.status.toUpperCase()}] ${g.category} — ${g.name}`
+      ).join("\n");
+
+      const iso27001GapSummary = iso27001Stats.gaps.slice(0, 15).map(g =>
+        `[${g.status.toUpperCase()}] ${g.clause} — ${g.name}`
+      ).join("\n");
+
+      // Ask LLM for prioritised remediation roadmap
+      let roadmap: any[] = [];
+      try {
+        const llmResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: "You are a compliance expert specialising in SOC 2 Type II and ISO 27001. Generate a concise, prioritised remediation roadmap based on the gap data provided. Return ONLY valid JSON.",
+            },
+            {
+              role: "user",
+              content: `Generate a prioritised remediation roadmap for the following compliance gaps.
+
+SOC 2 Score: ${soc2Score}% (${soc2Stats.nonCompliant} non-compliant, ${soc2Stats.partial} partial out of ${soc2Stats.total} controls)
+Top SOC 2 Gaps:
+${soc2GapSummary || "No gaps identified"}
+
+ISO 27001 Score: ${iso27001Score}% (${iso27001Stats.nonCompliant} non-compliant, ${iso27001Stats.partial} partial out of ${iso27001Stats.total} controls)
+Top ISO 27001 Gaps:
+${iso27001GapSummary || "No gaps identified"}
+
+Return a JSON array of up to 8 remediation items:
+[{
+  "priority": "critical|high|medium|low",
+  "framework": "SOC2|ISO27001|BOTH",
+  "title": "short action title",
+  "description": "what needs to be done",
+  "estimatedEffort": "1 week|2 weeks|1 month|3 months",
+  "impact": "what compliance improvement this achieves"
+}]`,
+            },
+          ],
+        });
+        const raw = llmResponse?.choices?.[0]?.message?.content ?? "[]";
+        const jsonMatch = raw.match(/\[.*\]/s);
+        if (jsonMatch) roadmap = JSON.parse(jsonMatch[0]);
+      } catch (err) {
+        console.error("[GapAnalysis] LLM call failed:", err);
+      }
+
+      return {
+        generatedAt: new Date().toISOString(),
+        soc2: {
+          score: soc2Score,
+          total: soc2Stats.total,
+          compliant: soc2Stats.compliant,
+          partial: soc2Stats.partial,
+          nonCompliant: soc2Stats.nonCompliant,
+          topGaps: soc2Stats.gaps.slice(0, 10).map(g => ({
+            id: g.id,
+            name: g.name,
+            category: g.category,
+            status: g.status,
+          })),
+        },
+        iso27001: {
+          score: iso27001Score,
+          total: iso27001Stats.total,
+          compliant: iso27001Stats.compliant,
+          partial: iso27001Stats.partial,
+          nonCompliant: iso27001Stats.nonCompliant,
+          topGaps: iso27001Stats.gaps.slice(0, 10).map(g => ({
+            id: g.id,
+            name: g.name,
+            clause: g.clause,
+            status: g.status,
+          })),
+        },
+        roadmap,
+      };
     }),
 
   getAuditLog: protectedProcedure
