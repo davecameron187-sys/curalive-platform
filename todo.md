@@ -2128,3 +2128,36 @@
 - [x] Added /onboarding route to App.tsx
 - [x] Deleted 4 backup OCC files: OCC.backup.tsx, OCC_CORRECTED.tsx, OCC_REDESIGNED.tsx, OCC_TABS.tsx
 - [x] Fixed duplicate SecurityMetricsAPI import in App.tsx
+
+## Round 67 — Follow-Up Improvements
+
+### Event Password Protection
+- [ ] Add access_code field to events DB schema
+- [ ] Add server-side validation in registrations.register procedure
+- [ ] Add access code input to Registration.tsx
+- [ ] Show error if wrong code entered
+
+### Silence / Anomaly Detector
+- [ ] Add useAudioSilenceDetector hook (Web Audio API, 10s gap threshold)
+- [ ] Wire into OperatorConsole.tsx with amber/red alert banner
+- [ ] Add dismiss button and alert log
+
+### AI Press Release Draft
+- [ ] Add pressRelease.generate tRPC procedure using LLM + transcript
+- [ ] Add "Draft Press Release" button to PostEvent.tsx
+- [ ] Show loading state and rendered markdown output with copy/download
+
+### Auth Guard & First-Run CTA
+- [ ] Add auth guard to /onboarding route (redirect to login if unauthenticated)
+- [ ] Add first-run "Complete your setup" CTA banner to Home.tsx when profile.organisation is empty
+
+## Round 67 — Follow-Up Improvements (Sanity Check Phase 1 Fixes)
+
+- [x] Confirm Presenter.tsx already wired to AblyContext (no fix needed)
+- [x] Confirm event password protection already implemented in Registration.tsx + routers
+- [x] Confirm silence/anomaly detector already in OperatorConsole.tsx
+- [x] Add pressRelease.generate tRPC procedure to routers.eager.ts (LLM-powered SENS/RNS draft)
+- [x] Add "Draft Press Release" button and panel to PostEvent.tsx (copy + download)
+- [x] Add auth guard (useEffect redirect) to OnboardingFlow.tsx
+- [x] Add first-run "Complete your setup" CTA banner to Home.tsx
+- [x] All 760 tests passing (49 suites)

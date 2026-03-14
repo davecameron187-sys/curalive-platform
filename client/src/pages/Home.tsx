@@ -50,6 +50,9 @@ export default function Home() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
 
+  // Show first-run CTA if logged in but organisation not yet configured
+  const showSetupCTA = isAuthenticated && user && !(user as { organisation?: string }).organisation;
+
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
       {/* Header */}
@@ -105,6 +108,25 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* First-Run Setup CTA Banner */}
+      {showSetupCTA && (
+        <div className="fixed top-16 left-0 right-0 z-40 bg-primary/10 border-b border-primary/20 px-4 py-2.5">
+          <div className="container flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5 text-sm">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse inline-block"></span>
+              <span className="font-semibold text-primary">Welcome to CuraLive!</span>
+              <span className="text-muted-foreground hidden sm:inline" style={{ fontFamily: "'Inter', sans-serif" }}>Complete your organisation setup to unlock all features.</span>
+            </div>
+            <button
+              onClick={() => navigate("/onboarding")}
+              className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity whitespace-nowrap"
+            >
+              Complete setup &rarr;
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       <section className="relative pt-16 min-h-[85vh] flex items-center overflow-hidden">

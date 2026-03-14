@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,9 +19,16 @@ interface OnboardingStep {
 }
 
 export default function OnboardingFlow() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
+
+  // Auth guard: redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/");
+    }
+  }, [user, loading, navigate]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateProfile = trpc.profile.update.useMutation({
