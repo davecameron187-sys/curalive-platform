@@ -149,6 +149,9 @@ import ComplianceGapAnalysis from "./pages/ComplianceGapAnalysis";
 import IncidentResponseAutomation from "./pages/IncidentResponseAutomation";
 import RealTimeAlertsDashboard from "./pages/RealTimeAlertsDashboard";
 import SecurityComplianceAutomation from "./pages/SecurityComplianceAutomation";
+import DashboardAnalytics from "./pages/DashboardAnalytics";
+import SIEMIntegration from "./pages/SIEMIntegration";
+import ThreatResponseWorkflows from "./pages/ThreatResponseWorkflows";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -281,6 +284,9 @@ function Router() {
       <Route path="/security/response-automation" component={IncidentResponseAutomation} />
       <Route path="/security/alerts" component={RealTimeAlertsDashboard} />
       <Route path="/security/compliance-automation" component={SecurityComplianceAutomation} />
+      <Route path="/security/analytics" component={DashboardAnalytics} />
+      <Route path="/security/siem" component={SIEMIntegration} />
+      <Route path="/security/threat-workflows" component={ThreatResponseWorkflows} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
