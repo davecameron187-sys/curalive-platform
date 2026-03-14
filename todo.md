@@ -1149,3 +1149,29 @@
 
 ### Stripe Payment Processing
 - [DEFERRED] Stripe integration deferred - focus on Ably real-time only
+
+
+## Round 36 — Database Wiring, Real-Time Q&A, & Sentiment Visualization
+
+### Wire Database to Bookings Page
+- [x] Create BookingsEnhanced component with database persistence
+- [x] Wire event creation to persistence.postEvent.save mutation
+- [x] Subscribe to events:updates Ably channel for real-time sync
+- [x] Display persisted events with loading states and error handling
+- [x] Add event deletion functionality
+
+### Real-Time Q&A Moderation
+- [x] Create RealtimeQaModeration component with Ably integration
+- [x] Subscribe to occ:qa:{conferenceId} channel for incoming questions
+- [x] Display incoming Q&A questions in real-time with selection
+- [x] Wire approval/rejection buttons to publish qa.approved/qa.rejected events
+- [x] Add toast notifications for Q&A updates
+- [x] Track approved and rejected questions separately
+
+### Sentiment Trend Visualization
+- [x] Create SentimentTrendChart component with SVG sparkline
+- [x] Subscribe to occ:sentiment:{conferenceId} channel
+- [x] Display live sentiment score with historical trend line
+- [x] Add keyword highlights and trend direction indicators
+- [x] Implement rolling 60-point data window
+- [x] Add sentiment gauge visualization
