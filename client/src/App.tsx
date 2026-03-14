@@ -128,6 +128,9 @@ import SecurityPostureBenchmarking from "./pages/SecurityPostureBenchmarking";
 import SecurityIncidentManagement from "./pages/SecurityIncidentManagement";
 import ComplianceAuditTrail from "./pages/ComplianceAuditTrail";
 import SecurityTrainingAwareness from "./pages/SecurityTrainingAwareness";
+import SecurityVulnerabilityManagement from "./pages/SecurityVulnerabilityManagement";
+import IdentityAccessManagement from "./pages/IdentityAccessManagement";
+import SecurityOrchestrationResponse from "./pages/SecurityOrchestrationResponse";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -239,6 +242,9 @@ function Router() {
       <Route path="/security/incidents" component={SecurityIncidentManagement} />
       <Route path="/security/audit-trail" component={ComplianceAuditTrail} />
       <Route path="/security/training" component={SecurityTrainingAwareness} />
+      <Route path="/security/vulnerabilities" component={SecurityVulnerabilityManagement} />
+      <Route path="/security/iam" component={IdentityAccessManagement} />
+      <Route path="/security/soar" component={SecurityOrchestrationResponse} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
