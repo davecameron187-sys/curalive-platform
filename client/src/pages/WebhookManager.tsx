@@ -314,7 +314,7 @@ export default function WebhookManager() {
                         <Clock className="h-3 w-3" />
                       )}
                       {endpoint.deliveryStatus}
-                    </span>
+                    </div>
                   </div>
 
                   <div className="mb-3 p-2 bg-secondary rounded text-xs">
