@@ -140,6 +140,9 @@ import SecurityMetricsAPI from "./pages/SecurityMetricsAPI";
 import SecurityGovernanceDashboard from "./pages/SecurityGovernanceDashboard";
 import ContinuousSecurityMonitoring from "./pages/ContinuousSecurityMonitoring";
 import SecurityVendorEcosystem from "./pages/SecurityVendorEcosystem";
+import SecurityDashboardsIntegration from "./pages/SecurityDashboardsIntegration";
+import AutomatedIncidentResponse from "./pages/AutomatedIncidentResponse";
+import SecurityMetricsExport from "./pages/SecurityMetricsExport";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -263,6 +266,9 @@ function Router() {
       <Route path="/security/governance" component={SecurityGovernanceDashboard} />
       <Route path="/security/monitoring" component={ContinuousSecurityMonitoring} />
       <Route path="/security/vendors" component={SecurityVendorEcosystem} />
+      <Route path="/security/dashboards" component={SecurityDashboardsIntegration} />
+      <Route path="/security/incident-response" component={AutomatedIncidentResponse} />
+      <Route path="/security/export" component={SecurityMetricsExport} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
