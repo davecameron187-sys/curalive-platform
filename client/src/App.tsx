@@ -113,6 +113,9 @@ import InvestorQuestionIntelligence from "./pages/InvestorQuestionIntelligence";
 import IntelligenceReportPage from "./pages/IntelligenceReport";
 import CallPreparation from "./pages/CallPreparation";
 import IntelligenceTerminal from "./pages/IntelligenceTerminal";
+import CICDSecurityDashboard from "./pages/CICDSecurityDashboard";
+import PolicyManagementDashboard from "./pages/PolicyManagementDashboard";
+import VendorRiskDashboard from "./pages/VendorRiskDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -209,6 +212,9 @@ function Router() {
       <Route path="/intelligence-report" component={IntelligenceReportPage} />
       <Route path="/call-preparation" component={CallPreparation} />
       <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
+      <Route path="/security/cicd" component={CICDSecurityDashboard} />
+      <Route path="/security/policies" component={PolicyManagementDashboard} />
+      <Route path="/security/vendors" component={VendorRiskDashboard} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
