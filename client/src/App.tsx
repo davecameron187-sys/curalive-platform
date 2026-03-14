@@ -131,6 +131,9 @@ import SecurityTrainingAwareness from "./pages/SecurityTrainingAwareness";
 import SecurityVulnerabilityManagement from "./pages/SecurityVulnerabilityManagement";
 import IdentityAccessManagement from "./pages/IdentityAccessManagement";
 import SecurityOrchestrationResponse from "./pages/SecurityOrchestrationResponse";
+import AdvancedThreatHunting from "./pages/AdvancedThreatHunting";
+import ExecutiveSecurityMetrics from "./pages/ExecutiveSecurityMetrics";
+import AutomatedComplianceReporting from "./pages/AutomatedComplianceReporting";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -245,6 +248,9 @@ function Router() {
       <Route path="/security/vulnerabilities" component={SecurityVulnerabilityManagement} />
       <Route path="/security/iam" component={IdentityAccessManagement} />
       <Route path="/security/soar" component={SecurityOrchestrationResponse} />
+      <Route path="/security/threat-hunting" component={AdvancedThreatHunting} />
+      <Route path="/security/executive-metrics" component={ExecutiveSecurityMetrics} />
+      <Route path="/security/compliance-reporting" component={AutomatedComplianceReporting} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
