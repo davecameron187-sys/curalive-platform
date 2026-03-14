@@ -1202,3 +1202,30 @@
 - [x] Show compliance scores and engagement metrics
 - [x] Add transcript display with keyword extraction
 - [x] Implement downloadable transcript feature with copy-to-clipboard
+
+
+## Round 38 — RBAC, Event Replay, & Admin Dashboard
+
+### Role-Based Access Control
+- [x] Create rbac.ts router with role hierarchy and middleware
+- [x] Implement adminProcedure, operatorProcedure, moderatorProcedure
+- [x] Add hasRole() utility function for permission checking
+- [x] Create tRPC procedures: getCurrentRole, hasRole, getPermissions, getAllUsers, updateUserRole
+- [x] Add role-based permission matrix for UI features
+- [x] Implement role statistics endpoint for admin dashboard
+
+### Event Replay & Playback
+- [x] Create EventReplayPlayer component with video controls
+- [x] Implement timestamp-based transcript navigation with sync
+- [x] Add playback speed controls (0.5x, 1x, 1.5x, 2x)
+- [x] Wire sentiment data to timeline with color-coded visualization
+- [x] Implement Q&A overlay with clickable markers on timeline
+- [x] Add volume control, fullscreen, and time display
+
+### Admin Dashboard
+- [x] Create AdminDashboard page with comprehensive analytics
+- [x] Display total events (156), participants (12.8K), engagement (78%), compliance (94%)
+- [x] Add compliance trend visualization with 7-day chart
+- [x] Implement date range filters (week, month, year)
+- [x] Create JSON export functionality for reports
+- [x] Add user management with role statistics and system health monitoring
