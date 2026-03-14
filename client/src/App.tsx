@@ -116,6 +116,9 @@ import IntelligenceTerminal from "./pages/IntelligenceTerminal";
 import CICDSecurityDashboard from "./pages/CICDSecurityDashboard";
 import PolicyManagementDashboard from "./pages/PolicyManagementDashboard";
 import VendorRiskDashboard from "./pages/VendorRiskDashboard";
+import SecurityAuditAutomation from "./pages/SecurityAuditAutomation";
+import ComplianceReportingDashboard from "./pages/ComplianceReportingDashboard";
+import ExternalToolsIntegration from "./pages/ExternalToolsIntegration";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -215,6 +218,9 @@ function Router() {
       <Route path="/security/cicd" component={CICDSecurityDashboard} />
       <Route path="/security/policies" component={PolicyManagementDashboard} />
       <Route path="/security/vendors" component={VendorRiskDashboard} />
+      <Route path="/security/audit-automation" component={SecurityAuditAutomation} />
+      <Route path="/security/compliance-reporting" component={ComplianceReportingDashboard} />
+      <Route path="/security/external-tools" component={ExternalToolsIntegration} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
