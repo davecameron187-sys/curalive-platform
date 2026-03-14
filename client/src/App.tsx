@@ -157,6 +157,9 @@ import RealTimeSecurityDashboards from "./pages/RealTimeSecurityDashboards";
 import PlaybookLibrary from "./pages/PlaybookLibrary";
 import RiskForecastingEngine from "./pages/RiskForecastingEngine";
 import ComplianceAutomationWorkflows from "./pages/ComplianceAutomationWorkflows";
+import BenchmarkingDashboard from "./pages/BenchmarkingDashboard";
+import IncidentResponseAutomationEngine from "./pages/IncidentResponseAutomationEngine";
+import SecurityTrainingAwarenessPlat from "./pages/SecurityTrainingAwarenessPlat";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -298,6 +301,9 @@ function Router() {
       <Route path="/security/threat-hunting" component={AdvancedThreatHunting} />
       <Route path="/security/risk-forecasting" component={RiskForecastingEngine} />
       <Route path="/security/compliance-automation" component={ComplianceAutomationWorkflows} />
+      <Route path="/security/benchmarking" component={BenchmarkingDashboard} />
+      <Route path="/security/incident-automation" component={IncidentResponseAutomationEngine} />
+      <Route path="/security/training" component={SecurityTrainingAwarenessPlat} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
