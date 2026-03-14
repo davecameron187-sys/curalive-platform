@@ -2689,5 +2689,6 @@ export const complianceEvidenceFiles = mysqlTable("compliance_evidence_files", {
   mimeType: varchar("mime_type", { length: 100 }),
   uploadedBy: int("uploaded_by"),
   uploadedAt: bigint("uploaded_at", { mode: "number" }).notNull(),
+  expiresAt: bigint("expires_at", { mode: "number" }),
 });
 export type ComplianceEvidenceFile = typeof complianceEvidenceFiles.$inferSelect;

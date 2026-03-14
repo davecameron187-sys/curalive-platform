@@ -31,6 +31,9 @@ import {
   Upload,
   Trash2,
   ExternalLink,
+  FileDown,
+  FileUp,
+  Calendar,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -109,6 +112,7 @@ function OwnerDialog({ control, onClose }: { control: any; onClose: () => void }
 // ─── Evidence Upload Panel ────────────────────────────────────────────────────
 function EvidencePanel({ controlDbId }: { controlDbId: number }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [expiryDate, setExpiryDate] = useState("");
   const utils = trpc.useUtils();
 
   const { data: files = [], isLoading } = trpc.iso27001.getEvidenceFiles.useQuery({ controlId: controlDbId });
@@ -117,6 +121,7 @@ function EvidencePanel({ controlDbId }: { controlDbId: number }) {
     onSuccess: () => {
       utils.iso27001.getEvidenceFiles.invalidate({ controlId: controlDbId });
       toast.success("Evidence uploaded");
+      setExpiryDate("");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -141,6 +146,7 @@ function EvidencePanel({ controlDbId }: { controlDbId: number }) {
         fileName: file.name,
         fileBase64: base64,
         mimeType: file.type || "application/octet-stream",
+        expiresAt: expiryDate ? new Date(expiryDate).getTime() : undefined,
       });
     };
     reader.readAsDataURL(file);
@@ -149,20 +155,33 @@ function EvidencePanel({ controlDbId }: { controlDbId: number }) {
 
   return (
     <div className="mt-3 pt-3 border-t border-border">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
           <Paperclip className="w-3 h-3" /> Evidence Files
         </span>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-6 text-xs px-2 gap-1"
-          onClick={() => fileRef.current?.click()}
-          disabled={uploadMutation.isPending}
-        >
-          {uploadMutation.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-          Upload
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-muted-foreground" />
+            <input
+              type="date"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              className="text-xs bg-secondary border border-border rounded px-1.5 py-0.5 text-foreground h-6"
+              title="Evidence expiry date (optional)"
+              min={new Date().toISOString().slice(0, 10)}
+            />
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 text-xs px-2 gap-1"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploadMutation.isPending}
+          >
+            {uploadMutation.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+            Upload
+          </Button>
+        </div>
         <input
           ref={fileRef}
           type="file"
@@ -177,9 +196,12 @@ function EvidencePanel({ controlDbId }: { controlDbId: number }) {
         <div className="text-xs text-muted-foreground italic">No evidence files attached yet</div>
       ) : (
         <div className="space-y-1">
-          {(files as any[]).map((f: any) => (
+          {(files as any[]).map((f: any) => {
+            const isExpired = f.expiresAt && f.expiresAt < Date.now();
+            const isExpiringSoon = f.expiresAt && !isExpired && f.expiresAt < Date.now() + 30 * 24 * 60 * 60 * 1000;
+            return (
             <div key={f.id} className="flex items-center gap-2 text-xs">
-              <Paperclip className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+              <Paperclip className={`w-3 h-3 flex-shrink-0 ${isExpired ? "text-red-400" : isExpiringSoon ? "text-amber-400" : "text-muted-foreground"}`} />
               <a
                 href={f.fileUrl}
                 target="_blank"
@@ -188,6 +210,12 @@ function EvidencePanel({ controlDbId }: { controlDbId: number }) {
               >
                 {f.fileName} <ExternalLink className="w-2.5 h-2.5 flex-shrink-0" />
               </a>
+              {f.expiresAt && (
+                <span className={`flex-shrink-0 flex items-center gap-0.5 ${isExpired ? "text-red-400" : isExpiringSoon ? "text-amber-400" : "text-muted-foreground"}`}>
+                  <Calendar className="w-2.5 h-2.5" />
+                  {isExpired ? "Exp." : "Exp"} {new Date(f.expiresAt).toLocaleDateString()}
+                </span>
+              )}
               <span className="text-muted-foreground flex-shrink-0">
                 {new Date(f.uploadedAt).toLocaleDateString()}
               </span>
@@ -199,10 +227,90 @@ function EvidencePanel({ controlDbId }: { controlDbId: number }) {
                 <Trash2 className="w-3 h-3" />
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Bulk CSV Import Dialog ───────────────────────────────────────────────────
+function BulkImportDialog({ onClose }: { onClose: () => void }) {
+  const [result, setResult] = useState<{ updated: number; skipped: number; errors: string[]; total: number } | null>(null);
+  const utils = trpc.useUtils();
+
+  const importMutation = trpc.iso27001.bulkImportCSV.useMutation({
+    onSuccess: (data) => {
+      setResult(data);
+      utils.iso27001.getControls.invalidate();
+      utils.iso27001.getStats.invalidate();
+      utils.iso27001.getClauses.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = btoa(reader.result as string);
+      importMutation.mutate({ csvBase64: base64 });
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = "";
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-base flex items-center gap-2"><FileUp className="w-4 h-4" /> Bulk Import ISO 27001 Statuses</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2 text-sm">
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Upload a CSV with columns: <code className="bg-secondary px-1 rounded">control_id</code>, <code className="bg-secondary px-1 rounded">status</code> (required), and optionally <code className="bg-secondary px-1 rounded">owner_name</code>, <code className="bg-secondary px-1 rounded">notes</code>.
+            Valid statuses: <code className="bg-secondary px-1 rounded">compliant</code>, <code className="bg-secondary px-1 rounded">partial</code>, <code className="bg-secondary px-1 rounded">non_compliant</code>, <code className="bg-secondary px-1 rounded">not_applicable</code>.
+          </p>
+          {!result ? (
+            <label className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-6 cursor-pointer hover:border-primary/50 transition-colors">
+              <FileUp className="w-8 h-8 text-muted-foreground mb-2" />
+              <span className="text-xs text-muted-foreground">{importMutation.isPending ? "Processing..." : "Click to select CSV file"}</span>
+              <input type="file" accept=".csv" className="hidden" onChange={handleFile} disabled={importMutation.isPending} />
+            </label>
+          ) : (
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-emerald-500/10 rounded p-2 text-center">
+                  <div className="text-lg font-bold text-emerald-400">{result.updated}</div>
+                  <div className="text-xs text-muted-foreground">Updated</div>
+                </div>
+                <div className="bg-amber-500/10 rounded p-2 text-center">
+                  <div className="text-lg font-bold text-amber-400">{result.skipped}</div>
+                  <div className="text-xs text-muted-foreground">Skipped</div>
+                </div>
+                <div className="bg-secondary rounded p-2 text-center">
+                  <div className="text-lg font-bold">{result.total}</div>
+                  <div className="text-xs text-muted-foreground">Total Rows</div>
+                </div>
+              </div>
+              {result.errors.length > 0 && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded p-2">
+                  <div className="text-xs font-medium text-red-400 mb-1">Errors ({result.errors.length}):</div>
+                  <div className="space-y-0.5 max-h-24 overflow-y-auto">
+                    {result.errors.map((err, i) => <div key={i} className="text-xs text-red-300">{err}</div>)}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>{result ? "Close" : "Cancel"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -213,6 +321,7 @@ export default function ISO27001Dashboard() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [ownerDialogControl, setOwnerDialogControl] = useState<any>(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -256,6 +365,17 @@ export default function ISO27001Dashboard() {
     return acc;
   }, {});
 
+  const exportMutation = trpc.iso27001.exportAuditZip.useMutation({
+    onSuccess: (data) => {
+      const a = document.createElement("a");
+      a.href = data.url;
+      a.download = data.fileName;
+      a.click();
+      toast.success(`Audit pack downloaded (${data.controlCount} controls, ${data.evidenceCount} evidence files)`);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const scoreColor = !stats ? "text-slate-400" : (stats as any).score >= 80 ? "text-emerald-400" : (stats as any).score >= 60 ? "text-amber-400" : "text-red-400";
 
   return (
@@ -263,7 +383,7 @@ export default function ISO27001Dashboard() {
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
               <Shield className="w-5 h-5 text-violet-400" />
@@ -273,18 +393,38 @@ export default function ISO27001Dashboard() {
               <p className="text-sm text-muted-foreground">Annex A Controls — Information Security Management</p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              utils.iso27001.getControls.invalidate();
-              utils.iso27001.getStats.invalidate();
-              utils.iso27001.getClauses.invalidate();
-            }}
-            className="gap-2"
-          >
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBulkImport(true)}
+              className="gap-2"
+            >
+              <FileUp className="w-3.5 h-3.5" /> Import CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportMutation.mutate()}
+              disabled={exportMutation.isPending}
+              className="gap-2"
+            >
+              {exportMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+              Audit Pack
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                utils.iso27001.getControls.invalidate();
+                utils.iso27001.getStats.invalidate();
+                utils.iso27001.getClauses.invalidate();
+              }}
+              className="gap-2"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Score Cards */}
@@ -484,6 +624,10 @@ export default function ISO27001Dashboard() {
       {/* Owner Assignment Dialog */}
       {ownerDialogControl && (
         <OwnerDialog control={ownerDialogControl} onClose={() => setOwnerDialogControl(null)} />
+      )}
+      {/* Bulk Import Dialog */}
+      {showBulkImport && (
+        <BulkImportDialog onClose={() => setShowBulkImport(false)} />
       )}
     </div>
   );

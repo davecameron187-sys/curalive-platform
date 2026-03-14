@@ -2194,3 +2194,8 @@
 - [ ] Frontend ISO27001Dashboard: evidence upload panel per control
 - [ ] Scheduled digest: weekly cron job (server-side setInterval or startup scheduler) calling generateGapAnalysis + notifyOwner
 - [ ] Tests: vitest for new procedures
+
+## Compliance Sprint 3 (Round 3)
+- [ ] Bulk CSV status import for SOC 2 and ISO 27001 controls
+- [ ] Evidence expiry date field + expiry alerts in weekly digest
+- [ ] Audit-ready ZIP export (PDF cert + evidence files + control CSV)

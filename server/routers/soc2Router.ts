@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { createRequire } from "module";
+const _require = createRequire(import.meta.url);
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { soc2Controls, complianceEvidenceFiles } from "../../drizzle/schema";
@@ -143,6 +145,7 @@ export const soc2Router = router({
       fileName: z.string().min(1).max(255),
       fileBase64: z.string(),
       mimeType: z.string().default("application/octet-stream"),
+      expiresAt: z.number().optional(), // Unix ms
     }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -161,8 +164,86 @@ export const soc2Router = router({
         mimeType: input.mimeType,
         uploadedBy: ctx.user.id,
         uploadedAt: Date.now(),
+        expiresAt: input.expiresAt ?? null,
       });
       return { uploaded: true, url, fileName: input.fileName };
+    }),
+
+  bulkImportCSV: protectedProcedure
+    .input(z.object({
+      csvBase64: z.string(), // base64-encoded CSV content
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const csv = Buffer.from(input.csvBase64, "base64").toString("utf-8");
+      const lines = csv.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) throw new Error("CSV must have a header row and at least one data row");
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"));
+      const controlIdIdx = headers.indexOf("control_id");
+      const statusIdx = headers.indexOf("status");
+      const ownerIdx = headers.indexOf("owner_name");
+      const notesIdx = headers.indexOf("notes");
+      if (controlIdIdx === -1 || statusIdx === -1) throw new Error("CSV must have 'control_id' and 'status' columns");
+      const VALID_STATUSES = ["compliant", "partial", "non_compliant", "not_applicable"];
+      let updated = 0;
+      let skipped = 0;
+      const errors: string[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+        const controlIdVal = cols[controlIdIdx];
+        const statusVal = cols[statusIdx]?.toLowerCase().replace(/ /g, "_");
+        if (!controlIdVal || !statusVal) { skipped++; continue; }
+        if (!VALID_STATUSES.includes(statusVal)) { errors.push(`Row ${i + 1}: invalid status '${statusVal}'`); skipped++; continue; }
+        const existing = await db.select({ id: soc2Controls.id }).from(soc2Controls).where(eq(soc2Controls.controlId, controlIdVal)).limit(1);
+        if (existing.length === 0) { errors.push(`Row ${i + 1}: control_id '${controlIdVal}' not found`); skipped++; continue; }
+        const updateData: Record<string, string> = { status: statusVal };
+        if (ownerIdx !== -1 && cols[ownerIdx]) updateData.ownerName = cols[ownerIdx];
+        if (notesIdx !== -1 && cols[notesIdx]) updateData.notes = cols[notesIdx];
+        await db.update(soc2Controls).set(updateData).where(eq(soc2Controls.id, existing[0].id));
+        updated++;
+      }
+      return { updated, skipped, errors, total: lines.length - 1 };
+    }),
+
+  exportAuditZip: protectedProcedure
+    .mutation(async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const archiver = _require("archiver");
+      const { Readable, PassThrough } = _require("stream");
+      // Fetch all controls and evidence
+      const controls = await db.select().from(soc2Controls);
+      const evidence = await db.select().from(complianceEvidenceFiles).where(eq(complianceEvidenceFiles.controlType, "soc2"));
+      // Build CSV
+      const csvHeader = "control_id,category,name,status,owner_name,testing_frequency,notes\n";
+      const csvRows = controls.map(c =>
+        [c.controlId, c.category, `"${c.name}"`, c.status, c.ownerName ?? "", c.testingFrequency ?? "", `"${(c.notes ?? "").replace(/"/g, "'")}"` ].join(",")
+      ).join("\n");
+      const csvContent = csvHeader + csvRows;
+      // Build evidence manifest
+      const manifestLines = ["id,control_id,file_name,file_url,uploaded_at,expires_at"];
+      for (const e of evidence) {
+        manifestLines.push([e.id, e.controlId, e.fileName, e.fileUrl, new Date(e.uploadedAt).toISOString(), e.expiresAt ? new Date(e.expiresAt).toISOString() : ""].join(","));
+      }
+      const manifestContent = manifestLines.join("\n");
+      // Build zip in memory
+      const chunks: Buffer[] = [];
+      await new Promise<void>((resolve, reject) => {
+        const archive = archiver("zip", { zlib: { level: 6 } });
+        archive.on("data", (chunk: Buffer) => chunks.push(chunk));
+        archive.on("end", resolve);
+        archive.on("error", reject);
+        archive.append(csvContent, { name: "soc2_controls.csv" });
+        archive.append(manifestContent, { name: "evidence_manifest.csv" });
+        archive.append(JSON.stringify({ framework: "SOC 2", exportedAt: new Date().toISOString(), controlCount: controls.length, evidenceCount: evidence.length }, null, 2), { name: "audit_summary.json" });
+        archive.finalize();
+      });
+      const zipBuffer = Buffer.concat(chunks);
+      const suffix = Date.now().toString(36);
+      const fileKey = `compliance/exports/soc2-audit-pack-${suffix}.zip`;
+      const { url } = await storagePut(fileKey, zipBuffer, "application/zip");
+      return { url, fileName: `soc2-audit-pack-${new Date().toISOString().slice(0, 10)}.zip`, controlCount: controls.length, evidenceCount: evidence.length };
     }),
 
   getEvidenceFiles: protectedProcedure

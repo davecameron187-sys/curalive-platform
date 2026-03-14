@@ -10,9 +10,10 @@
  */
 
 import { getDb } from "./db";
-import { soc2Controls, iso27001Controls } from "../drizzle/schema";
+import { soc2Controls, iso27001Controls, complianceEvidenceFiles } from "../drizzle/schema";
 import { notifyOwner } from "./_core/notification";
 import { invokeLLM } from "./_core/llm";
+import { lte, and, isNotNull } from "drizzle-orm";
 
 const POLL_INTERVAL_MS = 60 * 60 * 1000; // Check every hour
 
@@ -125,6 +126,48 @@ Keep it factual and actionable. No preamble.`;
   return buildFastDigest(soc2, iso);
 }
 
+/** Check for evidence files expiring within the next 30 days and build an alert section */
+async function buildExpiryAlerts(db: Awaited<ReturnType<typeof getDb>>): Promise<string> {
+  if (!db) return "";
+  try {
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() + thirtyDaysMs;
+    const expiring = await db
+      .select()
+      .from(complianceEvidenceFiles)
+      .where(and(isNotNull(complianceEvidenceFiles.expiresAt), lte(complianceEvidenceFiles.expiresAt, cutoff)));
+    if (expiring.length === 0) return "";
+    const lines: string[] = [
+      ``,
+      `### ⚠️ Evidence Expiry Alerts (${expiring.length} file${expiring.length === 1 ? "" : "s"} expiring within 30 days)`,
+    ];
+    const alreadyExpired = expiring.filter((e) => (e.expiresAt ?? 0) < Date.now());
+    const soonExpiring = expiring.filter((e) => (e.expiresAt ?? 0) >= Date.now());
+    if (alreadyExpired.length > 0) {
+      lines.push(`**Already expired (${alreadyExpired.length}):**`);
+      alreadyExpired.slice(0, 5).forEach((e) => {
+        const expiredDate = new Date(e.expiresAt!).toISOString().slice(0, 10);
+        lines.push(`- [${e.controlType.toUpperCase()}] Control #${e.controlId}: \`${e.fileName}\` — expired ${expiredDate}`);
+      });
+      if (alreadyExpired.length > 5) lines.push(`- ...and ${alreadyExpired.length - 5} more`);
+    }
+    if (soonExpiring.length > 0) {
+      lines.push(`**Expiring soon (${soonExpiring.length}):**`);
+      soonExpiring.slice(0, 5).forEach((e) => {
+        const expiryDate = new Date(e.expiresAt!).toISOString().slice(0, 10);
+        const daysLeft = Math.ceil(((e.expiresAt ?? 0) - Date.now()) / (24 * 60 * 60 * 1000));
+        lines.push(`- [${e.controlType.toUpperCase()}] Control #${e.controlId}: \`${e.fileName}\` — expires ${expiryDate} (${daysLeft}d)`);
+      });
+      if (soonExpiring.length > 5) lines.push(`- ...and ${soonExpiring.length - 5} more`);
+    }
+    lines.push(``);
+    return lines.join("\n");
+  } catch (err) {
+    console.warn("[ComplianceDigest] Error checking evidence expiry:", err);
+    return "";
+  }
+}
+
 /** Run one digest cycle */
 async function runDigest(): Promise<void> {
   console.log("[ComplianceDigest] Running weekly compliance digest...");
@@ -145,7 +188,12 @@ async function runDigest(): Promise<void> {
       return;
     }
 
-    const digestContent = await buildLLMDigest(soc2, iso);
+    const [digestContent, expiryAlerts] = await Promise.all([
+      buildLLMDigest(soc2, iso),
+      buildExpiryAlerts(db),
+    ]);
+
+    const fullContent = digestContent + expiryAlerts;
     const soc2Score = computeScore(soc2);
     const isoScore = computeScore(iso);
     const soc2Gaps = soc2.filter((c) => c.status === "non_compliant").length;
@@ -153,7 +201,7 @@ async function runDigest(): Promise<void> {
 
     const title = `Weekly Compliance Digest — SOC 2: ${soc2Score}% | ISO 27001: ${isoScore}% | ${soc2Gaps + isoGaps} gaps`;
 
-    const sent = await notifyOwner({ title, content: digestContent });
+    const sent = await notifyOwner({ title, content: fullContent });
     if (sent) {
       console.log(`[ComplianceDigest] Digest sent successfully (SOC2=${soc2Score}%, ISO=${isoScore}%, gaps=${soc2Gaps + isoGaps})`);
     } else {
