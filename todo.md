@@ -1256,3 +1256,30 @@
 - [x] Create high-contrast theme option
 - [x] Ensure WCAG 2.1 AA compliance with focus management
 - [x] Add focus indicators, skip links, and keyboard shortcut help
+
+
+## Round 40 — Live Transcription, Engagement Scoring, & Export/Sharing
+
+### Live Transcription Display
+- [x] Create LiveTranscriptDisplay component with scrolling transcript
+- [x] Implement real-time transcript updates via Ably
+- [x] Add speaker identification and timestamps
+- [x] Implement keyword highlighting for earnings, guidance, risk, etc.
+- [x] Add transcript search and speaker filtering
+- [x] Create transcript export to TXT with copy-to-clipboard
+
+### Participant Engagement Scoring
+- [x] Create EngagementScorer utility with scoring algorithm
+- [x] Implement hand raise tracking (10 pts each, max 50)
+- [x] Add Q&A participation metrics (15 pts each, max 45)
+- [x] Track poll response rates (5 pts each, max 20)
+- [x] Integrate sentiment analysis scoring (0-20 pts)
+- [x] Create EngagementDashboard with leaderboard and aggregate metrics
+
+### Export & Sharing Features
+- [x] Create ExportDialog component with multi-format export
+- [x] Implement export options (PDF, DOCX, ZIP formats)
+- [x] Add recording link sharing with token-based access
+- [x] Create shareable post-event report links with copy-to-clipboard
+- [x] Implement selective export (transcript, recording, polls, engagement)
+- [x] Add email and native share functionality
