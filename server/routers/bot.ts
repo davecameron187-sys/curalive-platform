@@ -2,37 +2,35 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
+// Simplified types to reduce memory overhead
+type BotStatus = "idle" | "connecting" | "connected" | "recording" | "stopped";
+
+interface TranscriptionSegment {
+  text: string;
+  startTime: number;
+  endTime: number;
+  speaker?: string;
+}
+
 interface BotSession {
   id: string;
   conferenceId: string;
   meetingUrl: string;
-  status: "idle" | "connecting" | "connected" | "recording" | "stopped";
+  status: BotStatus;
   createdAt: Date;
   startedAt?: Date;
   stoppedAt?: Date;
-  transcriptionSegments: Array<{
-    text: string;
-    startTime: number;
-    endTime: number;
-    speaker?: string;
-  }>;
+  transcriptionSegments: TranscriptionSegment[];
 }
 
-// In-memory store for bot sessions (in production, use database)
+// In-memory store for bot sessions
 const botSessions = new Map<string, BotSession>();
 
 export const botRouter = router({
-  // Create a new bot session
   createBot: publicProcedure
-    .input(
-      z.object({
-        conferenceId: z.string(),
-        meetingUrl: z.string().url(),
-      })
-    )
+    .input(z.object({ conferenceId: z.string(), meetingUrl: z.string().url() }))
     .mutation(async ({ input }) => {
       const botId = `bot_${input.conferenceId}_${Date.now()}`;
-
       const botSession: BotSession = {
         id: botId,
         conferenceId: input.conferenceId,
@@ -41,58 +39,22 @@ export const botRouter = router({
         createdAt: new Date(),
         transcriptionSegments: [],
       };
-
       botSessions.set(botId, botSession);
-
-      console.log(`[Bot] Created bot session: ${botId}`);
-
-      return {
-        botId,
-        status: "created",
-        message: "Bot session created successfully",
-      };
+      return { botId, status: "created" };
     }),
 
-  // Start transcription for a bot
   startTranscription: publicProcedure
     .input(z.object({ botId: z.string() }))
     .mutation(async ({ input }) => {
       const botSession = botSessions.get(input.botId);
-
       if (!botSession) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Bot session not found",
-        });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Bot not found" });
       }
-
       botSession.status = "connecting";
       botSession.startedAt = new Date();
-
-      console.log(`[Bot] Starting transcription for bot: ${input.botId}`);
-
-      // Simulate connection delay
-      setTimeout(() => {
-        const session = botSessions.get(input.botId);
-        if (session) {
-          session.status = "connected";
-          setTimeout(() => {
-            if (session) {
-              session.status = "recording";
-              console.log(`[Bot] Bot ${input.botId} is now recording`);
-            }
-          }, 1000);
-        }
-      }, 2000);
-
-      return {
-        botId: input.botId,
-        status: botSession.status,
-        message: "Transcription started",
-      };
+      return { botId: input.botId, status: botSession.status };
     }),
 
-  // Add transcription segment
   addTranscriptionSegment: publicProcedure
     .input(
       z.object({
@@ -105,70 +67,40 @@ export const botRouter = router({
     )
     .mutation(async ({ input }) => {
       const botSession = botSessions.get(input.botId);
-
       if (!botSession) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Bot session not found",
-        });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Bot not found" });
       }
-
       botSession.transcriptionSegments.push({
         text: input.text,
         startTime: input.startTime,
         endTime: input.endTime,
         speaker: input.speaker,
       });
-
-      console.log(
-        `[Bot] Added transcription segment to ${input.botId}: ${input.text.substring(0, 50)}...`
-      );
-
-      return {
-        botId: input.botId,
-        segmentCount: botSession.transcriptionSegments.length,
-        message: "Transcription segment added",
-      };
+      return { botId: input.botId, segmentCount: botSession.transcriptionSegments.length };
     }),
 
-  // Get bot status
   getBotStatus: publicProcedure
     .input(z.object({ botId: z.string() }))
     .query(async ({ input }) => {
       const botSession = botSessions.get(input.botId);
-
       if (!botSession) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Bot session not found",
-        });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Bot not found" });
       }
-
       return {
         botId: input.botId,
         status: botSession.status,
         conferenceId: botSession.conferenceId,
-        meetingUrl: botSession.meetingUrl,
-        createdAt: botSession.createdAt,
-        startedAt: botSession.startedAt,
-        transcriptionSegments: botSession.transcriptionSegments,
         segmentCount: botSession.transcriptionSegments.length,
       };
     }),
 
-  // Get transcription segments
   getTranscriptionSegments: publicProcedure
     .input(z.object({ botId: z.string() }))
     .query(async ({ input }) => {
       const botSession = botSessions.get(input.botId);
-
       if (!botSession) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Bot session not found",
-        });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Bot not found" });
       }
-
       return {
         botId: input.botId,
         segments: botSession.transcriptionSegments,
@@ -176,71 +108,36 @@ export const botRouter = router({
       };
     }),
 
-  // Stop transcription
   stopTranscription: publicProcedure
     .input(z.object({ botId: z.string() }))
     .mutation(async ({ input }) => {
       const botSession = botSessions.get(input.botId);
-
       if (!botSession) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Bot session not found",
-        });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Bot not found" });
       }
-
       botSession.status = "stopped";
       botSession.stoppedAt = new Date();
-
-      console.log(`[Bot] Stopped transcription for bot: ${input.botId}`);
-
-      return {
-        botId: input.botId,
-        status: botSession.status,
-        stoppedAt: botSession.stoppedAt,
-        totalSegments: botSession.transcriptionSegments.length,
-        message: "Transcription stopped",
-      };
+      return { botId: input.botId, status: botSession.status };
     }),
 
-  // Delete bot session
   deleteBot: publicProcedure
     .input(z.object({ botId: z.string() }))
     .mutation(async ({ input }) => {
-      const botSession = botSessions.get(input.botId);
-
-      if (!botSession) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Bot session not found",
-        });
-      }
-
       botSessions.delete(input.botId);
-      console.log(`[Bot] Deleted bot session: ${input.botId}`);
-
-      return {
-        botId: input.botId,
-        message: "Bot session deleted",
-      };
+      return { botId: input.botId, message: "Bot deleted" };
     }),
 
-  // List all bot sessions for a conference
   listBots: publicProcedure
     .input(z.object({ conferenceId: z.string() }))
     .query(async ({ input }) => {
       const bots = Array.from(botSessions.values()).filter(
         (bot) => bot.conferenceId === input.conferenceId
       );
-
       return {
         conferenceId: input.conferenceId,
         bots: bots.map((bot) => ({
           botId: bot.id,
           status: bot.status,
-          createdAt: bot.createdAt,
-          startedAt: bot.startedAt,
-          stoppedAt: bot.stoppedAt,
           segmentCount: bot.transcriptionSegments.length,
         })),
         totalBots: bots.length,

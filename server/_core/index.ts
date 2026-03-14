@@ -5,7 +5,7 @@ import net from "net";
 import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
-import { appRouter } from "../routers";
+import { createAppRouter } from "../routers-lazy";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerSlideDeckUploadRoute } from "../slideDeckUpload";
@@ -581,6 +581,9 @@ async function startServer() {
   // Initialize WebSocket server for real-time metrics
   new MetricsWebSocketServer(server);
   console.log("[Metrics WebSocket] Server initialized");
+
+  // Create lazy-loaded router to avoid TypeScript heap exhaustion
+  const appRouter = await createAppRouter();
 
   // tRPC API
   app.use(
