@@ -1,7 +1,8 @@
 import { useLocation } from "wouter";
-import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay, Activity, LogIn, LogOut, User } from "lucide-react";
+import { Zap, Video, Mic, BarChart3, MessageSquare, Globe, ArrowRight, Play, Settings, Code2, Package, FileText, Radio, MonitorPlay, Activity, LogIn, LogOut, User, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { trpc } from "@/lib/trpc";
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/chorus-hero-bg-bFr44AaNNWKkv4uMRbTXe8.webp";
 const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/demo_curalive_0cb4c723.mp4";
@@ -32,6 +33,30 @@ const PLATFORM_PAGES = [
   { icon: Video, label: "Live Video Meetings", desc: "Capital raising 1:1 roadshows, research presentations, earnings calls & hybrid conferences", path: "/live-video", color: "text-blue-400" },
   { icon: Radio, label: "Webcasting Platform", desc: "Webinars, webcasts, virtual events, hybrid events, on-demand — across 8 industry verticals", path: "/live-video/webcasting", color: "text-amber-400" },
 ];
+
+function PlatformStatusPill() {
+  const { data: healthStatus } = trpc.healthGuardian.currentStatus.useQuery(undefined, {
+    refetchInterval: 60000,
+    retry: false,
+  });
+  const score = healthStatus?.overall?.score ?? null;
+  if (score === null) return null;
+  const isOk = score >= 90;
+  const isDegraded = score >= 70 && score < 90;
+  const Icon = isOk ? CheckCircle : isDegraded ? AlertTriangle : XCircle;
+  const colorClass = isOk
+    ? "text-emerald-400 border-emerald-500/30 bg-emerald-950/50"
+    : isDegraded
+    ? "text-amber-400 border-amber-500/30 bg-amber-950/50"
+    : "text-red-400 border-red-500/30 bg-red-950/50";
+  const label = isOk ? "All Systems Operational" : isDegraded ? `Degraded — ${score}%` : `Disruption — ${score}%`;
+  return (
+    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${colorClass}`}>
+      <Icon className="w-3 h-3" />
+      <span>{label}</span>
+    </div>
+  );
+}
 
 function StatusBadge({ status }: { status: string }) {
   if (status === "live") return <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-red-400"><span className="live-badge-dot inline-block w-2 h-2 rounded-full bg-red-400" />Live</span>;
@@ -139,8 +164,11 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-14 items-center">
             {/* Left: headline + CTAs */}
             <div>
-              <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-6">
-                <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — CuraLive Inc.
+              <div className="flex flex-wrap items-center gap-3 mb-6">
+                <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full">
+                  <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — CuraLive Inc.
+                </div>
+                <PlatformStatusPill />
               </div>
               <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight mb-6">
                 The Intelligence Layer<br /><span className="text-primary">for Every Meeting</span>
