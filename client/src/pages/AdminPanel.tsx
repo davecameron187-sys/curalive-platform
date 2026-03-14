@@ -1,161 +1,273 @@
+/**
+ * AdminPanel — Unified Admin Hub
+ *
+ * Wired to real backend:
+ *   - trpc.admin.listUsers — live user list with role management
+ *   - trpc.admin.updateUserRole — promote/demote users
+ *   - trpc.billing.getClients — billing client count
+ *   - trpc.billing.getBillingInvoices — invoice overview
+ *
+ * Quick-links to sub-pages: /admin/users, /admin/billing, /admin/clients
+ */
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import {
-  Users,
-  Key,
-  Settings,
-  Plus,
-  Edit2,
-  Trash2,
-  Copy,
-  Eye,
-  EyeOff,
-  Search,
-  Filter,
-  Download,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
+  Users, Settings, Search, AlertCircle,
+  ChevronRight, Shield, DollarSign, FileText,
+  RefreshCw, Loader2, UserCheck, Building2,
+  BarChart3, Zap, Lock,
 } from "lucide-react";
 
+const ROLE_COLORS: Record<string, string> = {
+  admin: "bg-red-900/40 text-red-300 border border-red-800/40",
+  operator: "bg-indigo-900/40 text-indigo-300 border border-indigo-800/40",
+  user: "bg-slate-700/60 text-slate-300 border border-slate-600/40",
+};
+
 export default function AdminPanel() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
-  // Mock user data
-  const users = [
-    { id: "1", name: "Alice Johnson", email: "alice@curalive.com", role: "admin", status: "active", joinedDate: "2026-01-15" },
-    { id: "2", name: "Bob Smith", email: "bob@curalive.com", role: "operator", status: "active", joinedDate: "2026-02-01" },
-    { id: "3", name: "Carol Davis", email: "carol@curalive.com", role: "operator", status: "active", joinedDate: "2026-02-15" },
-    { id: "4", name: "David Wilson", email: "david@curalive.com", role: "trainer", status: "inactive", joinedDate: "2026-01-20" },
-    { id: "5", name: "Eve Martinez", email: "eve@curalive.com", role: "developer", status: "active", joinedDate: "2026-03-01" },
-  ];
-
-  // Mock API keys
-  const apiKeys = [
-    { id: "key_1", name: "Production API Key", key: "sk_live_51234567890abcdef", created: "2026-01-10", lastUsed: "2 hours ago", status: "active" },
-    { id: "key_2", name: "Development API Key", key: "sk_test_9876543210fedcba", created: "2026-02-01", lastUsed: "30 minutes ago", status: "active" },
-    { id: "key_3", name: "Staging API Key", key: "sk_stage_abcdef1234567890", created: "2026-02-15", lastUsed: "1 day ago", status: "active" },
-  ];
-
-  // Mock audit logs
-  const auditLogs = [
-    { id: "1", user: "Alice Johnson", action: "Created user: Bob Smith", timestamp: "2 hours ago", type: "user_created" },
-    { id: "2", user: "Bob Smith", action: "Toggled feature: Redaction Workflow", timestamp: "1 hour ago", type: "feature_toggle" },
-    { id: "3", user: "Alice Johnson", action: "Updated system settings", timestamp: "30 minutes ago", type: "settings_updated" },
-    { id: "4", user: "Eve Martinez", action: "Generated API key", timestamp: "15 minutes ago", type: "api_key_created" },
-    { id: "5", user: "Carol Davis", action: "Exported audit logs", timestamp: "5 minutes ago", type: "export" },
-  ];
-
-  // Mock system settings
-  const systemSettings = [
-    { key: "feature_flags_enabled", label: "Feature Flags", value: true, description: "Enable/disable features per environment" },
-    { key: "ab_testing_enabled", label: "A/B Testing", value: true, description: "Allow A/B testing for new features" },
-    { key: "analytics_enabled", label: "Analytics Tracking", value: true, description: "Track user analytics and usage" },
-    { key: "email_notifications", label: "Email Notifications", value: true, description: "Send email alerts for system events" },
-    { key: "audit_logging", label: "Audit Logging", value: true, description: "Log all admin actions for compliance" },
-  ];
-
-  const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+  // Real data from backend
+  const { data: userList, isLoading: usersLoading, refetch: refetchUsers } = trpc.admin.listUsers.useQuery(
+    undefined,
+    { enabled: user?.role === "admin" }
   );
 
+  const { data: billingClients } = trpc.billing.getClients.useQuery(
+    undefined,
+    { enabled: user?.role === "admin" }
+  );
+
+  const { data: invoices } = trpc.billing.getBillingInvoices.useQuery(
+    { limit: 5 },
+    { enabled: user?.role === "admin" }
+  );
+
+  const updateRole = trpc.admin.updateUserRole.useMutation({
+    onSuccess: () => {
+      refetchUsers();
+      toast.success("Role updated successfully");
+      setUpdatingId(null);
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Failed to update role");
+      setUpdatingId(null);
+    },
+  });
+
+  // Auth guard
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#080c14] flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "admin") {
+    return (
+      <div className="min-h-screen bg-[#080c14] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <Lock className="w-10 h-10 text-red-400 mx-auto" />
+          <div className="text-white font-semibold">Admin Access Required</div>
+          <div className="text-slate-400 text-sm">You need admin privileges to view this page.</div>
+          <Button variant="outline" onClick={() => navigate("/")}>Go Home</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredUsers = (userList ?? []).filter(u =>
+    u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalUsers = userList?.length ?? 0;
+  const adminCount = userList?.filter(u => u.role === "admin").length ?? 0;
+  const operatorCount = userList?.filter(u => u.role === "operator").length ?? 0;
+  const clientCount = billingClients?.length ?? 0;
+  const overdueInvoices = invoices?.filter((inv: any) => inv.status === "overdue").length ?? 0;
+
   return (
-    <div className="min-h-screen bg-background text-foreground p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
-          <p className="text-muted-foreground">Manage users, API keys, settings, and audit logs</p>
+    <div className="min-h-screen bg-[#080c14] text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+      {/* Header */}
+      <header className="border-b border-white/8 bg-[#0d1117]/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+            <Shield className="w-4 h-4 text-indigo-400" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight">Admin Panel</h1>
+            <p className="text-xs text-slate-400">Platform management & oversight</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => refetchUsers()} className="gap-2 text-xs">
+            <RefreshCw className="w-3 h-3" /> Refresh
+          </Button>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-[#0d1117] border-white/8 p-4 cursor-pointer hover:border-indigo-500/30 transition-colors" onClick={() => navigate("/admin/users")}>
+            <div className="flex items-center justify-between mb-2">
+              <Users className="w-4 h-4 text-indigo-400" />
+              <ChevronRight className="w-4 h-4 text-slate-600" />
+            </div>
+            <div className="text-2xl font-bold">{totalUsers}</div>
+            <div className="text-xs text-slate-400 mt-1">Total Users</div>
+            <div className="text-xs text-slate-500 mt-1">{adminCount} admin · {operatorCount} operator</div>
+          </Card>
+
+          <Card className="bg-[#0d1117] border-white/8 p-4 cursor-pointer hover:border-emerald-500/30 transition-colors" onClick={() => navigate("/admin/clients")}>
+            <div className="flex items-center justify-between mb-2">
+              <Building2 className="w-4 h-4 text-emerald-400" />
+              <ChevronRight className="w-4 h-4 text-slate-600" />
+            </div>
+            <div className="text-2xl font-bold">{clientCount}</div>
+            <div className="text-xs text-slate-400 mt-1">Billing Clients</div>
+            <div className="text-xs text-slate-500 mt-1">Active accounts</div>
+          </Card>
+
+          <Card className="bg-[#0d1117] border-white/8 p-4 cursor-pointer hover:border-amber-500/30 transition-colors" onClick={() => navigate("/admin/billing")}>
+            <div className="flex items-center justify-between mb-2">
+              <DollarSign className="w-4 h-4 text-amber-400" />
+              <ChevronRight className="w-4 h-4 text-slate-600" />
+            </div>
+            <div className="text-2xl font-bold">{overdueInvoices}</div>
+            <div className="text-xs text-slate-400 mt-1">Overdue Invoices</div>
+            <div className="text-xs text-slate-500 mt-1">Requires attention</div>
+          </Card>
+
+          <Card className="bg-[#0d1117] border-white/8 p-4 cursor-pointer hover:border-violet-500/30 transition-colors" onClick={() => navigate("/admin/feature-flags")}>
+            <div className="flex items-center justify-between mb-2">
+              <Zap className="w-4 h-4 text-violet-400" />
+              <ChevronRight className="w-4 h-4 text-slate-600" />
+            </div>
+            <div className="text-2xl font-bold">FF</div>
+            <div className="text-xs text-slate-400 mt-1">Feature Flags</div>
+            <div className="text-xs text-slate-500 mt-1">Manage toggles</div>
+          </Card>
         </div>
 
-        {/* Admin Info Alert */}
-        {user?.role === "admin" && (
-          <Card className="p-4 bg-blue-500/10 border-blue-500/20">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-              <div>
-                <div className="font-semibold text-blue-400">Admin Access Granted</div>
-                <div className="text-sm text-blue-300">You have full access to all admin functions. Use this power responsibly.</div>
+        {/* Quick Navigation */}
+        <div>
+          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Admin Modules</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[
+              { icon: Users, label: "User Management", desc: "Manage roles, access, and permissions", path: "/admin/users", color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
+              { icon: Building2, label: "Billing Clients", desc: "View and manage client accounts", path: "/admin/clients", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+              { icon: DollarSign, label: "Billing Dashboard", desc: "Quotes, invoices, and payments", path: "/admin/billing", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+              { icon: Zap, label: "Feature Flags", desc: "Toggle features per environment", path: "/admin/feature-flags", color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
+              { icon: BarChart3, label: "Analytics", desc: "Platform usage and metrics", path: "/analytics", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+              { icon: Settings, label: "Settings", desc: "System configuration", path: "/operator/preferences/default", color: "text-slate-400", bg: "bg-slate-500/10 border-slate-500/20" },
+            ].map(({ icon: Icon, label, desc, path, color, bg }) => (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                className={`flex items-start gap-3 p-4 rounded-xl border ${bg} text-left hover:opacity-80 transition-opacity`}
+              >
+                <Icon className={`w-5 h-5 ${color} mt-0.5 shrink-0`} />
+                <div>
+                  <div className="font-semibold text-sm text-white">{label}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{desc}</div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-600 ml-auto mt-0.5 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Live User List */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Users</h2>
+            <Button size="sm" variant="ghost" className="text-xs gap-1" onClick={() => navigate("/admin/users")}>
+              Full Management <ChevronRight className="w-3 h-3" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2 mb-3 max-w-sm">
+            <Search className="w-4 h-4 text-slate-500 shrink-0" />
+            <Input
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-[#0d1117] border-white/10 text-sm h-8"
+            />
+          </div>
+
+          <Card className="bg-[#0d1117] border-white/8 overflow-hidden">
+            {usersLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
               </div>
-            </div>
-          </Card>
-        )}
-
-        <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="api-keys">API Keys</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-          </TabsList>
-
-          {/* Users Tab */}
-          <TabsContent value="users" className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 flex-1 max-w-md">
-                <Search className="w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-secondary border-border"
-                />
+            ) : filteredUsers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                <Users className="w-8 h-8 mb-2 opacity-40" />
+                <span className="text-sm">No users found</span>
               </div>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Add User
-              </Button>
-            </div>
-
-            <Card className="overflow-hidden">
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-border bg-secondary/50">
-                      <th className="px-6 py-3 text-left text-sm font-semibold">Name</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">Role</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">Status</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">Joined</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">Actions</th>
+                    <tr className="border-b border-white/8 bg-white/2">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Email</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Role</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Last Seen</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.map((u) => (
-                      <tr key={u.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
-                        <td className="px-6 py-4 text-sm font-medium">{u.name}</td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{u.email}</td>
-                        <td className="px-6 py-4 text-sm">
-                          <Badge variant="outline" className="capitalize">
+                    {filteredUsers.slice(0, 10).map((u) => (
+                      <tr key={u.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium">{u.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-sm text-slate-400">{u.email ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ROLE_COLORS[u.role] ?? ROLE_COLORS.user}`}>
                             {u.role}
-                          </Badge>
+                          </span>
                         </td>
-                        <td className="px-6 py-4 text-sm">
-                          <Badge
-                            variant="outline"
-                            className={u.status === "active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-500/10 text-slate-400 border-slate-500/20"}
-                          >
-                            {u.status}
-                          </Badge>
+                        <td className="px-4 py-3 text-xs text-slate-500">
+                          {u.lastSignedIn ? new Date(u.lastSignedIn).toLocaleDateString() : "Never"}
                         </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{u.joinedDate}</td>
-                        <td className="px-6 py-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="ghost">
-                              <Edit2 className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1">
+                            {u.role !== "operator" && u.id !== user.id && (
+                              <button
+                                onClick={() => { setUpdatingId(u.id); updateRole.mutate({ userId: u.id, role: "operator" }); }}
+                                disabled={updatingId === u.id}
+                                className="text-xs text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded border border-indigo-500/20 hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
+                              >
+                                {updatingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "→ Operator"}
+                              </button>
+                            )}
+                            {u.role !== "admin" && u.id !== user.id && (
+                              <button
+                                onClick={() => { setUpdatingId(u.id); updateRole.mutate({ userId: u.id, role: "admin" }); }}
+                                disabled={updatingId === u.id}
+                                className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded border border-red-500/20 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                              >
+                                → Admin
+                              </button>
+                            )}
+                            {u.id === user.id && (
+                              <span className="text-xs text-slate-500 italic">You</span>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -163,154 +275,72 @@ export default function AdminPanel() {
                   </tbody>
                 </table>
               </div>
-            </Card>
-
-            <div className="text-sm text-muted-foreground">
-              Showing {filteredUsers.length} of {users.length} users
-            </div>
-          </TabsContent>
-
-          {/* API Keys Tab */}
-          <TabsContent value="api-keys" className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold">API Keys</h3>
-                <p className="text-sm text-muted-foreground">Manage API keys for integrations</p>
+            )}
+            {filteredUsers.length > 10 && (
+              <div className="px-4 py-3 border-t border-white/8 text-xs text-slate-400">
+                Showing 10 of {filteredUsers.length} users.{" "}
+                <button onClick={() => navigate("/admin/users")} className="text-indigo-400 hover:underline">
+                  View all →
+                </button>
               </div>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Generate Key
+            )}
+          </Card>
+        </div>
+
+        {/* Recent Invoices */}
+        {invoices && invoices.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Recent Invoices</h2>
+              <Button size="sm" variant="ghost" className="text-xs gap-1" onClick={() => navigate("/admin/billing")}>
+                View All <ChevronRight className="w-3 h-3" />
               </Button>
             </div>
-
-            <div className="space-y-3">
-              {apiKeys.map((key) => (
-                <Card key={key.id} className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="font-semibold">{key.name}</div>
-                      <div className="text-sm text-muted-foreground">Created {key.created}</div>
-                    </div>
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                      {key.status}
-                    </Badge>
-                  </div>
-
-                  <div className="bg-secondary rounded p-3 mb-3 flex items-center justify-between">
-                    <code className="text-sm font-mono">
-                      {showApiKey ? key.key : "•".repeat(key.key.length)}
-                    </code>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setShowApiKey(!showApiKey)}
-                      >
-                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </Button>
-                      <Button size="sm" variant="ghost">
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
-                    <span>Last used: {key.lastUsed}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline">
-                      Rotate
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
-                      Revoke
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="mt-6 space-y-4">
-            <div>
-              <h3 className="font-semibold mb-4">System Settings</h3>
-              <div className="space-y-3">
-                {systemSettings.map((setting) => (
-                  <Card key={setting.key} className="p-4 flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold">{setting.label}</div>
-                      <div className="text-sm text-muted-foreground">{setting.description}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-12 h-6 rounded-full transition-colors ${setting.value ? "bg-emerald-500" : "bg-slate-500"}`}></div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <Card className="p-4 bg-amber-500/10 border-amber-500/20">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-semibold text-amber-400">Danger Zone</div>
-                  <div className="text-sm text-amber-300 mb-3">These actions cannot be undone. Proceed with caution.</div>
-                  <Button variant="outline" className="text-destructive hover:text-destructive">
-                    Reset All Settings
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* Audit Logs Tab */}
-          <TabsContent value="audit" className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Filter logs..." className="max-w-xs bg-secondary border-border" />
-              </div>
-              <Button variant="outline" className="gap-2">
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
-            </div>
-
-            <Card className="overflow-hidden">
+            <Card className="bg-[#0d1117] border-white/8 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-border bg-secondary/50">
-                      <th className="px-6 py-3 text-left text-sm font-semibold">User</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">Action</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">Type</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">Timestamp</th>
+                    <tr className="border-b border-white/8 bg-white/2">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Invoice #</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Client</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400">Due</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {auditLogs.map((log) => (
-                      <tr key={log.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
-                        <td className="px-6 py-4 text-sm font-medium">{log.user}</td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{log.action}</td>
-                        <td className="px-6 py-4 text-sm">
-                          <Badge variant="outline" className="capitalize">
-                            {log.type.replace(/_/g, " ")}
-                          </Badge>
+                    {invoices.slice(0, 5).map((inv: any) => (
+                      <tr
+                        key={inv.id}
+                        className="border-b border-white/5 hover:bg-white/2 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/admin/billing/invoice/${inv.id}`)}
+                      >
+                        <td className="px-4 py-3 text-sm font-mono text-indigo-400">{inv.invoiceNumber}</td>
+                        <td className="px-4 py-3 text-sm">{inv.clientName ?? "—"}</td>
+                        <td className="px-4 py-3 text-sm font-semibold">
+                          {inv.currency} {((inv.totalCents ?? 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{log.timestamp}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                            inv.status === "paid" ? "bg-emerald-500/20 text-emerald-400" :
+                            inv.status === "overdue" ? "bg-red-500/20 text-red-400" :
+                            inv.status === "sent" ? "bg-amber-500/20 text-amber-400" :
+                            "bg-slate-500/20 text-slate-400"
+                          }`}>
+                            {inv.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-400">
+                          {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </Card>
-
-            <div className="text-sm text-muted-foreground">
-              Showing latest 5 audit log entries. <a href="#" className="text-primary hover:underline">View all</a>
-            </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
     </div>
   );

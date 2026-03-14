@@ -1,12 +1,15 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, CheckCircle2, ChevronRight, Lock } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronRight, Lock, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { toast } from "sonner";
 
 interface OnboardingStep {
   id: string;
@@ -16,7 +19,21 @@ interface OnboardingStep {
 }
 
 export default function OnboardingFlow() {
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const updateProfile = trpc.profile.update.useMutation({
+    onSuccess: () => {
+      toast.success("Setup complete! Welcome to CuraLive.");
+      navigate("/");
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Failed to save configuration");
+      setIsSubmitting(false);
+    },
+  });
   const [formData, setFormData] = useState({
     companyName: "",
     industry: "",
@@ -440,11 +457,16 @@ export default function OnboardingFlow() {
           {currentStep === steps.length - 1 ? (
             <Button
               onClick={() => {
-                // Save configuration and activate AI-AM
-                console.log("Activating AI-AM with config:", formData);
+                setIsSubmitting(true);
+                updateProfile.mutate({
+                  name: formData.operatorName || user?.name || undefined,
+                  organisation: formData.companyName || undefined,
+                });
               }}
-              className="px-8 bg-green-600 hover:bg-green-700"
+              disabled={isSubmitting || updateProfile.isPending}
+              className="px-8 bg-green-600 hover:bg-green-700 gap-2"
             >
+              {isSubmitting || updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               Activate AI-AM
             </Button>
           ) : (

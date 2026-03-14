@@ -2116,3 +2116,15 @@
 - [x] Build webhook delivery logs
 - [x] Implement rate limiting display
 - [x] Add third-party connector library
+
+
+## Phase 1 Sanity Check Fixes (Round 67)
+
+- [x] Confirmed Presenter.tsx already correctly wired to Ably via AblyContext (no fix needed)
+- [x] Fixed 11 failing test suites — created server/routers.ts barrel file re-exporting from routers.eager.ts (760 tests, 49 suites, all passing)
+- [x] Rewrote AdminPanel.tsx to use real tRPC backend data (trpc.admin.listUsers, trpc.admin.updateUserRole, trpc.billing.getClients, trpc.billing.getBillingInvoices)
+- [x] Confirmed AdminBilling.tsx and AdminUsers.tsx already wired to real backends
+- [x] Wired OnboardingFlow.tsx to trpc.profile.update mutation with loading state and redirect on success
+- [x] Added /onboarding route to App.tsx
+- [x] Deleted 4 backup OCC files: OCC.backup.tsx, OCC_CORRECTED.tsx, OCC_REDESIGNED.tsx, OCC_TABS.tsx
+- [x] Fixed duplicate SecurityMetricsAPI import in App.tsx
