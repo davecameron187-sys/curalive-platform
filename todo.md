@@ -1283,3 +1283,30 @@
 - [x] Create shareable post-event report links with copy-to-clipboard
 - [x] Implement selective export (transcript, recording, polls, engagement)
 - [x] Add email and native share functionality
+
+
+## Round 41 — Compliance Monitoring, AI Insights, & Multi-Event Analytics
+
+### Real-Time Compliance Monitoring
+- [x] Create ComplianceMonitor component with violation tracking
+- [x] Implement unauthorized recording detection
+- [x] Add data retention violation tracking
+- [x] Create compliance alert system with severity levels
+- [x] Generate automated compliance reports (JSON export)
+- [x] Add FINRA/SEC requirement checklist with status tracking
+
+### AI-Powered Insights
+- [x] Create InsightsPanel component with AI analysis
+- [x] Implement key takeaway extraction via LLM
+- [x] Add risk identification from transcripts
+- [x] Track guidance changes and updates
+- [x] Generate executive summaries with markdown rendering
+- [x] Add sentiment-based risk scoring and confidence metrics
+
+### Multi-Event Analytics
+- [x] Create MultiEventAnalytics page with cross-event comparison
+- [x] Implement engagement trend visualization with bar charts
+- [x] Add compliance score tracking across events
+- [x] Display participant metrics and event comparison table
+- [x] Create date range filters (week, month, quarter, year, all)
+- [x] Add board-level reporting export (JSON format)
