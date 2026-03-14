@@ -228,3 +228,213 @@ export async function getRecentFeedback(limit = 20) {
     .orderBy(desc(userFeedback.createdAt))
     .limit(limit);
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Post-Event Data Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function savePostEventData(data: {
+  eventId: string;
+  conferenceId?: number;
+  aiSummary?: string;
+  keyTopics?: string;
+  sentimentTrends?: string;
+  keyQuotes?: string;
+  fullTranscript?: string;
+  transcriptFormat?: string;
+  recordingUrl?: string;
+  recordingKey?: string;
+  recordingDurationSeconds?: number;
+  complianceScore?: number;
+  flaggedItems?: string;
+  totalParticipants?: number;
+  totalDuration?: number;
+  engagementScore?: number;
+  analyticsData?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { postEventData } = await import("../drizzle/schema");
+  
+  return db.insert(postEventData).values({
+    eventId: data.eventId,
+    conferenceId: data.conferenceId,
+    aiSummary: data.aiSummary,
+    keyTopics: data.keyTopics,
+    sentimentTrends: data.sentimentTrends,
+    keyQuotes: data.keyQuotes,
+    fullTranscript: data.fullTranscript,
+    transcriptFormat: data.transcriptFormat,
+    recordingUrl: data.recordingUrl,
+    recordingKey: data.recordingKey,
+    recordingDurationSeconds: data.recordingDurationSeconds,
+    complianceScore: data.complianceScore,
+    flaggedItems: data.flaggedItems,
+    totalParticipants: data.totalParticipants,
+    totalDuration: data.totalDuration,
+    engagementScore: data.engagementScore,
+    analyticsData: data.analyticsData,
+  });
+}
+
+export async function getPostEventData(eventId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { postEventData } = await import("../drizzle/schema");
+  const result = await db.select().from(postEventData).where(eq(postEventData.eventId, eventId)).limit(1);
+  
+  return result.length > 0 ? result[0] : null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stripe Integration Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createStripeCustomer(userId: number, stripeCustomerId: string, email: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { stripeCustomers } = await import("../drizzle/schema");
+  
+  return db.insert(stripeCustomers).values({
+    userId,
+    stripeCustomerId,
+    email,
+  });
+}
+
+export async function getStripeCustomer(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { stripeCustomers } = await import("../drizzle/schema");
+  const result = await db.select().from(stripeCustomers).where(eq(stripeCustomers.userId, userId)).limit(1);
+  
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function createStripeSubscription(userId: number, subscriptionData: {
+  stripeSubscriptionId: string;
+  stripePriceId: string;
+  status: "active" | "past_due" | "unpaid" | "canceled" | "incomplete";
+  tier: "basic" | "professional" | "enterprise";
+  currentPeriodStart?: Date;
+  currentPeriodEnd?: Date;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { stripeSubscriptions } = await import("../drizzle/schema");
+  
+  return db.insert(stripeSubscriptions).values({
+    userId,
+    stripeSubscriptionId: subscriptionData.stripeSubscriptionId,
+    stripePriceId: subscriptionData.stripePriceId,
+    status: subscriptionData.status,
+    tier: subscriptionData.tier,
+    currentPeriodStart: subscriptionData.currentPeriodStart,
+    currentPeriodEnd: subscriptionData.currentPeriodEnd,
+  });
+}
+
+export async function getActiveSubscription(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { stripeSubscriptions } = await import("../drizzle/schema");
+  const result = await db.select().from(stripeSubscriptions).where(
+    eq(stripeSubscriptions.userId, userId)
+  ).orderBy(desc(stripeSubscriptions.createdAt)).limit(1);
+  
+  return result.length > 0 && result[0].status === "active" ? result[0] : null;
+}
+
+export async function updateSubscriptionStatus(subscriptionId: string, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { stripeSubscriptions } = await import("../drizzle/schema");
+  
+  return db.update(stripeSubscriptions).set({
+    status: status as any,
+  }).where(eq(stripeSubscriptions.stripeSubscriptionId, subscriptionId));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Premium Features Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createPremiumFeatures(userId: number, tier: "basic" | "professional" | "enterprise") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { premiumFeatures } = await import("../drizzle/schema");
+  
+  const featureMap = {
+    basic: {
+      advancedAnalytics: false,
+      complianceReporting: false,
+      whiteLabel: false,
+      multiLanguageTranscription: false,
+      customBranding: false,
+      apiAccess: false,
+      maxEventsPerMonth: 5,
+      maxParticipantsPerEvent: 500,
+      storageGbPerMonth: 10,
+    },
+    professional: {
+      advancedAnalytics: true,
+      complianceReporting: true,
+      whiteLabel: false,
+      multiLanguageTranscription: true,
+      customBranding: false,
+      apiAccess: true,
+      maxEventsPerMonth: 50,
+      maxParticipantsPerEvent: 5000,
+      storageGbPerMonth: 100,
+    },
+    enterprise: {
+      advancedAnalytics: true,
+      complianceReporting: true,
+      whiteLabel: true,
+      multiLanguageTranscription: true,
+      customBranding: true,
+      apiAccess: true,
+      maxEventsPerMonth: 999,
+      maxParticipantsPerEvent: 99999,
+      storageGbPerMonth: 1000,
+    },
+  };
+
+  return db.insert(premiumFeatures).values({
+    userId,
+    ...featureMap[tier],
+  });
+}
+
+export async function getPremiumFeatures(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { premiumFeatures } = await import("../drizzle/schema");
+  const result = await db.select().from(premiumFeatures).where(eq(premiumFeatures.userId, userId)).limit(1);
+  
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function logStripePaymentEvent(stripeEventId: string, eventType: string, userId: number | null, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { stripePaymentEvents } = await import("../drizzle/schema");
+  
+  return db.insert(stripePaymentEvents).values({
+    stripeEventId,
+    eventType,
+    userId,
+    data: JSON.stringify(data),
+  });
+}

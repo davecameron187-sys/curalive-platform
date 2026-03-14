@@ -2463,3 +2463,127 @@ export const alertHistory = mysqlTable("alert_history", {
 });
 export type AlertHistory = typeof alertHistory.$inferSelect;
 export type InsertAlertHistory = typeof alertHistory.$inferInsert;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Post-Event Data — stores summaries, transcripts, analytics, and reports
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Post-Event Data — stores AI summaries, compliance reports, and analytics for completed events.
+ */
+export const postEventData = mysqlTable("post_event_data", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("eventId", { length: 128 }).notNull(), // references events.eventId
+  conferenceId: int("conferenceId"), // references occConferences.id if applicable
+  // AI Summary
+  aiSummary: text("aiSummary"), // LLM-generated executive summary
+  keyTopics: text("keyTopics"), // JSON array of extracted topics
+  sentimentTrends: text("sentimentTrends"), // JSON object with sentiment timeline
+  keyQuotes: text("keyQuotes"), // JSON array of important quotes with timestamps
+  // Transcription
+  fullTranscript: longtext("fullTranscript"), // complete word-for-word transcript
+  transcriptFormat: varchar("transcriptFormat", { length: 32 }).default("txt"), // txt, pdf, vtt, srt, json
+  // Recording
+  recordingUrl: varchar("recordingUrl", { length: 512 }), // S3 URL to recording
+  recordingKey: varchar("recordingKey", { length: 512 }), // S3 key for retrieval
+  recordingDurationSeconds: int("recordingDurationSeconds"),
+  // Compliance
+  complianceScore: int("complianceScore"), // 0-100 score
+  flaggedItems: text("flaggedItems"), // JSON array of compliance violations
+  // Analytics
+  totalParticipants: int("totalParticipants"),
+  totalDuration: int("totalDuration"), // seconds
+  engagementScore: int("engagementScore"), // 0-100 score
+  analyticsData: text("analyticsData"), // JSON object with detailed metrics
+  // Delivery Status
+  deliveryStatus: mysqlEnum("deliveryStatus", ["pending", "sent", "failed"]).default("pending").notNull(),
+  deliveredAt: timestamp("deliveredAt"),
+  // Timestamps
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PostEventData = typeof postEventData.$inferSelect;
+export type InsertPostEventData = typeof postEventData.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stripe Integration — payment processing for premium features
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Stripe Customers — links users to their Stripe customer records.
+ */
+export const stripeCustomers = mysqlTable("stripe_customers", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(), // references users.id
+  stripeCustomerId: varchar("stripeCustomerId", { length: 128 }).notNull().unique(), // Stripe customer ID
+  email: varchar("email", { length: 320 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StripeCustomer = typeof stripeCustomers.$inferSelect;
+export type InsertStripeCustomer = typeof stripeCustomers.$inferInsert;
+
+/**
+ * Stripe Subscriptions — tracks active subscriptions for premium features.
+ */
+export const stripeSubscriptions = mysqlTable("stripe_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // references users.id
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }).notNull().unique(),
+  stripePriceId: varchar("stripePriceId", { length: 128 }).notNull(),
+  status: mysqlEnum("status", ["active", "past_due", "unpaid", "canceled", "incomplete"]).default("active").notNull(),
+  tier: mysqlEnum("tier", ["basic", "professional", "enterprise"]).default("basic").notNull(),
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  canceledAt: timestamp("canceledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StripeSubscription = typeof stripeSubscriptions.$inferSelect;
+export type InsertStripeSubscription = typeof stripeSubscriptions.$inferInsert;
+
+/**
+ * Premium Features — tracks which features are enabled for each user based on subscription.
+ */
+export const premiumFeatures = mysqlTable("premium_features", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(), // references users.id
+  // Feature flags
+  advancedAnalytics: boolean("advancedAnalytics").default(false).notNull(),
+  complianceReporting: boolean("complianceReporting").default(false).notNull(),
+  whiteLabel: boolean("whiteLabel").default(false).notNull(),
+  multiLanguageTranscription: boolean("multiLanguageTranscription").default(false).notNull(),
+  customBranding: boolean("customBranding").default(false).notNull(),
+  apiAccess: boolean("apiAccess").default(false).notNull(),
+  // Limits
+  maxEventsPerMonth: int("maxEventsPerMonth").default(5),
+  maxParticipantsPerEvent: int("maxParticipantsPerEvent").default(500),
+  storageGbPerMonth: int("storageGbPerMonth").default(10),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PremiumFeature = typeof premiumFeatures.$inferSelect;
+export type InsertPremiumFeature = typeof premiumFeatures.$inferInsert;
+
+/**
+ * Stripe Payment Events — audit log for all Stripe webhook events.
+ */
+export const stripePaymentEvents = mysqlTable("stripe_payment_events", {
+  id: int("id").autoincrement().primaryKey(),
+  stripeEventId: varchar("stripeEventId", { length: 128 }).notNull().unique(),
+  eventType: varchar("eventType", { length: 128 }).notNull(), // e.g. "payment_intent.succeeded"
+  userId: int("userId"), // references users.id if applicable
+  data: text("data").notNull(), // JSON payload
+  processed: boolean("processed").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type StripePaymentEvent = typeof stripePaymentEvents.$inferSelect;
+export type InsertStripePaymentEvent = typeof stripePaymentEvents.$inferInsert;

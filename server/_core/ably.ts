@@ -38,3 +38,115 @@ export async function publishToChannel(
     return false;
   }
 }
+
+
+/**
+ * Publish real-time event for event creation
+ */
+export async function publishEventCreated(eventData: {
+  eventId: string;
+  title: string;
+  company: string;
+  platform: string;
+  status: string;
+}): Promise<boolean> {
+  return publishToChannel("events:updates", "event.created", {
+    timestamp: new Date().toISOString(),
+    ...eventData,
+  });
+}
+
+/**
+ * Publish real-time event for registration
+ */
+export async function publishRegistrationCreated(registrationData: {
+  eventId: string;
+  name: string;
+  email: string;
+  company?: string;
+  jobTitle?: string;
+}): Promise<boolean> {
+  return publishToChannel("registrations:updates", "registration.created", {
+    timestamp: new Date().toISOString(),
+    ...registrationData,
+  });
+}
+
+/**
+ * Publish real-time event for post-event data
+ */
+export async function publishPostEventData(postEventData: {
+  eventId: string;
+  aiSummary?: string;
+  complianceScore?: number;
+  engagementScore?: number;
+}): Promise<boolean> {
+  return publishToChannel("post_event:updates", "post_event.generated", {
+    timestamp: new Date().toISOString(),
+    ...postEventData,
+  });
+}
+
+/**
+ * Publish real-time notification for OCC
+ */
+export async function publishOccNotification(notification: {
+  conferenceId: number;
+  type: "participant_joined" | "participant_left" | "sentiment_update" | "qa_approval";
+  data: any;
+}): Promise<boolean> {
+  return publishToChannel(
+    `occ:notifications:${notification.conferenceId}`,
+    notification.type,
+    {
+      timestamp: new Date().toISOString(),
+      ...notification.data,
+    }
+  );
+}
+
+/**
+ * Publish real-time Q&A approval notification
+ */
+export async function publishQaApproval(qaData: {
+  conferenceId: number;
+  questionId: string;
+  question: string;
+  approvedBy: string;
+}): Promise<boolean> {
+  return publishToChannel(`occ:qa:${qaData.conferenceId}`, "qa.approved", {
+    timestamp: new Date().toISOString(),
+    ...qaData,
+  });
+}
+
+/**
+ * Publish real-time sentiment analysis update
+ */
+export async function publishSentimentUpdate(sentimentData: {
+  conferenceId: number;
+  score: number;
+  trend: "positive" | "neutral" | "negative";
+  keywords: string[];
+}): Promise<boolean> {
+  return publishToChannel(`occ:sentiment:${sentimentData.conferenceId}`, "sentiment.updated", {
+    timestamp: new Date().toISOString(),
+    ...sentimentData,
+  });
+}
+
+/**
+ * Publish real-time participant status update
+ */
+export async function publishParticipantStatusUpdate(statusData: {
+  conferenceId: number;
+  participantId: number;
+  state: string;
+  isSpeaking: boolean;
+  requestToSpeak: boolean;
+}): Promise<boolean> {
+  return publishToChannel(`occ:participants:${statusData.conferenceId}`, "participant.updated", {
+    timestamp: new Date().toISOString(),
+    ...statusData,
+  });
+}

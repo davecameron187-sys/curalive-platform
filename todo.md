@@ -1125,3 +1125,27 @@
 - [ ] Show violation history and severity breakdown
 - [ ] Add compliance score calculation and display
 - [ ] Test compliance rule evaluation and alerting
+
+
+## Round 35 — Database Persistence, Ably Real-Time, & Stripe Integration
+
+### Database Persistence
+- [x] Extend schema: events, registrations, post_event_data tables
+- [x] Add tRPC procedures: events.create, events.list, registrations.register, registrations.list, postEvent.save
+- [ ] Wire Bookings page to persist event creation to database
+- [ ] Wire Registrations page to persist participant registrations to database
+- [ ] Wire OCC to load events and participants from database
+- [ ] Wire Post-Event page to load and display persisted data
+
+### Ably Real-Time Notifications
+- [x] Create Ably real-time helper module (server/_core/ably.ts)
+- [x] Implement Ably channel subscriptions for events, registrations, post-event
+- [x] Create React hook for Ably real-time updates (useAblyChannel)
+- [x] Wire Ably publish on database mutations
+- [x] Create RealtimeEventUpdates component with event, registration, and post-event updates
+- [x] Create OccRealtimeUpdates component with participant status, Q&A, and sentiment updates
+- [x] Create Ably router with token generation and subscription setup
+- [x] Add notification toast UI for real-time events
+
+### Stripe Payment Processing
+- [DEFERRED] Stripe integration deferred - focus on Ably real-time only
