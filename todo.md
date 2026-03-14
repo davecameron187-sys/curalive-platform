@@ -1175,3 +1175,30 @@
 - [x] Add keyword highlights and trend direction indicators
 - [x] Implement rolling 60-point data window
 - [x] Add sentiment gauge visualization
+
+
+## Round 37 — Component Integration, Participant Dashboard, & Post-Event Analytics
+
+### Integrate Components into Main App Routes
+- [x] Create AppEnhanced.tsx with integrated routes
+- [x] Wire BookingsEnhanced to /bookings route
+- [x] Wire RealtimeQaModeration to /moderator/:conferenceId route
+- [x] Wire SentimentTrendChart and ParticipantStatusDashboard to /occ/:conferenceId route
+- [x] Add route guards for authenticated operators
+- [x] Create comprehensive INTEGRATION_GUIDE.md
+
+### Participant Status Dashboard
+- [x] Create ParticipantStatusDashboard component
+- [x] Subscribe to occ:participants:{conferenceId} channel
+- [x] Display live participant list with status indicators
+- [x] Show speaking status and hand-raised indicators
+- [x] Display connection quality metrics
+- [x] Add participant count and active speaker tracking
+
+### Post-Event Analytics Page
+- [x] Create PostEventAnalytics component
+- [x] Load post-event data from database via tRPC
+- [x] Display AI-generated summaries with key topics
+- [x] Show compliance scores and engagement metrics
+- [x] Add transcript display with keyword extraction
+- [x] Implement downloadable transcript feature with copy-to-clipboard
