@@ -163,6 +163,9 @@ import SecurityTrainingAwarenessPlat from "./pages/SecurityTrainingAwarenessPlat
 import SecurityPostureManagement from "./pages/SecurityPostureManagement";
 import ThreatIntelligenceIOC from "./pages/ThreatIntelligenceIOC";
 import OnboardingFlow from "./pages/OnboardingFlow";
+import HealthGuardian from "./pages/HealthGuardian";
+import MailingListManager from "./pages/MailingListManager";
+import MailingListConfirm from "./pages/MailingListConfirm";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -337,6 +340,9 @@ function Router() {
       <Route path="/my-dashboard" component={OperatorQuickRef} />
       <Route path="/live-sentiment">{() => { window.location.replace("/operator/q4-earnings-2026/sentiment"); return null; }}</Route>
       <Route path="/post-event">{() => { window.location.replace("/post-event/q4-earnings-2026"); return null; }}</Route>
+      <Route path="/health-guardian" component={HealthGuardian} />
+      <Route path="/mailing-lists" component={MailingListManager} />
+      <Route path="/register/confirm/:token" component={MailingListConfirm} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

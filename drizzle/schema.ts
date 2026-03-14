@@ -1,4 +1,4 @@
-import { boolean, int, float, tinyint, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
+import { boolean, int, float, tinyint, json, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -2587,3 +2587,57 @@ export const stripePaymentEvents = mysqlTable("stripe_payment_events", {
 
 export type StripePaymentEvent = typeof stripePaymentEvents.$inferSelect;
 export type InsertStripePaymentEvent = typeof stripePaymentEvents.$inferInsert;
+
+// ─── Mailing Lists (from Replit sync) ────────────────────────────────────────
+export const mailingLists = mysqlTable("mailing_lists", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["draft", "processing", "ready", "sending", "sent"]).default("draft").notNull(),
+  totalEntries: int("total_entries").default(0).notNull(),
+  processedEntries: int("processed_entries").default(0).notNull(),
+  emailedEntries: int("emailed_entries").default(0).notNull(),
+  registeredEntries: int("registered_entries").default(0).notNull(),
+  webhookUrl: varchar("webhook_url", { length: 512 }),
+  defaultJoinMethod: mysqlEnum("default_join_method", ["phone", "teams", "zoom", "web"]),
+  preRegistered: boolean("pre_registered").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type MailingList = typeof mailingLists.$inferSelect;
+export type InsertMailingList = typeof mailingLists.$inferInsert;
+
+export const mailingListEntries = mysqlTable("mailing_list_entries", {
+  id: int("id").autoincrement().primaryKey(),
+  mailingListId: int("mailing_list_id").notNull(),
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  company: varchar("company", { length: 255 }),
+  jobTitle: varchar("job_title", { length: 255 }),
+  accessPin: varchar("access_pin", { length: 8 }),
+  status: mysqlEnum("status", ["pending", "pin_assigned", "emailed", "clicked", "registered"]).default("pending").notNull(),
+  joinMethod: mysqlEnum("join_method", ["phone", "teams", "zoom", "web"]),
+  registrationId: int("registration_id"),
+  confirmToken: varchar("confirm_token", { length: 64 }),
+  emailSentAt: timestamp("email_sent_at"),
+  clickedAt: timestamp("clicked_at"),
+  registeredAt: timestamp("registered_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type MailingListEntry = typeof mailingListEntries.$inferSelect;
+export type InsertMailingListEntry = typeof mailingListEntries.$inferInsert;
+
+// ─── CRM API Keys (from Replit sync) ─────────────────────────────────────────
+export const crmApiKeys = mysqlTable("crm_api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  keyHash: varchar("key_hash", { length: 128 }).notNull(),
+  keyPrefix: varchar("key_prefix", { length: 12 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  eventId: varchar("event_id", { length: 128 }),
+  permissions: json("permissions").notNull(),
+  active: boolean("active").default(true).notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type CrmApiKey = typeof crmApiKeys.$inferSelect;
