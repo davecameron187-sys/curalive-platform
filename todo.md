@@ -2180,3 +2180,17 @@
 - [x] Sprint C: generateGapAnalysis procedure added to compliance router (real DB + LLM)
 - [x] Sprint C: ComplianceGapAnalysis.tsx rewritten to call trpc.compliance.generateGapAnalysis
 - [x] Tests: compliance.soc.iso.test.ts — 13 tests all passing
+
+## Compliance Round 2 (Owner Assignment + Evidence Upload + Digest)
+- [ ] DB: compliance_evidence_files table (id, controlType, controlId, fileName, fileUrl, fileKey, mimeType, uploadedBy, uploadedAt)
+- [ ] DB: soc2_controls ownerName + testingFrequency columns (already in schema, verify in DB)
+- [ ] Backend soc2Router: assignOwner procedure
+- [ ] Backend soc2Router: uploadEvidence + getEvidenceFiles procedures
+- [ ] Backend iso27001Router: assignOwner procedure
+- [ ] Backend iso27001Router: uploadEvidence + getEvidenceFiles procedures
+- [ ] Frontend SOC2Dashboard: inline owner assignment popover per control row
+- [ ] Frontend SOC2Dashboard: evidence upload panel per control (file input -> S3 -> DB)
+- [ ] Frontend ISO27001Dashboard: inline owner assignment popover per control row
+- [ ] Frontend ISO27001Dashboard: evidence upload panel per control
+- [ ] Scheduled digest: weekly cron job (server-side setInterval or startup scheduler) calling generateGapAnalysis + notifyOwner
+- [ ] Tests: vitest for new procedures

@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { soc2Controls } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { soc2Controls, complianceEvidenceFiles } from "../../drizzle/schema";
+import { eq, and } from "drizzle-orm";
+import { storagePut } from "../storage";
 
 const SOC2_SEED = [
   { controlId: "CC1.1", category: "CC1 - Control Environment", name: "COSO Principles and Integrity", description: "The entity demonstrates a commitment to integrity and ethical values.", status: "compliant" as const, ownerName: "CISO", testingFrequency: "Annual" },
@@ -119,5 +120,70 @@ export const soc2Router = router({
       if (Object.keys(filtered).length === 0) return { updated: false };
       await db.update(soc2Controls).set(filtered).where(eq(soc2Controls.id, id));
       return { updated: true };
+    }),
+
+  assignOwner: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      ownerName: z.string().min(1).max(100),
+      testingFrequency: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      await db.update(soc2Controls)
+        .set({ ownerName: input.ownerName, testingFrequency: input.testingFrequency ?? null })
+        .where(eq(soc2Controls.id, input.id));
+      return { assigned: true, ownerName: input.ownerName };
+    }),
+
+  uploadEvidence: protectedProcedure
+    .input(z.object({
+      controlId: z.number(),
+      fileName: z.string().min(1).max(255),
+      fileBase64: z.string(),
+      mimeType: z.string().default("application/octet-stream"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const buf = Buffer.from(input.fileBase64, "base64");
+      if (buf.byteLength > 16 * 1024 * 1024) throw new Error("File too large (max 16 MB)");
+      const suffix = Date.now().toString(36);
+      const fileKey = `compliance/soc2/${input.controlId}/${suffix}-${input.fileName}`;
+      const { url } = await storagePut(fileKey, buf, input.mimeType);
+      await db.insert(complianceEvidenceFiles).values({
+        controlType: "soc2",
+        controlId: input.controlId,
+        fileName: input.fileName,
+        fileUrl: url,
+        fileKey,
+        mimeType: input.mimeType,
+        uploadedBy: ctx.user.id,
+        uploadedAt: Date.now(),
+      });
+      return { uploaded: true, url, fileName: input.fileName };
+    }),
+
+  getEvidenceFiles: protectedProcedure
+    .input(z.object({ controlId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(complianceEvidenceFiles)
+        .where(and(
+          eq(complianceEvidenceFiles.controlType, "soc2"),
+          eq(complianceEvidenceFiles.controlId, input.controlId)
+        ))
+        .orderBy(complianceEvidenceFiles.uploadedAt);
+    }),
+
+  deleteEvidence: protectedProcedure
+    .input(z.object({ evidenceId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      await db.delete(complianceEvidenceFiles).where(eq(complianceEvidenceFiles.id, input.evidenceId));
+      return { deleted: true };
     }),
 });

@@ -2677,3 +2677,17 @@ export const iso27001Controls = mysqlTable("iso27001_controls", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 export type Iso27001Control = typeof iso27001Controls.$inferSelect;
+
+// ─── Compliance Evidence Files ────────────────────────────────────────────────
+export const complianceEvidenceFiles = mysqlTable("compliance_evidence_files", {
+  id: int("id").autoincrement().primaryKey(),
+  controlType: mysqlEnum("control_type", ["soc2", "iso27001"]).notNull(),
+  controlId: int("control_id").notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileKey: varchar("file_key", { length: 500 }).notNull(),
+  mimeType: varchar("mime_type", { length: 100 }),
+  uploadedBy: int("uploaded_by"),
+  uploadedAt: bigint("uploaded_at", { mode: "number" }).notNull(),
+});
+export type ComplianceEvidenceFile = typeof complianceEvidenceFiles.$inferSelect;

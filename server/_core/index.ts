@@ -12,6 +12,7 @@ import { registerSlideDeckUploadRoute } from "../slideDeckUpload";
 // import { registerAudioUploadRoute } from "../audioUpload"; // TODO: audioUpload module not found
 import { registerRecallWebhookRoute } from "../recallWebhook";
 import { startReminderScheduler } from "../reminderScheduler";
+import { startComplianceDigestScheduler } from "../complianceDigestScheduler";
 import { registerBillingPdfRoutes } from "../billingPdf";
 import { buildTwiMLVoiceResponse } from "../webphone/twilio";
 import { parseTelnyxWebhook } from "../webphone/telnyx";
@@ -614,6 +615,8 @@ async function startServer() {
     // in development we fall back to localhost so reminders still log without sending.
     const origin = process.env.APP_ORIGIN ?? `http://localhost:${port}`;
     startReminderScheduler(origin);
+    // Start the weekly compliance gap analysis digest scheduler
+    startComplianceDigestScheduler();
   });
 }
 
