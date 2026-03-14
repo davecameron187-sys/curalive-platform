@@ -134,6 +134,9 @@ import SecurityOrchestrationResponse from "./pages/SecurityOrchestrationResponse
 import AdvancedThreatHunting from "./pages/AdvancedThreatHunting";
 import ExecutiveSecurityMetrics from "./pages/ExecutiveSecurityMetrics";
 import AutomatedComplianceReporting from "./pages/AutomatedComplianceReporting";
+import SecurityRiskScoring from "./pages/SecurityRiskScoring";
+import IncidentResponsePlaybooks from "./pages/IncidentResponsePlaybooks";
+import SecurityMetricsAPI from "./pages/SecurityMetricsAPI";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -251,6 +254,9 @@ function Router() {
       <Route path="/security/threat-hunting" component={AdvancedThreatHunting} />
       <Route path="/security/executive-metrics" component={ExecutiveSecurityMetrics} />
       <Route path="/security/compliance-reporting" component={AutomatedComplianceReporting} />
+      <Route path="/security/risk-scoring" component={SecurityRiskScoring} />
+      <Route path="/security/playbooks" component={IncidentResponsePlaybooks} />
+      <Route path="/security/api" component={SecurityMetricsAPI} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
