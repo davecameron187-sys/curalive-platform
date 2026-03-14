@@ -2161,3 +2161,9 @@
 - [x] Add auth guard (useEffect redirect) to OnboardingFlow.tsx
 - [x] Add first-run "Complete your setup" CTA banner to Home.tsx
 - [x] All 760 tests passing (49 suites)
+
+## Round 68 — GitHub Sync, MailingList Nav, HealthGuardian Admin
+
+- [ ] Push Manus changes to GitHub davecameron187-sys/curalive-platform
+- [ ] Wire MailingListManager into Operator Console sidebar/nav
+- [ ] Add HealthGuardian status indicator to admin panel header
