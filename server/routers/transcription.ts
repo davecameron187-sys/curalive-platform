@@ -70,16 +70,16 @@ export const transcriptionRouter = router({
       
       const segments = await db.select().from(occTranscriptionSegments)
         .where(eq(occTranscriptionSegments.conferenceId, input.eventId))
-        .orderBy(occTranscriptionSegments.startTimeMs);
+        .orderBy(occTranscriptionSegments.startTime);
 
       const completed = jobs.find(j => j.status === "completed");
       return {
         segments: segments.map(s => ({
           id: s.id,
           speaker: s.speakerName,
-          text: s.content,
-          startTime: s.startTimeMs ? s.startTimeMs / 1000 : 0,
-          endTime: s.endTimeMs ? s.endTimeMs / 1000 : 0,
+          text: s.text,
+          startTime: s.startTime ? s.startTime / 1000 : 0,
+          endTime: s.endTime ? s.endTime / 1000 : 0,
           confidence: s.confidence,
         })),
         metadata: completed ? {
@@ -140,7 +140,7 @@ export const transcriptionRouter = router({
 
       const segments = await db.select().from(occTranscriptionSegments)
         .where(eq(occTranscriptionSegments.conferenceId, input.eventId))
-        .orderBy(occTranscriptionSegments.startTimeMs);
+        .orderBy(occTranscriptionSegments.startTime);
 
       if (input.format === "json") {
         return { content: JSON.stringify(segments, null, 2), contentType: "application/json" };
@@ -148,7 +148,7 @@ export const transcriptionRouter = router({
 
       let content = "";
       if (input.format === "txt") {
-        content = segments.map(s => `[${s.speakerName ?? "Speaker"}] ${s.content}`).join("\n\n");
+        content = segments.map(s => `[${s.speakerName ?? "Speaker"}] ${s.text}`).join("\n\n");
         return { content, contentType: "text/plain" };
       }
 
@@ -164,14 +164,14 @@ export const transcriptionRouter = router({
 
       if (input.format === "vtt") {
         content = "WEBVTT\n\n" + segments.map((s, i) => 
-          `${formatTime(s.startTimeMs ?? 0, true)} --> ${formatTime(s.endTimeMs ?? 0, true)}\n${s.speakerName ? `<v ${s.speakerName}>` : ""}${s.content}\n`
+          `${formatTime((s.startTime ?? 0), true)} --> ${formatTime((s.endTime ?? 0), true)}\n${s.speakerName ? `<v ${s.speakerName}>` : ""}${s.text}\n`
         ).join("\n");
         return { content, contentType: "text/vtt" };
       }
 
       if (input.format === "srt") {
         content = segments.map((s, i) => 
-          `${i + 1}\n${formatTime(s.startTimeMs ?? 0, false)} --> ${formatTime(s.endTimeMs ?? 0, false)}\n${s.content}\n`
+          `${i + 1}\n${formatTime((s.startTime ?? 0), false)} --> ${formatTime((s.endTime ?? 0), false)}\n${s.text}\n`
         ).join("\n");
         return { content, contentType: "text/plain" };
       }
