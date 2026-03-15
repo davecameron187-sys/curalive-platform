@@ -9,7 +9,7 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin", "operator"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "operator", "moderator"]).default("user").notNull(),
   // Profile customisation fields
   jobTitle: varchar("jobTitle", { length: 255 }),
   organisation: varchar("organisation", { length: 255 }),
@@ -2731,3 +2731,20 @@ export const complianceFrameworkChecks = mysqlTable("compliance_framework_checks
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 export type ComplianceFrameworkCheck = typeof complianceFrameworkChecks.$inferSelect;
+
+/**
+ * Role Change Audit Log — immutable record of every user role change.
+ * Captures who changed what, from which role, to which role, and when.
+ */
+export const roleChangeAuditLog = mysqlTable("role_change_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),           // the user whose role was changed
+  changedByUserId: int("changedByUserId").notNull(), // the admin who made the change
+  oldRole: mysqlEnum("oldRole", ["user", "admin", "operator", "moderator"]).notNull(),
+  newRole: mysqlEnum("newRole", ["user", "admin", "operator", "moderator"]).notNull(),
+  reason: varchar("reason", { length: 512 }), // optional justification
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RoleChangeAuditLog = typeof roleChangeAuditLog.$inferSelect;
+export type InsertRoleChangeAuditLog = typeof roleChangeAuditLog.$inferInsert;

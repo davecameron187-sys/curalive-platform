@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `users` MODIFY COLUMN `role` enum('user','admin','operator','moderator') NOT NULL DEFAULT 'user';\n\nCREATE TABLE IF NOT EXISTS `role_change_audit_log` (\n  `id` int AUTO_INCREMENT PRIMARY KEY NOT NULL,\n  `userId` int NOT NULL,\n  `changedByUserId` int NOT NULL,\n  `oldRole` enum('user','admin','operator','moderator') NOT NULL,\n  `newRole` enum('user','admin','operator','moderator') NOT NULL,\n  `reason` varchar(512),\n  `createdAt` timestamp NOT NULL DEFAULT (now())\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2h457xAgLtxN22J.8d91d5a5e05f --database Mdu4k2iB9LVRNHXWAQDZg3 --execute ALTER TABLE `users` MODIFY COLUMN `role` enum('user','admin','operator','moderator') NOT NULL DEFAULT 'user';\n\nCREATE TABLE IF NOT EXISTS `role_change_audit_log` (\n  `id` int AUTO_INCREMENT PRIMARY KEY NOT NULL,\n  `userId` int NOT NULL,\n  `changedByUserId` int NOT NULL,\n  `oldRole` enum('user','admin','operator','moderator') NOT NULL,\n  `newRole` enum('user','admin','operator','moderator') NOT NULL,\n  `reason` varchar(512),\n  `createdAt` timestamp NOT NULL DEFAULT (now())\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 330
+}

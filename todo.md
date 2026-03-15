@@ -1042,3 +1042,12 @@
 - [ ] Fix LSP error in compliance.ts:274 (.match() on union type)
 - [ ] Add Seed Controls button to Compliance Dashboard
 - [ ] Wire trpc.rbac.updateUserRole into AdminUsers.tsx
+
+## Enhancement Sprint — Role & Audit
+
+- [x] Wire roleStats refetch after each role update in AdminUsers.tsx (onSuccess handler)
+- [x] Add `moderator` role to Drizzle schema enum and run pnpm db:push
+- [x] Create roleChangeAuditLog table (userId, changedBy, oldRole, newRole, timestamp)
+- [x] Log every rbac.updateUserRole call to roleChangeAuditLog
+- [x] Expose trpc.rbac.getRoleAuditLog procedure for admin review
+- [x] Write vitest tests for audit log and moderator role

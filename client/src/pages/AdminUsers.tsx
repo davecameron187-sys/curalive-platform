@@ -1,24 +1,26 @@
 /**
  * AdminUsers — User Role Management
- * Admin-only page to view all users and promote/demote roles (user / operator / admin)
- * Includes quick-promote buttons and a banner for users with role=user who need operator access
+ * Admin-only page to view all users and promote/demote roles (user / moderator / operator / admin)
+ * Includes quick-promote buttons, role statistics, and a full role-change audit log.
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
-import { Shield, Users, RefreshCw, AlertCircle, Lock, UserCheck, Zap } from "lucide-react";
+import { Shield, Users, RefreshCw, AlertCircle, Lock, UserCheck, Zap, ClipboardList, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-900/40 text-red-300 border border-red-800/40",
   operator: "bg-indigo-900/40 text-indigo-300 border border-indigo-800/40",
+  moderator: "bg-amber-900/40 text-amber-300 border border-amber-800/40",
   user: "bg-slate-700/60 text-slate-300 border border-slate-600/40",
 };
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
   operator: "Operator",
+  moderator: "Moderator",
   user: "User",
 };
 
@@ -26,19 +28,26 @@ export default function AdminUsers() {
   const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const utils = trpc.useUtils();
 
   const { data: userList, isLoading, refetch } = trpc.admin.listUsers.useQuery(undefined, {
     enabled: user?.role === "admin",
   });
-  const { data: roleStats } = trpc.rbac.getRoleStatistics.useQuery(undefined, {
+  const { data: roleStats, refetch: refetchStats } = trpc.rbac.getRoleStatistics.useQuery(undefined, {
     enabled: user?.role === "admin",
   });
+  const { data: auditLog, refetch: refetchAudit } = trpc.rbac.getRoleAuditLog.useQuery(
+    { limit: 50 },
+    { enabled: user?.role === "admin" }
+  );
 
-  // Use trpc.rbac.updateUserRole as the primary mutation (persists to DB + RBAC audit trail)
+  // Use trpc.rbac.updateUserRole as the primary mutation (persists to DB + writes audit log)
   const updateRole = trpc.rbac.updateUserRole.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       refetch();
-      toast.success("Role updated successfully");
+      refetchStats();   // keep stats bar in sync
+      refetchAudit();   // refresh audit log immediately
+      toast.success(`Role updated: ${ROLE_LABELS[data.oldRole]} → ${ROLE_LABELS[data.newRole]}`);
       setUpdatingId(null);
     },
     onError: (err) => {
@@ -99,12 +108,12 @@ export default function AdminUsers() {
           </div>
           <div>
             <h1 className="font-bold text-base">User Management</h1>
-            <p className="text-slate-500 text-xs">CuraLive Admin Panel</p>
+            <p className="text-slate-500 text-xs">Chorus.AI Admin Panel</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => refetch()}
+            onClick={() => { refetch(); refetchStats(); refetchAudit(); }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-medium transition-colors"
           >
             <RefreshCw className="w-3 h-3" /> Refresh
@@ -149,13 +158,14 @@ export default function AdminUsers() {
           </div>
         )}
 
-        {/* Role Statistics Summary Bar */}
+        {/* Role Statistics Summary Bar — 5 tiles including Moderator */}
         {roleStats && (
-          <div className="mb-6 grid grid-cols-4 gap-3">
+          <div className="mb-6 grid grid-cols-5 gap-3">
             {[
               { label: "Total Users", value: roleStats.totalUsers, color: "text-slate-200", bg: "bg-slate-800/60 border-slate-700" },
               { label: "Admins", value: roleStats.admins, color: "text-red-300", bg: "bg-red-900/20 border-red-800/40" },
               { label: "Operators", value: roleStats.operators, color: "text-indigo-300", bg: "bg-indigo-900/20 border-indigo-800/40" },
+              { label: "Moderators", value: (roleStats as any).moderators ?? 0, color: "text-amber-300", bg: "bg-amber-900/20 border-amber-800/40" },
               { label: "Users", value: roleStats.users, color: "text-slate-300", bg: "bg-slate-800/40 border-slate-700/60" },
             ].map(({ label, value, color, bg }) => (
               <div key={label} className={`rounded-lg border px-4 py-3 flex items-center justify-between ${bg}`}>
@@ -165,13 +175,15 @@ export default function AdminUsers() {
             ))}
           </div>
         )}
-        {/* Role Guide */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+
+        {/* Role Guide — 4 roles */}
+        <div className="grid grid-cols-4 gap-4 mb-8">
           {[
-            { role: "user", icon: Users, desc: "Default role. Can register for events and view event rooms." },
-            { role: "operator", icon: Shield, desc: "Can access the OCC, create events, manage webcasts, and use all operator tools." },
-            { role: "admin", icon: Shield, desc: "Full access including User Management, seed data tools, and all operator capabilities." },
-          ].map(({ role, icon: Icon, desc }) => (
+            { role: "user", desc: "Default role. Can register for events and view event rooms." },
+            { role: "moderator", desc: "Can moderate Q&A queues and approve/reject attendee questions." },
+            { role: "operator", desc: "Can access the OCC, create events, manage webcasts, and use all operator tools." },
+            { role: "admin", desc: "Full access including User Management, seed data tools, and all operator capabilities." },
+          ].map(({ role, desc }) => (
             <div key={role} className="bg-[#0f172a] border border-slate-800 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded ${ROLE_COLORS[role]}`}>{ROLE_LABELS[role]}</span>
@@ -182,7 +194,7 @@ export default function AdminUsers() {
         </div>
 
         {/* User Table */}
-        <div className="bg-[#0f172a] border border-slate-800 rounded-lg overflow-hidden">
+        <div className="bg-[#0f172a] border border-slate-800 rounded-lg overflow-hidden mb-8">
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-slate-400" />
@@ -228,7 +240,7 @@ export default function AdminUsers() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded ${ROLE_COLORS[u.role ?? "user"]}`}>
-                        {ROLE_LABELS[u.role ?? "user"]}
+                        {ROLE_LABELS[u.role ?? "user"] ?? u.role}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -236,7 +248,7 @@ export default function AdminUsers() {
                         <span className="text-slate-600 text-xs italic">Cannot change own role</span>
                       ) : (
                         <div className="flex items-center gap-1">
-                          {(["user", "operator", "admin"] as const).map((r) => (
+                          {(["user", "moderator", "operator", "admin"] as const).map((r) => (
                             <button
                               key={r}
                               disabled={u.role === r || updatingId === u.id}
@@ -263,12 +275,81 @@ export default function AdminUsers() {
           )}
         </div>
 
+        {/* Role Change Audit Log */}
+        <div className="bg-[#0f172a] border border-slate-800 rounded-lg overflow-hidden mb-8">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-slate-400" />
+              <span className="font-semibold text-sm">Role Change Audit Log</span>
+              {auditLog && <span className="text-slate-500 text-xs">({auditLog.length} entries)</span>}
+            </div>
+            <button
+              onClick={() => refetchAudit()}
+              className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded text-xs transition-colors"
+            >
+              <RefreshCw className="w-3 h-3" />
+            </button>
+          </div>
+
+          {!auditLog || auditLog.length === 0 ? (
+            <div className="py-8 text-center text-slate-500 text-sm">No role changes recorded yet.</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-500 text-xs uppercase tracking-wider">
+                  <th className="text-left px-4 py-2.5 font-medium">User</th>
+                  <th className="text-left px-4 py-2.5 font-medium">Change</th>
+                  <th className="text-left px-4 py-2.5 font-medium">Changed By</th>
+                  <th className="text-left px-4 py-2.5 font-medium">Reason</th>
+                  <th className="text-left px-4 py-2.5 font-medium">When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLog.map((entry) => (
+                  <tr key={entry.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-200 text-xs">{entry.userName}</div>
+                      <div className="text-slate-500 text-[10px]">{entry.userEmail}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${ROLE_COLORS[entry.oldRole] ?? "bg-slate-700 text-slate-300"}`}>
+                          {ROLE_LABELS[entry.oldRole] ?? entry.oldRole}
+                        </span>
+                        <ArrowRight className="w-3 h-3 text-slate-500" />
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${ROLE_COLORS[entry.newRole] ?? "bg-slate-700 text-slate-300"}`}>
+                          {ROLE_LABELS[entry.newRole] ?? entry.newRole}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-slate-300 text-xs">{entry.changedByName}</div>
+                      <div className="text-slate-500 text-[10px]">{entry.changedByEmail}</div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-400 text-xs italic">
+                      {entry.reason ?? <span className="text-slate-600">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 text-xs">
+                      {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
         {/* Info box */}
         <div className="mt-6 bg-amber-900/20 border border-amber-800/30 rounded-lg px-4 py-3 flex items-start gap-3">
           <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
           <div>
-            <p className="text-amber-300 text-xs font-semibold mb-0.5">Role changes take effect immediately</p>
-            <p className="text-amber-400/70 text-xs">Users with the <strong>operator</strong> role can access the OCC, create and manage events, and use all conference management tools. The <strong>admin</strong> role additionally grants access to this User Management page. When a team member logs in for the first time, they appear here with role=user — use the quick-promote banner above to grant them operator access.</p>
+            <p className="text-amber-300 text-xs font-semibold mb-0.5">Role changes take effect immediately and are permanently logged</p>
+            <p className="text-amber-400/70 text-xs">
+              <strong>Moderator</strong> — can moderate Q&A queues and approve/reject questions.{" "}
+              <strong>Operator</strong> — can access the OCC, create and manage events, and use all conference management tools.{" "}
+              <strong>Admin</strong> — additionally grants access to this User Management page.
+              Every role change is recorded in the audit log above with the name of the admin who made the change.
+            </p>
           </div>
         </div>
       </div>

@@ -3,14 +3,15 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getDb } from "../db";
-import { users } from "../../drizzle/schema";
-import { eq, count } from "drizzle-orm";
+import { users, roleChangeAuditLog } from "../../drizzle/schema";
+import { eq, count, sql } from "drizzle-orm";
 
-export type UserRole = "admin" | "operator" | "user";
+export type UserRole = "admin" | "operator" | "moderator" | "user";
 
 export const roleHierarchy: Record<UserRole, number> = {
-  admin: 3,
-  operator: 2,
+  admin: 4,
+  operator: 3,
+  moderator: 2,
   user: 1,
 };
 
@@ -32,6 +33,13 @@ export const operatorProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+export const moderatorProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (!hasRole(ctx.user.role as UserRole, "moderator")) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Moderator access required" });
+  }
+  return next({ ctx });
+});
+
 export const rbacRouter = router({
   getCurrentRole: protectedProcedure.query(({ ctx }) => ({
     role: ctx.user.role,
@@ -40,7 +48,7 @@ export const rbacRouter = router({
   })),
 
   hasRole: protectedProcedure
-    .input(z.object({ requiredRole: z.enum(["admin", "operator", "user"]) }))
+    .input(z.object({ requiredRole: z.enum(["admin", "operator", "moderator", "user"]) }))
     .query(({ ctx, input }) => ({
       hasRole: hasRole(ctx.user.role as UserRole, input.requiredRole),
       userRole: ctx.user.role,
@@ -54,8 +62,8 @@ export const rbacRouter = router({
       canViewComplianceReports: hasRole(role, "admin"),
       canOperateConsole: hasRole(role, "operator"),
       canViewParticipants: hasRole(role, "operator"),
-      canModerateQA: hasRole(role, "operator"),
-      canApproveQuestions: hasRole(role, "operator"),
+      canModerateQA: hasRole(role, "moderator"),
+      canApproveQuestions: hasRole(role, "moderator"),
       canViewAnalytics: hasRole(role, "operator"),
       canDownloadTranscripts: hasRole(role, "operator"),
       canExportReports: hasRole(role, "admin"),
@@ -83,7 +91,8 @@ export const rbacRouter = router({
   updateUserRole: adminProcedure
     .input(z.object({
       userId: z.number(),
-      newRole: z.enum(["admin", "operator", "user"]),
+      newRole: z.enum(["admin", "operator", "moderator", "user"]),
+      reason: z.string().max(512).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.id === input.userId) {
@@ -91,24 +100,88 @@ export const rbacRouter = router({
       }
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const [target] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, input.userId));
+
+      if (!target) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      const oldRole = target.role as UserRole;
+
       await db.update(users).set({ role: input.newRole }).where(eq(users.id, input.userId));
-      return { success: true, userId: input.userId, newRole: input.newRole };
+
+      await db.insert(roleChangeAuditLog).values({
+        userId: input.userId,
+        changedByUserId: ctx.user.id,
+        oldRole,
+        newRole: input.newRole,
+        reason: input.reason ?? null,
+      });
+
+      return { success: true, userId: input.userId, oldRole, newRole: input.newRole };
     }),
 
   getRoleStatistics: adminProcedure.query(async () => {
     const db = await getDb();
-    if (!db) return { totalUsers: 0, admins: 0, operators: 0, users: 0 };
+    if (!db) return { totalUsers: 0, admins: 0, operators: 0, moderators: 0, users: 0 };
     const rows = await db
       .select({ role: users.role, cnt: count() })
       .from(users)
       .groupBy(users.role);
-    const stats = { totalUsers: 0, admins: 0, operators: 0, users: 0 };
+    const stats = { totalUsers: 0, admins: 0, operators: 0, moderators: 0, users: 0 };
     for (const row of rows) {
       stats.totalUsers += Number(row.cnt);
       if (row.role === "admin") stats.admins = Number(row.cnt);
       else if (row.role === "operator") stats.operators = Number(row.cnt);
+      else if (row.role === "moderator") stats.moderators = Number(row.cnt);
       else stats.users = Number(row.cnt);
     }
     return stats;
   }),
+
+  getRoleAuditLog: adminProcedure
+    .input(z.object({ limit: z.number().min(1).max(500).default(100) }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const limit = input?.limit ?? 100;
+
+      const rows = await db.execute(sql`
+        SELECT
+          a.id,
+          a.userId,
+          a.changedByUserId,
+          a.oldRole,
+          a.newRole,
+          a.reason,
+          a.createdAt,
+          u1.name  AS userName,
+          u1.email AS userEmail,
+          u2.name  AS changedByName,
+          u2.email AS changedByEmail
+        FROM role_change_audit_log a
+        LEFT JOIN users u1 ON u1.id = a.userId
+        LEFT JOIN users u2 ON u2.id = a.changedByUserId
+        ORDER BY a.createdAt DESC
+        LIMIT ${limit}
+      `);
+
+      return (rows[0] as any[]).map((r: any) => ({
+        id: r.id,
+        userId: r.userId,
+        changedByUserId: r.changedByUserId,
+        oldRole: r.oldRole,
+        newRole: r.newRole,
+        reason: r.reason ?? null,
+        createdAt: r.createdAt,
+        userName: r.userName ?? "Unknown",
+        userEmail: r.userEmail ?? "",
+        changedByName: r.changedByName ?? "Unknown",
+        changedByEmail: r.changedByEmail ?? "",
+      }));
+    }),
 });
