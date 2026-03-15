@@ -2692,3 +2692,42 @@ export const complianceEvidenceFiles = mysqlTable("compliance_evidence_files", {
   expiresAt: bigint("expires_at", { mode: "number" }),
 });
 export type ComplianceEvidenceFile = typeof complianceEvidenceFiles.$inferSelect;
+
+// ─── AI Compliance Engine — Threat Detection ──────────────────────────────────
+export const complianceThreats = mysqlTable("compliance_threats", {
+  id: int("id").autoincrement().primaryKey(),
+  threatType: mysqlEnum("threat_type", ["fraud", "access_anomaly", "data_exfiltration", "policy_violation", "regulatory_breach", "predictive_warning"]).notNull(),
+  severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).notNull().default("medium"),
+  status: mysqlEnum("status", ["detected", "investigating", "confirmed", "mitigated", "false_positive"]).notNull().default("detected"),
+  eventId: varchar("event_id", { length: 128 }),
+  sourceSystem: varchar("source_system", { length: 64 }).notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  description: text("description"),
+  evidence: json("evidence"),
+  affectedEntities: json("affected_entities"),
+  aiConfidence: float("ai_confidence").default(0),
+  aiReasoning: text("ai_reasoning"),
+  remediationAction: varchar("remediation_action", { length: 255 }),
+  remediationTakenAt: timestamp("remediation_taken_at"),
+  detectedBy: varchar("detected_by", { length: 64 }).notNull().default("compliance_engine"),
+  reviewedBy: int("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type ComplianceThreat = typeof complianceThreats.$inferSelect;
+
+export const complianceFrameworkChecks = mysqlTable("compliance_framework_checks", {
+  id: int("id").autoincrement().primaryKey(),
+  framework: mysqlEnum("framework", ["iso27001", "soc2"]).notNull(),
+  controlRef: varchar("control_ref", { length: 20 }).notNull(),
+  controlName: varchar("control_name", { length: 255 }).notNull(),
+  checkType: mysqlEnum("check_type", ["automated", "manual", "ai_assessed"]).notNull().default("automated"),
+  status: mysqlEnum("status", ["passing", "failing", "warning", "not_assessed"]).notNull().default("not_assessed"),
+  lastCheckedAt: timestamp("last_checked_at"),
+  details: text("details"),
+  evidence: json("evidence"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type ComplianceFrameworkCheck = typeof complianceFrameworkChecks.$inferSelect;

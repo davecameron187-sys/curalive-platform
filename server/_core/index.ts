@@ -761,6 +761,10 @@ async function startServer() {
     import("../services/HealthGuardianService").then(({ startHealthGuardian }) => {
       startHealthGuardian();
     }).catch(e => console.warn("[HealthGuardian] Failed to start:", e.message));
+
+    import("../services/ComplianceEngineService").then(({ startComplianceEngine }) => {
+      startComplianceEngine();
+    }).catch(e => console.warn("[ComplianceEngine] Failed to start:", e.message));
   });
 }
 

@@ -90,6 +90,7 @@ import AutonomousIntervention from "./pages/AutonomousIntervention";
 import TaggedMetricsDashboard from "./pages/TaggedMetricsDashboard";
 import ShadowMode from "./pages/ShadowMode";
 import HealthGuardian from "./pages/HealthGuardian";
+import ComplianceEngineDashboard from "./pages/ComplianceEngineDashboard";
 import Bastion from "./pages/Bastion";
 import LumiPartner from "./pages/LumiPartner";
 import ArchiveUpload from "./pages/ArchiveUpload";
@@ -214,6 +215,7 @@ function Router() {
       <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/health-guardian" component={HealthGuardian} />
+      <Route path="/compliance-engine" component={ComplianceEngineDashboard} />
       <Route path="/mailing-lists" component={MailingListManager} />
       <Route path="/register/confirm/:token">{(params: any) => <MailingListConfirm params={params} />}</Route>
       <Route path="/bastion" component={Bastion} />

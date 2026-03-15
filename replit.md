@@ -215,6 +215,18 @@ The full Q&A support infrastructure is built and working but the UI widget is cu
 - **Phase 4 (Zero-Click)**: `preRegisterAll` mutation in mailingListRouter — registers all unregistered entries with a chosen default join method, sends confirmation emails with join details immediately (no click required). "Pre-Register All" button with join method picker modal in MailingListManager. DB columns: `pre_registered`, `default_join_method` on `mailing_lists`
 - **Security**: Confirm tokens are single-use (nulled after registration), PINs are unique per event, PINs only generated for phone join method. CRM API keys enforce event-scope and permission checks on all endpoints
 
+## AI Compliance Engine (March 2026)
+
+- **Route**: `/compliance-engine` — Autonomous threat detection, predictive fraud analysis & framework compliance monitoring
+- **Service**: `server/services/ComplianceEngineService.ts` — Runs every 5 minutes; detects registration fraud, access anomalies, data exfiltration; AI-assessed severity via LLM; predictive alerts for recurring threats and capacity stress
+- **Router**: `server/routers/complianceEngineRouter.ts` — `complianceEngine.dashboard`, `complianceEngine.runScan`, `complianceEngine.threats`, `complianceEngine.threatStats`, `complianceEngine.updateThreat`
+- **Framework Routers (from Manus)**: `server/routers/soc2Router.ts` (SOC 2 control CRUD, CSV import, evidence upload, audit ZIP), `server/routers/iso27001Router.ts` (ISO 27001 control CRUD, same features)
+- **DB tables**: `compliance_threats`, `compliance_framework_checks`, `soc2_controls` (18 seeded), `iso27001_controls` (16 seeded), `compliance_evidence_files`
+- **Migrations**: `scripts/create-compliance-framework-tables.ts`, `scripts/create-compliance-engine-tables.ts`
+- **Auto-start**: Engine starts on server boot via dynamic import in `server/_core/index.ts`
+- **PDF generation**: `server/compliancePdf.ts` (pdfmake) — compliance certificate PDF export
+- **Patent extension**: `docs/CIPC-Patent-Extension-AI-Compliance.md` — 5 claims covering autonomous compliance monitoring, multi-signal predictive fraud detection, cross-system health-compliance correlation, AI-assessed threat severity, automated remediation lifecycle
+
 ## OpenAI API Key Configuration (March 2026)
 
 - **Priority order** (`server/_core/env.ts`): `OPENAI_API_KEY` → `BUILT_IN_FORGE_API_KEY` → `AI_INTEGRATIONS_OPENAI_API_KEY`
