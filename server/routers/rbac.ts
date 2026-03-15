@@ -195,4 +195,62 @@ export const rbacRouter = router({
         changedByEmail: r.changedByEmail ?? "",
       }));
     }),
+
+  bulkImportRoles: adminProcedure
+    .input(z.object({
+      records: z.array(z.object({
+        email: z.string().email(),
+        role: z.enum(["user", "moderator", "operator", "admin"]),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      let successful = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      for (const record of input.records) {
+        try {
+          const [targetUser] = await db
+            .select({ id: users.id, role: users.role })
+            .from(users)
+            .where(eq(users.email, record.email));
+
+          if (!targetUser) {
+            failed++;
+            errors.push(`User ${record.email} not found`);
+            continue;
+          }
+
+          const oldRole = targetUser.role as UserRole;
+          if (oldRole === record.role) {
+            successful++; // Already has this role, count as success
+            continue;
+          }
+
+          await db.update(users).set({ role: record.role }).where(eq(users.id, targetUser.id));
+
+          await db.insert(roleChangeAuditLog).values({
+            userId: targetUser.id,
+            changedByUserId: ctx.user.id,
+            oldRole,
+            newRole: record.role,
+            reason: "Bulk import",
+          });
+
+          successful++;
+        } catch (err) {
+          failed++;
+          errors.push(`Error updating ${record.email}: ${err instanceof Error ? err.message : "Unknown error"}`);
+        }
+      }
+
+      if (errors.length > 0 && errors.length <= 5) {
+        console.log("[Bulk Import Errors]", errors);
+      }
+
+      return { successful, failed, total: input.records.length };
+    }),
 });
