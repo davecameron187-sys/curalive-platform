@@ -18,7 +18,7 @@ const CARD_BG = "#1e2028";
 
 const W = 1400;
 const H = 900;
-const assetsDir = path.resolve("docs/diagram-assets");
+const assetsDir = path.resolve("docs/diagram-assets-small");
 
 const doc = new PDFDocument({
   size: [W, H],
