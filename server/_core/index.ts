@@ -764,8 +764,10 @@ async function startServer() {
       startHealthGuardian();
     }).catch(e => console.warn("[HealthGuardian] Failed to start:", e.message));
 
-    import("../services/ComplianceEngineService").then(({ startComplianceEngine }) => {
+    import("../services/ComplianceEngineService").then(({ startComplianceEngine, seedFrameworkControls }) => {
       startComplianceEngine();
+      // Seed SOC2 / ISO27001 framework controls on first boot (idempotent — skips existing rows)
+      seedFrameworkControls().catch(e => console.warn("[ComplianceEngine] Seed failed:", e.message));
     }).catch(e => console.warn("[ComplianceEngine] Failed to start:", e.message));
   });
 }

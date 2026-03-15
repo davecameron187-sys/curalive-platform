@@ -115,8 +115,8 @@ export const transcriptionRouter = router({
         conferenceId: segment.conferenceId,
         segmentId: input.segmentId,
         operatorId: ctx.user?.id ?? 0,
-        originalText: segment.text,
-        correctedText: input.text,
+        originalText: segment.text ?? "",
+        correctedText: input.text ?? "",
         editType: "manual_correction",
         reason: input.reason ?? "Manual correction",
         status: "completed"
