@@ -96,3 +96,9 @@ id = "VjmT089hj3C_ZUTWL2DXj"
 uri = "file://docs/AI_AntiHijack_Market_Traction_Playbook.docx"
 type = "word_document"
 title = "AI AntiHijack — Market Traction & Acquisition Value Playbook"
+
+[[outputs]]
+id = "zBbjZgXMrMvSlU7bqlpBe"
+uri = "file://docs/AI_AntiHijack_Tragar_Pilot_Proposal.docx"
+type = "word_document"
+title = "AI AntiHijack — Tragar Logistics Pilot Proposal"
