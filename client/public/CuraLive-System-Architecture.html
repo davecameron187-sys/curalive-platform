@@ -3,357 +3,793 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CuraLive — Complete System Architecture</title>
+<title>CuraLive — System Architecture Diagram</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0f; color: #e4e4e7; padding: 40px; min-width: 1400px; }
-  .page { max-width: 1400px; margin: 0 auto; }
-  h1 { font-size: 32px; font-weight: 800; color: #fff; text-align: center; margin-bottom: 6px; }
-  .subtitle { text-align: center; color: #71717a; font-size: 13px; margin-bottom: 32px; letter-spacing: 0.5px; }
-  .section-bar { padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; margin-top: 28px; }
-  .bar-orange { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; }
-  .bar-green { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; }
-  .bar-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
-  .bar-violet { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; }
-  .bar-teal { background: linear-gradient(135deg, #14b8a6, #0d9488); color: #fff; }
-  .bar-red { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
-  .bar-grey { background: linear-gradient(135deg, #52525b, #3f3f46); color: #fff; }
-  .grid { display: grid; gap: 12px; margin-bottom: 8px; }
-  .grid-6 { grid-template-columns: repeat(6, 1fr); }
-  .grid-5 { grid-template-columns: repeat(5, 1fr); }
-  .grid-4 { grid-template-columns: repeat(4, 1fr); }
-  .grid-3 { grid-template-columns: repeat(3, 1fr); }
-  .grid-7 { grid-template-columns: repeat(7, 1fr); }
-  .card { border-radius: 10px; padding: 16px; border: 1px solid rgba(255,255,255,0.08); }
-  .card h3 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
-  .card p, .card ul { font-size: 11px; line-height: 1.6; color: #a1a1aa; }
-  .card ul { list-style: none; }
-  .card ul li::before { content: "• "; color: #71717a; }
-  .c-orange { background: rgba(249,115,22,0.1); border-color: rgba(249,115,22,0.3); }
-  .c-orange h3 { color: #fb923c; }
-  .c-green { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.3); }
-  .c-green h3 { color: #4ade80; }
-  .c-violet { background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); }
-  .c-violet h3 { color: #a78bfa; }
-  .c-blue { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); }
-  .c-blue h3 { color: #60a5fa; }
-  .c-yellow { background: rgba(234,179,8,0.1); border-color: rgba(234,179,8,0.3); }
-  .c-yellow h3 { color: #facc15; }
-  .c-red { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); }
-  .c-red h3 { color: #f87171; }
-  .c-teal { background: rgba(20,184,166,0.1); border-color: rgba(20,184,166,0.3); }
-  .c-teal h3 { color: #2dd4bf; }
-  .c-grey { background: rgba(113,113,122,0.1); border-color: rgba(113,113,122,0.3); }
-  .c-grey h3 { color: #a1a1aa; }
-  .arrow-row { text-align: center; font-size: 24px; color: #3f3f46; margin: 6px 0; letter-spacing: 20px; }
-  .flow-card { border-radius: 10px; padding: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
-  .flow-card h3 { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
-  .flow-card p { font-size: 11px; line-height: 1.7; color: #a1a1aa; }
-  .footer { text-align: center; margin-top: 32px; padding: 16px; background: linear-gradient(135deg, #1e3a5f, #1e1b4b); border-radius: 10px; font-size: 13px; font-weight: 600; color: #93c5fd; }
-  .legend { text-align: center; margin-top: 12px; font-size: 11px; color: #71717a; }
-  .legend span { margin: 0 8px; }
-  @media print {
-    body { background: #fff; color: #111; padding: 20px; }
-    .card, .flow-card { border: 1px solid #ddd; }
-    .card p, .card ul, .flow-card p { color: #444; }
-    .section-bar { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-  }
+  body { font-family: 'Inter', sans-serif; background: #1a1d23; overflow-x: hidden; }
+  svg { display: block; margin: 0 auto; }
+  text { font-family: 'Inter', sans-serif; }
 </style>
 </head>
 <body>
-<div class="page">
+<svg viewBox="0 0 1800 2200" xmlns="http://www.w3.org/2000/svg" width="1800" height="2200">
+  <defs>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.5)"/>
+    </filter>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1d23"/>
+      <stop offset="100%" stop-color="#0f1117"/>
+    </linearGradient>
+    <linearGradient id="orangeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f97316"/><stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="violetGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="tealGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#14b8a6"/><stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+    <linearGradient id="yellowGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eab308"/><stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+    <linearGradient id="coreLineGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.8"/>
+    </linearGradient>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrowOrange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f97316"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#22c55e"/>
+    </marker>
+    <marker id="arrowViolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6"/>
+    </marker>
+    <marker id="arrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+    </marker>
+    <marker id="arrowTeal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#14b8a6"/>
+    </marker>
+    <marker id="arrowYellow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#eab308"/>
+    </marker>
+  </defs>
 
-<h1>CuraLive — Complete System Architecture</h1>
-<p class="subtitle">React 19 + Vite &nbsp;|&nbsp; Express + tRPC &nbsp;|&nbsp; MySQL (Drizzle ORM) &nbsp;|&nbsp; Ably Real-time &nbsp;|&nbsp; OpenAI GPT-4o &nbsp;|&nbsp; Port 5000</p>
+  <rect width="1800" height="2200" fill="url(#bgGrad)"/>
 
-<div class="section-bar bar-orange">Entry Points — How Users Access the Platform</div>
-<div class="grid grid-6">
-  <div class="card c-orange"><h3>Web Browser</h3><p>Operator, Admin, and Attendee access via browser. Full dashboard, OCC, event rooms.</p></div>
-  <div class="card c-orange"><h3>Phone Dial-In</h3><p>Attendees call the conference bridge with their unique PIN. OCC admits them.</p></div>
-  <div class="card c-orange"><h3>External Bridge</h3><p>3rd-party conference systems. Shadow Mode joins silently via Recall.ai.</p></div>
-  <div class="card c-orange"><h3>CRM / Partner API</h3><p>REST + Webhook integration. API key auth (clv_ prefix). Bulk registration.</p></div>
-  <div class="card c-orange"><h3>Mobile Attendee</h3><p>5-panel swipeable event room: Video, Transcript, Q&A, Polls, Info.</p></div>
-  <div class="card c-orange"><h3>OAuth Login</h3><p>Google / GitHub SSO. JWT session cookies. Role-based access control.</p></div>
-</div>
+  <!-- ===== TITLE ===== -->
+  <text x="900" y="55" text-anchor="middle" fill="white" font-size="36" font-weight="900" letter-spacing="1">CuraLive</text>
+  <text x="900" y="82" text-anchor="middle" fill="#71717a" font-size="14" font-weight="400">Complete System Architecture  |  Real-Time Investor Events Platform</text>
+  <text x="900" y="102" text-anchor="middle" fill="#52525b" font-size="11">React 19 + Vite  |  Express + tRPC  |  MySQL (Drizzle)  |  Ably Real-time  |  OpenAI GPT-4o  |  Port 5000</text>
 
-<div class="arrow-row">▼ ▼ ▼ ▼ ▼ ▼</div>
+  <!-- ===== ENTRY POINTS (Top Row) — Icons with labels ===== -->
+  <!-- Browser -->
+  <g filter="url(#shadow)" transform="translate(120, 140)">
+    <rect width="130" height="110" rx="16" fill="#1e2028" stroke="#f97316" stroke-width="2"/>
+    <rect width="130" height="4" rx="2" fill="url(#orangeGrad)" y="0"/>
+    <g transform="translate(41, 18)">
+      <rect x="0" y="8" width="48" height="34" rx="4" fill="none" stroke="#fb923c" stroke-width="2"/>
+      <rect x="16" y="42" width="16" height="4" rx="1" fill="#fb923c"/>
+      <rect x="10" y="46" width="28" height="2" rx="1" fill="#fb923c" opacity="0.5"/>
+      <circle cx="24" cy="20" r="3" fill="#fb923c" opacity="0.7"/>
+      <rect x="6" y="26" width="36" height="1" fill="#fb923c" opacity="0.3"/>
+      <rect x="6" y="30" width="28" height="1" fill="#fb923c" opacity="0.3"/>
+      <rect x="6" y="34" width="32" height="1" fill="#fb923c" opacity="0.3"/>
+    </g>
+    <text x="65" y="85" text-anchor="middle" fill="#fb923c" font-size="11" font-weight="700">Web Browser</text>
+    <text x="65" y="100" text-anchor="middle" fill="#71717a" font-size="8">Dashboard, OCC</text>
+  </g>
 
-<div class="section-bar bar-green">Frontend — React 19 + Vite + TailwindCSS 4 + shadcn/ui</div>
-<div class="grid grid-5">
-  <div class="card c-green">
-    <h3>Events & Operations</h3>
-    <ul>
-      <li>Dashboard · OCC (Operator Console)</li>
-      <li>Webcast Studio · Virtual Studio</li>
-      <li>Event Scheduler · Calendar</li>
-      <li>Bookings · Registrations</li>
-      <li>Training Mode Console</li>
-    </ul>
-  </div>
-  <div class="card c-violet">
-    <h3>AI & Intelligence</h3>
-    <ul>
-      <li>Agentic Brain · Tagged Metrics</li>
-      <li>Intelligence Terminal</li>
-      <li>Shadow Mode · Health Guardian</li>
-      <li>Compliance Engine</li>
-      <li>Sentiment · Market Reaction</li>
-    </ul>
-  </div>
-  <div class="card c-blue">
-    <h3>Attendee Experience</h3>
-    <ul>
-      <li>Event Room · Waiting Room</li>
-      <li>Mobile Room (5-panel)</li>
-      <li>Q&A · Live Polls · Chat</li>
-      <li>On-Demand Library</li>
-      <li>Webcast Replay</li>
-    </ul>
-  </div>
-  <div class="card c-yellow">
-    <h3>Platform & Admin</h3>
-    <ul>
-      <li>Billing · Admin Panel</li>
-      <li>Client Portal (white-label)</li>
-      <li>Mailing Lists · CRM API Keys</li>
-      <li>Branding · Feature Flags</li>
-      <li>Integrations Hub</li>
-    </ul>
-  </div>
-  <div class="card c-red">
-    <h3>Security & Compliance</h3>
-    <ul>
-      <li>SOC 2 Dashboard</li>
-      <li>ISO 27001 Dashboard</li>
-      <li>AI Compliance Engine</li>
-      <li>Audit Trail · Threat Detection</li>
-      <li>Zero Trust Dashboard</li>
-    </ul>
-  </div>
-</div>
+  <!-- Phone -->
+  <g filter="url(#shadow)" transform="translate(280, 140)">
+    <rect width="130" height="110" rx="16" fill="#1e2028" stroke="#f97316" stroke-width="2"/>
+    <rect width="130" height="4" rx="2" fill="url(#orangeGrad)" y="0"/>
+    <g transform="translate(43, 16)">
+      <rect x="8" y="4" width="28" height="48" rx="6" fill="none" stroke="#fb923c" stroke-width="2"/>
+      <rect x="16" y="8" width="12" height="2" rx="1" fill="#fb923c" opacity="0.5"/>
+      <circle cx="22" cy="44" r="3" fill="none" stroke="#fb923c" stroke-width="1.5"/>
+      <rect x="12" y="14" width="20" height="24" rx="1" fill="#fb923c" opacity="0.15"/>
+    </g>
+    <text x="65" y="85" text-anchor="middle" fill="#fb923c" font-size="11" font-weight="700">Phone Dial-In</text>
+    <text x="65" y="100" text-anchor="middle" fill="#71717a" font-size="8">PIN Conference</text>
+  </g>
 
-<div class="arrow-row">▼ ▼ ▼ ▼ ▼</div>
+  <!-- External Bridge -->
+  <g filter="url(#shadow)" transform="translate(440, 140)">
+    <rect width="130" height="110" rx="16" fill="#1e2028" stroke="#f97316" stroke-width="2"/>
+    <rect width="130" height="4" rx="2" fill="url(#orangeGrad)" y="0"/>
+    <g transform="translate(35, 16)">
+      <circle cx="30" cy="28" r="20" fill="none" stroke="#fb923c" stroke-width="2"/>
+      <path d="M18 20 Q30 10 42 20" fill="none" stroke="#fb923c" stroke-width="1.5" opacity="0.6"/>
+      <path d="M14 30 Q30 44 46 30" fill="none" stroke="#fb923c" stroke-width="1.5" opacity="0.6"/>
+      <circle cx="30" cy="28" r="4" fill="#fb923c"/>
+      <text x="30" y="32" text-anchor="middle" fill="#1e2028" font-size="5" font-weight="700">S</text>
+    </g>
+    <text x="65" y="85" text-anchor="middle" fill="#fb923c" font-size="11" font-weight="700">Shadow Mode</text>
+    <text x="65" y="100" text-anchor="middle" fill="#71717a" font-size="8">Recall.ai Listener</text>
+  </g>
 
-<div class="section-bar bar-blue">Backend API — Express + tRPC (45+ Routers on Port 5000)</div>
-<div class="grid grid-6">
-  <div class="card c-blue">
-    <h3>Core Operations</h3>
-    <ul>
-      <li>occ · events · webcast</li>
-      <li>scheduling · registrations</li>
-      <li>webphone · polls</li>
-      <li>liveVideo · mux</li>
-    </ul>
-  </div>
-  <div class="card c-violet">
-    <h3>AI & Intelligence</h3>
-    <ul>
-      <li>agenticBrain · ai · sentiment</li>
-      <li>transcription · shadowMode</li>
-      <li>intelligenceReport</li>
-      <li>taggedMetrics · benchmarks</li>
-    </ul>
-  </div>
-  <div class="card c-blue">
-    <h3>Media & Real-time</h3>
-    <ul>
-      <li>mux · recall · ably</li>
-      <li>virtualStudio · socialMedia</li>
-      <li>contentTriggers</li>
-      <li>archiveUpload</li>
-    </ul>
-  </div>
-  <div class="card c-yellow">
-    <h3>Business & CRM</h3>
-    <ul>
-      <li>billing · clientPortal</li>
-      <li>mailingList · crmApi</li>
-      <li>branding · customisation</li>
-      <li>followups · callPrep</li>
-    </ul>
-  </div>
-  <div class="card c-red">
-    <h3>Compliance & Security</h3>
-    <ul>
-      <li>complianceEngine · compliance</li>
-      <li>soc2 · iso27001</li>
-      <li>healthGuardian</li>
-      <li>supportChat · admin</li>
-    </ul>
-  </div>
-  <div class="card c-grey">
-    <h3>System & Auth</h3>
-    <ul>
-      <li>system · auth · profile</li>
-      <li>OAuth (Google/GitHub)</li>
-      <li>JWT · rate limiting</li>
-      <li>Role-based access (RBAC)</li>
-    </ul>
-  </div>
-</div>
+  <!-- CRM API -->
+  <g filter="url(#shadow)" transform="translate(600, 140)">
+    <rect width="130" height="110" rx="16" fill="#1e2028" stroke="#eab308" stroke-width="2"/>
+    <rect width="130" height="4" rx="2" fill="url(#yellowGrad)" y="0"/>
+    <g transform="translate(37, 16)">
+      <rect x="4" y="6" width="48" height="40" rx="4" fill="none" stroke="#facc15" stroke-width="2"/>
+      <text x="28" y="22" text-anchor="middle" fill="#facc15" font-size="8" font-weight="700">API</text>
+      <path d="M16 28 L40 28" stroke="#facc15" stroke-width="1" opacity="0.4"/>
+      <text x="28" y="38" text-anchor="middle" fill="#facc15" font-size="6" opacity="0.7">clv_***</text>
+    </g>
+    <text x="65" y="85" text-anchor="middle" fill="#facc15" font-size="11" font-weight="700">CRM / Partner</text>
+    <text x="65" y="100" text-anchor="middle" fill="#71717a" font-size="8">REST + Webhooks</text>
+  </g>
 
-<div class="arrow-row">▼ ▼ ▼ ▼ ▼ ▼</div>
+  <!-- Mobile -->
+  <g filter="url(#shadow)" transform="translate(760, 140)">
+    <rect width="130" height="110" rx="16" fill="#1e2028" stroke="#f97316" stroke-width="2"/>
+    <rect width="130" height="4" rx="2" fill="url(#orangeGrad)" y="0"/>
+    <g transform="translate(43, 12)">
+      <rect x="8" y="4" width="28" height="50" rx="6" fill="none" stroke="#fb923c" stroke-width="2"/>
+      <rect x="12" y="12" width="20" height="8" rx="1" fill="#fb923c" opacity="0.2"/>
+      <rect x="12" y="22" width="20" height="8" rx="1" fill="#fb923c" opacity="0.15"/>
+      <rect x="12" y="32" width="20" height="8" rx="1" fill="#fb923c" opacity="0.1"/>
+      <rect x="16" y="8" width="12" height="2" rx="1" fill="#fb923c" opacity="0.4"/>
+    </g>
+    <text x="65" y="85" text-anchor="middle" fill="#fb923c" font-size="11" font-weight="700">Mobile Room</text>
+    <text x="65" y="100" text-anchor="middle" fill="#71717a" font-size="8">5-Panel Swipe</text>
+  </g>
 
-<div class="section-bar bar-violet">Services Layer — Background Processing, AI Engines & Autonomous Systems</div>
-<div class="grid grid-4">
-  <div class="card c-green">
-    <h3>Real-time & Media</h3>
-    <ul>
-      <li>Ably Real-time (live events, presence)</li>
-      <li>Transcription (live + post-event)</li>
-      <li>Audio Enhancer · Virtual Studio</li>
-      <li>Language Dubber (8 languages)</li>
-      <li>Realtime Collaboration</li>
-    </ul>
-  </div>
-  <div class="card c-violet">
-    <h3>AI & Analysis Engines</h3>
-    <ul>
-      <li>Sentiment Analysis (per-speaker, live)</li>
-      <li>Speaking Pace Coach</li>
-      <li>QA Auto-Triage · Toxicity Filter</li>
-      <li>Content Generation Triggers</li>
-      <li>Personalization Engine</li>
-    </ul>
-  </div>
-  <div class="card c-blue">
-    <h3>Content & Reporting</h3>
-    <ul>
-      <li>Event Brief Generator</li>
-      <li>Webcast Recap · Podcast Converter</li>
-      <li>Live Rolling Summary</li>
-      <li>Social Media · Event Echo Pipeline</li>
-      <li>Content Performance Analytics</li>
-    </ul>
-  </div>
-  <div class="card c-red">
-    <h3>Compliance & Monitoring</h3>
-    <ul>
-      <li>Compliance Engine (5-min scans)</li>
-      <li>Health Guardian (30s health checks)</li>
-      <li>AI Threat Assessment (GPT-4o)</li>
-      <li>Compliance Moderator</li>
-      <li>Redaction Workflow · Sustainability</li>
-    </ul>
-  </div>
-</div>
+  <!-- OAuth -->
+  <g filter="url(#shadow)" transform="translate(920, 140)">
+    <rect width="130" height="110" rx="16" fill="#1e2028" stroke="#f97316" stroke-width="2"/>
+    <rect width="130" height="4" rx="2" fill="url(#orangeGrad)" y="0"/>
+    <g transform="translate(37, 16)">
+      <circle cx="28" cy="18" r="10" fill="none" stroke="#fb923c" stroke-width="2"/>
+      <path d="M28 28 C12 32 10 44 10 46 L46 46 C46 44 44 32 28 28Z" fill="none" stroke="#fb923c" stroke-width="2"/>
+      <rect x="36" y="12" width="14" height="10" rx="2" fill="none" stroke="#fb923c" stroke-width="1.5"/>
+      <circle cx="43" cy="17" r="2" fill="#fb923c"/>
+    </g>
+    <text x="65" y="85" text-anchor="middle" fill="#fb923c" font-size="11" font-weight="700">OAuth SSO</text>
+    <text x="65" y="100" text-anchor="middle" fill="#71717a" font-size="8">Google / GitHub</text>
+  </g>
 
-<div class="arrow-row">▼ ▼ ▼ ▼</div>
+  <!-- ===== CONNECTION LINES: Entry -> Frontend Core ===== -->
+  <g opacity="0.5">
+    <line x1="185" y1="250" x2="185" y2="310" stroke="#f97316" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrowOrange)"/>
+    <line x1="345" y1="250" x2="345" y2="310" stroke="#f97316" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrowOrange)"/>
+    <line x1="505" y1="250" x2="505" y2="310" stroke="#f97316" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrowOrange)"/>
+    <line x1="665" y1="250" x2="665" y2="310" stroke="#eab308" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrowYellow)"/>
+    <line x1="825" y1="250" x2="825" y2="310" stroke="#f97316" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrowOrange)"/>
+    <line x1="985" y1="250" x2="985" y2="310" stroke="#f97316" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrowOrange)"/>
+  </g>
 
-<div class="section-bar bar-teal">Data Layer — MySQL (Drizzle ORM) · 80+ Tables · Ably Channels · Object Storage</div>
-<div class="grid grid-6">
-  <div class="card c-teal">
-    <h3>Core Tables</h3>
-    <ul>
-      <li>users · events</li>
-      <li>attendee_registrations</li>
-      <li>ir_contacts · branding</li>
-      <li>event_schedules</li>
-    </ul>
-  </div>
-  <div class="card c-teal">
-    <h3>OCC / Telephony</h3>
-    <ul>
-      <li>occ_conferences</li>
-      <li>occ_participants · lounge</li>
-      <li>chat_messages · audio_files</li>
-      <li>operator_sessions</li>
-    </ul>
-  </div>
-  <div class="card c-teal">
-    <h3>Webcasting & Media</h3>
-    <ul>
-      <li>webcast_events</li>
-      <li>webcast_qa · polls</li>
-      <li>mux_streams · slides</li>
-      <li>transcription_jobs</li>
-    </ul>
-  </div>
-  <div class="card c-teal">
-    <h3>AI & Intelligence</h3>
-    <ul>
-      <li>agentic_analyses</li>
-      <li>tagged_metrics · shadow</li>
-      <li>briefing_packs · signals</li>
-      <li>audit_log · feedback</li>
-    </ul>
-  </div>
-  <div class="card c-teal">
-    <h3>Billing & CRM</h3>
-    <ul>
-      <li>billing_clients · quotes</li>
-      <li>stripe_customers</li>
-      <li>mailing_lists · entries</li>
-      <li>crm_api_keys · social</li>
-    </ul>
-  </div>
-  <div class="card c-teal">
-    <h3>Compliance</h3>
-    <ul>
-      <li>compliance_threats</li>
-      <li>soc2_controls (18)</li>
-      <li>iso27001_controls (16)</li>
-      <li>evidence · certificates</li>
-    </ul>
-  </div>
-</div>
+  <!-- ===== FRONTEND LAYER (Big rounded box) ===== -->
+  <g filter="url(#shadow)">
+    <rect x="80" y="310" width="960" height="250" rx="20" fill="#151820" stroke="#22c55e" stroke-width="2.5" stroke-opacity="0.6"/>
+    <rect x="80" y="310" width="960" height="6" rx="3" fill="url(#greenGrad)"/>
+    <text x="560" y="338" text-anchor="middle" fill="#4ade80" font-size="13" font-weight="800" letter-spacing="1.5">FRONTEND  —  React 19 + Vite + TailwindCSS 4 + shadcn/ui</text>
 
-<div class="arrow-row">▼ ▼ ▼ ▼ ▼ ▼</div>
+    <!-- Inner modules -->
+    <g transform="translate(100, 355)">
+      <rect width="170" height="180" rx="10" fill="rgba(34,197,94,0.08)" stroke="#22c55e" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="85" y="22" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="700">Events &amp; Operations</text>
+      <text x="85" y="42" text-anchor="middle" fill="#a1a1aa" font-size="9">Dashboard</text>
+      <text x="85" y="57" text-anchor="middle" fill="#a1a1aa" font-size="9">Operator Console (OCC)</text>
+      <text x="85" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">Webcast Studio</text>
+      <text x="85" y="87" text-anchor="middle" fill="#a1a1aa" font-size="9">Event Scheduler</text>
+      <text x="85" y="102" text-anchor="middle" fill="#a1a1aa" font-size="9">Bookings / Registrations</text>
+      <text x="85" y="117" text-anchor="middle" fill="#a1a1aa" font-size="9">Virtual Studio</text>
+      <text x="85" y="132" text-anchor="middle" fill="#a1a1aa" font-size="9">Training Console</text>
+    </g>
+    <g transform="translate(290, 355)">
+      <rect width="170" height="180" rx="10" fill="rgba(139,92,246,0.08)" stroke="#8b5cf6" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="85" y="22" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="700">AI &amp; Intelligence</text>
+      <text x="85" y="42" text-anchor="middle" fill="#a1a1aa" font-size="9">Agentic Brain</text>
+      <text x="85" y="57" text-anchor="middle" fill="#a1a1aa" font-size="9">Tagged Metrics</text>
+      <text x="85" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">Intelligence Terminal</text>
+      <text x="85" y="87" text-anchor="middle" fill="#a1a1aa" font-size="9">Shadow Mode</text>
+      <text x="85" y="102" text-anchor="middle" fill="#a1a1aa" font-size="9">Health Guardian</text>
+      <text x="85" y="117" text-anchor="middle" fill="#a1a1aa" font-size="9">Compliance Engine</text>
+      <text x="85" y="132" text-anchor="middle" fill="#a1a1aa" font-size="9">Sentiment Analysis</text>
+    </g>
+    <g transform="translate(480, 355)">
+      <rect width="170" height="180" rx="10" fill="rgba(59,130,246,0.08)" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="85" y="22" text-anchor="middle" fill="#60a5fa" font-size="11" font-weight="700">Attendee Experience</text>
+      <text x="85" y="42" text-anchor="middle" fill="#a1a1aa" font-size="9">Event Room</text>
+      <text x="85" y="57" text-anchor="middle" fill="#a1a1aa" font-size="9">Waiting Room</text>
+      <text x="85" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">Mobile Room (5-panel)</text>
+      <text x="85" y="87" text-anchor="middle" fill="#a1a1aa" font-size="9">Q&amp;A / Live Polls</text>
+      <text x="85" y="102" text-anchor="middle" fill="#a1a1aa" font-size="9">Chat</text>
+      <text x="85" y="117" text-anchor="middle" fill="#a1a1aa" font-size="9">On-Demand Library</text>
+      <text x="85" y="132" text-anchor="middle" fill="#a1a1aa" font-size="9">Webcast Replay</text>
+    </g>
+    <g transform="translate(670, 355)">
+      <rect width="170" height="85" rx="10" fill="rgba(234,179,8,0.08)" stroke="#eab308" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="85" y="22" text-anchor="middle" fill="#facc15" font-size="11" font-weight="700">Platform &amp; Admin</text>
+      <text x="85" y="42" text-anchor="middle" fill="#a1a1aa" font-size="9">Billing / Admin Panel</text>
+      <text x="85" y="57" text-anchor="middle" fill="#a1a1aa" font-size="9">Client Portal</text>
+      <text x="85" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">Mailing Lists / CRM Keys</text>
+    </g>
+    <g transform="translate(670, 450)">
+      <rect width="170" height="85" rx="10" fill="rgba(239,68,68,0.08)" stroke="#ef4444" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="85" y="22" text-anchor="middle" fill="#f87171" font-size="11" font-weight="700">Security &amp; Compliance</text>
+      <text x="85" y="42" text-anchor="middle" fill="#a1a1aa" font-size="9">SOC 2 / ISO 27001</text>
+      <text x="85" y="57" text-anchor="middle" fill="#a1a1aa" font-size="9">AI Compliance Engine</text>
+      <text x="85" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">Audit Trail / Threats</text>
+    </g>
+  </g>
 
-<div class="section-bar bar-red">External Integrations — Third-Party Services & APIs</div>
-<div class="grid grid-7">
-  <div class="card c-red"><h3>Twilio / Telnyx</h3><p>Voice dial-in/out, SIP trunking, WebRTC webphone</p></div>
-  <div class="card c-red"><h3>OpenAI GPT-4o</h3><p>Agentic Brain, sentiment, transcription, threat AI</p></div>
-  <div class="card c-red"><h3>Ably Realtime</h3><p>Live channels, presence, pub/sub, push notifications</p></div>
-  <div class="card c-red"><h3>Recall.ai</h3><p>Zoom/Teams/Webex bots, Shadow Mode listener</p></div>
-  <div class="card c-red"><h3>Mux Video</h3><p>Live streaming, HLS/RTMP, on-demand playback</p></div>
-  <div class="card c-red"><h3>Stripe</h3><p>Subscriptions, invoices, payment processing</p></div>
-  <div class="card c-red"><h3>GitHub</h3><p>Source control, CI/CD, collaboration</p></div>
-</div>
+  <!-- ===== tRPC Connection Line ===== -->
+  <g opacity="0.6">
+    <path d="M560 560 L560 610" stroke="#3b82f6" stroke-width="3" marker-end="url(#arrowBlue)"/>
+    <rect x="520" y="575" width="80" height="22" rx="11" fill="#1e2028" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="560" y="590" text-anchor="middle" fill="#60a5fa" font-size="9" font-weight="700">tRPC</text>
+  </g>
 
-<div style="margin-top: 32px;"></div>
+  <!-- ===== BACKEND API LAYER ===== -->
+  <g filter="url(#shadow)">
+    <rect x="80" y="610" width="960" height="220" rx="20" fill="#151820" stroke="#3b82f6" stroke-width="2.5" stroke-opacity="0.6"/>
+    <rect x="80" y="610" width="960" height="6" rx="3" fill="url(#blueGrad)"/>
+    <text x="560" y="638" text-anchor="middle" fill="#60a5fa" font-size="13" font-weight="800" letter-spacing="1.5">BACKEND API  —  Express + tRPC (45+ Routers) on Port 5000</text>
 
-<div class="section-bar bar-grey">Key Data Flows — How Information Moves Through the Platform</div>
-<div class="grid grid-3" style="margin-top: 12px;">
-  <div class="flow-card">
-    <h3 style="color: #4ade80;">1. Event Lifecycle</h3>
-    <p>Booking Form → Event Created → Mailing List Import → Auto-PIN Generation → Invitation Emails Sent → Attendee Clicks → Registered → OCC Loads Event → Attendees Dial In / Join Web → Live Conference Runs → Post-Event Report Generated → Social Content Published</p>
-  </div>
-  <div class="flow-card">
-    <h3 style="color: #a78bfa;">2. AI Intelligence Pipeline</h3>
-    <p>Live Audio → Real-time Transcription → Sentiment Analysis (per speaker) → Q&A Auto-Triage → Speaking Pace Coaching → Live Rolling Summary → Tagged Metrics Extraction → Post-Event Brief + Recap → Social Media Content → Podcast Conversion</p>
-  </div>
-  <div class="flow-card">
-    <h3 style="color: #60a5fa;">3. Shadow Mode Flow</h3>
-    <p>External Bridge Configured → Recall.ai Bot Joins Call Silently → Audio Captured in Real-time → AI Transcription Runs → Sentiment + Intelligence Analysis → Feeds to OCC Dashboard → Operator Sees Live Insights → Zero Disruption to Original Call</p>
-  </div>
-  <div class="flow-card">
-    <h3 style="color: #f87171;">4. Compliance Engine</h3>
-    <p>Engine Runs Every 5 Minutes → Scans Registrations (fraud patterns) → Scans Audit Log (access anomalies) → Scans Exports (data exfiltration) → AI Assesses Severity (GPT-4o) → Threats Persisted → ISO 27001 + SOC 2 Scored → Predictive Alerts Generated</p>
-  </div>
-  <div class="flow-card">
-    <h3 style="color: #facc15;">5. CRM / Partner API</h3>
-    <p>Partner Gets API Key (clv_ prefix) → REST: Create Registrations → Bulk Import (up to 500) → Query Event Stats → Webhook on Registration → Zero-Click Pre-Register All → Confirmation Emails Sent → Full Audit Trail Logged</p>
-  </div>
-  <div class="flow-card">
-    <h3 style="color: #fb923c;">6. Health Monitoring</h3>
-    <p>Health Guardian (30s cycle) → Checks: DB, Twilio, OpenAI, Ably, Recall, Active Events → Anomaly Detection (2.5σ threshold) → Auto-Incident Creation → AI Root-Cause Analysis → Customer Impact Reports → Cross-feeds Compliance Engine</p>
-  </div>
-</div>
+    <g transform="translate(100, 655)">
+      <rect width="140" height="155" rx="10" fill="rgba(59,130,246,0.08)" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="70" y="20" text-anchor="middle" fill="#60a5fa" font-size="10" font-weight="700">Core Ops</text>
+      <text x="70" y="40" text-anchor="middle" fill="#a1a1aa" font-size="8">occ</text>
+      <text x="70" y="54" text-anchor="middle" fill="#a1a1aa" font-size="8">events</text>
+      <text x="70" y="68" text-anchor="middle" fill="#a1a1aa" font-size="8">webcast</text>
+      <text x="70" y="82" text-anchor="middle" fill="#a1a1aa" font-size="8">scheduling</text>
+      <text x="70" y="96" text-anchor="middle" fill="#a1a1aa" font-size="8">registrations</text>
+      <text x="70" y="110" text-anchor="middle" fill="#a1a1aa" font-size="8">webphone</text>
+      <text x="70" y="124" text-anchor="middle" fill="#a1a1aa" font-size="8">polls / liveVideo</text>
+      <text x="70" y="138" text-anchor="middle" fill="#a1a1aa" font-size="8">mux</text>
+    </g>
+    <g transform="translate(260, 655)">
+      <rect width="140" height="155" rx="10" fill="rgba(139,92,246,0.08)" stroke="#8b5cf6" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="70" y="20" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="700">AI &amp; Intel</text>
+      <text x="70" y="40" text-anchor="middle" fill="#a1a1aa" font-size="8">agenticBrain</text>
+      <text x="70" y="54" text-anchor="middle" fill="#a1a1aa" font-size="8">ai / sentiment</text>
+      <text x="70" y="68" text-anchor="middle" fill="#a1a1aa" font-size="8">transcription</text>
+      <text x="70" y="82" text-anchor="middle" fill="#a1a1aa" font-size="8">shadowMode</text>
+      <text x="70" y="96" text-anchor="middle" fill="#a1a1aa" font-size="8">intelligenceReport</text>
+      <text x="70" y="110" text-anchor="middle" fill="#a1a1aa" font-size="8">taggedMetrics</text>
+      <text x="70" y="124" text-anchor="middle" fill="#a1a1aa" font-size="8">benchmarks</text>
+    </g>
+    <g transform="translate(420, 655)">
+      <rect width="140" height="155" rx="10" fill="rgba(59,130,246,0.08)" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="70" y="20" text-anchor="middle" fill="#60a5fa" font-size="10" font-weight="700">Media &amp; RT</text>
+      <text x="70" y="40" text-anchor="middle" fill="#a1a1aa" font-size="8">mux / recall</text>
+      <text x="70" y="54" text-anchor="middle" fill="#a1a1aa" font-size="8">ably</text>
+      <text x="70" y="68" text-anchor="middle" fill="#a1a1aa" font-size="8">virtualStudio</text>
+      <text x="70" y="82" text-anchor="middle" fill="#a1a1aa" font-size="8">socialMedia</text>
+      <text x="70" y="96" text-anchor="middle" fill="#a1a1aa" font-size="8">contentTriggers</text>
+      <text x="70" y="110" text-anchor="middle" fill="#a1a1aa" font-size="8">archiveUpload</text>
+    </g>
+    <g transform="translate(580, 655)">
+      <rect width="140" height="155" rx="10" fill="rgba(234,179,8,0.08)" stroke="#eab308" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="70" y="20" text-anchor="middle" fill="#facc15" font-size="10" font-weight="700">Business</text>
+      <text x="70" y="40" text-anchor="middle" fill="#a1a1aa" font-size="8">billing</text>
+      <text x="70" y="54" text-anchor="middle" fill="#a1a1aa" font-size="8">clientPortal</text>
+      <text x="70" y="68" text-anchor="middle" fill="#a1a1aa" font-size="8">mailingList</text>
+      <text x="70" y="82" text-anchor="middle" fill="#a1a1aa" font-size="8">crmApi</text>
+      <text x="70" y="96" text-anchor="middle" fill="#a1a1aa" font-size="8">branding</text>
+      <text x="70" y="110" text-anchor="middle" fill="#a1a1aa" font-size="8">followups / callPrep</text>
+    </g>
+    <g transform="translate(740, 655)">
+      <rect width="140" height="75" rx="10" fill="rgba(239,68,68,0.08)" stroke="#ef4444" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="70" y="20" text-anchor="middle" fill="#f87171" font-size="10" font-weight="700">Compliance</text>
+      <text x="70" y="40" text-anchor="middle" fill="#a1a1aa" font-size="8">complianceEngine</text>
+      <text x="70" y="54" text-anchor="middle" fill="#a1a1aa" font-size="8">soc2 / iso27001</text>
+      <text x="70" y="68" text-anchor="middle" fill="#a1a1aa" font-size="8">healthGuardian</text>
+    </g>
+    <g transform="translate(740, 740)">
+      <rect width="140" height="70" rx="10" fill="rgba(113,113,122,0.08)" stroke="#71717a" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="70" y="20" text-anchor="middle" fill="#a1a1aa" font-size="10" font-weight="700">Auth &amp; System</text>
+      <text x="70" y="40" text-anchor="middle" fill="#a1a1aa" font-size="8">OAuth / JWT / RBAC</text>
+      <text x="70" y="54" text-anchor="middle" fill="#a1a1aa" font-size="8">system / auth / profile</text>
+    </g>
+  </g>
 
-<div class="footer">CuraLive © 2026 &nbsp;|&nbsp; Provisional Patent Filed (CIPC — South Africa) &nbsp;|&nbsp; ISO 27001 + SOC 2 Compliant &nbsp;|&nbsp; Targeting Microsoft / Zoom Acquisition</div>
-<p class="legend">
-  <span>🟠 Orange = Entry Points</span>
-  <span>🟢 Green = Events/Ops</span>
-  <span>🟣 Violet = AI/Intelligence</span>
-  <span>🔵 Blue = Media/Attendee</span>
-  <span>🟡 Yellow = Business</span>
-  <span>🔴 Red = External/Compliance</span>
-  <span>🟩 Teal = Data</span>
-  <span>⬜ Grey = System</span>
-</p>
+  <!-- ===== Connection to Services ===== -->
+  <g opacity="0.6">
+    <path d="M560 830 L560 880" stroke="#8b5cf6" stroke-width="3" marker-end="url(#arrowViolet)"/>
+  </g>
 
-</div>
+  <!-- ===== SERVICES LAYER ===== -->
+  <g filter="url(#shadow)">
+    <rect x="80" y="880" width="960" height="210" rx="20" fill="#151820" stroke="#8b5cf6" stroke-width="2.5" stroke-opacity="0.6"/>
+    <rect x="80" y="880" width="960" height="6" rx="3" fill="url(#violetGrad)"/>
+    <text x="560" y="908" text-anchor="middle" fill="#a78bfa" font-size="13" font-weight="800" letter-spacing="1.5">SERVICES  —  Background Processing &amp; Autonomous AI Engines</text>
+
+    <g transform="translate(100, 925)">
+      <rect width="210" height="145" rx="10" fill="rgba(34,197,94,0.08)" stroke="#22c55e" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="105" y="20" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="700">Real-time &amp; Media</text>
+      <text x="105" y="40" text-anchor="middle" fill="#a1a1aa" font-size="8">Ably Real-time (live + presence)</text>
+      <text x="105" y="55" text-anchor="middle" fill="#a1a1aa" font-size="8">Live Transcription</text>
+      <text x="105" y="70" text-anchor="middle" fill="#a1a1aa" font-size="8">Audio Enhancer</text>
+      <text x="105" y="85" text-anchor="middle" fill="#a1a1aa" font-size="8">Language Dubber (8 langs)</text>
+      <text x="105" y="100" text-anchor="middle" fill="#a1a1aa" font-size="8">Virtual Studio Renderer</text>
+    </g>
+    <g transform="translate(330, 925)">
+      <rect width="210" height="145" rx="10" fill="rgba(139,92,246,0.08)" stroke="#8b5cf6" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="105" y="20" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="700">AI Analysis Engines</text>
+      <text x="105" y="40" text-anchor="middle" fill="#a1a1aa" font-size="8">Sentiment (per-speaker, live)</text>
+      <text x="105" y="55" text-anchor="middle" fill="#a1a1aa" font-size="8">Speaking Pace Coach</text>
+      <text x="105" y="70" text-anchor="middle" fill="#a1a1aa" font-size="8">Q&amp;A Auto-Triage</text>
+      <text x="105" y="85" text-anchor="middle" fill="#a1a1aa" font-size="8">Content Gen Triggers</text>
+      <text x="105" y="100" text-anchor="middle" fill="#a1a1aa" font-size="8">Personalization Engine</text>
+    </g>
+    <g transform="translate(560, 925)">
+      <rect width="210" height="145" rx="10" fill="rgba(59,130,246,0.08)" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="105" y="20" text-anchor="middle" fill="#60a5fa" font-size="10" font-weight="700">Content &amp; Reporting</text>
+      <text x="105" y="40" text-anchor="middle" fill="#a1a1aa" font-size="8">Event Brief Generator</text>
+      <text x="105" y="55" text-anchor="middle" fill="#a1a1aa" font-size="8">Webcast Recap / Podcast</text>
+      <text x="105" y="70" text-anchor="middle" fill="#a1a1aa" font-size="8">Live Rolling Summary</text>
+      <text x="105" y="85" text-anchor="middle" fill="#a1a1aa" font-size="8">Social Media Pipeline</text>
+      <text x="105" y="100" text-anchor="middle" fill="#a1a1aa" font-size="8">Content Analytics</text>
+    </g>
+    <g transform="translate(790, 925)">
+      <rect width="230" height="145" rx="10" fill="rgba(239,68,68,0.08)" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.5"/>
+      <text x="115" y="20" text-anchor="middle" fill="#f87171" font-size="10" font-weight="700">Compliance &amp; Monitoring</text>
+      <text x="115" y="42" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="600">Compliance Engine (5-min)</text>
+      <text x="115" y="58" text-anchor="middle" fill="#a1a1aa" font-size="8">Fraud + Anomaly + Exfiltration</text>
+      <text x="115" y="73" text-anchor="middle" fill="#a1a1aa" font-size="8">AI Threat Assessment (GPT-4o)</text>
+      <text x="115" y="90" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="600">Health Guardian (30s)</text>
+      <text x="115" y="106" text-anchor="middle" fill="#a1a1aa" font-size="8">DB/Twilio/OpenAI/Ably checks</text>
+      <text x="115" y="121" text-anchor="middle" fill="#a1a1aa" font-size="8">Anomaly Detection (2.5 sigma)</text>
+      <text x="115" y="136" text-anchor="middle" fill="#a1a1aa" font-size="8">Auto-Incident + Root Cause</text>
+    </g>
+  </g>
+
+  <!-- ===== Connection to Data ===== -->
+  <g opacity="0.6">
+    <path d="M560 1090 L560 1140" stroke="#14b8a6" stroke-width="3" marker-end="url(#arrowTeal)"/>
+  </g>
+
+  <!-- ===== DATA LAYER ===== -->
+  <g filter="url(#shadow)">
+    <rect x="80" y="1140" width="960" height="200" rx="20" fill="#151820" stroke="#14b8a6" stroke-width="2.5" stroke-opacity="0.6"/>
+    <rect x="80" y="1140" width="960" height="6" rx="3" fill="url(#tealGrad)"/>
+    <text x="560" y="1168" text-anchor="middle" fill="#2dd4bf" font-size="13" font-weight="800" letter-spacing="1.5">DATA LAYER  —  MySQL (Drizzle ORM)  |  80+ Tables  |  Ably Channels</text>
+
+    <!-- DB icon -->
+    <g transform="translate(100, 1185)">
+      <ellipse cx="50" cy="12" rx="40" ry="12" fill="none" stroke="#2dd4bf" stroke-width="1.5"/>
+      <rect x="10" y="12" width="80" height="40" fill="#151820"/>
+      <line x1="10" y1="12" x2="10" y2="52" stroke="#2dd4bf" stroke-width="1.5"/>
+      <line x1="90" y1="12" x2="90" y2="52" stroke="#2dd4bf" stroke-width="1.5"/>
+      <ellipse cx="50" cy="52" rx="40" ry="12" fill="none" stroke="#2dd4bf" stroke-width="1.5"/>
+      <ellipse cx="50" cy="32" rx="40" ry="12" fill="none" stroke="#2dd4bf" stroke-width="0.8" stroke-dasharray="4,3"/>
+      <text x="50" y="36" text-anchor="middle" fill="#2dd4bf" font-size="10" font-weight="700">MySQL</text>
+    </g>
+
+    <g transform="translate(210, 1185)">
+      <rect width="150" height="135" rx="8" fill="rgba(20,184,166,0.06)" stroke="#14b8a6" stroke-width="0.8" stroke-opacity="0.3"/>
+      <text x="75" y="18" text-anchor="middle" fill="#2dd4bf" font-size="9" font-weight="700">Core</text>
+      <text x="75" y="36" text-anchor="middle" fill="#71717a" font-size="8">users / events</text>
+      <text x="75" y="50" text-anchor="middle" fill="#71717a" font-size="8">attendee_registrations</text>
+      <text x="75" y="64" text-anchor="middle" fill="#71717a" font-size="8">ir_contacts / branding</text>
+      <text x="75" y="78" text-anchor="middle" fill="#71717a" font-size="8">event_schedules</text>
+    </g>
+    <g transform="translate(375, 1185)">
+      <rect width="150" height="135" rx="8" fill="rgba(20,184,166,0.06)" stroke="#14b8a6" stroke-width="0.8" stroke-opacity="0.3"/>
+      <text x="75" y="18" text-anchor="middle" fill="#2dd4bf" font-size="9" font-weight="700">OCC / Media</text>
+      <text x="75" y="36" text-anchor="middle" fill="#71717a" font-size="8">occ_conferences</text>
+      <text x="75" y="50" text-anchor="middle" fill="#71717a" font-size="8">occ_participants</text>
+      <text x="75" y="64" text-anchor="middle" fill="#71717a" font-size="8">webcast_events / qa</text>
+      <text x="75" y="78" text-anchor="middle" fill="#71717a" font-size="8">mux_streams / polls</text>
+    </g>
+    <g transform="translate(540, 1185)">
+      <rect width="150" height="135" rx="8" fill="rgba(20,184,166,0.06)" stroke="#14b8a6" stroke-width="0.8" stroke-opacity="0.3"/>
+      <text x="75" y="18" text-anchor="middle" fill="#2dd4bf" font-size="9" font-weight="700">AI / Intel</text>
+      <text x="75" y="36" text-anchor="middle" fill="#71717a" font-size="8">agentic_analyses</text>
+      <text x="75" y="50" text-anchor="middle" fill="#71717a" font-size="8">tagged_metrics</text>
+      <text x="75" y="64" text-anchor="middle" fill="#71717a" font-size="8">briefing_packs</text>
+      <text x="75" y="78" text-anchor="middle" fill="#71717a" font-size="8">audit_log / shadow</text>
+    </g>
+    <g transform="translate(705, 1185)">
+      <rect width="150" height="135" rx="8" fill="rgba(20,184,166,0.06)" stroke="#14b8a6" stroke-width="0.8" stroke-opacity="0.3"/>
+      <text x="75" y="18" text-anchor="middle" fill="#2dd4bf" font-size="9" font-weight="700">Billing / CRM</text>
+      <text x="75" y="36" text-anchor="middle" fill="#71717a" font-size="8">billing_clients</text>
+      <text x="75" y="50" text-anchor="middle" fill="#71717a" font-size="8">stripe_customers</text>
+      <text x="75" y="64" text-anchor="middle" fill="#71717a" font-size="8">mailing_lists</text>
+      <text x="75" y="78" text-anchor="middle" fill="#71717a" font-size="8">crm_api_keys</text>
+    </g>
+    <g transform="translate(870, 1185)">
+      <rect width="150" height="135" rx="8" fill="rgba(239,68,68,0.06)" stroke="#ef4444" stroke-width="0.8" stroke-opacity="0.3"/>
+      <text x="75" y="18" text-anchor="middle" fill="#f87171" font-size="9" font-weight="700">Compliance</text>
+      <text x="75" y="36" text-anchor="middle" fill="#71717a" font-size="8">compliance_threats</text>
+      <text x="75" y="50" text-anchor="middle" fill="#71717a" font-size="8">soc2_controls (18)</text>
+      <text x="75" y="64" text-anchor="middle" fill="#71717a" font-size="8">iso27001_controls (16)</text>
+      <text x="75" y="78" text-anchor="middle" fill="#71717a" font-size="8">framework_checks</text>
+    </g>
+  </g>
+
+  <!-- ===== Connection to External ===== -->
+  <g opacity="0.6">
+    <path d="M560 1340 L560 1390" stroke="#ef4444" stroke-width="3" marker-end="url(#arrowRed)"/>
+  </g>
+
+  <!-- ===== EXTERNAL INTEGRATIONS ===== -->
+  <g filter="url(#shadow)">
+    <rect x="80" y="1390" width="960" height="160" rx="20" fill="#151820" stroke="#ef4444" stroke-width="2.5" stroke-opacity="0.6"/>
+    <rect x="80" y="1390" width="960" height="6" rx="3" fill="url(#redGrad)"/>
+    <text x="560" y="1418" text-anchor="middle" fill="#f87171" font-size="13" font-weight="800" letter-spacing="1.5">EXTERNAL INTEGRATIONS  —  Third-Party Services &amp; APIs</text>
+
+    <!-- Integration boxes with icons -->
+    <g transform="translate(100, 1435)">
+      <rect width="120" height="95" rx="12" fill="rgba(239,68,68,0.08)" stroke="#ef4444" stroke-width="1" stroke-opacity="0.3"/>
+      <circle cx="60" cy="30" r="16" fill="none" stroke="#f87171" stroke-width="1.5"/>
+      <path d="M50 24 L60 30 L70 24" fill="none" stroke="#f87171" stroke-width="1.5"/>
+      <path d="M50 30 L60 36 L70 30" fill="none" stroke="#f87171" stroke-width="1" opacity="0.5"/>
+      <text x="60" y="62" text-anchor="middle" fill="#f87171" font-size="10" font-weight="700">Twilio</text>
+      <text x="60" y="76" text-anchor="middle" fill="#71717a" font-size="7">Voice / SIP / WebRTC</text>
+      <text x="60" y="88" text-anchor="middle" fill="#71717a" font-size="7">Dial-in / Dial-out</text>
+    </g>
+    <g transform="translate(235, 1435)">
+      <rect width="120" height="95" rx="12" fill="rgba(139,92,246,0.08)" stroke="#8b5cf6" stroke-width="1" stroke-opacity="0.3"/>
+      <circle cx="60" cy="28" r="14" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="60" y="33" text-anchor="middle" fill="#a78bfa" font-size="9" font-weight="800">AI</text>
+      <text x="60" y="62" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="700">OpenAI</text>
+      <text x="60" y="76" text-anchor="middle" fill="#71717a" font-size="7">GPT-4o / Whisper</text>
+      <text x="60" y="88" text-anchor="middle" fill="#71717a" font-size="7">Brain + Threats</text>
+    </g>
+    <g transform="translate(370, 1435)">
+      <rect width="120" height="95" rx="12" fill="rgba(34,197,94,0.08)" stroke="#22c55e" stroke-width="1" stroke-opacity="0.3"/>
+      <g transform="translate(48, 16)">
+        <circle cx="12" cy="12" r="4" fill="#4ade80" opacity="0.6"/>
+        <circle cx="12" cy="12" r="8" fill="none" stroke="#4ade80" stroke-width="1"/>
+        <circle cx="12" cy="12" r="12" fill="none" stroke="#4ade80" stroke-width="0.8" opacity="0.4"/>
+      </g>
+      <text x="60" y="62" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="700">Ably</text>
+      <text x="60" y="76" text-anchor="middle" fill="#71717a" font-size="7">Real-time Channels</text>
+      <text x="60" y="88" text-anchor="middle" fill="#71717a" font-size="7">Pub/Sub / Presence</text>
+    </g>
+    <g transform="translate(505, 1435)">
+      <rect width="120" height="95" rx="12" fill="rgba(59,130,246,0.08)" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.3"/>
+      <g transform="translate(44, 16)">
+        <rect x="2" y="4" width="28" height="20" rx="4" fill="none" stroke="#60a5fa" stroke-width="1.5"/>
+        <circle cx="16" cy="14" r="5" fill="none" stroke="#60a5fa" stroke-width="1"/>
+        <circle cx="16" cy="14" r="2" fill="#60a5fa"/>
+      </g>
+      <text x="60" y="62" text-anchor="middle" fill="#60a5fa" font-size="10" font-weight="700">Recall.ai</text>
+      <text x="60" y="76" text-anchor="middle" fill="#71717a" font-size="7">Meeting Bots</text>
+      <text x="60" y="88" text-anchor="middle" fill="#71717a" font-size="7">Shadow Mode</text>
+    </g>
+    <g transform="translate(640, 1435)">
+      <rect width="120" height="95" rx="12" fill="rgba(239,68,68,0.08)" stroke="#ef4444" stroke-width="1" stroke-opacity="0.3"/>
+      <g transform="translate(44, 14)">
+        <polygon points="16,2 28,10 28,24 16,30 4,24 4,10" fill="none" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="16,8 22,12 22,20 16,24 10,20 10,12" fill="#f87171" opacity="0.2"/>
+        <circle cx="16" cy="16" r="3" fill="#f87171" opacity="0.6"/>
+      </g>
+      <text x="60" y="62" text-anchor="middle" fill="#f87171" font-size="10" font-weight="700">Mux Video</text>
+      <text x="60" y="76" text-anchor="middle" fill="#71717a" font-size="7">HLS / RTMP</text>
+      <text x="60" y="88" text-anchor="middle" fill="#71717a" font-size="7">Live + On-Demand</text>
+    </g>
+    <g transform="translate(775, 1435)">
+      <rect width="120" height="95" rx="12" fill="rgba(234,179,8,0.08)" stroke="#eab308" stroke-width="1" stroke-opacity="0.3"/>
+      <g transform="translate(44, 14)">
+        <rect x="2" y="6" width="28" height="18" rx="3" fill="none" stroke="#facc15" stroke-width="1.5"/>
+        <path d="M8 14 L16 18 L24 14" fill="none" stroke="#facc15" stroke-width="1.5"/>
+        <text x="16" y="13" text-anchor="middle" fill="#facc15" font-size="7" font-weight="800">$</text>
+      </g>
+      <text x="60" y="62" text-anchor="middle" fill="#facc15" font-size="10" font-weight="700">Stripe</text>
+      <text x="60" y="76" text-anchor="middle" fill="#71717a" font-size="7">Subscriptions</text>
+      <text x="60" y="88" text-anchor="middle" fill="#71717a" font-size="7">Payments</text>
+    </g>
+    <g transform="translate(910, 1435)">
+      <rect width="110" height="95" rx="12" fill="rgba(113,113,122,0.08)" stroke="#71717a" stroke-width="1" stroke-opacity="0.3"/>
+      <g transform="translate(38, 14)">
+        <circle cx="16" cy="16" r="14" fill="none" stroke="#a1a1aa" stroke-width="1.5"/>
+        <path d="M16 6 C10 6 6 10 6 16 C6 20 10 28 16 28 L16 16 L26 12" fill="none" stroke="#a1a1aa" stroke-width="1.5"/>
+      </g>
+      <text x="55" y="62" text-anchor="middle" fill="#a1a1aa" font-size="10" font-weight="700">GitHub</text>
+      <text x="55" y="76" text-anchor="middle" fill="#71717a" font-size="7">Source Control</text>
+      <text x="55" y="88" text-anchor="middle" fill="#71717a" font-size="7">CI/CD</text>
+    </g>
+  </g>
+
+  <!-- ===== SIDE PANEL: KEY DATA FLOWS ===== -->
+  <g filter="url(#shadow)" transform="translate(1100, 140)">
+    <rect width="640" height="1410" rx="20" fill="#13151b" stroke="#3f3f46" stroke-width="1.5"/>
+    <rect width="640" height="6" rx="3" fill="url(#blueGrad)" y="0"/>
+    <text x="320" y="34" text-anchor="middle" fill="white" font-size="15" font-weight="800">Key Data Flows</text>
+
+    <!-- Flow 1 -->
+    <g transform="translate(24, 55)">
+      <rect width="592" height="185" rx="12" fill="rgba(34,197,94,0.06)" stroke="#22c55e" stroke-width="1" stroke-opacity="0.3"/>
+      <circle cx="24" cy="22" r="12" fill="#22c55e" opacity="0.2"/>
+      <text x="24" y="27" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="800">1</text>
+      <text x="46" y="27" fill="#4ade80" font-size="12" font-weight="700">Event Lifecycle</text>
+      <g transform="translate(20, 42)">
+        <rect width="100" height="28" rx="6" fill="rgba(34,197,94,0.15)"/>
+        <text x="50" y="18" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">Booking Form</text>
+      </g>
+      <path d="M128 56 L138 56" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+      <g transform="translate(146, 42)">
+        <rect width="100" height="28" rx="6" fill="rgba(34,197,94,0.15)"/>
+        <text x="50" y="18" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">Event Created</text>
+      </g>
+      <path d="M254 56 L264 56" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+      <g transform="translate(272, 42)">
+        <rect width="110" height="28" rx="6" fill="rgba(34,197,94,0.15)"/>
+        <text x="55" y="18" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">Mailing List Import</text>
+      </g>
+      <path d="M390 56 L400 56" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+      <g transform="translate(408, 42)">
+        <rect width="100" height="28" rx="6" fill="rgba(34,197,94,0.15)"/>
+        <text x="50" y="18" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">Auto-PIN Gen</text>
+      </g>
+      <g transform="translate(20, 80)">
+        <rect width="100" height="28" rx="6" fill="rgba(34,197,94,0.15)"/>
+        <text x="50" y="18" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">Invitations Sent</text>
+      </g>
+      <path d="M128 94 L138 94" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+      <g transform="translate(146, 80)">
+        <rect width="100" height="28" rx="6" fill="rgba(34,197,94,0.15)"/>
+        <text x="50" y="18" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">Attendee Joins</text>
+      </g>
+      <path d="M254 94 L264 94" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+      <g transform="translate(272, 80)">
+        <rect width="110" height="28" rx="6" fill="rgba(34,197,94,0.15)"/>
+        <text x="55" y="18" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">OCC Live Event</text>
+      </g>
+      <path d="M390 94 L400 94" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+      <g transform="translate(408, 80)">
+        <rect width="100" height="28" rx="6" fill="rgba(34,197,94,0.15)"/>
+        <text x="50" y="18" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">Conference Runs</text>
+      </g>
+      <g transform="translate(20, 118)">
+        <rect width="120" height="28" rx="6" fill="rgba(34,197,94,0.1)"/>
+        <text x="60" y="18" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">Post-Event Report</text>
+      </g>
+      <path d="M148 132 L158 132" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+      <g transform="translate(166, 118)">
+        <rect width="120" height="28" rx="6" fill="rgba(34,197,94,0.1)"/>
+        <text x="60" y="18" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">Social Content</text>
+      </g>
+    </g>
+
+    <!-- Flow 2 -->
+    <g transform="translate(24, 255)">
+      <rect width="592" height="145" rx="12" fill="rgba(139,92,246,0.06)" stroke="#8b5cf6" stroke-width="1" stroke-opacity="0.3"/>
+      <circle cx="24" cy="22" r="12" fill="#8b5cf6" opacity="0.2"/>
+      <text x="24" y="27" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="800">2</text>
+      <text x="46" y="27" fill="#a78bfa" font-size="12" font-weight="700">AI Intelligence Pipeline</text>
+      <g transform="translate(20, 42)">
+        <rect width="90" height="26" rx="6" fill="rgba(139,92,246,0.15)"/>
+        <text x="45" y="17" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">Live Audio</text>
+      </g>
+      <path d="M118 55 L128 55" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrowViolet)"/>
+      <g transform="translate(136, 42)">
+        <rect width="100" height="26" rx="6" fill="rgba(139,92,246,0.15)"/>
+        <text x="50" y="17" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">Transcription</text>
+      </g>
+      <path d="M244 55 L254 55" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrowViolet)"/>
+      <g transform="translate(262, 42)">
+        <rect width="100" height="26" rx="6" fill="rgba(139,92,246,0.15)"/>
+        <text x="50" y="17" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">Sentiment</text>
+      </g>
+      <path d="M370 55 L380 55" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrowViolet)"/>
+      <g transform="translate(388, 42)">
+        <rect width="100" height="26" rx="6" fill="rgba(139,92,246,0.15)"/>
+        <text x="50" y="17" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">Q&amp;A Triage</text>
+      </g>
+      <g transform="translate(20, 78)">
+        <rect width="110" height="26" rx="6" fill="rgba(139,92,246,0.12)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">Pace Coaching</text>
+      </g>
+      <path d="M138 91 L148 91" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrowViolet)"/>
+      <g transform="translate(156, 78)">
+        <rect width="110" height="26" rx="6" fill="rgba(139,92,246,0.12)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">Rolling Summary</text>
+      </g>
+      <path d="M274 91 L284 91" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrowViolet)"/>
+      <g transform="translate(292, 78)">
+        <rect width="110" height="26" rx="6" fill="rgba(139,92,246,0.12)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">Tagged Metrics</text>
+      </g>
+      <path d="M410 91 L420 91" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrowViolet)"/>
+      <g transform="translate(428, 78)">
+        <rect width="110" height="26" rx="6" fill="rgba(139,92,246,0.12)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="600">Event Brief</text>
+      </g>
+    </g>
+
+    <!-- Flow 3 -->
+    <g transform="translate(24, 415)">
+      <rect width="592" height="105" rx="12" fill="rgba(59,130,246,0.06)" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.3"/>
+      <circle cx="24" cy="22" r="12" fill="#3b82f6" opacity="0.2"/>
+      <text x="24" y="27" text-anchor="middle" fill="#60a5fa" font-size="11" font-weight="800">3</text>
+      <text x="46" y="27" fill="#60a5fa" font-size="12" font-weight="700">Shadow Mode Flow</text>
+      <g transform="translate(20, 42)">
+        <rect width="110" height="26" rx="6" fill="rgba(59,130,246,0.15)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#60a5fa" font-size="8" font-weight="600">External Bridge</text>
+      </g>
+      <path d="M138 55 L148 55" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+      <g transform="translate(156, 42)">
+        <rect width="110" height="26" rx="6" fill="rgba(59,130,246,0.15)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#60a5fa" font-size="8" font-weight="600">Recall.ai Bot</text>
+      </g>
+      <path d="M274 55 L284 55" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+      <g transform="translate(292, 42)">
+        <rect width="110" height="26" rx="6" fill="rgba(59,130,246,0.15)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#60a5fa" font-size="8" font-weight="600">Silent Capture</text>
+      </g>
+      <path d="M410 55 L420 55" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+      <g transform="translate(428, 42)">
+        <rect width="110" height="26" rx="6" fill="rgba(59,130,246,0.15)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#60a5fa" font-size="8" font-weight="600">AI Analysis</text>
+      </g>
+    </g>
+
+    <!-- Flow 4 -->
+    <g transform="translate(24, 535)">
+      <rect width="592" height="145" rx="12" fill="rgba(239,68,68,0.06)" stroke="#ef4444" stroke-width="1" stroke-opacity="0.3"/>
+      <circle cx="24" cy="22" r="12" fill="#ef4444" opacity="0.2"/>
+      <text x="24" y="27" text-anchor="middle" fill="#f87171" font-size="11" font-weight="800">4</text>
+      <text x="46" y="27" fill="#f87171" font-size="12" font-weight="700">Compliance Engine (every 5 min)</text>
+      <g transform="translate(20, 42)">
+        <rect width="110" height="26" rx="6" fill="rgba(239,68,68,0.15)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#fca5a5" font-size="8" font-weight="600">Scan Registrations</text>
+      </g>
+      <path d="M138 55 L148 55" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+      <g transform="translate(156, 42)">
+        <rect width="110" height="26" rx="6" fill="rgba(239,68,68,0.15)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#fca5a5" font-size="8" font-weight="600">Scan Audit Log</text>
+      </g>
+      <path d="M274 55 L284 55" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+      <g transform="translate(292, 42)">
+        <rect width="110" height="26" rx="6" fill="rgba(239,68,68,0.15)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#fca5a5" font-size="8" font-weight="600">Scan Exports</text>
+      </g>
+      <path d="M410 55 L420 55" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+      <g transform="translate(428, 42)">
+        <rect width="110" height="26" rx="6" fill="rgba(239,68,68,0.15)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#fca5a5" font-size="8" font-weight="600">AI Assessment</text>
+      </g>
+      <g transform="translate(20, 78)">
+        <rect width="130" height="26" rx="6" fill="rgba(239,68,68,0.12)"/>
+        <text x="65" y="17" text-anchor="middle" fill="#fca5a5" font-size="8" font-weight="600">Threats Persisted</text>
+      </g>
+      <path d="M158 91 L168 91" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+      <g transform="translate(176, 78)">
+        <rect width="130" height="26" rx="6" fill="rgba(239,68,68,0.12)"/>
+        <text x="65" y="17" text-anchor="middle" fill="#fca5a5" font-size="8" font-weight="600">ISO + SOC 2 Scored</text>
+      </g>
+      <path d="M314 91 L324 91" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+      <g transform="translate(332, 78)">
+        <rect width="130" height="26" rx="6" fill="rgba(239,68,68,0.12)"/>
+        <text x="65" y="17" text-anchor="middle" fill="#fca5a5" font-size="8" font-weight="600">Predictive Alerts</text>
+      </g>
+    </g>
+
+    <!-- Flow 5 -->
+    <g transform="translate(24, 695)">
+      <rect width="592" height="105" rx="12" fill="rgba(234,179,8,0.06)" stroke="#eab308" stroke-width="1" stroke-opacity="0.3"/>
+      <circle cx="24" cy="22" r="12" fill="#eab308" opacity="0.2"/>
+      <text x="24" y="27" text-anchor="middle" fill="#facc15" font-size="11" font-weight="800">5</text>
+      <text x="46" y="27" fill="#facc15" font-size="12" font-weight="700">CRM / Partner API</text>
+      <g transform="translate(20, 42)">
+        <rect width="100" height="26" rx="6" fill="rgba(234,179,8,0.15)"/>
+        <text x="50" y="17" text-anchor="middle" fill="#facc15" font-size="8" font-weight="600">API Key (clv_)</text>
+      </g>
+      <path d="M128 55 L138 55" stroke="#eab308" stroke-width="1.5" marker-end="url(#arrowYellow)"/>
+      <g transform="translate(146, 42)">
+        <rect width="100" height="26" rx="6" fill="rgba(234,179,8,0.15)"/>
+        <text x="50" y="17" text-anchor="middle" fill="#facc15" font-size="8" font-weight="600">REST Register</text>
+      </g>
+      <path d="M254 55 L264 55" stroke="#eab308" stroke-width="1.5" marker-end="url(#arrowYellow)"/>
+      <g transform="translate(272, 42)">
+        <rect width="110" height="26" rx="6" fill="rgba(234,179,8,0.15)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#facc15" font-size="8" font-weight="600">Bulk Import 500</text>
+      </g>
+      <path d="M390 55 L400 55" stroke="#eab308" stroke-width="1.5" marker-end="url(#arrowYellow)"/>
+      <g transform="translate(408, 42)">
+        <rect width="110" height="26" rx="6" fill="rgba(234,179,8,0.15)"/>
+        <text x="55" y="17" text-anchor="middle" fill="#facc15" font-size="8" font-weight="600">Webhook + Audit</text>
+      </g>
+    </g>
+
+    <!-- Flow 6 -->
+    <g transform="translate(24, 815)">
+      <rect width="592" height="105" rx="12" fill="rgba(249,115,22,0.06)" stroke="#f97316" stroke-width="1" stroke-opacity="0.3"/>
+      <circle cx="24" cy="22" r="12" fill="#f97316" opacity="0.2"/>
+      <text x="24" y="27" text-anchor="middle" fill="#fb923c" font-size="11" font-weight="800">6</text>
+      <text x="46" y="27" fill="#fb923c" font-size="12" font-weight="700">Health Guardian (every 30s)</text>
+      <g transform="translate(20, 42)">
+        <rect width="120" height="26" rx="6" fill="rgba(249,115,22,0.15)"/>
+        <text x="60" y="17" text-anchor="middle" fill="#fb923c" font-size="8" font-weight="600">Check All Services</text>
+      </g>
+      <path d="M148 55 L158 55" stroke="#f97316" stroke-width="1.5" marker-end="url(#arrowOrange)"/>
+      <g transform="translate(166, 42)">
+        <rect width="120" height="26" rx="6" fill="rgba(249,115,22,0.15)"/>
+        <text x="60" y="17" text-anchor="middle" fill="#fb923c" font-size="8" font-weight="600">Anomaly (2.5 sigma)</text>
+      </g>
+      <path d="M294 55 L304 55" stroke="#f97316" stroke-width="1.5" marker-end="url(#arrowOrange)"/>
+      <g transform="translate(312, 42)">
+        <rect width="120" height="26" rx="6" fill="rgba(249,115,22,0.15)"/>
+        <text x="60" y="17" text-anchor="middle" fill="#fb923c" font-size="8" font-weight="600">AI Root Cause</text>
+      </g>
+    </g>
+
+    <!-- Cross-feed indicator -->
+    <g transform="translate(24, 940)">
+      <rect width="592" height="50" rx="12" fill="rgba(255,255,255,0.03)" stroke="#3f3f46" stroke-width="1"/>
+      <text x="296" y="22" text-anchor="middle" fill="#71717a" font-size="10" font-weight="600">Cross-System Feeds</text>
+      <text x="296" y="40" text-anchor="middle" fill="#52525b" font-size="9">Health Guardian feeds Compliance Engine  |  Compliance scores feed Dashboard  |  Threats feed AI Brain</text>
+    </g>
+
+    <!-- Tech Stack -->
+    <g transform="translate(24, 1010)">
+      <rect width="592" height="130" rx="12" fill="rgba(255,255,255,0.02)" stroke="#3f3f46" stroke-width="1"/>
+      <text x="296" y="22" text-anchor="middle" fill="white" font-size="11" font-weight="700">Technology Stack</text>
+      <text x="60" y="48" fill="#4ade80" font-size="9" font-weight="600">Frontend</text>
+      <text x="60" y="63" fill="#71717a" font-size="8">React 19 + Vite + TailwindCSS 4</text>
+      <text x="60" y="78" fill="#71717a" font-size="8">shadcn/ui + Framer Motion</text>
+      <text x="220" y="48" fill="#60a5fa" font-size="9" font-weight="600">Backend</text>
+      <text x="220" y="63" fill="#71717a" font-size="8">Express.js + tRPC v11</text>
+      <text x="220" y="78" fill="#71717a" font-size="8">Node.js + TypeScript</text>
+      <text x="380" y="48" fill="#2dd4bf" font-size="9" font-weight="600">Database</text>
+      <text x="380" y="63" fill="#71717a" font-size="8">MySQL + Drizzle ORM</text>
+      <text x="380" y="78" fill="#71717a" font-size="8">80+ tables, 2700+ schema lines</text>
+      <text x="60" y="100" fill="#a78bfa" font-size="9" font-weight="600">AI</text>
+      <text x="60" y="115" fill="#71717a" font-size="8">OpenAI GPT-4o + Whisper</text>
+      <text x="220" y="100" fill="#fb923c" font-size="9" font-weight="600">Real-time</text>
+      <text x="220" y="115" fill="#71717a" font-size="8">Ably Pub/Sub + Presence</text>
+      <text x="380" y="100" fill="#f87171" font-size="9" font-weight="600">Security</text>
+      <text x="380" y="115" fill="#71717a" font-size="8">ISO 27001 + SOC 2 + OAuth</text>
+    </g>
+
+    <!-- CIPC footer -->
+    <g transform="translate(24, 1160)">
+      <rect width="592" height="35" rx="10" fill="rgba(59,130,246,0.1)" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="296" y="23" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="600">CIPC Provisional Patent Filed  |  ISO 27001 + SOC 2 Compliant  |  Acquisition Target: Microsoft / Zoom</text>
+    </g>
+  </g>
+
+  <!-- ===== Lateral connection lines from Backend to External ===== -->
+  <!-- These show the services connecting to external APIs -->
+  <g opacity="0.35">
+    <!-- Backend to right side panel -->
+    <path d="M1040 720 Q1070 720 1070 400 Q1070 280 1100 280" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="5,4"/>
+    <!-- Services to External -->
+    <path d="M1040 980 Q1060 980 1060 1500 Q1060 1510 1080 1510" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,4"/>
+  </g>
+
+  <!-- ===== FOOTER ===== -->
+  <rect x="80" y="1580" width="1660" height="50" rx="14" fill="rgba(59,130,246,0.08)" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.2"/>
+  <text x="910" y="1610" text-anchor="middle" fill="#93c5fd" font-size="13" font-weight="700">CuraLive (c) 2026  |  Provisional Patent Filed (CIPC - South Africa)  |  ISO 27001 + SOC 2 Type II Compliant  |  Built for Acquisition Readiness</text>
+
+  <!-- Legend -->
+  <g transform="translate(80, 1650)">
+    <circle cx="10" cy="8" r="6" fill="#f97316"/><text x="22" y="12" fill="#a1a1aa" font-size="10">Entry Points</text>
+    <circle cx="140" cy="8" r="6" fill="#22c55e"/><text x="152" y="12" fill="#a1a1aa" font-size="10">Events / Ops</text>
+    <circle cx="280" cy="8" r="6" fill="#8b5cf6"/><text x="292" y="12" fill="#a1a1aa" font-size="10">AI / Intelligence</text>
+    <circle cx="430" cy="8" r="6" fill="#3b82f6"/><text x="442" y="12" fill="#a1a1aa" font-size="10">Media / Attendee</text>
+    <circle cx="590" cy="8" r="6" fill="#eab308"/><text x="602" y="12" fill="#a1a1aa" font-size="10">Business / CRM</text>
+    <circle cx="740" cy="8" r="6" fill="#ef4444"/><text x="752" y="12" fill="#a1a1aa" font-size="10">External / Compliance</text>
+    <circle cx="930" cy="8" r="6" fill="#14b8a6"/><text x="942" y="12" fill="#a1a1aa" font-size="10">Data Layer</text>
+  </g>
+</svg>
 </body>
 </html>
