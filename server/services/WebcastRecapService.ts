@@ -35,30 +35,14 @@ export interface RecapBrief {
 
 export class WebcastRecapService {
   async generateRecap(eventId: string): Promise<RecapBrief> {
-    const db = await getDb();
-
-    if (!db) {
-      return {
-        eventTitle: "Unknown",
-        eventId: eventId,
-        generatedAt: new Date().toISOString(),
-        executiveSummary: "Database connection failed",
-        topMoments: [],
-        keyQuotes: [],
-        sentimentArc: { opening: 50, midpoint: 50, closing: 50, trend: "stable" },
-        topQa: [],
-        ctaSuggestions: [],
-        videoScriptOutline: "",
-        shareableHook: ""
-      };
-    }
+    const db = getDb();
 
     const [segments, sentiments, qaItems, events] = await Promise.all([
       db.select().from(occTranscriptionSegments).where(eq(occTranscriptionSegments.conferenceId, eventId)).orderBy(asc(occTranscriptionSegments.createdAt)).limit(150).catch(() => []),
       db.select().from(sentimentSnapshots).where(eq(sentimentSnapshots.conferenceId, eventId)).orderBy(asc(sentimentSnapshots.createdAt)).limit(30).catch(() => []),
       db.select().from(webcastQa).where(eq(webcastQa.eventId, eventId)).limit(20).catch(() => []),
       db.select().from(webcastEvents).where(eq(webcastEvents.id, eventId as any)).limit(1).catch(() => []),
-    ])
+    ]);
 
     const transcript = segments.map((s: any) => s.content).join(" ").slice(0, 5000);
     const eventTitle = (events[0] as any)?.title ?? "CuraLive Event";

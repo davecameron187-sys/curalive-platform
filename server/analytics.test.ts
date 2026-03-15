@@ -7,56 +7,63 @@ import { eq } from "drizzle-orm";
 describe("ContentPerformanceAnalyticsService", () => {
   let testEventId: number;
   let testContentId: number;
-  let transaction: any;
 
   beforeAll(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database unavailable");
 
-    // Create test event (MySQL doesn't support .returning(), use $client.promise().query())
-    const eventSlug = `test-event-${Date.now()}`;
-    const now = Date.now();
-    const [eventRows] = await (db as any).$client.promise().query(
-      `INSERT INTO webcast_events (slug, title, description, event_type, industry_vertical, start_time, end_time, timezone, max_attendees, registration_count, peak_attendees, recording_enabled, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [eventSlug, "Test Event for Analytics", "Analytics test event", "capital_markets", "technology", now, now, "UTC", 100, 50, 45, true, now, now]
-    );
-    testEventId = (eventRows as any).insertId;
+    // Create test event
+    const [event] = await db
+      .insert(webcastEvents)
+      .values({
+        slug: `test-event-${Date.now()}`,
+        title: "Test Event for Analytics",
+        description: "Analytics test event",
+        eventType: "earnings_call",
+        industryVertical: "technology",
+        webcastStatus: "completed",
+        startTime: new Date(),
+        endTime: new Date(),
+        timezone: "UTC",
+        maxAttendees: 100,
+        registrationCount: 50,
+        peakAttendees: 45,
+        recordingEnabled: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
 
-    // Start a transaction for test isolation — all data will be rolled back after the test
-    try {
-      transaction = await (db as any).$client.promise().beginTransaction();
-    } catch (e) {
-      console.log("Transaction not supported, proceeding without isolation");
-    }
+    testEventId = event.id;
 
-    // Create test content (approved_by is required in DB)
-    const [contentRows] = await (db as any).$client.promise().query(
-      `INSERT INTO ai_generated_content (event_id, content_type, title, content, status, generated_at, approved_by, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [testEventId, "event_summary", "Test Summary", "This is a test summary", "approved", new Date(), 1, new Date()]
-    );
-    testContentId = (contentRows as any).insertId;
+    // Create test content
+    const [content] = await db
+      .insert(aiGeneratedContent)
+      .values({
+        eventId: testEventId,
+        contentType: "event_summary",
+        title: "Test Summary",
+        content: "This is a test summary",
+        status: "approved",
+        generatedAt: new Date(),
+        approvedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    testContentId = content.id;
   });
 
   afterAll(async () => {
     const db = await getDb();
     if (!db) return;
 
-    // Rollback transaction if it exists (ensures test isolation)
-    if (transaction) {
-      try {
-        await transaction.rollback();
-      } catch (e) {
-        console.log("Transaction already rolled back or completed");
-      }
-    } else {
-      // Fallback cleanup if transaction wasn't used
-      await db
-        .delete(aiGeneratedContent)
-        .where(eq(aiGeneratedContent.id, testContentId));
-      await db.delete(webcastEvents).where(eq(webcastEvents.id, testEventId));
-    }
+    // Cleanup
+    await db
+      .delete(aiGeneratedContent)
+      .where(eq(aiGeneratedContent.id, testContentId));
+    await db.delete(webcastEvents).where(eq(webcastEvents.id, testEventId));
   });
 
   describe("recordEngagementEvent", () => {

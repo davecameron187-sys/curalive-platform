@@ -133,8 +133,18 @@ export function buildRegistrationConfirmationEmail(opts: {
   accessCode?: string;
   attendUrl?: string;
   icsContent?: string;
-  accessPin?: string; // CuraLive Direct — personal dial-in PIN
+  accessPin?: string;
+  joinMethod?: "phone" | "teams" | "zoom" | "web";
 }): string {
+  const joinMethodLabels: Record<string, { label: string; color: string; icon: string; instructions: string }> = {
+    phone: { label: "Phone Dial-In", color: "#8b5cf6", icon: "&#128222;", instructions: "Dial the event number and enter your personal PIN when prompted. You will be connected directly to the conference." },
+    teams: { label: "Microsoft Teams", color: "#6264a7", icon: "&#128187;", instructions: "A Microsoft Teams meeting link will be sent to you before the event. Click the link at the scheduled time to join." },
+    zoom: { label: "Zoom", color: "#2d8cff", icon: "&#127909;", instructions: "A Zoom meeting link will be sent to you before the event. Click the link at the scheduled time to join." },
+    web: { label: "Web Browser", color: "#3b82f6", icon: "&#127760;", instructions: "Join directly from your web browser. A link to the CuraLive web attendee room will be sent before the event." },
+  };
+
+  const method = opts.joinMethod ? joinMethodLabels[opts.joinMethod] : null;
+
   return `
 <!DOCTYPE html>
 <html>
@@ -161,8 +171,22 @@ export function buildRegistrationConfirmationEmail(opts: {
             <td style="padding:32px 40px;">
               <p style="margin:0 0 16px;font-size:15px;color:#94a3b8;">Dear ${opts.firstName} ${opts.lastName},</p>
               <p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">
-                Your registration has been confirmed. Use the button below to join when the event goes live.
+                Your registration has been confirmed. ${method ? `You have chosen to join via <strong style="color:#f1f5f9;">${method.label}</strong>.` : 'Use the details below to join when the event goes live.'}
               </p>
+              ${method ? `
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:10px;border:1px solid ${method.color}40;margin:0 0 24px;">
+                <tr>
+                  <td style="padding:16px 20px;border-bottom:1px solid #1e293b;">
+                    <p style="margin:0;font-size:13px;font-weight:700;color:${method.color};">${method.icon}&nbsp; Your Join Method: ${method.label}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0;font-size:14px;color:#94a3b8;line-height:1.6;">${method.instructions}</p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
               ${opts.attendUrl ? `
               <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
                 <tr>
@@ -365,6 +389,98 @@ export function buildReminderEmail(opts: ReminderEmailOptions): string {
             <td style="background:#0f172a;padding:20px 40px;border-top:1px solid #1e293b;">
               <p style="margin:0;font-size:12px;color:#475569;text-align:center;">
                 CuraLive &middot; Powered by ${opts.organizerName ?? "CuraLive Inc."}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+export function buildMailingListInvitationEmail(opts: {
+  firstName: string;
+  lastName: string;
+  eventTitle: string;
+  company: string;
+  eventDate: string;
+  confirmUrl: string;
+  dialInNumber?: string;
+  personalMessage?: string;
+}): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You're Invited — ${opts.eventTitle}</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0d14;font-family:'Inter',Arial,sans-serif;color:#e2e8f0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0d14;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;border:1px solid #1e293b;">
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#1e3a5f,#0f172a);padding:32px 40px;">
+              <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#60a5fa;">Event Invitation</p>
+              <h1 style="margin:0;font-size:24px;font-weight:700;color:#f1f5f9;line-height:1.3;">${opts.eventTitle}</h1>
+              <p style="margin:8px 0 0;font-size:14px;color:#94a3b8;">${opts.company} · ${opts.eventDate}</p>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px 40px;">
+              <p style="margin:0 0 16px;font-size:15px;color:#94a3b8;">Dear ${opts.firstName} ${opts.lastName},</p>
+              <p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">
+                You have been invited to attend the upcoming event. Click the button below to choose how you&rsquo;d like to join and confirm your registration.
+              </p>
+              ${opts.personalMessage ? `
+              <div style="background:#0f172a;border-left:3px solid #3b82f6;border-radius:4px;padding:16px 20px;margin:0 0 24px;">
+                <p style="margin:0;font-size:14px;color:#cbd5e1;line-height:1.6;">${opts.personalMessage}</p>
+              </div>
+              ` : ''}
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${opts.confirmUrl}" style="display:inline-block;background:#3b82f6;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 48px;border-radius:8px;letter-spacing:0.3px;">
+                      Click here to Register for the Event
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-align:center;">
+                Choose how you&rsquo;d like to join — Phone, Microsoft Teams, Zoom, or Web Browser.
+              </p>
+              <p style="margin:0 0 24px;font-size:12px;color:#64748b;text-align:center;">
+                One click and you're registered — no forms to fill in.
+              </p>
+              ${opts.dialInNumber ? `
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:8px;padding:20px;margin:0 0 24px;">
+                <tr>
+                  <td>
+                    <p style="margin:0;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#64748b;">Dial-In Number</p>
+                    <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:#f1f5f9;font-family:monospace;">${opts.dialInNumber}</p>
+                    <p style="margin:8px 0 0;font-size:12px;color:#64748b;">Your personal PIN will be provided after registration.</p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+              <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">
+                After registering, you will receive a confirmation email with your join details based on the method you choose.
+              </p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background:#0f172a;padding:20px 40px;border-top:1px solid #1e293b;">
+              <p style="margin:0;font-size:12px;color:#475569;text-align:center;">
+                CuraLive · Powered by CuraLive Inc.
               </p>
             </td>
           </tr>

@@ -90,12 +90,6 @@ Return a JSON object with:
     try {
       const content = response.choices[0].message.content;
       const parsed = typeof content === "string" ? JSON.parse(content) : content;
-      // Normalize types to lowercase so tests can reliably match 'financial', 'personal', etc.
-      if (parsed.types && Array.isArray(parsed.types)) {
-        parsed.types = parsed.types.map((t: string) =>
-          t.toLowerCase().replace(/\s+/g, "_")
-        );
-      }
       return parsed;
     } catch (error) {
       return {

@@ -178,3 +178,58 @@ The OCC is a world-class conference control centre built to the technical brief.
 - **Rate limiting** (`express-rate-limit`): `/api/trpc` — 120 req/min prod / 500 dev; `/api/oauth` + `/api/auth` — 20/15min prod / 200 dev. Ably token endpoint is exempt.
 - **Operator Hub** (`/operator-hub`): Single landing page for all operator training. 4-step learning path, full call-type guides (Audio Bridge / Audio Webcast / Video Webcast) with step-by-step setup, warnings, tips, operating tips, Quick Reference panel, and links to all training resources.
 - OCC "Training" button (line 1383) now navigates to `/operator-hub` instead of `/training`.
+
+## Intelligence Terminal (March 2026)
+
+- **Route**: `/intelligence-terminal` — Bloomberg-style financial professional terminal
+- **Router**: `server/routers/intelligenceTerminalRouter.ts` — registered in `server/routers.ts`
+- **4 tabs**: Concern Intelligence, Market Signals, Exec Benchmarks, CICI Index
+- **Filters**: Quarter and sector selectors
+- **Link**: Added to `OperatorLinks.tsx`
+- **Purpose**: Acquisition-readiness intelligence dashboard for financial professionals
+
+## Q&A Support System (March 2026 — Built, Currently Disabled)
+
+The full Q&A support infrastructure is built and working but the UI widget is currently unmounted. Can be re-enabled at any time.
+
+**Infrastructure in place:**
+- `client/src/components/LiveQuestionBox.tsx` — floating support widget, auth-gated, context-aware per page and event
+- `server/routers/supportChatRouter.ts` — tRPC router using `protectedProcedure`; requires auth, accepts `eventId`/`eventName` context, logs all queries
+- `server/services/KnowledgeRetrievalService.ts` — keyword-based RAG retrieval from knowledge base
+- **DB tables**: `knowledge_entries` (20 entries seeded), `support_queries` (columns: `user_id`, `user_email`, `event_id`, `event_name`, `needs_escalation`, `matched_entries`)
+- **Model**: `gpt-4o-mini` (cost-optimised for support use)
+- **IP protection**: System prompt hard limits block all questions about internal algorithms, scoring formulas, model architecture, pipelines, and patent-pending IP
+
+**To re-enable**: Import `LiveQuestionBox` and mount `<LiveQuestionBox />` in any page or in `App.tsx` (for global mounting).
+
+## Mailing List & Auto-PIN Registration (March 2026)
+
+- **Route**: `/mailing-lists` — Operator mailing list manager with CSV import, auto-PIN generation, one-click registration emails
+- **Confirm route**: `/register/confirm/:token` — Public one-click registration page (token invalidated after use)
+- **Server router**: `server/routers/mailingListRouter.ts` — `mailingList.create`, `mailingList.importCSV`, `mailingList.sendInvitations`, `mailingList.confirmRegistration`
+- **DB tables**: `mailing_lists`, `mailing_list_entries` — migration: `scripts/create-mailing-list-tables.ts`
+- **Email template**: `buildMailingListInvitationEmail` in `server/_core/email.ts` — "Click here to Register" button
+- **Flow**: Upload CSV → auto-generate PINs → send personalised invitation emails → recipient clicks → **chooses join method** (Phone/Teams/Zoom/Web) → registered with method stored → confirmation email with method-specific instructions
+- **Phase 2 (Multi-Mode)**: Confirmation page presents 4 join options — Phone Dial-In (with PIN), Microsoft Teams, Zoom, Web Browser. Join method stored on both `mailing_list_entries.join_method` and `attendee_registrations.join_method`
+- **Phase 3 (CRM API)**: `server/routers/crmApiRouter.ts` — API key auth (SHA-256 hash, `clv_` prefix), endpoints: `createRegistration`, `bulkCreateRegistrations` (up to 500), `getRegistrationStatus`, `listRegistrations`, `getEventStats`. Webhook dispatch on registration events. API key management UI in mailing list detail (generate/revoke keys, webhook URL config). DB table: `crm_api_keys` + `webhook_url` column on `mailing_lists`. Migration: `scripts/create-crm-api-tables.ts`
+- **Phase 4 (Zero-Click)**: `preRegisterAll` mutation in mailingListRouter — registers all unregistered entries with a chosen default join method, sends confirmation emails with join details immediately (no click required). "Pre-Register All" button with join method picker modal in MailingListManager. DB columns: `pre_registered`, `default_join_method` on `mailing_lists`
+- **Security**: Confirm tokens are single-use (nulled after registration), PINs are unique per event, PINs only generated for phone join method. CRM API keys enforce event-scope and permission checks on all endpoints
+
+## AI Compliance Engine (March 2026)
+
+- **Route**: `/compliance-engine` — Autonomous threat detection, predictive fraud analysis & framework compliance monitoring
+- **Service**: `server/services/ComplianceEngineService.ts` — Runs every 5 minutes; detects registration fraud, access anomalies, data exfiltration; AI-assessed severity via LLM; predictive alerts for recurring threats and capacity stress
+- **Router**: `server/routers/complianceEngineRouter.ts` — `complianceEngine.dashboard`, `complianceEngine.runScan`, `complianceEngine.threats`, `complianceEngine.threatStats`, `complianceEngine.updateThreat`
+- **Framework Routers (from Manus)**: `server/routers/soc2Router.ts` (SOC 2 control CRUD, CSV import, evidence upload, audit ZIP), `server/routers/iso27001Router.ts` (ISO 27001 control CRUD, same features)
+- **DB tables**: `compliance_threats`, `compliance_framework_checks`, `soc2_controls` (18 seeded), `iso27001_controls` (16 seeded), `compliance_evidence_files`
+- **Migrations**: `scripts/create-compliance-framework-tables.ts`, `scripts/create-compliance-engine-tables.ts`
+- **Auto-start**: Engine starts on server boot via dynamic import in `server/_core/index.ts`
+- **PDF generation**: `server/compliancePdf.ts` (pdfmake) — compliance certificate PDF export
+- **Patent extension**: `docs/CIPC-Patent-Extension-AI-Compliance.md` — 5 claims covering autonomous compliance monitoring, multi-signal predictive fraud detection, cross-system health-compliance correlation, AI-assessed threat severity, automated remediation lifecycle
+
+## OpenAI API Key Configuration (March 2026)
+
+- **Priority order** (`server/_core/env.ts`): `OPENAI_API_KEY` → `BUILT_IN_FORGE_API_KEY` → `AI_INTEGRATIONS_OPENAI_API_KEY`
+- **URL routing** (`server/_core/llm.ts`): If `OPENAI_API_KEY` is set, always routes to `https://api.openai.com/v1/chat/completions` directly, bypassing the platform forge proxy entirely
+- **Reason**: The built-in forge API (`forge.manus.ai`) has usage quotas. Setting `OPENAI_API_KEY` as a Replit secret gives full control with no quota ceiling
+- **`isForgeMode()`**: Returns `false` when `OPENAI_API_KEY` is present — ensures GPT-4o is used, not Gemini

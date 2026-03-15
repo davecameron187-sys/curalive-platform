@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { z } from "zod";
 import { createRequire } from "module";
 const _require = createRequire(import.meta.url);

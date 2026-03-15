@@ -89,6 +89,8 @@ import AgenticBrain from "./pages/AgenticBrain";
 import AutonomousIntervention from "./pages/AutonomousIntervention";
 import TaggedMetricsDashboard from "./pages/TaggedMetricsDashboard";
 import ShadowMode from "./pages/ShadowMode";
+import HealthGuardian from "./pages/HealthGuardian";
+import ComplianceEngineDashboard from "./pages/ComplianceEngineDashboard";
 import Bastion from "./pages/Bastion";
 import LumiPartner from "./pages/LumiPartner";
 import ArchiveUpload from "./pages/ArchiveUpload";
@@ -113,57 +115,6 @@ import InvestorQuestionIntelligence from "./pages/InvestorQuestionIntelligence";
 import IntelligenceReportPage from "./pages/IntelligenceReport";
 import CallPreparation from "./pages/CallPreparation";
 import IntelligenceTerminal from "./pages/IntelligenceTerminal";
-import CICDSecurityDashboard from "./pages/CICDSecurityDashboard";
-import PolicyManagementDashboard from "./pages/PolicyManagementDashboard";
-import VendorRiskDashboard from "./pages/VendorRiskDashboard";
-import SecurityAuditAutomation from "./pages/SecurityAuditAutomation";
-import ComplianceReportingDashboard from "./pages/ComplianceReportingDashboard";
-import ExternalToolsIntegration from "./pages/ExternalToolsIntegration";
-import RealTimeAlertingSystem from "./pages/RealTimeAlertingSystem";
-import MLAnomalyDetection from "./pages/MLAnomalyDetection";
-import SecurityMetricsKPIDashboard from "./pages/SecurityMetricsKPIDashboard";
-import SecurityAutomationWorkflows from "./pages/SecurityAutomationWorkflows";
-import ThreatIntelligenceIntegration from "./pages/ThreatIntelligenceIntegration";
-import SecurityPostureBenchmarking from "./pages/SecurityPostureBenchmarking";
-import SecurityIncidentManagement from "./pages/SecurityIncidentManagement";
-import ComplianceAuditTrail from "./pages/ComplianceAuditTrail";
-import SecurityTrainingAwareness from "./pages/SecurityTrainingAwareness";
-import SecurityVulnerabilityManagement from "./pages/SecurityVulnerabilityManagement";
-import IdentityAccessManagement from "./pages/IdentityAccessManagement";
-import SecurityOrchestrationResponse from "./pages/SecurityOrchestrationResponse";
-import AdvancedThreatHunting from "./pages/AdvancedThreatHunting";
-import ExecutiveSecurityMetrics from "./pages/ExecutiveSecurityMetrics";
-import AutomatedComplianceReporting from "./pages/AutomatedComplianceReporting";
-import SecurityRiskScoring from "./pages/SecurityRiskScoring";
-import IncidentResponsePlaybooks from "./pages/IncidentResponsePlaybooks";
-import SecurityMetricsAPI from "./pages/SecurityMetricsAPI";
-import SecurityGovernanceDashboard from "./pages/SecurityGovernanceDashboard";
-import ContinuousSecurityMonitoring from "./pages/ContinuousSecurityMonitoring";
-import SecurityVendorEcosystem from "./pages/SecurityVendorEcosystem";
-import SecurityDashboardsIntegration from "./pages/SecurityDashboardsIntegration";
-import AutomatedIncidentResponse from "./pages/AutomatedIncidentResponse";
-import SecurityMetricsExport from "./pages/SecurityMetricsExport";
-import IncidentTimeline from "./pages/IncidentTimeline";
-import TrainingPlatform from "./pages/TrainingPlatform";
-import ComplianceGapAnalysis from "./pages/ComplianceGapAnalysis";
-import IncidentResponseAutomation from "./pages/IncidentResponseAutomation";
-import RealTimeAlertsDashboard from "./pages/RealTimeAlertsDashboard";
-import SecurityComplianceAutomation from "./pages/SecurityComplianceAutomation";
-import DashboardAnalytics from "./pages/DashboardAnalytics";
-import SIEMIntegration from "./pages/SIEMIntegration";
-import ThreatResponseWorkflows from "./pages/ThreatResponseWorkflows";
-import IncidentCorrelationEngine from "./pages/IncidentCorrelationEngine";
-import RealTimeSecurityDashboards from "./pages/RealTimeSecurityDashboards";
-import PlaybookLibrary from "./pages/PlaybookLibrary";
-import RiskForecastingEngine from "./pages/RiskForecastingEngine";
-import ComplianceAutomationWorkflows from "./pages/ComplianceAutomationWorkflows";
-import BenchmarkingDashboard from "./pages/BenchmarkingDashboard";
-import IncidentResponseAutomationEngine from "./pages/IncidentResponseAutomationEngine";
-import SecurityTrainingAwarenessPlat from "./pages/SecurityTrainingAwarenessPlat";
-import SecurityPostureManagement from "./pages/SecurityPostureManagement";
-import ThreatIntelligenceIOC from "./pages/ThreatIntelligenceIOC";
-import OnboardingFlow from "./pages/OnboardingFlow";
-import HealthGuardian from "./pages/HealthGuardian";
 import MailingListManager from "./pages/MailingListManager";
 import MailingListConfirm from "./pages/MailingListConfirm";
 
@@ -263,58 +214,11 @@ function Router() {
       <Route path="/intelligence-report" component={IntelligenceReportPage} />
       <Route path="/call-preparation" component={CallPreparation} />
       <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
-      <Route path="/security/cicd" component={CICDSecurityDashboard} />
-      <Route path="/security/policies" component={PolicyManagementDashboard} />
-      <Route path="/security/vendors" component={VendorRiskDashboard} />
-      <Route path="/security/audit-automation" component={SecurityAuditAutomation} />
-      <Route path="/security/compliance-reporting" component={ComplianceReportingDashboard} />
-      <Route path="/security/external-tools" component={ExternalToolsIntegration} />
-      <Route path="/security/alerting" component={RealTimeAlertingSystem} />
-      <Route path="/security/anomaly-detection" component={MLAnomalyDetection} />
-      <Route path="/security/metrics-kpi" component={SecurityMetricsKPIDashboard} />
-      <Route path="/security/automation" component={SecurityAutomationWorkflows} />
-      <Route path="/security/threat-intelligence" component={ThreatIntelligenceIntegration} />
-      <Route path="/security/benchmarking" component={SecurityPostureBenchmarking} />
-      <Route path="/security/incidents" component={SecurityIncidentManagement} />
-      <Route path="/security/audit-trail" component={ComplianceAuditTrail} />
-      <Route path="/security/training" component={SecurityTrainingAwareness} />
-      <Route path="/security/vulnerabilities" component={SecurityVulnerabilityManagement} />
-      <Route path="/security/iam" component={IdentityAccessManagement} />
-      <Route path="/security/soar" component={SecurityOrchestrationResponse} />
-      <Route path="/security/threat-hunting" component={AdvancedThreatHunting} />
-      <Route path="/security/executive-metrics" component={ExecutiveSecurityMetrics} />
-      <Route path="/security/compliance-reporting" component={AutomatedComplianceReporting} />
-      <Route path="/security/risk-scoring" component={SecurityRiskScoring} />
-      <Route path="/security/playbooks" component={IncidentResponsePlaybooks} />
-      <Route path="/security/api" component={SecurityMetricsAPI} />
-      <Route path="/security/governance" component={SecurityGovernanceDashboard} />
-      <Route path="/security/monitoring" component={ContinuousSecurityMonitoring} />
-      <Route path="/security/vendors" component={SecurityVendorEcosystem} />
-      <Route path="/security/dashboards" component={SecurityDashboardsIntegration} />
-      <Route path="/security/incident-response" component={AutomatedIncidentResponse} />
-      <Route path="/security/export" component={SecurityMetricsExport} />
-      <Route path="/security/timeline" component={IncidentTimeline} />
-      <Route path="/security/training" component={TrainingPlatform} />
-      <Route path="/security/gaps" component={ComplianceGapAnalysis} />
-      <Route path="/security/response-automation" component={IncidentResponseAutomation} />
-      <Route path="/security/alerts" component={RealTimeAlertsDashboard} />
-      <Route path="/security/compliance-automation" component={SecurityComplianceAutomation} />
-      <Route path="/security/analytics" component={DashboardAnalytics} />
-      <Route path="/security/siem" component={SIEMIntegration} />
-      <Route path="/security/threat-workflows" component={ThreatResponseWorkflows} />
-      <Route path="/security/correlation" component={IncidentCorrelationEngine} />
-      <Route path="/security/realtime" component={RealTimeSecurityDashboards} />
-      <Route path="/security/playbooks" component={PlaybookLibrary} />
-      <Route path="/security/threat-hunting" component={AdvancedThreatHunting} />
-      <Route path="/security/risk-forecasting" component={RiskForecastingEngine} />
-      <Route path="/security/compliance-automation" component={ComplianceAutomationWorkflows} />
-      <Route path="/security/benchmarking" component={BenchmarkingDashboard} />
-      <Route path="/security/incident-automation" component={IncidentResponseAutomationEngine} />
-      <Route path="/security/training" component={SecurityTrainingAwarenessPlat} />
-      <Route path="/security/posture" component={SecurityPostureManagement} />
-      <Route path="/security/threat-intelligence" component={ThreatIntelligenceIOC} />
-      <Route path="/security/metrics-api" component={SecurityMetricsAPI} />
       <Route path="/shadow-mode" component={ShadowMode} />
+      <Route path="/health-guardian" component={HealthGuardian} />
+      <Route path="/compliance-engine" component={ComplianceEngineDashboard} />
+      <Route path="/mailing-lists" component={MailingListManager} />
+      <Route path="/register/confirm/:token">{(params: any) => <MailingListConfirm params={params} />}</Route>
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
       <Route path="/archive-upload" component={ArchiveUpload} />
@@ -340,9 +244,6 @@ function Router() {
       <Route path="/my-dashboard" component={OperatorQuickRef} />
       <Route path="/live-sentiment">{() => { window.location.replace("/operator/q4-earnings-2026/sentiment"); return null; }}</Route>
       <Route path="/post-event">{() => { window.location.replace("/post-event/q4-earnings-2026"); return null; }}</Route>
-      <Route path="/health-guardian" component={HealthGuardian} />
-      <Route path="/mailing-lists" component={MailingListManager} />
-      <Route path="/register/confirm/:token" component={MailingListConfirm} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

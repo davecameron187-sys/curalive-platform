@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { createServer } from "http";
+import http from "http";
 import net from "net";
 import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -9,7 +9,7 @@ import { createAppRouter } from "../routers-lazy";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerSlideDeckUploadRoute } from "../slideDeckUpload";
-// import { registerAudioUploadRoute } from "../audioUpload"; // TODO: audioUpload module not found
+import { registerAudioTranscribeRoute } from "../audioTranscribe";
 import { registerRecallWebhookRoute } from "../recallWebhook";
 import { startReminderScheduler } from "../reminderScheduler";
 import { startComplianceDigestScheduler } from "../complianceDigestScheduler";
@@ -40,10 +40,32 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   const app = express();
-  const server = createServer(app);
+  const server = http.createServer(app);
   app.set("trust proxy", 1);
 
   const isProd = process.env.NODE_ENV === "production";
+
+  if (!isProd) {
+    app.use("/__mockup", (req, res) => {
+      const proxyReq = http.request(
+        {
+          hostname: "127.0.0.1",
+          port: 23636,
+          path: "/__mockup" + req.url,
+          method: req.method,
+          headers: req.headers,
+        },
+        (proxyRes) => {
+          res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers);
+          proxyRes.pipe(res, { end: true });
+        },
+      );
+      proxyReq.on("error", () => {
+        res.status(502).send("Mockup sandbox not available");
+      });
+      req.pipe(proxyReq, { end: true });
+    });
+  }
 
   const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -353,6 +375,59 @@ async function startServer() {
     res.sendStatus(204);
   });
 
+  // ─── Shadow Bridge TwiML ─────────────────────────────────────────────────────
+  // Twilio fetches this URL when the outbound bridge call connects.
+  // Responds with DTMF tones to enter the conference ID and access code.
+
+  app.post("/api/shadow/bridge-twiml", express.urlencoded({ extended: false }), async (req, res) => {
+    const { buildBridgeTwiML } = await import("../webphone/bridgeDial");
+    const conferenceId = req.query.conferenceId as string | undefined;
+    const accessCode = req.query.accessCode as string | undefined;
+    const hostPin = req.query.hostPin as string | undefined;
+    console.log(`[BridgeTwiML] conferenceId=${conferenceId} accessCode=*** hostPin=***`);
+    const xml = buildBridgeTwiML(conferenceId, accessCode, hostPin);
+    res.type("text/xml").send(xml);
+  });
+
+  // Bridge call status poll — frontend polls this for live call status
+  app.get("/api/shadow/bridge-poll", async (req, res) => {
+    const callSid = req.query.callSid as string;
+    if (!callSid) return res.status(400).json({ error: "callSid required" });
+    try {
+      const { getCallStatus } = await import("../webphone/bridgeDial");
+      const result = await getCallStatus(callSid);
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Bridge call status callback — Twilio posts here when call status changes
+  app.post("/api/shadow/bridge-status", express.urlencoded({ extended: false }), async (req, res) => {
+    const callSid = req.body?.CallSid ?? "";
+    const status = req.body?.CallStatus ?? "";
+    const duration = req.body?.CallDuration ?? null;
+    console.log(`[BridgeStatus] callSid=${callSid} status=${status} duration=${duration}`);
+
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      const conn = (db as any).session?.client ?? (db as any).$client;
+      const updates: Record<string, unknown> = { status };
+      if (duration) updates.duration_seconds = parseInt(duration);
+      if (status === "completed" || status === "failed" || status === "busy" || status === "no-answer") {
+        updates.ended_at = new Date();
+      }
+      await conn.execute(
+        `UPDATE bridge_calls SET status = ?, duration_seconds = COALESCE(?, duration_seconds), ended_at = COALESCE(?, ended_at) WHERE call_sid = ?`,
+        [status, duration ? parseInt(duration) : null, (status === "completed" || status === "failed") ? new Date() : null, callSid]
+      );
+    } catch (err) {
+      console.error("[BridgeStatus] DB update failed:", err);
+    }
+    res.sendStatus(204);
+  });
+
   // ─── CuraLive Direct IVR ─────────────────────────────────────────────────────
   // /api/voice/inbound  — Twilio calls this when a participant dials in.
   //   Greets the caller and collects a 5-digit PIN via <Gather>.
@@ -460,11 +535,90 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Slide deck file upload
   registerSlideDeckUploadRoute(app);
-  // OCC audio library upload
-  // registerAudioUploadRoute(app); // TODO: audioUpload module not found
+  // Audio transcription (Whisper)
+  registerAudioTranscribeRoute(app);
   // Recall.ai webhook (raw body, HMAC-verified)
   registerRecallWebhookRoute(app);
   registerBillingPdfRoutes(app);
+
+  // Architecture doc download — serves the generated Word document
+  app.get("/download/architecture", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_Platform_Architecture.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Platform_Architecture.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
+  // Transition Strategy download
+  app.get("/download/transition-strategy", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_Transition_Strategy.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Transition_Strategy.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
+  // CIPC Patent Submission download
+  app.get("/download/patent", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_Patent_CIPC_Submission.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Patent_CIPC_Submission.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
+  // AI Reports brief download
+  app.get("/download/ai-reports", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_AI_Reports.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_AI_Reports.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
+  // Mirroring & Infrastructure brief download
+  app.get("/download/mirroring", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_Mirroring_Brief.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Mirroring_Brief.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
+  app.get("/download/mirroring-response", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_Mirroring_Response.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Mirroring_Response_to_Steve.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
+  // Resilience & BYOC doc download
+  app.get("/download/resilience", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_Resilience_BYOC.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Resilience_BYOC.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
+
+  // Shadow Bridge doc download
+  app.get("/download/shadowbridge", (_req, res) => {
+    const filePath = `${process.cwd()}/public/CuraLive_Shadow_Bridge_Guide.docx`;
+    res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Shadow_Bridge_Guide.docx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.sendFile(filePath, (err) => {
+      if (err) res.status(404).send("Document not found.");
+    });
+  });
 
   // Checklist download — serves the project owner collaboration checklist as HTML
   app.get("/download/checklist", (_req, res) => {
@@ -579,13 +733,6 @@ async function startServer() {
     }
   });
 
-  // Initialize WebSocket server for real-time metrics
-  new MetricsWebSocketServer(server);
-  console.log("[Metrics WebSocket] Server initialized");
-
-  // Create lazy-loaded router to avoid TypeScript heap exhaustion
-  const appRouter = await createAppRouter();
-
   // tRPC API
   app.use(
     "/api/trpc",
@@ -610,13 +757,16 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
-    // Start the pre-event reminder email scheduler
-    // In production the origin is derived from the VITE_APP_ID-based domain;
-    // in development we fall back to localhost so reminders still log without sending.
     const origin = process.env.APP_ORIGIN ?? `http://localhost:${port}`;
     startReminderScheduler(origin);
-    // Start the weekly compliance gap analysis digest scheduler
-    startComplianceDigestScheduler();
+
+    import("../services/HealthGuardianService").then(({ startHealthGuardian }) => {
+      startHealthGuardian();
+    }).catch(e => console.warn("[HealthGuardian] Failed to start:", e.message));
+
+    import("../services/ComplianceEngineService").then(({ startComplianceEngine }) => {
+      startComplianceEngine();
+    }).catch(e => console.warn("[ComplianceEngine] Failed to start:", e.message));
   });
 }
 

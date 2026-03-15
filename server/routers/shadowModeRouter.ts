@@ -332,4 +332,108 @@ export const shadowModeRouter = router({
       await db.update(shadowSessions).set(updates).where(eq(shadowSessions.id, input.sessionId));
       return { success: true };
     }),
+
+  // ─── Bridge Dial-Out ───────────────────────────────────────────────────────
+  dialOutToBridge: publicProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      eventName: z.string(),
+      dialInNumber: z.string().min(7),
+      conferenceId: z.string().optional(),
+      accessCode: z.string().optional(),
+      hostPin: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { initiateOutboundBridgeCall } = await import("../webphone/bridgeDial");
+      const db = await getDb();
+      const conn = (db as any).session?.client ?? (db as any).$client;
+
+      const domain = process.env.REPLIT_DEV_DOMAIN
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : `http://localhost:${process.env.PORT ?? 5000}`;
+
+      const params = new URLSearchParams();
+      if (input.conferenceId) params.set("conferenceId", input.conferenceId);
+      if (input.accessCode) params.set("accessCode", input.accessCode);
+      if (input.hostPin) params.set("hostPin", input.hostPin);
+
+      const twimlUrl = `${domain}/api/shadow/bridge-twiml?${params.toString()}`;
+      const statusCallbackUrl = `${domain}/api/shadow/bridge-status`;
+
+      const result = await initiateOutboundBridgeCall({
+        dialInNumber: input.dialInNumber,
+        conferenceId: input.conferenceId,
+        accessCode: input.accessCode,
+        hostPin: input.hostPin,
+        twimlUrl,
+        statusCallbackUrl,
+      });
+
+      await conn.execute(
+        `INSERT INTO bridge_calls (session_id, call_sid, event_name, dial_in_number, conference_id, access_code, host_pin, status, from_number)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          input.sessionId,
+          result.callSid,
+          input.eventName,
+          input.dialInNumber,
+          input.conferenceId ?? null,
+          input.accessCode ?? null,
+          input.hostPin ?? null,
+          result.status,
+          result.fromNumber,
+        ]
+      );
+
+      return { success: true, callSid: result.callSid, status: result.status, fromNumber: result.fromNumber };
+    }),
+
+  getBridgeCallStatus: publicProcedure
+    .input(z.object({ callSid: z.string() }))
+    .query(async ({ input }) => {
+      const { getCallStatus } = await import("../webphone/bridgeDial");
+      const db = await getDb();
+      const conn = (db as any).session?.client ?? (db as any).$client;
+
+      const [rows]: any = await conn.execute(
+        `SELECT status, duration_seconds, started_at, ended_at FROM bridge_calls WHERE call_sid = ? ORDER BY created_at DESC LIMIT 1`,
+        [input.callSid]
+      );
+      const dbRow = rows?.[0];
+
+      // Also pull live status from Twilio if still in progress
+      let liveStatus = dbRow?.status ?? "unknown";
+      if (liveStatus === "queued" || liveStatus === "ringing" || liveStatus === "in-progress" || liveStatus === "initiated") {
+        try {
+          const live = await getCallStatus(input.callSid);
+          liveStatus = live.status;
+          if (live.duration !== null) {
+            await conn.execute(`UPDATE bridge_calls SET status = ?, duration_seconds = ? WHERE call_sid = ?`,
+              [live.status, live.duration, input.callSid]);
+          }
+        } catch (_) {}
+      }
+
+      return {
+        callSid: input.callSid,
+        status: liveStatus,
+        durationSeconds: dbRow?.duration_seconds ?? null,
+        startedAt: dbRow?.started_at ?? null,
+      };
+    }),
+
+  hangupBridgeCall: publicProcedure
+    .input(z.object({ callSid: z.string() }))
+    .mutation(async ({ input }) => {
+      const { hangupCall } = await import("../webphone/bridgeDial");
+      const db = await getDb();
+      const conn = (db as any).session?.client ?? (db as any).$client;
+
+      await hangupCall(input.callSid);
+      await conn.execute(
+        `UPDATE bridge_calls SET status = 'completed', ended_at = ? WHERE call_sid = ?`,
+        [new Date(), input.callSid]
+      );
+      return { success: true };
+    }),
 });

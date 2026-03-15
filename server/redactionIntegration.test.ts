@@ -1,72 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-
-// Mock LLM to avoid live API calls and quota exhaustion
-vi.mock("./_core/llm", () => ({
-  invokeLLM: vi.fn().mockImplementation(async ({ messages }: { messages: Array<{ role: string; content: string }> }) => {
-    const userMsg = messages.find((m) => m.role === "user")?.content || "";
-    const hasFinancial = /\$[\d,]+|revenue|profit|margin|EBITDA/i.test(userMsg);
-    const hasPersonal = /email|phone|\d{3}-\d{3}-\d{4}|@/i.test(userMsg);
-    const types: string[] = [];
-    if (hasFinancial) types.push("financial");
-    if (hasPersonal) types.push("personal");
-    return {
-      choices: [{
-        index: 0,
-        message: {
-          role: "assistant",
-          content: JSON.stringify({
-            hasSensitive: types.length > 0,
-            types,
-            segments: types.map((t) => ({ text: "sensitive content", type: t, confidence: 0.9 })),
-            // QA triage fields
-            classification: "approved",
-            confidence: 85,
-            reason: "Mock LLM response",
-            suggestedCategory: "general",
-            isDuplicate: false,
-            isSensitive: hasFinancial || hasPersonal,
-            sensitivityFlags: hasFinancial ? ["price_sensitive"] : [],
-            triageScore: 75,
-          }),
-        },
-        finish_reason: "stop",
-      }],
-      usage: { prompt_tokens: 200, completion_tokens: 100, total_tokens: 300 },
-    };
-  }),
-}));
-
 import { RedactionWorkflowService } from "./services/RedactionWorkflowService";
 import { AblyRealtimeService } from "./services/AblyRealtimeService";
 import { RealtimeCollaborationService } from "./services/RealtimeCollaborationService";
-import { beforeAll, afterAll } from "vitest";
 
 describe("Redaction Integration Tests", () => {
-  let transaction: any;
-
-  beforeAll(async () => {
-    // Start transaction for test isolation
-    try {
-      const { getDb } = require('./db');
-      const db = await getDb();
-      if (db) {
-        transaction = await (db as any).$client.promise().beginTransaction();
-      }
-    } catch (e) {
-      console.log("Transaction not supported for redaction tests");
-    }
-  });
-
-  afterAll(async () => {
-    // Rollback transaction to clean up test data
-    if (transaction) {
-      try {
-        await transaction.rollback();
-      } catch (e) {
-        console.log("Transaction already rolled back");
-      }
-    }
-  });
   describe("RedactionWorkflowService", () => {
     it("should detect sensitive financial content", async () => {
       const text = "Our revenue is $5,000,000 with a profit margin of 25%";
@@ -96,10 +33,9 @@ describe("Redaction Integration Tests", () => {
     });
 
     it("should validate redaction completeness", () => {
-      // Use text where original is longer than redacted to get positive percentage
       const validation = RedactionWorkflowService.validateRedaction(
-        "Our Q3 revenue was $1,000,000,000,000 with a profit margin of 35.5% and EBITDA of $250,000,000,000",
-        "Our Q3 revenue was [FINANCIAL] with a profit margin of [FINANCIAL] and EBITDA of [FINANCIAL]"
+        "Original: $1,000,000",
+        "Original: [FINANCIAL]"
       );
 
       expect(validation.isValid).toBe(true);

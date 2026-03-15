@@ -302,7 +302,7 @@ export class SpeakingPaceCoachService {
    * Get pace label based on WPM
    */
   private static getPaceLabel(wpm: number): PaceLabel {
-    if (wpm <= 100) return "too_slow";
+    if (wpm < 100) return "too_slow";
     if (wpm < 120) return "slow";
     if (wpm <= 150) return "normal";
     if (wpm <= 170) return "fast";

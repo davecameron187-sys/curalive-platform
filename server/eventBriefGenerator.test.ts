@@ -1,130 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { EventBriefGeneratorService } from "./services/EventBriefGeneratorService";
 
-// Mock the LLM to avoid live API calls and quota exhaustion
-vi.mock("./_core/llm", () => ({
-  invokeLLM: vi.fn().mockResolvedValue({
-    choices: [
-      {
-        index: 0,
-        message: {
-          role: "assistant",
-          content: JSON.stringify({
-            briefTitle: "Q4 2025 Earnings Call Brief",
-            briefSummary:
-              "Strong Q4 performance with revenue up 15% YoY to $2.5B. Cloud services led growth at 35% YoY.",
-            keyMessages: [
-              {
-                title: "Revenue Growth",
-                description: "Revenue grew 15% YoY to $2.5B driven by cloud services",
-                emphasis: "high",
-              },
-              {
-                title: "EPS Improvement",
-                description: "EPS increased 22% YoY to $1.85",
-                emphasis: "high",
-              },
-              {
-                title: "Margin Expansion",
-                description: "Operating margin improved 200bps to 28%",
-                emphasis: "medium",
-              },
-              {
-                title: "Cloud Leadership",
-                description: "Cloud services grew 35% YoY",
-                emphasis: "high",
-              },
-            ],
-            talkingPoints: [
-              {
-                topic: "Financial Performance",
-                points: [
-                  "Revenue reached $2.5B, up 15% year-over-year",
-                  "EPS of $1.85, a 22% improvement",
-                  "Operating margin expanded to 28%",
-                ],
-                speakerNotes: "Emphasize consistent growth trajectory",
-              },
-              {
-                topic: "Cloud Growth",
-                points: [
-                  "Cloud services grew 35% YoY",
-                  "Customer retention improved to 98%",
-                  "Launched 3 new enterprise products",
-                ],
-                speakerNotes: "Highlight cloud as primary growth driver",
-              },
-              {
-                topic: "Market Expansion",
-                points: [
-                  "Expanded into 5 new markets",
-                  "International revenue growing faster than domestic",
-                  "Pipeline remains strong heading into 2026",
-                ],
-                speakerNotes: "Focus on long-term growth opportunities",
-              },
-              {
-                topic: "Outlook",
-                points: [
-                  "Guidance for Q1 2026 remains positive",
-                  "Investment in AI capabilities continues",
-                  "Strong balance sheet supports continued growth",
-                ],
-                speakerNotes: "Be cautious about forward-looking statements",
-              },
-            ],
-            anticipatedQuestions: [
-              {
-                question: "What drove the 35% cloud growth this quarter?",
-                suggestedAnswer:
-                  "Cloud growth was driven by enterprise adoption and new product launches.",
-                difficulty: "easy",
-              },
-              {
-                question: "How sustainable is the 28% operating margin?",
-                suggestedAnswer:
-                  "We expect margins to remain stable as we scale cloud infrastructure.",
-                difficulty: "medium",
-              },
-              {
-                question: "What is your guidance for Q1 2026 revenue?",
-                suggestedAnswer:
-                  "We expect continued growth in the 12-15% range for Q1 2026.",
-                difficulty: "medium",
-              },
-              {
-                question: "How are you managing competition in the cloud space?",
-                suggestedAnswer:
-                  "Our differentiated enterprise focus and 98% retention rate demonstrate competitive strength.",
-                difficulty: "hard",
-              },
-              {
-                question: "What is the impact of the 5 new market expansions?",
-                suggestedAnswer:
-                  "New markets are expected to contribute 3-5% of revenue within 18 months.",
-                difficulty: "hard",
-              },
-            ],
-            financialHighlights: [
-              { metric: "Revenue", value: "$2.5B", context: "+15% YoY" },
-              { metric: "EPS", value: "$1.85", context: "+22% YoY" },
-              { metric: "Operating Margin", value: "28%", context: "+200bps" },
-            ],
-            confidence: 92,
-          }),
-        },
-        finish_reason: "stop",
-      },
-    ],
-    usage: { prompt_tokens: 500, completion_tokens: 800, total_tokens: 1300 },
-  }),
-}));
-
 describe("Event Brief Generator Service", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe("generateBriefFromPressRelease", () => {
     it("should generate a brief from a press release", async () => {
       const pressRelease = `
@@ -393,10 +270,7 @@ describe("Event Brief Generator Service", () => {
     });
 
     it("should provide fallback when generation fails", async () => {
-      // Mock LLM to return no choices to test fallback
-      const { invokeLLM } = await import("./_core/llm");
-      vi.mocked(invokeLLM).mockResolvedValueOnce({ choices: [] } as any);
-
+      // Even if LLM fails, should return valid structure
       const result = await EventBriefGeneratorService.generateBriefFromPressRelease(
         "Test"
       );

@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "python-3.11"]
+modules = ["nodejs-20", "web"]
 [agent]
 expertMode = true
 integrations = ["github:1.0.0", "javascript_openai_ai_integrations:2.0.0"]
@@ -46,7 +46,15 @@ externalPort = 80
 localPort = 5001
 externalPort = 3001
 
+[[ports]]
+localPort = 23636
+externalPort = 3000
+
+[[ports]]
+localPort = 23637
+externalPort = 3003
+
 [deployment]
-deploymentTarget = "autoscale"
-run = ["node", "dist/index.js"]
-build = ["pnpm", "run", "build"]
+deploymentTarget = "vm"
+run = ["bash", "-c", "NODE_ENV=production node dist/index.js"]
+build = ["pnpm", "install"]

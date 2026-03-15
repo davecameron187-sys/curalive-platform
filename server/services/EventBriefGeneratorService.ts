@@ -106,6 +106,8 @@ Respond with a JSON object containing all required fields.`;
                     },
                     required: ["title", "description", "emphasis"],
                   },
+                  minItems: 3,
+                  maxItems: 5,
                 },
                 talkingPoints: {
                   type: "array",
@@ -116,11 +118,15 @@ Respond with a JSON object containing all required fields.`;
                       points: {
                         type: "array",
                         items: { type: "string" },
+                        minItems: 3,
+                        maxItems: 4,
                       },
                       speakerNotes: { type: "string" },
                     },
                     required: ["topic", "points"],
                   },
+                  minItems: 4,
+                  maxItems: 6,
                 },
                 anticipatedQuestions: {
                   type: "array",
@@ -133,6 +139,8 @@ Respond with a JSON object containing all required fields.`;
                     },
                     required: ["question", "suggestedAnswer", "difficulty"],
                   },
+                  minItems: 5,
+                  maxItems: 8,
                 },
                 financialHighlights: {
                   type: "array",
@@ -163,14 +171,8 @@ Respond with a JSON object containing all required fields.`;
         },
       });
 
-      const firstChoice = response.choices?.[0];
-      if (!firstChoice) {
-        throw new Error("LLM returned no choices in response");
-      }
-      const content = firstChoice.message.content;
-      const rawContent = typeof content === "string" ? content : JSON.stringify(content);
-      const jsonStr = rawContent.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
-      const parsed = JSON.parse(jsonStr);
+      const content = response.choices[0].message.content;
+      const parsed = typeof content === "string" ? JSON.parse(content) : content;
 
       return {
         briefTitle: parsed.briefTitle,

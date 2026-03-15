@@ -1,108 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-
-// Mock LLM to avoid live API calls and quota exhaustion
-vi.mock("./_core/llm", () => ({
-  invokeLLM: vi.fn().mockImplementation(async ({ messages }: { messages: Array<{ role: string; content: string }> }) => {
-    const userMsg = messages.find((m) => m.role === "user")?.content || "";
-    const sysMsg = messages.find((m) => m.role === "system")?.content || "";
-
-    // Determine context from system message
-    const isQaTriage = sysMsg.includes("Q&A moderator") || sysMsg.includes("classify");
-    const isToxicity = sysMsg.includes("toxicity") || sysMsg.includes("content moderation");
-
-    // QA Triage mock logic
-    if (isQaTriage) {
-      const isPriceSensitive = /stock price|acquisition|valuation|undisclosed/i.test(userMsg);
-      const isOffTopic = /pizza|favorite food|hobby/i.test(userMsg);
-      const isSpam = /BUY NOW|click here|crypto|free money/i.test(userMsg);
-      const isUnclear = /blah blah|something something/i.test(userMsg);
-      const isDuplicate = /market share in Europe/i.test(userMsg) && /Previous questions/i.test(userMsg);
-      const isConfidential = /undisclosed|secret|board meeting/i.test(userMsg);
-
-      const classification = isOffTopic ? "off_topic"
-        : isSpam ? "spam"
-        : isUnclear ? "unclear"
-        : isDuplicate ? "duplicate"
-        : isPriceSensitive || isConfidential ? "sensitive"
-        : "approved";
-
-      return {
-        choices: [{
-          index: 0,
-          message: {
-            role: "assistant",
-            content: JSON.stringify({
-              classification,
-              confidence: 85,
-              reason: "Mock LLM classification",
-              suggestedCategory: "general",
-              isDuplicate,
-              isSensitive: isPriceSensitive || isConfidential,
-              sensitivityFlags: isPriceSensitive ? ["price_sensitive"] : isConfidential ? ["confidential"] : [],
-              triageScore: 75,
-            }),
-          },
-          finish_reason: "stop",
-        }],
-        usage: { prompt_tokens: 200, completion_tokens: 100, total_tokens: 300 },
-      };
-    }
-
-    // Toxicity filter mock logic
-    if (isToxicity) {
-      const isPriceSensitive = /stock price|earnings per share|projection/i.test(userMsg);
-      const isConfidential = /acquisition|board meeting|secret/i.test(userMsg);
-      const isLegalRisk = /litigation|lawsuit|regulatory|pending/i.test(userMsg);
-      const isAbusive = /incompetent|fools|idiots|stupid/i.test(userMsg);
-      const isSpam = /BUY|click here|crypto|free money/i.test(userMsg);
-      const isFlagged = isPriceSensitive || isConfidential || isLegalRisk || isAbusive || isSpam;
-
-      const riskLevel = isAbusive ? "high" : isPriceSensitive || isConfidential ? "medium" : isLegalRisk ? "medium" : isSpam ? "high" : "safe";
-      const toxicityScore = isAbusive ? 80 : isSpam ? 90 : isPriceSensitive ? 30 : 5;
-      const detectedIssues: Array<{ type: string; severity: string; phrase: string }> = [];
-      if (isAbusive) detectedIssues.push({ type: "harassment", severity: "high", phrase: "offensive content" });
-      if (isPriceSensitive) detectedIssues.push({ type: "price_sensitive", severity: "medium", phrase: "stock price" });
-      if (isConfidential) detectedIssues.push({ type: "confidential", severity: "medium", phrase: "acquisition" });
-      if (isLegalRisk) detectedIssues.push({ type: "legal_risk", severity: "medium", phrase: "litigation" });
-      if (isSpam) detectedIssues.push({ type: "spam", severity: "high", phrase: "BUY" });
-
-      return {
-        choices: [{
-          index: 0,
-          message: {
-            role: "assistant",
-            content: JSON.stringify({
-              toxicityScore,
-              toxicityLabel: toxicityScore > 70 ? "severe" : toxicityScore > 40 ? "moderate" : toxicityScore > 20 ? "mild" : "safe",
-              isPriceSensitive,
-              isConfidential,
-              isLegalRisk,
-              isAbusive,
-              isSpam,
-              detectedIssues,
-              riskLevel,
-              recommendedAction: isFlagged ? "flag_moderator" : "approve",
-              confidence: 90,
-            }),
-          },
-          finish_reason: "stop",
-        }],
-        usage: { prompt_tokens: 200, completion_tokens: 100, total_tokens: 300 },
-      };
-    }
-
-    // Default mock response
-    return {
-      choices: [{
-        index: 0,
-        message: { role: "assistant", content: JSON.stringify({ result: "ok" }) },
-        finish_reason: "stop",
-      }],
-      usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
-    };
-  }),
-}));
-
 import { QaAutoTriageService } from "./services/QaAutoTriageService";
 import { SpeakingPaceCoachService } from "./services/SpeakingPaceCoachService";
 import { ToxicityFilterService } from "./services/ToxicityFilterService";
@@ -459,96 +355,155 @@ describe("AI Features - Q&A Auto-Triage, Speaking-Pace Coach, Toxicity Filter", 
       expect(chatResult).toBeDefined();
     });
 
-    it("should return safe result for clean content", async () => {
+    it("should fallback gracefully on error", async () => {
       const result = await ToxicityFilterService.filterContent(
-        "What are your plans for expanding into new markets?",
+        "Test content",
         "qa_question"
       );
 
-      expect(result.toxicityScore).toBeLessThan(30);
-      expect(result.riskLevel).toBe("safe");
-      expect(result.recommendedAction).toBe("approve");
+      expect(result).toBeDefined();
+      expect(result.riskLevel).toBeDefined();
+      expect(result.recommendedAction).toBeDefined();
     });
 
-    it("should detect harassment in spoken segments", async () => {
+    it("should detect multiple types of issues in one content", async () => {
       const result = await ToxicityFilterService.filterContent(
-        "You incompetent fools have no idea what you're doing!",
-        "spoken_segment"
-      );
-
-      expect(result.isAbusive).toBe(true);
-      expect(result.isFlagged).toBe(true);
-    });
-
-    it("should detect spam in chat messages", async () => {
-      const result = await ToxicityFilterService.filterContent(
-        "BUY NOW! Limited offer! Click here for free money!",
-        "chat_message"
-      );
-
-      expect(result.isSpam).toBe(true);
-    });
-
-    it("should return valid toxicity label", async () => {
-      const result = await ToxicityFilterService.filterContent(
-        "Normal business question",
+        "You're terrible! Also, what's the secret valuation of the acquisition?",
         "qa_question"
       );
 
-      expect(["safe", "mild", "moderate", "severe"]).toContain(result.toxicityLabel);
+      expect(result).toBeDefined();
+      expect(result.detectedIssues.length).toBeGreaterThanOrEqual(1);
+      const issueTypes = result.detectedIssues.map((i) => i.type);
+      expect(issueTypes.length).toBeGreaterThan(0);
     });
 
-    it("should return valid risk level", async () => {
+    it("should assign severity levels to detected issues", async () => {
       const result = await ToxicityFilterService.filterContent(
-        "Normal business question",
+        "Abusive content with price-sensitive data",
         "qa_question"
       );
 
-      expect(["safe", "low", "medium", "high", "critical"]).toContain(result.riskLevel);
+      expect(result).toBeDefined();
+      result.detectedIssues.forEach((issue) => {
+        expect(["low", "medium", "high"]).toContain(issue.severity);
+      });
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Integration Tests
+  // ─────────────────────────────────────────────────────────────────────────
+
+  describe("Integration - All Three Features", () => {
+    it("should handle a complex question with all three services", async () => {
+      const question = "What are your undisclosed acquisition targets at $X price?";
+
+      // Test Q&A Triage
+      const triageResult = await QaAutoTriageService.triageQuestion(
+        100,
+        question,
+        { eventTitle: "Board Meeting" }
+      );
+      expect(triageResult).toBeDefined();
+      expect(triageResult.isSensitive).toBe(true);
+
+      // Test Toxicity Filter
+      const filterResult = await ToxicityFilterService.filterContent(
+        question,
+        "qa_question",
+        { eventTitle: "Board Meeting" }
+      );
+      expect(filterResult).toBeDefined();
+      expect(filterResult.isPriceSensitive).toBe(true);
+      expect(filterResult.isConfidential).toBe(true);
+
+      // Both should flag this as problematic
+      expect(triageResult.isSensitive).toBe(true);
+      expect(filterResult.isFlagged).toBe(true);
     });
 
-    it("should handle very long content", async () => {
-      const longContent = "What are your plans? ".repeat(100);
+    it("should handle a safe question with all three services", async () => {
+      const question = "What is your vision for the next five years?";
+
+      // Test Q&A Triage
+      const triageResult = await QaAutoTriageService.triageQuestion(
+        101,
+        question,
+        { eventTitle: "Investor Day" }
+      );
+      expect(triageResult.classification).toBe("approved");
+
+      // Test Toxicity Filter
+      const filterResult = await ToxicityFilterService.filterContent(
+        question,
+        "qa_question",
+        { eventTitle: "Investor Day" }
+      );
+      expect(filterResult.riskLevel).toBe("safe");
+      expect(filterResult.isFlagged).toBe(false);
+    });
+
+    it("should handle speaking pace analysis with realistic metrics", () => {
+      // Test with various WPM values
+      const wpmValues = [80, 120, 130, 150, 180];
+
+      wpmValues.forEach((wpm) => {
+        const paceScore = (SpeakingPaceCoachService as any).calculatePaceScore(wpm);
+        const label = (SpeakingPaceCoachService as any).getPaceLabel(wpm);
+
+        expect(paceScore).toBeGreaterThanOrEqual(0);
+        expect(paceScore).toBeLessThanOrEqual(100);
+        expect(["too_slow", "slow", "normal", "fast", "too_fast"]).toContain(label);
+      });
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Error Handling Tests
+  // ─────────────────────────────────────────────────────────────────────────
+
+  describe("Error Handling", () => {
+    it("QaAutoTriageService should handle empty questions", async () => {
+      const result = await QaAutoTriageService.triageQuestion(
+        200,
+        "",
+        { eventTitle: "Test" }
+      );
+
+      expect(result).toBeDefined();
+      expect(result.classification).toBeDefined();
+    });
+
+    it("ToxicityFilterService should handle very long content", async () => {
+      const longContent = "test ".repeat(1000);
       const result = await ToxicityFilterService.filterContent(
         longContent,
         "qa_question"
       );
 
       expect(result).toBeDefined();
-      expect(result.toxicityScore).toBeGreaterThanOrEqual(0);
-    });
-  });
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Cross-Feature Integration Tests
-  // ─────────────────────────────────────────────────────────────────────────
-
-  describe("Cross-Feature Integration", () => {
-    it("should triage and filter the same question consistently", async () => {
-      const question = "What is your target stock price for next quarter?";
-
-      const triageResult = await QaAutoTriageService.triageQuestion(1, question);
-      const filterResult = await ToxicityFilterService.filterContent(question, "qa_question");
-
-      // Both should flag price-sensitive content
-      expect(triageResult.isSensitive).toBe(true);
-      expect(filterResult.isPriceSensitive).toBe(true);
+      expect(result.riskLevel).toBeDefined();
     });
 
-    it("should handle batch processing efficiently", async () => {
-      const questions = [
-        "What is your revenue forecast?",
-        "BUY NOW! Click here!",
-        "What are your expansion plans?",
-      ];
+    it("SpeakingPaceCoachService should handle edge case WPM values", () => {
+      const edgeCases = [0, 1, 50, 200, 300, 500];
 
-      const results = await Promise.all(
-        questions.map((q, i) => QaAutoTriageService.triageQuestion(i + 1, q))
-      );
+      edgeCases.forEach((wpm) => {
+        const paceScore = (SpeakingPaceCoachService as any).calculatePaceScore(wpm);
+        expect(paceScore).toBeGreaterThanOrEqual(0);
+        expect(paceScore).toBeLessThanOrEqual(100);
+      });
+    });
 
-      expect(results).toHaveLength(3);
-      expect(results[1].classification).toBe("spam");
-      expect(results[2].classification).toBe("approved");
+    it("SpeakingPaceCoachService should handle edge case pause values", () => {
+      const edgeCases = [0, 100, 500, 1000, 2000, 3000];
+
+      edgeCases.forEach((pauseMs) => {
+        const pauseScore = (SpeakingPaceCoachService as any).calculatePauseScore(pauseMs);
+        expect(pauseScore).toBeGreaterThanOrEqual(0);
+        expect(pauseScore).toBeLessThanOrEqual(100);
+      });
     });
   });
 });

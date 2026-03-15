@@ -1,0 +1,74 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "wFOr7C13ODPZHL29DJNAY"
+uri = "file://curalive-update.tar.gz"
+type = "unspecified"
+title = "CuraLive Platform — Full Source Update (no media files)"
+
+[[outputs]]
+id = "V07_eZDRy3LgabPhql3C9"
+uri = "file://CURALIVE_TECH_STACK_BRIEF.md"
+type = "text"
+title = "CuraLive Tech Stack Brief — March 2026"
+
+[[outputs]]
+id = "D262WME-QJLNAZP0XVN3M"
+uri = "file://public/CuraLive_Platform_Architecture.docx"
+type = "word_document"
+title = "CuraLive — Flow Map (AI in OCC)"
+
+[[outputs]]
+id = "exVMT7-rSC8e1pNNfKVgp"
+uri = "file://public/CuraLive_ShadowBridge.docx"
+type = "word_document"
+title = "Shadow Bridge — How It All Works (updated)"
+
+[[outputs]]
+id = "VfuKnoru8GhexcwGMbIDy"
+uri = "file://public/CuraLive_Resilience_BYOC.docx"
+type = "word_document"
+title = "CuraLive — Resilience, DR & Bring Your Own Carrier"
+
+[[outputs]]
+id = "ln-L3zKJhDy8PIZBjt2vu"
+uri = "file://public/CuraLive_Mirroring_Brief.docx"
+type = "word_document"
+title = "CuraLive — Multi-Region Mirroring & Infrastructure Brief"
+
+[[outputs]]
+id = "sfvb1DcVspcFOS6BpoG3Z"
+uri = "file://public/CuraLive_AI_Reports.docx"
+type = "word_document"
+title = "CuraLive — AI Reports: Storage, Access & Delivery"
+
+[[outputs]]
+id = "PTCQrbiWim-WlWMcdHTAq"
+uri = "file://public/CuraLive_Patent_v2.docx"
+type = "word_document"
+title = "CuraLive Patent Specification v2.0 (Enhanced)"
+
+[[outputs]]
+id = "-wE_3qlqVzxzfzNjSkGHa"
+uri = "file://public/CuraLive_Patent_CIPC_Submission.docx"
+type = "word_document"
+title = "CuraLive Patent — CIPC Submission (37 Claims, 19 Figures)"
+
+[[outputs]]
+id = "zplLVVR7m9BGrlWFQeCUX"
+uri = "file://public/CuraLive_Transition_Strategy.docx"
+type = "word_document"
+title = "CuraLive — Founder Transition Strategy, Shareholding & Patent Timeline"
+
+[[outputs]]
+id = "z1TvL6TCmBlnDyXGU5VbN"
+uri = "file://public/CuraLive_Mirroring_Response_v2.docx"
+type = "word_document"
+title = "CuraLive Mirroring & Infrastructure Brief — Response to Steve v2"
+
+[[outputs]]
+id = "jn9DE3wh6vTJp3UfMIV2w"
+uri = "file://CuraLive_Mirroring_Response_v3.docx"
+type = "word_document"
+title = "CuraLive Mirroring Response v3 — Updated for Steve"

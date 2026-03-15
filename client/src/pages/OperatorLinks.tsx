@@ -5,7 +5,7 @@ import {
   HelpCircle, Play, X, ChevronRight as ChevRight,
   Radio, Users, AlertTriangle, BarChart3, FileText,
   Mic, Star, Clock, Loader2, Rocket, MapPin, Circle,
-  TrendingUp, ShieldCheck, Database, Activity, Tag,
+  TrendingUp, ShieldCheck, Database, Activity, Tag, Download,
 } from "lucide-react";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 type LinkCard = {
   badge: string; badgeColor: string; title: string;
   description: string; path: string; actionLabel: string;
+  isDownload?: boolean;
 };
 
 type Section = {
@@ -29,6 +30,7 @@ const BADGE_COLORS: Record<string, string> = {
   SETUP: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   FEATURE: "bg-slate-500/20 text-slate-400 border-slate-500/30",
   BUNDLE: "bg-violet-500/20 text-violet-400 border-violet-500/30",
+  DOCS: "bg-teal-500/20 text-teal-400 border-teal-500/30",
 };
 
 const SECTIONS: Section[] = [
@@ -82,6 +84,7 @@ const SECTIONS: Section[] = [
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Autonomous Intervention Engine", description: "6 live rules that fire automatically during events — sentiment drops, Q&A overload, compliance risks, and more. Agents act without human input.", path: "/autonomous-intervention", actionLabel: "View Engine" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Tagged Metrics Dashboard", description: "Your proprietary intelligence database. Every sentiment score, compliance flag, scaling event and engagement signal stored and queryable. The data moat that compounds with every event.", path: "/tagged-metrics", actionLabel: "View Dashboard" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Shadow Mode — Live Intelligence", description: "Plug into any live webcast or meeting. CuraLive runs silently in the background — transcribes, scores sentiment, detects compliance risks, and builds your intelligence database. Clients see nothing.", path: "/shadow-mode", actionLabel: "Launch Shadow Mode" },
+      { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "AI Infrastructure Guardian", description: "Autonomous AI monitoring of all platform services — database, telephony, AI engines, real-time messaging, and bots. Detects anomalies, identifies root causes (platform vs participant vs presenter), and generates customer-facing incident reports with clear attribution.", path: "/health-guardian", actionLabel: "Open Guardian" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Archive Upload", description: "Upload any past event transcript and retroactively build your intelligence database. Paste or upload a .txt file — CuraLive scores sentiment, scans compliance, and adds 4 tagged records instantly.", path: "/archive-upload", actionLabel: "Upload Archive" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Industry Benchmarks", description: "Anonymized aggregate intelligence across all events on the platform. Sentiment distributions, compliance risk profiles, engagement patterns, and coverage by quarter — no client data, no identifiers.", path: "/benchmarks", actionLabel: "View Benchmarks" },
       { badge: "NEW", badgeColor: BADGE_COLORS.NEW, title: "Market Reaction Intelligence", description: "Correlates investor event communication signals — sentiment, executive confidence, compliance risk, Q&A difficulty — with post-event stock market reactions. Builds a proprietary prediction model over time.", path: "/market-reaction", actionLabel: "Open Intelligence" },
@@ -129,6 +132,20 @@ const SECTIONS: Section[] = [
       { badge: "BUNDLE", badgeColor: BADGE_COLORS.BUNDLE, title: "Bundle D: Content Marketing", description: "Features: Press Release, Event Echo, Podcast Converter, AI Video Recap, Rolling Summary. ROI: Content Amplification", path: "/bundles/content", actionLabel: "View Bundle" },
       { badge: "BUNDLE", badgeColor: BADGE_COLORS.BUNDLE, title: "Bundle E: Premium", description: "All features from A–D + Intelligent Broadcaster, Advanced Analytics. ROI: Maximum", path: "/bundles/premium", actionLabel: "View Bundle" },
       { badge: "BUNDLE", badgeColor: BADGE_COLORS.BUNDLE, title: "Bundle F: Social Amplification", description: "Features: Event Echo, Podcast Converter, AI Video Recap. ROI: Social Reach", path: "/bundles/social", actionLabel: "View Bundle" },
+    ],
+  },
+  {
+    id: "documents", step: undefined, title: "Documents & Downloads",
+    icon: FileText, color: "text-teal-400",
+    description: "Downloadable Word documents covering architecture, infrastructure, patent filings, and partner briefs. Share these directly with partners and stakeholders.",
+    cards: [
+      { badge: "DOCS", badgeColor: BADGE_COLORS.DOCS, title: "Shadow Bridge Guide", description: "Complete guide to the Shadow Bridge and External Bridge intelligence capture system. How CuraLive silently joins any conference call and extracts live intelligence.", path: "/download/shadowbridge", actionLabel: "Download", isDownload: true },
+      { badge: "DOCS", badgeColor: BADGE_COLORS.DOCS, title: "Multi-Region Mirroring Brief", description: "Infrastructure resilience brief covering multi-region mirroring, failover, health monitoring, cost breakdown, BYOC telephony, and call quality monitoring. Updated with partner feedback.", path: "/download/mirroring", actionLabel: "Download", isDownload: true },
+      { badge: "DOCS", badgeColor: BADGE_COLORS.DOCS, title: "CIPC Patent Submission", description: "Full provisional patent filed with CIPC \u2014 25 claims (15 system + 5 method + 5 autonomous evolution), 12 figures, detailed description, and autonomous self-evolving platform section.", path: "/download/patent", actionLabel: "Download", isDownload: true },
+      { badge: "DOCS", badgeColor: BADGE_COLORS.DOCS, title: "AI Reports Lifecycle", description: "How intelligence reports are generated, stored, and delivered. Covers the full lifecycle from live capture through AI analysis to client delivery.", path: "/download/ai-reports", actionLabel: "Download", isDownload: true },
+      { badge: "DOCS", badgeColor: BADGE_COLORS.DOCS, title: "Founder Transition Strategy", description: "3-phase transition plan from Chorus Call SA to CuraLive. Covers equity structure, operating profit splits, partner vesting, and valuation projections.", path: "/download/transition-strategy", actionLabel: "Download", isDownload: true },
+      { badge: "DOCS", badgeColor: BADGE_COLORS.DOCS, title: "Platform Architecture", description: "Technical architecture overview of the CuraLive platform covering application stack, database design, telephony integration, and AI pipeline.", path: "/download/architecture", actionLabel: "Download", isDownload: true },
+      { badge: "DOCS", badgeColor: BADGE_COLORS.DOCS, title: "Resilience & Disaster Recovery", description: "Disaster recovery strategy including current state assessment, multi-region deployment plan, cloud provider options, and failover procedures.", path: "/download/resilience", actionLabel: "Download", isDownload: true },
     ],
   },
   {
@@ -520,10 +537,19 @@ function SectionCard({ section }: { section: Section }) {
                 <h3 className="font-semibold text-sm mb-2 group-hover:text-primary transition-colors">{card.title}</h3>
                 <p className="text-xs text-muted-foreground mb-4 leading-relaxed">{card.description}</p>
                 <button
-                  onClick={() => navigate(card.path + (card.path.includes("?") ? "&" : "?") + "from=operator-links")}
+                  onClick={() => {
+                    if (card.isDownload) {
+                      const a = document.createElement("a");
+                      a.href = card.path;
+                      a.download = "";
+                      a.click();
+                    } else {
+                      navigate(card.path + (card.path.includes("?") ? "&" : "?") + "from=operator-links");
+                    }
+                  }}
                   className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
                 >
-                  {card.actionLabel} <ExternalLink className="w-3 h-3" />
+                  {card.actionLabel} {card.isDownload ? <Download className="w-3 h-3" /> : <ExternalLink className="w-3 h-3" />}
                 </button>
               </div>
             ))}

@@ -3,7 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { TrendingUp, TrendingDown, Minus, ArrowLeft, Activity, AlertTriangle, Loader2, RefreshCw, User, X } from "lucide-react";
-import { useAbly } from "@/contexts/AblyContext";
+import { AblyProvider, useAbly } from "@/contexts/AblyContext";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -112,8 +112,7 @@ function SentimentTimeline({ history }: { history: Array<{ overallScore: number;
   );
 }
 
-export default function SentimentDashboard() {
-  const { eventId } = useParams<{ eventId: string }>();
+function SentimentDashboardInner({ eventId }: { eventId: string }) {
   const [, navigate] = useLocation();
   const [analysing, setAnalysing] = useState(false);
   const [lastScore, setLastScore] = useState<number | null>(null);
@@ -338,5 +337,15 @@ export default function SentimentDashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SentimentDashboard() {
+  const { eventId } = useParams<{ eventId: string }>();
+  if (!eventId) return <div className="p-8 text-center text-red-400">No event ID provided</div>;
+  return (
+    <AblyProvider eventId={eventId}>
+      <SentimentDashboardInner eventId={eventId} />
+    </AblyProvider>
   );
 }

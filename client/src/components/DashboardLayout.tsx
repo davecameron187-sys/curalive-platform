@@ -10,6 +10,9 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -21,16 +24,56 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import {
+  LayoutDashboard, LogOut, PanelLeft, Users, Calendar, Mail,
+  Radio, Settings, Brain, BarChart3, Shield, Zap, Video,
+  Eye, CreditCard, Globe, FileText, AlertTriangle
+} from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+type MenuSection = {
+  label?: string;
+  items: { icon: typeof LayoutDashboard; label: string; path: string }[];
+};
+
+const menuSections: MenuSection[] = [
+  {
+    label: "Events",
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+      { icon: Settings, label: "Operator Console", path: "/operator-links" },
+      { icon: Video, label: "Webcasting", path: "/live-video/webcasting" },
+      { icon: Radio, label: "Video Conferences", path: "/occ" },
+      { icon: Calendar, label: "Bookings", path: "/events/calendar" },
+      { icon: Mail, label: "Registrations", path: "/mailing-lists" },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { icon: Brain, label: "Agentic Brain", path: "/agentic-brain" },
+      { icon: BarChart3, label: "Tagged Metrics", path: "/tagged-metrics" },
+      { icon: Globe, label: "Terminal", path: "/intelligence-terminal" },
+      { icon: Eye, label: "Shadow Mode", path: "/shadow-mode" },
+      { icon: Shield, label: "Health Guardian", path: "/health-guardian" },
+      { icon: AlertTriangle, label: "Compliance Engine", path: "/compliance-engine" },
+      { icon: FileText, label: "AI Reports", path: "/ai-reports" },
+    ],
+  },
+  {
+    label: "Platform",
+    items: [
+      { icon: Zap, label: "Integrations", path: "/integrations" },
+      { icon: CreditCard, label: "Billing", path: "/billing" },
+      { icon: Users, label: "Admin", path: "/admin/users" },
+    ],
+  },
 ];
+
+const allMenuItems = menuSections.flatMap(s => s.items);
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -112,7 +155,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = allMenuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -178,27 +221,33 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
-                const isActive = location === item.path;
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
+          <SidebarContent>
+            {menuSections.map((section, idx) => (
+              <SidebarGroup key={idx}>
+                {section.label && (
+                  <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+                )}
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {section.items.map(item => {
+                      const isActive = location === item.path;
+                      return (
+                        <SidebarMenuItem key={item.path}>
+                          <SidebarMenuButton
+                            isActive={isActive}
+                            onClick={() => setLocation(item.path)}
+                            tooltip={item.label}
+                          >
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
           </SidebarContent>
 
           <SidebarFooter className="p-3">
