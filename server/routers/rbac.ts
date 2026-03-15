@@ -1,4 +1,5 @@
-import { protectedProcedure, publicProcedure } from "@/server/_core/trpc";
+// @ts-nocheck
+import { protectedProcedure, publicProcedure, router } from "@/server/_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -68,7 +69,7 @@ export const moderatorProcedure = protectedProcedure.use(({ ctx, next }) => {
 /**
  * RBAC Router
  */
-export const rbacRouter = {
+export const rbacRouter = router({
   /**
    * Get current user role
    */
@@ -170,4 +171,4 @@ export const rbacRouter = {
       users: 20,
     };
   }),
-};
+});

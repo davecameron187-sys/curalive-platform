@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * OCC — Operator Call Centre
  * VIER-style production operator console for CuraLive

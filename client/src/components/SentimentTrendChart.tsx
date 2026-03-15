@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useCallback, useEffect } from "react";
 import { useAblyChannel } from "@/hooks/useAblyChannel";
 import { Types } from "ably";

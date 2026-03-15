@@ -69,17 +69,17 @@ export const transcriptionRouter = router({
         .orderBy(desc(transcriptionJobs.createdAt));
       
       const segments = await db.select().from(occTranscriptionSegments)
-        .where(eq(occTranscriptionSegments.conferenceId, input.eventId))
-        .orderBy(occTranscriptionSegments.startTimeMs);
+        .where(eq(occTranscriptionSegments.conferenceId, parseInt(input.eventId) || 0))
+        .orderBy(occTranscriptionSegments.startTime);
 
       const completed = jobs.find(j => j.status === "completed");
       return {
         segments: segments.map(s => ({
           id: s.id,
           speaker: s.speakerName,
-          text: s.content,
-          startTime: s.startTimeMs ? s.startTimeMs / 1000 : 0,
-          endTime: s.endTimeMs ? s.endTimeMs / 1000 : 0,
+          text: s.text,
+          startTime: s.startTime ? s.startTime / 1000 : 0,
+          endTime: s.endTime ? s.endTime / 1000 : 0,
           confidence: s.confidence,
         })),
         metadata: completed ? {
@@ -112,10 +112,10 @@ export const transcriptionRouter = router({
 
       // Audit trail
       await db.insert(transcriptEdits).values({
-        conferenceId: parseInt(segment.conferenceId), // Assuming numeric conferenceId in edits table, adjust if needed
+        conferenceId: segment.conferenceId,
         segmentId: input.segmentId,
         operatorId: ctx.user?.id ?? 0,
-        originalText: segment.content,
+        originalText: segment.text,
         correctedText: input.text,
         editType: "manual_correction",
         reason: input.reason ?? "Manual correction",
@@ -123,7 +123,7 @@ export const transcriptionRouter = router({
       });
 
       await db.update(occTranscriptionSegments)
-        .set({ content: input.text })
+        .set({ text: input.text })
         .where(eq(occTranscriptionSegments.id, input.segmentId));
 
       return { success: true };
@@ -139,8 +139,8 @@ export const transcriptionRouter = router({
       if (!db) throw new Error("Database not available");
 
       const segments = await db.select().from(occTranscriptionSegments)
-        .where(eq(occTranscriptionSegments.conferenceId, input.eventId))
-        .orderBy(occTranscriptionSegments.startTimeMs);
+        .where(eq(occTranscriptionSegments.conferenceId, parseInt(input.eventId) || 0))
+        .orderBy(occTranscriptionSegments.startTime);
 
       if (input.format === "json") {
         return { content: JSON.stringify(segments, null, 2), contentType: "application/json" };
@@ -148,7 +148,7 @@ export const transcriptionRouter = router({
 
       let content = "";
       if (input.format === "txt") {
-        content = segments.map(s => `[${s.speakerName ?? "Speaker"}] ${s.content}`).join("\n\n");
+        content = segments.map(s => `[${s.speakerName ?? "Speaker"}] ${s.text}`).join("\n\n");
         return { content, contentType: "text/plain" };
       }
 
@@ -164,14 +164,14 @@ export const transcriptionRouter = router({
 
       if (input.format === "vtt") {
         content = "WEBVTT\n\n" + segments.map((s, i) => 
-          `${formatTime(s.startTimeMs ?? 0, true)} --> ${formatTime(s.endTimeMs ?? 0, true)}\n${s.speakerName ? `<v ${s.speakerName}>` : ""}${s.content}\n`
+          `${formatTime(s.startTime ?? 0, true)} --> ${formatTime(s.endTime ?? 0, true)}\n${s.speakerName ? `<v ${s.speakerName}>` : ""}${s.text}\n`
         ).join("\n");
         return { content, contentType: "text/vtt" };
       }
 
       if (input.format === "srt") {
         content = segments.map((s, i) => 
-          `${i + 1}\n${formatTime(s.startTimeMs ?? 0, false)} --> ${formatTime(s.endTimeMs ?? 0, false)}\n${s.content}\n`
+          `${i + 1}\n${formatTime(s.startTime ?? 0, false)} --> ${formatTime(s.endTime ?? 0, false)}\n${s.text}\n`
         ).join("\n");
         return { content, contentType: "text/plain" };
       }

@@ -63,6 +63,8 @@ import { crmApiRouter } from "./routers/crmApiRouter";
 import { soc2Router } from "./routers/soc2Router";
 import { iso27001Router } from "./routers/iso27001Router";
 import { complianceEngineRouter } from "./routers/complianceEngineRouter";
+import { aiAmRouter } from "./routers/aiAm";
+import { rbacRouter } from "./routers/rbac";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -136,6 +138,8 @@ export const appRouter = router({
   soc2: soc2Router,
   iso27001: iso27001Router,
   complianceEngine: complianceEngineRouter,
+  aiAm: aiAmRouter,
+  rbac: rbacRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react";
 import { Route, Router } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";

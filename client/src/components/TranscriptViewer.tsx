@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useRef, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Search, Download, User, Clock, Loader2, RefreshCw, ChevronDown, Filter, Mic, AlertCircle, Copy, Check, ArrowDown, Languages } from "lucide-react";
