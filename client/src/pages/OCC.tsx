@@ -2404,6 +2404,29 @@ export default function OCC() {
                       ✋ {counts.speak_requests} Q&A
                     </button>
                   )}
+                  {/* Divider */}
+                  <div className="w-px h-4 bg-slate-700 mx-0.5" />
+
+                  {/* Group 4: Export & Settings */}
+                  <button
+                    onClick={() => {
+                      // Navigate to Post-Event Report with conference data
+                      const reportUrl = `/post-event/${activeCCPConferenceId}?conferenceId=${activeCCPConferenceId}&conferenceName=${encodeURIComponent(activeConf?.subject ?? 'Conference')}&participantCount=${counts.connected}`;
+                      window.open(reportUrl, '_blank');
+                    }}
+                    title="Export conference to Post-Event Report"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-colors"
+                  >
+                    <FileText className="w-3 h-3" /> Export
+                  </button>
+                  <button
+                    onClick={() => setShowSettingsModal(true)}
+                    title="Operator preferences"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-colors"
+                  >
+                    <Settings className="w-3 h-3" /> Settings
+                  </button>
+
                   {/* Info */}
                   <div className="ml-auto flex items-center gap-3 text-[10px] text-slate-500 font-mono">
                     {/* Timer with alert colouring */}
