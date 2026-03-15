@@ -16,11 +16,6 @@ const DEV_BYPASS = process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV ==
 
 const DEV_USER = { id: 0, name: 'Dev Operator', email: 'dev@curalive.local', role: 'operator' as const };
 
-// AUTH_BYPASS: set AUTH_BYPASS=true (or leave NODE_ENV=development) to skip auth — remove before go-live
-const DEV_BYPASS = process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development';
-
-const DEV_USER = { id: 0, name: 'Dev Operator', email: 'dev@curalive.local', role: 'operator' as const };
-
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
 
