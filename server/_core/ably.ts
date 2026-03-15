@@ -150,3 +150,20 @@ export async function publishParticipantStatusUpdate(statusData: {
     ...statusData,
   });
 }
+
+
+/**
+ * Publish role change notification to affected user
+ */
+export async function publishRoleChangeNotification(roleChangeData: {
+  userId: number;
+  oldRole: string;
+  newRole: string;
+  changedByName: string;
+  reason?: string;
+}): Promise<boolean> {
+  return publishToChannel(`user:${roleChangeData.userId}:notifications`, "role.changed", {
+    timestamp: new Date().toISOString(),
+    ...roleChangeData,
+  });
+}

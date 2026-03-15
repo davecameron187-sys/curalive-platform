@@ -10,6 +10,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin", "operator", "moderator"]).default("user").notNull(),
+  roleExpiresAt: timestamp("roleExpiresAt"), // null = permanent role, otherwise auto-reverts to 'user' at this timestamp
   // Profile customisation fields
   jobTitle: varchar("jobTitle", { length: 255 }),
   organisation: varchar("organisation", { length: 255 }),

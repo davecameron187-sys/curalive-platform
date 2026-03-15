@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getDb } from "../db";
 import { users, roleChangeAuditLog } from "../../drizzle/schema";
 import { eq, count, sql } from "drizzle-orm";
+import { publishRoleChangeNotification } from "../_core/ably";
 
 export type UserRole = "admin" | "operator" | "moderator" | "user";
 
@@ -128,8 +129,15 @@ export const rbacRouter = router({
         .from(users)
         .where(eq(users.id, input.userId));
 
-      // Log role change event (integrates with Ably for real-time notification)
+      // Broadcast role change via Ably for real-time toast notification
       if (targetUser?.email) {
+        await publishRoleChangeNotification({
+          userId: input.userId,
+          oldRole,
+          newRole: input.newRole,
+          changedByName: ctx.user.name || ctx.user.email || "Admin",
+          reason: input.reason,
+        });
         console.log(`[Role Change] User ${targetUser.name || targetUser.email} promoted from ${oldRole} to ${input.newRole}`);
       }
 
