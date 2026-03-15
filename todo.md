@@ -1051,3 +1051,10 @@
 - [x] Log every rbac.updateUserRole call to roleChangeAuditLog
 - [x] Expose trpc.rbac.getRoleAuditLog procedure for admin review
 - [x] Write vitest tests for audit log and moderator role
+
+
+## Next Steps — Role Management Enhancements
+
+- [ ] Add role-change notifications — send in-app notification to affected user when role changes
+- [ ] Implement role-based dashboard views — conditionally render OCC sidebar/nav based on user role
+- [ ] Add bulk role import via CSV — upload CSV to bulk-assign roles to multiple users at once

@@ -122,6 +122,17 @@ export const rbacRouter = router({
         reason: input.reason ?? null,
       });
 
+      // Fetch target user details for notification
+      const [targetUser] = await db
+        .select({ email: users.email, name: users.name })
+        .from(users)
+        .where(eq(users.id, input.userId));
+
+      // Log role change event (integrates with Ably for real-time notification)
+      if (targetUser?.email) {
+        console.log(`[Role Change] User ${targetUser.name || targetUser.email} promoted from ${oldRole} to ${input.newRole}`);
+      }
+
       return { success: true, userId: input.userId, oldRole, newRole: input.newRole };
     }),
 

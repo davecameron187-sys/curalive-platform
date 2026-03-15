@@ -10,7 +10,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import {
   Shield, Users, RefreshCw, AlertCircle, Lock, UserCheck, Zap,
-  ClipboardList, ArrowRight, Download, X, Check,
+  ClipboardList, ArrowRight, Download, X, Check, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,6 +29,86 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 type RoleKey = "user" | "moderator" | "operator" | "admin";
+
+/** CSV Bulk Import Form */
+function BulkImportForm({
+  onImportComplete,
+}: {
+  onImportComplete: () => void;
+}) {
+  const [csvText, setCsvText] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const bulkImport = trpc.admin.bulkImportRoles.useMutation({
+    onSuccess: (result) => {
+      toast.success(`Imported ${result.successful} users, ${result.failed} failed`);
+      setCsvText("");
+      setIsOpen(false);
+      onImportComplete();
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Import failed");
+    },
+  });
+
+  const handleImport = () => {
+    const lines = csvText.trim().split("\n").filter(l => l.trim());
+    if (lines.length < 2) {
+      toast.error("CSV must have at least a header row and one data row");
+      return;
+    }
+    const headers = lines[0].toLowerCase().split(",").map(h => h.trim());
+    const emailIdx = headers.indexOf("email");
+    const roleIdx = headers.indexOf("role");
+    if (emailIdx === -1 || roleIdx === -1) {
+      toast.error("CSV must have 'email' and 'role' columns");
+      return;
+    }
+    const records = lines.slice(1).map(line => {
+      const cols = line.split(",").map(c => c.trim());
+      return { email: cols[emailIdx], role: cols[roleIdx] };
+    });
+    bulkImport.mutate({ records });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-[#0f172a] border border-slate-700 rounded-lg p-6 max-w-lg w-full mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-200">Bulk Import Roles</h3>
+          <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-slate-300">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-slate-400 text-sm mb-4">
+          Paste CSV with columns: <code className="bg-slate-800 px-1 rounded text-xs">email,role</code>. Roles: user, moderator, operator, admin.
+        </p>
+        <textarea
+          value={csvText}
+          onChange={(e) => setCsvText(e.target.value)}
+          placeholder="email,role\njohn@example.com,operator\njane@example.com,moderator"
+          rows={6}
+          className="w-full bg-slate-800 border border-slate-700 rounded text-xs text-slate-200 placeholder-slate-500 px-3 py-2 resize-none focus:outline-none focus:border-indigo-500 mb-4 font-mono"
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={handleImport}
+            disabled={bulkImport.isPending || !csvText.trim()}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-700 hover:bg-indigo-600 text-white text-sm font-semibold px-4 py-2 rounded transition-colors disabled:opacity-50"
+          >
+            <Upload className="w-4 h-4" />
+            {bulkImport.isPending ? "Importing…" : "Import"}
+          </button>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-sm transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /** Inline popover that appears when clicking a role button */
 function RoleChangePopover({
@@ -124,6 +204,7 @@ export default function AdminUsers() {
   const [, navigate] = useLocation();
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [popover, setPopover] = useState<{ userId: number; newRole: RoleKey } | null>(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   const { data: userList, isLoading, refetch } = trpc.admin.listUsers.useQuery(undefined, {
     enabled: user?.role === "admin",
@@ -497,6 +578,7 @@ export default function AdminUsers() {
             </p>
           </div>
         </div>
+        {showBulkImport && <BulkImportForm onImportComplete={() => { refetch(); refetchStats(); refetchAudit(); }} />}
       </div>
     </div>
   );

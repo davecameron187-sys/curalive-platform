@@ -1721,12 +1721,12 @@ export default function OCC() {
         {/* ── Left Sidebar Navigation ──────────────────────────────────────────── */}
         <div className="w-20 shrink-0 flex flex-col items-center py-3 gap-1 bg-[#080c14] border-r border-slate-700/60">
           {([
-            { key: "running",    Icon: Phone,      label: "Running\nCalls" },
-            { key: "post_event", Icon: BarChart2,  label: "Post\nEvent" },
-            { key: "simulate",   Icon: Mic,        label: "Simulate\nCall" },
-            { key: "settings",   Icon: Settings2,  label: "Settings" },
-            { key: "op_settings",Icon: UserCog,    label: "Op\nSettings" },
-          ] as const).map(({ key, Icon, label }) => (
+            { key: "running",    Icon: Phone,      label: "Running\nCalls", roles: ["operator", "admin"] },
+            { key: "post_event", Icon: BarChart2,  label: "Post\nEvent", roles: ["operator", "admin"] },
+            { key: "simulate",   Icon: Mic,        label: "Simulate\nCall", roles: ["operator", "admin"] },
+            { key: "settings",   Icon: Settings2,  label: "Settings", roles: ["operator", "admin"] },
+            { key: "op_settings",Icon: UserCog,    label: "Op\nSettings", roles: ["admin"] },
+          ] as const).filter(item => item.roles.includes(user?.role as string)).map(({ key, Icon, label }) => (
             <button
               key={key}
               onClick={() => setActiveSidebarTab(key)}
