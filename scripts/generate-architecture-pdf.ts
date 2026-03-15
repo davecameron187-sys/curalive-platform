@@ -188,9 +188,9 @@ label(980, 735, "Compliance & Security", RED, 12);
 sublabel(980, 751, "ISO 27001 + SOC 2\nAI Threat Detection (5-min)\nHealth Guardian (30s)");
 
 // Integrations
-drawImg("icon-integrations.png", 570, 870, 120);
-label(530, 910, "External Integrations", GREEN, 11);
-sublabel(530, 926, "Twilio | Ably | Mux\nStripe | Recall.ai | GitHub");
+drawImg("icon-integrations.png", 580, 870, 100);
+label(540, 975, "External Integrations", GREEN, 11);
+sublabel(540, 991, "Twilio | Ably | Mux\nStripe | Recall.ai | GitHub");
 
 // ===== Connection Labels =====
 connLabel(280, 300, "HTTP / WebSocket", ORANGE);
@@ -237,7 +237,7 @@ detailBox(1190, 610, 195, "Security Features", [
   "Auto-incident + root cause",
 ], RED);
 
-detailBox(16, 680, 180, "AI Services", [
+detailBox(16, 800, 180, "AI Services", [
   "Live Transcription",
   "Per-speaker Sentiment",
   "Speaking Pace Coach",
