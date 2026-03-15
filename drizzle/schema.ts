@@ -1,4 +1,4 @@
-import { boolean, int, float, tinyint, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint, json } from "drizzle-orm/mysql-core";
+import { boolean, int, float, tinyint, json, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -61,7 +61,6 @@ export const attendeeRegistrations = mysqlTable("attendee_registrations", {
   // CuraLive Direct — unique 5-digit PIN for auto-admit dial-in
   accessPin: varchar("access_pin", { length: 8 }),
   pinUsedAt: timestamp("pin_used_at"),
-  joinMethod: mysqlEnum("join_method", ["phone", "teams", "zoom", "web"]),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -1737,12 +1736,12 @@ export type InsertAiGeneratedContent = typeof aiGeneratedContent.$inferInsert;
 
 export const occTranscriptionSegments = mysqlTable("occ_transcription_segments", {
   id: int("id").autoincrement().primaryKey(),
-  conferenceId: varchar("conference_id", { length: 128 }).notNull(),
+  conferenceId: int("conference_id").notNull(),
   speakerName: varchar("speaker_name", { length: 255 }),
   speakerRole: varchar("speaker_role", { length: 64 }),
-  content: text("content").notNull(),
-  startTimeMs: int("start_time_ms"),
-  endTimeMs: int("end_time_ms"),
+  text: text("text"),
+  startTime: int("start_time"),
+  endTime: int("end_time"),
   confidence: float("confidence"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -1795,35 +1794,47 @@ export const toxicityFilterResults = mysqlTable("toxicity_filter_results", {
 
 export const transcriptEdits = mysqlTable("transcript_edits", {
   id: int("id").autoincrement().primaryKey(),
-  conferenceId: int("conference_id").notNull(),
-  segmentId: int("segment_id").notNull(),
-  operatorId: int("operator_id").notNull(),
+  conferenceId: int("conference_id"),
+  segmentId: int("segment_id").default(0),
+  transcriptionSegmentId: int("transcription_segment_id"),
+  operatorId: int("operator_id"),
+  operatorName: varchar("operator_name", { length: 255 }),
   originalText: text("original_text").notNull(),
   correctedText: text("corrected_text").notNull(),
   editType: varchar("edit_type", { length: 64 }).notNull(),
   reason: text("reason"),
   confidence: float("confidence"),
+  approved: boolean("approved").default(false),
+  approvedBy: int("approved_by"),
+  approvedAt: timestamp("approved_at"),
   status: varchar("status", { length: 32 }).default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const transcriptVersions = mysqlTable("transcript_versions", {
   id: int("id").autoincrement().primaryKey(),
-  conferenceId: int("conference_id").notNull(),
+  conferenceId: int("conference_id"),
   versionNumber: int("version_number").notNull(),
   fullTranscript: text("full_transcript").notNull(),
   editCount: int("edit_count").default(0),
   changeDescription: text("change_description"),
   createdBy: int("created_by"),
+  createdByName: varchar("created_by_name", { length: 255 }),
+  isPublished: boolean("is_published").default(false),
+  publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const transcriptEditAuditLog = mysqlTable("transcript_edit_audit_log", {
   id: int("id").autoincrement().primaryKey(),
+  conferenceId: int("conference_id"),
   editId: int("edit_id").notNull(),
   action: varchar("action", { length: 64 }).notNull(),
-  actorId: int("actor_id"),
-  actorName: varchar("actor_name", { length: 255 }),
+  userId: int("actor_id"),
+  userName: varchar("actor_name", { length: 255 }),
+  userRole: varchar("user_role", { length: 64 }),
+  details: text("details"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -1842,19 +1853,37 @@ export const eventBriefResults = mysqlTable("event_brief_results", {
 export const contentEngagementEvents = mysqlTable("content_engagement_events", {
   id: int("id").autoincrement().primaryKey(),
   contentId: int("content_id").notNull(),
-  recipientEmail: varchar("recipient_email", { length: 255 }),
-  eventType: varchar("event_type", { length: 64 }).notNull(),
-  metadata: text("metadata"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
+  eventType: mysqlEnum("event_type", ["sent", "opened", "clicked", "responded", "bounced", "unsubscribed"]).notNull(),
+  eventData: text("event_data"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
 export const contentPerformanceMetrics = mysqlTable("content_performance_metrics", {
   id: int("id").autoincrement().primaryKey(),
   contentId: int("content_id").notNull(),
-  openRate: float("open_rate").default(0),
-  clickRate: float("click_rate").default(0),
-  engagementScore: float("engagement_score").default(0),
-  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  eventId: int("event_id").notNull(),
+  contentType: varchar("content_type", { length: 50 }).notNull(),
+  approvalStatus: mysqlEnum("approval_status", ["approved", "rejected", "pending"]).notNull().default("pending"),
+  approvalTime: int("approval_time"),
+  approvalScore: varchar("approval_score", { length: 16 }),
+  recipientCount: int("recipient_count").default(0),
+  sentCount: int("sent_count").default(0),
+  openCount: int("open_count").default(0),
+  clickCount: int("click_count").default(0),
+  responseCount: int("response_count").default(0),
+  openRate: varchar("open_rate", { length: 16 }).default("0"),
+  clickThroughRate: varchar("click_through_rate", { length: 16 }).default("0"),
+  responseRate: varchar("response_rate", { length: 16 }).default("0"),
+  engagementScore: varchar("engagement_score", { length: 16 }).default("0"),
+  qualityScore: varchar("quality_score", { length: 16 }),
+  relevanceScore: varchar("relevance_score", { length: 16 }),
+  professionalismScore: varchar("professionalism_score", { length: 16 }),
+  editsCount: int("edits_count").default(0),
+  rejectionReason: varchar("rejection_reason", { length: 500 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const contentTypePerformance = mysqlTable("content_type_performance", {
@@ -1875,10 +1904,18 @@ export const eventPerformanceSummary = mysqlTable("event_performance_summary", {
   contentItemsApproved: int("content_items_approved").default(0),
   contentItemsRejected: int("content_items_rejected").default(0),
   overallApprovalRate: varchar("overall_approval_rate", { length: 16 }).default("0"),
+  avgTimeToApproval: int("avg_time_to_approval"),
+  totalContentSent: int("total_content_sent").default(0),
   totalEngagements: int("total_engagements").default(0),
   avgEngagementRate: varchar("avg_engagement_rate", { length: 16 }).default("0"),
-  bestPerformingType: varchar("best_performing_type", { length: 64 }),
-  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  bestPerformingType: varchar("best_performing_type", { length: 50 }),
+  bestPerformingScore: varchar("best_performing_score", { length: 16 }),
+  worstPerformingType: varchar("worst_performing_type", { length: 50 }),
+  worstPerformingScore: varchar("worst_performing_score", { length: 16 }),
+  avgContentQuality: varchar("avg_content_quality", { length: 16 }),
+  operatorSatisfaction: varchar("operator_satisfaction", { length: 16 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 /**
@@ -2317,6 +2354,241 @@ export const shadowSessions = mysqlTable("shadow_sessions", {
 export type ShadowSession = typeof shadowSessions.$inferSelect;
 export type InsertShadowSession = typeof shadowSessions.$inferInsert;
 
+// ─── User Feedback ────────────────────────────────────────────────────────────
+export const userFeedback = mysqlTable("user_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  rating: int("rating").notNull(),
+  suggestion: text("suggestion"),
+  email: varchar("email", { length: 255 }),
+  userId: int("user_id"),
+  pageUrl: varchar("page_url", { length: 1000 }),
+  ipAddress: varchar("ip_address", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type UserFeedback = typeof userFeedback.$inferSelect;
+export type InsertUserFeedback = typeof userFeedback.$inferInsert;
+
+// ─── AI-AM Compliance Audit Trail ─────────────────────────────────────────────
+// Separate table used by aiAmAuditTrail.ts (different schema from complianceAuditLog)
+export const aiAmAuditLog = mysqlTable("ai_am_audit_log", {
+  id: varchar("id", { length: 36 }).primaryKey(), // UUID
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  action: mysqlEnum("action", [
+    "violation_detected",
+    "violation_acknowledged",
+    "violation_muted",
+    "violation_unmuted",
+    "alert_sent",
+    "rule_updated",
+    "preferences_changed",
+  ]).notNull(),
+  actionBy: varchar("action_by", { length: 128 }).notNull(),
+  actionByRole: varchar("action_by_role", { length: 64 }),
+  targetViolationId: varchar("target_violation_id", { length: 128 }),
+  targetSpeaker: varchar("target_speaker", { length: 255 }),
+  details: text("details"),
+  timestamp: bigint("timestamp", { mode: "number" }).notNull(),
+  ipAddress: varchar("ip_address", { length: 64 }),
+  userAgent: varchar("user_agent", { length: 512 }),
+  hash: varchar("hash", { length: 64 }).notNull(),
+  previousHash: varchar("previous_hash", { length: 64 }),
+});
+export type AiAmAuditLog = typeof aiAmAuditLog.$inferSelect;
+export type InsertAiAmAuditLog = typeof aiAmAuditLog.$inferInsert;
+
+// ─── Compliance Violations ────────────────────────────────────────────────────
+// Used by compliance.ts, aiAmAuditTrail.ts, aiAmAutoMuting.ts, and test files
+export const complianceViolations = mysqlTable("compliance_violations", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  violationId: varchar("violation_id", { length: 128 }),
+  conferenceId: int("conference_id"),
+  violationType: varchar("violation_type", { length: 128 }).notNull(),
+  severity: varchar("severity", { length: 32 }).notNull(),
+  confidence: float("confidence"),
+  confidenceScore: float("confidence_score"),
+  speaker: varchar("speaker", { length: 255 }),
+  speakerName: varchar("speaker_name", { length: 255 }),
+  speakerRole: varchar("speaker_role", { length: 128 }),
+  transcript: text("transcript"),
+  transcriptExcerpt: text("transcript_excerpt"),
+  startTimeMs: int("start_time_ms"),
+  endTimeMs: int("end_time_ms"),
+  acknowledged: tinyint("acknowledged").default(0),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  actionTaken: varchar("action_taken", { length: 64 }).default("none"),
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ComplianceViolation = typeof complianceViolations.$inferSelect;
+export type InsertComplianceViolation = typeof complianceViolations.$inferInsert;
+
+// ─── Alert Preferences ────────────────────────────────────────────────────────
+// Used by aiAmNotificationDispatch.ts and test files
+export const alertPreferences = mysqlTable("alert_preferences", {
+  id: int("id").autoincrement().primaryKey(),
+  operatorId: varchar("operator_id", { length: 128 }).notNull().unique(),
+  eventId: varchar("event_id", { length: 128 }),
+  emailNotificationsEnabled: tinyint("email_notifications_enabled").default(1),
+  smsNotificationsEnabled: tinyint("sms_notifications_enabled").default(0),
+  inAppNotificationsEnabled: tinyint("in_app_notifications_enabled").default(1),
+  emailAddress: varchar("email_address", { length: 320 }),
+  phoneNumber: varchar("phone_number", { length: 32 }),
+  criticalOnly: tinyint("critical_only").default(0),
+  quietHoursEnabled: tinyint("quiet_hours_enabled").default(0),
+  quietHoursStart: varchar("quiet_hours_start", { length: 8 }).default("22:00"),
+  quietHoursEnd: varchar("quiet_hours_end", { length: 8 }).default("08:00"),
+  timezone: varchar("timezone", { length: 64 }).default("UTC"),
+  monitoredViolationTypes: text("monitored_violation_types"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type AlertPreference = typeof alertPreferences.$inferSelect;
+export type InsertAlertPreference = typeof alertPreferences.$inferInsert;
+
+// ─── Alert History ────────────────────────────────────────────────────────────
+// Used by aiAmNotificationDispatch.ts and compliance.ts
+export const alertHistory = mysqlTable("alert_history", {
+  id: int("id").autoincrement().primaryKey(),
+  operatorId: varchar("operator_id", { length: 128 }),
+  eventId: varchar("event_id", { length: 128 }),
+  violationId: varchar("violation_id", { length: 128 }),
+  channel: varchar("channel", { length: 32 }),
+  status: varchar("status", { length: 32 }),
+  action: varchar("action", { length: 64 }),
+  actorId: varchar("actor_id", { length: 128 }),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+  details: text("details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type AlertHistory = typeof alertHistory.$inferSelect;
+export type InsertAlertHistory = typeof alertHistory.$inferInsert;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Post-Event Data — stores summaries, transcripts, analytics, and reports
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Post-Event Data — stores AI summaries, compliance reports, and analytics for completed events.
+ */
+export const postEventData = mysqlTable("post_event_data", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("eventId", { length: 128 }).notNull(), // references events.eventId
+  conferenceId: int("conferenceId"), // references occConferences.id if applicable
+  // AI Summary
+  aiSummary: text("aiSummary"), // LLM-generated executive summary
+  keyTopics: text("keyTopics"), // JSON array of extracted topics
+  sentimentTrends: text("sentimentTrends"), // JSON object with sentiment timeline
+  keyQuotes: text("keyQuotes"), // JSON array of important quotes with timestamps
+  // Transcription
+  fullTranscript: longtext("fullTranscript"), // complete word-for-word transcript
+  transcriptFormat: varchar("transcriptFormat", { length: 32 }).default("txt"), // txt, pdf, vtt, srt, json
+  // Recording
+  recordingUrl: varchar("recordingUrl", { length: 512 }), // S3 URL to recording
+  recordingKey: varchar("recordingKey", { length: 512 }), // S3 key for retrieval
+  recordingDurationSeconds: int("recordingDurationSeconds"),
+  // Compliance
+  complianceScore: int("complianceScore"), // 0-100 score
+  flaggedItems: text("flaggedItems"), // JSON array of compliance violations
+  // Analytics
+  totalParticipants: int("totalParticipants"),
+  totalDuration: int("totalDuration"), // seconds
+  engagementScore: int("engagementScore"), // 0-100 score
+  analyticsData: text("analyticsData"), // JSON object with detailed metrics
+  // Delivery Status
+  deliveryStatus: mysqlEnum("deliveryStatus", ["pending", "sent", "failed"]).default("pending").notNull(),
+  deliveredAt: timestamp("deliveredAt"),
+  // Timestamps
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PostEventData = typeof postEventData.$inferSelect;
+export type InsertPostEventData = typeof postEventData.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stripe Integration — payment processing for premium features
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Stripe Customers — links users to their Stripe customer records.
+ */
+export const stripeCustomers = mysqlTable("stripe_customers", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(), // references users.id
+  stripeCustomerId: varchar("stripeCustomerId", { length: 128 }).notNull().unique(), // Stripe customer ID
+  email: varchar("email", { length: 320 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StripeCustomer = typeof stripeCustomers.$inferSelect;
+export type InsertStripeCustomer = typeof stripeCustomers.$inferInsert;
+
+/**
+ * Stripe Subscriptions — tracks active subscriptions for premium features.
+ */
+export const stripeSubscriptions = mysqlTable("stripe_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // references users.id
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }).notNull().unique(),
+  stripePriceId: varchar("stripePriceId", { length: 128 }).notNull(),
+  status: mysqlEnum("status", ["active", "past_due", "unpaid", "canceled", "incomplete"]).default("active").notNull(),
+  tier: mysqlEnum("tier", ["basic", "professional", "enterprise"]).default("basic").notNull(),
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  canceledAt: timestamp("canceledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StripeSubscription = typeof stripeSubscriptions.$inferSelect;
+export type InsertStripeSubscription = typeof stripeSubscriptions.$inferInsert;
+
+/**
+ * Premium Features — tracks which features are enabled for each user based on subscription.
+ */
+export const premiumFeatures = mysqlTable("premium_features", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(), // references users.id
+  // Feature flags
+  advancedAnalytics: boolean("advancedAnalytics").default(false).notNull(),
+  complianceReporting: boolean("complianceReporting").default(false).notNull(),
+  whiteLabel: boolean("whiteLabel").default(false).notNull(),
+  multiLanguageTranscription: boolean("multiLanguageTranscription").default(false).notNull(),
+  customBranding: boolean("customBranding").default(false).notNull(),
+  apiAccess: boolean("apiAccess").default(false).notNull(),
+  // Limits
+  maxEventsPerMonth: int("maxEventsPerMonth").default(5),
+  maxParticipantsPerEvent: int("maxParticipantsPerEvent").default(500),
+  storageGbPerMonth: int("storageGbPerMonth").default(10),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PremiumFeature = typeof premiumFeatures.$inferSelect;
+export type InsertPremiumFeature = typeof premiumFeatures.$inferInsert;
+
+/**
+ * Stripe Payment Events — audit log for all Stripe webhook events.
+ */
+export const stripePaymentEvents = mysqlTable("stripe_payment_events", {
+  id: int("id").autoincrement().primaryKey(),
+  stripeEventId: varchar("stripeEventId", { length: 128 }).notNull().unique(),
+  eventType: varchar("eventType", { length: 128 }).notNull(), // e.g. "payment_intent.succeeded"
+  userId: int("userId"), // references users.id if applicable
+  data: text("data").notNull(), // JSON payload
+  processed: boolean("processed").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type StripePaymentEvent = typeof stripePaymentEvents.$inferSelect;
+export type InsertStripePaymentEvent = typeof stripePaymentEvents.$inferInsert;
+
+// ─── Mailing Lists (from Replit sync) ────────────────────────────────────────
 export const mailingLists = mysqlTable("mailing_lists", {
   id: int("id").autoincrement().primaryKey(),
   eventId: varchar("event_id", { length: 128 }).notNull(),
@@ -2332,7 +2604,6 @@ export const mailingLists = mysqlTable("mailing_lists", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
-
 export type MailingList = typeof mailingLists.$inferSelect;
 export type InsertMailingList = typeof mailingLists.$inferInsert;
 
@@ -2354,10 +2625,10 @@ export const mailingListEntries = mysqlTable("mailing_list_entries", {
   registeredAt: timestamp("registered_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
 export type MailingListEntry = typeof mailingListEntries.$inferSelect;
 export type InsertMailingListEntry = typeof mailingListEntries.$inferInsert;
 
+// ─── CRM API Keys (from Replit sync) ─────────────────────────────────────────
 export const crmApiKeys = mysqlTable("crm_api_keys", {
   id: int("id").autoincrement().primaryKey(),
   keyHash: varchar("key_hash", { length: 128 }).notNull(),
@@ -2369,5 +2640,55 @@ export const crmApiKeys = mysqlTable("crm_api_keys", {
   lastUsedAt: timestamp("last_used_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
 export type CrmApiKey = typeof crmApiKeys.$inferSelect;
+
+// ─── SOC 2 Controls ──────────────────────────────────────────────────────────
+export const soc2Controls = mysqlTable("soc2_controls", {
+  id: int("id").autoincrement().primaryKey(),
+  controlId: varchar("control_id", { length: 20 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  status: mysqlEnum("status", ["compliant", "partial", "non_compliant", "not_applicable"]).notNull().default("non_compliant"),
+  ownerName: varchar("owner_name", { length: 100 }),
+  notes: text("notes"),
+  testingFrequency: varchar("testing_frequency", { length: 50 }),
+  lastTestedAt: timestamp("last_tested_at"),
+  evidenceUrls: json("evidence_urls"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type Soc2Control = typeof soc2Controls.$inferSelect;
+
+// ─── ISO 27001 Controls ───────────────────────────────────────────────────────
+export const iso27001Controls = mysqlTable("iso27001_controls", {
+  id: int("id").autoincrement().primaryKey(),
+  controlId: varchar("control_id", { length: 20 }).notNull(),
+  clause: varchar("clause", { length: 100 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  status: mysqlEnum("status", ["compliant", "partial", "non_compliant", "not_applicable"]).notNull().default("non_compliant"),
+  ownerName: varchar("owner_name", { length: 100 }),
+  notes: text("notes"),
+  testingFrequency: varchar("testing_frequency", { length: 50 }),
+  lastTestedAt: timestamp("last_tested_at"),
+  evidenceUrls: json("evidence_urls"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type Iso27001Control = typeof iso27001Controls.$inferSelect;
+
+// ─── Compliance Evidence Files ────────────────────────────────────────────────
+export const complianceEvidenceFiles = mysqlTable("compliance_evidence_files", {
+  id: int("id").autoincrement().primaryKey(),
+  controlType: mysqlEnum("control_type", ["soc2", "iso27001"]).notNull(),
+  controlId: int("control_id").notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileKey: varchar("file_key", { length: 500 }).notNull(),
+  mimeType: varchar("mime_type", { length: 100 }),
+  uploadedBy: int("uploaded_by"),
+  uploadedAt: bigint("uploaded_at", { mode: "number" }).notNull(),
+  expiresAt: bigint("expires_at", { mode: "number" }),
+});
+export type ComplianceEvidenceFile = typeof complianceEvidenceFiles.$inferSelect;
