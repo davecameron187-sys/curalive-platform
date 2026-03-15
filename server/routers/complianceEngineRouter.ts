@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { adminProcedure, router } from "../_core/trpc";
 import {
   runFullScan,
   getThreats,
@@ -10,16 +10,16 @@ import {
 } from "../services/ComplianceEngineService";
 
 export const complianceEngineRouter = router({
-  dashboard: protectedProcedure.query(async () => {
+  dashboard: adminProcedure.query(async () => {
     return getComplianceDashboardData();
   }),
 
-  runScan: protectedProcedure.mutation(async () => {
+  runScan: adminProcedure.mutation(async () => {
     const result = await runFullScan();
     return result;
   }),
 
-  threats: protectedProcedure
+  threats: adminProcedure
     .input(z.object({
       status: z.enum(["detected", "investigating", "confirmed", "mitigated", "false_positive"]).optional(),
       severity: z.enum(["low", "medium", "high", "critical"]).optional(),
@@ -30,11 +30,11 @@ export const complianceEngineRouter = router({
       return getThreats(input ?? {});
     }),
 
-  threatStats: protectedProcedure.query(async () => {
+  threatStats: adminProcedure.query(async () => {
     return getThreatStats();
   }),
 
-  updateThreat: protectedProcedure
+  updateThreat: adminProcedure
     .input(z.object({
       id: z.number(),
       status: z.enum(["detected", "investigating", "confirmed", "mitigated", "false_positive"]),

@@ -161,7 +161,7 @@ async function runPredictiveAnalysis(): Promise<PredictiveAlert[]> {
   const eventGrowth: any[] = await safeRawQuery(`
     SELECT COUNT(*) as upcoming_events
     FROM events
-    WHERE status = 'scheduled'
+    WHERE status = 'upcoming'
   `);
   const upcoming = Number(eventGrowth[0]?.upcoming_events ?? 0);
 

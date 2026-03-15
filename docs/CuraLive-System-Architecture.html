@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CuraLive — Complete System Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0f; color: #e4e4e7; padding: 40px; min-width: 1400px; }
+  .page { max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 32px; font-weight: 800; color: #fff; text-align: center; margin-bottom: 6px; }
+  .subtitle { text-align: center; color: #71717a; font-size: 13px; margin-bottom: 32px; letter-spacing: 0.5px; }
+  .section-bar { padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; margin-top: 28px; }
+  .bar-orange { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; }
+  .bar-green { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; }
+  .bar-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
+  .bar-violet { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; }
+  .bar-teal { background: linear-gradient(135deg, #14b8a6, #0d9488); color: #fff; }
+  .bar-red { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+  .bar-grey { background: linear-gradient(135deg, #52525b, #3f3f46); color: #fff; }
+  .grid { display: grid; gap: 12px; margin-bottom: 8px; }
+  .grid-6 { grid-template-columns: repeat(6, 1fr); }
+  .grid-5 { grid-template-columns: repeat(5, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-7 { grid-template-columns: repeat(7, 1fr); }
+  .card { border-radius: 10px; padding: 16px; border: 1px solid rgba(255,255,255,0.08); }
+  .card h3 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .card p, .card ul { font-size: 11px; line-height: 1.6; color: #a1a1aa; }
+  .card ul { list-style: none; }
+  .card ul li::before { content: "• "; color: #71717a; }
+  .c-orange { background: rgba(249,115,22,0.1); border-color: rgba(249,115,22,0.3); }
+  .c-orange h3 { color: #fb923c; }
+  .c-green { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.3); }
+  .c-green h3 { color: #4ade80; }
+  .c-violet { background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); }
+  .c-violet h3 { color: #a78bfa; }
+  .c-blue { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); }
+  .c-blue h3 { color: #60a5fa; }
+  .c-yellow { background: rgba(234,179,8,0.1); border-color: rgba(234,179,8,0.3); }
+  .c-yellow h3 { color: #facc15; }
+  .c-red { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); }
+  .c-red h3 { color: #f87171; }
+  .c-teal { background: rgba(20,184,166,0.1); border-color: rgba(20,184,166,0.3); }
+  .c-teal h3 { color: #2dd4bf; }
+  .c-grey { background: rgba(113,113,122,0.1); border-color: rgba(113,113,122,0.3); }
+  .c-grey h3 { color: #a1a1aa; }
+  .arrow-row { text-align: center; font-size: 24px; color: #3f3f46; margin: 6px 0; letter-spacing: 20px; }
+  .flow-card { border-radius: 10px; padding: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+  .flow-card h3 { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .flow-card p { font-size: 11px; line-height: 1.7; color: #a1a1aa; }
+  .footer { text-align: center; margin-top: 32px; padding: 16px; background: linear-gradient(135deg, #1e3a5f, #1e1b4b); border-radius: 10px; font-size: 13px; font-weight: 600; color: #93c5fd; }
+  .legend { text-align: center; margin-top: 12px; font-size: 11px; color: #71717a; }
+  .legend span { margin: 0 8px; }
+  @media print {
+    body { background: #fff; color: #111; padding: 20px; }
+    .card, .flow-card { border: 1px solid #ddd; }
+    .card p, .card ul, .flow-card p { color: #444; }
+    .section-bar { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>CuraLive — Complete System Architecture</h1>
+<p class="subtitle">React 19 + Vite &nbsp;|&nbsp; Express + tRPC &nbsp;|&nbsp; MySQL (Drizzle ORM) &nbsp;|&nbsp; Ably Real-time &nbsp;|&nbsp; OpenAI GPT-4o &nbsp;|&nbsp; Port 5000</p>
+
+<div class="section-bar bar-orange">Entry Points — How Users Access the Platform</div>
+<div class="grid grid-6">
+  <div class="card c-orange"><h3>Web Browser</h3><p>Operator, Admin, and Attendee access via browser. Full dashboard, OCC, event rooms.</p></div>
+  <div class="card c-orange"><h3>Phone Dial-In</h3><p>Attendees call the conference bridge with their unique PIN. OCC admits them.</p></div>
+  <div class="card c-orange"><h3>External Bridge</h3><p>3rd-party conference systems. Shadow Mode joins silently via Recall.ai.</p></div>
+  <div class="card c-orange"><h3>CRM / Partner API</h3><p>REST + Webhook integration. API key auth (clv_ prefix). Bulk registration.</p></div>
+  <div class="card c-orange"><h3>Mobile Attendee</h3><p>5-panel swipeable event room: Video, Transcript, Q&A, Polls, Info.</p></div>
+  <div class="card c-orange"><h3>OAuth Login</h3><p>Google / GitHub SSO. JWT session cookies. Role-based access control.</p></div>
+</div>
+
+<div class="arrow-row">▼ ▼ ▼ ▼ ▼ ▼</div>
+
+<div class="section-bar bar-green">Frontend — React 19 + Vite + TailwindCSS 4 + shadcn/ui</div>
+<div class="grid grid-5">
+  <div class="card c-green">
+    <h3>Events & Operations</h3>
+    <ul>
+      <li>Dashboard · OCC (Operator Console)</li>
+      <li>Webcast Studio · Virtual Studio</li>
+      <li>Event Scheduler · Calendar</li>
+      <li>Bookings · Registrations</li>
+      <li>Training Mode Console</li>
+    </ul>
+  </div>
+  <div class="card c-violet">
+    <h3>AI & Intelligence</h3>
+    <ul>
+      <li>Agentic Brain · Tagged Metrics</li>
+      <li>Intelligence Terminal</li>
+      <li>Shadow Mode · Health Guardian</li>
+      <li>Compliance Engine</li>
+      <li>Sentiment · Market Reaction</li>
+    </ul>
+  </div>
+  <div class="card c-blue">
+    <h3>Attendee Experience</h3>
+    <ul>
+      <li>Event Room · Waiting Room</li>
+      <li>Mobile Room (5-panel)</li>
+      <li>Q&A · Live Polls · Chat</li>
+      <li>On-Demand Library</li>
+      <li>Webcast Replay</li>
+    </ul>
+  </div>
+  <div class="card c-yellow">
+    <h3>Platform & Admin</h3>
+    <ul>
+      <li>Billing · Admin Panel</li>
+      <li>Client Portal (white-label)</li>
+      <li>Mailing Lists · CRM API Keys</li>
+      <li>Branding · Feature Flags</li>
+      <li>Integrations Hub</li>
+    </ul>
+  </div>
+  <div class="card c-red">
+    <h3>Security & Compliance</h3>
+    <ul>
+      <li>SOC 2 Dashboard</li>
+      <li>ISO 27001 Dashboard</li>
+      <li>AI Compliance Engine</li>
+      <li>Audit Trail · Threat Detection</li>
+      <li>Zero Trust Dashboard</li>
+    </ul>
+  </div>
+</div>
+
+<div class="arrow-row">▼ ▼ ▼ ▼ ▼</div>
+
+<div class="section-bar bar-blue">Backend API — Express + tRPC (45+ Routers on Port 5000)</div>
+<div class="grid grid-6">
+  <div class="card c-blue">
+    <h3>Core Operations</h3>
+    <ul>
+      <li>occ · events · webcast</li>
+      <li>scheduling · registrations</li>
+      <li>webphone · polls</li>
+      <li>liveVideo · mux</li>
+    </ul>
+  </div>
+  <div class="card c-violet">
+    <h3>AI & Intelligence</h3>
+    <ul>
+      <li>agenticBrain · ai · sentiment</li>
+      <li>transcription · shadowMode</li>
+      <li>intelligenceReport</li>
+      <li>taggedMetrics · benchmarks</li>
+    </ul>
+  </div>
+  <div class="card c-blue">
+    <h3>Media & Real-time</h3>
+    <ul>
+      <li>mux · recall · ably</li>
+      <li>virtualStudio · socialMedia</li>
+      <li>contentTriggers</li>
+      <li>archiveUpload</li>
+    </ul>
+  </div>
+  <div class="card c-yellow">
+    <h3>Business & CRM</h3>
+    <ul>
+      <li>billing · clientPortal</li>
+      <li>mailingList · crmApi</li>
+      <li>branding · customisation</li>
+      <li>followups · callPrep</li>
+    </ul>
+  </div>
+  <div class="card c-red">
+    <h3>Compliance & Security</h3>
+    <ul>
+      <li>complianceEngine · compliance</li>
+      <li>soc2 · iso27001</li>
+      <li>healthGuardian</li>
+      <li>supportChat · admin</li>
+    </ul>
+  </div>
+  <div class="card c-grey">
+    <h3>System & Auth</h3>
+    <ul>
+      <li>system · auth · profile</li>
+      <li>OAuth (Google/GitHub)</li>
+      <li>JWT · rate limiting</li>
+      <li>Role-based access (RBAC)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="arrow-row">▼ ▼ ▼ ▼ ▼ ▼</div>
+
+<div class="section-bar bar-violet">Services Layer — Background Processing, AI Engines & Autonomous Systems</div>
+<div class="grid grid-4">
+  <div class="card c-green">
+    <h3>Real-time & Media</h3>
+    <ul>
+      <li>Ably Real-time (live events, presence)</li>
+      <li>Transcription (live + post-event)</li>
+      <li>Audio Enhancer · Virtual Studio</li>
+      <li>Language Dubber (8 languages)</li>
+      <li>Realtime Collaboration</li>
+    </ul>
+  </div>
+  <div class="card c-violet">
+    <h3>AI & Analysis Engines</h3>
+    <ul>
+      <li>Sentiment Analysis (per-speaker, live)</li>
+      <li>Speaking Pace Coach</li>
+      <li>QA Auto-Triage · Toxicity Filter</li>
+      <li>Content Generation Triggers</li>
+      <li>Personalization Engine</li>
+    </ul>
+  </div>
+  <div class="card c-blue">
+    <h3>Content & Reporting</h3>
+    <ul>
+      <li>Event Brief Generator</li>
+      <li>Webcast Recap · Podcast Converter</li>
+      <li>Live Rolling Summary</li>
+      <li>Social Media · Event Echo Pipeline</li>
+      <li>Content Performance Analytics</li>
+    </ul>
+  </div>
+  <div class="card c-red">
+    <h3>Compliance & Monitoring</h3>
+    <ul>
+      <li>Compliance Engine (5-min scans)</li>
+      <li>Health Guardian (30s health checks)</li>
+      <li>AI Threat Assessment (GPT-4o)</li>
+      <li>Compliance Moderator</li>
+      <li>Redaction Workflow · Sustainability</li>
+    </ul>
+  </div>
+</div>
+
+<div class="arrow-row">▼ ▼ ▼ ▼</div>
+
+<div class="section-bar bar-teal">Data Layer — MySQL (Drizzle ORM) · 80+ Tables · Ably Channels · Object Storage</div>
+<div class="grid grid-6">
+  <div class="card c-teal">
+    <h3>Core Tables</h3>
+    <ul>
+      <li>users · events</li>
+      <li>attendee_registrations</li>
+      <li>ir_contacts · branding</li>
+      <li>event_schedules</li>
+    </ul>
+  </div>
+  <div class="card c-teal">
+    <h3>OCC / Telephony</h3>
+    <ul>
+      <li>occ_conferences</li>
+      <li>occ_participants · lounge</li>
+      <li>chat_messages · audio_files</li>
+      <li>operator_sessions</li>
+    </ul>
+  </div>
+  <div class="card c-teal">
+    <h3>Webcasting & Media</h3>
+    <ul>
+      <li>webcast_events</li>
+      <li>webcast_qa · polls</li>
+      <li>mux_streams · slides</li>
+      <li>transcription_jobs</li>
+    </ul>
+  </div>
+  <div class="card c-teal">
+    <h3>AI & Intelligence</h3>
+    <ul>
+      <li>agentic_analyses</li>
+      <li>tagged_metrics · shadow</li>
+      <li>briefing_packs · signals</li>
+      <li>audit_log · feedback</li>
+    </ul>
+  </div>
+  <div class="card c-teal">
+    <h3>Billing & CRM</h3>
+    <ul>
+      <li>billing_clients · quotes</li>
+      <li>stripe_customers</li>
+      <li>mailing_lists · entries</li>
+      <li>crm_api_keys · social</li>
+    </ul>
+  </div>
+  <div class="card c-teal">
+    <h3>Compliance</h3>
+    <ul>
+      <li>compliance_threats</li>
+      <li>soc2_controls (18)</li>
+      <li>iso27001_controls (16)</li>
+      <li>evidence · certificates</li>
+    </ul>
+  </div>
+</div>
+
+<div class="arrow-row">▼ ▼ ▼ ▼ ▼ ▼</div>
+
+<div class="section-bar bar-red">External Integrations — Third-Party Services & APIs</div>
+<div class="grid grid-7">
+  <div class="card c-red"><h3>Twilio / Telnyx</h3><p>Voice dial-in/out, SIP trunking, WebRTC webphone</p></div>
+  <div class="card c-red"><h3>OpenAI GPT-4o</h3><p>Agentic Brain, sentiment, transcription, threat AI</p></div>
+  <div class="card c-red"><h3>Ably Realtime</h3><p>Live channels, presence, pub/sub, push notifications</p></div>
+  <div class="card c-red"><h3>Recall.ai</h3><p>Zoom/Teams/Webex bots, Shadow Mode listener</p></div>
+  <div class="card c-red"><h3>Mux Video</h3><p>Live streaming, HLS/RTMP, on-demand playback</p></div>
+  <div class="card c-red"><h3>Stripe</h3><p>Subscriptions, invoices, payment processing</p></div>
+  <div class="card c-red"><h3>GitHub</h3><p>Source control, CI/CD, collaboration</p></div>
+</div>
+
+<div style="margin-top: 32px;"></div>
+
+<div class="section-bar bar-grey">Key Data Flows — How Information Moves Through the Platform</div>
+<div class="grid grid-3" style="margin-top: 12px;">
+  <div class="flow-card">
+    <h3 style="color: #4ade80;">1. Event Lifecycle</h3>
+    <p>Booking Form → Event Created → Mailing List Import → Auto-PIN Generation → Invitation Emails Sent → Attendee Clicks → Registered → OCC Loads Event → Attendees Dial In / Join Web → Live Conference Runs → Post-Event Report Generated → Social Content Published</p>
+  </div>
+  <div class="flow-card">
+    <h3 style="color: #a78bfa;">2. AI Intelligence Pipeline</h3>
+    <p>Live Audio → Real-time Transcription → Sentiment Analysis (per speaker) → Q&A Auto-Triage → Speaking Pace Coaching → Live Rolling Summary → Tagged Metrics Extraction → Post-Event Brief + Recap → Social Media Content → Podcast Conversion</p>
+  </div>
+  <div class="flow-card">
+    <h3 style="color: #60a5fa;">3. Shadow Mode Flow</h3>
+    <p>External Bridge Configured → Recall.ai Bot Joins Call Silently → Audio Captured in Real-time → AI Transcription Runs → Sentiment + Intelligence Analysis → Feeds to OCC Dashboard → Operator Sees Live Insights → Zero Disruption to Original Call</p>
+  </div>
+  <div class="flow-card">
+    <h3 style="color: #f87171;">4. Compliance Engine</h3>
+    <p>Engine Runs Every 5 Minutes → Scans Registrations (fraud patterns) → Scans Audit Log (access anomalies) → Scans Exports (data exfiltration) → AI Assesses Severity (GPT-4o) → Threats Persisted → ISO 27001 + SOC 2 Scored → Predictive Alerts Generated</p>
+  </div>
+  <div class="flow-card">
+    <h3 style="color: #facc15;">5. CRM / Partner API</h3>
+    <p>Partner Gets API Key (clv_ prefix) → REST: Create Registrations → Bulk Import (up to 500) → Query Event Stats → Webhook on Registration → Zero-Click Pre-Register All → Confirmation Emails Sent → Full Audit Trail Logged</p>
+  </div>
+  <div class="flow-card">
+    <h3 style="color: #fb923c;">6. Health Monitoring</h3>
+    <p>Health Guardian (30s cycle) → Checks: DB, Twilio, OpenAI, Ably, Recall, Active Events → Anomaly Detection (2.5σ threshold) → Auto-Incident Creation → AI Root-Cause Analysis → Customer Impact Reports → Cross-feeds Compliance Engine</p>
+  </div>
+</div>
+
+<div class="footer">CuraLive © 2026 &nbsp;|&nbsp; Provisional Patent Filed (CIPC — South Africa) &nbsp;|&nbsp; ISO 27001 + SOC 2 Compliant &nbsp;|&nbsp; Targeting Microsoft / Zoom Acquisition</div>
+<p class="legend">
+  <span>🟠 Orange = Entry Points</span>
+  <span>🟢 Green = Events/Ops</span>
+  <span>🟣 Violet = AI/Intelligence</span>
+  <span>🔵 Blue = Media/Attendee</span>
+  <span>🟡 Yellow = Business</span>
+  <span>🔴 Red = External/Compliance</span>
+  <span>🟩 Teal = Data</span>
+  <span>⬜ Grey = System</span>
+</p>
+
+</div>
+</body>
+</html>
