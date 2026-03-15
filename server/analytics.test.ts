@@ -12,47 +12,23 @@ describe("ContentPerformanceAnalyticsService", () => {
     const db = await getDb();
     if (!db) throw new Error("Database unavailable");
 
-    // Create test event
-    const [event] = await db
-      .insert(webcastEvents)
-      .values({
-        slug: `test-event-${Date.now()}`,
-        title: "Test Event for Analytics",
-        description: "Analytics test event",
-        eventType: "earnings_call",
-        industryVertical: "technology",
-        webcastStatus: "completed",
-        startTime: new Date(),
-        endTime: new Date(),
-        timezone: "UTC",
-        maxAttendees: 100,
-        registrationCount: 50,
-        peakAttendees: 45,
-        recordingEnabled: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
+    // Create test event (MySQL doesn't support .returning(), use $client.promise().query())
+    const eventSlug = `test-event-${Date.now()}`;
+    const now = Date.now();
+    const [eventRows] = await (db as any).$client.promise().query(
+      `INSERT INTO webcast_events (slug, title, description, event_type, industry_vertical, start_time, end_time, timezone, max_attendees, registration_count, peak_attendees, recording_enabled, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [eventSlug, "Test Event for Analytics", "Analytics test event", "capital_markets", "technology", now, now, "UTC", 100, 50, 45, true, now, now]
+    );
+    testEventId = (eventRows as any).insertId;
 
-    testEventId = event.id;
-
-    // Create test content
-    const [content] = await db
-      .insert(aiGeneratedContent)
-      .values({
-        eventId: testEventId,
-        contentType: "event_summary",
-        title: "Test Summary",
-        content: "This is a test summary",
-        status: "approved",
-        generatedAt: new Date(),
-        approvedAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-
-    testContentId = content.id;
+    // Create test content (approved_by is required in DB)
+    const [contentRows] = await (db as any).$client.promise().query(
+      `INSERT INTO ai_generated_content (event_id, content_type, title, content, status, generated_at, approved_by, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [testEventId, "event_summary", "Test Summary", "This is a test summary", "approved", new Date(), 1, new Date()]
+    );
+    testContentId = (contentRows as any).insertId;
   });
 
   afterAll(async () => {

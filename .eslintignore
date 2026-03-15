@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+build/
+.next/
+client/public/
+drizzle/migrations/
+**/*.d.ts
+.manus-logs/
+screenshots/

@@ -5,8 +5,8 @@ import { promisify } from "util";
 import { writeFile, readFile, mkdtemp, rm } from "fs/promises";
 import { join, extname } from "path";
 import { tmpdir } from "os";
-import { openai } from "./replit_integrations/audio/client";
-import { toFile } from "openai";
+// Use Manus built-in transcription instead of direct OpenAI
+import { transcribeAudio } from "./_core/voiceTranscription";
 
 const execFileAsync = promisify(execFile);
 
@@ -65,14 +65,14 @@ async function extractChunkMp3(
 }
 
 async function callTranscribeApi(buffer: Buffer, filename: string): Promise<string> {
+  // Upload buffer to a temp S3 location then use Manus built-in transcription
+  const { storagePut } = await import("./storage");
   const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
   const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm"].includes(ext) ? ext : "mp3";
-  const file = await toFile(buffer, `audio.${safeExt}`);
-  const response = await openai.audio.transcriptions.create({
-    file,
-    model: "gpt-4o-mini-transcribe",
-  });
-  return response.text.trim();
+  const key = `transcribe-tmp/${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`;
+  const { url } = await storagePut(key, buffer, `audio/${safeExt}`);
+  const result = await transcribeAudio({ audioUrl: url });
+  return result.text.trim();
 }
 
 export function registerAudioTranscribeRoute(app: import("express").Express) {

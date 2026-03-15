@@ -6,7 +6,7 @@ import {
   TrendingUp, Minus, ChevronDown, ChevronUp,
   Sparkles, Loader2, AlertCircle, RefreshCw, Send, UserPlus, Trash2, X,
   AlertTriangle, Shield, TrendingDown, Pencil, Check, Phone, Share2,
-  PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed, Wifi, WifiOff
+  PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed, Wifi, WifiOff, Copy
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -249,6 +249,59 @@ export default function PostEvent() {
     },
   });
 
+  // Press Release Draft state & mutation
+  const [pressReleaseText, setPressReleaseText] = useState<string | null>(null);
+  const [showPressRelease, setShowPressRelease] = useState(false);
+
+  // Export Attendees to Mailing List
+  const [exportAttendeesResult, setExportAttendeesResult] = useState<{ imported: number; duplicates: number; mailingListId: number } | null>(null);
+  const exportAttendeesMutation = trpc.mailingList.importFromEvent.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        setExportAttendeesResult({ imported: data.imported, duplicates: data.duplicates, mailingListId: data.mailingListId! });
+        toast.success(`Exported ${data.imported} attendees to mailing list!`);
+      } else {
+        toast.error(data.error ?? "Failed to export attendees");
+      }
+    },
+    onError: () => toast.error("Failed to export attendees to mailing list"),
+  });
+
+  const handleExportAttendees = () => {
+    const id = params.id ?? "q4-earnings-2026";
+    exportAttendeesMutation.mutate({
+      eventId: id,
+      mailingListName: `${id} — Post-Event Attendees`,
+    });
+  };
+  const generatePressRelease = trpc.pressRelease.generate.useMutation({
+    onSuccess: (data) => {
+      setPressReleaseText(data.pressRelease);
+      setShowPressRelease(true);
+      if (!data.success) {
+        toast.warning("Using fallback press release — LLM temporarily unavailable");
+      } else {
+        toast.success("Press release draft generated!");
+      }
+    },
+    onError: () => toast.error("Failed to generate press release. Please try again."),
+  });
+
+  const handleGeneratePressRelease = () => {
+    generatePressRelease.mutate({
+      eventTitle: "Q4 2025 Earnings Call — CuraLive Inc.",
+      companyName: "CuraLive Inc.",
+      transcript: TRANSCRIPT.map(t => ({ speaker: t.speaker, text: t.text, timeLabel: t.time })),
+      aiSummary: aiSummary ? {
+        headline: aiSummary.headline,
+        keyPoints: aiSummary.keyPoints,
+        financialHighlights: aiSummary.financialHighlights,
+        executiveSummary: aiSummary.executiveSummary,
+        forwardLookingStatements: aiSummary.forwardLookingStatements,
+      } : undefined,
+    });
+  };
+
   const handleGenerateSummary = () => {
     generateSummary.mutate({
       eventTitle: "Q4 2025 Earnings Call — CuraLive Inc.",
@@ -474,8 +527,41 @@ export default function PostEvent() {
                     <button onClick={handleDownloadPDF} className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors">
                       <Download className="w-3 h-3" /> Download
                     </button>
+                    <button
+                      onClick={handleGeneratePressRelease}
+                      disabled={generatePressRelease.isPending}
+                      className="flex items-center gap-1.5 text-xs bg-amber-500/10 border border-amber-500/20 text-amber-400 px-3 py-1.5 rounded-lg hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+                    >
+                      {generatePressRelease.isPending ? <><Loader2 className="w-3 h-3 animate-spin" /> Drafting...</> : <><FileText className="w-3 h-3" /> Draft Press Release</>}
+                    </button>
+                    <button
+                      onClick={handleExportAttendees}
+                      disabled={exportAttendeesMutation.isPending}
+                      className="flex items-center gap-1.5 text-xs bg-violet-500/10 border border-violet-500/20 text-violet-400 px-3 py-1.5 rounded-lg hover:bg-violet-500/20 transition-colors disabled:opacity-50"
+                    >
+                      {exportAttendeesMutation.isPending ? <><Loader2 className="w-3 h-3 animate-spin" /> Exporting...</> : <><Users className="w-3 h-3" /> Export Attendees</>}
+                    </button>
                   </div>
                 </div>
+
+                {/* Export Attendees Result Banner */}
+                {exportAttendeesResult && (
+                  <div className="mb-4 flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3">
+                    <CheckCircle className="w-4 h-4 text-violet-400 shrink-0" />
+                    <div className="flex-1 text-sm">
+                      <span className="font-semibold text-violet-400">{exportAttendeesResult.imported} attendees</span>
+                      <span className="text-muted-foreground"> exported to mailing list</span>
+                      {exportAttendeesResult.duplicates > 0 && <span className="text-muted-foreground"> ({exportAttendeesResult.duplicates} duplicates skipped)</span>}
+                    </div>
+                    <button
+                      onClick={() => window.location.href = '/mailing-lists'}
+                      className="text-xs text-violet-400 border border-violet-500/30 px-2 py-1 rounded hover:bg-violet-500/10 transition-colors"
+                    >View List</button>
+                    <button onClick={() => setExportAttendeesResult(null)} className="text-muted-foreground hover:text-foreground">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Headline */}
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-5">
@@ -594,6 +680,43 @@ export default function PostEvent() {
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Press Release Panel */}
+            {showPressRelease && pressReleaseText && (
+              <div className="bg-card border border-amber-500/30 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <FileText className="w-3.5 h-3.5 text-amber-400" />
+                    </div>
+                    <span className="font-semibold">SENS/RNS Press Release Draft</span>
+                    <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">AI Draft</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(pressReleaseText); toast.success("Copied to clipboard!"); }}
+                      className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
+                    >
+                      <Copy className="w-3 h-3" /> Copy
+                    </button>
+                    <button
+                      onClick={() => {
+                        const blob = new Blob([pressReleaseText], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a'); a.href = url; a.download = 'press-release-draft.txt'; a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="flex items-center gap-1.5 text-xs border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
+                    >
+                      <Download className="w-3 h-3" /> Download
+                    </button>
+                    <button onClick={() => setShowPressRelease(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+                  </div>
+                </div>
+                <pre className="whitespace-pre-wrap text-sm font-mono text-foreground/90 bg-background/60 border border-border rounded-xl p-5 leading-relaxed max-h-[500px] overflow-y-auto" style={{ fontFamily: "'Courier New', monospace" }}>{pressReleaseText}</pre>
+                <p className="text-[10px] text-muted-foreground mt-3 italic" style={{ fontFamily: "'Inter', sans-serif" }}>AI-generated draft for reference only. Review with your legal and IR team before submission to SENS/RNS.</p>
               </div>
             )}
 

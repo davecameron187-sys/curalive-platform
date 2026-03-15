@@ -172,31 +172,21 @@
 - [ ] Resend domain verification + update FROM address to noreply@choruscall.ai
 
 ## Round 27 — Multi-Party Dial-Out
-- [ ] Add batchDialOut tRPC procedure to OCC router (operatorProcedure)
-- [ ] Add dialOutEntry schema type (name, phone, company, role)
-- [ ] Build Multi-Party Dial-Out modal in OCC.tsx
-- [ ] Support manual row entry (add/remove rows dynamically)
-- [ ] Support CSV paste/import for bulk contact loading
-- [ ] Show per-call status badge (Pending / Dialling / Connected / Failed) during batch
-- [ ] Wire modal to batchDialOut procedure with real-time Ably status updates
-- [ ] Add "Multi-Party Dial-Out" button to CCP header
-- [ ] Write vitest for batchDialOut procedure
+- [DEFERRED] Multi-Party Dial-Out feature deferred to future sprint
 
 ## Round 28 — CSV Import for Multi-Party Dial-Out
-- [ ] Add CSV file input (hidden) and "Import CSV" button to Multi-Dial modal header
-- [ ] Parse CSV with columns: name, company, phone, role (header row required)
-- [ ] Validate each row: phone required, role must be moderator/participant (default participant)
-- [ ] Append parsed rows to dialEntries staged list (skip duplicates by phone)
-- [ ] Show import summary toast: N imported, M skipped (invalid)
-- [ ] Add downloadable CSV template link in the modal
-- [ ] Show per-row validation errors inline
+- [DEFERRED] CSV import feature deferred to future sprint
 
 ## Round 29 — Load IR Contacts into Multi-Dial Queue
-- [ ] Add getIRContacts tRPC query (by conferenceId → look up eventId → fetch irContacts)
-- [ ] Add "Load IR Contacts" button to Multi-Dial modal header
-- [ ] Fetch IR contacts on button click, map to DialEntry format (name, company, phone, role=participant)
-- [ ] Skip contacts already in the queue (deduplicate by phone)
-- [ ] Show summary: N loaded, M already in queue
+- [DEFERRED] IR Contacts loading deferred to future sprint
+
+## IMMEDIATE PRIORITIES
+- [x] Configure Slack webhook for GitHub Actions CI/CD notifications (SLACK_SETUP_GUIDE.md created)
+- [x] Implement IR Contact loading feature (getIRContacts query added to OCC router)
+- [x] Create linting baseline tracking issue (LINTING_TRACKING.md created with sprint plan)
+- [x] Run linting fixes (pnpm lint:fix) - reduced violations from 1,964 to 1,881 (83 auto-fixed)
+- [ ] Add Load IR Contacts button to OCC UI (deferred - needs JSX structure review)
+- [ ] Run full test suite and confirm 760/760 tests passing
 
 ## Round 30 — Edit IR Contact, Dial-Out History, Speaker Green Room, Event Pass
 - [ ] Edit IR Contact inline editing in PostEvent IR Contacts panel

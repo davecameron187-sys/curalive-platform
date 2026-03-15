@@ -11,7 +11,7 @@ import {
   Eye, EyeOff, Bell, BellOff, TrendingUp, Signal,
   Layers, Terminal, Database, Hash, Check, X, MoreVertical,
   Headphones, Video, VideoOff, Maximize2, AlertTriangle,
-  FileText, Download, RotateCcw, Info
+  FileText, Download, RotateCcw, Info, Mail
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -413,6 +413,7 @@ export default function OperatorConsole() {
                       { label: "Open Moderator Console", action: () => navigate(`/moderator/${eventId}`), icon: Radio },
                       { label: "Open Presenter View", action: () => navigate(`/presenter/${eventId}`), icon: Monitor },
                       { label: "View Post-Event Report", action: () => navigate(`/post-event/${eventId}`), icon: FileText },
+                      { label: "Mailing List Manager", action: () => navigate("/mailing-lists"), icon: Mail },
                     ].map(({ label, action, icon: Icon }) => (
                       <button key={label} onClick={action} className="w-full flex items-center gap-2.5 text-sm text-slate-400 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg transition-all text-left">
                         <Icon className="w-3.5 h-3.5 flex-shrink-0" />

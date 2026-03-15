@@ -18,6 +18,10 @@ export interface ContentMetrics {
   clickThroughRate: number;
   responseRate: number;
   qualityScore?: number;
+  sentCount?: number;
+  openCount?: number;
+  clickCount?: number;
+  responseCount?: number;
 }
 
 export interface ContentTypeAnalytics {
@@ -61,7 +65,7 @@ export class ContentPerformanceAnalyticsService {
       contentId,
       recipientEmail,
       eventType,
-      eventData: eventData || null,
+      eventData: eventData ? JSON.stringify(eventData) : null,
       timestamp: new Date(),
     });
 
@@ -97,13 +101,13 @@ export class ContentPerformanceAnalyticsService {
     const clickCount = events.filter((e) => e.eventType === "clicked").length;
     const responseCount = events.filter((e) => e.eventType === "responded").length;
 
-    const openRate = sentCount > 0 ? openCount / sentCount : 0;
-    const clickThroughRate = openCount > 0 ? clickCount / openCount : 0;
-    const responseRate = sentCount > 0 ? responseCount / sentCount : 0;
-
-    // Calculate engagement score (weighted average)
-    const engagementScore =
-      openRate * 0.4 + clickThroughRate * 0.35 + responseRate * 0.25;
+     const openRate = Math.min(1, sentCount > 0 ? openCount / sentCount : 0);
+    const clickThroughRate = Math.min(1, openCount > 0 ? clickCount / openCount : 0);
+    const responseRate = Math.min(1, sentCount > 0 ? responseCount / sentCount : 0);
+    // Calculate engagement score (weighted average, capped at 1)
+    const engagementScore = Math.min(1,
+      openRate * 0.4 + clickThroughRate * 0.35 + responseRate * 0.25
+    );
 
     // Calculate approval score
     let approvalScore = 0;
@@ -185,6 +189,10 @@ export class ContentPerformanceAnalyticsService {
       qualityScore: metrics.qualityScore
         ? parseFloat(metrics.qualityScore.toString())
         : undefined,
+      sentCount: metrics.sentCount || 0,
+      openCount: metrics.openCount || 0,
+      clickCount: metrics.clickCount || 0,
+      responseCount: metrics.responseCount || 0,
     };
   }
 

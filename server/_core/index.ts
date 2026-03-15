@@ -5,17 +5,19 @@ import net from "net";
 import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
-import { appRouter } from "../routers";
+import { appRouter } from "../routers.eager";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerSlideDeckUploadRoute } from "../slideDeckUpload";
 import { registerAudioTranscribeRoute } from "../audioTranscribe";
 import { registerRecallWebhookRoute } from "../recallWebhook";
 import { startReminderScheduler } from "../reminderScheduler";
+import { startComplianceDigestScheduler } from "../complianceDigestScheduler";
 import { registerBillingPdfRoutes } from "../billingPdf";
 import { buildTwiMLVoiceResponse } from "../webphone/twilio";
 import { parseTelnyxWebhook } from "../webphone/telnyx";
 import twilio_twiml from "twilio";
+import { MetricsWebSocketServer } from "./metricsWebsocket";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
