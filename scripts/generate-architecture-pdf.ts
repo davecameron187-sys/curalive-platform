@@ -17,7 +17,7 @@ const TEXT_MUTED = "#71717a";
 const CARD_BG = "#1e2028";
 
 const W = 1400;
-const H = 900;
+const H = 1050;
 const assetsDir = path.resolve("docs/diagram-assets-small");
 
 const doc = new PDFDocument({
@@ -60,16 +60,19 @@ function connLabel(x: number, y: number, text: string, color: string) {
 }
 
 function detailBox(x: number, y: number, w: number, title: string, items: string[], color: string) {
-  const h = 20 + items.length * 14;
+  const titleSize = 12;
+  const itemSize = 10;
+  const itemGap = 18;
+  const h = 30 + items.length * itemGap;
   doc.save();
-  doc.roundedRect(x, y, w, h, 8).fillOpacity(0.88).fill(CARD_BG);
+  doc.roundedRect(x, y, w, h, 10).fillOpacity(0.9).fill(CARD_BG);
   doc.fillOpacity(1);
-  doc.roundedRect(x, y, w, h, 8).lineWidth(0.8).strokeColor(color).strokeOpacity(0.25).stroke();
+  doc.roundedRect(x, y, w, h, 10).lineWidth(1).strokeColor(color).strokeOpacity(0.3).stroke();
   doc.strokeOpacity(1);
   doc.restore();
-  doc.fontSize(9).font("Helvetica-Bold").fillColor(color).text(title, x + 10, y + 8, { width: w - 20 });
+  doc.fontSize(titleSize).font("Helvetica-Bold").fillColor(color).text(title, x + 14, y + 10, { width: w - 28 });
   items.forEach((item, i) => {
-    doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_DIM).text(`>  ${item}`, x + 12, y + 24 + i * 14, { width: w - 24 });
+    doc.fontSize(itemSize).font("Helvetica").fillColor(TEXT_DIM).text(`>  ${item}`, x + 16, y + 32 + i * itemGap, { width: w - 32 });
   });
 }
 
@@ -124,7 +127,7 @@ curvedLine(620, 520, 620, 580, 640, 620, 650, 640, TEAL, 2.5, false);
 curvedLine(730, 510, 830, 550, 1020, 560, 1070, 580, RED, 2.5, false);
 
 // Server -> Integrations
-curvedLine(620, 520, 620, 730, 640, 790, 650, 810, GREEN, 2, true);
+curvedLine(620, 520, 620, 780, 640, 850, 650, 880, GREEN, 2, true);
 
 // AI -> DB cross
 curvedLine(280, 720, 400, 760, 550, 760, 620, 730, VIOLET, 1.5, true);
@@ -185,9 +188,9 @@ label(980, 735, "Compliance & Security", RED, 12);
 sublabel(980, 751, "ISO 27001 + SOC 2\nAI Threat Detection (5-min)\nHealth Guardian (30s)");
 
 // Integrations
-drawImg("icon-integrations.png", 570, 810, 120);
-label(530, 840, "Integrations", GREEN, 10);
-sublabel(530, 854, "Twilio | Ably | Mux\nStripe | Recall.ai | GitHub");
+drawImg("icon-integrations.png", 570, 870, 120);
+label(530, 910, "External Integrations", GREEN, 11);
+sublabel(530, 926, "Twilio | Ably | Mux\nStripe | Recall.ai | GitHub");
 
 // ===== Connection Labels =====
 connLabel(280, 300, "HTTP / WebSocket", ORANGE);
@@ -199,18 +202,19 @@ connLabel(770, 560, "SQL via Drizzle", TEAL);
 connLabel(700, 640, "Cross-feed", GREY);
 
 // ===== Detail Boxes =====
-detailBox(20, 310, 160, "Frontend Pages", [
+detailBox(16, 300, 195, "Frontend Pages", [
   "Dashboard & OCC",
   "Webcast Studio",
-  "Event Scheduler",
+  "Event Scheduler / Bookings",
   "Intelligence Terminal",
   "Tagged Metrics",
   "Compliance Engine",
   "Health Guardian",
   "Billing / Admin",
+  "Client Portal",
 ], GREEN);
 
-detailBox(1220, 350, 160, "Backend Routers (45+)", [
+detailBox(1190, 300, 195, "Backend Routers (45+)", [
   "occ / events / webcast",
   "registrations / scheduling",
   "agenticBrain / sentiment",
@@ -222,9 +226,9 @@ detailBox(1220, 350, 160, "Backend Routers (45+)", [
   "mux / ably / recall",
 ], BLUE);
 
-detailBox(1220, 620, 160, "Security Features", [
+detailBox(1190, 610, 195, "Security Features", [
   "Compliance Engine (5-min)",
-  "Fraud detection",
+  "Registration fraud detection",
   "Access anomaly monitoring",
   "Data exfiltration alerts",
   "AI threat assessment",
@@ -233,7 +237,7 @@ detailBox(1220, 620, 160, "Security Features", [
   "Auto-incident + root cause",
 ], RED);
 
-detailBox(20, 680, 140, "AI Services", [
+detailBox(16, 680, 180, "AI Services", [
   "Live Transcription",
   "Per-speaker Sentiment",
   "Speaking Pace Coach",
@@ -241,6 +245,7 @@ detailBox(20, 680, 140, "AI Services", [
   "Content Generation",
   "Event Brief / Recap",
   "Predictive Analytics",
+  "Language Dubber (8 langs)",
 ], VIOLET);
 
 // Footer
