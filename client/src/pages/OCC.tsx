@@ -326,6 +326,17 @@ export default function OCC() {
     1: 82, 2: 91, 3: 74, 4: 58, 5: 66, 6: 45, 7: 79, 8: 38, 9: 87, 10: 62,
   });
 
+  // Role-based feature toggles
+  const isModeratorOrAbove = user?.role && ['moderator', 'operator', 'admin'].includes(user.role);
+  const isOperatorOrAbove = user?.role && ['operator', 'admin'].includes(user.role);
+  const isAdmin = user?.role === 'admin';
+
+  const featureToggles = {
+    sentimentOverride: isOperatorOrAbove,
+    manualQAInjection: isOperatorOrAbove,
+    advancedTools: isAdmin,
+  };
+
   // Simulated call-quality metrics (updated periodically)
   const [callQuality, setCallQuality] = useState({
     bandwidth: 1240, latency: 42, jitter: 5, packetLoss: 0.2, mos: 4.3,

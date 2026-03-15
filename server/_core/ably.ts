@@ -167,3 +167,59 @@ export async function publishRoleChangeNotification(roleChangeData: {
     ...roleChangeData,
   });
 }
+
+
+/**
+ * Publish conference transfer request to target operator
+ */
+export async function publishConferenceTransfer(data: {
+  fromOperatorId: number;
+  fromOperatorName: string;
+  toOperatorId: number;
+  conferenceId: string;
+  conferenceName: string;
+  timestamp: number;
+}): Promise<boolean> {
+  return publishToChannel(
+    `operator:${data.toOperatorId}:notifications`,
+    "conference_transfer_request",
+    data
+  );
+}
+
+/**
+ * Publish conference transfer acceptance
+ */
+export async function publishConferenceTransferAccepted(data: {
+  fromOperatorId: number;
+  toOperatorId: number;
+  toOperatorName: string;
+  conferenceId: string;
+  conferenceName: string;
+  timestamp: number;
+}): Promise<boolean> {
+  return publishToChannel(
+    `operator:${data.fromOperatorId}:notifications`,
+    "conference_transfer_accepted",
+    data
+  );
+}
+
+/**
+ * Publish conference transfer rejection
+ */
+export async function publishConferenceTransferRejected(data: {
+  fromOperatorId: number;
+  toOperatorId: number;
+  toOperatorName: string;
+  conferenceId: string;
+  conferenceName: string;
+  reason?: string;
+  timestamp: number;
+}): Promise<boolean> {
+  return publishToChannel(
+    `operator:${data.fromOperatorId}:notifications`,
+    "conference_transfer_rejected",
+    data
+  );
+}

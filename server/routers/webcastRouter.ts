@@ -1137,4 +1137,66 @@ export const webcastRouter = router({
         sustainabilityGrade: "B",
       };
     }),
+
+  transferConference: operatorProcedure
+    .input(z.object({
+      conferenceId: z.string(),
+      conferenceName: z.string(),
+      toOperatorId: z.number(),
+      toOperatorName: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { publishConferenceTransfer } = await import("../_core/ably");
+      await publishConferenceTransfer({
+        fromOperatorId: ctx.user.id,
+        fromOperatorName: ctx.user.name ?? "Unknown Operator",
+        toOperatorId: input.toOperatorId,
+        conferenceId: input.conferenceId,
+        conferenceName: input.conferenceName,
+        timestamp: Date.now(),
+      });
+      return { success: true, message: `Transfer request sent to ${input.toOperatorName}` };
+    }),
+
+  acceptConferenceTransfer: operatorProcedure
+    .input(z.object({
+      fromOperatorId: z.number(),
+      fromOperatorName: z.string(),
+      conferenceId: z.string(),
+      conferenceName: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { publishConferenceTransferAccepted } = await import("../_core/ably");
+      await publishConferenceTransferAccepted({
+        fromOperatorId: input.fromOperatorId,
+        toOperatorId: ctx.user.id,
+        toOperatorName: ctx.user.name ?? "Unknown Operator",
+        conferenceId: input.conferenceId,
+        conferenceName: input.conferenceName,
+        timestamp: Date.now(),
+      });
+      return { success: true, message: "Conference transfer accepted" };
+    }),
+
+  rejectConferenceTransfer: operatorProcedure
+    .input(z.object({
+      fromOperatorId: z.number(),
+      fromOperatorName: z.string(),
+      conferenceId: z.string(),
+      conferenceName: z.string(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { publishConferenceTransferRejected } = await import("../_core/ably");
+      await publishConferenceTransferRejected({
+        fromOperatorId: input.fromOperatorId,
+        toOperatorId: ctx.user.id,
+        toOperatorName: ctx.user.name ?? "Unknown Operator",
+        conferenceId: input.conferenceId,
+        conferenceName: input.conferenceName,
+        reason: input.reason,
+        timestamp: Date.now(),
+      });
+      return { success: true, message: "Conference transfer rejected" };
+    }),
 });
