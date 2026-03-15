@@ -38,14 +38,14 @@ function BulkImportForm({
 }) {
   const [csvText, setCsvText] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const bulkImport = trpc.admin.bulkImportRoles.useMutation({
-    onSuccess: (result) => {
+  const bulkImport = trpc.rbac.bulkImportRoles.useMutation({
+    onSuccess: (result: { successful: number; failed: number; total: number }) => {
       toast.success(`Imported ${result.successful} users, ${result.failed} failed`);
       setCsvText("");
       setIsOpen(false);
       onImportComplete();
     },
-    onError: (err) => {
+    onError: (err: any) => {
       toast.error(err.message ?? "Import failed");
     },
   });
@@ -65,7 +65,8 @@ function BulkImportForm({
     }
     const records = lines.slice(1).map(line => {
       const cols = line.split(",").map(c => c.trim());
-      return { email: cols[emailIdx], role: cols[roleIdx] };
+      const role = cols[roleIdx] as "admin" | "operator" | "moderator" | "user";
+      return { email: cols[emailIdx], role };
     });
     bulkImport.mutate({ records });
   };
