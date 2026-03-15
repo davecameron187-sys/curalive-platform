@@ -256,6 +256,36 @@ export const occRouter = router({
       }
     }),
 
+  updateIRContact: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().min(1),
+      email: z.string().email(),
+      company: z.string().optional(),
+      role: z.string().optional(),
+      phoneNumber: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      try {
+        const result = await db
+          .update(irContacts)
+          .set({
+            name: input.name,
+            email: input.email,
+            company: input.company,
+            role: input.role,
+            phoneNumber: input.phoneNumber,
+          })
+          .where(eq(irContacts.id, input.id));
+        return { success: true, id: input.id };
+      } catch (e) {
+        console.error("[OCC] Failed to update IR contact:", e);
+        throw new Error("Failed to update IR contact");
+      }
+    }),
+
   dialOut: operatorProcedure
     .input(z.object({
       conferenceId: z.number(),
