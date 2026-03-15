@@ -90,3 +90,9 @@ id = "FKtZbaR2Wuw-sNb4wDGdA"
 uri = "file://docs/AI_AntiHijack_Patent_CIPC_Submission.md"
 type = "text"
 title = "AI AntiHijack — CIPC Patent Submission (Markdown Source)"
+
+[[outputs]]
+id = "VjmT089hj3C_ZUTWL2DXj"
+uri = "file://docs/AI_AntiHijack_Market_Traction_Playbook.docx"
+type = "word_document"
+title = "AI AntiHijack — Market Traction & Acquisition Value Playbook"
