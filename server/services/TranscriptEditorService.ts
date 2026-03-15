@@ -44,7 +44,7 @@ export class TranscriptEditorService {
   ) {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
-    const edit = await db.insert(transcriptEdits).values({
+     const editRows = await db.insert(transcriptEdits).values({
       transcriptionSegmentId: editRequest.transcriptionSegmentId,
       conferenceId,
       originalText: editRequest.originalText,
@@ -55,19 +55,18 @@ export class TranscriptEditorService {
       operatorName,
       confidence: editRequest.confidence || 95,
       approved: false,
-    });
-
+    }).$returningId();
+    const insertId = editRows[0]?.id;
     // Log audit trail
     await this.logAuditEvent(conferenceId, operatorId, operatorName, "operator", "created", {
-      editId: (edit as any).insertId,
+      editId: insertId,
       originalText: editRequest.originalText,
       correctedText: editRequest.correctedText,
       editType: editRequest.editType,
-    });
+     });
 
-    return edit;
+    return { insertId };
   }
-
   /**
    * Get all edits for a conference
    */
@@ -211,7 +210,7 @@ export class TranscriptEditorService {
 
     const versionNumber = lastVersion.length > 0 ? lastVersion[0].versionNumber + 1 : 1;
 
-    const version = await db.insert(transcriptVersions).values({
+    const versionRows = await db.insert(transcriptVersions).values({
       conferenceId,
       versionNumber,
       fullTranscript,
@@ -220,18 +219,16 @@ export class TranscriptEditorService {
       createdByName: userName,
       changeDescription,
       isPublished: false,
-    });
-
+    }).$returningId();
+    const versionInsertId = versionRows[0]?.id;
     // Log audit trail
     await this.logAuditEvent(conferenceId, userId, userName, "operator", "created", {
-      versionId: (version as any).insertId,
+      versionId: versionInsertId,
       versionNumber,
       editCount,
     });
-
-    return version;
+    return { insertId: versionInsertId };
   }
-
   /**
    * Get all versions for a conference
    */
@@ -294,8 +291,8 @@ export class TranscriptEditorService {
       throw new Error(`Version ${versionId} not found`);
     }
 
-    // Create new version with reverted content
-    const newVersion = await db.insert(transcriptVersions).values({
+     // Create new version with reverted content
+    const newVersionRows = await db.insert(transcriptVersions).values({
       conferenceId,
       versionNumber: targetVersion[0].versionNumber + 1,
       fullTranscript: targetVersion[0].fullTranscript,
@@ -304,15 +301,15 @@ export class TranscriptEditorService {
       createdByName: userName,
       changeDescription: `Reverted to version ${targetVersion[0].versionNumber}`,
       isPublished: false,
-    });
-
+    }).$returningId();
+    const newVersionInsertId = newVersionRows[0]?.id;
     // Log audit trail
     await this.logAuditEvent(conferenceId, userId, userName, "operator", "reverted", {
       revertedFromVersionId: versionId,
-      newVersionId: (newVersion as any).insertId,
-    });
+      newVersionId: newVersionInsertId,
+     });
 
-    return newVersion;
+    return { insertId: newVersionInsertId };
   }
 
   /**
@@ -325,7 +322,7 @@ export class TranscriptEditorService {
       .select()
       .from(transcriptEditAuditLog)
       .where(eq(transcriptEditAuditLog.conferenceId, conferenceId))
-      .orderBy(transcriptEditAuditLog.timestamp);
+      .orderBy(transcriptEditAuditLog.createdAt);
 
     return logs;
   }
@@ -346,11 +343,10 @@ export class TranscriptEditorService {
     await db.insert(transcriptEditAuditLog).values({
       conferenceId,
       action,
-      userId,
-      userName,
-      userRole,
+      userId: userId,
+      userName: userName,
+      userRole: userRole,
       details: details ? JSON.stringify(details) : null,
-      timestamp: new Date(),
     });
   }
 
