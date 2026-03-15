@@ -7,6 +7,7 @@ import {
   updateThreatStatus,
   getThreatStats,
   getComplianceDashboardData,
+  seedFrameworkControls,
 } from "../services/ComplianceEngineService";
 
 export const complianceEngineRouter = router({
@@ -42,4 +43,10 @@ export const complianceEngineRouter = router({
     .mutation(async ({ input }) => {
       return updateThreatStatus(input.id, input.status);
     }),
+
+  // Manually re-seed SOC2 / ISO27001 framework controls (idempotent)
+  seedControls: adminProcedure.mutation(async () => {
+    await seedFrameworkControls();
+    return { seeded: true };
+  }),
 });

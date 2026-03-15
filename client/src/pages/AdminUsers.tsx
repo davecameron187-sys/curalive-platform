@@ -31,7 +31,8 @@ export default function AdminUsers() {
     enabled: user?.role === "admin",
   });
 
-  const updateRole = trpc.admin.updateUserRole.useMutation({
+  // Use trpc.rbac.updateUserRole as the primary mutation (persists to DB + RBAC audit trail)
+  const updateRole = trpc.rbac.updateUserRole.useMutation({
     onSuccess: () => {
       refetch();
       toast.success("Role updated successfully");
@@ -45,7 +46,7 @@ export default function AdminUsers() {
 
   const quickPromote = (userId: number, role: "operator" | "admin") => {
     setUpdatingId(userId);
-    updateRole.mutate({ userId, role });
+    updateRole.mutate({ userId, newRole: role });
   };
 
   // Auth guard
@@ -222,7 +223,7 @@ export default function AdminUsers() {
                               disabled={u.role === r || updatingId === u.id}
                               onClick={() => {
                                 setUpdatingId(u.id);
-                                updateRole.mutate({ userId: u.id, role: r });
+                                updateRole.mutate({ userId: u.id, newRole: r });
                               }}
                               className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                                 u.role === r

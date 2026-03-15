@@ -1036,3 +1036,9 @@
   - [ ] API uptime monitoring
   - [ ] Active users tracking
   - [ ] Auto-refresh metrics every 30 seconds
+
+## Round 4 Tasks
+- [ ] Fix LSP error in aiAmPhase2.ts:143 (dead comparison "operator" === "admin")
+- [ ] Fix LSP error in compliance.ts:274 (.match() on union type)
+- [ ] Add Seed Controls button to Compliance Dashboard
+- [ ] Wire trpc.rbac.updateUserRole into AdminUsers.tsx

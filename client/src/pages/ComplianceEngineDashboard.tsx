@@ -44,6 +44,7 @@ export default function ComplianceEngineDashboard() {
   const statsQuery = trpc.complianceEngine.threatStats.useQuery();
   const scanMutation = trpc.complianceEngine.runScan.useMutation();
   const updateThreatMutation = trpc.complianceEngine.updateThreat.useMutation();
+  const seedControlsMutation = trpc.complianceEngine.seedControls.useMutation();
 
   const dashboard = dashboardQuery.data;
   const threats = threatsQuery.data ?? [];
@@ -61,6 +62,16 @@ export default function ComplianceEngineDashboard() {
       toast.error(err.message ?? "Scan failed");
     } finally {
       setScanning(false);
+    }
+  }
+
+  async function handleSeedControls() {
+    try {
+      await seedControlsMutation.mutateAsync();
+      toast.success("SOC2 & ISO 27001 framework controls seeded successfully");
+      dashboardQuery.refetch();
+    } catch (err: any) {
+      toast.error(err.message ?? "Seed failed");
     }
   }
 
@@ -90,10 +101,16 @@ export default function ComplianceEngineDashboard() {
             Autonomous threat detection, predictive fraud analysis & framework compliance monitoring
           </p>
         </div>
-        <Button onClick={handleScan} disabled={scanning} size="sm">
-          <RefreshCw className={`h-4 w-4 mr-2 ${scanning ? "animate-spin" : ""}`} />
-          {scanning ? "Scanning..." : "Run Full Scan"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleSeedControls} disabled={seedControlsMutation.isPending} size="sm" variant="outline">
+            <Shield className={`h-4 w-4 mr-2 ${seedControlsMutation.isPending ? "animate-pulse" : ""}`} />
+            {seedControlsMutation.isPending ? "Seeding..." : "Seed Controls"}
+          </Button>
+          <Button onClick={handleScan} disabled={scanning} size="sm">
+            <RefreshCw className={`h-4 w-4 mr-2 ${scanning ? "animate-spin" : ""}`} />
+            {scanning ? "Scanning..." : "Run Full Scan"}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
