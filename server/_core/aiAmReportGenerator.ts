@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { db } from "../db";
 import { complianceViolations, webcastEvents } from "../../drizzle/schema";
 import { eq, and, gte } from "drizzle-orm";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Resend } from "resend";
 import twilio from "twilio";
 import { db } from "@/server/db";

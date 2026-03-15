@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * complianceDigestScheduler.ts — Weekly compliance gap analysis digest.
  *

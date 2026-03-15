@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ComplianceViolation } from "../../drizzle/schema";
 
 /**

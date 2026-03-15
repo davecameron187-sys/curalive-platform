@@ -1,4 +1,15 @@
 import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +47,7 @@ const threatTypeIcon: Record<string, typeof AlertTriangle> = {
 
 export default function ComplianceEngineDashboard() {
   const [scanning, setScanning] = useState(false);
+  const [seedDialogOpen, setSeedDialogOpen] = useState(false);
 
   const dashboardQuery = trpc.complianceEngine.dashboard.useQuery(undefined, {
     refetchInterval: 30000,
@@ -102,10 +114,35 @@ export default function ComplianceEngineDashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleSeedControls} disabled={seedControlsMutation.isPending} size="sm" variant="outline">
-            <Shield className={`h-4 w-4 mr-2 ${seedControlsMutation.isPending ? "animate-pulse" : ""}`} />
-            {seedControlsMutation.isPending ? "Seeding..." : "Seed Controls"}
-          </Button>
+          <AlertDialog open={seedDialogOpen} onOpenChange={setSeedDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button disabled={seedControlsMutation.isPending} size="sm" variant="outline">
+                <Shield className={`h-4 w-4 mr-2 ${seedControlsMutation.isPending ? "animate-pulse" : ""}`} />
+                {seedControlsMutation.isPending ? "Seeding..." : "Seed Controls"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Seed Framework Controls?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will idempotently re-seed all SOC2 and ISO 27001 framework controls into the database.
+                  Existing controls will not be duplicated — only missing controls will be added.
+                  This operation is safe to run in production.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setSeedDialogOpen(false);
+                    handleSeedControls();
+                  }}
+                >
+                  Seed Controls
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button onClick={handleScan} disabled={scanning} size="sm">
             <RefreshCw className={`h-4 w-4 mr-2 ${scanning ? "animate-spin" : ""}`} />
             {scanning ? "Scanning..." : "Run Full Scan"}

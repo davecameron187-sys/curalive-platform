@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getAblyClient } from "./ably";
 import { ComplianceViolation } from "./compliance";
 

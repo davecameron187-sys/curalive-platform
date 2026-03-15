@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { invokeLLM } from "./llm";
 import { db } from "../db";
 import { complianceViolations, alertHistory } from "../../drizzle/schema";

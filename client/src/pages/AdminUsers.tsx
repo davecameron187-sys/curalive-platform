@@ -30,6 +30,9 @@ export default function AdminUsers() {
   const { data: userList, isLoading, refetch } = trpc.admin.listUsers.useQuery(undefined, {
     enabled: user?.role === "admin",
   });
+  const { data: roleStats } = trpc.rbac.getRoleStatistics.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
 
   // Use trpc.rbac.updateUserRole as the primary mutation (persists to DB + RBAC audit trail)
   const updateRole = trpc.rbac.updateUserRole.useMutation({
@@ -146,6 +149,22 @@ export default function AdminUsers() {
           </div>
         )}
 
+        {/* Role Statistics Summary Bar */}
+        {roleStats && (
+          <div className="mb-6 grid grid-cols-4 gap-3">
+            {[
+              { label: "Total Users", value: roleStats.totalUsers, color: "text-slate-200", bg: "bg-slate-800/60 border-slate-700" },
+              { label: "Admins", value: roleStats.admins, color: "text-red-300", bg: "bg-red-900/20 border-red-800/40" },
+              { label: "Operators", value: roleStats.operators, color: "text-indigo-300", bg: "bg-indigo-900/20 border-indigo-800/40" },
+              { label: "Users", value: roleStats.users, color: "text-slate-300", bg: "bg-slate-800/40 border-slate-700/60" },
+            ].map(({ label, value, color, bg }) => (
+              <div key={label} className={`rounded-lg border px-4 py-3 flex items-center justify-between ${bg}`}>
+                <span className="text-slate-400 text-xs font-medium">{label}</span>
+                <span className={`text-2xl font-bold ${color}`}>{value}</span>
+              </div>
+            ))}
+          </div>
+        )}
         {/* Role Guide */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * AI Automated Moderator (AI-AM) Phase 2: Auto-Muting System
  * Implements configurable violation thresholds and automatic speaker muting

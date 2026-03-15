@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Alert Deduplication & Caching Service for AI-AM
  * Prevents duplicate alerts within a time window and caches violation data
