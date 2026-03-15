@@ -117,6 +117,7 @@ import CallPreparation from "./pages/CallPreparation";
 import IntelligenceTerminal from "./pages/IntelligenceTerminal";
 import MailingListManager from "./pages/MailingListManager";
 import MailingListConfirm from "./pages/MailingListConfirm";
+import OnboardingFlow from "./pages/OnboardingFlow";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
