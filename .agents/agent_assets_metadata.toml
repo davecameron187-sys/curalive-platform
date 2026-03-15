@@ -78,3 +78,15 @@ id = "EEiDct1_490aNWmoxIgvE"
 uri = "file://docs/CuraLive-System-Architecture.pdf"
 type = "pdf"
 title = "CuraLive System Architecture — Fixed overlaps"
+
+[[outputs]]
+id = "IFb-YtNm0TCyayPWRd5dV"
+uri = "file://docs/AI_AntiHijack_Patent_CIPC_Submission.pdf"
+type = "pdf"
+title = "AI AntiHijack — CIPC Patent Submission (PDF)"
+
+[[outputs]]
+id = "FKtZbaR2Wuw-sNb4wDGdA"
+uri = "file://docs/AI_AntiHijack_Patent_CIPC_Submission.md"
+type = "text"
+title = "AI AntiHijack — CIPC Patent Submission (Markdown Source)"
