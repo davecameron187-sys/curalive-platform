@@ -1,4 +1,5 @@
 import { protectedProcedure, router } from "../_core/trpc";
+import { moderatorProcedure } from "./rbac";
 import { QaAutoTriageService } from "../services/QaAutoTriageService";
 import { SpeakingPaceCoachService } from "../services/SpeakingPaceCoachService";
 import { ToxicityFilterService } from "../services/ToxicityFilterService";
@@ -325,9 +326,9 @@ export const aiFeaturesRouter = router({
       }),
 
     /**
-     * Mark filter result as reviewed by moderator
+     * Mark filter result as reviewed by moderator — requires moderator role or above
      */
-    markAsReviewed: protectedProcedure
+    markAsReviewed: moderatorProcedure
       .input(
         z.object({
           filterId: z.number().int().positive(),
@@ -367,9 +368,9 @@ export const aiFeaturesRouter = router({
       }),
 
     /**
-     * Approve a toxicity flag
+     * Approve a toxicity flag — requires moderator role or above
      */
-    approveToxicityFlag: protectedProcedure
+    approveToxicityFlag: moderatorProcedure
       .input(z.object({ flagId: z.number().int().positive(), notes: z.string().optional() }))
       .mutation(async ({ input }) => {
         const success = await ToxicityFilterService.markAsReviewed(
@@ -381,9 +382,9 @@ export const aiFeaturesRouter = router({
       }),
 
     /**
-     * Reject a toxicity flag
+     * Reject a toxicity flag — requires moderator role or above
      */
-    rejectToxicityFlag: protectedProcedure
+    rejectToxicityFlag: moderatorProcedure
       .input(z.object({ flagId: z.number().int().positive(), notes: z.string().optional() }))
       .mutation(async ({ input }) => {
         const success = await ToxicityFilterService.markAsReviewed(
@@ -395,9 +396,9 @@ export const aiFeaturesRouter = router({
       }),
 
     /**
-     * Block toxic content
+     * Block toxic content — requires moderator role or above
      */
-    blockToxicContent: protectedProcedure
+    blockToxicContent: moderatorProcedure
       .input(z.object({ contentId: z.number().int().positive() }))
       .mutation(async ({ input }) => {
         const success = await ToxicityFilterService.markAsReviewed(
@@ -408,9 +409,9 @@ export const aiFeaturesRouter = router({
       }),
 
     /**
-     * Redact toxic content
+     * Redact toxic content — requires moderator role or above
      */
-    redactToxicContent: protectedProcedure
+    redactToxicContent: moderatorProcedure
       .input(z.object({ contentId: z.number().int().positive() }))
       .mutation(async ({ input }) => {
         const success = await ToxicityFilterService.markAsReviewed(
@@ -446,9 +447,9 @@ export const aiFeaturesRouter = router({
       }),
 
     /**
-     * Approve a Q&A question
+     * Approve a Q&A question — requires moderator role or above
      */
-    approveQAQuestion: protectedProcedure
+    approveQAQuestion: moderatorProcedure
       .input(z.object({ questionId: z.number().int().positive(), notes: z.string().optional() }))
       .mutation(async ({ input }) => {
         const success = await QaAutoTriageService.approveQuestion(input.questionId, input.notes);
@@ -456,9 +457,9 @@ export const aiFeaturesRouter = router({
       }),
 
     /**
-     * Reject a Q&A question
+     * Reject a Q&A question — requires moderator role or above
      */
-    rejectQAQuestion: protectedProcedure
+    rejectQAQuestion: moderatorProcedure
       .input(z.object({ questionId: z.number().int().positive() }))
       .mutation(async ({ input }) => {
         const success = await QaAutoTriageService.rejectQuestion(input.questionId);
@@ -466,9 +467,9 @@ export const aiFeaturesRouter = router({
       }),
 
     /**
-     * Flag a Q&A question
+     * Flag a Q&A question — requires moderator role or above
      */
-    flagQAQuestion: protectedProcedure
+    flagQAQuestion: moderatorProcedure
       .input(z.object({ questionId: z.number().int().positive(), reason: z.string().optional() }))
       .mutation(async ({ input }) => {
         const success = await QaAutoTriageService.flagQuestion(input.questionId, input.reason);
