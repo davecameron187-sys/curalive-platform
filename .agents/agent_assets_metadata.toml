@@ -114,3 +114,9 @@ id = "VGJIy9VsTsa7qMqAopRTv"
 uri = "file://docs/AI_AntiHijack_Patent_CIPC_Submission.docx"
 type = "word_document"
 title = "AI AntiHijack — CIPC Patent (68 Claims + All 17 Diagrams, Word)"
+
+[[outputs]]
+id = "8b7Flhz02iVA9KmeUXWhX"
+uri = "file://CuraLive_CIP_CIPC_Submission.docx"
+type = "word_document"
+title = "CuraLive CIP Patent Submission (CIPC)"
