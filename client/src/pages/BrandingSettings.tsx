@@ -39,11 +39,11 @@ interface BrandingConfig {
  */
 export default function BrandingSettings() {
   const [branding, setBranding] = useState<BrandingConfig>({
-    companyName: "Chorus.AI",
+    companyName: "CuraLive",
     primaryColor: "#FF1744",
     secondaryColor: "#1F2937",
     accentColor: "#00BCD4",
-    domain: "chorusai.manus.space",
+    domain: "curalive-platform.replit.app",
     eventPageTemplate: "premium",
     whiteLabel: false,
     emailTemplate: "default",
@@ -87,11 +87,11 @@ export default function BrandingSettings() {
 
   const handleReset = () => {
     setBranding({
-      companyName: "Chorus.AI",
+      companyName: "CuraLive",
       primaryColor: "#FF1744",
       secondaryColor: "#1F2937",
       accentColor: "#00BCD4",
-      domain: "chorusai.manus.space",
+      domain: "curalive-platform.replit.app",
       eventPageTemplate: "premium",
       whiteLabel: false,
       emailTemplate: "default",
@@ -343,7 +343,7 @@ export default function BrandingSettings() {
                 <div>
                   <p className="font-medium text-sm">Enable White-Label Mode</p>
                   <p className="text-xs text-muted-foreground">
-                    Remove Chorus.AI branding from event pages
+                    Remove CuraLive branding from event pages
                   </p>
                 </div>
               </label>

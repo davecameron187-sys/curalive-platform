@@ -106,8 +106,8 @@ export default function AdvancedReporting() {
       generatedAt: new Date(report.createdAt).toISOString(),
       metrics: report.metrics,
       biIntegration: {
-        tableau: "https://tableau.example.com/dashboard/chorus",
-        powerbi: "https://powerbi.example.com/dashboard/chorus",
+        tableau: "https://tableau.example.com/dashboard/curalive",
+        powerbi: "https://powerbi.example.com/dashboard/curalive",
       },
     };
 

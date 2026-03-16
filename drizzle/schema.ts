@@ -572,7 +572,7 @@ export const eventBranding = mysqlTable("event_branding", {
   tagline: varchar("tagline", { length: 300 }),
   footerText: varchar("footer_text", { length: 500 }),
   faviconUrl: varchar("favicon_url", { length: 500 }),
-  showChorusWatermark: boolean("show_chorus_watermark").default(true),
+  showCuraLiveWatermark: boolean("show_chorus_watermark").default(true),
   customCss: text("custom_css"),
   createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),

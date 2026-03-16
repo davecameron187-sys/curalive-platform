@@ -52,7 +52,7 @@ export default function BookingsEnhanced() {
         {
           eventId: "q4-earnings-2026",
           title: "Q4 2025 Earnings Call",
-          company: "Chorus Call Inc.",
+          company: "CuraLive",
           platform: "Zoom",
           status: "live",
           attendees: 1247,
@@ -62,7 +62,7 @@ export default function BookingsEnhanced() {
         {
           eventId: "investor-day-2026",
           title: "Annual Investor Day",
-          company: "Chorus Call Inc.",
+          company: "CuraLive",
           platform: "Microsoft Teams",
           status: "upcoming",
           attendees: 3500,
@@ -176,7 +176,7 @@ export default function BookingsEnhanced() {
             <div>
               <label className="text-sm font-medium mb-1 block">Company *</label>
               <Input
-                placeholder="e.g., Chorus Call Inc."
+                placeholder="e.g., CuraLive"
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 disabled={loading}

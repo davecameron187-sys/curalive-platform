@@ -48,7 +48,7 @@ export default function WebhookManager() {
   const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>([
     {
       id: "1",
-      url: "https://partner.example.com/webhooks/chorus",
+      url: "https://partner.example.com/webhooks/curalive",
       events: ["participant_joined", "qa_approved", "sentiment_changed"],
       active: true,
       createdAt: Date.now() - 2592000000,
@@ -76,7 +76,7 @@ export default function WebhookManager() {
       type: "qa_approved",
       timestamp: Date.now() - 300000,
       status: "delivered",
-      endpoint: "https://partner.example.com/webhooks/chorus",
+      endpoint: "https://partner.example.com/webhooks/curalive",
       payload: {
         eventId: "q4-earnings-2026",
         questionId: "q123",
@@ -89,7 +89,7 @@ export default function WebhookManager() {
       type: "sentiment_changed",
       timestamp: Date.now() - 600000,
       status: "delivered",
-      endpoint: "https://partner.example.com/webhooks/chorus",
+      endpoint: "https://partner.example.com/webhooks/curalive",
       payload: {
         eventId: "q4-earnings-2026",
         score: 78,
@@ -217,7 +217,7 @@ export default function WebhookManager() {
                   type="url"
                   value={newUrl}
                   onChange={(e) => setNewUrl(e.target.value)}
-                  placeholder="https://example.com/webhooks/chorus"
+                  placeholder="https://example.com/webhooks/curalive"
                   className="w-full px-3 py-2 border border-border rounded bg-background text-sm"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
@@ -456,7 +456,7 @@ export default function WebhookManager() {
               <div>
                 <p className="font-semibold mb-1">Signature Verification</p>
                 <p className="text-muted-foreground">
-                  All webhooks include X-Chorus-Signature header with HMAC-SHA256
+                  All webhooks include X-CuraLive-Signature header with HMAC-SHA256
                 </p>
               </div>
 
