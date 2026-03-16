@@ -2749,3 +2749,47 @@ export const roleChangeAuditLog = mysqlTable("role_change_audit_log", {
 
 export type RoleChangeAuditLog = typeof roleChangeAuditLog.$inferSelect;
 export type InsertRoleChangeAuditLog = typeof roleChangeAuditLog.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Event Pass — Public registration page for events
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Event Passes — public registration pages for events.
+ * Each pass has a unique passCode for public access.
+ */
+export const eventPasses = mysqlTable("event_passes", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("eventId").notNull(),
+  passCode: varchar("passCode", { length: 64 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  bannerUrl: varchar("bannerUrl", { length: 512 }),
+  registrationDeadline: timestamp("registrationDeadline"),
+  maxAttendees: int("maxAttendees"),
+  currentAttendees: int("currentAttendees").default(0).notNull(),
+  isPublic: boolean("isPublic").default(true).notNull(),
+  embedAllowed: boolean("embedAllowed").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EventPass = typeof eventPasses.$inferSelect;
+export type InsertEventPass = typeof eventPasses.$inferInsert;
+
+/**
+ * Event Pass Registrations — attendees who registered via public event pass page.
+ */
+export const eventPassRegistrations = mysqlTable("event_pass_registrations", {
+  id: int("id").autoincrement().primaryKey(),
+  passId: int("passId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  company: varchar("company", { length: 255 }),
+  jobTitle: varchar("jobTitle", { length: 255 }),
+  phone: varchar("phone", { length: 32 }),
+  registeredAt: timestamp("registeredAt").defaultNow().notNull(),
+});
+
+export type EventPassRegistration = typeof eventPassRegistrations.$inferSelect;
+export type InsertEventPassRegistration = typeof eventPassRegistrations.$inferInsert;

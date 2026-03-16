@@ -668,6 +668,12 @@ export default function OCC() {
                   translationLanguage: payload.translationLanguage,
                 },
               }));
+            } else if (msg.name === "dialout:completed") {
+              // Dial-out notification from operator
+              toast.success(`${payload.operatorName} dialed out: ${payload.successCount}/${payload.totalCount} connected`, {
+                duration: 5000,
+                description: `${payload.failCount > 0 ? `${payload.failCount} failed` : "All successful"}`,
+              });
             }
           } catch {}
         });

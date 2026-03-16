@@ -41,6 +41,8 @@ import {
   occGreenRooms,
   attendeeRegistrations,
   irContacts,
+  eventPasses,
+  eventPassRegistrations,
 } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { getDirectAccessStats, getRecentDirectAccessAttempts, generateUniquePin } from "../directAccess";
@@ -919,6 +921,20 @@ export const occRouter = router({
           initiatedAt: new Date(),
         });
       }
+      // Publish Ably notification for successful dial-outs
+      if (successCount > 0) {
+        await publishAblyEvent(
+          `occ:conference:${input.conferenceId}`,
+          "dialout:completed",
+          {
+            operatorName: input.operatorName ?? "Operator",
+            successCount,
+            failCount: results.length - successCount,
+            totalCount: results.length,
+            timestamp: new Date().toISOString(),
+          }
+        );
+      }
       return { success: successCount > 0, results, successCount, failCount: results.length - successCount };
     }),
 
@@ -1250,5 +1266,84 @@ export const occRouter = router({
         translatedMessage: parsed.translation,
         translationLanguage: input.targetLanguage,
       };
+    }),
+
+  // ── Event Pass — Public Registration Page ────────────────────────────────
+
+  getEventPass: publicProcedure
+    .input(z.object({ passCode: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const rows = await db.select().from(eventPasses).where(eq(eventPasses.passCode, input.passCode)).limit(1);
+      const pass = rows[0];
+      if (!pass) throw new Error("Event pass not found");
+      if (!pass.isPublic) throw new Error("Event pass is not public");
+      if (pass.registrationDeadline && new Date(pass.registrationDeadline) < new Date()) {
+        throw new Error("Registration deadline has passed");
+      }
+      if (pass.maxAttendees && pass.currentAttendees >= pass.maxAttendees) {
+        throw new Error("Event pass is at capacity");
+      }
+      return {
+        id: pass.id,
+        title: pass.title,
+        description: pass.description,
+        bannerUrl: pass.bannerUrl,
+        registrationDeadline: pass.registrationDeadline,
+        maxAttendees: pass.maxAttendees,
+        currentAttendees: pass.currentAttendees,
+      };
+    }),
+
+  registerForEventPass: publicProcedure
+    .input(z.object({
+      passCode: z.string().min(1),
+      name: z.string().min(1),
+      email: z.string().email(),
+      company: z.string().optional(),
+      jobTitle: z.string().optional(),
+      phone: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const passRows = await db.select().from(eventPasses).where(eq(eventPasses.passCode, input.passCode)).limit(1);
+      const pass = passRows[0];
+      if (!pass) throw new Error("Event pass not found");
+      if (!pass.isPublic) throw new Error("Event pass is not public");
+      if (pass.registrationDeadline && new Date(pass.registrationDeadline) < new Date()) {
+        throw new Error("Registration deadline has passed");
+      }
+      if (pass.maxAttendees && pass.currentAttendees >= pass.maxAttendees) {
+        throw new Error("Event pass is at capacity");
+      }
+      const result = await db.insert(eventPassRegistrations).values({
+        passId: pass.id,
+        name: input.name,
+        email: input.email,
+        company: input.company,
+        jobTitle: input.jobTitle,
+        phone: input.phone,
+      });
+      await db.update(eventPasses).set({ currentAttendees: pass.currentAttendees + 1 }).where(eq(eventPasses.id, pass.id));
+      await publishAblyEvent(`eventpass:${input.passCode}`, "registration:new", {
+        name: input.name,
+        email: input.email,
+        company: input.company,
+      });
+      return { success: true, registrationId: result.insertId, message: "Registration successful" };
+    }),
+
+  getEventPassRegistrations: operatorProcedure
+    .input(z.object({ passCode: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const passRows = await db.select().from(eventPasses).where(eq(eventPasses.passCode, input.passCode)).limit(1);
+      const pass = passRows[0];
+      if (!pass) throw new Error("Event pass not found");
+      const registrations = await db.select().from(eventPassRegistrations).where(eq(eventPassRegistrations.passId, pass.id));
+      return registrations;
     }),
 });

@@ -1053,8 +1053,24 @@
 - [x] Write vitest tests for audit log and moderator role
 
 
-## Next Steps — Role Management Enhancements
-
+### Next Steps — Role Management Enhancements
 - [ ] Add role-change notifications — send in-app notification to affected user when role changes
 - [ ] Implement role-based dashboard views — conditionally render OCC sidebar/nav based on user role
 - [ ] Add bulk role import via CSV — upload CSV to bulk-assign roles to multiple users at once
+
+## Round 48 — Event Pass, Dial-Out Notifications, Speaker Green Room
+- [x] Event Pass Page — /event-pass/:id registration form + embeddable widget
+  - [x] eventPasses & eventPassRegistrations schema tables
+  - [x] getEventPass (public) — fetch pass details by passCode
+  - [x] registerForEventPass (public) — register attendee + increment counter
+  - [x] getEventPassRegistrations (operator) — view registrants
+  - [x] Ably real-time notifications on registration
+- [x] Dial-Out Notifications — Ably broadcast on dial-out connect + OCC toast UI
+  - [x] Added Ably event "dialout:completed" to multiDialOut procedure
+  - [x] OCC.tsx toast notification handler for real-time dial-out alerts
+  - [x] Success/failure count display in toast
+- [x] Speaker Green Room — Sub-conference creation + speaker CCP panel + Transfer All
+  - [x] getGreenRoom — fetch green room details
+  - [x] createGreenRoom — create/reopen speaker green room
+  - [x] addToGreenRoom — add speaker to green room (subconferenceId = -1)
+  - [x] transferGreenRoomToMain — transfer all speakers to main conference with Ably notification
