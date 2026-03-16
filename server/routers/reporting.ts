@@ -235,7 +235,7 @@ async function aggregateReportMetrics(
   const reportData: Record<string, unknown> = {};
 
   // Sentiment metrics
-  if (metrics.includes("sentiment")) {
+  if (metrics.includes("sentiment") && Array.isArray(metrics)) {
     const sentiments = await db
       .select()
       .from(occTranscriptSentiments)
@@ -249,23 +249,23 @@ async function aggregateReportMetrics(
     if (sentiments.length > 0) {
       const avgScore = sentiments.reduce((sum, s) => sum + (s.overallScore || 0), 0) / sentiments.length;
       const emotionCounts = {
-        joy: sentiments.filter((s) => s.emotion === "joy").length,
-        sadness: sentiments.filter((s) => s.emotion === "sadness").length,
-        anger: sentiments.filter((s) => s.emotion === "anger").length,
-        fear: sentiments.filter((s) => s.emotion === "fear").length,
-        surprise: sentiments.filter((s) => s.emotion === "surprise").length,
-        disgust: sentiments.filter((s) => s.emotion === "disgust").length,
+        positive: sentiments.filter((s) => s.overallSentiment === "positive").length,
+        neutral: sentiments.filter((s) => s.overallSentiment === "neutral").length,
+        negative: sentiments.filter((s) => s.overallSentiment === "negative").length,
       };
       reportData.sentiment = {
         averageScore: avgScore,
         totalAnalyzed: sentiments.length,
-        emotionBreakdown: emotionCounts,
+        sentimentBreakdown: emotionCounts,
+        positiveCount: sentiments[0]?.positiveCount || 0,
+        neutralCount: sentiments[0]?.neutralCount || 0,
+        negativeCount: sentiments[0]?.negativeCount || 0,
       };
     }
   }
 
   // Summary metrics
-  if (metrics.includes("transcription")) {
+  if (metrics.includes("transcription") && Array.isArray(metrics)) {
     const summaries = await db
       .select()
       .from(occTranscriptSummaries)

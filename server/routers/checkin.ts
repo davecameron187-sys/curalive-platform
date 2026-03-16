@@ -116,9 +116,9 @@ export const checkinRouter = router({
         eventId: input.eventId,
         passCode: input.passCode,
         registrationId: registration.id,
-        attendeeName: registration.attendeeName,
-        attendeeEmail: registration.attendeeEmail,
-        company: registration.company,
+        attendeeName: registration.name,
+        attendeeEmail: registration.email,
+        company: registration.company || undefined,
         result: "success",
       });
 
@@ -133,8 +133,8 @@ export const checkinRouter = router({
         result: "success",
         checkIn,
         attendee: {
-          name: registration.attendeeName,
-          email: registration.attendeeEmail,
+          name: registration.name,
+          email: registration.email,
           company: registration.company,
         },
       };
