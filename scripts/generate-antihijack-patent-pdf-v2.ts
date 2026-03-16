@@ -123,7 +123,7 @@ doc.moveDown(1);
 labeledField("Applicant",
   "David Cameron\n41 Rooigras Avenue\n73 Tiffani Gardens\nBassonia\n2090\nJohannesburg\n+27 84 444 6001\nRepublic of South Africa");
 
-doc.addPage();
+checkPage(200);
 
 // ============================================================
 // ABSTRACT
@@ -198,7 +198,7 @@ drawLine();
 // BACKGROUND OF THE INVENTION
 // ============================================================
 
-doc.addPage();
+checkPage(200);
 heading("Background of the Invention");
 
 para("Vehicle hijacking, coercive vehicle diversion, vehicle theft, signal interference, and unauthorized startup remain significant safety and asset-protection risks in many regions. South Africa alone records over 16,000 vehicle hijackings annually, with logistics vehicles and commercial fleets facing disproportionate risk due to cargo value and predictable route patterns.");
@@ -285,7 +285,7 @@ drawLine();
 // BRIEF DESCRIPTION OF DRAWINGS
 // ============================================================
 
-doc.addPage();
+checkPage(200);
 heading("Brief Description of the Drawings");
 
 const figures = [
@@ -553,7 +553,7 @@ drawLine();
 // EXAMPLE EMBODIMENTS
 // ============================================================
 
-doc.addPage();
+checkPage(200);
 heading("Example Embodiments");
 
 const embodiments = [
@@ -613,7 +613,7 @@ drawLine();
 // CLAIMS
 // ============================================================
 
-doc.addPage();
+checkPage(200);
 heading("Claims", 18);
 
 // --- SYSTEM CLAIMS ---
@@ -832,7 +832,7 @@ drawLine();
 // DRAWINGS
 // ============================================================
 
-doc.addPage();
+checkPage(200);
 heading("Drawings", 18);
 para("Figures 1 to 17 are attached hereto and form part of this specification.");
 doc.moveDown(1);
