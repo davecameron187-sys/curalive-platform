@@ -3064,3 +3064,68 @@ export const networkAnomalies = mysqlTable("networkAnomalies", {
 
 export type NetworkAnomaly = typeof networkAnomalies.$inferSelect;
 export type InsertNetworkAnomaly = typeof networkAnomalies.$inferInsert;
+
+
+/**
+ * Alert Suppression Rules table — stores rules for suppressing notifications
+ */
+export const alertSuppressionRules = mysqlTable("alertSuppressionRules", {
+  id: int("id").autoincrement().primaryKey(),
+  kioskId: varchar("kioskId", { length: 128 }).notNull(),
+  eventId: varchar("eventId", { length: 128 }).notNull(),
+  ruleName: varchar("ruleName", { length: 255 }).notNull(),
+  anomalyType: varchar("anomalyType", { length: 64 }).notNull(), // high_latency, packet_loss, etc
+  suppressionType: mysqlEnum("suppressionType", ["time_based", "condition_based", "threshold_based"]).notNull(),
+  startTime: timestamp("startTime"),
+  endTime: timestamp("endTime"),
+  conditions: json("conditions"), // JSON conditions for suppression
+  isActive: boolean("isActive").notNull().default(true),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AlertSuppressionRule = typeof alertSuppressionRules.$inferSelect;
+export type InsertAlertSuppressionRule = typeof alertSuppressionRules.$inferInsert;
+
+/**
+ * Alert Thresholds table — stores custom alert thresholds per location
+ */
+export const alertThresholds = mysqlTable("alertThresholds", {
+  id: int("id").autoincrement().primaryKey(),
+  kioskId: varchar("kioskId", { length: 128 }).notNull(),
+  eventId: varchar("eventId", { length: 128 }).notNull(),
+  metricType: varchar("metricType", { length: 64 }).notNull(), // latency, bandwidth, signal_strength, etc
+  warningThreshold: float("warningThreshold").notNull(),
+  criticalThreshold: float("criticalThreshold").notNull(),
+  unit: varchar("unit", { length: 32 }).notNull(), // ms, Mbps, %, etc
+  isEnabled: boolean("isEnabled").notNull().default(true),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AlertThreshold = typeof alertThresholds.$inferSelect;
+export type InsertAlertThreshold = typeof alertThresholds.$inferInsert;
+
+/**
+ * Root Cause Analysis table — stores diagnosed root causes for anomalies
+ */
+export const rootCauseAnalysis = mysqlTable("rootCauseAnalysis", {
+  id: int("id").autoincrement().primaryKey(),
+  anomalyId: int("anomalyId").notNull(),
+  kioskId: varchar("kioskId", { length: 128 }).notNull(),
+  eventId: varchar("eventId", { length: 128 }).notNull(),
+  rootCause: varchar("rootCause", { length: 255 }).notNull(), // network_issue, hardware_failure, software_bug, etc
+  confidence: float("confidence").notNull(), // 0-1 confidence score
+  relatedEvents: json("relatedEvents"), // Array of related event IDs
+  remediation: text("remediation"), // Suggested remediation steps
+  isVerified: boolean("isVerified").notNull().default(false),
+  verifiedBy: int("verifiedBy"),
+  verifiedAt: timestamp("verifiedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RootCauseAnalysis = typeof rootCauseAnalysis.$inferSelect;
+export type InsertRootCauseAnalysis = typeof rootCauseAnalysis.$inferInsert;

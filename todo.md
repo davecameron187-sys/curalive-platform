@@ -242,3 +242,19 @@ All core features implemented and production-ready.
 - [x] Build location heatmap visualization
 - [x] Implement trend analysis across locations
 - [x] Create location-specific reports and exports
+
+
+## Round 63 — Alert Suppression Rules, Root Cause Analysis, Custom Thresholds
+
+- [x] Create alertSuppressionRules table in database schema
+- [x] Create alertThresholds table for per-location configuration
+- [x] Create rootCauseAnalysis table for diagnosis history
+- [x] Implement Alert Suppression Rules service with time-based and condition-based rules
+- [x] Build Alert Suppression UI for rule creation and management
+- [x] Implement Root Cause Analysis engine with event correlation
+- [x] Build Root Cause Analysis dashboard showing diagnosis results
+- [x] Implement Custom Alert Thresholds service with per-location configuration
+- [x] Build Custom Thresholds UI for threshold management
+- [x] Create tRPC procedures for all alert management operations
+- [x] Write comprehensive vitest tests for all features
+- [x] Verify TypeScript compilation and save checkpoint
