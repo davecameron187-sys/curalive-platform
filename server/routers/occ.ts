@@ -39,6 +39,9 @@ import {
   occParticipantHistory,
   occDialOutHistory,
   occGreenRooms,
+  occGreenRoomTranscriptions,
+  occTranscriptSentiments,
+  occTranscriptSummaries,
   attendeeRegistrations,
   irContacts,
   eventPasses,
@@ -47,9 +50,10 @@ import {
 import { eq } from "drizzle-orm";
 import { getDirectAccessStats, getRecentDirectAccessAttempts, generateUniquePin } from "../directAccess";
 import { buildRegistrationConfirmationEmail, sendEmail } from "../_core/email";
-import { invokeLLM } from "../\_core/llm";
-import { transcribeRecording, getRecordingTranscription, getConferenceTranscriptions } from "../\_core/recordingTranscription";
-import { occGreenRoomTranscriptions } from "../../drizzle/schema";
+import { invokeLLM } from "../_core/llm";
+import { transcribeRecording, getRecordingTranscription, getConferenceTranscriptions } from "../_core/recordingTranscription";
+import { triggerRecordingAnalysis, generateComparisonAnalytics } from "../_core/recordingWebhooks";
+import { sendReportEmail, generateComparisonReport } from "../_core/reportGeneration";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function publishAblyEvent(channel: string, event: string, data: unknown) {

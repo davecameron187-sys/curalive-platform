@@ -1,4 +1,4 @@
-import { boolean, int, float, tinyint, json, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
+import { boolean, int, float, tinyint, json, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, bigint, date } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -2865,3 +2865,112 @@ export const occTranscriptSummaries = mysqlTable("occ_transcript_summaries", {
 
 export type OccTranscriptSummary = typeof occTranscriptSummaries.$inferSelect;
 export type InsertOccTranscriptSummary = typeof occTranscriptSummaries.$inferInsert;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROUND 56 — Check-In Kiosk, SMS Retry Automation, Advanced Reporting
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Check-In Sessions — tracks active kiosk sessions for event check-ins.
+ * One session per kiosk per event.
+ */
+export const checkInSessions = mysqlTable("check_in_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("eventId", { length: 128 }).notNull(), // references events.eventId
+  kioskId: varchar("kioskId", { length: 128 }).notNull(), // unique identifier for this kiosk
+  status: mysqlEnum("status", ["active", "paused", "ended"]).default("active").notNull(),
+  totalScanned: int("totalScanned").default(0).notNull(),
+  successfulScans: int("successfulScans").default(0).notNull(),
+  failedScans: int("failedScans").default(0).notNull(),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  endedAt: timestamp("endedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CheckInSession = typeof checkInSessions.$inferSelect;
+export type InsertCheckInSession = typeof checkInSessions.$inferInsert;
+
+/**
+ * Attendee Check-Ins — tracks individual QR code scans at kiosk.
+ * Records timestamp, pass code, and result of each scan.
+ */
+export const attendeeCheckIns = mysqlTable("attendee_check_ins", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("sessionId").notNull(), // references checkInSessions.id
+  eventId: varchar("eventId", { length: 128 }).notNull(), // references events.eventId
+  passCode: varchar("passCode", { length: 128 }).notNull(), // QR code value
+  registrationId: int("registrationId"), // references eventPassRegistrations.id if found
+  attendeeName: varchar("attendeeName", { length: 255 }),
+  attendeeEmail: varchar("attendeeEmail", { length: 320 }),
+  company: varchar("company", { length: 255 }),
+  result: mysqlEnum("result", ["success", "not_found", "duplicate", "invalid"]).notNull(),
+  errorMessage: text("errorMessage"), // Details if scan failed
+  checkedInAt: timestamp("checkedInAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AttendeeCheckIn = typeof attendeeCheckIns.$inferSelect;
+export type InsertAttendeeCheckIn = typeof attendeeCheckIns.$inferInsert;
+
+/**
+ * Report Configurations — saved report templates for custom reporting.
+ * Allows users to define and reuse report filters, metrics, and schedules.
+ */
+export const reportConfigs = mysqlTable("report_configs", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("eventId", { length: 128 }).notNull(), // references events.eventId
+  name: varchar("name", { length: 255 }).notNull(), // e.g., "Weekly Sentiment Report"
+  description: text("description"),
+  // Metrics selection (JSON array of metric names)
+  metrics: json("metrics"), // ["sentiment", "transcription", "qa", "attendees", "engagement"]
+  // Date range configuration
+  dateRangeType: mysqlEnum("dateRangeType", ["last_7_days", "last_30_days", "custom"]).default("last_7_days").notNull(),
+  customStartDate: date("customStartDate"),
+  customEndDate: date("customEndDate"),
+  // Export format
+  exportFormats: json("exportFormats"), // ["pdf", "csv", "json"]
+  // Scheduling
+  scheduleFrequency: mysqlEnum("scheduleFrequency", ["once", "daily", "weekly", "monthly"]).default("once").notNull(),
+  scheduleTime: varchar("scheduleTime", { length: 5 }), // HH:mm format for recurring reports
+  recipientEmails: json("recipientEmails"), // Array of email addresses for scheduled delivery
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  lastGeneratedAt: timestamp("lastGeneratedAt"),
+  nextScheduledAt: timestamp("nextScheduledAt"),
+  createdBy: int("createdBy").notNull(), // references users.id
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReportConfig = typeof reportConfigs.$inferSelect;
+export type InsertReportConfig = typeof reportConfigs.$inferInsert;
+
+/**
+ * Generated Reports — stores generated report instances and their outputs.
+ * Links to reportConfigs for traceability.
+ */
+export const generatedReports = mysqlTable("generated_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  configId: int("configId").notNull(), // references reportConfigs.id
+  eventId: varchar("eventId", { length: 128 }).notNull(), // references events.eventId
+  reportType: varchar("reportType", { length: 64 }).notNull(), // "sentiment", "engagement", "qa_analysis", etc.
+  startDate: date("startDate").notNull(),
+  endDate: date("endDate").notNull(),
+  // Report content (JSON structure varies by report type)
+  reportData: json("reportData"), // Aggregated metrics, charts data, summaries
+  // Export files
+  pdfUrl: varchar("pdfUrl", { length: 512 }), // S3 URL to generated PDF
+  csvUrl: varchar("csvUrl", { length: 512 }), // S3 URL to generated CSV
+  jsonUrl: varchar("jsonUrl", { length: 512 }), // S3 URL to generated JSON
+  // Metadata
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  generatedBy: int("generatedBy"), // references users.id (null if auto-scheduled)
+  emailsSentTo: json("emailsSentTo"), // Array of emails report was sent to
+  emailSentAt: timestamp("emailSentAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type GeneratedReport = typeof generatedReports.$inferSelect;
+export type InsertGeneratedReport = typeof generatedReports.$inferInsert;
