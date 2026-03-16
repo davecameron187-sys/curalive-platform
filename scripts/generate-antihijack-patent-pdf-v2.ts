@@ -103,16 +103,16 @@ function sysTableRow(module: string, purpose: string) {
 // COVER / TITLE PAGE — MATCHING CURALIVE FORMAT EXACTLY
 // ============================================================
 
-doc.moveDown(3);
+doc.moveDown(2);
 doc.fontSize(14).font("Helvetica-Bold").fillColor("#888888").text("PROVISIONAL PATENT SPECIFICATION", { align: "center" });
-doc.moveDown(1.5);
+doc.moveDown(1);
 doc.fontSize(28).font("Helvetica-Bold").fillColor("#1a1a2e").text("AI AntiHijack", { align: "center" });
 doc.moveDown(0.3);
 doc.fontSize(13).font("Helvetica").fillColor("#555555").text("CIPC Submission", { align: "center" });
-doc.moveDown(4);
+doc.moveDown(2);
 
 drawLine();
-doc.moveDown(1);
+doc.moveDown(0.5);
 
 // Title block — same layout as CuraLive
 labeledField("Title of the Invention",
@@ -123,7 +123,7 @@ doc.moveDown(1);
 labeledField("Applicant",
   "David Cameron\n41 Rooigras Avenue\n73 Tiffani Gardens\nBassonia\n2090\nJohannesburg\n+27 84 444 6001\nRepublic of South Africa");
 
-checkPage(200);
+checkPage(100);
 
 // ============================================================
 // ABSTRACT
@@ -198,7 +198,7 @@ drawLine();
 // BACKGROUND OF THE INVENTION
 // ============================================================
 
-checkPage(200);
+checkPage(100);
 heading("Background of the Invention");
 
 para("Vehicle hijacking, coercive vehicle diversion, vehicle theft, signal interference, and unauthorized startup remain significant safety and asset-protection risks in many regions. South Africa alone records over 16,000 vehicle hijackings annually, with logistics vehicles and commercial fleets facing disproportionate risk due to cargo value and predictable route patterns.");
@@ -285,7 +285,7 @@ drawLine();
 // BRIEF DESCRIPTION OF DRAWINGS
 // ============================================================
 
-checkPage(200);
+checkPage(100);
 heading("Brief Description of the Drawings");
 
 const figures = [
@@ -382,7 +382,7 @@ subheading("12. Learning Feedback and Model Update (refer FIG 4 and FIG 15)");
 para("Behavioural models may be updated over time using additional journey history, verified false positives, verified incidents, operator feedback, or trusted-contact confirmation. Updated behavioural models may improve classification accuracy and reduce false positives. The model improvement pipeline operates autonomously, retraining detection models after each journey or at scheduled intervals without requiring human-initiated training cycles.");
 
 // 13
-checkPage(200);
+checkPage(100);
 subheading("13. Predictive Threat Intelligence Module (refer FIG 12)");
 para("The system includes a predictive threat intelligence module that generates proactive risk assessments before and during journeys. The predictive module operates as follows:");
 doc.moveDown(0.3);
@@ -402,7 +402,7 @@ bold("Fleet and Community Intelligence");
 para("In fleet or community deployments, anonymised threat intelligence may be aggregated across multiple vehicles to generate real-time risk maps that benefit all participants, creating a network effect where each additional vehicle improves the collective intelligence available to all users.");
 
 // 14
-checkPage(200);
+checkPage(100);
 subheading("14. Anti-Jamming Communication Resilience Layer (refer FIG 14)");
 para("The system includes an anti-jamming communication resilience layer that detects or infers signal interference and maintains emergency capability during degraded communications. The anti-jamming layer operates as follows:");
 doc.moveDown(0.3);
@@ -422,7 +422,7 @@ bold("Delayed-Burst Alert Transmission");
 para("When all real-time communication pathways are blocked, the system stores alerts, evidence, and status data locally. It continuously probes for available communication windows. When a temporary connectivity opportunity is detected — even briefly — the system performs a delayed-burst transmission, sending compressed critical data in the shortest possible time.");
 
 // 15
-checkPage(200);
+checkPage(100);
 subheading("15. Tamper-Resilient Evidence Preservation Module (refer FIG 13)");
 para("The system includes a tamper-resilient evidence preservation module that autonomously captures, secures, and preserves forensic data during and after security incidents. The evidence module operates as follows:");
 doc.moveDown(0.3);
@@ -553,7 +553,7 @@ drawLine();
 // EXAMPLE EMBODIMENTS
 // ============================================================
 
-checkPage(200);
+checkPage(100);
 heading("Example Embodiments");
 
 const embodiments = [
@@ -613,7 +613,7 @@ drawLine();
 // CLAIMS
 // ============================================================
 
-checkPage(200);
+checkPage(100);
 heading("Claims", 18);
 
 // --- SYSTEM CLAIMS ---
@@ -832,13 +832,13 @@ drawLine();
 // DRAWINGS
 // ============================================================
 
-checkPage(200);
+checkPage(100);
 heading("Drawings", 18);
 para("Figures 1 to 17 are attached hereto and form part of this specification.");
 doc.moveDown(1);
 
 // FIG 1
-checkPage(200);
+checkPage(100);
 subheading("FIG 1 — Overall Platform Architecture");
 diagramBox([
   "+-----------------------------------+",
@@ -879,7 +879,7 @@ diagramBox([
 ]);
 
 // FIG 2
-checkPage(200);
+checkPage(100);
 subheading("FIG 2 — Communication Architecture");
 diagramBox([
   "+-----------------------------------+",
@@ -905,7 +905,7 @@ diagramBox([
 ]);
 
 // FIG 3
-checkPage(200);
+checkPage(100);
 subheading("FIG 3 — AI Detection Pipeline");
 diagramBox([
   "+---------------------------+",
@@ -983,7 +983,7 @@ diagramBox([
 ]);
 
 // FIG 12
-checkPage(200);
+checkPage(100);
 subheading("FIG 12 — Predictive Threat Intelligence Pipeline");
 diagramBox([
   "+---------------------------+     +---------------------------+",
@@ -1012,7 +1012,7 @@ diagramBox([
 ]);
 
 // FIG 13
-checkPage(200);
+checkPage(100);
 subheading("FIG 13 — Tamper-Resilient Evidence Preservation");
 diagramBox([
   "+---------------------------+",
@@ -1056,7 +1056,7 @@ diagramBox([
 ]);
 
 // FIG 14
-checkPage(200);
+checkPage(100);
 subheading("FIG 14 — Anti-Jamming Communication Resilience");
 diagramBox([
   "+---------------------------+",
@@ -1100,7 +1100,7 @@ diagramBox([
 ]);
 
 // FIG 15
-checkPage(200);
+checkPage(100);
 subheading("FIG 15 — Self-Improving Detection Model Pipeline");
 diagramBox([
   "+---------------------------+",
@@ -1139,7 +1139,7 @@ diagramBox([
 ]);
 
 // FIG 16
-checkPage(200);
+checkPage(100);
 subheading("FIG 16 — Occupant Duress Detection and Correlation");
 diagramBox([
   "+---------------------------+     +---------------------------+",
@@ -1169,7 +1169,7 @@ diagramBox([
 ]);
 
 // FIG 17
-checkPage(200);
+checkPage(100);
 subheading("FIG 17 — Multi-Vehicle Coordinated Response");
 diagramBox([
   "+============================================+",
