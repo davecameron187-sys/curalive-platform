@@ -118,6 +118,7 @@ import IntelligenceTerminal from "./pages/IntelligenceTerminal";
 import MailingListManager from "./pages/MailingListManager";
 import MailingListConfirm from "./pages/MailingListConfirm";
 import OnboardingFlow from "./pages/OnboardingFlow";
+import OperatorDashboard from "./pages/OperatorDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -231,6 +232,7 @@ function Router() {
       <Route path="/admin/interconnection-analytics" component={InterconnectionAnalytics} />
       <Route path="/virtual-studio" component={VirtualStudio} />
       <Route path="/operator-links" component={OperatorLinks} />
+      <Route path="/operator-dashboard" component={OperatorDashboard} />
       <Route path="/features/:id" component={FeatureDetail} />
       <Route path="/bundles/:id" component={BundleDetail} />
       <Route path="/workflows" component={WorkflowsPage} />
