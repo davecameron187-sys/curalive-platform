@@ -69,6 +69,7 @@ import { checkinRouter } from "./routers/checkin";
 import { reportingRouter } from "./routers/reporting";
 import { smsRetryRouter } from "./routers/smsRetry";
 import { reportSchedulingRouter } from "./routers/reportScheduling";
+import { ablyChannelsRouter } from "./routers/ablyChannels";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -148,6 +149,7 @@ export const appRouter = router({
   reporting: reportingRouter,
   smsRetry: smsRetryRouter,
   reportScheduling: reportSchedulingRouter,
+  ably: ablyChannelsRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

@@ -118,6 +118,8 @@ import IntelligenceTerminal from "./pages/IntelligenceTerminal";
 import MailingListManager from "./pages/MailingListManager";
 import MailingListConfirm from "./pages/MailingListConfirm";
 import OnboardingFlow from "./pages/OnboardingFlow";
+import MarketplaceDashboard from "./pages/MarketplaceDashboard";
+import MarketplaceModerationTools from "./pages/MarketplaceModerationTools";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -243,6 +245,8 @@ function Router() {
       <Route path="/feedback" component={OperatorQuickRef} />
       <Route path="/whats-new" component={OperatorQuickRef} />
       <Route path="/my-dashboard" component={OperatorQuickRef} />
+      <Route path="/marketplace" component={MarketplaceDashboard} />
+      <Route path="/admin/moderation" component={MarketplaceModerationTools} />
       <Route path="/live-sentiment">{() => { window.location.replace("/operator/q4-earnings-2026/sentiment"); return null; }}</Route>
       <Route path="/post-event">{() => { window.location.replace("/post-event/q4-earnings-2026"); return null; }}</Route>
       <Route path="/404" component={NotFound} />
