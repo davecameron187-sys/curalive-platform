@@ -1326,18 +1326,13 @@ export const occRouter = router({
         jobTitle: input.jobTitle,
         phone: input.phone,
       });
-      const registrationRows = await db.select().from(eventPassRegistrations)
-        .where(eq(eventPassRegistrations.passId, pass.id))
-        .orderBy(eventPassRegistrations.registeredAt)
-        .limit(1);
-      const registrationId = registrationRows[0]?.id ?? 0;
       await db.update(eventPasses).set({ currentAttendees: pass.currentAttendees + 1 }).where(eq(eventPasses.id, pass.id));
       await publishAblyEvent(`eventpass:${input.passCode}`, "registration:new", {
         name: input.name,
         email: input.email,
         company: input.company,
       });
-      return { success: true, registrationId, message: "Registration successful" };
+      return { success: true, registrationId: result.insertId, message: "Registration successful" };
     }),
 
   getEventPassRegistrations: operatorProcedure
