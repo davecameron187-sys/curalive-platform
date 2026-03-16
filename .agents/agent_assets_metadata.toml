@@ -120,3 +120,9 @@ id = "8b7Flhz02iVA9KmeUXWhX"
 uri = "file://CuraLive_CIP_CIPC_Submission.docx"
 type = "word_document"
 title = "CuraLive CIP Patent Submission (CIPC)"
+
+[[outputs]]
+id = "ZG57V3Nd0lJu33rOEV7Gt"
+uri = "file://CuraLive_Self_Improving_AI_Brief.docx"
+type = "word_document"
+title = "CuraLive Self-Improving AI — Executive Brief"
