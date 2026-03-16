@@ -108,3 +108,9 @@ id = "LSOvLRqQCntBrVlI7SxCa"
 uri = "file://docs/AI_AntiHijack_Implementation_Guide.docx"
 type = "word_document"
 title = "AI AntiHijack — Complete Implementation Guide"
+
+[[outputs]]
+id = "VGJIy9VsTsa7qMqAopRTv"
+uri = "file://docs/AI_AntiHijack_Patent_CIPC_Submission.docx"
+type = "word_document"
+title = "AI AntiHijack — CIPC Patent (68 Claims, Word Document)"
