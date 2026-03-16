@@ -64,6 +64,7 @@ import { crmApiRouter } from "./routers/crmApiRouter";
 import { supportChatRouter } from "./routers/supportChatRouter";
 import { soc2Router } from "./routers/soc2Router";
 import { iso27001Router } from "./routers/iso27001Router";
+import { adaptiveIntelligenceRouter } from "./routers/adaptiveIntelligenceRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -137,6 +138,7 @@ export const appRouter = router({
   supportChat: supportChatRouter,
   soc2: soc2Router,
   iso27001: iso27001Router,
+  adaptiveIntelligence: adaptiveIntelligenceRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

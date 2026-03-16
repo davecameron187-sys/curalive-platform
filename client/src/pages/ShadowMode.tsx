@@ -96,7 +96,7 @@ export default function ShadowMode() {
   }, []);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "recording" | "ccaudio">("live");
+  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "recording" | "ccaudio" | "ailearning">("live");
 
   // ── CC Audio Only state ────────────────────────────────────────────────────
   const [ccForm, setCcForm] = useState({
@@ -471,6 +471,16 @@ export default function ShadowMode() {
                   {ccSessions.length}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => setActiveTab("ailearning")}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "ailearning"
+                  ? "border-purple-400 text-purple-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              <Activity className="w-4 h-4" />
+              AI Learning
             </button>
           </div>
         </div>
@@ -1240,6 +1250,16 @@ export default function ShadowMode() {
                       </div>
                     )}
 
+                    {/* Operator Correction Panel */}
+                    <OperatorCorrectionPanel
+                      eventId={`archive-${archiveDetail.data.id}`}
+                      eventTitle={`${archiveDetail.data.client_name} — ${archiveDetail.data.event_name}`}
+                      eventType={archiveDetail.data.event_type}
+                      clientName={archiveDetail.data.client_name}
+                      sentimentAvg={archiveDetail.data.sentiment_avg}
+                      complianceFlags={archiveDetail.data.compliance_flags}
+                    />
+
                     {/* Quick actions */}
                     <div className="flex gap-3">
                       <Button variant="outline" onClick={() => window.location.href = "/tagged-metrics"}
@@ -1855,7 +1875,430 @@ export default function ShadowMode() {
           </>
         )}
 
+        {/* ══════════════════════════════════════════════════
+            AI LEARNING TAB
+        ══════════════════════════════════════════════════ */}
+        {activeTab === "ailearning" && (
+          <AILearningDashboard />
+        )}
+
       </div>
     </div>
+  );
+}
+
+function OperatorCorrectionPanel({ eventId, eventTitle, eventType, clientName, sentimentAvg, complianceFlags }: {
+  eventId: string; eventTitle: string; eventType: string; clientName: string;
+  sentimentAvg: number | null; complianceFlags: number;
+}) {
+  const [showCorrection, setShowCorrection] = useState(false);
+  const [sentimentOverride, setSentimentOverride] = useState(sentimentAvg ?? 50);
+  const [correctionReason, setCorrectionReason] = useState("");
+  const [newKeyword, setNewKeyword] = useState("");
+
+  const submitCorrection = trpc.adaptiveIntelligence.submitCorrection.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setCorrectionReason("");
+      setNewKeyword("");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  return (
+    <div className="bg-white/[0.02] border border-purple-500/20 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setShowCorrection(!showCorrection)}
+        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-1.5 rounded-lg bg-purple-500/10">
+            <Activity className="w-4 h-4 text-purple-400" />
+          </div>
+          <div className="text-left">
+            <div className="text-sm font-medium text-slate-200">Correct AI Analysis</div>
+            <div className="text-xs text-slate-500">Your corrections train the AI to be more accurate</div>
+          </div>
+        </div>
+        <ChevronRight className={`w-4 h-4 text-slate-500 transition-transform ${showCorrection ? "rotate-90" : ""}`} />
+      </button>
+
+      {showCorrection && (
+        <div className="px-5 pb-5 space-y-4 border-t border-white/5 pt-4">
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-slate-500 block mb-2">Sentiment Score Override</label>
+              <div className="flex items-center gap-4">
+                <input
+                  type="range"
+                  min="0" max="100"
+                  value={sentimentOverride}
+                  onChange={(e) => setSentimentOverride(Number(e.target.value))}
+                  className="flex-1 accent-purple-500"
+                />
+                <span className={`text-lg font-bold min-w-[3ch] text-right ${
+                  sentimentOverride >= 70 ? "text-emerald-400" : sentimentOverride >= 50 ? "text-amber-400" : "text-red-400"
+                }`}>{sentimentOverride}</span>
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs text-slate-600">AI scored: {sentimentAvg ?? "N/A"}</span>
+                <span className="text-xs text-slate-600">Your correction: {sentimentOverride}</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-500 block mb-1.5">Reason for correction</label>
+              <input
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-purple-500/50"
+                placeholder="e.g. Mining sector calls are naturally more cautious"
+                value={correctionReason}
+                onChange={(e) => setCorrectionReason(e.target.value)}
+              />
+            </div>
+
+            <Button
+              size="sm"
+              disabled={submitCorrection.isPending || sentimentOverride === (sentimentAvg ?? 50)}
+              onClick={() => submitCorrection.mutate({
+                eventId,
+                eventTitle,
+                correctionType: "sentiment_override",
+                originalValue: sentimentAvg ?? 50,
+                correctedValue: sentimentOverride,
+                originalLabel: `AI Score: ${sentimentAvg ?? 50}`,
+                correctedLabel: `Operator Override: ${sentimentOverride}`,
+                reason: correctionReason || undefined,
+                eventType,
+                clientName,
+              })}
+              className="bg-purple-600 hover:bg-purple-500 gap-2"
+            >
+              {submitCorrection.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+              Submit Sentiment Correction
+            </Button>
+          </div>
+
+          <div className="border-t border-white/5 pt-4 space-y-3">
+            <div>
+              <label className="text-xs text-slate-500 block mb-2">Compliance Actions</label>
+              <div className="flex gap-2">
+                {complianceFlags > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={submitCorrection.isPending}
+                    onClick={() => submitCorrection.mutate({
+                      eventId,
+                      eventTitle,
+                      correctionType: "compliance_dismiss",
+                      originalValue: complianceFlags,
+                      correctedValue: 0,
+                      originalLabel: `${complianceFlags} flags`,
+                      correctedLabel: "Dismissed by operator",
+                      reason: correctionReason || "False positive — operator reviewed",
+                      eventType,
+                      clientName,
+                      dismissedKeywords: ["forward-looking", "guidance", "forecast", "predict", "expect", "material", "non-public", "insider"].slice(0, complianceFlags),
+                    })}
+                    className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 gap-1.5"
+                  >
+                    <Shield className="w-3.5 h-3.5" /> Dismiss {complianceFlags} Flag{complianceFlags !== 1 ? "s" : ""}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-500 block mb-1.5">Add Compliance Keyword</label>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-purple-500/50"
+                  placeholder="e.g. restructuring, dividend cut"
+                  value={newKeyword}
+                  onChange={(e) => setNewKeyword(e.target.value)}
+                />
+                <Button
+                  size="sm"
+                  disabled={!newKeyword.trim() || submitCorrection.isPending}
+                  onClick={() => submitCorrection.mutate({
+                    eventId,
+                    eventTitle,
+                    correctionType: "compliance_add",
+                    correctedLabel: newKeyword.trim(),
+                    reason: `Operator added keyword: ${newKeyword.trim()}`,
+                    eventType,
+                    clientName,
+                  })}
+                  className="bg-purple-600 hover:bg-purple-500 gap-1.5 shrink-0"
+                >
+                  <Tag className="w-3.5 h-3.5" /> Add
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-purple-500/5 border border-purple-500/10 rounded-lg p-3">
+            <p className="text-xs text-purple-300/70 leading-relaxed">
+              Every correction you submit trains CuraLive's AI. Over time, sentiment thresholds adapt to your sector, compliance scanning learns which keywords matter, and false positives decrease. This is the self-improving feedback loop described in the patent.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AILearningDashboard() {
+  const learningStats = trpc.adaptiveIntelligence.getLearningStats.useQuery();
+  const thresholds = trpc.adaptiveIntelligence.getAdaptiveThresholds.useQuery();
+  const vocabulary = trpc.adaptiveIntelligence.getComplianceVocabulary.useQuery();
+  const corrections = trpc.adaptiveIntelligence.getCorrections.useQuery({ limit: 20 });
+
+  const [newKeyword, setNewKeyword] = useState("");
+  const addKeyword = trpc.adaptiveIntelligence.addComplianceKeyword.useMutation({
+    onSuccess: (data) => { toast.success(data.message); setNewKeyword(""); vocabulary.refetch(); },
+    onError: (err) => toast.error(err.message),
+  });
+  const toggleKeyword = trpc.adaptiveIntelligence.toggleComplianceKeyword.useMutation({
+    onSuccess: () => vocabulary.refetch(),
+  });
+
+  const stats = learningStats.data;
+
+  const maturityColors: Record<string, string> = {
+    "Initialising": "text-slate-400 bg-slate-400/10 border-slate-400/20",
+    "Learning": "text-amber-400 bg-amber-400/10 border-amber-400/20",
+    "Adapting": "text-blue-400 bg-blue-400/10 border-blue-400/20",
+    "Calibrated": "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+    "Self-Evolving": "text-purple-400 bg-purple-400/10 border-purple-400/20",
+  };
+
+  return (
+    <>
+      <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 flex flex-col sm:flex-row items-start gap-4">
+        <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20 shrink-0">
+          <Activity className="w-5 h-5 text-purple-400" />
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-slate-200 mb-1">AI Learning Engine</div>
+          <p className="text-sm text-slate-400 leading-relaxed">
+            CuraLive's AI improves with every operator correction. When you override a sentiment score, dismiss a false compliance flag, or add a new keyword, those corrections become training signals that calibrate future analysis. This dashboard shows how the AI is learning and evolving.
+          </p>
+        </div>
+      </div>
+
+      {stats && (
+        <>
+          {/* Maturity header */}
+          <div className="bg-white/[0.03] border border-purple-500/20 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-lg font-semibold text-slate-200">AI Maturity Level</div>
+                <p className="text-sm text-slate-500 mt-0.5">Based on {stats.totalCorrections} operator corrections</p>
+              </div>
+              <span className={`px-3 py-1.5 rounded-full border text-sm font-semibold ${maturityColors[stats.maturityLevel] ?? maturityColors["Initialising"]}`}>
+                {stats.maturityLevel}
+              </span>
+            </div>
+            <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-purple-600 to-purple-400 transition-all duration-700"
+                style={{ width: `${stats.maturityScore}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-2 text-xs text-slate-600">
+              <span>Initialising</span>
+              <span>Learning</span>
+              <span>Adapting</span>
+              <span>Calibrated</span>
+              <span>Self-Evolving</span>
+            </div>
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Total Corrections", value: stats.totalCorrections, color: "text-purple-400" },
+              { label: "Sentiment Overrides", value: stats.correctionsByType?.sentiment_override ?? 0, color: "text-emerald-400" },
+              { label: "Compliance Adjustments", value: (stats.correctionsByType?.compliance_dismiss ?? 0) + (stats.correctionsByType?.compliance_add ?? 0), color: "text-amber-400" },
+              { label: "Adapted Thresholds", value: stats.adaptedThresholds, color: "text-blue-400" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="bg-white/[0.02] border border-white/10 rounded-xl p-4 text-center">
+                <div className={`text-2xl font-bold ${color}`}>{value}</div>
+                <div className="text-xs text-slate-500 mt-1">{label}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Adaptive Thresholds */}
+        <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <Activity className="w-4 h-4 text-blue-400" /> Adaptive Thresholds
+          </h3>
+          {thresholds.data?.learned && thresholds.data.learned.length > 0 ? (
+            <div className="space-y-3">
+              {thresholds.data.summary.map((t: any) => (
+                <div key={t.key} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-400 font-medium">{t.key.replace(/_/g, " ")}</span>
+                    <span className="text-xs text-slate-600">{t.samples} samples</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="text-slate-500">Default:</span>
+                      <span className="text-slate-400 font-medium">{t.default}</span>
+                    </div>
+                    <ChevronRight className="w-3 h-3 text-slate-600" />
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="text-slate-500">Learned:</span>
+                      <span className="text-purple-400 font-bold">{t.learned}</span>
+                    </div>
+                    <span className={`text-xs font-medium ml-auto ${Number(t.driftPercent) > 0 ? "text-emerald-400" : Number(t.driftPercent) < 0 ? "text-red-400" : "text-slate-500"}`}>
+                      {t.driftPercent}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Activity className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+              <p className="text-sm text-slate-500">No thresholds adapted yet</p>
+              <p className="text-xs text-slate-600 mt-1">Submit sentiment corrections from event reports to begin threshold learning</p>
+            </div>
+          )}
+        </div>
+
+        {/* Compliance Vocabulary */}
+        <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-amber-400" /> Compliance Vocabulary
+            {stats && <span className="text-xs text-slate-600 ml-auto">{stats.vocabularyStats.totalKeywords} keywords</span>}
+          </h3>
+          <div className="flex gap-2 mb-4">
+            <input
+              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-purple-500/50"
+              placeholder="Add new compliance keyword..."
+              value={newKeyword}
+              onChange={(e) => setNewKeyword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && newKeyword.trim()) addKeyword.mutate({ keyword: newKeyword.trim() }); }}
+            />
+            <Button size="sm" disabled={!newKeyword.trim() || addKeyword.isPending}
+              onClick={() => addKeyword.mutate({ keyword: newKeyword.trim() })}
+              className="bg-purple-600 hover:bg-purple-500 gap-1.5">
+              <Tag className="w-3.5 h-3.5" /> Add
+            </Button>
+          </div>
+          {vocabulary.data && vocabulary.data.length > 0 ? (
+            <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
+              {vocabulary.data.map((kw: any) => (
+                <div key={kw.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${kw.active ? "border-white/5 bg-white/[0.01]" : "border-white/5 bg-white/[0.005] opacity-50"}`}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button onClick={() => toggleKeyword.mutate({ id: kw.id, active: !kw.active })}
+                      className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${kw.active ? "bg-purple-500/20 border-purple-500/50 text-purple-400" : "border-white/20"}`}>
+                      {kw.active && <CheckCircle2 className="w-3 h-3" />}
+                    </button>
+                    <span className="text-sm text-slate-300 truncate">{kw.keyword}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${kw.source === "operator" ? "bg-purple-500/20 text-purple-400" : kw.source === "learned" ? "bg-blue-500/20 text-blue-400" : "bg-slate-500/20 text-slate-400"}`}>
+                      {kw.source}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xs text-slate-600" title="Effective weight">
+                      w:{(kw.effective_weight ?? kw.effectiveWeight ?? 1).toFixed(2)}
+                    </span>
+                    <span className="text-xs text-slate-600">
+                      {kw.times_flagged ?? kw.timesFlagged ?? 0}F / {kw.times_dismissed ?? kw.timesDismissed ?? 0}D
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <Shield className="w-6 h-6 text-slate-700 mx-auto mb-2" />
+              <p className="text-xs text-slate-500">Loading vocabulary...</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recent Corrections */}
+      <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-slate-400" /> Recent Corrections (Training Signals)
+        </h3>
+        {corrections.data && corrections.data.length > 0 ? (
+          <div className="space-y-2">
+            {corrections.data.map((c: any) => {
+              const typeColors: Record<string, string> = {
+                sentiment_override: "text-emerald-400 bg-emerald-500/10",
+                compliance_dismiss: "text-amber-400 bg-amber-500/10",
+                compliance_add: "text-purple-400 bg-purple-500/10",
+                severity_change: "text-blue-400 bg-blue-500/10",
+                threshold_adjust: "text-cyan-400 bg-cyan-500/10",
+              };
+              const typeLabels: Record<string, string> = {
+                sentiment_override: "Sentiment Override",
+                compliance_dismiss: "Compliance Dismissed",
+                compliance_add: "Keyword Added",
+                severity_change: "Severity Changed",
+                threshold_adjust: "Threshold Adjusted",
+              };
+              return (
+                <div key={c.id} className="flex items-start gap-3 px-4 py-3 bg-white/[0.01] border border-white/5 rounded-lg">
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 mt-0.5 ${typeColors[c.correctionType ?? c.correction_type] ?? "text-slate-400 bg-slate-500/10"}`}>
+                    {typeLabels[c.correctionType ?? c.correction_type] ?? c.correctionType ?? c.correction_type}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-slate-300 truncate">{c.eventTitle ?? c.event_title ?? c.eventId ?? c.event_id}</div>
+                    {(c.originalValue != null || c.original_value != null) && (
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        {c.originalValue ?? c.original_value} → {c.correctedValue ?? c.corrected_value}
+                        {(c.reason || c.correctedLabel || c.corrected_label) && (
+                          <span className="text-slate-600"> · {c.reason ?? c.correctedLabel ?? c.corrected_label}</span>
+                        )}
+                      </div>
+                    )}
+                    {!(c.originalValue != null || c.original_value != null) && (c.reason || c.correctedLabel || c.corrected_label) && (
+                      <div className="text-xs text-slate-500 mt-0.5">{c.reason ?? c.correctedLabel ?? c.corrected_label}</div>
+                    )}
+                  </div>
+                  <span className="text-xs text-slate-600 shrink-0">{new Date(c.createdAt ?? c.created_at).toLocaleDateString()}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Clock className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+            <p className="text-sm text-slate-500">No corrections recorded yet</p>
+            <p className="text-xs text-slate-600 mt-1">Go to Archives & Reports, select an event, and use "Correct AI Analysis" to submit your first training signal</p>
+          </div>
+        )}
+      </div>
+
+      {/* How it works */}
+      <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-purple-300 mb-3">How the Self-Improving Loop Works</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs text-slate-400">
+          {[
+            { step: "1", title: "Operator Corrects", desc: "You override a sentiment score or dismiss a false compliance flag on any event." },
+            { step: "2", title: "Correction Stored", desc: "The correction is saved as a training signal with full context (event type, sector, reason)." },
+            { step: "3", title: "Thresholds Adapt", desc: "The system recalculates thresholds using a weighted blend of defaults and operator corrections." },
+            { step: "4", title: "Future Events Improve", desc: "New events of the same type are scored against the adapted thresholds, producing more accurate results." },
+          ].map(({ step, title, desc }) => (
+            <div key={step}>
+              <div className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold mb-2">{step}</div>
+              <p className="text-slate-300 font-medium mb-1">{title}</p>
+              <p>{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
   );
 }

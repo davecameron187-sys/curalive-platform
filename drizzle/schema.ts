@@ -2354,6 +2354,56 @@ export const shadowSessions = mysqlTable("shadow_sessions", {
 export type ShadowSession = typeof shadowSessions.$inferSelect;
 export type InsertShadowSession = typeof shadowSessions.$inferInsert;
 
+// ─── Operator Corrections (Self-Improving AI Loop) ───────────────────────────
+export const operatorCorrections = mysqlTable("operator_corrections", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 255 }).notNull(),
+  eventTitle: varchar("event_title", { length: 255 }),
+  metricId: int("metric_id"),
+  correctionType: mysqlEnum("correction_type", ["sentiment_override", "compliance_dismiss", "compliance_add", "severity_change", "threshold_adjust"]).notNull(),
+  originalValue: float("original_value"),
+  correctedValue: float("corrected_value"),
+  originalLabel: varchar("original_label", { length: 255 }),
+  correctedLabel: varchar("corrected_label", { length: 255 }),
+  reason: text("reason"),
+  eventType: varchar("event_type", { length: 64 }),
+  clientName: varchar("client_name", { length: 255 }),
+  operatorId: varchar("operator_id", { length: 255 }).default("operator"),
+  appliedToModel: tinyint("applied_to_model").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type OperatorCorrection = typeof operatorCorrections.$inferSelect;
+export type InsertOperatorCorrection = typeof operatorCorrections.$inferInsert;
+
+export const adaptiveThresholds = mysqlTable("adaptive_thresholds", {
+  id: int("id").autoincrement().primaryKey(),
+  thresholdKey: varchar("threshold_key", { length: 255 }).notNull(),
+  eventType: varchar("event_type", { length: 64 }),
+  sector: varchar("sector", { length: 64 }),
+  metricType: mysqlEnum("metric_type", ["sentiment", "compliance", "engagement"]).notNull(),
+  defaultValue: float("default_value").notNull(),
+  learnedValue: float("learned_value").notNull(),
+  sampleCount: int("sample_count").default(0),
+  lastCorrectionAt: timestamp("last_correction_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type AdaptiveThreshold = typeof adaptiveThresholds.$inferSelect;
+
+export const complianceVocabulary = mysqlTable("compliance_vocabulary", {
+  id: int("id").autoincrement().primaryKey(),
+  keyword: varchar("keyword", { length: 255 }).notNull(),
+  source: mysqlEnum("source", ["system", "operator", "learned"]).default("system").notNull(),
+  severityWeight: float("severity_weight").default(1.0),
+  timesFlagged: int("times_flagged").default(0),
+  timesDismissed: int("times_dismissed").default(0),
+  effectiveWeight: float("effective_weight").default(1.0),
+  sector: varchar("sector", { length: 64 }),
+  addedBy: varchar("added_by", { length: 255 }).default("system"),
+  active: tinyint("active").default(1),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ComplianceKeyword = typeof complianceVocabulary.$inferSelect;
+
 // ─── User Feedback ────────────────────────────────────────────────────────────
 export const userFeedback = mysqlTable("user_feedback", {
   id: int("id").autoincrement().primaryKey(),

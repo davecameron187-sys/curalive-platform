@@ -69,6 +69,15 @@ Key variables needed:
 - **Handover document** — `MANUS_DEPLOYMENT_STATUS.md` with full route reference, DB schema, tRPC procedures, and demo walkthrough guide
 - **GitHub** — main `9695a98` + manus-demo branch `3dde94d` (30 batches, all files)
 
+## Self-Improving AI (Operator Feedback Loop)
+
+- **Route**: `/shadow-mode` → "AI Learning" tab
+- **Server router**: `server/routers/adaptiveIntelligenceRouter.ts` — `adaptiveIntelligence.submitCorrection`, `getCorrections`, `getAdaptiveThresholds`, `getComplianceVocabulary`, `addComplianceKeyword`, `toggleComplianceKeyword`, `getLearningStats`
+- **DB tables**: `operator_corrections`, `adaptive_thresholds`, `compliance_vocabulary`
+- **Migration**: `scripts/create-operator-corrections-table.ts`
+- **How it works**: Operators correct AI sentiment scores or dismiss false compliance flags on any event. Each correction is stored as a training signal. The system recalculates adaptive thresholds using a weighted blend of defaults and operator corrections, improving accuracy per event type over time. Compliance vocabulary grows as operators add new keywords. Maturity levels: Initialising → Learning → Adapting → Calibrated → Self-Evolving.
+- **Patent claims**: Implements Claims 13, 20, 21, 25, 33 from the CIPC patent (self-improving learning loop, operator corrections as training signals, autonomous threshold adaptation)
+
 ## Key Features
 
 - **AI Shop** (`/ai-shop`) — 6 role-based AI bundles (A-F) + 28 individual AI applications browser
