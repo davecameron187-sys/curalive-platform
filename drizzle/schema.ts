@@ -2974,3 +2974,93 @@ export const generatedReports = mysqlTable("generated_reports", {
 
 export type GeneratedReport = typeof generatedReports.$inferSelect;
 export type InsertGeneratedReport = typeof generatedReports.$inferInsert;
+
+
+/**
+ * Kiosk Network Metrics table — stores historical network performance data
+ */
+export const kioskNetworkMetrics = mysqlTable("kioskNetworkMetrics", {
+  id: int("id").autoincrement().primaryKey(),
+  kioskId: varchar("kioskId", { length: 128 }).notNull(),
+  eventId: varchar("eventId", { length: 128 }).notNull(),
+  networkType: varchar("networkType", { length: 32 }).notNull(), // wifi, cellular, ethernet
+  latency: int("latency").notNull(), // milliseconds
+  bandwidth: float("bandwidth").notNull(), // Mbps
+  signalStrength: int("signalStrength").notNull(), // 0-100
+  connectionQuality: varchar("connectionQuality", { length: 32 }).notNull(), // excellent, good, fair, poor
+  isOnline: boolean("isOnline").notNull().default(true),
+  isMetered: boolean("isMetered").notNull().default(false),
+  saveData: boolean("saveData").notNull().default(false),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type KioskNetworkMetrics = typeof kioskNetworkMetrics.$inferSelect;
+export type InsertKioskNetworkMetrics = typeof kioskNetworkMetrics.$inferInsert;
+
+/**
+ * Failover Events table — tracks network failover occurrences
+ */
+export const failoverEvents = mysqlTable("failoverEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  kioskId: varchar("kioskId", { length: 128 }).notNull(),
+  eventId: varchar("eventId", { length: 128 }).notNull(),
+  fromNetwork: varchar("fromNetwork", { length: 32 }).notNull(),
+  toNetwork: varchar("toNetwork", { length: 32 }).notNull(),
+  reason: text("reason"),
+  latencyImprovement: int("latencyImprovement"), // milliseconds (positive = improvement)
+  duration: int("duration"), // milliseconds on previous network
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type FailoverEvent = typeof failoverEvents.$inferSelect;
+export type InsertFailoverEvent = typeof failoverEvents.$inferInsert;
+
+/**
+ * Connection Stability Metrics table — aggregated stability data
+ */
+export const connectionStabilityMetrics = mysqlTable("connectionStabilityMetrics", {
+  id: int("id").autoincrement().primaryKey(),
+  kioskId: varchar("kioskId", { length: 128 }).notNull(),
+  eventId: varchar("eventId", { length: 128 }).notNull(),
+  period: varchar("period", { length: 32 }).notNull(), // hourly, daily, weekly
+  periodStart: timestamp("periodStart").notNull(),
+  periodEnd: timestamp("periodEnd").notNull(),
+  averageLatency: float("averageLatency").notNull(),
+  minLatency: int("minLatency").notNull(),
+  maxLatency: int("maxLatency").notNull(),
+  latencyStdDev: float("latencyStdDev").notNull(),
+  averageBandwidth: float("averageBandwidth").notNull(),
+  peakBandwidth: float("peakBandwidth").notNull(),
+  averageSignalStrength: float("averageSignalStrength").notNull(),
+  uptime: float("uptime").notNull(), // percentage
+  downtime: int("downtime").notNull(), // milliseconds
+  failoverCount: int("failoverCount").notNull().default(0),
+  connectionStability: int("connectionStability").notNull(), // 0-100
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ConnectionStabilityMetrics = typeof connectionStabilityMetrics.$inferSelect;
+export type InsertConnectionStabilityMetrics = typeof connectionStabilityMetrics.$inferInsert;
+
+/**
+ * Network Anomalies table — detects and logs unusual network behavior
+ */
+export const networkAnomalies = mysqlTable("networkAnomalies", {
+  id: int("id").autoincrement().primaryKey(),
+  kioskId: varchar("kioskId", { length: 128 }).notNull(),
+  eventId: varchar("eventId", { length: 128 }).notNull(),
+  anomalyType: varchar("anomalyType", { length: 64 }).notNull(), // high_latency, packet_loss, frequent_failover, etc
+  severity: varchar("severity", { length: 32 }).notNull(), // low, medium, high, critical
+  description: text("description"),
+  detectedAt: timestamp("detectedAt").notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+  isResolved: boolean("isResolved").notNull().default(false),
+  metadata: json("metadata"), // Additional context
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type NetworkAnomaly = typeof networkAnomalies.$inferSelect;
+export type InsertNetworkAnomaly = typeof networkAnomalies.$inferInsert;

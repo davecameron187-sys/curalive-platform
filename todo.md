@@ -177,3 +177,38 @@ All core features implemented and production-ready.
 - [x] Write vitest tests for failover logic
 - [x] Test network switching scenarios
 - [x] Verify status indicator accuracy
+
+
+## Round 61 — Network Analytics Dashboard
+
+### Database Schema & Backend
+- [x] Create kioskNetworkMetrics table for storing historical data
+- [x] Create failoverEvents table for tracking all failover occurrences
+- [x] Create connectionStabilityMetrics table for stability tracking
+- [x] Implement tRPC procedures for analytics queries
+- [x] Build aggregation functions for time-series data
+- [x] Create data retention and cleanup policies
+
+### Dashboard UI Components
+- [x] Create main NetworkAnalyticsDashboard page
+- [x] Build failover pattern visualization chart
+- [x] Implement connection stability trend chart
+- [x] Create latency distribution histogram
+- [x] Build bandwidth usage chart
+- [x] Implement signal strength heatmap
+- [x] Create kiosk location map with status indicators
+
+### Real-Time Updates
+- [x] Integrate Ably for real-time metric updates
+- [x] Implement live metric streaming
+- [x] Build real-time alert system for anomalies
+- [x] Create notification system for failover events
+- [x] Implement metric aggregation pipeline
+
+### Analytics Features
+- [x] Build date range filter for historical analysis
+- [x] Create kiosk location filter and grouping
+- [x] Implement network type filter (WiFi, Cellular, etc.)
+- [x] Build performance comparison tools
+- [x] Create export functionality (CSV, PDF)
+- [x] Implement custom report builder
