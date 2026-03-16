@@ -50,3 +50,34 @@ All core features implemented and production-ready.
 - [x] Data integrity and error handling tests
 - [x] Database helper functions (db.round56.ts)
 - [x] TypeScript compilation: 0 errors
+
+
+## Round 57 — Check-In Kiosk UI, Report Scheduling Service, SMS Retry Webhook
+
+### Check-In Kiosk UI
+- [x] Create /check-in/:eventId/kiosk page component
+- [x] Integrate jsQR library for QR code scanning from camera
+- [x] Add camera permission request and error handling
+- [x] Build real-time success/failure feedback UI
+- [x] Add check-in statistics display (scanned, successful, failed)
+- [x] Implement session start/stop controls
+- [x] Add responsive tablet layout
+
+### Report Scheduling Service
+- [x] Create cron job scheduler for report generation
+- [x] Implement daily/weekly/monthly schedule execution
+- [x] Add report generation trigger based on reportConfigs
+- [x] Integrate email delivery for generated reports
+- [x] Create scheduled job logging and error handling
+- [x] Add retry mechanism for failed email sends
+- [x] Build admin UI to view scheduled jobs and execution history
+
+### SMS Retry Webhook & Admin Dashboard
+- [x] Create POST /api/sms-retry-trigger webhook endpoint
+- [x] Implement exponential backoff retry logic
+- [x] Add SMS retry queue status tracking
+- [x] Build admin dashboard page (/admin/sms-retry-queue)
+- [x] Display retry queue with attempt counts and status
+- [x] Add manual retry trigger button
+- [x] Implement real-time queue updates via Ably
+- [x] Add error logging and debugging tools
