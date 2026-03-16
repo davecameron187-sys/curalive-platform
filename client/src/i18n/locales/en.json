@@ -1,0 +1,71 @@
+{
+  "kiosk": {
+    "title": "Check-In Kiosk",
+    "subtitle": "Scan attendee QR codes",
+    "startScanning": "Start Scanning",
+    "stopScanning": "Stop Scanning",
+    "reset": "Reset",
+    "language": "Language",
+    "sound": "Sound",
+    "fullscreen": "Fullscreen",
+    "instructions": "Instructions",
+    "instructionsText": "Press Start Scanning to begin",
+    "positionQR": "Position QR code within the frame",
+    "resultsDisplayImmediately": "Results display immediately",
+    "stats": {
+      "total": "Total",
+      "success": "Success",
+      "duplicates": "Duplicates",
+      "failed": "Failed"
+    },
+    "feedback": {
+      "welcome": "Welcome, {{name}}!",
+      "alreadyCheckedIn": "Already checked in",
+      "qrNotFound": "QR code not found",
+      "checkInFailed": "Check-in failed. Please try again.",
+      "cameraAccessDenied": "Camera access denied. Please enable camera permissions.",
+      "moveCloser": "Move closer to QR code",
+      "moveAway": "Move away from QR code",
+      "perfectPosition": "Perfect position",
+      "goodPosition": "Good position",
+      "centerFrame": "Move QR code to center of frame"
+    },
+    "attendeeInfo": {
+      "name": "Name",
+      "email": "Email",
+      "company": "Company"
+    },
+    "offline": {
+      "status": "Offline Mode",
+      "cacheStatus": "Cache: {{pending}} pending, {{synced}} synced",
+      "syncing": "Syncing...",
+      "syncComplete": "Sync complete",
+      "syncFailed": "Sync failed"
+    }
+  },
+  "admin": {
+    "dashboard": "Kiosk Dashboard",
+    "realTimeMonitoring": "Real-Time Monitoring",
+    "kioskStatus": "Kiosk Status",
+    "activeKiosks": "Active Kiosks",
+    "scanRate": "Scan Rate",
+    "errorRate": "Error Rate",
+    "totalScans": "Total Scans",
+    "successfulScans": "Successful Scans",
+    "failedScans": "Failed Scans",
+    "duplicateScans": "Duplicate Scans",
+    "actions": "Actions",
+    "restart": "Restart",
+    "reconfigure": "Reconfigure",
+    "viewDetails": "View Details",
+    "lastSync": "Last Sync",
+    "uptime": "Uptime",
+    "performance": "Performance",
+    "analytics": "Analytics",
+    "export": "Export",
+    "noKiosks": "No active kiosks",
+    "confirmRestart": "Are you sure you want to restart this kiosk?",
+    "restartSuccess": "Kiosk restarted successfully",
+    "restartFailed": "Failed to restart kiosk"
+  }
+}

@@ -119,3 +119,32 @@ All core features implemented and production-ready.
 - [x] Verify orientation transitions
 - [x] Test touch responsiveness
 - [x] Write responsive design vitest tests
+
+
+## Round 59 — Offline QR Cache, Multi-Language UI, Admin Dashboard
+
+### Offline QR Cache
+- [x] Create IndexedDB schema for offline QR scans
+- [x] Implement offline detection and cache management
+- [x] Build sync-on-reconnect logic with conflict resolution
+- [x] Add cache status indicator to kiosk UI
+- [x] Implement automatic cleanup of old cached scans
+- [x] Create sync progress tracking and error handling
+
+### Multi-Language Kiosk UI
+- [x] Set up i18n library (react-i18next)
+- [x] Create language translation files (EN, ES, FR, DE, ZH, JA, AR, HE)
+- [x] Implement language selector component
+- [x] Add RTL (right-to-left) support for Arabic/Hebrew
+- [x] Translate all kiosk UI text and feedback messages
+- [x] Add language persistence to localStorage
+- [x] Test font rendering for all languages
+
+### Admin Kiosk Dashboard
+- [x] Create /admin/kiosk-dashboard page
+- [x] Build real-time kiosk status monitoring
+- [x] Implement scan rate and error rate charts
+- [x] Add remote kiosk restart/reconfigure controls
+- [x] Build kiosk session management interface
+- [x] Create kiosk performance analytics
+- [x] Implement real-time updates via Ably

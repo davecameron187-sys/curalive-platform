@@ -1,0 +1,240 @@
+{
+  "es": {
+    "kiosk": {
+      "title": "Quiosco de Registro",
+      "subtitle": "Escanear códigos QR de asistentes",
+      "startScanning": "Comenzar a Escanear",
+      "stopScanning": "Detener Escaneo",
+      "reset": "Reiniciar",
+      "language": "Idioma",
+      "sound": "Sonido",
+      "fullscreen": "Pantalla Completa",
+      "instructions": "Instrucciones",
+      "instructionsText": "Presione Comenzar a Escanear para iniciar",
+      "positionQR": "Posicione el código QR dentro del marco",
+      "resultsDisplayImmediately": "Los resultados se muestran inmediatamente",
+      "stats": {
+        "total": "Total",
+        "success": "Éxito",
+        "duplicates": "Duplicados",
+        "failed": "Fallido"
+      },
+      "feedback": {
+        "welcome": "¡Bienvenido, {{name}}!",
+        "alreadyCheckedIn": "Ya registrado",
+        "qrNotFound": "Código QR no encontrado",
+        "checkInFailed": "Registro fallido. Intente de nuevo.",
+        "cameraAccessDenied": "Acceso a cámara denegado. Por favor habilite permisos de cámara.",
+        "moveCloser": "Acérquese al código QR",
+        "moveAway": "Aléjese del código QR",
+        "perfectPosition": "Posición perfecta",
+        "goodPosition": "Buena posición",
+        "centerFrame": "Mueva el código QR al centro del marco"
+      }
+    }
+  },
+  "fr": {
+    "kiosk": {
+      "title": "Kiosque d'Enregistrement",
+      "subtitle": "Scannez les codes QR des participants",
+      "startScanning": "Commencer le Scan",
+      "stopScanning": "Arrêter le Scan",
+      "reset": "Réinitialiser",
+      "language": "Langue",
+      "sound": "Son",
+      "fullscreen": "Plein Écran",
+      "instructions": "Instructions",
+      "instructionsText": "Appuyez sur Commencer le Scan pour démarrer",
+      "positionQR": "Positionnez le code QR dans le cadre",
+      "resultsDisplayImmediately": "Les résultats s'affichent immédiatement",
+      "stats": {
+        "total": "Total",
+        "success": "Succès",
+        "duplicates": "Doublons",
+        "failed": "Échoué"
+      },
+      "feedback": {
+        "welcome": "Bienvenue, {{name}}!",
+        "alreadyCheckedIn": "Déjà enregistré",
+        "qrNotFound": "Code QR non trouvé",
+        "checkInFailed": "Enregistrement échoué. Veuillez réessayer.",
+        "cameraAccessDenied": "Accès à la caméra refusé. Veuillez activer les permissions de caméra.",
+        "moveCloser": "Rapprochez-vous du code QR",
+        "moveAway": "Éloignez-vous du code QR",
+        "perfectPosition": "Position parfaite",
+        "goodPosition": "Bonne position",
+        "centerFrame": "Déplacez le code QR au centre du cadre"
+      }
+    }
+  },
+  "de": {
+    "kiosk": {
+      "title": "Check-In-Kiosk",
+      "subtitle": "QR-Codes von Teilnehmern scannen",
+      "startScanning": "Scannen Starten",
+      "stopScanning": "Scannen Stoppen",
+      "reset": "Zurücksetzen",
+      "language": "Sprache",
+      "sound": "Ton",
+      "fullscreen": "Vollbild",
+      "instructions": "Anleitung",
+      "instructionsText": "Drücken Sie Scannen Starten zum Beginnen",
+      "positionQR": "Positionieren Sie den QR-Code im Rahmen",
+      "resultsDisplayImmediately": "Ergebnisse werden sofort angezeigt",
+      "stats": {
+        "total": "Gesamt",
+        "success": "Erfolg",
+        "duplicates": "Duplikate",
+        "failed": "Fehlgeschlagen"
+      },
+      "feedback": {
+        "welcome": "Willkommen, {{name}}!",
+        "alreadyCheckedIn": "Bereits eingecheckt",
+        "qrNotFound": "QR-Code nicht gefunden",
+        "checkInFailed": "Check-In fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "cameraAccessDenied": "Kamerazugriff verweigert. Bitte aktivieren Sie Kameraberechtigungen.",
+        "moveCloser": "Näher an den QR-Code heranrücken",
+        "moveAway": "Vom QR-Code entfernen",
+        "perfectPosition": "Perfekte Position",
+        "goodPosition": "Gute Position",
+        "centerFrame": "Verschieben Sie den QR-Code in die Mitte des Rahmens"
+      }
+    }
+  },
+  "zh": {
+    "kiosk": {
+      "title": "签到亭",
+      "subtitle": "扫描参与者二维码",
+      "startScanning": "开始扫描",
+      "stopScanning": "停止扫描",
+      "reset": "重置",
+      "language": "语言",
+      "sound": "声音",
+      "fullscreen": "全屏",
+      "instructions": "说明",
+      "instructionsText": "按开始扫描开始",
+      "positionQR": "将二维码放在框内",
+      "resultsDisplayImmediately": "结果立即显示",
+      "stats": {
+        "total": "总计",
+        "success": "成功",
+        "duplicates": "重复",
+        "failed": "失败"
+      },
+      "feedback": {
+        "welcome": "欢迎，{{name}}！",
+        "alreadyCheckedIn": "已签到",
+        "qrNotFound": "未找到二维码",
+        "checkInFailed": "签到失败。请重试。",
+        "cameraAccessDenied": "摄像头访问被拒绝。请启用摄像头权限。",
+        "moveCloser": "靠近二维码",
+        "moveAway": "远离二维码",
+        "perfectPosition": "完美位置",
+        "goodPosition": "良好位置",
+        "centerFrame": "将二维码移至框的中心"
+      }
+    }
+  },
+  "ja": {
+    "kiosk": {
+      "title": "チェックインキオスク",
+      "subtitle": "参加者のQRコードをスキャン",
+      "startScanning": "スキャン開始",
+      "stopScanning": "スキャン停止",
+      "reset": "リセット",
+      "language": "言語",
+      "sound": "音声",
+      "fullscreen": "全画面",
+      "instructions": "手順",
+      "instructionsText": "スキャン開始を押して開始します",
+      "positionQR": "QRコードをフレーム内に配置",
+      "resultsDisplayImmediately": "結果が即座に表示されます",
+      "stats": {
+        "total": "合計",
+        "success": "成功",
+        "duplicates": "重複",
+        "failed": "失敗"
+      },
+      "feedback": {
+        "welcome": "ようこそ、{{name}}！",
+        "alreadyCheckedIn": "既にチェックイン済み",
+        "qrNotFound": "QRコードが見つかりません",
+        "checkInFailed": "チェックインに失敗しました。もう一度お試しください。",
+        "cameraAccessDenied": "カメラアクセスが拒否されました。カメラの権限を有効にしてください。",
+        "moveCloser": "QRコードに近づいてください",
+        "moveAway": "QRコードから離れてください",
+        "perfectPosition": "完璧な位置",
+        "goodPosition": "良い位置",
+        "centerFrame": "QRコードをフレームの中央に移動"
+      }
+    }
+  },
+  "ar": {
+    "kiosk": {
+      "title": "كشك تسجيل الدخول",
+      "subtitle": "مسح رموز QR للحاضرين",
+      "startScanning": "ابدأ المسح",
+      "stopScanning": "إيقاف المسح",
+      "reset": "إعادة تعيين",
+      "language": "اللغة",
+      "sound": "الصوت",
+      "fullscreen": "ملء الشاشة",
+      "instructions": "تعليمات",
+      "instructionsText": "اضغط على ابدأ المسح للبدء",
+      "positionQR": "ضع رمز QR داخل الإطار",
+      "resultsDisplayImmediately": "تظهر النتائج فوراً",
+      "stats": {
+        "total": "الإجمالي",
+        "success": "نجح",
+        "duplicates": "نسخ مكررة",
+        "failed": "فشل"
+      },
+      "feedback": {
+        "welcome": "أهلا وسهلا، {{name}}!",
+        "alreadyCheckedIn": "تم تسجيل الدخول بالفعل",
+        "qrNotFound": "لم يتم العثور على رمز QR",
+        "checkInFailed": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+        "cameraAccessDenied": "تم رفض الوصول إلى الكاميرا. يرجى تفعيل أذونات الكاميرا.",
+        "moveCloser": "اقترب من رمز QR",
+        "moveAway": "ابتعد عن رمز QR",
+        "perfectPosition": "موضع مثالي",
+        "goodPosition": "موضع جيد",
+        "centerFrame": "انقل رمز QR إلى مركز الإطار"
+      }
+    }
+  },
+  "he": {
+    "kiosk": {
+      "title": "קיוסק הרישום",
+      "subtitle": "סרוק קודי QR של משתתפים",
+      "startScanning": "התחל סריקה",
+      "stopScanning": "עצור סריקה",
+      "reset": "אפס",
+      "language": "שפה",
+      "sound": "קול",
+      "fullscreen": "מסך מלא",
+      "instructions": "הוראות",
+      "instructionsText": "לחץ על התחל סריקה כדי להתחיל",
+      "positionQR": "מקם קוד QR בתוך המסגרת",
+      "resultsDisplayImmediately": "התוצאות מוצגות מיד",
+      "stats": {
+        "total": "סה\"כ",
+        "success": "הצלחה",
+        "duplicates": "כפילויות",
+        "failed": "כישלון"
+      },
+      "feedback": {
+        "welcome": "ברוכים הבאים, {{name}}!",
+        "alreadyCheckedIn": "כבר בדקת",
+        "qrNotFound": "קוד QR לא נמצא",
+        "checkInFailed": "הרישום נכשל. אנא נסה שוב.",
+        "cameraAccessDenied": "גישה למצלמה נדחתה. אנא הפוך הרשאות מצלמה.",
+        "moveCloser": "התקרב לקוד QR",
+        "moveAway": "התרחק מקוד QR",
+        "perfectPosition": "מיקום מושלם",
+        "goodPosition": "מיקום טוב",
+        "centerFrame": "הזז את קוד QR למרכז המסגרת"
+      }
+    }
+  }
+}
