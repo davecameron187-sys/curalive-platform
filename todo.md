@@ -1074,3 +1074,16 @@
   - [x] createGreenRoom — create/reopen speaker green room
   - [x] addToGreenRoom — add speaker to green room (subconferenceId = -1)
   - [x] transferGreenRoomToMain — transfer all speakers to main conference with Ably notification
+
+
+## Round 51 — SMS Retry Dashboard, QR Analytics, Recording Player
+- [x] SMS Retry Dashboard UI — Operator panel to view/trigger retries manually
+  - [x] getSmsRetryQueue query procedure
+  - [x] processSmsRetryQueue mutation with exponential backoff
+- [x] QR Code Scanning Analytics — Track QR scans per pass code
+  - [x] generateEventPassQrCode mutation (QR Server API)
+  - [x] getEventPassQrCode public query with scan tracking
+- [x] Recording Playback Player — Built-in video player for green room recordings
+  - [x] startGreenRoomRecording mutation
+  - [x] endGreenRoomRecording mutation
+  - [x] getGreenRoomRecordings query with metadata

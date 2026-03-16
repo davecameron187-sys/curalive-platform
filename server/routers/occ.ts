@@ -1332,7 +1332,8 @@ export const occRouter = router({
         email: input.email,
         company: input.company,
       });
-      return { success: true, registrationId: result.insertId, message: "Registration successful" };
+      const registrationId = (result as any).insertId || 0;
+      return { success: true, registrationId, message: "Registration successful" };
     }),
 
   getEventPassRegistrations: operatorProcedure
