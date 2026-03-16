@@ -102,3 +102,9 @@ id = "zBbjZgXMrMvSlU7bqlpBe"
 uri = "file://docs/AI_AntiHijack_Tragar_Pilot_Proposal.docx"
 type = "word_document"
 title = "AI AntiHijack — Tragar Pilot Proposal (with Implementation Plan)"
+
+[[outputs]]
+id = "LSOvLRqQCntBrVlI7SxCa"
+uri = "file://docs/AI_AntiHijack_Implementation_Guide.docx"
+type = "word_document"
+title = "AI AntiHijack — Complete Implementation Guide"
