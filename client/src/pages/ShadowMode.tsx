@@ -96,7 +96,7 @@ export default function ShadowMode() {
   }, []);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"live" | "archive" | "recording" | "ccaudio">("live");
+  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "recording" | "ccaudio">("live");
 
   // ── CC Audio Only state ────────────────────────────────────────────────────
   const [ccForm, setCcForm] = useState({
@@ -270,6 +270,29 @@ export default function ShadowMode() {
 
   const archiveWordCount = archiveForm.transcriptText.trim().split(/\s+/).filter(Boolean).length;
 
+  // ── Archives & Reports state ─────────────────────────────────────────────────
+  const [selectedArchiveId, setSelectedArchiveId] = useState<number | null>(null);
+  const [emailModalArchiveId, setEmailModalArchiveId] = useState<number | null>(null);
+  const [emailForm, setEmailForm] = useState({ recipientEmail: "", recipientName: "" });
+
+  const archiveDetail = trpc.archiveUpload.getArchiveDetail.useQuery(
+    { archiveId: selectedArchiveId! },
+    { enabled: selectedArchiveId != null }
+  );
+
+  const emailReport = trpc.archiveUpload.emailArchiveReport.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message);
+        setEmailModalArchiveId(null);
+        setEmailForm({ recipientEmail: "", recipientName: "" });
+      } else {
+        toast.error(data.message);
+      }
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   // ── Event Recording state ──────────────────────────────────────────────────
   const [recForm, setRecForm] = useState({
     clientName: "", eventName: "",
@@ -405,6 +428,21 @@ export default function ShadowMode() {
               Archive Upload
               {archives.data && archives.data.length > 0 && (
                 <span className="text-xs px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400">
+                  {archives.data.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab("reports")}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "reports"
+                  ? "border-cyan-400 text-cyan-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              <BarChart3 className="w-4 h-4" />
+              Archives &amp; Reports
+              {archives.data && archives.data.length > 0 && (
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400">
                   {archives.data.length}
                 </span>
               )}
@@ -1011,6 +1049,217 @@ export default function ShadowMode() {
                 </div>
               </div>
             )}
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════
+            ARCHIVES & REPORTS TAB
+        ══════════════════════════════════════════════════ */}
+        {activeTab === "reports" && (
+          <>
+            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 flex flex-col sm:flex-row items-start gap-4">
+              <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20 shrink-0">
+                <BarChart3 className="w-5 h-5 text-cyan-400" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-slate-200 mb-1">Archives &amp; Reports</div>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  Browse all past events processed through CuraLive. View stats for any event and email a professional intelligence report directly to your customers.
+                </p>
+              </div>
+            </div>
+
+            {/* Email Modal */}
+            {emailModalArchiveId != null && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                <div className="bg-[#111827] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                  <h3 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-cyan-400" /> Email Intelligence Report
+                  </h3>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!emailForm.recipientEmail.trim() || !emailForm.recipientName.trim()) {
+                      toast.error("Please fill in both fields");
+                      return;
+                    }
+                    emailReport.mutate({
+                      archiveId: emailModalArchiveId,
+                      recipientEmail: emailForm.recipientEmail.trim(),
+                      recipientName: emailForm.recipientName.trim(),
+                    });
+                  }} className="space-y-4">
+                    <div>
+                      <label className="text-xs text-slate-500 block mb-1.5">Recipient Name *</label>
+                      <input
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50"
+                        placeholder="e.g. John Smith"
+                        value={emailForm.recipientName}
+                        onChange={e => setEmailForm(f => ({ ...f, recipientName: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 block mb-1.5">Email Address *</label>
+                      <input
+                        type="email"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50"
+                        placeholder="e.g. john@company.com"
+                        value={emailForm.recipientEmail}
+                        onChange={e => setEmailForm(f => ({ ...f, recipientEmail: e.target.value }))}
+                      />
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                      <Button type="button" variant="outline" onClick={() => { setEmailModalArchiveId(null); setEmailForm({ recipientEmail: "", recipientName: "" }); }}
+                        className="flex-1 border-white/10 text-slate-400 hover:text-white">
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={emailReport.isPending}
+                        className="flex-1 bg-cyan-600 hover:bg-cyan-500 gap-2">
+                        {emailReport.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                        Send Report
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left: Archive list */}
+              <div className="lg:col-span-1 space-y-2">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-slate-300">Past Events</h3>
+                  <Button size="sm" variant="outline" onClick={() => archives.refetch()}
+                    className="border-white/10 text-slate-400 hover:text-white gap-1">
+                    <RefreshCw className="w-3 h-3" /> Refresh
+                  </Button>
+                </div>
+                {(!archives.data || archives.data.length === 0) ? (
+                  <div className="bg-white/[0.02] border border-white/10 rounded-xl p-8 text-center">
+                    <Database className="w-8 h-8 text-slate-700 mx-auto mb-3" />
+                    <p className="text-sm text-slate-500">No archive events yet</p>
+                    <p className="text-xs text-slate-600 mt-1">Process events via Archive Upload or Event Recording</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                    {archives.data.map((a: any) => {
+                      const isSelected = selectedArchiveId === a.id;
+                      const sentColor = (a.sentiment_avg ?? 50) >= 70 ? "text-emerald-400" : (a.sentiment_avg ?? 50) >= 50 ? "text-amber-400" : "text-red-400";
+                      return (
+                        <button key={a.id} onClick={() => setSelectedArchiveId(a.id)}
+                          className={`w-full text-left p-4 rounded-xl border transition-all ${isSelected
+                            ? "border-cyan-500/50 bg-cyan-500/10"
+                            : "border-white/10 bg-white/[0.02] hover:bg-white/[0.04]"
+                          }`}>
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-slate-200 truncate">{a.event_name}</div>
+                              <div className="text-xs text-slate-500 truncate">{a.client_name}</div>
+                            </div>
+                            <span className={`text-xs font-bold ${sentColor}`}>{a.sentiment_avg ?? "—"}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-slate-600">
+                            <span>{EVENT_TYPE_LABELS[a.event_type] ?? a.event_type}</span>
+                            {a.event_date && <><span>·</span><span>{a.event_date}</span></>}
+                            <span>·</span>
+                            <span>{a.word_count?.toLocaleString()} words</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Detail panel */}
+              <div className="lg:col-span-2">
+                {selectedArchiveId == null ? (
+                  <div className="bg-white/[0.02] border border-white/10 rounded-xl p-12 text-center">
+                    <BarChart2 className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+                    <p className="text-sm text-slate-500">Select an event to view stats</p>
+                    <p className="text-xs text-slate-600 mt-1">Click any event on the left to see the full breakdown</p>
+                  </div>
+                ) : archiveDetail.isLoading ? (
+                  <div className="bg-white/[0.02] border border-white/10 rounded-xl p-12 text-center">
+                    <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mx-auto" />
+                  </div>
+                ) : archiveDetail.data ? (
+                  <div className="space-y-4">
+                    {/* Header */}
+                    <div className="bg-white/[0.03] border border-cyan-500/20 rounded-xl p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-200">{archiveDetail.data.event_name}</h3>
+                          <p className="text-sm text-slate-500 mt-0.5">{archiveDetail.data.client_name} · {EVENT_TYPE_LABELS[archiveDetail.data.event_type] ?? archiveDetail.data.event_type}{archiveDetail.data.event_date ? ` · ${archiveDetail.data.event_date}` : ""}</p>
+                        </div>
+                        <Button size="sm" onClick={() => { setEmailModalArchiveId(selectedArchiveId); setEmailForm({ recipientEmail: "", recipientName: "" }); }}
+                          className="bg-cyan-600 hover:bg-cyan-500 gap-2 shrink-0">
+                          <FileText className="w-3.5 h-3.5" /> Email Report
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {(() => {
+                        const d = archiveDetail.data;
+                        const sentColor = (d.sentiment_avg ?? 50) >= 70 ? "text-emerald-400" : (d.sentiment_avg ?? 50) >= 50 ? "text-amber-400" : "text-red-400";
+                        const compColor = d.compliance_flags > 3 ? "text-red-400" : d.compliance_flags > 1 ? "text-amber-400" : "text-emerald-400";
+                        return [
+                          { label: "Sentiment Score", value: `${d.sentiment_avg ?? "N/A"}`, sub: "/100", color: sentColor },
+                          { label: "Compliance Flags", value: `${d.compliance_flags}`, sub: d.compliance_flags > 3 ? "High Risk" : d.compliance_flags > 1 ? "Moderate" : "Low Risk", color: compColor },
+                          { label: "Words Analysed", value: d.word_count?.toLocaleString(), sub: "", color: "text-blue-400" },
+                          { label: "Segments", value: `${d.segment_count}`, sub: "", color: "text-blue-400" },
+                        ].map(({ label, value, sub, color }) => (
+                          <div key={label} className="bg-white/[0.02] border border-white/10 rounded-xl p-4 text-center">
+                            <div className={`text-2xl font-bold ${color}`}>{value}<span className="text-xs text-slate-600 ml-0.5">{sub}</span></div>
+                            <div className="text-xs text-slate-500 mt-1">{label}</div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+
+                    {/* Detail rows */}
+                    <div className="bg-white/[0.02] border border-white/10 rounded-xl divide-y divide-white/5">
+                      {[
+                        { label: "Intelligence Records Generated", value: `${archiveDetail.data.tagged_metrics_generated} tagged records` },
+                        { label: "Platform", value: archiveDetail.data.platform ?? "Not specified" },
+                        { label: "Status", value: archiveDetail.data.status },
+                        { label: "Processed On", value: new Date(archiveDetail.data.created_at).toLocaleString() },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex items-center justify-between px-5 py-3">
+                          <span className="text-xs text-slate-500">{label}</span>
+                          <span className="text-sm text-slate-300 font-medium">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {archiveDetail.data.notes && (
+                      <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4">
+                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Notes</p>
+                        <p className="text-sm text-slate-400 leading-relaxed">{archiveDetail.data.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Quick actions */}
+                    <div className="flex gap-3">
+                      <Button variant="outline" onClick={() => window.location.href = "/tagged-metrics"}
+                        className="border-white/10 text-slate-400 hover:text-white gap-2">
+                        <Database className="w-4 h-4" /> View Intelligence Database
+                      </Button>
+                      <Button onClick={() => { setEmailModalArchiveId(selectedArchiveId); setEmailForm({ recipientEmail: "", recipientName: "" }); }}
+                        className="bg-cyan-600 hover:bg-cyan-500 gap-2">
+                        <FileText className="w-4 h-4" /> Email Report to Customer
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 text-center">
+                    <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+                    <p className="text-sm text-red-300">Failed to load archive details</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </>
         )}
 

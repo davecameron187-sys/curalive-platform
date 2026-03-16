@@ -133,6 +133,87 @@ async function generateMetricsFromArchive(
   return { eventId, eventTitle, metricsCount: metricsToInsert.length };
 }
 
+function buildArchiveReportEmail(opts: {
+  recipientName: string;
+  clientName: string;
+  eventName: string;
+  eventType: string;
+  eventDate: string | null;
+  wordCount: number;
+  segmentCount: number;
+  sentimentAvg: number | null;
+  complianceFlags: number;
+  metricsGenerated: number;
+  notes: string | null;
+}): string {
+  const sentimentColor = (opts.sentimentAvg ?? 50) >= 70 ? "#10b981" : (opts.sentimentAvg ?? 50) >= 50 ? "#f59e0b" : "#ef4444";
+  const sentimentLabel = (opts.sentimentAvg ?? 50) >= 70 ? "Positive" : (opts.sentimentAvg ?? 50) >= 50 ? "Neutral" : "Negative";
+  const complianceColor = opts.complianceFlags > 3 ? "#ef4444" : opts.complianceFlags > 1 ? "#f59e0b" : "#10b981";
+  const complianceLabel = opts.complianceFlags > 3 ? "High Risk" : opts.complianceFlags > 1 ? "Moderate" : "Low Risk";
+  const eventTypeLabels: Record<string, string> = {
+    earnings_call: "Earnings Call", agm: "AGM", capital_markets_day: "Capital Markets Day",
+    ceo_town_hall: "CEO Town Hall", board_meeting: "Board Meeting", webcast: "Webcast", other: "Other",
+  };
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#0a0d14;font-family:'Inter',Arial,sans-serif;color:#e2e8f0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0d14;padding:40px 20px;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;border:1px solid #1e293b;">
+<tr><td style="background:linear-gradient(135deg,#1e3a5f,#0f172a);padding:32px 40px;">
+<p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;">CuraLive Post-Event Intelligence Report</p>
+<h1 style="margin:0;font-size:22px;font-weight:700;color:#f1f5f9;line-height:1.3;">${opts.eventName}</h1>
+<p style="margin:8px 0 0;font-size:14px;color:#94a3b8;">${opts.clientName} · ${eventTypeLabels[opts.eventType] ?? opts.eventType}${opts.eventDate ? ` · ${opts.eventDate}` : ""}</p>
+</td></tr>
+<tr><td style="padding:32px 40px;">
+<p style="margin:0 0 20px;font-size:15px;color:#94a3b8;">Dear ${opts.recipientName},</p>
+<p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">Please find below the AI-generated intelligence summary from your event.</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr>
+<td width="50%" style="padding:8px;">
+<table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:16px;text-align:center;">
+<p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Sentiment Score</p>
+<p style="margin:6px 0 0;font-size:28px;font-weight:800;color:${sentimentColor};">${opts.sentimentAvg ?? "N/A"}<span style="font-size:14px;color:#64748b;">/100</span></p>
+<p style="margin:4px 0 0;font-size:12px;color:${sentimentColor};font-weight:600;">${sentimentLabel}</p>
+</td></tr></table>
+</td>
+<td width="50%" style="padding:8px;">
+<table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:16px;text-align:center;">
+<p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Compliance Risk</p>
+<p style="margin:6px 0 0;font-size:28px;font-weight:800;color:${complianceColor};">${opts.complianceFlags}</p>
+<p style="margin:4px 0 0;font-size:12px;color:${complianceColor};font-weight:600;">${complianceLabel}</p>
+</td></tr></table>
+</td>
+</tr>
+<tr>
+<td width="50%" style="padding:8px;">
+<table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:16px;text-align:center;">
+<p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Words Analysed</p>
+<p style="margin:6px 0 0;font-size:28px;font-weight:800;color:#60a5fa;">${opts.wordCount.toLocaleString()}</p>
+</td></tr></table>
+</td>
+<td width="50%" style="padding:8px;">
+<table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:16px;text-align:center;">
+<p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Segments Processed</p>
+<p style="margin:6px 0 0;font-size:28px;font-weight:800;color:#60a5fa;">${opts.segmentCount}</p>
+</td></tr></table>
+</td>
+</tr>
+</table>
+<table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;margin:0 0 24px;"><tr><td style="padding:16px;">
+<p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Intelligence Records Generated</p>
+<p style="margin:0;font-size:15px;color:#cbd5e1;line-height:1.6;">${opts.metricsGenerated} tagged intelligence records have been added to your CuraLive database, covering sentiment analysis, engagement metrics, compliance scanning, and session completion tracking.</p>
+</td></tr></table>
+${opts.notes ? `<table width="100%" style="background:#0f172a;border-left:3px solid #3b82f6;border-radius:4px;margin:0 0 24px;"><tr><td style="padding:16px 20px;">
+<p style="margin:0 0 4px;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Operator Notes</p>
+<p style="margin:0;font-size:14px;color:#cbd5e1;line-height:1.6;">${opts.notes}</p>
+</td></tr></table>` : ""}
+<p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">For the full transcript and detailed analytics, please contact your CuraLive account manager.</p>
+</td></tr>
+<tr><td style="background:#0f172a;padding:20px 40px;border-top:1px solid #1e293b;">
+<p style="margin:0;font-size:12px;color:#475569;text-align:center;">CuraLive Intelligence Platform · Automated Post-Event Report</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
+}
+
 export const archiveUploadRouter = router({
 
   processTranscript: publicProcedure
@@ -228,6 +309,80 @@ export const archiveUploadRouter = router({
         complianceFlags,
         metricsGenerated: metricsCount,
         message: `Archive processed. ${metricsCount} intelligence records added to your Tagged Metrics database.`,
+      };
+    }),
+
+  getArchiveDetail: publicProcedure
+    .input(z.object({ archiveId: z.number() }))
+    .query(async ({ input }) => {
+      const conn = await (async () => {
+        const db = await getDb();
+        return (db as any).session?.client ?? (db as any).$client;
+      })();
+      const [rows] = await conn.execute(
+        `SELECT id, client_name, event_name, event_type, event_date, platform,
+                word_count, segment_count, sentiment_avg, compliance_flags,
+                tagged_metrics_generated, status, notes, created_at
+         FROM archive_events WHERE id = ? LIMIT 1`,
+        [input.archiveId]
+      );
+      const row = (rows as any[])[0];
+      if (!row) throw new Error("Archive not found");
+      return row as {
+        id: number; client_name: string; event_name: string; event_type: string;
+        event_date: string | null; platform: string | null; word_count: number;
+        segment_count: number; sentiment_avg: number | null; compliance_flags: number;
+        tagged_metrics_generated: number; status: string; notes: string | null; created_at: string;
+      };
+    }),
+
+  emailArchiveReport: publicProcedure
+    .input(z.object({
+      archiveId: z.number(),
+      recipientEmail: z.string().email(),
+      recipientName: z.string().min(1),
+    }))
+    .mutation(async ({ input }) => {
+      const conn = await (async () => {
+        const db = await getDb();
+        return (db as any).session?.client ?? (db as any).$client;
+      })();
+      const [rows] = await conn.execute(
+        `SELECT id, client_name, event_name, event_type, event_date,
+                word_count, segment_count, sentiment_avg, compliance_flags,
+                tagged_metrics_generated, notes
+         FROM archive_events WHERE id = ? LIMIT 1`,
+        [input.archiveId]
+      );
+      const row = (rows as any[])[0];
+      if (!row) throw new Error("Archive not found");
+
+      const { sendEmail } = await import("../_core/email");
+      const html = buildArchiveReportEmail({
+        recipientName: input.recipientName,
+        clientName: row.client_name,
+        eventName: row.event_name,
+        eventType: row.event_type,
+        eventDate: row.event_date,
+        wordCount: row.word_count,
+        segmentCount: row.segment_count,
+        sentimentAvg: row.sentiment_avg,
+        complianceFlags: row.compliance_flags,
+        metricsGenerated: row.tagged_metrics_generated,
+        notes: row.notes,
+      });
+
+      const result = await sendEmail({
+        to: input.recipientEmail,
+        subject: `CuraLive Intelligence Report — ${row.event_name} (${row.client_name})`,
+        html,
+      });
+
+      return {
+        success: result.success,
+        message: result.success
+          ? `Report emailed to ${input.recipientEmail}`
+          : `Email failed: ${result.error}`,
       };
     }),
 
