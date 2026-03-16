@@ -2781,3 +2781,57 @@ export const complianceFrameworkChecks = mysqlTable("compliance_framework_checks
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 export type ComplianceFrameworkCheck = typeof complianceFrameworkChecks.$inferSelect;
+
+export const sustainabilityReports = mysqlTable("sustainability_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  eventTitle: varchar("event_title", { length: 512 }).default(""),
+  totalAttendees: int("total_attendees").default(0).notNull(),
+  durationHours: float("duration_hours").default(1).notNull(),
+  isVirtual: boolean("is_virtual").default(true),
+  physicalCo2Tonnes: float("physical_co2_tonnes").default(0).notNull(),
+  virtualCo2Tonnes: float("virtual_co2_tonnes").default(0).notNull(),
+  carbonSavedTonnes: float("carbon_saved_tonnes").default(0).notNull(),
+  savingsPercent: float("savings_percent").default(0).notNull(),
+  totalCostAvoidedUsd: float("total_cost_avoided_usd").default(0).notNull(),
+  grade: varchar("grade", { length: 4 }).default("B").notNull(),
+  breakdownJson: json("breakdown_json"),
+  country: varchar("country", { length: 8 }).default("ZA"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type SustainabilityReport = typeof sustainabilityReports.$inferSelect;
+
+export const broadcastSessions = mysqlTable("broadcast_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  presenterName: varchar("presenter_name", { length: 256 }),
+  avgWpm: float("avg_wpm").default(0),
+  optimalWpmMin: int("optimal_wpm_min").default(130),
+  optimalWpmMax: int("optimal_wpm_max").default(160),
+  paceAlerts: int("pace_alerts").default(0),
+  fillerWordCount: int("filler_word_count").default(0),
+  keyMomentsJson: json("key_moments_json"),
+  recapJson: json("recap_json"),
+  recapGeneratedAt: timestamp("recap_generated_at"),
+  durationSeconds: int("duration_seconds").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type BroadcastSession = typeof broadcastSessions.$inferSelect;
+
+export const studioSessions = mysqlTable("studio_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  activeLayout: varchar("active_layout", { length: 64 }).default("single-presenter"),
+  feedSources: json("feed_sources"),
+  lowerThirds: json("lower_thirds"),
+  activeOverlays: json("active_overlays"),
+  liveSentimentOverlay: boolean("live_sentiment_overlay").default(false),
+  participantCountOverlay: boolean("participant_count_overlay").default(false),
+  recordingStatus: varchar("recording_status", { length: 32 }).default("idle"),
+  streamKey: varchar("stream_key", { length: 256 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type StudioSession = typeof studioSessions.$inferSelect;

@@ -565,6 +565,97 @@ export const mailingListRouter = router({
       return { success: true, registered, skipped };
     }),
 
+  zeroClickRegister: publicProcedure
+    .input(z.object({ token: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable" };
+      const conn = (db as any).session?.client ?? (db as any).$client;
+
+      const [entryRows] = await conn.execute(
+        `SELECT id, mailing_list_id, first_name, last_name, email, company, job_title, access_pin, status, join_method FROM mailing_list_entries WHERE confirm_token = ? LIMIT 1`,
+        [input.token]
+      );
+
+      if (entryRows.length === 0) return { success: false, error: "Invalid or expired registration link" };
+      const entry = entryRows[0];
+
+      if (entry.status === "registered") {
+        return { success: true, alreadyRegistered: true, firstName: entry.first_name, lastName: entry.last_name };
+      }
+
+      const [claimResult] = await conn.execute(
+        `UPDATE mailing_list_entries SET status = 'registered', confirm_token = NULL, clicked_at = COALESCE(clicked_at, NOW()), registered_at = NOW(), join_method = 'web' WHERE id = ? AND confirm_token = ? AND status != 'registered'`,
+        [entry.id, input.token]
+      );
+
+      if (claimResult.affectedRows === 0) {
+        return { success: true, alreadyRegistered: true, firstName: entry.first_name, lastName: entry.last_name };
+      }
+
+      const [listRows] = await conn.execute(
+        `SELECT id, event_id FROM mailing_lists WHERE id = ? LIMIT 1`,
+        [entry.mailing_list_id]
+      );
+      if (listRows.length === 0) return { success: false, error: "Mailing list not found" };
+      const list = listRows[0];
+
+      const [existingRegRows] = await conn.execute(
+        `SELECT id FROM attendee_registrations WHERE eventId = ? AND email = ? LIMIT 1`,
+        [list.event_id, entry.email]
+      );
+
+      let registrationId: number;
+      if (existingRegRows.length > 0) {
+        registrationId = existingRegRows[0].id;
+      } else {
+        const [regResult] = await conn.execute(
+          `INSERT INTO attendee_registrations (eventId, name, email, company, jobTitle, language, dialIn, accessGranted, access_pin, join_method) VALUES (?, ?, ?, ?, ?, 'English', 0, 1, ?, 'web')`,
+          [list.event_id, `${entry.first_name} ${entry.last_name}`.trim(), entry.email, entry.company || null, entry.job_title || null, entry.access_pin || null]
+        );
+        registrationId = regResult.insertId;
+      }
+
+      await conn.execute(
+        `UPDATE mailing_list_entries SET registration_id = ? WHERE id = ?`,
+        [registrationId, entry.id]
+      );
+
+      await conn.execute(
+        `UPDATE mailing_lists SET registered_entries = registered_entries + 1 WHERE id = ?`,
+        [entry.mailing_list_id]
+      );
+
+      const [eventRows] = await conn.execute(
+        `SELECT title, company FROM events WHERE eventId = ? LIMIT 1`,
+        [list.event_id]
+      );
+      const event = eventRows[0] || null;
+
+      await sendEmail({
+        to: entry.email,
+        subject: `Registration Confirmed: ${event?.title || list.event_id}`,
+        html: buildRegistrationConfirmationEmail({
+          firstName: entry.first_name,
+          lastName: entry.last_name,
+          eventTitle: event?.title || list.event_id,
+          company: event?.company || "CuraLive Inc.",
+          eventDate: "See your calendar invite for the date and time",
+          joinMethod: "web",
+        }),
+      }).catch(() => {});
+
+      return {
+        success: true,
+        alreadyRegistered: false,
+        firstName: entry.first_name,
+        lastName: entry.last_name,
+        eventTitle: event?.title || list.event_id,
+        company: event?.company || "CuraLive Inc.",
+        registeredVia: "zero-click",
+      };
+    }),
+
   deleteEntry: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {

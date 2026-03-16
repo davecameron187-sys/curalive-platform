@@ -78,6 +78,41 @@ Key variables needed:
 - **How it works**: Operators correct AI sentiment scores or dismiss false compliance flags on any event. Each correction is stored as a training signal. The system recalculates adaptive thresholds using a weighted blend of defaults and operator corrections, improving accuracy per event type over time. Compliance vocabulary grows as operators add new keywords. Maturity levels: Initialising → Learning → Adapting → Calibrated → Self-Evolving.
 - **Patent claims**: Implements Claims 13, 20, 21, 25, 33 from the CIPC patent (self-improving learning loop, operator corrections as training signals, autonomous threshold adaptation)
 
+## Sustainability Calculator (Module F — Claim 46)
+
+- **Server router**: `server/routers/sustainabilityRouter.ts` — `sustainability.calculateEvent`, `getReport`, `getAggregateStats`, `generateESGNarrative`
+- **DB table**: `sustainability_reports`
+- **How it works**: Calculates carbon saved (CO₂e tonnes), cost avoided (USD), and sustainability grade (A+ to F) for virtual vs physical events. Uses DEFRA/GHG Protocol emission factors for flights (short/medium/long haul), hotels, ground transport, catering, printed materials, and venue energy. Generates ESG narratives via AI for annual sustainability reports.
+
+## Communication Index (Module K — Claim 51) — Enhanced with Peer Benchmarking
+
+- **Server router**: `server/routers/communicationIndexRouter.ts` — `communicationIndex.getCurrent`, `getHistory`, `publishSnapshot`, `getPeerBenchmark`, `getAllSectorBenchmarks`, `getSectorList`, `getExecutiveScorecard`
+- **DB table**: `communication_index_snapshots`
+- **How it works**: CICI score = (Communication Quality × 35%) + (Investor Engagement × 25%) + (Compliance Quality × 20%) + (Market Confidence × 20%). New peer benchmarking compares against 9 sector baselines (Financial Services, Technology, Mining, Healthcare, etc.) with percentile ranking and dimension-by-dimension comparison. Executive scorecard adds quarter-over-quarter trend analysis.
+
+## Market Reaction Correlation (Module G — Claim 47) — Enhanced with Correlation Engine
+
+- **Server router**: `server/routers/marketReactionRouter.ts` — `marketReaction.listRecords`, `getStats`, `getCorrelationAnalysis`, `addRecord`, `generatePrediction`, `deleteRecord`
+- **DB table**: `market_reaction_correlations`
+- **How it works**: New Pearson correlation coefficient engine computes actual statistical correlations between sentiment scores, executive confidence, compliance flags, Q&A difficulty, and market outcomes. Identifies the strongest predictor signal. Correlates with real 24h price changes when available.
+
+## Intelligent Broadcaster + Recap (Module I — Claim 49)
+
+- **Server router**: `server/routers/broadcasterRouter.ts` — `broadcaster.analyseSegment`, `updateSessionStats`, `getSession`, `generateRecap`, `listSessions`
+- **DB table**: `broadcast_sessions`
+- **How it works**: Real-time speaking pace analysis (WPM vs optimal 130-160 range), filler word detection (10 filler patterns), and automatic key moment detection (announcements, financial disclosures, guidance, risk warnings, quotable phrases). Generates structured post-event recaps via AI with executive summary, key takeaways, notable quotes, financial figures, and recommended follow-ups.
+
+## Virtual Production Studio (Module L — Claim 52) — Expanded
+
+- **Server router**: `server/routers/virtualStudioRouter.ts` — `virtualStudio.createSession`, `getSession`, `switchLayout`, `updateFeedSources`, `updateLowerThirds`, `toggleOverlay`, `getPreview`, `startRecording`, `stopRecording`, `getLayoutTemplates`
+- **DB table**: `studio_sessions`
+- **How it works**: 8 broadcast layout templates (single-presenter, dual, panel, interview, PiP, etc.). Video feed source management (camera, screen share, pre-recorded, remote guest). Lower third overlays for presenter info, logos, live sentiment scores, and participant counts. Real-time broadcast preview showing active feeds and visible overlays. Recording start/stop control.
+
+## Zero-Click Registration (Module H — Claim 48) — Added
+
+- **Server router**: `server/routers/mailingListRouter.ts` — `mailingList.zeroClickRegister` (new endpoint)
+- **How it works**: Each mailing list entry gets a unique tokenised link. When a recipient clicks the link, they are automatically registered for the event without any form submission — using their pre-existing contact data from the CSV import. The token is consumed on first click (idempotent). Confirmation email sent automatically.
+
 ## Key Features
 
 - **AI Shop** (`/ai-shop`) — 6 role-based AI bundles (A-F) + 28 individual AI applications browser

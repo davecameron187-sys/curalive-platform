@@ -25,6 +25,19 @@ function getCurrentQuarter(): string {
   return `Q${q} ${now.getFullYear()}`;
 }
 
+const SECTOR_BENCHMARKS: Record<string, { sentiment: number; engagement: number; compliance: number; market: number; label: string }> = {
+  financial_services: { sentiment: 68, engagement: 72, compliance: 82, market: 65, label: "Financial Services" },
+  technology: { sentiment: 74, engagement: 78, compliance: 70, market: 72, label: "Technology" },
+  mining_resources: { sentiment: 60, engagement: 58, compliance: 75, market: 55, label: "Mining & Resources" },
+  healthcare: { sentiment: 66, engagement: 65, compliance: 85, market: 62, label: "Healthcare" },
+  retail_consumer: { sentiment: 70, engagement: 70, compliance: 72, market: 68, label: "Retail & Consumer" },
+  industrials: { sentiment: 62, engagement: 60, compliance: 78, market: 58, label: "Industrials" },
+  telecoms: { sentiment: 65, engagement: 68, compliance: 76, market: 63, label: "Telecommunications" },
+  energy: { sentiment: 58, engagement: 55, compliance: 80, market: 52, label: "Energy" },
+  real_estate: { sentiment: 64, engagement: 62, compliance: 74, market: 60, label: "Real Estate" },
+  general: { sentiment: 65, engagement: 65, compliance: 75, market: 60, label: "All-Sector Average" },
+};
+
 async function computeCICI() {
   const [aggStats] = await rawQuery<any>(`
     SELECT
@@ -139,6 +152,47 @@ async function computeCICI() {
   };
 }
 
+function computePeerBenchmark(cici: any, sector: string) {
+  const benchmark = SECTOR_BENCHMARKS[sector] ?? SECTOR_BENCHMARKS.general;
+
+  const dimensions = [
+    { name: "Communication Quality", score: cici.communicationQuality, benchmark: benchmark.sentiment, weight: 0.35 },
+    { name: "Investor Engagement", score: cici.investorEngagement, benchmark: benchmark.engagement, weight: 0.25 },
+    { name: "Compliance Quality", score: cici.complianceQuality, benchmark: benchmark.compliance, weight: 0.20 },
+    { name: "Market Confidence", score: cici.marketConfidence, benchmark: benchmark.market, weight: 0.20 },
+  ];
+
+  const benchmarkCICI = Math.round(
+    (benchmark.sentiment * 0.35) + (benchmark.engagement * 0.25) +
+    (benchmark.compliance * 0.20) + (benchmark.market * 0.20)
+  );
+
+  const overallDelta = cici.ciciScore - benchmarkCICI;
+
+  const percentileEstimate = Math.min(99, Math.max(1, Math.round(50 + overallDelta * 1.5)));
+
+  return {
+    sector: benchmark.label,
+    sectorKey: sector,
+    benchmarkCICI,
+    yourCICI: cici.ciciScore,
+    delta: overallDelta,
+    percentileEstimate,
+    ranking: percentileEstimate >= 80 ? "Top Quartile" :
+      percentileEstimate >= 60 ? "Above Average" :
+      percentileEstimate >= 40 ? "Average" :
+      percentileEstimate >= 20 ? "Below Average" : "Bottom Quartile",
+    dimensions: dimensions.map(d => ({
+      name: d.name,
+      yourScore: d.score,
+      sectorBenchmark: d.benchmark,
+      delta: d.score - d.benchmark,
+      status: d.score >= d.benchmark + 5 ? "outperforming" :
+        d.score >= d.benchmark - 5 ? "in-line" : "underperforming",
+    })),
+  };
+}
+
 export const communicationIndexRouter = router({
 
   getCurrent: publicProcedure.query(async () => {
@@ -153,9 +207,57 @@ export const communicationIndexRouter = router({
     return snapshots;
   }),
 
+  getPeerBenchmark: publicProcedure
+    .input(z.object({
+      sector: z.string().default("general"),
+    }))
+    .query(async ({ input }) => {
+      const cici = await computeCICI();
+      return computePeerBenchmark(cici, input.sector);
+    }),
+
+  getAllSectorBenchmarks: publicProcedure.query(async () => {
+    const cici = await computeCICI();
+    return Object.keys(SECTOR_BENCHMARKS).map(key => computePeerBenchmark(cici, key));
+  }),
+
+  getSectorList: publicProcedure.query(() => {
+    return Object.entries(SECTOR_BENCHMARKS).map(([key, v]) => ({
+      key,
+      label: v.label,
+    }));
+  }),
+
+  getExecutiveScorecard: publicProcedure
+    .input(z.object({ sector: z.string().default("general") }))
+    .query(async ({ input }) => {
+      const cici = await computeCICI();
+      const benchmark = computePeerBenchmark(cici, input.sector);
+      const history = await rawQuery<any>(`
+        SELECT quarter, cici_score FROM communication_index_snapshots ORDER BY quarter DESC LIMIT 4
+      `);
+
+      const previousScore = history.length > 0 ? Number(history[0].cici_score) : null;
+      const trend = previousScore !== null
+        ? (cici.ciciScore > previousScore ? "improving" : cici.ciciScore < previousScore ? "declining" : "stable")
+        : "new";
+
+      const quarterOverQuarterChange = previousScore !== null ? cici.ciciScore - previousScore : null;
+
+      return {
+        current: cici,
+        benchmark,
+        trend,
+        quarterOverQuarterChange,
+        history: history.map((h: any) => ({ quarter: h.quarter, score: Number(h.cici_score) })),
+        generatedAt: new Date().toISOString(),
+      };
+    }),
+
   publishSnapshot: publicProcedure.mutation(async () => {
     const data = await computeCICI();
     const quarter = getCurrentQuarter();
+    const benchmark = computePeerBenchmark(data, "general");
 
     let commentary = '';
     try {
@@ -170,8 +272,10 @@ Current CICI Reading: ${data.ciciScore}/100
 - High Engagement Rate: ${data.highEngPct}%
 - Low Compliance Risk Rate: ${data.lowRiskPct}%
 - Positive Market Outcome Rate: ${data.positiveMktPct}%
+- Peer Benchmark (All-Sector): ${benchmark.benchmarkCICI}/100
+- Percentile Ranking: ${benchmark.percentileEstimate}th
 
-Write a professional 3-sentence quarterly index commentary in the style of a Bloomberg or S&P Global index publication. Be specific, data-driven, and forward-looking. Reference the CICI score prominently.`;
+Write a professional 3-sentence quarterly index commentary in the style of a Bloomberg or S&P Global index publication. Be specific, data-driven, and forward-looking. Reference the CICI score and peer benchmark prominently.`;
 
       const result = await invokeLLM(prompt, { maxTokens: 250 });
       commentary = result.choices?.[0]?.message?.content ?? '';
@@ -188,8 +292,8 @@ Write a professional 3-sentence quarterly index commentary in the style of a Blo
         (quarter, cici_score, communication_quality_score, investor_engagement_score,
          compliance_quality_score, market_confidence_score, total_events, live_events,
          archive_events, avg_sentiment, high_engagement_pct, low_compliance_risk_pct,
-         positive_market_pct, event_type_breakdown, top_signal, ai_commentary)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         positive_market_pct, event_type_breakdown, top_signal, ai_commentary, peer_benchmark_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         cici_score = VALUES(cici_score),
         communication_quality_score = VALUES(communication_quality_score),
@@ -199,7 +303,8 @@ Write a professional 3-sentence quarterly index commentary in the style of a Blo
         total_events = VALUES(total_events),
         avg_sentiment = VALUES(avg_sentiment),
         ai_commentary = VALUES(ai_commentary),
-        top_signal = VALUES(top_signal)
+        top_signal = VALUES(top_signal),
+        peer_benchmark_json = VALUES(peer_benchmark_json)
     `, [
       quarter,
       data.ciciScore,
@@ -217,9 +322,10 @@ Write a professional 3-sentence quarterly index commentary in the style of a Blo
       JSON.stringify(data.byEventType),
       topSignal,
       commentary,
+      JSON.stringify(benchmark),
     ]);
 
-    return { success: true, quarter, score: data.ciciScore, commentary };
+    return { success: true, quarter, score: data.ciciScore, commentary, benchmark };
   }),
 
 });

@@ -20,6 +20,23 @@ async function rawExecute(query: string, params: any[] = []): Promise<void> {
   await conn.execute(query, params);
 }
 
+function computeCorrelationCoefficient(xs: number[], ys: number[]): number {
+  const n = xs.length;
+  if (n < 3) return 0;
+  const meanX = xs.reduce((a, b) => a + b, 0) / n;
+  const meanY = ys.reduce((a, b) => a + b, 0) / n;
+  let num = 0, denX = 0, denY = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - meanX;
+    const dy = ys[i] - meanY;
+    num += dx * dy;
+    denX += dx * dx;
+    denY += dy * dy;
+  }
+  const den = Math.sqrt(denX * denY);
+  return den === 0 ? 0 : num / den;
+}
+
 export const marketReactionRouter = router({
 
   listRecords: publicProcedure.query(async () => {
@@ -78,6 +95,89 @@ export const marketReactionRouter = router({
       byReaction,
       byEventType,
       correlations: correlations[0] ?? {},
+    };
+  }),
+
+  getCorrelationAnalysis: publicProcedure.query(async () => {
+    const rows = await rawQuery<any>(`
+      SELECT sentiment_score, executive_confidence_score, compliance_flags,
+             qa_difficulty_score, reaction_magnitude, market_reaction,
+             price_pre_event, price_post_24h, price_post_48h, price_post_7d
+      FROM market_reaction_correlations
+      WHERE sentiment_score IS NOT NULL AND market_reaction IS NOT NULL
+    `);
+
+    if (rows.length < 3) {
+      return {
+        dataPoints: rows.length,
+        insufficient: true,
+        message: "Need at least 3 events with sentiment scores and market reactions to compute correlations.",
+      };
+    }
+
+    const sentiments = rows.map((r: any) => Number(r.sentiment_score));
+    const confidences = rows.map((r: any) => Number(r.executive_confidence_score ?? 50));
+    const flags = rows.map((r: any) => Number(r.compliance_flags ?? 0));
+    const qaScores = rows.map((r: any) => Number(r.qa_difficulty_score ?? 50));
+
+    const reactionScores = rows.map((r: any) => {
+      const m = r.market_reaction;
+      return m === 'strongly_positive' ? 5 : m === 'positive' ? 4 : m === 'neutral' ? 3 : m === 'negative' ? 2 : 1;
+    });
+
+    const priceChanges24h = rows
+      .filter((r: any) => r.price_pre_event && r.price_post_24h)
+      .map((r: any) => ((Number(r.price_post_24h) - Number(r.price_pre_event)) / Number(r.price_pre_event)) * 100);
+
+    const sentimentToReaction = computeCorrelationCoefficient(sentiments, reactionScores);
+    const confidenceToReaction = computeCorrelationCoefficient(confidences, reactionScores);
+    const flagsToReaction = computeCorrelationCoefficient(flags, reactionScores);
+    const qaToReaction = computeCorrelationCoefficient(qaScores, reactionScores);
+
+    let sentimentToPrice = null;
+    if (priceChanges24h.length >= 3) {
+      const filteredSentiments = rows
+        .filter((r: any) => r.price_pre_event && r.price_post_24h)
+        .map((r: any) => Number(r.sentiment_score));
+      sentimentToPrice = computeCorrelationCoefficient(filteredSentiments, priceChanges24h);
+    }
+
+    function strengthLabel(r: number): string {
+      const abs = Math.abs(r);
+      if (abs >= 0.7) return "strong";
+      if (abs >= 0.4) return "moderate";
+      if (abs >= 0.2) return "weak";
+      return "negligible";
+    }
+
+    const correlationMatrix = [
+      { pair: "Sentiment → Market Reaction", coefficient: Number(sentimentToReaction.toFixed(3)), strength: strengthLabel(sentimentToReaction), direction: sentimentToReaction >= 0 ? "positive" : "negative" },
+      { pair: "Exec Confidence → Market Reaction", coefficient: Number(confidenceToReaction.toFixed(3)), strength: strengthLabel(confidenceToReaction), direction: confidenceToReaction >= 0 ? "positive" : "negative" },
+      { pair: "Compliance Flags → Market Reaction", coefficient: Number(flagsToReaction.toFixed(3)), strength: strengthLabel(flagsToReaction), direction: flagsToReaction >= 0 ? "positive" : "negative" },
+      { pair: "Q&A Difficulty → Market Reaction", coefficient: Number(qaToReaction.toFixed(3)), strength: strengthLabel(qaToReaction), direction: qaToReaction >= 0 ? "positive" : "negative" },
+    ];
+
+    if (sentimentToPrice !== null) {
+      correlationMatrix.push({
+        pair: "Sentiment → 24h Price Change",
+        coefficient: Number(sentimentToPrice.toFixed(3)),
+        strength: strengthLabel(sentimentToPrice),
+        direction: sentimentToPrice >= 0 ? "positive" : "negative",
+      });
+    }
+
+    const strongestPredictor = correlationMatrix
+      .filter(c => c.pair !== "Sentiment → 24h Price Change")
+      .sort((a, b) => Math.abs(b.coefficient) - Math.abs(a.coefficient))[0];
+
+    return {
+      dataPoints: rows.length,
+      insufficient: false,
+      correlationMatrix,
+      strongestPredictor: strongestPredictor?.pair ?? "N/A",
+      strongestCoefficent: strongestPredictor?.coefficient ?? 0,
+      priceDataPoints: priceChanges24h.length,
+      avgPriceChange24h: priceChanges24h.length > 0 ? Number((priceChanges24h.reduce((a, b) => a + b, 0) / priceChanges24h.length).toFixed(2)) : null,
     };
   }),
 
