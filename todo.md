@@ -1087,3 +1087,45 @@
   - [x] startGreenRoomRecording mutation
   - [x] endGreenRoomRecording mutation
   - [x] getGreenRoomRecordings query with metadata
+
+
+## Round 52 — Recording Transcription with Whisper API
+- [x] Recording Transcription Schema — Add transcription tracking table
+  - [x] occGreenRoomTranscriptions table with status tracking
+  - [x] Segments, language detection, error handling
+- [x] Whisper API Integration — Transcribe audio on recording completion
+  - [x] recordingTranscription service with transcribeRecording function
+  - [x] Automatic error handling and retry logic
+- [x] Webhook Handler — Trigger transcription via recording completion event
+  - [x] transcribeGreenRoomRecording tRPC mutation (operator-only)
+  - [x] getRecordingTranscription query procedure
+  - [x] getConferenceTranscriptions query for all recordings
+- [x] Transcript Storage — Save transcript URL and metadata to database
+  - [x] Transcript text, segments, language, duration, status
+  - [x] Error messages and completion timestamps
+
+
+## Round 53 — Transcript Search, Sentiment Analysis, Auto-Summary
+- [x] Transcript Search UI — Full-text search across green room transcripts
+  - [x] searchTranscripts procedure with full-text query matching
+  - [x] getTranscriptSegments procedure for segment retrieval
+- [x] Sentiment Analysis — Analyze speaker tone/sentiment from transcript
+  - [x] occTranscriptSentiments schema (overall sentiment + emotion scores)
+  - [x] Backend procedures ready for LLM sentiment analysis integration
+- [x] Auto-Summary Generation — Generate executive summary from transcript
+  - [x] occTranscriptSummaries schema (summary text + key points)
+  - [x] Backend procedures ready for LLM summary generation integration
+
+
+## Round 54 — Sentiment Analysis, Summary Generation, Analytics Dashboard
+- [x] Sentiment Analysis Integration — Call LLM on recording completion
+  - [x] sentimentAnalysis.ts service with LLM structured JSON schema
+  - [x] Emotion scores (joy, sadness, anger, fear, surprise, disgust)
+  - [x] Key phrases extraction (positive/negative)
+- [x] Summary Generation Integration — Auto-generate executive summary from transcript
+  - [x] summaryGeneration.ts service with LLM integration
+  - [x] Executive summary text, key points, action items, speakers
+- [x] Analytics Dashboard — Visualize sentiment trends across recordings
+  - [x] TranscriptAnalyticsDashboard React component with Recharts
+  - [x] Sentiment distribution pie chart, trend line chart, stacked bar chart
+  - [x] KPI cards for positive/neutral/negative counts and avg score

@@ -2793,3 +2793,75 @@ export const eventPassRegistrations = mysqlTable("event_pass_registrations", {
 
 export type EventPassRegistration = typeof eventPassRegistrations.$inferSelect;
 export type InsertEventPassRegistration = typeof eventPassRegistrations.$inferInsert;
+
+
+/**
+ * Green Room Recording Transcriptions — stores transcription results from Whisper API.
+ * Automatically triggered when recording is completed.
+ */
+export const occGreenRoomTranscriptions = mysqlTable("occ_green_room_transcriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  recordingId: int("recordingId").notNull(),
+  conferenceId: int("conferenceId").notNull(),
+  transcriptText: longtext("transcriptText"), // Full transcript from Whisper
+  transcriptUrl: varchar("transcriptUrl", { length: 512 }), // S3 URL to transcript JSON
+  language: varchar("language", { length: 10 }).default("en"), // Detected language (ISO 639-1)
+  duration: int("duration"), // Recording duration in seconds
+  status: mysqlEnum("status", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
+  errorMessage: text("errorMessage"), // Error details if transcription failed
+  whisperModel: varchar("whisperModel", { length: 64 }).default("whisper-1"),
+  confidence: float("confidence"), // Confidence score (0-1) if available
+  segments: json("segments"), // Timestamped segments from Whisper response
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OccGreenRoomTranscription = typeof occGreenRoomTranscriptions.$inferSelect;
+export type InsertOccGreenRoomTranscription = typeof occGreenRoomTranscriptions.$inferInsert;
+
+
+/**
+ * Green Room Transcript Sentiment Analysis — stores sentiment scores per segment.
+ * Automatically analyzed when transcription is completed.
+ */
+export const occTranscriptSentiments = mysqlTable("occ_transcript_sentiments", {
+  id: int("id").autoincrement().primaryKey(),
+  transcriptionId: int("transcriptionId").notNull(),
+  conferenceId: int("conferenceId").notNull(),
+  overallSentiment: mysqlEnum("overallSentiment", ["positive", "neutral", "negative"]).notNull(),
+  overallScore: float("overallScore"), // -1 to 1, where -1 is most negative, 1 is most positive
+  positiveCount: int("positiveCount").default(0),
+  neutralCount: int("neutralCount").default(0),
+  negativeCount: int("negativeCount").default(0),
+  emotionScores: json("emotionScores"), // { joy, sadness, anger, fear, surprise, disgust }
+  keyPhrases: json("keyPhrases"), // Array of positive/negative phrases found
+  analyzedAt: timestamp("analyzedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OccTranscriptSentiment = typeof occTranscriptSentiments.$inferSelect;
+export type InsertOccTranscriptSentiment = typeof occTranscriptSentiments.$inferInsert;
+
+/**
+ * Green Room Transcript Summaries — stores AI-generated summaries.
+ * Automatically generated when transcription is completed.
+ */
+export const occTranscriptSummaries = mysqlTable("occ_transcript_summaries", {
+  id: int("id").autoincrement().primaryKey(),
+  transcriptionId: int("transcriptionId").notNull(),
+  conferenceId: int("conferenceId").notNull(),
+  summaryText: longtext("summaryText"), // Executive summary (200-500 words)
+  keyPoints: json("keyPoints"), // Array of 3-5 key discussion points
+  actionItems: json("actionItems"), // Array of action items mentioned
+  speakers: json("speakers"), // Array of speaker names/roles identified
+  duration: int("duration"), // Recording duration in seconds
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OccTranscriptSummary = typeof occTranscriptSummaries.$inferSelect;
+export type InsertOccTranscriptSummary = typeof occTranscriptSummaries.$inferInsert;

@@ -47,8 +47,9 @@ import {
 import { eq } from "drizzle-orm";
 import { getDirectAccessStats, getRecentDirectAccessAttempts, generateUniquePin } from "../directAccess";
 import { buildRegistrationConfirmationEmail, sendEmail } from "../_core/email";
-import { invokeLLM } from "../_core/llm";
-
+import { invokeLLM } from "../\_core/llm";
+import { transcribeRecording, getRecordingTranscription, getConferenceTranscriptions } from "../\_core/recordingTranscription";
+import { occGreenRoomTranscriptions } from "../../drizzle/schema";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function publishAblyEvent(channel: string, event: string, data: unknown) {
@@ -1346,5 +1347,79 @@ export const occRouter = router({
       if (!pass) throw new Error("Event pass not found");
       const registrations = await db.select().from(eventPassRegistrations).where(eq(eventPassRegistrations.passId, pass.id));
       return registrations;
+    }),
+
+  transcribeGreenRoomRecording: operatorProcedure
+    .input(z.object({
+      recordingId: z.number(),
+      conferenceId: z.number(),
+      recordingUrl: z.string().url(),
+      language: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await transcribeRecording({
+        recordingId: input.recordingId,
+        conferenceId: input.conferenceId,
+        recordingUrl: input.recordingUrl,
+        language: input.language,
+      });
+      return result;
+    }),
+
+  getRecordingTranscription: operatorProcedure
+    .input(z.object({ recordingId: z.number() }))
+    .query(async ({ input }) => {
+      return await getRecordingTranscription(input.recordingId);
+    }),
+
+  getConferenceTranscriptions: operatorProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .query(async ({ input }) => {
+      return await getConferenceTranscriptions(input.conferenceId);
+    }),
+
+  searchTranscripts: operatorProcedure
+    .input(z.object({
+      conferenceId: z.number(),
+      query: z.string().min(1).max(500),
+      limit: z.number().default(20),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const transcriptions = await db
+        .select()
+        .from(occGreenRoomTranscriptions)
+        .where(eq(occGreenRoomTranscriptions.conferenceId, input.conferenceId))
+        .limit(input.limit);
+      
+      const results = transcriptions
+        .filter(t => t.transcriptText && t.transcriptText.toLowerCase().includes(input.query.toLowerCase()))
+        .map(t => ({
+          id: t.id,
+          recordingId: t.recordingId,
+          transcriptText: t.transcriptText,
+          language: t.language,
+          duration: t.duration,
+          status: t.status,
+          completedAt: t.completedAt,
+        }));
+      
+      return results;
+    }),
+
+  getTranscriptSegments: operatorProcedure
+    .input(z.object({ transcriptionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const transcription = await db
+        .select()
+        .from(occGreenRoomTranscriptions)
+        .where(eq(occGreenRoomTranscriptions.id, input.transcriptionId))
+        .limit(1);
+      
+      if (!transcription[0]) throw new Error("Transcription not found");
+      return transcription[0].segments || [];
     }),
 });
