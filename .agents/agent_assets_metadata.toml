@@ -126,3 +126,9 @@ id = "ZG57V3Nd0lJu33rOEV7Gt"
 uri = "file://CuraLive_Self_Improving_AI_Brief.docx"
 type = "word_document"
 title = "CuraLive Self-Improving AI — Executive Brief"
+
+[[outputs]]
+id = "Uud3nY_niqcppV3zoQ6_7"
+uri = "file://CuraLive_Patent_Modules_Brief.docx"
+type = "word_document"
+title = "CuraLive Patent Modules Brief — 6 New Builds"
