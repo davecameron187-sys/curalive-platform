@@ -361,6 +361,16 @@ export default function ShadowMode() {
     if (f) setRecFile(f);
   }
 
+  function handleAudioDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) setRecFile(f);
+  }
+
+  const [dragOver, setDragOver] = useState(false);
+
   async function handleRecordingSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!recForm.clientName.trim() || !recForm.eventName.trim() || !recForm.eventType || !recFile) {
@@ -1500,10 +1510,17 @@ export default function ShadowMode() {
                     <Mic className="w-4 h-4 text-blue-400" /> Audio / Video File *
                   </h2>
                   <div
-                    className="border-2 border-dashed border-white/10 rounded-xl p-10 text-center cursor-pointer hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors"
-                    onClick={() => audioFileRef.current?.click()}>
-                    <Mic className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-                    {recFile ? (
+                    className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${dragOver ? "border-blue-400 bg-blue-500/10" : "border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5"}`}
+                    onClick={() => audioFileRef.current?.click()}
+                    onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={e => { e.preventDefault(); setDragOver(false); }}
+                    onDrop={handleAudioDrop}>
+                    {dragOver ? (
+                      <div>
+                        <Upload className="w-10 h-10 text-blue-400 mx-auto mb-3 animate-bounce" />
+                        <p className="font-medium text-sm text-blue-300">Drop your recording here</p>
+                      </div>
+                    ) : recFile ? (
                       <div>
                         <p className="font-medium text-sm text-slate-200">{recFile.name}</p>
                         <p className="text-xs text-slate-500 mt-1">
@@ -1515,16 +1532,15 @@ export default function ShadowMode() {
                       </div>
                     ) : (
                       <div>
-                        <p className="font-medium text-sm text-slate-300 mb-1">Click to select an audio or video file</p>
-                        <p className="text-xs text-slate-600">MP3, MP4, WAV, M4A, WebM, OGG &nbsp;·&nbsp; Up to 500MB</p>
-                        <p className="text-xs text-slate-700 mt-1">Large files auto-compressed server-side — no pre-processing needed</p>
+                        <p className="font-medium text-sm text-slate-300 mb-1">Click to select or drag & drop your recording</p>
+                        <p className="text-xs text-slate-600">MP3, MP4, WAV, M4A, WebM, OGG, MOV, AVI &nbsp;·&nbsp; Up to 500MB</p>
+                        <p className="text-xs text-slate-700 mt-1">Drag the file straight from File Explorer — or click to browse all files</p>
                       </div>
                     )}
                   </div>
                   <input
                     ref={audioFileRef}
                     type="file"
-                    accept="audio/*,video/*,.mp3,.mp4,.wav,.m4a,.webm,.ogg,.flac,.aac,.wma,.opus,.3gp,.mov,.mkv,.avi,.wmv"
                     onChange={handleAudioFileChange}
                     className="hidden"
                   />
