@@ -78,6 +78,16 @@ Key variables needed:
 - **How it works**: Operators correct AI sentiment scores or dismiss false compliance flags on any event. Each correction is stored as a training signal. The system recalculates adaptive thresholds using a weighted blend of defaults and operator corrections, improving accuracy per event type over time. Compliance vocabulary grows as operators add new keywords. Maturity levels: Initialising → Learning → Adapting → Calibrated → Self-Evolving.
 - **Patent claims**: Implements Claims 13, 20, 21, 25, 33 from the CIPC patent (self-improving learning loop, operator corrections as training signals, autonomous threshold adaptation)
 
+## Archive Intelligence Reports (12-Module AI Analysis)
+
+- **Route**: `/shadow-mode` → "Archives & Reports" tab
+- **Server router**: `server/routers/archiveUploadRouter.ts` — `archiveUpload.processTranscript`, `getArchiveDetail`, `listArchives`, `emailArchiveReport`, `generateReport`
+- **DB table**: `archive_events` (includes `ai_report` JSON column for full GPT-4o analysis)
+- **Migration**: `scripts/create-archive-events-table.ts`, `scripts/add-ai-report-column.ts`
+- **How it works**: Uploads (paste text, .txt file, or audio/video recording via Whisper AI) are processed through the full intelligence pipeline. GPT-4o generates a comprehensive JSON report with 12 analysis modules: executive summary, sentiment analysis, compliance review, key topics, speaker analysis, Q&A breakdown, action items, investor signals, communication scoring (clarity + transparency sub-scores), risk factors, competitive intelligence, and strategic recommendations.
+- **UI**: Collapsible report sections with severity badges, color-coded metrics, count indicators. "Generate AI Report" button for retroactive analysis of older archives. "Regenerate Report" to re-run analysis.
+- **Audio transcription**: `server/audioTranscribe.ts` — sends audio buffer directly to OpenAI Whisper API (bypasses Forge storage proxy). Routes to `api.openai.com` when `OPENAI_API_KEY` is set.
+
 ## Sustainability Calculator (Module F — Claim 46)
 
 - **Server router**: `server/routers/sustainabilityRouter.ts` — `sustainability.calculateEvent`, `getReport`, `getAggregateStats`, `generateESGNarrative`
