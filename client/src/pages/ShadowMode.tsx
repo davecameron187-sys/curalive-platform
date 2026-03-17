@@ -1524,7 +1524,7 @@ export default function ShadowMode() {
                   <input
                     ref={audioFileRef}
                     type="file"
-                    accept=".mp3,.mp4,.wav,.m4a,.webm,.ogg,.flac,.aac,audio/*,video/mp4,video/webm"
+                    accept="audio/*,video/*,.mp3,.mp4,.wav,.m4a,.webm,.ogg,.flac,.aac,.wma,.opus,.3gp,.mov,.mkv,.avi,.wmv"
                     onChange={handleAudioFileChange}
                     className="hidden"
                   />
