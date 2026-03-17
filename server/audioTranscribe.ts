@@ -65,12 +65,18 @@ async function extractChunkMp3(
 }
 
 async function callTranscribeApi(buffer: Buffer, filename: string): Promise<string> {
-  const { ENV } = await import("./_core/env");
-  const apiKey = ENV.forgeApiKey;
-  const baseUrl = (ENV.forgeApiUrl || "https://api.openai.com").replace(/\/+$/, "");
+  const hasDirectKey = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
+  let apiKey: string;
+  let baseUrl: string;
 
-  if (!apiKey) {
-    throw new Error("Transcription API key not configured (OPENAI_API_KEY or BUILT_IN_FORGE_API_KEY)");
+  if (hasDirectKey) {
+    apiKey = process.env.OPENAI_API_KEY!.trim();
+    baseUrl = "https://api.openai.com";
+  } else if (process.env.BUILT_IN_FORGE_API_KEY && process.env.BUILT_IN_FORGE_API_URL) {
+    apiKey = process.env.BUILT_IN_FORGE_API_KEY;
+    baseUrl = process.env.BUILT_IN_FORGE_API_URL.replace(/\/+$/, "");
+  } else {
+    throw new Error("No OpenAI API key configured for transcription");
   }
 
   const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
