@@ -20,6 +20,15 @@ type AiReport = {
   riskFactors: { factor: string; impact: string; likelihood: string }[];
   competitiveIntelligence: { mention: string; context: string }[];
   recommendations: string[];
+  speakingPaceAnalysis: { overallWpm: number; paceLabel: string; fillerWords: { word: string; count: number }[]; deliveryScore: number; coachingTips: string[] };
+  toxicityScreen: { overallRisk: string; flaggedContent: { phrase: string; issue: string; severity: string }[]; priceSensitive: boolean; legalRisk: boolean };
+  sentimentArc: { opening: number; midpoint: number; closing: number; trend: string; narrative: string };
+  financialHighlights: { metric: string; value: string; context: string; yoyChange: string }[];
+  esgMentions: { topic: string; commitment: string; sentiment: string }[];
+  pressReleaseDraft: string;
+  socialMediaContent: { platform: string; content: string }[];
+  boardReadySummary: { verdict: string; keyRisks: string[]; keyOpportunities: string[]; recommendedActions: string[] };
+  modulesGenerated: number;
 };
 
 async function generateFullAiReport(
@@ -30,17 +39,17 @@ async function generateFullAiReport(
   sentimentAvg: number,
   complianceFlags: number
 ): Promise<AiReport> {
-  const truncated = transcriptText.slice(0, 12000);
+  const truncated = transcriptText.slice(0, 14000);
 
   const systemPrompt = `You are CuraLive's AI Intelligence Engine — an expert analyst for investor events.
-Analyze the transcript and produce a comprehensive JSON report. Be specific and cite actual content from the transcript.
+Analyze the transcript and produce a comprehensive JSON report with ALL 20 analysis modules. Be specific and cite actual content from the transcript. Every module must be populated with real analysis — never return empty arrays if there is relevant content.
 The event is: "${eventName}" by "${clientName}" (type: ${eventType}).
 Pre-computed sentiment: ${sentimentAvg}/100, compliance flags: ${complianceFlags}.
 
 Return ONLY valid JSON with this exact structure (no markdown, no code fences):
 {
   "executiveSummary": "3-5 sentence executive summary of the event",
-  "sentimentAnalysis": { "score": <number 0-100>, "narrative": "detailed sentiment narrative", "keyDrivers": ["driver1", "driver2"] },
+  "sentimentAnalysis": { "score": <0-100>, "narrative": "detailed sentiment narrative", "keyDrivers": ["driver1", "driver2"] },
   "complianceReview": { "riskLevel": "Low|Moderate|High|Critical", "flaggedPhrases": ["phrase1"], "recommendations": ["rec1"] },
   "keyTopics": [{ "topic": "name", "sentiment": "Positive|Neutral|Negative", "detail": "explanation" }],
   "speakerAnalysis": [{ "speaker": "Name", "role": "CEO/CFO/Analyst/etc", "keyPoints": ["point1"] }],
@@ -50,7 +59,15 @@ Return ONLY valid JSON with this exact structure (no markdown, no code fences):
   "communicationScore": { "score": <0-100>, "clarity": <0-100>, "transparency": <0-100>, "narrative": "assessment of communication quality" },
   "riskFactors": [{ "factor": "risk name", "impact": "High|Medium|Low", "likelihood": "High|Medium|Low" }],
   "competitiveIntelligence": [{ "mention": "competitor or market ref", "context": "how it was discussed" }],
-  "recommendations": ["actionable recommendation 1", "recommendation 2"]
+  "recommendations": ["actionable recommendation 1", "recommendation 2"],
+  "speakingPaceAnalysis": { "overallWpm": <number>, "paceLabel": "Slow|Normal|Fast|Rushed", "fillerWords": [{ "word": "um", "count": <n> }], "deliveryScore": <0-100>, "coachingTips": ["tip1"] },
+  "toxicityScreen": { "overallRisk": "Clean|Low|Moderate|High", "flaggedContent": [{ "phrase": "exact phrase", "issue": "why flagged", "severity": "Low|Medium|High" }], "priceSensitive": <bool>, "legalRisk": <bool> },
+  "sentimentArc": { "opening": <0-100>, "midpoint": <0-100>, "closing": <0-100>, "trend": "Improving|Stable|Declining|Volatile", "narrative": "how sentiment evolved" },
+  "financialHighlights": [{ "metric": "Revenue/EBITDA/EPS/etc", "value": "R2.3bn", "context": "explanation", "yoyChange": "+12% YoY" }],
+  "esgMentions": [{ "topic": "carbon/diversity/governance/etc", "commitment": "what was committed", "sentiment": "Positive|Neutral|Negative" }],
+  "pressReleaseDraft": "A 2-3 paragraph SENS/RNS-style press release summarising the key outcomes",
+  "socialMediaContent": [{ "platform": "LinkedIn|Twitter|General", "content": "ready-to-post content" }],
+  "boardReadySummary": { "verdict": "Strong|Satisfactory|Concerning|Critical", "keyRisks": ["risk1"], "keyOpportunities": ["opp1"], "recommendedActions": ["action1"] }
 }`;
 
   try {
@@ -64,7 +81,9 @@ Return ONLY valid JSON with this exact structure (no markdown, no code fences):
 
     const raw = (response.choices?.[0]?.message?.content ?? "").trim();
     const cleaned = raw.replace(/^```json?\s*/i, "").replace(/```\s*$/i, "").trim();
-    return JSON.parse(cleaned) as AiReport;
+    const parsed = JSON.parse(cleaned) as AiReport;
+    parsed.modulesGenerated = 20;
+    return parsed;
   } catch (err) {
     console.error("[ArchiveAI] Report generation failed:", err);
     throw new Error(`AI report generation failed: ${err instanceof Error ? err.message : "Unknown error"}`);

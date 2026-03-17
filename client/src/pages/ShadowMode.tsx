@@ -14,7 +14,8 @@ import {
   KeyRound, CalendarClock, Info, DollarSign, TrendingDown,
   Sparkles, Target, UserCheck, HelpCircle, ListChecks,
   TrendingUp, Swords, Lightbulb, ChevronDown, ChevronUp,
-  Brain,
+  Brain, Gauge, ShieldAlert, LineChart, Banknote, Leaf,
+  Newspaper, Share2, Briefcase, Send,
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -405,6 +406,37 @@ export default function ShadowMode() {
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const toggleSection = (key: string) => setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+  const ALL_REPORT_MODULES = [
+    { id: "executiveSummary", label: "Executive Summary", icon: Sparkles },
+    { id: "sentimentAnalysis", label: "Sentiment Analysis", icon: Activity },
+    { id: "complianceReview", label: "Compliance Review", icon: Shield },
+    { id: "keyTopics", label: "Key Topics", icon: Tag },
+    { id: "speakerAnalysis", label: "Speaker Analysis", icon: UserCheck },
+    { id: "questionsAsked", label: "Q&A Analysis", icon: HelpCircle },
+    { id: "actionItems", label: "Action Items", icon: ListChecks },
+    { id: "investorSignals", label: "Investor Signals", icon: Target },
+    { id: "communicationScore", label: "Communication Score", icon: MessageSquare },
+    { id: "riskFactors", label: "Risk Factors", icon: AlertTriangle },
+    { id: "competitiveIntelligence", label: "Competitive Intel", icon: Swords },
+    { id: "recommendations", label: "AI Recommendations", icon: Lightbulb },
+    { id: "speakingPaceAnalysis", label: "Speaking Pace Coach", icon: Gauge },
+    { id: "toxicityScreen", label: "Toxicity & Language Risk", icon: ShieldAlert },
+    { id: "sentimentArc", label: "Sentiment Arc", icon: LineChart },
+    { id: "financialHighlights", label: "Financial Highlights", icon: Banknote },
+    { id: "esgMentions", label: "ESG & Sustainability", icon: Leaf },
+    { id: "pressReleaseDraft", label: "Press Release Draft", icon: Newspaper },
+    { id: "socialMediaContent", label: "Social Media Content", icon: Share2 },
+    { id: "boardReadySummary", label: "Board-Ready Summary", icon: Briefcase },
+  ];
+
+  const [selectedModules, setSelectedModules] = useState<Set<string>>(new Set(ALL_REPORT_MODULES.map(m => m.id)));
+  const [showModuleSelector, setShowModuleSelector] = useState(false);
+  const toggleModule = (id: string) => setSelectedModules(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   // ── Event Recording state ──────────────────────────────────────────────────
   const [recForm, setRecForm] = useState({
@@ -1654,6 +1686,228 @@ export default function ShadowMode() {
                               </div>
                             </ReportSection>
                           )}
+
+                          {r.speakingPaceAnalysis && (
+                            <ReportSection id="speakingPace" icon={Gauge} title="Speaking Pace Coach" iconColor="text-teal-400">
+                              <div className="grid grid-cols-3 gap-3 mb-3">
+                                {[
+                                  { label: "WPM", value: r.speakingPaceAnalysis.overallWpm, color: r.speakingPaceAnalysis.overallWpm >= 130 && r.speakingPaceAnalysis.overallWpm <= 160 ? "text-emerald-400" : "text-amber-400" },
+                                  { label: "Pace", value: r.speakingPaceAnalysis.paceLabel, color: r.speakingPaceAnalysis.paceLabel === "Normal" ? "text-emerald-400" : "text-amber-400" },
+                                  { label: "Delivery", value: `${r.speakingPaceAnalysis.deliveryScore}/100`, color: r.speakingPaceAnalysis.deliveryScore >= 70 ? "text-emerald-400" : "text-amber-400" },
+                                ].map(({ label, value, color }) => (
+                                  <div key={label} className="bg-white/[0.02] border border-white/5 rounded-lg p-2.5 text-center">
+                                    <div className={`text-lg font-bold ${color}`}>{value}</div>
+                                    <div className="text-[10px] text-slate-500 uppercase tracking-wider">{label}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              {r.speakingPaceAnalysis.fillerWords?.length > 0 && (
+                                <div className="mb-3">
+                                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Filler Words Detected</p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {r.speakingPaceAnalysis.fillerWords.map((fw: any, i: number) => (
+                                      <span key={i} className="text-xs px-2 py-1 rounded-lg bg-teal-500/10 text-teal-300 border border-teal-500/20">"{fw.word}" x{fw.count}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {r.speakingPaceAnalysis.coachingTips?.length > 0 && (
+                                <div>
+                                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Coaching Tips</p>
+                                  {r.speakingPaceAnalysis.coachingTips.map((tip: string, i: number) => (
+                                    <div key={i} className="flex items-start gap-2 text-sm text-slate-300 mb-1">
+                                      <Lightbulb className="w-3.5 h-3.5 text-teal-400 mt-0.5 shrink-0" />
+                                      <span>{tip}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </ReportSection>
+                          )}
+
+                          {r.toxicityScreen && (
+                            <ReportSection id="toxicity" icon={ShieldAlert} title="Toxicity & Language Risk" iconColor="text-rose-400"
+                              count={r.toxicityScreen.flaggedContent?.length || 0}>
+                              <div className="flex items-center gap-3 mb-3">
+                                <span className="text-xs font-medium text-slate-500">Overall Risk:</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                                  r.toxicityScreen.overallRisk === "Clean" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" :
+                                  r.toxicityScreen.overallRisk === "Low" ? "text-amber-400 bg-amber-500/10 border-amber-500/20" :
+                                  "text-red-400 bg-red-500/10 border-red-500/20"
+                                }`}>{r.toxicityScreen.overallRisk}</span>
+                                {r.toxicityScreen.priceSensitive && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-300 border border-red-500/20">Price Sensitive</span>}
+                                {r.toxicityScreen.legalRisk && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-300 border border-red-500/20">Legal Risk</span>}
+                              </div>
+                              {r.toxicityScreen.flaggedContent?.length > 0 && (
+                                <div className="space-y-2">
+                                  {r.toxicityScreen.flaggedContent.map((fc: any, i: number) => (
+                                    <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                      <p className="text-sm text-slate-200 mb-1">"{fc.phrase}"</p>
+                                      <div className="flex gap-2 text-xs text-slate-500">
+                                        <span>{fc.issue}</span>
+                                        <span className={`px-2 py-0.5 rounded-full border ${severityColor(fc.severity === "Low" ? "Positive" : fc.severity === "High" ? "Critical" : "Neutral")}`}>{fc.severity}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </ReportSection>
+                          )}
+
+                          {r.sentimentArc && (
+                            <ReportSection id="sentimentArc" icon={LineChart} title="Sentiment Arc" iconColor="text-purple-400">
+                              <div className="grid grid-cols-3 gap-3 mb-3">
+                                {[
+                                  { label: "Opening", value: r.sentimentArc.opening },
+                                  { label: "Midpoint", value: r.sentimentArc.midpoint },
+                                  { label: "Closing", value: r.sentimentArc.closing },
+                                ].map(({ label, value }) => {
+                                  const c = value >= 70 ? "text-emerald-400" : value >= 50 ? "text-amber-400" : "text-red-400";
+                                  return (
+                                    <div key={label} className="bg-white/[0.02] border border-white/5 rounded-lg p-2.5 text-center">
+                                      <div className={`text-lg font-bold ${c}`}>{value}<span className="text-xs text-slate-600">/100</span></div>
+                                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">{label}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-xs font-medium text-slate-500">Trend:</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                                  r.sentimentArc.trend === "Improving" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" :
+                                  r.sentimentArc.trend === "Stable" ? "text-blue-400 bg-blue-500/10 border-blue-500/20" :
+                                  "text-red-400 bg-red-500/10 border-red-500/20"
+                                }`}>{r.sentimentArc.trend}</span>
+                              </div>
+                              <p className="text-sm text-slate-400 leading-relaxed">{r.sentimentArc.narrative}</p>
+                            </ReportSection>
+                          )}
+
+                          {r.financialHighlights?.length > 0 && (
+                            <ReportSection id="financials" icon={Banknote} title="Financial Highlights" iconColor="text-green-400"
+                              count={r.financialHighlights.length}>
+                              <div className="space-y-2">
+                                {r.financialHighlights.map((fh: any, i: number) => (
+                                  <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-sm font-medium text-slate-200">{fh.metric}</span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-green-400">{fh.value}</span>
+                                        {fh.yoyChange && <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                                          fh.yoyChange.startsWith("+") ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" :
+                                          fh.yoyChange.startsWith("-") ? "text-red-400 bg-red-500/10 border-red-500/20" :
+                                          "text-slate-400 bg-white/5 border-white/10"
+                                        }`}>{fh.yoyChange}</span>}
+                                      </div>
+                                    </div>
+                                    <p className="text-xs text-slate-400">{fh.context}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </ReportSection>
+                          )}
+
+                          {r.esgMentions?.length > 0 && (
+                            <ReportSection id="esg" icon={Leaf} title="ESG & Sustainability" iconColor="text-lime-400"
+                              count={r.esgMentions.length}>
+                              <div className="space-y-2">
+                                {r.esgMentions.map((e: any, i: number) => (
+                                  <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-sm font-medium text-slate-200">{e.topic}</span>
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${severityColor(e.sentiment)}`}>{e.sentiment}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-400">{e.commitment}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </ReportSection>
+                          )}
+
+                          {r.pressReleaseDraft && (
+                            <ReportSection id="pressRelease" icon={Newspaper} title="Press Release Draft" iconColor="text-sky-400">
+                              <div className="bg-white/[0.02] border border-white/5 rounded-lg p-4">
+                                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">{r.pressReleaseDraft}</p>
+                              </div>
+                              <Button size="sm" variant="outline" className="mt-3 border-white/10 text-slate-400 hover:text-white gap-2"
+                                onClick={() => { navigator.clipboard.writeText(r.pressReleaseDraft); toast.success("Press release copied to clipboard"); }}>
+                                <Copy className="w-3.5 h-3.5" /> Copy to Clipboard
+                              </Button>
+                            </ReportSection>
+                          )}
+
+                          {r.socialMediaContent?.length > 0 && (
+                            <ReportSection id="social" icon={Share2} title="Social Media Content" iconColor="text-blue-400"
+                              count={r.socialMediaContent.length}>
+                              <div className="space-y-3">
+                                {r.socialMediaContent.map((sc: any, i: number) => (
+                                  <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">{sc.platform}</span>
+                                      <Button size="sm" variant="ghost" className="h-6 px-2 text-slate-500 hover:text-white gap-1"
+                                        onClick={() => { navigator.clipboard.writeText(sc.content); toast.success(`${sc.platform} post copied`); }}>
+                                        <Copy className="w-3 h-3" /> Copy
+                                      </Button>
+                                    </div>
+                                    <p className="text-sm text-slate-300 leading-relaxed">{sc.content}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </ReportSection>
+                          )}
+
+                          {r.boardReadySummary && (
+                            <ReportSection id="board" icon={Briefcase} title="Board-Ready Summary" iconColor="text-amber-400">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="text-xs font-medium text-slate-500">Board Verdict:</span>
+                                <span className={`text-sm font-bold px-3 py-1 rounded-full border ${
+                                  r.boardReadySummary.verdict === "Strong" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" :
+                                  r.boardReadySummary.verdict === "Satisfactory" ? "text-blue-400 bg-blue-500/10 border-blue-500/20" :
+                                  r.boardReadySummary.verdict === "Concerning" ? "text-amber-400 bg-amber-500/10 border-amber-500/20" :
+                                  "text-red-400 bg-red-500/10 border-red-500/20"
+                                }`}>{r.boardReadySummary.verdict}</span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Key Risks</p>
+                                  {(r.boardReadySummary.keyRisks || []).map((risk: string, i: number) => (
+                                    <div key={i} className="flex items-start gap-2 text-xs text-red-300 mb-1">
+                                      <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+                                      <span>{risk}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div>
+                                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Opportunities</p>
+                                  {(r.boardReadySummary.keyOpportunities || []).map((opp: string, i: number) => (
+                                    <div key={i} className="flex items-start gap-2 text-xs text-emerald-300 mb-1">
+                                      <TrendingUp className="w-3 h-3 mt-0.5 shrink-0" />
+                                      <span>{opp}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div>
+                                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Recommended Actions</p>
+                                  {(r.boardReadySummary.recommendedActions || []).map((act: string, i: number) => (
+                                    <div key={i} className="flex items-start gap-2 text-xs text-blue-300 mb-1">
+                                      <CheckCircle2 className="w-3 h-3 mt-0.5 shrink-0" />
+                                      <span>{act}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </ReportSection>
+                          )}
+
+                          {r.modulesGenerated && (
+                            <div className="bg-gradient-to-r from-violet-500/5 to-cyan-500/5 border border-violet-500/20 rounded-xl p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Brain className="w-4 h-4 text-violet-400" />
+                                <span className="text-xs font-semibold text-violet-300 uppercase tracking-wider">{r.modulesGenerated} AI Modules Processed</span>
+                              </div>
+                              <span className="text-xs text-slate-500">All modules run on every event — select which to include in reports</span>
+                            </div>
+                          )}
                         </div>
                       );
                     })() : (
@@ -1667,6 +1921,63 @@ export default function ShadowMode() {
                           {generateReport.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
                           {generateReport.isPending ? "Generating AI Report..." : "Generate Full AI Report"}
                         </Button>
+                      </div>
+                    )}
+
+                    {archiveDetail.data.ai_report && (
+                      <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
+                        <button
+                          onClick={() => setShowModuleSelector(!showModuleSelector)}
+                          className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Send className="w-4 h-4 text-violet-400" />
+                            <span className="text-sm font-semibold text-slate-200">Select Modules for Client Report</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                              {selectedModules.size}/{ALL_REPORT_MODULES.length} selected
+                            </span>
+                          </div>
+                          {showModuleSelector ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                        </button>
+                        {showModuleSelector && (
+                          <div className="px-5 pb-4 border-t border-white/5">
+                            <div className="flex items-center justify-between py-3 mb-2">
+                              <p className="text-xs text-slate-500">Choose which AI modules to include when sending this report to the client. All modules are always processed and stored.</p>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="ghost" className="text-xs text-slate-500 hover:text-white h-7 px-2"
+                                  onClick={() => setSelectedModules(new Set(ALL_REPORT_MODULES.map(m => m.id)))}>Select All</Button>
+                                <Button size="sm" variant="ghost" className="text-xs text-slate-500 hover:text-white h-7 px-2"
+                                  onClick={() => setSelectedModules(new Set())}>Clear All</Button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                              {ALL_REPORT_MODULES.map(({ id, label, icon: ModIcon }) => {
+                                const checked = selectedModules.has(id);
+                                return (
+                                  <button key={id} onClick={() => toggleModule(id)}
+                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors ${
+                                      checked ? "bg-violet-500/10 border border-violet-500/20" : "bg-white/[0.01] border border-white/5 hover:border-white/10"
+                                    }`}>
+                                    <div className={`w-4 h-4 rounded flex items-center justify-center ${
+                                      checked ? "bg-violet-500 text-white" : "bg-white/5 border border-white/20"
+                                    }`}>
+                                      {checked && <CheckCircle2 className="w-3 h-3" />}
+                                    </div>
+                                    <ModIcon className={`w-3.5 h-3.5 ${checked ? "text-violet-300" : "text-slate-600"}`} />
+                                    <span className={`text-xs font-medium ${checked ? "text-slate-200" : "text-slate-500"}`}>{label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
+                              <span className="text-xs text-slate-600">Selected modules will be included when emailing this report to clients</span>
+                              <Button size="sm" className="bg-violet-600 hover:bg-violet-500 gap-2 h-8">
+                                <Send className="w-3.5 h-3.5" />
+                                Preview Client Report ({selectedModules.size} modules)
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
