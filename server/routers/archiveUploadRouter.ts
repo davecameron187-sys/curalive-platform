@@ -286,7 +286,7 @@ export const archiveUploadRouter = router({
         clientName: z.string().min(1).max(255),
         eventName: z.string().min(1).max(255),
         eventType: z.enum([
-          "earnings_call", "agm", "capital_markets_day",
+          "earnings_call", "interim_results", "agm", "capital_markets_day",
           "ceo_town_hall", "board_meeting", "webcast", "other",
         ]),
         eventDate: z.string().optional(),

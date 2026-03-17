@@ -22,7 +22,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
-  earnings_call: "Earnings Call", agm: "AGM", capital_markets_day: "Capital Markets Day",
+  earnings_call: "Earnings Call", interim_results: "Interim Results", agm: "AGM", capital_markets_day: "Capital Markets Day",
   ceo_town_hall: "CEO Town Hall", board_meeting: "Board Meeting", webcast: "Webcast", other: "Other",
 };
 

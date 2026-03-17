@@ -177,6 +177,21 @@
   animation: fade-in-up 0.5s ease-out forwards;
 }
 
+select option {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  padding: 8px 12px;
+}
+
+select option:checked {
+  background-color: #334155;
+  color: #f1f5f9;
+}
+
+select option:hover {
+  background-color: #334155;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;
