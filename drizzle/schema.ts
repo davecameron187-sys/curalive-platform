@@ -2860,3 +2860,47 @@ export const archiveEvents = mysqlTable("archive_events", {
 
 export type ArchiveEvent = typeof archiveEvents.$inferSelect;
 export type InsertArchiveEvent = typeof archiveEvents.$inferInsert;
+
+export const aiEvolutionObservations = mysqlTable("ai_evolution_observations", {
+  id: int("id").autoincrement().primaryKey(),
+  sourceType: mysqlEnum("source_type", ["live_session", "archive_upload", "transcript_paste"]).notNull(),
+  sourceId: int("source_id"),
+  eventType: varchar("event_type", { length: 64 }),
+  clientName: varchar("client_name", { length: 255 }),
+  observationType: mysqlEnum("observation_type", [
+    "weak_module", "missing_capability", "repeated_pattern",
+    "operator_friction", "data_gap", "cross_event_trend",
+  ]).notNull(),
+  moduleName: varchar("module_name", { length: 128 }),
+  observation: text("observation").notNull(),
+  confidence: float("confidence").default(0.5),
+  suggestedCapability: varchar("suggested_capability", { length: 255 }),
+  rawContext: json("raw_context"),
+  clusterId: int("cluster_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AiEvolutionObservation = typeof aiEvolutionObservations.$inferSelect;
+
+export const aiToolProposals = mysqlTable("ai_tool_proposals", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  category: mysqlEnum("category", [
+    "analysis", "tracking", "automation", "reporting", "integration",
+  ]).notNull(),
+  rationale: text("rationale").notNull(),
+  evidenceCount: int("evidence_count").default(0),
+  avgConfidence: float("avg_confidence").default(0),
+  observationIds: json("observation_ids"),
+  status: mysqlEnum("status", [
+    "emerging", "proposed", "approved", "building", "live", "rejected",
+  ]).default("emerging").notNull(),
+  estimatedImpact: mysqlEnum("estimated_impact", ["low", "medium", "high", "transformative"]).default("medium"),
+  promptTemplate: text("prompt_template"),
+  moduleSpec: json("module_spec"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AiToolProposal = typeof aiToolProposals.$inferSelect;

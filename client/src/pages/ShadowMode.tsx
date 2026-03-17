@@ -17,6 +17,7 @@ import {
   TrendingUp, Swords, Lightbulb, ChevronDown, ChevronUp,
   Brain, Gauge, ShieldAlert, LineChart, Banknote, Leaf,
   Newspaper, Share2, Briefcase, Send,
+  Zap, Network,
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -2439,6 +2440,18 @@ function AILearningDashboard() {
   const thresholds = trpc.adaptiveIntelligence.getAdaptiveThresholds.useQuery();
   const vocabulary = trpc.adaptiveIntelligence.getComplianceVocabulary.useQuery();
   const corrections = trpc.adaptiveIntelligence.getCorrections.useQuery({ limit: 20 });
+  const evolution = trpc.aiEvolution.getDashboard.useQuery(undefined, { refetchInterval: 30000 });
+  const runAccumulation = trpc.aiEvolution.runAccumulation.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Accumulation: ${data.proposalsCreated} new, ${data.proposalsUpdated} updated, ${data.promoted.length} promoted`);
+      evolution.refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const updateProposalStatus = trpc.aiEvolution.updateProposalStatus.useMutation({
+    onSuccess: () => { toast.success("Proposal updated"); evolution.refetch(); },
+    onError: (err) => toast.error(err.message),
+  });
 
   const [newKeyword, setNewKeyword] = useState("");
   const addKeyword = trpc.adaptiveIntelligence.addComplianceKeyword.useMutation({
@@ -2667,18 +2680,315 @@ function AILearningDashboard() {
         )}
       </div>
 
+      {/* ═══ Autonomous Evolution Dashboard ═══ */}
+      <div className="border-t border-purple-500/20 pt-6 mt-2">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+              <Zap className="w-5 h-5 text-indigo-400" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-slate-200">Autonomous Evolution Engine</h2>
+              <p className="text-xs text-slate-500">Self-observing AI that detects gaps, proposes new tools, and auto-promotes based on evidence</p>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" disabled={runAccumulation.isPending}
+            onClick={() => runAccumulation.mutate()}
+            className="border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10 gap-1.5 text-xs">
+            <RefreshCw className={`w-3.5 h-3.5 ${runAccumulation.isPending ? "animate-spin" : ""}`} />
+            Run Accumulation
+          </Button>
+        </div>
+
+        {evolution.data && (
+          <>
+            {/* Evolution velocity stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+              {[
+                { label: "Events Analyzed", value: evolution.data.eventsAnalyzed, color: "text-indigo-400" },
+                { label: "Observations", value: evolution.data.totalObservations, color: "text-purple-400" },
+                { label: "Tool Proposals", value: evolution.data.proposals?.length ?? 0, color: "text-cyan-400" },
+                { label: "Last 7 Days", value: evolution.data.velocity?.last7days ?? 0, color: "text-emerald-400" },
+                { label: "Last 30 Days", value: evolution.data.velocity?.last30days ?? 0, color: "text-amber-400" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="bg-white/[0.02] border border-white/10 rounded-xl p-3 text-center">
+                  <div className={`text-xl font-bold ${color}`}>{value}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Observation type breakdown */}
+            {evolution.data.observationsByType && Object.keys(evolution.data.observationsByType).length > 0 && (
+              <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4 mb-5">
+                <h3 className="text-sm font-semibold text-slate-200 mb-3">Observation Breakdown</h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(evolution.data.observationsByType).map(([type, count]) => {
+                    const typeColors: Record<string, string> = {
+                      weak_module: "bg-red-500/10 text-red-400 border-red-500/20",
+                      missing_capability: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                      repeated_pattern: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                      data_gap: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+                      cross_event_trend: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                      operator_friction: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+                    };
+                    return (
+                      <span key={type} className={`px-3 py-1.5 rounded-full border text-xs font-medium ${typeColors[type] ?? "bg-slate-500/10 text-slate-400 border-slate-500/20"}`}>
+                        {type.replace(/_/g, " ")}: {count as number}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+              {/* Gap Detection Matrix */}
+              <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4">
+                <h3 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-red-400" /> Module Gap Matrix
+                </h3>
+                <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
+                  {(evolution.data.gapMatrix ?? []).slice(0, 10).map((g: any) => (
+                    <div key={g.module} className="flex items-center gap-2 px-2 py-1.5 bg-white/[0.01] rounded-lg">
+                      <span className="text-xs text-slate-400 w-36 truncate">{g.module}</span>
+                      <div className="flex-1 bg-white/5 rounded-full h-2 overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400" style={{ width: `${Math.min(100, g.gapScore * 200)}%` }} />
+                      </div>
+                      <span className="text-xs text-slate-500 w-12 text-right">{(g.failRate * 100).toFixed(0)}% fail</span>
+                    </div>
+                  ))}
+                  {(evolution.data.gapMatrix ?? []).length === 0 && (
+                    <p className="text-xs text-slate-500 text-center py-4">No gap data yet — process events to build the matrix</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Cross-Event Patterns */}
+              <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4">
+                <h3 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                  <Network className="w-4 h-4 text-cyan-400" /> Cross-Event Patterns
+                </h3>
+                <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                  {(evolution.data.crossEventPatterns ?? []).map((p: any, i: number) => (
+                    <div key={i} className="bg-white/[0.01] border border-white/5 rounded-lg p-2.5">
+                      <div className="text-xs text-slate-300 font-medium mb-1 truncate">{p.pattern}</div>
+                      <div className="flex gap-3 text-xs text-slate-500">
+                        <span>{p.frequency}x seen</span>
+                        <span>{p.clientCount} clients</span>
+                        <span>{p.eventTypeCount} event types</span>
+                        <span className="ml-auto text-cyan-400 font-medium">{(p.breadthScore * 100).toFixed(0)}% breadth</span>
+                      </div>
+                    </div>
+                  ))}
+                  {(evolution.data.crossEventPatterns ?? []).length === 0 && (
+                    <p className="text-xs text-slate-500 text-center py-4">Patterns emerge after analyzing multiple events across different clients</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Tool Proposals */}
+            <div className="bg-white/[0.02] border border-indigo-500/20 rounded-xl p-4 mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-amber-400" /> Autonomous Tool Proposals
+                </h3>
+                {evolution.data.proposalsByStatus && (
+                  <div className="flex gap-2">
+                    {Object.entries(evolution.data.proposalsByStatus).map(([status, ct]) => {
+                      const sColors: Record<string, string> = {
+                        emerging: "text-slate-400 bg-slate-500/10",
+                        proposed: "text-amber-400 bg-amber-500/10",
+                        approved: "text-emerald-400 bg-emerald-500/10",
+                        building: "text-blue-400 bg-blue-500/10",
+                        live: "text-purple-400 bg-purple-500/10",
+                        rejected: "text-red-400 bg-red-500/10",
+                      };
+                      return (
+                        <span key={status} className={`text-xs px-2 py-0.5 rounded-full ${sColors[status] ?? "text-slate-400 bg-slate-500/10"}`}>
+                          {status}: {ct as number}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                {(evolution.data.proposals ?? []).map((p: any) => {
+                  const statusColors: Record<string, string> = {
+                    emerging: "border-slate-500/30 bg-white/[0.01]",
+                    proposed: "border-amber-500/30 bg-amber-500/[0.03]",
+                    approved: "border-emerald-500/30 bg-emerald-500/[0.03]",
+                    building: "border-blue-500/30 bg-blue-500/[0.03]",
+                    live: "border-purple-500/30 bg-purple-500/[0.03]",
+                    rejected: "border-red-500/20 bg-red-500/[0.02] opacity-50",
+                  };
+                  const impactColors: Record<string, string> = {
+                    low: "text-slate-400", medium: "text-amber-400", high: "text-orange-400", transformative: "text-red-400",
+                  };
+                  return (
+                    <div key={p.id} className={`border rounded-lg p-3 ${statusColors[p.status] ?? "border-white/10"}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium text-slate-200">{p.title}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              p.status === "emerging" ? "bg-slate-500/20 text-slate-400" :
+                              p.status === "proposed" ? "bg-amber-500/20 text-amber-400" :
+                              p.status === "approved" ? "bg-emerald-500/20 text-emerald-400" :
+                              p.status === "building" ? "bg-blue-500/20 text-blue-400" :
+                              p.status === "live" ? "bg-purple-500/20 text-purple-400" :
+                              "bg-red-500/20 text-red-400"
+                            }`}>
+                              {p.status}
+                            </span>
+                            {p.estimatedImpact && (
+                              <span className={`text-xs font-medium ${impactColors[p.estimatedImpact] ?? "text-slate-400"}`}>
+                                {p.estimatedImpact} impact
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-400 line-clamp-2">{p.description}</p>
+                          <div className="flex gap-3 mt-1.5 text-xs text-slate-500">
+                            <span>{p.evidenceCount} evidence</span>
+                            <span>Confidence: {((p.avgConfidence ?? 0) * 100).toFixed(0)}%</span>
+                            <span className="text-slate-600">{p.category}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          {p.status === "emerging" && (
+                            <Button size="sm" variant="ghost" className="text-xs h-7 text-amber-400 hover:bg-amber-500/10"
+                              onClick={() => updateProposalStatus.mutate({ proposalId: p.id, status: "proposed" })}>
+                              Propose
+                            </Button>
+                          )}
+                          {p.status === "proposed" && (
+                            <>
+                              <Button size="sm" variant="ghost" className="text-xs h-7 text-emerald-400 hover:bg-emerald-500/10"
+                                onClick={() => updateProposalStatus.mutate({ proposalId: p.id, status: "approved" })}>
+                                Approve
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-xs h-7 text-red-400 hover:bg-red-500/10"
+                                onClick={() => updateProposalStatus.mutate({ proposalId: p.id, status: "rejected" })}>
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {(evolution.data.proposals ?? []).length === 0 && (
+                  <div className="text-center py-8">
+                    <Lightbulb className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+                    <p className="text-sm text-slate-500">No tool proposals yet</p>
+                    <p className="text-xs text-slate-600 mt-1">Process events through Shadow Mode — the AI will observe its own outputs and propose new tools</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recent Observations */}
+            {(evolution.data.recentObservations ?? []).length > 0 && (
+              <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4 mb-5">
+                <h3 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-slate-400" /> Recent Observations
+                </h3>
+                <div className="space-y-1.5 max-h-[250px] overflow-y-auto pr-1">
+                  {(evolution.data.recentObservations ?? []).slice(0, 15).map((o: any) => {
+                    const tColors: Record<string, string> = {
+                      weak_module: "text-red-400 bg-red-500/10",
+                      missing_capability: "text-amber-400 bg-amber-500/10",
+                      repeated_pattern: "text-blue-400 bg-blue-500/10",
+                      data_gap: "text-purple-400 bg-purple-500/10",
+                      cross_event_trend: "text-emerald-400 bg-emerald-500/10",
+                    };
+                    return (
+                      <div key={o.id} className="flex items-start gap-2 px-3 py-2 bg-white/[0.01] border border-white/5 rounded-lg">
+                        <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${tColors[o.observationType] ?? "text-slate-400 bg-slate-500/10"}`}>
+                          {(o.observationType ?? "").replace(/_/g, " ")}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-slate-300 line-clamp-1">{o.observation}</p>
+                          <div className="flex gap-2 mt-0.5 text-xs text-slate-600">
+                            {o.clientName && <span>{o.clientName}</span>}
+                            {o.eventType && <span>{o.eventType}</span>}
+                            <span>Conf: {((o.confidence ?? 0) * 100).toFixed(0)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Algorithm stats card */}
+            <div className="bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-indigo-300 mb-3">Autonomous Evolution Algorithms</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-slate-400">
+                <div>
+                  <p className="text-slate-300 font-medium mb-1">Module Quality Scoring</p>
+                  <p>Weighted depth/breadth/specificity analysis per module. Detects generic output vs transcript-specific intelligence.</p>
+                </div>
+                <div>
+                  <p className="text-slate-300 font-medium mb-1">Evidence Decay (14-day half-life)</p>
+                  <p>Recent observations weighted exponentially higher. Proposals must sustain evidence to promote — stale gaps decay away.</p>
+                </div>
+                <div>
+                  <p className="text-slate-300 font-medium mb-1">Cross-Event Correlation</p>
+                  <p>Detects patterns spanning multiple clients and event types. High-breadth gaps auto-promote to proposed tools.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-slate-400 mt-4">
+                <div>
+                  <p className="text-slate-300 font-medium mb-1">Autonomous Promotion</p>
+                  <p>Tools auto-promote: emerging (5+ evidence, 55%+ score) → proposed → approved (12+ evidence, 70%+ score).</p>
+                </div>
+                <div>
+                  <p className="text-slate-300 font-medium mb-1">Gap Detection Matrix</p>
+                  <p>Importance × failure_rate × (1-quality) × breadth. Systematically identifies blind spots across the 20-module grid.</p>
+                </div>
+                <div>
+                  <p className="text-slate-300 font-medium mb-1">Impact Estimation</p>
+                  <p>Frequency × breadth × severity × urgency composite. Each proposed tool gets a live impact score that evolves with data.</p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {!evolution.data && !evolution.isLoading && (
+          <div className="text-center py-12">
+            <Zap className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+            <p className="text-sm text-slate-500">Evolution engine not initialized</p>
+            <p className="text-xs text-slate-600 mt-1">Process events through Shadow Mode to start the autonomous evolution cycle</p>
+          </div>
+        )}
+
+        {evolution.isLoading && (
+          <div className="text-center py-12">
+            <RefreshCw className="w-8 h-8 text-slate-700 mx-auto mb-2 animate-spin" />
+            <p className="text-sm text-slate-500">Loading evolution data...</p>
+          </div>
+        )}
+      </div>
+
       {/* How it works */}
       <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-5">
         <h3 className="text-sm font-semibold text-purple-300 mb-3">How the Self-Improving Loop Works</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs text-slate-400">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 text-xs text-slate-400">
           {[
-            { step: "1", title: "Operator Corrects", desc: "You override a sentiment score or dismiss a false compliance flag on any event." },
-            { step: "2", title: "Correction Stored", desc: "The correction is saved as a training signal with full context (event type, sector, reason)." },
-            { step: "3", title: "Thresholds Adapt", desc: "The system recalculates thresholds using a weighted blend of defaults and operator corrections." },
-            { step: "4", title: "Future Events Improve", desc: "New events of the same type are scored against the adapted thresholds, producing more accurate results." },
+            { step: "1", title: "AI Observes", desc: "Every report is auto-scored for depth, breadth, and specificity across all 20 modules." },
+            { step: "2", title: "Gaps Detected", desc: "Weak modules and missing capabilities are logged as observations with confidence scores." },
+            { step: "3", title: "Patterns Cluster", desc: "The accumulation engine groups observations into tool proposals using cross-event correlation." },
+            { step: "4", title: "Evidence Builds", desc: "Proposals gain evidence over time. Recent data weighted higher (14-day half-life decay)." },
+            { step: "5", title: "Auto-Promote", desc: "Tools with sufficient evidence auto-promote: emerging → proposed → approved → built → live." },
           ].map(({ step, title, desc }) => (
             <div key={step}>
-              <div className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold mb-2">{step}</div>
+              <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold mb-2">{step}</div>
               <p className="text-slate-300 font-medium mb-1">{title}</p>
               <p>{desc}</p>
             </div>

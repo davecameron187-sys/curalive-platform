@@ -65,6 +65,7 @@ import { iso27001Router } from "./routers/iso27001Router";
 import { complianceEngineRouter } from "./routers/complianceEngineRouter";
 import { aiAmRouter } from "./routers/aiAm";
 import { rbacRouter } from "./routers/rbac";
+import { aiEvolutionRouter } from "./routers/aiEvolutionRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -124,6 +125,7 @@ export const appRouter = router({
   taggedMetrics: taggedMetricsRouter,
   shadowMode: shadowModeRouter,
   archiveUpload: archiveUploadRouter,
+  aiEvolution: aiEvolutionRouter,
   benchmarks: benchmarksRouter,
   marketReaction: marketReactionRouter,
   communicationIndex: communicationIndexRouter,

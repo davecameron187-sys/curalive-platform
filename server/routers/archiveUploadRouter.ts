@@ -433,6 +433,25 @@ export const archiveUploadRouter = router({
         sourceType: "archive_upload",
       });
 
+      if (aiReport) {
+        try {
+          const { runMetaObserver, runAccumulationEngine } = await import("../services/AiEvolutionService");
+          await runMetaObserver(
+            aiReport,
+            "archive_upload",
+            archiveId,
+            input.eventType,
+            input.clientName,
+            input.transcriptText.length
+          );
+          runAccumulationEngine().catch(err =>
+            console.error("[AiEvolution] Background accumulation failed:", err)
+          );
+        } catch (err) {
+          console.error("[AiEvolution] Meta-observer hook failed:", err);
+        }
+      }
+
       return {
         success: true,
         archiveId,
@@ -554,6 +573,23 @@ export const archiveUploadRouter = router({
         `UPDATE archive_events SET ai_report = ? WHERE id = ?`,
         [JSON.stringify(aiReport), input.archiveId]
       );
+
+      try {
+        const { runMetaObserver, runAccumulationEngine } = await import("../services/AiEvolutionService");
+        await runMetaObserver(
+          aiReport,
+          "archive_upload",
+          input.archiveId,
+          row.event_type ?? "unknown",
+          row.client_name ?? "Unknown",
+          (row.transcript_text ?? "").length
+        );
+        runAccumulationEngine().catch(err =>
+          console.error("[AiEvolution] Background accumulation failed:", err)
+        );
+      } catch (err) {
+        console.error("[AiEvolution] Meta-observer hook failed:", err);
+      }
 
       return { success: true, message: "AI report generated successfully" };
     }),

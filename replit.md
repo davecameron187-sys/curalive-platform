@@ -195,6 +195,29 @@ Shadow Mode is the intelligence factory. Every event (live, uploaded, or pasted)
 
 **Database:** `archive_events` table defined in `drizzle/schema.ts` and created via `scripts/create-archive-events-table.ts` + `scripts/add-ai-report-column.ts`
 
+## AI Self-Evolution Engine
+
+Autonomous system that observes its own AI report quality, detects gaps, and proposes new tools.
+
+**Core Algorithms:**
+1. **Module Quality Scoring** — Weighted depth/breadth/specificity analysis (40/30/30) per module with generic-phrase detection
+2. **Evidence Decay** — Exponential half-life (14 days) so stale observations fade, recent data dominates
+3. **Cross-Event Correlation** — Detects patterns spanning multiple clients/event types via capability clustering
+4. **Autonomous Promotion** — emerging (5+ evidence, 55%+ score) → proposed → approved (12+ evidence, 70%+) → building → live
+5. **Gap Detection Matrix** — importance × failure_rate × (1 - quality) × breadth_factor across all 20 modules
+6. **Impact Estimation** — frequency × breadth × severity × urgency composite per proposal
+
+**Files:**
+- `server/services/AiEvolutionService.ts` — All 6 algorithms + `runMetaObserver()` + `runAccumulationEngine()` + `getEvolutionDashboard()`
+- `server/routers/aiEvolutionRouter.ts` — tRPC router (protectedProcedure): `getDashboard`, `runAccumulation`, `updateProposalStatus` (with transition validation)
+- `drizzle/schema.ts` — `ai_evolution_observations`, `ai_tool_proposals` tables
+- `client/src/pages/ShadowMode.tsx` — Evolution Dashboard in AI Learning tab
+
+**How it works:**
+- After every AI report (archive upload or transcript), `runMetaObserver()` scores all 20 modules, detects weak ones, and calls gpt-4o-mini to identify missing capabilities
+- `runAccumulationEngine()` clusters observations into tool proposals, runs cross-event correlation, and triggers autonomous promotion
+- Dashboard shows velocity stats, gap matrix, cross-event patterns, tool proposals with approve/reject controls
+
 ## OCC (Operator Console) — `/occ`
 
 The OCC is a world-class conference control centre built to the technical brief. Key areas:
