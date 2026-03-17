@@ -6,8 +6,7 @@ import { promisify } from "util";
 import { writeFile, readFile, mkdtemp, rm } from "fs/promises";
 import { join, extname } from "path";
 import { tmpdir } from "os";
-// Use Manus built-in transcription instead of direct OpenAI
-import { transcribeAudio } from "./_core/voiceTranscription";
+// Whisper transcription — sends audio buffer directly to OpenAI API
 
 const execFileAsync = promisify(execFile);
 
@@ -66,14 +65,44 @@ async function extractChunkMp3(
 }
 
 async function callTranscribeApi(buffer: Buffer, filename: string): Promise<string> {
-  // Upload buffer to a temp S3 location then use Manus built-in transcription
-  const { storagePut } = await import("./storage");
+  const { ENV } = await import("./_core/env");
+  const apiKey = ENV.forgeApiKey;
+  const baseUrl = (ENV.forgeApiUrl || "https://api.openai.com").replace(/\/+$/, "");
+
+  if (!apiKey) {
+    throw new Error("Transcription API key not configured (OPENAI_API_KEY or BUILT_IN_FORGE_API_KEY)");
+  }
+
   const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
-  const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm"].includes(ext) ? ext : "mp3";
-  const key = `transcribe-tmp/${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`;
-  const { url } = await storagePut(key, buffer, `audio/${safeExt}`);
-  const result = await transcribeAudio({ audioUrl: url });
-  return result.text.trim();
+  const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4"].includes(ext) ? ext : "mp3";
+  const mimeType = safeExt === "mp4" ? "video/mp4" : `audio/${safeExt}`;
+
+  const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
+  const formData = new FormData();
+  formData.append("file", blob, `audio.${safeExt}`);
+  formData.append("model", "whisper-1");
+  formData.append("response_format", "verbose_json");
+  formData.append("prompt", "Transcribe this investor event recording accurately, including speaker names and financial terminology.");
+
+  const url = `${baseUrl}/v1/audio/transcriptions`;
+  console.log(`[AudioTranscribe] Sending ${(buffer.length / 1024 / 1024).toFixed(1)}MB directly to Whisper API...`);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Accept-Encoding": "identity",
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => response.statusText);
+    throw new Error(`Whisper API failed (${response.status}): ${errText}`);
+  }
+
+  const result = await response.json();
+  return (result.text ?? "").trim();
 }
 
 export function registerAudioTranscribeRoute(app: import("express").Express) {
