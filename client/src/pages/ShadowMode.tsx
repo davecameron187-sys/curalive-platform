@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
-  zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", webphone: "Webphone", other: "Other",
+  zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", other: "Other",
 };
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -427,13 +427,14 @@ export default function ShadowMode() {
               <Shield className="w-3.5 h-3.5" />
               Bastion Testing
             </a>
-            {activeTab === "live" && (
-              <Button onClick={() => setShowForm(!showForm)}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
-                <Play className="w-4 h-4" />
-                New Session
-              </Button>
-            )}
+            <Button onClick={() => {
+              if (activeTab !== "live") setActiveTab("live");
+              setShowForm(true);
+            }}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 text-sm font-semibold px-5">
+              <Play className="w-4 h-4" />
+              New Live Event
+            </Button>
           </div>
         </div>
 
@@ -511,19 +512,81 @@ export default function ShadowMode() {
         ══════════════════════════════════════════════════ */}
         {activeTab === "live" && (
           <>
-            {/* How it works banner */}
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 flex flex-col sm:flex-row items-start gap-4">
-              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 shrink-0">
-                <EyeOff className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-slate-200 mb-1">How Shadow Mode works</div>
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  Paste any Zoom, Teams, or Meet link from a live event. CuraLive deploys an invisible intelligence bot that joins as{" "}
-                  <span className="text-slate-200 font-medium">"CuraLive Intelligence"</span> — it transcribes the entire event in real time, scores sentiment every 5 segments, detects compliance keywords, and automatically stores everything in your Tagged Metrics database when the session ends. Your clients see a regular participant name. You get a full intelligence record of every event you run.
+            {!showForm && (
+              <div className="bg-gradient-to-br from-emerald-500/5 via-white/[0.01] to-violet-500/5 border border-white/10 rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <EyeOff className="w-5 h-5 text-emerald-400" />
+                  <h2 className="text-base font-semibold text-slate-200">How do you want to capture this event?</h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <button
+                    onClick={() => { setShowForm(true); }}
+                    className="group bg-white/[0.02] hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/30 rounded-xl p-5 text-left transition-all"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20">
+                        <Radio className="w-5 h-5 text-emerald-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-slate-200">Join Live Event</div>
+                        <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Free — no call charges</div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                      Paste a Zoom, Teams, or Meet link. An AI bot joins the meeting silently, transcribes in real time, and runs the full intelligence pipeline.
+                    </p>
+                    <div className="text-xs text-emerald-400 font-medium group-hover:text-emerald-300 flex items-center gap-1">
+                      <Play className="w-3 h-3" /> Start a new live session
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab("recording")}
+                    className="group bg-white/[0.02] hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/30 rounded-xl p-5 text-left transition-all"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20">
+                        <Mic className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-slate-200">Upload Recording</div>
+                        <div className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Audio or video file</div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                      Upload an MP3, WAV, M4A, MP4, or MOV recording of a past event. Whisper AI transcribes, then the full 20-module AI report runs.
+                    </p>
+                    <div className="text-xs text-blue-400 font-medium group-hover:text-blue-300 flex items-center gap-1">
+                      <Upload className="w-3 h-3" /> Upload a recording
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab("archive")}
+                    className="group bg-white/[0.02] hover:bg-violet-500/10 border border-white/10 hover:border-violet-500/30 rounded-xl p-5 text-left transition-all"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 group-hover:bg-violet-500/20">
+                        <FileText className="w-5 h-5 text-violet-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-slate-200">Paste Transcript</div>
+                        <div className="text-[10px] text-violet-400 font-bold uppercase tracking-wider">Text or .txt file</div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                      Paste raw transcript text or upload a .txt file from any source. Runs sentiment analysis, compliance scanning, and the full AI report.
+                    </p>
+                    <div className="text-xs text-violet-400 font-medium group-hover:text-violet-300 flex items-center gap-1">
+                      <FileText className="w-3 h-3" /> Submit a transcript
+                    </div>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-600 mt-4 text-center">
+                  Every input path runs all 20 AI modules and stores the intelligence in your database — building your data asset for every event.
                 </p>
               </div>
-            </div>
+            )}
 
             {/* New session form */}
             {showForm && (
@@ -578,7 +641,6 @@ export default function ShadowMode() {
                       ))}
                     </div>
                   </div>
-                  {form.platform !== "webphone" && (
                   <div className="sm:col-span-2">
                     <label className="text-xs text-slate-500 block mb-1.5">Meeting URL * (Zoom / Teams / Meet invite link)</label>
                     <input
@@ -587,18 +649,8 @@ export default function ShadowMode() {
                       value={form.meetingUrl}
                       onChange={e => setForm(f => ({ ...f, meetingUrl: e.target.value }))}
                     />
+                    <p className="text-[11px] text-slate-600 mt-1.5">The bot joins this meeting link as "CuraLive Intelligence" — a regular participant. No software needed on the client's side.</p>
                   </div>
-                  )}
-                  {form.platform === "webphone" && (
-                  <div className="sm:col-span-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Globe className="w-4 h-4 text-emerald-400" />
-                      <span className="text-sm font-semibold text-emerald-300">Webphone Mode</span>
-                      <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full font-bold tracking-wide uppercase">$0.00/min</span>
-                    </div>
-                    <p className="text-xs text-slate-400">CuraLive will use the built-in browser Webphone to join this event. No meeting URL needed — audio is captured directly and sent to the intelligence pipeline in real time.</p>
-                  </div>
-                  )}
                   <div className="sm:col-span-2">
                     <label className="text-xs text-slate-500 block mb-1.5">Notes (optional)</label>
                     <input
