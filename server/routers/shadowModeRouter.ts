@@ -10,6 +10,13 @@ import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
 const RECALL_BASE_URL = process.env.RECALL_AI_BASE_URL ?? "https://eu-central-1.recall.ai/api/v1";
 const RECALL_API_KEY = process.env.RECALL_AI_API_KEY ?? "";
 
+function getWebhookBaseUrl(): string {
+  if (process.env.RECALL_WEBHOOK_BASE_URL) return process.env.RECALL_WEBHOOK_BASE_URL;
+  if (process.env.REPLIT_DEPLOYMENT_URL) return `https://${process.env.REPLIT_DEPLOYMENT_URL}`;
+  if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  throw new Error("Cannot determine webhook URL. Set RECALL_WEBHOOK_BASE_URL, or ensure REPLIT_DEV_DOMAIN / REPLIT_DEPLOYMENT_URL is available.");
+}
+
 async function recallFetch(path: string, options: RequestInit = {}) {
   const res = await fetch(`${RECALL_BASE_URL}${path}`, {
     ...options,
@@ -109,7 +116,7 @@ export const shadowModeRouter = router({
       eventType: z.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]),
       platform: z.enum(["zoom", "teams", "meet", "webex", "other"]).default("zoom"),
       meetingUrl: z.string().url(),
-      webhookBaseUrl: z.string().url(),
+      webhookBaseUrl: z.string().url().optional(),
       notes: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
@@ -134,9 +141,12 @@ export const shadowModeRouter = router({
         throw new Error("RECALL_AI_API_KEY is not configured. Please add it to environment secrets.");
       }
 
+      const resolvedBase = getWebhookBaseUrl();
       const ablyChannel = `shadow-${sessionId}-${Date.now()}`;
-      const webhookUrl = `${input.webhookBaseUrl}/api/recall/webhook`;
+      const webhookUrl = `${resolvedBase}/api/recall/webhook`;
       const eventSlug = `shadow-${sessionId}`;
+
+      console.log(`[Shadow] Session ${sessionId}: webhook URL → ${webhookUrl}`);
 
       try {
         const bot = await recallFetch("/bot/", {

@@ -38,12 +38,33 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+function validateShadowModeEnv() {
+  const checks = [
+    { key: "RECALL_AI_API_KEY", label: "Recall.ai bot deployment", critical: true },
+    { key: "RECALL_AI_WEBHOOK_SECRET", label: "Webhook signature verification", critical: false },
+    { key: "ABLY_API_KEY", label: "Real-time transcript streaming to UI", critical: false },
+  ];
+  const missing: string[] = [];
+  for (const c of checks) {
+    if (!process.env[c.key]) {
+      const level = c.critical ? "CRITICAL" : "WARNING";
+      console.warn(`[Shadow Mode] ${level}: ${c.key} not set — ${c.label} will not work`);
+      if (c.critical) missing.push(c.key);
+    }
+  }
+  if (missing.length === 0) {
+    console.log("[Shadow Mode] ✓ All critical environment variables configured");
+  }
+}
+
 async function startServer() {
   const app = express();
   const server = http.createServer(app);
   app.set("trust proxy", 1);
 
   const isProd = process.env.NODE_ENV === "production";
+
+  validateShadowModeEnv();
 
   if (!isProd) {
     app.use("/__mockup", (req, res) => {

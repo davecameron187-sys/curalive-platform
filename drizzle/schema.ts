@@ -2835,3 +2835,28 @@ export const studioSessions = mysqlTable("studio_sessions", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 export type StudioSession = typeof studioSessions.$inferSelect;
+
+export const archiveEvents = mysqlTable("archive_events", {
+  id: int("id").autoincrement().primaryKey(),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  eventName: varchar("event_name", { length: 255 }).notNull(),
+  eventType: mysqlEnum("event_type", [
+    "earnings_call", "interim_results", "agm", "capital_markets_day",
+    "ceo_town_hall", "board_meeting", "webcast", "other",
+  ]).notNull(),
+  eventDate: varchar("event_date", { length: 32 }),
+  platform: varchar("platform", { length: 64 }),
+  transcriptText: longtext("transcript_text").notNull(),
+  wordCount: int("word_count").default(0),
+  segmentCount: int("segment_count").default(0),
+  sentimentAvg: float("sentiment_avg"),
+  complianceFlags: int("compliance_flags").default(0),
+  taggedMetricsGenerated: int("tagged_metrics_generated").default(0),
+  status: mysqlEnum("status", ["processing", "completed", "failed"]).default("processing").notNull(),
+  notes: text("notes"),
+  aiReport: json("ai_report"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ArchiveEvent = typeof archiveEvents.$inferSelect;
+export type InsertArchiveEvent = typeof archiveEvents.$inferInsert;

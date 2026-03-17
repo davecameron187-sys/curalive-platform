@@ -138,10 +138,6 @@ export default function ShadowMode() {
     onError: (e) => toast.error(e.message),
   });
 
-  const webhookBase = typeof window !== "undefined"
-    ? window.location.origin
-    : "https://localhost:5000";
-
   const liveSession = activeSession.data;
   const transcript = liveSession?.transcriptSegments ?? [];
   const isLive = liveSession?.status === "live" || liveSession?.status === "bot_joining";
@@ -663,7 +659,7 @@ export default function ShadowMode() {
                 </div>
                 <div className="flex items-center gap-3 mt-5">
                   <Button
-                    onClick={() => startSession.mutate({ ...form, webhookBaseUrl: webhookBase })}
+                    onClick={() => startSession.mutate(form)}
                     disabled={startSession.isPending || !form.clientName || !form.eventName || !form.meetingUrl}
                     className="bg-emerald-600 hover:bg-emerald-500 gap-2">
                     {startSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}

@@ -177,6 +177,24 @@ Set these env vars + matching secrets to enable live OAuth publishing:
 - Recall.ai integration for Zoom/Teams/Webex bots
 - Billing and PDF generation
 
+## Shadow Mode — Production Configuration
+
+Shadow Mode is the intelligence factory. Every event (live, uploaded, or pasted) runs the full 20-module AI report pipeline.
+
+**Required environment variables:**
+- `RECALL_AI_API_KEY` — (critical) Recall.ai bot deployment for live meeting capture
+- `RECALL_AI_WEBHOOK_SECRET` — Webhook HMAC signature verification (required in production; skipped in dev)
+- `ABLY_API_KEY` — Real-time transcript streaming to UI
+- `RECALL_WEBHOOK_BASE_URL` — (optional) Override for webhook callback URL; auto-detected from `REPLIT_DEPLOYMENT_URL` / `REPLIT_DEV_DOMAIN`
+
+**Webhook URL resolution order:**
+1. `RECALL_WEBHOOK_BASE_URL` (explicit override)
+2. `REPLIT_DEPLOYMENT_URL` (production deployment)
+3. `REPLIT_DEV_DOMAIN` (development)
+4. Fails with clear error if none available — never trusts client-supplied URLs
+
+**Database:** `archive_events` table defined in `drizzle/schema.ts` and created via `scripts/create-archive-events-table.ts` + `scripts/add-ai-report-column.ts`
+
 ## OCC (Operator Console) — `/occ`
 
 The OCC is a world-class conference control centre built to the technical brief. Key areas:

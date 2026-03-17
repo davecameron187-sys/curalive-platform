@@ -59,7 +59,15 @@ async function ablyPublish(channel: string, name: string, data: unknown) {
 // ─── HMAC signature verification ─────────────────────────────────────────────
 
 function verifyRecallSignature(rawBody: string, signature: string | undefined): boolean {
-  if (!RECALL_WEBHOOK_SECRET || !signature) return true; // skip in dev if not configured
+  const isProd = process.env.NODE_ENV === "production";
+  if (!RECALL_WEBHOOK_SECRET) {
+    if (isProd) {
+      console.error("[Recall] RECALL_AI_WEBHOOK_SECRET not set — rejecting unsigned webhook in production");
+      return false;
+    }
+    return true;
+  }
+  if (!signature) return false;
   try {
     const expected = crypto
       .createHmac("sha256", RECALL_WEBHOOK_SECRET)
