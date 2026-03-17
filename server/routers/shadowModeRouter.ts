@@ -2,13 +2,15 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { shadowSessions, taggedMetrics, recallBots } from "../../drizzle/schema";
+import { shadowSessions, taggedMetrics, recallBots, webphoneSessions } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
 import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
+import { initiateOutboundBridgeCall } from "../webphone/bridgeDial";
 
 const RECALL_BASE_URL = process.env.RECALL_AI_BASE_URL ?? "https://eu-central-1.recall.ai/api/v1";
 const RECALL_API_KEY = process.env.RECALL_AI_API_KEY ?? "";
+const WEBPHONE_ENABLED = process.env.TELNYX_API_KEY || process.env.TWILIO_AUTH_TOKEN; // Check if Webphone is configured
 
 async function recallFetch(path: string, options: RequestInit = {}) {
   const res = await fetch(`${RECALL_BASE_URL}${path}`, {
@@ -107,13 +109,33 @@ export const shadowModeRouter = router({
       clientName: z.string().min(1),
       eventName: z.string().min(1),
       eventType: z.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]),
-      platform: z.enum(["zoom", "teams", "meet", "webex", "other"]).default("zoom"),
-      meetingUrl: z.string().url(),
+      platform: z.enum(["zoom", "teams", "meet", "webex", "webphone", "sip", "other"]).default("webphone"), // Default to Webphone for cost-effective testing
+      meetingUrl: z.string().min(1), // Can be URL or Webphone/SIP identifier
       webhookBaseUrl: z.string().url(),
       notes: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
+
+      // Platform URL validation
+      if (input.platform === "zoom" && !input.meetingUrl.includes("zoom.us") && !input.meetingUrl.includes("zoom.com")) {
+        throw new Error("Invalid Zoom URL. Must be a zoom.us or zoom.com meeting link.");
+      }
+      if (input.platform === "teams" && !input.meetingUrl.includes("teams.microsoft.com") && !input.meetingUrl.includes("teams.live.com")) {
+        throw new Error("Invalid Teams URL. Must be a teams.microsoft.com or teams.live.com meeting link.");
+      }
+      if (input.platform === "webex" && !input.meetingUrl.includes("webex.com")) {
+        throw new Error("Invalid Webex URL. Must be a webex.com meeting link.");
+      }
+      if (input.platform === "meet" && !input.meetingUrl.includes("meet.google.com")) {
+        throw new Error("Invalid Google Meet URL. Must be a meet.google.com link.");
+      }
+      if (input.platform === "webphone" && !input.meetingUrl.match(/^[a-zA-Z0-9\-_]+$/)) {
+        throw new Error("Invalid Webphone identifier. Use alphanumeric characters, hyphens, or underscores only.");
+      }
+      if (input.platform === "sip" && !input.meetingUrl.match(/^sip:[a-zA-Z0-9\-_.]+@[a-zA-Z0-9\-_.]+/)) {
+        throw new Error("Invalid SIP URI. Format should be: sip:user@domain");
+      }
 
       const [inserted] = await db.insert(shadowSessions).values({
         clientName: input.clientName,
@@ -137,6 +159,42 @@ export const shadowModeRouter = router({
       const ablyChannel = `shadow-${sessionId}-${Date.now()}`;
       const webhookUrl = `${input.webhookBaseUrl}/api/recall/webhook`;
       const eventSlug = `shadow-${sessionId}`;
+
+      // Handle Webphone platform separately
+      if (input.platform === "webphone") {
+        try {
+          // Create Webphone session for bridge dialing
+          const bridgeCallResult = await initiateOutboundBridgeCall({
+            targetNumber: input.meetingUrl,
+            sessionId,
+            eventName: input.eventName,
+            clientName: input.clientName,
+            ablyChannel,
+          });
+
+          await db.update(shadowSessions)
+            .set({
+              status: "webphone_active",
+              startedAt: Date.now(),
+              notes: `Webphone bridge call initiated. Call ID: ${bridgeCallResult.callId}`,
+            })
+            .where(eq(shadowSessions.id, sessionId));
+
+          return {
+            sessionId,
+            botId: `webphone-${sessionId}`,
+            ablyChannel,
+            status: "webphone_active",
+            message: `CuraLive Webphone bridge is dialing ${input.meetingUrl}. Connection will be established within 10-15 seconds.`,
+            callId: bridgeCallResult.callId,
+          };
+        } catch (err) {
+          await db.update(shadowSessions)
+            .set({ status: "failed" })
+            .where(eq(shadowSessions.id, sessionId));
+          throw new Error(`Webphone bridge failed: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
 
       try {
         const bot = await recallFetch("/bot/", {

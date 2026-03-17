@@ -533,3 +533,79 @@ All core features implemented and production-ready.
 - [ ] Create user registration E2E test
 - [ ] Create admin moderation E2E test
 - [ ] Set up Playwright configuration
+
+
+## Shadow Mode Enhancements - Webphone & SIP Integration (Round 70)
+
+### Phase 1: Webphone Platform Support
+- [ ] Add Webphone as supported platform in Shadow Mode backend
+- [ ] Implement Webphone URL validation and parsing
+- [ ] Create Webphone bot integration service
+- [ ] Add Webphone to platform enum in database schema
+- [ ] Update Shadow Mode router to accept Webphone links
+- [ ] Write tests for Webphone platform validation
+
+### Phase 2: SIP Trunk Integration (SimpleToCall or similar)
+- [ ] Research SIP providers (SimpleToCall, Twilio SIP, etc.)
+- [ ] Evaluate cost vs. Twilio/traditional VoIP
+- [ ] Implement SIP trunk configuration
+- [ ] Create SIP connection management service
+- [ ] Add SIP credentials to environment variables
+- [ ] Build SIP dial-out functionality
+- [ ] Test SIP reliability and call quality
+
+### Phase 3: Webphone Bot Integration
+- [ ] Create Webphone bot service (similar to Recall.ai)
+- [ ] Implement audio capture from Webphone calls
+- [ ] Add real-time transcription for Webphone
+- [ ] Integrate sentiment analysis for Webphone calls
+- [ ] Add Q&A capture for Webphone sessions
+- [ ] Test Webphone bot with internal calls
+
+### Phase 4: Webphone → Teams/Zoom Bridges
+- [ ] **Option A: Webphone dials into Teams/Zoom meeting**
+  - [ ] Implement auto-dial logic
+  - [ ] Capture audio from bridge
+  - [ ] Test latency and reliability
+  - [ ] Measure cost savings
+- [ ] **Option C: Webphone as PSTN gateway**
+  - [ ] Configure PSTN dial-in numbers
+  - [ ] Implement phone number routing
+  - [ ] Test Teams/Zoom phone bridge
+  - [ ] Compare cost vs. Option A
+
+### Phase 5: Platform Validation & Error Handling
+- [ ] Add platform validation to Shadow Mode UI
+- [ ] Improve error messages for unsupported platforms
+- [ ] Create helpful error guidance (e.g., "Webphone links must start with...")
+- [ ] Add platform support documentation
+- [ ] Create user-friendly error recovery flows
+- [ ] Test error handling for malformed URLs
+
+### Phase 6: Shadow Mode UI Updates
+- [ ] Update session creation form to show supported platforms
+- [ ] Add Webphone link input field
+- [ ] Add SIP number input field (if using SIP)
+- [ ] Create platform selector dropdown
+- [ ] Add platform-specific help text
+- [ ] Update documentation with Webphone/SIP instructions
+
+### Phase 7: Testing & Validation
+- [ ] Test Webphone with internal calls
+- [ ] Test Webphone → Teams bridge (Option A)
+- [ ] Test Webphone → Zoom bridge (Option A)
+- [ ] Test PSTN gateway approach (Option C)
+- [ ] Compare reliability: Option A vs. Option C
+- [ ] Compare costs: Webphone vs. SIP vs. Twilio
+- [ ] Document performance metrics
+- [ ] Create cost analysis report
+
+### Phase 8: Documentation & Deployment
+- [ ] Update Shadow Mode customer guide
+- [ ] Create Webphone setup instructions
+- [ ] Create SIP trunk configuration guide
+- [ ] Document cost savings analysis
+- [ ] Create troubleshooting guide
+- [ ] Write deployment checklist
+- [ ] Save final checkpoint
+

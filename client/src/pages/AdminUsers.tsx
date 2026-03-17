@@ -298,7 +298,7 @@ export default function AdminUsers() {
           </div>
           <div>
             <h1 className="font-bold text-base">User Management</h1>
-            <p className="text-slate-500 text-xs">Chorus.AI Admin Panel</p>
+            <p className="text-slate-500 text-xs">CuraLive Admin Panel</p>
           </div>
         </div>
         <div className="flex items-center gap-3">

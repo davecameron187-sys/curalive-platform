@@ -217,7 +217,7 @@ export const corsConfig = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5173',
-      process.env.FRONTEND_URL || 'https://chorusai-mdu4k2ib.manus.space',
+      process.env.FRONTEND_URL || 'https://curalive-mdu4k2ib.manus.space',
     ];
 
     if (!origin || allowedOrigins.includes(origin)) {

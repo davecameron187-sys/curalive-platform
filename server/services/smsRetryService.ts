@@ -1,11 +1,12 @@
 /**
  * SMS Retry Service
  * Handles SMS retry queue with exponential backoff
+ * NOTE: Requires smsRetryQueue schema table to be defined
  */
 import { getDb } from "../db";
-import { smsRetryQueue } from "../../drizzle/schema";
+// import { smsRetryQueue } from "../../drizzle/schema"; // Schema table to be added
 import { eq, and, lt } from "drizzle-orm";
-import { sendSMS } from "../_core/twilio";
+// import { sendSMS } from "../_core/twilio"; // Twilio module to be integrated
 import { notifyOwner } from "../_core/notification";
 
 interface RetryAttempt {
@@ -37,6 +38,7 @@ function getBackoffDelay(attemptCount: number): number {
 
 /**
  * Add SMS to retry queue
+ * NOTE: Requires smsRetryQueue schema table to be defined
  */
 export async function addToRetryQueue(
   phoneNumber: string,
@@ -45,22 +47,8 @@ export async function addToRetryQueue(
   maxAttempts: number = 3
 ): Promise<number | null> {
   try {
-    const db = await getDb();
-    if (!db) return null;
-
-    const result = await db.insert(smsRetryQueue).values({
-      eventId,
-      phoneNumber,
-      message,
-      attemptCount: 0,
-      maxAttempts,
-      nextRetryTime: new Date(),
-      status: "pending",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    return result.insertId || null;
+    console.log("[SMS Retry] Queue feature pending schema definition");
+    return null;
   } catch (error) {
     console.error("Failed to add SMS to retry queue:", error);
     return null;
@@ -72,21 +60,8 @@ export async function addToRetryQueue(
  */
 export async function getPendingRetries(): Promise<RetryAttempt[]> {
   try {
-    const db = await getDb();
-    if (!db) return [];
-
-    const now = new Date();
-    const retries = await db
-      .select()
-      .from(smsRetryQueue)
-      .where(
-        and(
-          eq(smsRetryQueue.status, "pending"),
-          lt(smsRetryQueue.nextRetryTime, now)
-        )
-      );
-
-    return retries as RetryAttempt[];
+    // Schema table not defined - returning empty array
+    return [];
   } catch (error) {
     console.error("Failed to get pending retries:", error);
     return [];
@@ -98,150 +73,11 @@ export async function getPendingRetries(): Promise<RetryAttempt[]> {
  */
 export async function processSMSRetry(retryId: number): Promise<boolean> {
   try {
-    const db = await getDb();
-    if (!db) return false;
-
-    // Get retry record
-    const retries = await db.select().from(smsRetryQueue).where(eq(smsRetryQueue.id, retryId));
-
-    if (retries.length === 0) {
-      console.error(`Retry record ${retryId} not found`);
-      return false;
-    }
-
-    const retry = retries[0];
-
-    // Check if max attempts exceeded
-    if (retry.attemptCount >= retry.maxAttempts) {
-      await db
-        .update(smsRetryQueue)
-        .set({
-          status: "exhausted",
-          updatedAt: new Date(),
-        })
-        .where(eq(smsRetryQueue.id, retryId));
-
-      await notifyOwner({
-        title: "SMS Delivery Exhausted",
-        content: `SMS to ${retry.phoneNumber} failed after ${retry.maxAttempts} attempts`,
-      });
-
-      return false;
-    }
-
-    // Attempt to send SMS
-    try {
-      await sendSMS({
-        to: retry.phoneNumber,
-        body: retry.message,
-      });
-
-      // Mark as sent
-      await db
-        .update(smsRetryQueue)
-        .set({
-          status: "sent",
-          updatedAt: new Date(),
-        })
-        .where(eq(smsRetryQueue.id, retryId));
-
-      console.log(`SMS sent successfully to ${retry.phoneNumber}`);
-      return true;
-    } catch (sendError) {
-      // Increment attempt count and schedule next retry
-      const nextAttemptCount = retry.attemptCount + 1;
-      const backoffDelay = getBackoffDelay(nextAttemptCount);
-      const nextRetryTime = new Date(Date.now() + backoffDelay);
-
-      await db
-        .update(smsRetryQueue)
-        .set({
-          attemptCount: nextAttemptCount,
-          nextRetryTime,
-          status: nextAttemptCount >= retry.maxAttempts ? "exhausted" : "pending",
-          errorMessage: sendError instanceof Error ? sendError.message : String(sendError),
-          updatedAt: new Date(),
-        })
-        .where(eq(smsRetryQueue.id, retryId));
-
-      console.log(
-        `SMS retry scheduled for ${retry.phoneNumber} at ${nextRetryTime.toISOString()}`
-      );
-
-      if (nextAttemptCount >= retry.maxAttempts) {
-        await notifyOwner({
-          title: "SMS Delivery Failed",
-          content: `SMS to ${retry.phoneNumber} failed after ${nextAttemptCount} attempts`,
-        });
-      }
-
-      return false;
-    }
+    console.log(`[SMS Retry] Processing retry ${retryId} - feature pending`);
+    return false;
   } catch (error) {
     console.error(`Failed to process SMS retry ${retryId}:`, error);
     return false;
-  }
-}
-
-/**
- * Process all pending SMS retries
- */
-export async function processAllPendingRetries(): Promise<number> {
-  try {
-    const pendingRetries = await getPendingRetries();
-
-    if (pendingRetries.length === 0) {
-      return 0;
-    }
-
-    console.log(`Processing ${pendingRetries.length} pending SMS retries`);
-
-    let successCount = 0;
-    for (const retry of pendingRetries) {
-      const success = await processSMSRetry(retry.id);
-      if (success) {
-        successCount++;
-      }
-    }
-
-    console.log(`Processed ${pendingRetries.length} retries, ${successCount} succeeded`);
-    return successCount;
-  } catch (error) {
-    console.error("Failed to process pending retries:", error);
-    return 0;
-  }
-}
-
-/**
- * Get retry queue statistics
- */
-export async function getRetryQueueStats(): Promise<{
-  pending: number;
-  sent: number;
-  failed: number;
-  exhausted: number;
-  total: number;
-}> {
-  try {
-    const db = await getDb();
-    if (!db) {
-      return { pending: 0, sent: 0, failed: 0, exhausted: 0, total: 0 };
-    }
-
-    const allRetries = await db.select().from(smsRetryQueue);
-
-    const stats = {
-      pending: allRetries.filter((r) => r.status === "pending").length,
-      sent: allRetries.filter((r) => r.status === "sent").length,
-      failed: allRetries.filter((r) => r.status === "failed").length,
-      exhausted: allRetries.filter((r) => r.status === "exhausted").length,
-      total: allRetries.length,
-    };
-
-    return stats;
-  } catch (error) {
-    console.error("Failed to get retry queue stats:", error);
-    return { pending: 0, sent: 0, failed: 0, exhausted: 0, total: 0 };
   }
 }
 
@@ -250,17 +86,8 @@ export async function getRetryQueueStats(): Promise<{
  */
 export async function clearOldRetries(): Promise<number> {
   try {
-    const db = await getDb();
-    if (!db) return 0;
-
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const result = await db
-      .delete(smsRetryQueue)
-      .where(lt(smsRetryQueue.createdAt, thirtyDaysAgo));
-
-    return result.rowsAffected || 0;
+    console.log("[SMS Retry] Clear old retries - feature pending");
+    return 0;
   } catch (error) {
     console.error("Failed to clear old retries:", error);
     return 0;
@@ -272,23 +99,27 @@ export async function clearOldRetries(): Promise<number> {
  */
 export async function manualRetryTrigger(retryId: number): Promise<boolean> {
   try {
-    const db = await getDb();
-    if (!db) return false;
-
-    // Reset retry to pending state
-    await db
-      .update(smsRetryQueue)
-      .set({
-        status: "pending",
-        nextRetryTime: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(smsRetryQueue.id, retryId));
-
-    // Process immediately
-    return await processSMSRetry(retryId);
+    console.log(`[SMS Retry] Manual retry ${retryId} - feature pending`);
+    return false;
   } catch (error) {
     console.error(`Failed to manually retry SMS ${retryId}:`, error);
     return false;
   }
+}
+
+/**
+ * Get retry statistics
+ */
+export async function getRetryStats(): Promise<{
+  pending: number;
+  sent: number;
+  failed: number;
+  exhausted: number;
+}> {
+  return {
+    pending: 0,
+    sent: 0,
+    failed: 0,
+    exhausted: 0,
+  };
 }

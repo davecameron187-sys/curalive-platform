@@ -230,7 +230,7 @@ export async function sendReportEmail(data: ReportData): Promise<void> {
         <p><strong>Overall Sentiment:</strong> ${data.sentimentAnalysis.overallSentiment}</p>
         <p><strong>Sentiment Score:</strong> ${data.sentimentAnalysis.overallScore.toFixed(2)}/1.0</p>
         <p>Please see the attached PDF for the full report including sentiment analysis, executive summary, and action items.</p>
-        <p>Best regards,<br/>Chorus.AI</p>
+        <p>Best regards,<br/>CuraLive</p>
       `,
       attachments: [
         {

@@ -1,5 +1,5 @@
 /**
- * Email Templates for Chorus.AI
+ * Email Templates for CuraLive
  * 
  * Provides HTML email templates for various notifications:
  * - Event reminders
@@ -54,7 +54,7 @@ export function eventReminderEmail(data: {
             </p>
             <p>See you soon!</p>
             <div class="footer">
-              <p>© 2026 Chorus.AI. All rights reserved.</p>
+              <p>© 2026 CuraLive. All rights reserved.</p>
             </div>
           </div>
         </div>
@@ -76,7 +76,7 @@ Join Event: ${data.eventLink}
 
 See you soon!
 
-© 2026 Chorus.AI. All rights reserved.
+© 2026 CuraLive. All rights reserved.
   `.trim();
 
   return {
@@ -150,7 +150,7 @@ export function postEventSummaryEmail(data: {
             </p>
 
             <div class="footer">
-              <p>© 2026 Chorus.AI. All rights reserved.</p>
+              <p>© 2026 CuraLive. All rights reserved.</p>
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@ ${data.aiSummary}
 
 View Full Report: ${data.reportLink}
 
-© 2026 Chorus.AI. All rights reserved.
+© 2026 CuraLive. All rights reserved.
   `.trim();
 
   return {
@@ -237,7 +237,7 @@ export function complianceAlertEmail(data: {
             }
 
             <div class="footer">
-              <p>© 2026 Chorus.AI. All rights reserved.</p>
+              <p>© 2026 CuraLive. All rights reserved.</p>
             </div>
           </div>
         </div>
@@ -256,7 +256,7 @@ Alert: ${data.alertMessage}
 
 ${data.actionRequired ? `Action Required: Please review and take appropriate action.\nReview Details: ${data.actionLink}` : ""}
 
-© 2026 Chorus.AI. All rights reserved.
+© 2026 CuraLive. All rights reserved.
   `.trim();
 
   return {
@@ -318,7 +318,7 @@ export function userRoleChangeEmail(data: {
             </p>
 
             <div class="footer">
-              <p>© 2026 Chorus.AI. All rights reserved.</p>
+              <p>© 2026 CuraLive. All rights reserved.</p>
             </div>
           </div>
         </div>
@@ -340,7 +340,7 @@ ${data.permissions.map((perm) => `- ${perm}`).join("\n")}
 
 Access Dashboard: ${data.dashboardLink}
 
-© 2026 Chorus.AI. All rights reserved.
+© 2026 CuraLive. All rights reserved.
   `.trim();
 
   return {

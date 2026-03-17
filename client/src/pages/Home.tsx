@@ -9,9 +9,9 @@ const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu
 const DEMO_VIDEO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3/demo_curalive_0cb4c723.mp4";
 
 const DEMO_EVENTS = [
-  { id: "q4-earnings-2026", title: "Q4 2025 Earnings Call", company: "CuraLive Inc.", platform: "Zoom", status: "live", attendees: 1247, duration: "42:18" },
-  { id: "investor-day-2026", title: "Annual Investor Day", company: "CuraLive Inc.", platform: "Microsoft Teams", status: "upcoming", attendees: 3500, duration: "—" },
-  { id: "board-briefing", title: "Board Strategy Briefing", company: "CuraLive Inc.", platform: "Webex", status: "completed", attendees: 24, duration: "1:28:05" },
+  { id: "q4-earnings-2026", title: "Q4 2025 Earnings Call", company: "CuraLive", platform: "Zoom", status: "live", attendees: 1247, duration: "42:18" },
+  { id: "investor-day-2026", title: "Annual Investor Day", company: "CuraLive", platform: "Microsoft Teams", status: "upcoming", attendees: 3500, duration: "—" },
+  { id: "board-briefing", title: "Board Strategy Briefing", company: "CuraLive", platform: "Webex", status: "completed", attendees: 24, duration: "1:28:05" },
 ];
 
 const FEATURES = [
@@ -183,7 +183,7 @@ export default function Home() {
             <div>
               <div className="flex flex-wrap items-center gap-3 mb-6">
                 <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full">
-                  <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — CuraLive Inc.
+                  <span className="live-badge-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" /> Board Demo — CuraLive
                 </div>
                 <PlatformStatusPill />
               </div>

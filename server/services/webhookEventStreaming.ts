@@ -169,7 +169,7 @@ export class WebhookEventStreamingService {
       payload: {
         summary: event.title,
         severity: severityMap[event.severity],
-        source: "Chorus.AI",
+        source: "CuraLive",
         component: event.kioskId || "unknown",
         custom_details: {
           description: event.description,
@@ -196,7 +196,7 @@ export class WebhookEventStreamingService {
       message: event.title,
       description: event.description,
       priority: priorityMap[event.severity],
-      source: "Chorus.AI",
+      source: "CuraLive",
       tags: [event.type, event.eventId, event.kioskId || ""],
       details: {
         type: event.type,
@@ -237,7 +237,7 @@ export class WebhookEventStreamingService {
   private getHeaders(endpoint: WebhookEndpoint): Record<string, string> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "User-Agent": "Chorus.AI/1.0",
+      "User-Agent": "CuraLive/1.0",
     };
 
     if (endpoint.integrationType === "pagerduty") {

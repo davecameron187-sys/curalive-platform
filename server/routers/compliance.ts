@@ -155,7 +155,7 @@ Focus on: earnings guidance, forward-looking statements, material facts, selecti
           eventId: input.eventId,
           eventTitle: input.eventTitle ?? input.eventId,
           eventDate: new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" }),
-          companyName: "Chorus Call Inc.",
+          companyName: "CuraLive Inc.",
           certType: "REGULATORY",
           certId,
           issuedAt: new Date().toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" }),

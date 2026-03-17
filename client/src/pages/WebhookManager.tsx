@@ -456,7 +456,7 @@ export default function WebhookManager() {
               <div>
                 <p className="font-semibold mb-1">Signature Verification</p>
                 <p className="text-muted-foreground">
-                  All webhooks include X-Chorus-Signature header with HMAC-SHA256
+                  All webhooks include X-CuraLive-Signature header with HMAC-SHA256
                 </p>
               </div>
 

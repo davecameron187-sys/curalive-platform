@@ -32,7 +32,7 @@ export interface CacheStats {
   cacheSize: number;
 }
 
-const DB_NAME = "ChorusAI_QRCache";
+const DB_NAME = "CuraLive_QRCache";
 const DB_VERSION = 1;
 const STORE_NAME = "qr_scans";
 const SYNC_BATCH_SIZE = 50;
