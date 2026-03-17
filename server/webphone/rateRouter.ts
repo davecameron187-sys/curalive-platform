@@ -249,7 +249,10 @@ export function getRateComparison(phoneNumber: string): {
   twilio: number;
   telnyx: number;
   cheapest: Carrier;
+  selected: Carrier;
   savings: string;
+  telnyxAvailable: boolean;
+  twilioAvailable: boolean;
 } {
   const countryCode = extractCountryCode(phoneNumber);
   const numberType = detectNumberType(phoneNumber, countryCode);
@@ -259,9 +262,22 @@ export function getRateComparison(phoneNumber: string): {
   const tw = rates.twilio[rateKey];
   const tx = rates.telnyx[rateKey];
   const cheapest: Carrier = tx <= tw ? "telnyx" : "twilio";
-  const expensiveRate = Math.max(tw, tx);
-  const cheapRate = Math.min(tw, tx);
-  const pct = expensiveRate > 0 ? Math.round(((expensiveRate - cheapRate) / expensiveRate) * 100) : 0;
+
+  const hasTelnyx = !!process.env.TELNYX_API_KEY && !!process.env.TELNYX_PHONE_NUMBER;
+  const hasTwilio = !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN;
+
+  let selected: Carrier;
+  if (hasTelnyx && hasTwilio) {
+    selected = cheapest;
+  } else if (hasTelnyx) {
+    selected = "telnyx";
+  } else {
+    selected = "twilio";
+  }
+
+  const selectedRate = selected === "telnyx" ? tx : tw;
+  const otherRate = selected === "telnyx" ? tw : tx;
+  const pct = otherRate > 0 ? Math.round(((otherRate - selectedRate) / otherRate) * 100) : 0;
 
   return {
     country: getCountryName(countryCode),
@@ -269,6 +285,9 @@ export function getRateComparison(phoneNumber: string): {
     twilio: tw,
     telnyx: tx,
     cheapest,
-    savings: `${pct}% cheaper via ${cheapest}`,
+    selected,
+    savings: pct > 0 ? `${pct}% cheaper via ${selected}` : "Same rate",
+    telnyxAvailable: hasTelnyx,
+    twilioAvailable: hasTwilio,
   };
 }

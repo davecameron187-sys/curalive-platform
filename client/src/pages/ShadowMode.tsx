@@ -102,24 +102,26 @@ function RatePreviewBox({ dialInNumber }: { dialInNumber: string }) {
         <span className="text-[10px] text-slate-500">{r.country} · {r.numberType}</span>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-black/20 rounded-lg p-3 text-center">
+        <div className={`rounded-lg p-3 text-center ${r.selected === "telnyx" ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-black/20"}`}>
           <div className="text-[10px] text-slate-500 mb-1">Telnyx</div>
-          <div className={`text-sm font-bold font-mono ${r.cheapest === "telnyx" ? "text-emerald-400" : "text-slate-400"}`}>
+          <div className={`text-sm font-bold font-mono ${r.selected === "telnyx" ? "text-emerald-400" : "text-slate-400"}`}>
             ${r.telnyx.toFixed(3)}<span className="text-[10px] text-slate-600">/min</span>
           </div>
-          {r.cheapest === "telnyx" && <div className="text-[9px] text-emerald-400 mt-1 font-bold">SELECTED</div>}
+          {r.selected === "telnyx" && <div className="text-[9px] text-emerald-400 mt-1 font-bold">SELECTED</div>}
+          {!r.telnyxAvailable && <div className="text-[9px] text-red-400 mt-1">NOT CONFIGURED</div>}
         </div>
-        <div className="bg-black/20 rounded-lg p-3 text-center">
+        <div className={`rounded-lg p-3 text-center ${r.selected === "twilio" ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-black/20"}`}>
           <div className="text-[10px] text-slate-500 mb-1">Twilio</div>
-          <div className={`text-sm font-bold font-mono ${r.cheapest === "twilio" ? "text-emerald-400" : "text-slate-400"}`}>
+          <div className={`text-sm font-bold font-mono ${r.selected === "twilio" ? "text-emerald-400" : "text-slate-400"}`}>
             ${r.twilio.toFixed(3)}<span className="text-[10px] text-slate-600">/min</span>
           </div>
-          {r.cheapest === "twilio" && <div className="text-[9px] text-emerald-400 mt-1 font-bold">SELECTED</div>}
+          {r.selected === "twilio" && <div className="text-[9px] text-emerald-400 mt-1 font-bold">SELECTED</div>}
+          {!r.twilioAvailable && <div className="text-[9px] text-red-400 mt-1">NOT CONFIGURED</div>}
         </div>
         <div className="bg-black/20 rounded-lg p-3 text-center">
           <div className="text-[10px] text-slate-500 mb-1">Saving</div>
           <div className="text-sm font-bold text-emerald-400 font-mono">{r.savings.split(" ")[0]}</div>
-          <div className="text-[9px] text-slate-500 mt-1">vs {r.cheapest === "telnyx" ? "Twilio" : "Telnyx"}</div>
+          <div className="text-[9px] text-slate-500 mt-1">vs {r.selected === "telnyx" ? "Twilio" : "Telnyx"}</div>
         </div>
       </div>
     </div>

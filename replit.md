@@ -148,7 +148,13 @@ Set these env vars + matching secrets to enable live OAuth publishing:
 - Operator Analytics dashboard with performance scoring (`/operator/analytics`)
 - Development Dashboard with feature status & platform testing tools (`/dev-dashboard`)
 - AI Features Status overview of all intelligence capabilities (`/ai-features`)
-- WebRTC webphone with Twilio/Telnyx integration
+- WebRTC webphone with Smart Rate Router (auto-selects cheapest carrier per call)
+  - `server/webphone/rateRouter.ts` — compares Twilio vs Telnyx rates by destination country + number type (mobile/landline), 20+ country rate table
+  - `server/webphone/telnyxDial.ts` — Telnyx Call Control dial-out, DTMF scheduling, hangup, status
+  - `server/webphone/bridgeDial.ts` — Twilio dial-out (fallback carrier)
+  - `previewCallRate` endpoint — live rate comparison before dialling
+  - `bridge_calls` table columns: `carrier`, `rate_per_min` for cost tracking
+  - Automatic failover: primary carrier fails → falls back to other carrier
 - Multi-language translation (8 languages)
 - **Post-Event AI Report** — 8-tab AI report: Executive Summary, Key Moments timeline, Sentiment chart, Q&A Log, Engagement Metrics, Compliance Flags, Transcript, Replay (`/post-event/:eventId`)
 - **Real-Time Investor Sentiment Dashboard** — SVG gauge, Ably live updates, spike alerts, per-speaker breakdown (`/operator/:eventId/sentiment`)
