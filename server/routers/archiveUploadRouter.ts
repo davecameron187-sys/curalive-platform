@@ -7,6 +7,70 @@ import { invokeLLM } from "../_core/llm";
 import { desc, sql } from "drizzle-orm";
 import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
 
+type AiReport = {
+  executiveSummary: string;
+  sentimentAnalysis: { score: number; narrative: string; keyDrivers: string[] };
+  complianceReview: { riskLevel: string; flaggedPhrases: string[]; recommendations: string[] };
+  keyTopics: { topic: string; sentiment: string; detail: string }[];
+  speakerAnalysis: { speaker: string; role: string; keyPoints: string[] }[];
+  questionsAsked: { question: string; askedBy: string; quality: string }[];
+  actionItems: { item: string; owner: string; deadline: string }[];
+  investorSignals: { signal: string; interpretation: string; severity: string }[];
+  communicationScore: { score: number; clarity: number; transparency: number; narrative: string };
+  riskFactors: { factor: string; impact: string; likelihood: string }[];
+  competitiveIntelligence: { mention: string; context: string }[];
+  recommendations: string[];
+};
+
+async function generateFullAiReport(
+  transcriptText: string,
+  clientName: string,
+  eventName: string,
+  eventType: string,
+  sentimentAvg: number,
+  complianceFlags: number
+): Promise<AiReport> {
+  const truncated = transcriptText.slice(0, 12000);
+
+  const systemPrompt = `You are CuraLive's AI Intelligence Engine — an expert analyst for investor events.
+Analyze the transcript and produce a comprehensive JSON report. Be specific and cite actual content from the transcript.
+The event is: "${eventName}" by "${clientName}" (type: ${eventType}).
+Pre-computed sentiment: ${sentimentAvg}/100, compliance flags: ${complianceFlags}.
+
+Return ONLY valid JSON with this exact structure (no markdown, no code fences):
+{
+  "executiveSummary": "3-5 sentence executive summary of the event",
+  "sentimentAnalysis": { "score": <number 0-100>, "narrative": "detailed sentiment narrative", "keyDrivers": ["driver1", "driver2"] },
+  "complianceReview": { "riskLevel": "Low|Moderate|High|Critical", "flaggedPhrases": ["phrase1"], "recommendations": ["rec1"] },
+  "keyTopics": [{ "topic": "name", "sentiment": "Positive|Neutral|Negative", "detail": "explanation" }],
+  "speakerAnalysis": [{ "speaker": "Name", "role": "CEO/CFO/Analyst/etc", "keyPoints": ["point1"] }],
+  "questionsAsked": [{ "question": "the question", "askedBy": "who asked", "quality": "Insightful|Routine|Challenging" }],
+  "actionItems": [{ "item": "what needs to happen", "owner": "who", "deadline": "when if mentioned" }],
+  "investorSignals": [{ "signal": "what was signaled", "interpretation": "what it means", "severity": "Positive|Neutral|Concerning|Critical" }],
+  "communicationScore": { "score": <0-100>, "clarity": <0-100>, "transparency": <0-100>, "narrative": "assessment of communication quality" },
+  "riskFactors": [{ "factor": "risk name", "impact": "High|Medium|Low", "likelihood": "High|Medium|Low" }],
+  "competitiveIntelligence": [{ "mention": "competitor or market ref", "context": "how it was discussed" }],
+  "recommendations": ["actionable recommendation 1", "recommendation 2"]
+}`;
+
+  try {
+    const response = await invokeLLM({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Analyze this transcript:\n\n${truncated}` },
+      ],
+      model: "gpt-4o",
+    });
+
+    const raw = (response.choices?.[0]?.message?.content ?? "").trim();
+    const cleaned = raw.replace(/^```json?\s*/i, "").replace(/```\s*$/i, "").trim();
+    return JSON.parse(cleaned) as AiReport;
+  } catch (err) {
+    console.error("[ArchiveAI] Report generation failed:", err);
+    throw new Error(`AI report generation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+  }
+}
+
 const COMPLIANCE_KEYWORDS = [
   "forward-looking", "guidance", "forecast", "predict", "expect",
   "material", "non-public", "insider", "merger", "acquisition",
@@ -272,20 +336,35 @@ export const archiveUploadRouter = router({
 
       const archiveId: number = (result as any).insertId;
 
-      const { eventId, eventTitle, metricsCount } =
-        await generateMetricsFromArchive(
-          archiveId,
+      const metricsPromise = generateMetricsFromArchive(
+        archiveId,
+        input.clientName,
+        input.eventName,
+        input.eventType,
+        rawSegments,
+        sentimentAvg,
+        complianceFlags
+      );
+
+      let aiReport: AiReport | null = null;
+      try {
+        aiReport = await generateFullAiReport(
+          input.transcriptText,
           input.clientName,
           input.eventName,
           input.eventType,
-          rawSegments,
           sentimentAvg,
           complianceFlags
         );
+      } catch (err) {
+        console.error("[ArchiveAI] Report generation failed, continuing without report:", err);
+      }
+
+      const { eventId, eventTitle, metricsCount } = await metricsPromise;
 
       await conn.execute(
-        `UPDATE archive_events SET status = 'completed', tagged_metrics_generated = ? WHERE id = ?`,
-        [metricsCount, archiveId]
+        `UPDATE archive_events SET status = 'completed', tagged_metrics_generated = ?, ai_report = ? WHERE id = ?`,
+        [metricsCount, aiReport ? JSON.stringify(aiReport) : null, archiveId]
       );
 
       await writeAnonymizedRecord({
@@ -322,17 +401,22 @@ export const archiveUploadRouter = router({
       const [rows] = await conn.execute(
         `SELECT id, client_name, event_name, event_type, event_date, platform,
                 word_count, segment_count, sentiment_avg, compliance_flags,
-                tagged_metrics_generated, status, notes, created_at
+                tagged_metrics_generated, status, notes, created_at, ai_report
          FROM archive_events WHERE id = ? LIMIT 1`,
         [input.archiveId]
       );
       const row = (rows as any[])[0];
       if (!row) throw new Error("Archive not found");
-      return row as {
+      let parsedReport = null;
+      try {
+        parsedReport = typeof row.ai_report === "string" ? JSON.parse(row.ai_report) : row.ai_report;
+      } catch {}
+      return { ...row, ai_report: parsedReport } as {
         id: number; client_name: string; event_name: string; event_type: string;
         event_date: string | null; platform: string | null; word_count: number;
         segment_count: number; sentiment_avg: number | null; compliance_flags: number;
         tagged_metrics_generated: number; status: string; notes: string | null; created_at: string;
+        ai_report: AiReport | null;
       };
     }),
 
@@ -384,6 +468,38 @@ export const archiveUploadRouter = router({
           ? `Report emailed to ${input.recipientEmail}`
           : `Email failed: ${result.error}`,
       };
+    }),
+
+  generateReport: publicProcedure
+    .input(z.object({ archiveId: z.number() }))
+    .mutation(async ({ input }) => {
+      const conn = await (async () => {
+        const db = await getDb();
+        return (db as any).session?.client ?? (db as any).$client;
+      })();
+      const [rows] = await conn.execute(
+        `SELECT id, client_name, event_name, event_type, transcript_text, sentiment_avg, compliance_flags
+         FROM archive_events WHERE id = ? LIMIT 1`,
+        [input.archiveId]
+      );
+      const row = (rows as any[])[0];
+      if (!row) throw new Error("Archive not found");
+
+      const aiReport = await generateFullAiReport(
+        row.transcript_text,
+        row.client_name,
+        row.event_name,
+        row.event_type,
+        row.sentiment_avg ?? 50,
+        row.compliance_flags ?? 0
+      );
+
+      await conn.execute(
+        `UPDATE archive_events SET ai_report = ? WHERE id = ?`,
+        [JSON.stringify(aiReport), input.archiveId]
+      );
+
+      return { success: true, message: "AI report generated successfully" };
     }),
 
   listArchives: publicProcedure.query(async () => {

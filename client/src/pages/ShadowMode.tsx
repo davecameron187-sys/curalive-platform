@@ -12,6 +12,9 @@ import {
   Upload, Database, ChevronRight, BarChart2,
   Mic, FileAudio, Globe, Phone, Copy, Hash,
   KeyRound, CalendarClock, Info, DollarSign, TrendingDown,
+  Sparkles, Target, UserCheck, HelpCircle, ListChecks,
+  TrendingUp, Swords, Lightbulb, ChevronDown, ChevronUp,
+  Brain,
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -391,6 +394,17 @@ export default function ShadowMode() {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const generateReport = trpc.archiveUpload.generateReport.useMutation({
+    onSuccess: () => {
+      toast.success("AI report generated successfully");
+      archiveDetail.refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const toggleSection = (key: string) => setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
 
   // ── Event Recording state ──────────────────────────────────────────────────
   const [recForm, setRecForm] = useState({
@@ -1238,7 +1252,7 @@ export default function ShadowMode() {
               <div>
                 <div className="text-sm font-semibold text-slate-200 mb-1">Archives &amp; Reports</div>
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  Browse all past events processed through CuraLive. View stats for any event and email a professional intelligence report directly to your customers.
+                  Browse all events processed through CuraLive. Each event gets a comprehensive AI intelligence report with 12 analysis modules — executive summary, sentiment analysis, compliance review, key topics, speaker analysis, Q&A breakdown, action items, investor signals, communication scoring, risk factors, competitive intelligence, and strategic recommendations.
                 </p>
               </div>
             </div>
@@ -1365,32 +1379,296 @@ export default function ShadowMode() {
                           <h3 className="text-lg font-semibold text-slate-200">{archiveDetail.data.event_name}</h3>
                           <p className="text-sm text-slate-500 mt-0.5">{archiveDetail.data.client_name} · {EVENT_TYPE_LABELS[archiveDetail.data.event_type] ?? archiveDetail.data.event_type}{archiveDetail.data.event_date ? ` · ${archiveDetail.data.event_date}` : ""}</p>
                         </div>
-                        <Button size="sm" onClick={() => { setEmailModalArchiveId(selectedArchiveId); setEmailForm({ recipientEmail: "", recipientName: "" }); }}
-                          className="bg-cyan-600 hover:bg-cyan-500 gap-2 shrink-0">
-                          <FileText className="w-3.5 h-3.5" /> Email Report
-                        </Button>
+                        <div className="flex gap-2 shrink-0">
+                          {!archiveDetail.data.ai_report && (
+                            <Button size="sm" onClick={() => generateReport.mutate({ archiveId: selectedArchiveId! })}
+                              disabled={generateReport.isPending}
+                              className="bg-violet-600 hover:bg-violet-500 gap-2">
+                              {generateReport.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
+                              Generate AI Report
+                            </Button>
+                          )}
+                          <Button size="sm" onClick={() => { setEmailModalArchiveId(selectedArchiveId); setEmailForm({ recipientEmail: "", recipientName: "" }); }}
+                            className="bg-cyan-600 hover:bg-cyan-500 gap-2">
+                            <FileText className="w-3.5 h-3.5" /> Email Report
+                          </Button>
+                        </div>
                       </div>
                     </div>
 
                     {/* Stats grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                       {(() => {
                         const d = archiveDetail.data;
+                        const r = d.ai_report;
                         const sentColor = (d.sentiment_avg ?? 50) >= 70 ? "text-emerald-400" : (d.sentiment_avg ?? 50) >= 50 ? "text-amber-400" : "text-red-400";
                         const compColor = d.compliance_flags > 3 ? "text-red-400" : d.compliance_flags > 1 ? "text-amber-400" : "text-emerald-400";
+                        const commScore = r?.communicationScore?.score;
+                        const commColor = (commScore ?? 50) >= 70 ? "text-emerald-400" : (commScore ?? 50) >= 50 ? "text-amber-400" : "text-red-400";
                         return [
-                          { label: "Sentiment Score", value: `${d.sentiment_avg ?? "N/A"}`, sub: "/100", color: sentColor },
-                          { label: "Compliance Flags", value: `${d.compliance_flags}`, sub: d.compliance_flags > 3 ? "High Risk" : d.compliance_flags > 1 ? "Moderate" : "Low Risk", color: compColor },
-                          { label: "Words Analysed", value: d.word_count?.toLocaleString(), sub: "", color: "text-blue-400" },
+                          { label: "Sentiment", value: `${d.sentiment_avg ?? "N/A"}`, sub: "/100", color: sentColor },
+                          { label: "Compliance", value: `${d.compliance_flags}`, sub: d.compliance_flags > 3 ? "High Risk" : d.compliance_flags > 1 ? "Moderate" : "Low Risk", color: compColor },
+                          { label: "Comm. Score", value: commScore != null ? `${commScore}` : "—", sub: commScore != null ? "/100" : "", color: commColor },
+                          { label: "Words", value: d.word_count?.toLocaleString(), sub: "", color: "text-blue-400" },
                           { label: "Segments", value: `${d.segment_count}`, sub: "", color: "text-blue-400" },
                         ].map(({ label, value, sub, color }) => (
-                          <div key={label} className="bg-white/[0.02] border border-white/10 rounded-xl p-4 text-center">
-                            <div className={`text-2xl font-bold ${color}`}>{value}<span className="text-xs text-slate-600 ml-0.5">{sub}</span></div>
-                            <div className="text-xs text-slate-500 mt-1">{label}</div>
+                          <div key={label} className="bg-white/[0.02] border border-white/10 rounded-xl p-3 text-center">
+                            <div className={`text-xl font-bold ${color}`}>{value}<span className="text-xs text-slate-600 ml-0.5">{sub}</span></div>
+                            <div className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider">{label}</div>
                           </div>
                         ));
                       })()}
                     </div>
+
+                    {archiveDetail.data.ai_report ? (() => {
+                      const r = archiveDetail.data.ai_report;
+                      const severityColor = (s: string) =>
+                        s === "Positive" || s === "Low" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" :
+                        s === "Neutral" || s === "Medium" || s === "Routine" ? "text-amber-400 bg-amber-500/10 border-amber-500/20" :
+                        "text-red-400 bg-red-500/10 border-red-500/20";
+
+                      const ReportSection = ({ id, icon: Icon, title, iconColor, count, children }: any) => {
+                        const isOpen = expandedSections[id] !== false;
+                        return (
+                          <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
+                            <button onClick={() => toggleSection(id)}
+                              className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-1.5 rounded-lg ${iconColor.replace("text-", "bg-").replace("400", "500/10")} border ${iconColor.replace("text-", "border-").replace("400", "500/20")}`}>
+                                  <Icon className={`w-4 h-4 ${iconColor}`} />
+                                </div>
+                                <span className="text-sm font-semibold text-slate-200">{title}</span>
+                                {count != null && <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/10">{count}</span>}
+                              </div>
+                              {isOpen ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                            </button>
+                            {isOpen && <div className="px-5 pb-4 border-t border-white/5 pt-3">{children}</div>}
+                          </div>
+                        );
+                      };
+
+                      return (
+                        <div className="space-y-3">
+                          {r.executiveSummary && (
+                            <div className="bg-gradient-to-r from-cyan-500/5 to-violet-500/5 border border-cyan-500/20 rounded-xl p-5">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Sparkles className="w-4 h-4 text-cyan-400" />
+                                <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Executive Summary</span>
+                              </div>
+                              <p className="text-sm text-slate-300 leading-relaxed">{r.executiveSummary}</p>
+                            </div>
+                          )}
+
+                          <ReportSection id="sentiment" icon={Activity} title="Sentiment Analysis" iconColor="text-emerald-400">
+                            <p className="text-sm text-slate-400 leading-relaxed mb-3">{r.sentimentAnalysis?.narrative}</p>
+                            {r.sentimentAnalysis?.keyDrivers?.length > 0 && (
+                              <div className="space-y-1.5">
+                                <p className="text-xs text-slate-500 uppercase tracking-wider">Key Drivers</p>
+                                {r.sentimentAnalysis.keyDrivers.map((d: string, i: number) => (
+                                  <div key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                                    <span>{d}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </ReportSection>
+
+                          <ReportSection id="compliance" icon={Shield} title="Compliance Review" iconColor="text-amber-400"
+                            count={r.complianceReview?.flaggedPhrases?.length || 0}>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-medium text-slate-500">Risk Level:</span>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${severityColor(r.complianceReview?.riskLevel === "Low" ? "Positive" : r.complianceReview?.riskLevel === "High" || r.complianceReview?.riskLevel === "Critical" ? "Critical" : "Neutral")}`}>
+                                {r.complianceReview?.riskLevel}
+                              </span>
+                            </div>
+                            {r.complianceReview?.flaggedPhrases?.length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Flagged Phrases</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {r.complianceReview.flaggedPhrases.map((p: string, i: number) => (
+                                    <span key={i} className="text-xs px-2 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/20">{p}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {r.complianceReview?.recommendations?.length > 0 && (
+                              <div>
+                                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Recommendations</p>
+                                {r.complianceReview.recommendations.map((rec: string, i: number) => (
+                                  <div key={i} className="flex items-start gap-2 text-sm text-slate-300 mb-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                                    <span>{rec}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </ReportSection>
+
+                          <ReportSection id="topics" icon={Tag} title="Key Topics Discussed" iconColor="text-violet-400"
+                            count={r.keyTopics?.length || 0}>
+                            <div className="space-y-2">
+                              {(r.keyTopics || []).map((t: any, i: number) => (
+                                <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium text-slate-200">{t.topic}</span>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${severityColor(t.sentiment)}`}>{t.sentiment}</span>
+                                  </div>
+                                  <p className="text-xs text-slate-400 leading-relaxed">{t.detail}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </ReportSection>
+
+                          <ReportSection id="speakers" icon={UserCheck} title="Speaker Analysis" iconColor="text-blue-400"
+                            count={r.speakerAnalysis?.length || 0}>
+                            <div className="space-y-3">
+                              {(r.speakerAnalysis || []).map((s: any, i: number) => (
+                                <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Users className="w-3.5 h-3.5 text-blue-400" />
+                                    <span className="text-sm font-medium text-slate-200">{s.speaker}</span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">{s.role}</span>
+                                  </div>
+                                  <ul className="space-y-1">
+                                    {(s.keyPoints || []).map((p: string, j: number) => (
+                                      <li key={j} className="flex items-start gap-2 text-xs text-slate-400">
+                                        <ChevronRight className="w-3 h-3 text-slate-600 mt-0.5 shrink-0" />
+                                        <span>{p}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))}
+                            </div>
+                          </ReportSection>
+
+                          <ReportSection id="questions" icon={HelpCircle} title="Q&A Analysis" iconColor="text-cyan-400"
+                            count={r.questionsAsked?.length || 0}>
+                            <div className="space-y-2">
+                              {(r.questionsAsked || []).map((q: any, i: number) => (
+                                <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                  <p className="text-sm text-slate-200 mb-1.5">"{q.question}"</p>
+                                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                                    <span>Asked by: <span className="text-slate-400">{q.askedBy}</span></span>
+                                    <span className={`px-2 py-0.5 rounded-full border ${severityColor(q.quality)}`}>{q.quality}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </ReportSection>
+
+                          <ReportSection id="signals" icon={Target} title="Investor Signals" iconColor="text-orange-400"
+                            count={r.investorSignals?.length || 0}>
+                            <div className="space-y-2">
+                              {(r.investorSignals || []).map((s: any, i: number) => (
+                                <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium text-slate-200">{s.signal}</span>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${severityColor(s.severity)}`}>{s.severity}</span>
+                                  </div>
+                                  <p className="text-xs text-slate-400">{s.interpretation}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </ReportSection>
+
+                          <ReportSection id="actions" icon={ListChecks} title="Action Items" iconColor="text-green-400"
+                            count={r.actionItems?.length || 0}>
+                            <div className="space-y-2">
+                              {(r.actionItems || []).map((a: any, i: number) => (
+                                <div key={i} className="flex items-start gap-3 bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                  <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-sm text-slate-200">{a.item}</p>
+                                    <div className="flex gap-3 text-xs text-slate-500 mt-1">
+                                      <span>Owner: <span className="text-slate-400">{a.owner}</span></span>
+                                      {a.deadline && a.deadline !== "Not mentioned" && <span>Deadline: <span className="text-slate-400">{a.deadline}</span></span>}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </ReportSection>
+
+                          <ReportSection id="communication" icon={MessageSquare} title="Communication Assessment" iconColor="text-indigo-400">
+                            <div className="grid grid-cols-3 gap-3 mb-3">
+                              {[
+                                { label: "Overall", value: r.communicationScore?.score },
+                                { label: "Clarity", value: r.communicationScore?.clarity },
+                                { label: "Transparency", value: r.communicationScore?.transparency },
+                              ].map(({ label, value }) => {
+                                const c = (value ?? 50) >= 70 ? "text-emerald-400" : (value ?? 50) >= 50 ? "text-amber-400" : "text-red-400";
+                                return (
+                                  <div key={label} className="bg-white/[0.02] border border-white/5 rounded-lg p-2.5 text-center">
+                                    <div className={`text-lg font-bold ${c}`}>{value ?? "—"}<span className="text-xs text-slate-600">/100</span></div>
+                                    <div className="text-[10px] text-slate-500 uppercase tracking-wider">{label}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <p className="text-sm text-slate-400 leading-relaxed">{r.communicationScore?.narrative}</p>
+                          </ReportSection>
+
+                          <ReportSection id="risks" icon={AlertTriangle} title="Risk Factors" iconColor="text-red-400"
+                            count={r.riskFactors?.length || 0}>
+                            <div className="space-y-2">
+                              {(r.riskFactors || []).map((rf: any, i: number) => (
+                                <div key={i} className="flex items-start justify-between gap-3 bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                  <span className="text-sm text-slate-200">{rf.factor}</span>
+                                  <div className="flex gap-2 shrink-0">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${severityColor(rf.impact === "High" ? "Critical" : rf.impact === "Low" ? "Positive" : "Neutral")}`}>
+                                      Impact: {rf.impact}
+                                    </span>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${severityColor(rf.likelihood === "High" ? "Critical" : rf.likelihood === "Low" ? "Positive" : "Neutral")}`}>
+                                      Likelihood: {rf.likelihood}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </ReportSection>
+
+                          <ReportSection id="competitive" icon={Swords} title="Competitive Intelligence" iconColor="text-pink-400"
+                            count={r.competitiveIntelligence?.length || 0}>
+                            <div className="space-y-2">
+                              {(r.competitiveIntelligence || []).map((c: any, i: number) => (
+                                <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                  <p className="text-sm font-medium text-slate-200 mb-1">{c.mention}</p>
+                                  <p className="text-xs text-slate-400">{c.context}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </ReportSection>
+
+                          {r.recommendations?.length > 0 && (
+                            <ReportSection id="recommendations" icon={Lightbulb} title="AI Recommendations" iconColor="text-yellow-400"
+                              count={r.recommendations.length}>
+                              <div className="space-y-2">
+                                {r.recommendations.map((rec: string, i: number) => (
+                                  <div key={i} className="flex items-start gap-3 text-sm text-slate-300">
+                                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-yellow-500/10 text-yellow-400 text-xs font-bold shrink-0 mt-0.5">{i + 1}</span>
+                                    <span>{rec}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </ReportSection>
+                          )}
+                        </div>
+                      );
+                    })() : (
+                      <div className="bg-white/[0.02] border border-white/10 rounded-xl p-8 text-center">
+                        <Brain className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+                        <p className="text-sm text-slate-400 mb-1">No AI report generated yet</p>
+                        <p className="text-xs text-slate-600 mb-4">This archive was processed before the AI report feature was added.</p>
+                        <Button onClick={() => generateReport.mutate({ archiveId: selectedArchiveId! })}
+                          disabled={generateReport.isPending}
+                          className="bg-violet-600 hover:bg-violet-500 gap-2">
+                          {generateReport.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
+                          {generateReport.isPending ? "Generating AI Report..." : "Generate Full AI Report"}
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Detail rows */}
                     <div className="bg-white/[0.02] border border-white/10 rounded-xl divide-y divide-white/5">
@@ -1414,7 +1692,6 @@ export default function ShadowMode() {
                       </div>
                     )}
 
-                    {/* Operator Correction Panel */}
                     <OperatorCorrectionPanel
                       eventId={`archive-${archiveDetail.data.id}`}
                       eventTitle={`${archiveDetail.data.client_name} — ${archiveDetail.data.event_name}`}
@@ -1424,8 +1701,15 @@ export default function ShadowMode() {
                       complianceFlags={archiveDetail.data.compliance_flags}
                     />
 
-                    {/* Quick actions */}
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 flex-wrap">
+                      {archiveDetail.data.ai_report && (
+                        <Button size="sm" variant="outline" onClick={() => generateReport.mutate({ archiveId: selectedArchiveId! })}
+                          disabled={generateReport.isPending}
+                          className="border-white/10 text-slate-400 hover:text-white gap-2">
+                          {generateReport.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                          Regenerate Report
+                        </Button>
+                      )}
                       <Button variant="outline" onClick={() => window.location.href = "/tagged-metrics"}
                         className="border-white/10 text-slate-400 hover:text-white gap-2">
                         <Database className="w-4 h-4" /> View Intelligence Database
