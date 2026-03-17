@@ -269,10 +269,13 @@ export default function ShadowMode() {
     clientName: "", eventName: "", eventType: "", eventDate: "",
     platform: "", notes: "", transcriptText: "",
   });
-  const [archiveInputMode, setArchiveInputMode] = useState<"paste" | "file">("paste");
+  const [archiveInputMode, setArchiveInputMode] = useState<"paste" | "file" | "recording">("paste");
   const [archiveFileName, setArchiveFileName] = useState<string | null>(null);
   const [archiveResult, setArchiveResult] = useState<ArchiveResult | null>(null);
+  const [archiveRecFile, setArchiveRecFile] = useState<File | null>(null);
+  const [archiveTranscribing, setArchiveTranscribing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const archiveAudioRef = useRef<HTMLInputElement>(null);
 
   const processTranscript = trpc.archiveUpload.processTranscript.useMutation({
     onSuccess: (data) => {
@@ -296,19 +299,62 @@ export default function ShadowMode() {
     reader.readAsText(file);
   }
 
-  function handleArchiveSubmit(e: React.FormEvent) {
+  function handleArchiveAudioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) {
+      setArchiveRecFile(f);
+      setArchiveFileName(f.name);
+    }
+  }
+
+  async function handleArchiveSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!archiveForm.clientName.trim() || !archiveForm.eventName.trim() || !archiveForm.eventType || !archiveForm.transcriptText.trim()) {
-      toast.error("Please fill in Client Name, Event Name, Event Type, and the transcript.");
+    if (!archiveForm.clientName.trim() || !archiveForm.eventName.trim() || !archiveForm.eventType) {
+      toast.error("Please fill in Client Name, Event Name, and Event Type.");
       return;
     }
+
+    let transcript = archiveForm.transcriptText.trim();
+
+    if (archiveInputMode === "recording") {
+      if (!archiveRecFile) {
+        toast.error("Please select an audio or video recording to upload.");
+        return;
+      }
+      setArchiveTranscribing(true);
+      try {
+        const fd = new FormData();
+        fd.append("file", archiveRecFile);
+        toast.success("Uploading recording to Whisper AI for transcription...");
+        const res = await fetch("/api/transcribe-audio", { method: "POST", body: fd });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({ error: "Transcription failed" }));
+          throw new Error(data.error ?? "Transcription failed");
+        }
+        const { transcript: t } = await res.json();
+        transcript = t;
+        setArchiveForm(f => ({ ...f, transcriptText: t }));
+        toast.success(`Transcription complete — ${t.split(/\s+/).filter(Boolean).length.toLocaleString()} words`);
+      } catch (err: any) {
+        toast.error(err.message ?? "Transcription failed");
+        setArchiveTranscribing(false);
+        return;
+      }
+      setArchiveTranscribing(false);
+    }
+
+    if (!transcript) {
+      toast.error("No transcript available. Please paste text, upload a .txt file, or upload a recording.");
+      return;
+    }
+
     processTranscript.mutate({
       clientName: archiveForm.clientName.trim(),
       eventName: archiveForm.eventName.trim(),
       eventType: archiveForm.eventType as any,
       eventDate: archiveForm.eventDate || undefined,
       platform: archiveForm.platform || undefined,
-      transcriptText: archiveForm.transcriptText.trim(),
+      transcriptText: transcript,
       notes: archiveForm.notes || undefined,
     });
   }
@@ -317,6 +363,8 @@ export default function ShadowMode() {
     setArchiveResult(null);
     setArchiveForm({ clientName: "", eventName: "", eventType: "", eventDate: "", platform: "", notes: "", transcriptText: "" });
     setArchiveFileName(null);
+    setArchiveRecFile(null);
+    setArchiveTranscribing(false);
   }
 
   const archiveWordCount = archiveForm.transcriptText.trim().split(/\s+/).filter(Boolean).length;
@@ -868,7 +916,7 @@ export default function ShadowMode() {
               <div>
                 <div className="text-sm font-semibold text-slate-200 mb-1">Archive Upload — build your database retroactively</div>
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  Upload any past event transcript — earnings calls, AGMs, town halls — and CuraLive will process it through the same intelligence pipeline as a live Shadow Mode session. Paste text directly or upload a .txt file. Each archive generates 4 tagged intelligence records in your database.
+                  Upload any past event — earnings calls, AGMs, town halls — and CuraLive will process it through the same intelligence pipeline as a live Shadow Mode session. Paste a transcript, upload a .txt file, or upload an audio/video recording (CuraLive transcribes it automatically via Whisper AI). Each archive generates 4 tagged intelligence records in your database.
                 </p>
               </div>
             </div>
@@ -1012,18 +1060,22 @@ export default function ShadowMode() {
                 {/* Transcript input */}
                 <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6">
                   <h2 className="text-sm font-semibold text-slate-200 mb-4">
-                    Transcript <span className="text-red-400">*</span>
+                    Transcript Source <span className="text-red-400">*</span>
                   </h2>
                   <div className="flex gap-2 mb-4">
-                    {(["paste", "file"] as const).map(mode => (
-                      <button key={mode} type="button"
-                        onClick={() => setArchiveInputMode(mode)}
+                    {([
+                      { key: "paste", label: "Paste Text" },
+                      { key: "file", label: "Upload .txt File" },
+                      { key: "recording", label: "Upload Recording" },
+                    ] as const).map(({ key, label }) => (
+                      <button key={key} type="button"
+                        onClick={() => setArchiveInputMode(key as any)}
                         className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                          archiveInputMode === mode
+                          archiveInputMode === key
                             ? "bg-violet-600 text-white"
                             : "bg-white/5 text-slate-400 hover:bg-white/10"
                         }`}>
-                        {mode === "paste" ? "Paste Text" : "Upload .txt File"}
+                        {label}
                       </button>
                     ))}
                   </div>
@@ -1042,7 +1094,7 @@ export default function ShadowMode() {
                         <p className="text-xs text-slate-600 mt-2">{archiveWordCount.toLocaleString()} words detected</p>
                       )}
                     </div>
-                  ) : (
+                  ) : archiveInputMode === "file" ? (
                     <div>
                       <div
                         className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center cursor-pointer hover:border-violet-500/40 hover:bg-violet-500/5 transition-colors"
@@ -1064,6 +1116,41 @@ export default function ShadowMode() {
                       {archiveForm.transcriptText && (
                         <div className="mt-3 p-3 bg-white/[0.02] rounded-lg border border-white/10">
                           <p className="text-xs text-slate-600 font-mono line-clamp-2">{archiveForm.transcriptText.slice(0, 200)}...</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <div
+                        className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center cursor-pointer hover:border-violet-500/40 hover:bg-violet-500/5 transition-colors"
+                        onClick={() => archiveAudioRef.current?.click()}>
+                        <Mic className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+                        {archiveRecFile ? (
+                          <div>
+                            <p className="font-medium text-sm text-slate-200">{archiveRecFile.name}</p>
+                            <p className="text-xs text-slate-500 mt-1">
+                              {(archiveRecFile.size / 1024 / 1024).toFixed(1)} MB
+                              {archiveRecFile.size > 20 * 1024 * 1024 && (
+                                <span className="text-amber-400 ml-2">· Large file — auto-compressed on server, allow 5–10 min</span>
+                              )}
+                            </p>
+                            {archiveForm.transcriptText && (
+                              <p className="text-xs text-emerald-400 mt-1">{archiveWordCount.toLocaleString()} words transcribed</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="font-medium text-sm text-slate-300 mb-1">Click to select or drag & drop a recording</p>
+                            <p className="text-xs text-slate-600">MP3, MP4, WAV, M4A, WebM, MOV, AVI &nbsp;·&nbsp; Up to 500MB</p>
+                            <p className="text-xs text-slate-700 mt-1">CuraLive will transcribe the audio first, then run the full intelligence pipeline</p>
+                          </div>
+                        )}
+                      </div>
+                      <input ref={archiveAudioRef} type="file" onChange={handleArchiveAudioChange} className="hidden" />
+                      {archiveTranscribing && (
+                        <div className="mt-3 flex items-center gap-2 text-sm text-violet-400">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Transcribing audio with Whisper AI — this may take a few minutes for large files...
                         </div>
                       )}
                     </div>
@@ -1091,10 +1178,14 @@ export default function ShadowMode() {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={processTranscript.isPending}
+                <Button type="submit" disabled={processTranscript.isPending || archiveTranscribing}
                   className="w-full bg-violet-600 hover:bg-violet-500 gap-2 py-5">
-                  {processTranscript.isPending ? (
+                  {archiveTranscribing ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Transcribing recording with Whisper AI...</>
+                  ) : processTranscript.isPending ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Processing archive...</>
+                  ) : archiveInputMode === "recording" ? (
+                    <><Mic className="w-4 h-4" /> Transcribe Recording &amp; Generate Intelligence</>
                   ) : (
                     <><Upload className="w-4 h-4" /> Process Archive &amp; Generate Intelligence</>
                   )}
