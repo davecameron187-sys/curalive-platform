@@ -375,58 +375,6 @@ async function startServer() {
     res.sendStatus(204);
   });
 
-  // ─── Shadow Bridge TwiML ─────────────────────────────────────────────────────
-  // Twilio fetches this URL when the outbound bridge call connects.
-  // Responds with DTMF tones to enter the conference ID and access code.
-
-  app.post("/api/shadow/bridge-twiml", express.urlencoded({ extended: false }), async (req, res) => {
-    const { buildBridgeTwiML } = await import("../webphone/bridgeDial");
-    const conferenceId = req.query.conferenceId as string | undefined;
-    const accessCode = req.query.accessCode as string | undefined;
-    const hostPin = req.query.hostPin as string | undefined;
-    console.log(`[BridgeTwiML] conferenceId=${conferenceId} accessCode=*** hostPin=***`);
-    const xml = buildBridgeTwiML(conferenceId, accessCode, hostPin);
-    res.type("text/xml").send(xml);
-  });
-
-  // Bridge call status poll — frontend polls this for live call status
-  app.get("/api/shadow/bridge-poll", async (req, res) => {
-    const callSid = req.query.callSid as string;
-    if (!callSid) return res.status(400).json({ error: "callSid required" });
-    try {
-      const { getCallStatus } = await import("../webphone/bridgeDial");
-      const result = await getCallStatus(callSid);
-      res.json(result);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  // Bridge call status callback — Twilio posts here when call status changes
-  app.post("/api/shadow/bridge-status", express.urlencoded({ extended: false }), async (req, res) => {
-    const callSid = req.body?.CallSid ?? "";
-    const status = req.body?.CallStatus ?? "";
-    const duration = req.body?.CallDuration ?? null;
-    console.log(`[BridgeStatus] callSid=${callSid} status=${status} duration=${duration}`);
-
-    try {
-      const { getDb } = await import("../db");
-      const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const updates: Record<string, unknown> = { status };
-      if (duration) updates.duration_seconds = parseInt(duration);
-      if (status === "completed" || status === "failed" || status === "busy" || status === "no-answer") {
-        updates.ended_at = new Date();
-      }
-      await conn.execute(
-        `UPDATE bridge_calls SET status = ?, duration_seconds = COALESCE(?, duration_seconds), ended_at = COALESCE(?, ended_at) WHERE call_sid = ?`,
-        [status, duration ? parseInt(duration) : null, (status === "completed" || status === "failed") ? new Date() : null, callSid]
-      );
-    } catch (err) {
-      console.error("[BridgeStatus] DB update failed:", err);
-    }
-    res.sendStatus(204);
-  });
 
   // ─── CuraLive Direct IVR ─────────────────────────────────────────────────────
   // /api/voice/inbound  — Twilio calls this when a participant dials in.
