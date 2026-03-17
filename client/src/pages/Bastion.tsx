@@ -111,6 +111,7 @@ const PLATFORM_OPTIONS = [
   { value: "teams", label: "Microsoft Teams" },
   { value: "meet", label: "Google Meet" },
   { value: "webex", label: "Cisco Webex" },
+  { value: "webphone", label: "Webphone" },
   { value: "other", label: "Other" },
 ];
 
@@ -130,7 +131,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 };
 
 const PLATFORM_LABELS: Record<string, string> = {
-  zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", other: "Other",
+  zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", webphone: "Webphone", other: "Other",
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string; icon: React.ElementType }> = {

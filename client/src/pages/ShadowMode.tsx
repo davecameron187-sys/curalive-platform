@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
-  zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", other: "Other",
+  zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", webphone: "Webphone", other: "Other",
 };
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -113,6 +113,7 @@ export default function ShadowMode() {
   }>>([]);
   const [ccNextId, setCcNextId] = useState(1);
   const [ccShowForm, setCcShowForm] = useState(false);
+  const [ccPlatformMode, setCcPlatformMode] = useState<"dialin" | "webphone">("dialin");
 
   // ── Bridge Dial-Out state ──────────────────────────────────────────────────
   type BridgeEntry = { callSid: string; status: string; dialing: boolean };
@@ -560,6 +561,7 @@ export default function ShadowMode() {
                       ))}
                     </div>
                   </div>
+                  {form.platform !== "webphone" && (
                   <div className="sm:col-span-2">
                     <label className="text-xs text-slate-500 block mb-1.5">Meeting URL * (Zoom / Teams / Meet invite link)</label>
                     <input
@@ -569,6 +571,17 @@ export default function ShadowMode() {
                       onChange={e => setForm(f => ({ ...f, meetingUrl: e.target.value }))}
                     />
                   </div>
+                  )}
+                  {form.platform === "webphone" && (
+                  <div className="sm:col-span-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Globe className="w-4 h-4 text-emerald-400" />
+                      <span className="text-sm font-semibold text-emerald-300">Webphone Mode</span>
+                      <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full font-bold tracking-wide uppercase">$0.00/min</span>
+                    </div>
+                    <p className="text-xs text-slate-400">CuraLive will use the built-in browser Webphone to join this event. No meeting URL needed — audio is captured directly and sent to the intelligence pipeline in real time.</p>
+                  </div>
+                  )}
                   <div className="sm:col-span-2">
                     <label className="text-xs text-slate-500 block mb-1.5">Notes (optional)</label>
                     <input
@@ -1510,19 +1523,56 @@ export default function ShadowMode() {
               <div>
                 <div className="text-sm font-semibold text-slate-200 mb-1">CCAudioOnly — telephone conference call intelligence</div>
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  For events where participants dial in by telephone — earnings calls, AGMs, board briefings — with no video platform involved. Log the dial-in details here before the call, then record the audio on your end. After the call, upload the recording via <button onClick={() => setActiveTab("recording")} className="text-blue-400 underline hover:text-blue-300">Event Recording</button> to run the full intelligence pipeline: transcription, sentiment, compliance scanning, and database tagging.
+                  {ccPlatformMode === "dialin"
+                    ? <>For events where participants dial in by telephone — earnings calls, AGMs, board briefings — with no video platform involved. Log the dial-in details here before the call, then record the audio on your end. After the call, upload the recording via <button onClick={() => setActiveTab("recording")} className="text-blue-400 underline hover:text-blue-300">Event Recording</button> to run the full intelligence pipeline: transcription, sentiment, compliance scanning, and database tagging.</>
+                    : <>Use CuraLive's built-in Webphone to join conference calls directly from your browser — zero cost, no external software needed. The Webphone captures audio in real-time, transcribes via Whisper AI, scores sentiment, and detects compliance keywords — all automatically.</>
+                  }
                 </p>
               </div>
             </div>
 
+            {/* Platform toggle — Dial-In vs Webphone */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCcPlatformMode("dialin")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                  ccPlatformMode === "dialin"
+                    ? "bg-orange-500/20 border-orange-500/60 text-orange-300"
+                    : "bg-white/[0.03] border-white/10 text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 hover:border-white/20"
+                }`}
+              >
+                <Phone className="w-4 h-4" /> Dial-In Number
+              </button>
+              <button
+                onClick={() => setCcPlatformMode("webphone")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                  ccPlatformMode === "webphone"
+                    ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-300"
+                    : "bg-white/[0.03] border-white/10 text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 hover:border-white/20"
+                }`}
+              >
+                <Globe className="w-4 h-4" /> Webphone
+              </button>
+              {ccPlatformMode === "webphone" && (
+                <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full font-bold tracking-wide uppercase ml-1">
+                  $0.00/min
+                </span>
+              )}
+            </div>
+
             {/* Workflow steps */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              {[
+              {(ccPlatformMode === "dialin" ? [
                 { step: "1", icon: Hash, color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/20", title: "Log dial-in details", desc: "Enter the conference number, ID, and access code below before the call." },
                 { step: "2", icon: Phone, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/20", title: "Dial in & record", desc: "Call the conference number, enter credentials, and start your recording software." },
                 { step: "3", icon: Upload, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20", title: "Upload recording", desc: "After the call, go to Event Recording and upload the audio file for processing." },
                 { step: "4", icon: Database, color: "text-violet-400", bg: "bg-violet-400/10", border: "border-violet-400/20", title: "Intelligence delivered", desc: "Transcript, sentiment, compliance flags, and 4 tagged records added to your database." },
-              ].map(({ step, icon: Icon, color, bg, border, title, desc }) => (
+              ] : [
+                { step: "1", icon: Globe, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20", title: "Open Webphone", desc: "Launch the browser-based Webphone below — no software to install." },
+                { step: "2", icon: Phone, color: "text-cyan-400", bg: "bg-cyan-400/10", border: "border-cyan-400/20", title: "Dial the conference", desc: "Enter the conference number and connect. Audio is captured automatically." },
+                { step: "3", icon: Mic, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20", title: "Live transcription", desc: "Real-time Whisper AI transcription, sentiment scoring, and compliance scanning." },
+                { step: "4", icon: Database, color: "text-violet-400", bg: "bg-violet-400/10", border: "border-violet-400/20", title: "Intelligence delivered", desc: "Full transcript, sentiment scores, compliance flags, and tagged records — all automatic." },
+              ]).map(({ step, icon: Icon, color, bg, border, title, desc }) => (
                 <div key={step} className={`bg-white/[0.02] border ${border} rounded-xl p-4`}>
                   <div className={`w-6 h-6 rounded-full ${bg} border ${border} text-[11px] font-bold ${color} flex items-center justify-center mb-3`}>{step}</div>
                   <div className="flex items-center gap-2 mb-1">
@@ -1534,7 +1584,125 @@ export default function ShadowMode() {
               ))}
             </div>
 
-            {/* Log a call form */}
+            {/* Webphone interface — shown when webphone mode selected */}
+            {ccPlatformMode === "webphone" && (
+              <div className="bg-white/[0.02] border border-emerald-500/20 rounded-xl p-6 space-y-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-emerald-400" />
+                    <h3 className="text-sm font-semibold text-white">Browser Webphone</h3>
+                    <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full font-bold tracking-wide uppercase">Zero Cost</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1.5 block font-medium">Client / Company</label>
+                    <input
+                      value={ccForm.clientName}
+                      onChange={e => setCcForm(f => ({ ...f, clientName: e.target.value }))}
+                      placeholder="e.g. Acme Corp"
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1.5 block font-medium">Event Name *</label>
+                    <input
+                      value={ccForm.eventName}
+                      onChange={e => setCcForm(f => ({ ...f, eventName: e.target.value }))}
+                      placeholder="e.g. Q3 2025 Earnings Call"
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1.5 block font-medium">Event Type</label>
+                    <select
+                      value={ccForm.eventType}
+                      onChange={e => setCcForm(f => ({ ...f, eventType: e.target.value }))}
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+                    >
+                      <option value="earnings_call">Earnings Call</option>
+                      <option value="agm">AGM (Annual General Meeting)</option>
+                      <option value="capital_markets_day">Capital Markets Day</option>
+                      <option value="board_meeting">Board Meeting</option>
+                      <option value="ceo_town_hall">CEO / Investor Town Hall</option>
+                      <option value="analyst_briefing">Analyst Briefing</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1.5 block font-medium flex items-center gap-1">
+                      <Phone className="w-3 h-3" /> Conference Number to Dial
+                    </label>
+                    <input
+                      value={ccForm.dialInNumber}
+                      onChange={e => setCcForm(f => ({ ...f, dialInNumber: e.target.value }))}
+                      placeholder="+1 800 555 0100"
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1.5 block font-medium flex items-center gap-1">
+                      <Hash className="w-3 h-3" /> Conference ID / DTMF Code
+                    </label>
+                    <input
+                      value={ccForm.conferenceId}
+                      onChange={e => setCcForm(f => ({ ...f, conferenceId: e.target.value }))}
+                      placeholder="e.g. 123 456 789#"
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1.5 block font-medium flex items-center gap-1">
+                      <KeyRound className="w-3 h-3" /> Access Code / PIN
+                    </label>
+                    <input
+                      value={ccForm.accessCode}
+                      onChange={e => setCcForm(f => ({ ...f, accessCode: e.target.value }))}
+                      placeholder="e.g. 4892#"
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Webphone Ready
+                    </div>
+                    <span className="text-[10px] text-slate-600">Audio captured automatically · Recall.ai transcription · Real-time sentiment</span>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      if (!ccForm.eventName.trim() || !ccForm.dialInNumber.trim()) {
+                        toast.error("Event name and conference number are required");
+                        return;
+                      }
+                      const newSession = {
+                        id: ccNextId,
+                        ...ccForm,
+                        loggedAt: new Date().toLocaleString(),
+                      };
+                      setCcSessions(prev => [newSession, ...prev]);
+                      setCcNextId(n => n + 1);
+                      setCcForm({
+                        clientName: "", eventName: "", eventType: "earnings_call",
+                        dialInNumber: "", conferenceId: "", accessCode: "",
+                        hostPin: "", scheduledAt: "", notes: "",
+                      });
+                      toast.success("Webphone session created — dialling conference");
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold gap-2"
+                  >
+                    <Phone className="w-4 h-4" /> Dial with Webphone
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Log a call form — shown when dial-in mode selected */}
+            {ccPlatformMode === "dialin" && (
             <div className="bg-white/[0.02] border border-orange-500/20 rounded-xl p-6">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
@@ -1716,9 +1884,10 @@ export default function ShadowMode() {
                 </div>
               )}
             </div>
+            )}
 
-            {/* Logged sessions */}
-            {ccSessions.length > 0 && (
+            {/* Logged sessions — dial-in mode */}
+            {ccPlatformMode === "dialin" && ccSessions.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-2">
                   <Phone className="w-3.5 h-3.5 text-orange-400" />
@@ -1850,6 +2019,58 @@ export default function ShadowMode() {
                   </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Webphone sessions */}
+            {ccPlatformMode === "webphone" && ccSessions.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-2">
+                  <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                  Webphone Sessions ({ccSessions.length})
+                </h3>
+                {ccSessions.map(s => (
+                  <div key={s.id} className="bg-white/[0.02] border border-emerald-500/10 rounded-xl p-5">
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                          <span className="text-sm font-semibold text-white">{s.eventName}</span>
+                          <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full uppercase font-bold tracking-wide">
+                            Webphone
+                          </span>
+                          <span className="text-[10px] text-orange-400 bg-orange-400/10 border border-orange-400/20 px-2 py-0.5 rounded-full uppercase font-bold tracking-wide">
+                            {s.eventType.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                        {s.clientName && <p className="text-xs text-slate-500">{s.clientName}</p>}
+                        <p className="text-[10px] text-slate-700 mt-0.5">Started {s.loggedAt}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold tracking-wide flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                          LIVE
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-emerald-500/[0.04] border border-emerald-500/20 rounded-xl p-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {[
+                          { label: "Conference Number", value: s.dialInNumber, icon: Phone },
+                          { label: "Conference ID", value: s.conferenceId || "—", icon: Hash },
+                          { label: "Access Code", value: s.accessCode || "—", icon: KeyRound },
+                        ].map(({ label, value, icon: Icon }) => (
+                          <div key={label} className="bg-black/20 rounded-lg p-3">
+                            <div className="flex items-center gap-1 mb-1">
+                              <Icon className="w-3 h-3 text-slate-600" />
+                              <span className="text-[10px] text-slate-600 uppercase tracking-wide">{label}</span>
+                            </div>
+                            <span className="text-sm text-slate-200 font-mono break-all">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
