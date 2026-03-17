@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { RotateCw } from "lucide-react";
 import {
   Radio, Play, Square, Eye, EyeOff,
   Activity, Shield, Users, MessageSquare, Tag,
@@ -138,9 +139,70 @@ export default function ShadowMode() {
     onError: (e) => toast.error(e.message),
   });
 
+  const retrySession = trpc.shadowMode.retrySession.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      sessions.refetch();
+      activeSession.refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const liveSession = activeSession.data;
-  const transcript = liveSession?.transcriptSegments ?? [];
   const isLive = liveSession?.status === "live" || liveSession?.status === "bot_joining";
+
+  const [realtimeSegments, setRealtimeSegments] = useState<Array<{ id?: string; speaker: string; text: string; timestamp: number; timeLabel?: string }>>([]);
+  const ablyChannel = liveSession?.ablyChannel ?? "";
+
+  useEffect(() => {
+    setRealtimeSegments([]);
+  }, [activeSessionId]);
+
+  useEffect(() => {
+    if (!ablyChannel || !isLive) return;
+    let cancelled = false;
+    let ablyClient: any = null;
+
+    const connectAbly = async () => {
+      try {
+        const tokenRes = await fetch("/api/ably-token");
+        if (!tokenRes.ok || cancelled) return;
+        const tokenRequest = await tokenRes.json();
+        if (cancelled) return;
+
+        const { Realtime } = await import("ably");
+        if (cancelled) return;
+
+        ablyClient = new Realtime({ authCallback: (_data, cb) => cb(null, tokenRequest), autoConnect: true });
+        const channel = ablyClient.channels.get(ablyChannel);
+        channel.subscribe("curalive", (msg: any) => {
+          try {
+            const parsed = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
+            if (parsed.type === "transcript.segment" && parsed.data) {
+              setRealtimeSegments(prev => [...prev, parsed.data]);
+            }
+          } catch {}
+        });
+      } catch (err) {
+        console.warn("[Shadow] Ably subscription failed (falling back to polling):", err);
+      }
+    };
+
+    connectAbly();
+    return () => {
+      cancelled = true;
+      if (ablyClient) {
+        try { ablyClient.close(); } catch {}
+      }
+    };
+  }, [ablyChannel, isLive]);
+
+  const polledSegments = liveSession?.transcriptSegments ?? [];
+  const transcript = (() => {
+    if (!Array.isArray(polledSegments)) return realtimeSegments;
+    if (realtimeSegments.length > polledSegments.length) return realtimeSegments;
+    return polledSegments;
+  })();
 
   // ── Archive Upload state ───────────────────────────────────────────────────
   const [archiveForm, setArchiveForm] = useState({
@@ -755,6 +817,15 @@ export default function ShadowMode() {
                                 End Session
                               </Button>
                             )}
+                            {liveSession.status === "failed" && (
+                              <Button size="sm"
+                                onClick={() => retrySession.mutate({ sessionId: liveSession.id })}
+                                disabled={retrySession.isPending}
+                                className="bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/20 gap-1.5">
+                                {retrySession.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
+                                {retrySession.isPending ? "Retrying..." : "Retry Bot Join"}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -784,6 +855,23 @@ export default function ShadowMode() {
                             <div className="text-sm font-medium text-amber-300">CuraLive Intelligence is joining the meeting</div>
                             <div className="text-xs text-slate-500 mt-0.5">The bot will appear as a participant within 30–60 seconds. Transcription starts automatically once it joins.</div>
                           </div>
+                        </div>
+                      )}
+
+                      {liveSession.status === "failed" && (
+                        <div className="bg-red-900/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3">
+                          <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-red-300">Bot failed to join the meeting</div>
+                            <div className="text-xs text-slate-500 mt-0.5">The meeting may have ended, the URL may be invalid, or the bot was blocked. You can retry if the meeting is still active.</div>
+                          </div>
+                          <Button size="sm"
+                            onClick={() => retrySession.mutate({ sessionId: liveSession.id })}
+                            disabled={retrySession.isPending}
+                            className="bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/20 gap-1.5 shrink-0">
+                            {retrySession.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
+                            {retrySession.isPending ? "Retrying..." : "Retry"}
+                          </Button>
                         </div>
                       )}
 

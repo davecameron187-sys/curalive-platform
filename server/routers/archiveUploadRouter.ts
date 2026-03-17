@@ -39,15 +39,10 @@ async function generateFullAiReport(
   sentimentAvg: number,
   complianceFlags: number
 ): Promise<AiReport> {
-  const truncated = transcriptText.slice(0, 14000);
+  const CHUNK_SIZE = 12000;
+  const needsChunking = transcriptText.length > CHUNK_SIZE * 1.3;
 
-  const systemPrompt = `You are CuraLive's AI Intelligence Engine — an expert analyst for investor events.
-Analyze the transcript and produce a comprehensive JSON report with ALL 20 analysis modules. Be specific and cite actual content from the transcript. Every module must be populated with real analysis — never return empty arrays if there is relevant content.
-The event is: "${eventName}" by "${clientName}" (type: ${eventType}).
-Pre-computed sentiment: ${sentimentAvg}/100, compliance flags: ${complianceFlags}.
-
-Return ONLY valid JSON with this exact structure (no markdown, no code fences):
-{
+  const reportSchema = `{
   "executiveSummary": "3-5 sentence executive summary of the event",
   "sentimentAnalysis": { "score": <0-100>, "narrative": "detailed sentiment narrative", "keyDrivers": ["driver1", "driver2"] },
   "complianceReview": { "riskLevel": "Low|Moderate|High|Critical", "flaggedPhrases": ["phrase1"], "recommendations": ["rec1"] },
@@ -70,11 +65,53 @@ Return ONLY valid JSON with this exact structure (no markdown, no code fences):
   "boardReadySummary": { "verdict": "Strong|Satisfactory|Concerning|Critical", "keyRisks": ["risk1"], "keyOpportunities": ["opp1"], "recommendedActions": ["action1"] }
 }`;
 
+  let analysisInput: string;
+
+  if (needsChunking) {
+    const chunks: string[] = [];
+    for (let i = 0; i < transcriptText.length; i += CHUNK_SIZE) {
+      chunks.push(transcriptText.slice(i, i + CHUNK_SIZE));
+    }
+
+    console.log(`[ArchiveAI] Long transcript (${transcriptText.length} chars) — summarizing ${chunks.length} chunks`);
+
+    const chunkSummaries = await Promise.all(
+      chunks.map(async (chunk, idx) => {
+        try {
+          const resp = await invokeLLM({
+            messages: [
+              { role: "system", content: "You are a transcript analyst. Produce a dense, factual summary of this transcript section. Include all speaker names, financial figures, key statements, compliance-relevant phrases, questions asked, and sentiment indicators. Do not omit details — be comprehensive." },
+              { role: "user", content: `Summarize section ${idx + 1} of ${chunks.length}:\n\n${chunk}` },
+            ],
+            model: "gpt-4o-mini",
+          });
+          return resp.choices?.[0]?.message?.content?.trim() ?? "";
+        } catch (err) {
+          console.error(`[ArchiveAI] Chunk ${idx + 1} summary failed:`, err);
+          return chunk.slice(0, 2000);
+        }
+      })
+    );
+
+    analysisInput = `[Combined analysis from ${chunks.length} transcript sections — total ${transcriptText.length} characters]\n\n` +
+      chunkSummaries.map((s, i) => `=== Section ${i + 1} ===\n${s}`).join("\n\n");
+  } else {
+    analysisInput = transcriptText;
+  }
+
+  const systemPrompt = `You are CuraLive's AI Intelligence Engine — an expert analyst for investor events.
+Analyze the transcript and produce a comprehensive JSON report with ALL 20 analysis modules. Be specific and cite actual content from the transcript. Every module must be populated with real analysis — never return empty arrays if there is relevant content.
+The event is: "${eventName}" by "${clientName}" (type: ${eventType}).
+Pre-computed sentiment: ${sentimentAvg}/100, compliance flags: ${complianceFlags}.
+
+Return ONLY valid JSON with this exact structure (no markdown, no code fences):
+${reportSchema}`;
+
   try {
     const response = await invokeLLM({
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Analyze this transcript:\n\n${truncated}` },
+        { role: "user", content: `Analyze this transcript:\n\n${analysisInput}` },
       ],
       model: "gpt-4o",
     });

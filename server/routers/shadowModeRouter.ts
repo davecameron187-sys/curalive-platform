@@ -343,4 +343,85 @@ export const shadowModeRouter = router({
       return { success: true };
     }),
 
+  retrySession: publicProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db
+        .select()
+        .from(shadowSessions)
+        .where(eq(shadowSessions.id, input.sessionId))
+        .limit(1);
+
+      if (!session) throw new Error("Session not found");
+      if (session.status !== "failed") throw new Error("Only failed sessions can be retried");
+      if (!session.meetingUrl) throw new Error("Session has no meeting URL to retry");
+
+      if (!RECALL_API_KEY) {
+        throw new Error("RECALL_AI_API_KEY is not configured. Please add it to environment secrets.");
+      }
+
+      const resolvedBase = getWebhookBaseUrl();
+      const ablyChannel = `shadow-${session.id}-${Date.now()}`;
+      const webhookUrl = `${resolvedBase}/api/recall/webhook`;
+
+      console.log(`[Shadow] Retry session ${session.id}: webhook URL → ${webhookUrl}`);
+
+      try {
+        const bot = await recallFetch("/bot/", {
+          method: "POST",
+          body: JSON.stringify({
+            meeting_url: session.meetingUrl,
+            bot_name: "CuraLive Intelligence",
+            recording_config: {
+              transcript: { provider: { recallai_streaming: {} } },
+              realtime_endpoints: [{
+                type: "webhook",
+                url: webhookUrl,
+                events: ["transcript.data"],
+              }],
+            },
+            webhook_url: webhookUrl,
+            metadata: { ablyChannel, shadowSessionId: String(session.id) },
+            automatic_leave: {
+              waiting_room_timeout: 600,
+              noone_joined_timeout: 300,
+              everyone_left_timeout: 60,
+            },
+          }),
+        });
+
+        await db.update(shadowSessions)
+          .set({
+            recallBotId: bot.id,
+            ablyChannel,
+            status: "bot_joining",
+            startedAt: Date.now(),
+          })
+          .where(eq(shadowSessions.id, session.id));
+
+        await db.insert(recallBots).values({
+          recallBotId: bot.id,
+          meetingUrl: session.meetingUrl,
+          botName: "CuraLive Intelligence",
+          eventId: null,
+          meetingId: null,
+          status: bot.status_code ?? "created",
+          ablyChannel,
+          transcriptJson: JSON.stringify([]),
+        });
+
+        return {
+          sessionId: session.id,
+          botId: bot.id,
+          ablyChannel,
+          status: "bot_joining",
+          message: "Retrying — CuraLive Intelligence bot is joining the meeting.",
+        };
+
+      } catch (err) {
+        throw new Error(`Retry failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }),
+
 });
