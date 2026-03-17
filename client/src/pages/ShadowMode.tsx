@@ -1665,13 +1665,26 @@ export default function ShadowMode() {
                   </div>
                 </div>
 
+                <div className="bg-white/[0.02] border border-emerald-500/10 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wide">Dial Path</span>
+                  </div>
+                  <div className="text-xs text-slate-400 space-y-1">
+                    <p><span className="text-slate-300 font-medium">1.</span> CuraLive calls your conference number via Twilio (or Telnyx fallback)</p>
+                    <p><span className="text-slate-300 font-medium">2.</span> After the bridge answers, DTMF tones are sent automatically: Conference ID → Access Code → Host PIN</p>
+                    <p><span className="text-slate-300 font-medium">3.</span> Audio is recorded silently (up to 2 hours) and sent to Whisper AI for transcription</p>
+                    <p><span className="text-slate-300 font-medium">4.</span> Sentiment scoring, compliance scanning, and database tagging run on the transcript</p>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between pt-2">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                       Webphone Ready
                     </div>
-                    <span className="text-[10px] text-slate-600">Audio captured automatically · Recall.ai transcription · Real-time sentiment</span>
+                    <span className="text-[10px] text-slate-600">Twilio/Telnyx carrier · DTMF auto-entry · Silent recording</span>
                   </div>
                   <Button
                     onClick={() => {
@@ -1679,20 +1692,32 @@ export default function ShadowMode() {
                         toast.error("Event name and conference number are required");
                         return;
                       }
+                      const sessionId = ccNextId;
                       const newSession = {
-                        id: ccNextId,
+                        id: sessionId,
                         ...ccForm,
                         loggedAt: new Date().toLocaleString(),
                       };
                       setCcSessions(prev => [newSession, ...prev]);
                       setCcNextId(n => n + 1);
+
+                      setBridgeCalls(prev => ({ ...prev, [sessionId]: { callSid: "", status: "initiating", dialing: true } }));
+                      dialOutMutation.mutate({
+                        sessionId: String(sessionId),
+                        eventName: ccForm.eventName,
+                        dialInNumber: ccForm.dialInNumber,
+                        conferenceId: ccForm.conferenceId || undefined,
+                        accessCode: ccForm.accessCode || undefined,
+                        hostPin: ccForm.hostPin || undefined,
+                      });
+
                       setCcForm({
                         clientName: "", eventName: "", eventType: "earnings_call",
                         dialInNumber: "", conferenceId: "", accessCode: "",
                         hostPin: "", scheduledAt: "", notes: "",
                       });
-                      toast.success("Webphone session created — dialling conference");
                     }}
+                    disabled={dialOutMutation.isPending}
                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold gap-2"
                   >
                     <Phone className="w-4 h-4" /> Dial with Webphone
@@ -2029,8 +2054,15 @@ export default function ShadowMode() {
                   <Globe className="w-3.5 h-3.5 text-emerald-400" />
                   Webphone Sessions ({ccSessions.length})
                 </h3>
-                {ccSessions.map(s => (
-                  <div key={s.id} className="bg-white/[0.02] border border-emerald-500/10 rounded-xl p-5">
+                {ccSessions.map(s => {
+                  const bridge = bridgeCalls[s.id];
+                  const bridgeStatus = bridge?.status ?? null;
+                  const isConnected = bridgeStatus === "in-progress";
+                  const isRinging = bridgeStatus === "queued" || bridgeStatus === "ringing" || bridgeStatus === "initiated" || bridgeStatus === "initiating";
+                  const isDone = bridgeStatus === "completed" || bridgeStatus === "failed" || bridgeStatus === "busy" || bridgeStatus === "no-answer";
+
+                  return (
+                  <div key={s.id} className={`bg-white/[0.02] border rounded-xl p-5 transition-all ${isConnected ? "border-emerald-500/40" : bridge?.dialing ? "border-amber-500/30" : isDone ? "border-white/[0.06]" : "border-emerald-500/10"}`}>
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
@@ -2041,23 +2073,84 @@ export default function ShadowMode() {
                           <span className="text-[10px] text-orange-400 bg-orange-400/10 border border-orange-400/20 px-2 py-0.5 rounded-full uppercase font-bold tracking-wide">
                             {s.eventType.replace(/_/g, " ")}
                           </span>
+                          {isConnected && (
+                            <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold tracking-wide flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                              LIVE — RECORDING
+                            </span>
+                          )}
+                          {isRinging && (
+                            <span className="text-[10px] text-amber-400 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded-full font-bold tracking-wide flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
+                              {bridge?.dialing ? "DIALLING..." : "CONNECTING"}
+                            </span>
+                          )}
+                          {isDone && (
+                            <span className="text-[10px] text-slate-400 bg-slate-400/10 border border-slate-400/20 px-2 py-0.5 rounded-full font-bold tracking-wide uppercase">
+                              {bridgeStatus}
+                            </span>
+                          )}
                         </div>
                         {s.clientName && <p className="text-xs text-slate-500">{s.clientName}</p>}
                         <p className="text-[10px] text-slate-700 mt-0.5">Started {s.loggedAt}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold tracking-wide flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                          LIVE
-                        </span>
+                        {bridge && !isDone && !bridge.dialing && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => bridge.callSid && hangupMutation.mutate({ callSid: bridge.callSid })}
+                            disabled={!bridge.callSid}
+                            className="text-xs gap-1.5"
+                          >
+                            <Square className="w-3 h-3" /> Disconnect
+                          </Button>
+                        )}
+                        {isDone && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setBridgeCalls(prev => { const n = { ...prev }; delete n[s.id]; return n; });
+                                setBridgeCalls(prev => ({ ...prev, [s.id]: { callSid: "", status: "initiating", dialing: true } }));
+                                dialOutMutation.mutate({
+                                  sessionId: String(s.id),
+                                  eventName: s.eventName,
+                                  dialInNumber: s.dialInNumber,
+                                  conferenceId: s.conferenceId || undefined,
+                                  accessCode: s.accessCode || undefined,
+                                  hostPin: s.hostPin || undefined,
+                                });
+                              }}
+                              className="text-xs gap-1.5 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10"
+                            >
+                              <RefreshCw className="w-3 h-3" /> Redial
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => setActiveTab("recording")}
+                              className="bg-blue-600/80 hover:bg-blue-500 text-white text-xs gap-1.5"
+                            >
+                              <Upload className="w-3 h-3" /> Upload Recording
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
+
+                    {/* Dial path details */}
                     <div className="bg-emerald-500/[0.04] border border-emerald-500/20 rounded-xl p-4">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wide">Dial Path</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {[
                           { label: "Conference Number", value: s.dialInNumber, icon: Phone },
                           { label: "Conference ID", value: s.conferenceId || "—", icon: Hash },
                           { label: "Access Code", value: s.accessCode || "—", icon: KeyRound },
+                          { label: "Call SID", value: bridge?.callSid ? bridge.callSid.slice(0, 16) + "..." : "Pending", icon: Globe },
                         ].map(({ label, value, icon: Icon }) => (
                           <div key={label} className="bg-black/20 rounded-lg p-3">
                             <div className="flex items-center gap-1 mb-1">
@@ -2068,9 +2161,16 @@ export default function ShadowMode() {
                           </div>
                         ))}
                       </div>
+                      {isConnected && (
+                        <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400">
+                          <Mic className="w-3 h-3" />
+                          <span>Audio being recorded silently — Whisper transcription will run when call ends</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
