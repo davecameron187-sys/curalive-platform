@@ -132,3 +132,9 @@ id = "Uud3nY_niqcppV3zoQ6_7"
 uri = "file://CuraLive_Patent_Modules_Brief.docx"
 type = "word_document"
 title = "CuraLive Patent Modules Brief — 6 New Builds"
+
+[[outputs]]
+id = "G1QVV04dgbCIurelesfRy"
+uri = "file://docs/CIP-Module-M-AI-Self-Evolution-Engine.md"
+type = "text"
+title = "CIP Module M — AI Self-Evolution Engine Patent Amendment"
