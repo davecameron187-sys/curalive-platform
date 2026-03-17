@@ -116,16 +116,17 @@ export default function ShadowMode() {
   const [ccPlatformMode, setCcPlatformMode] = useState<"dialin" | "webphone">("dialin");
 
   // ── Bridge Dial-Out state ──────────────────────────────────────────────────
-  type BridgeEntry = { callSid: string; status: string; dialing: boolean };
+  type BridgeEntry = { callSid: string; status: string; dialing: boolean; carrier?: string };
   const [bridgeCalls, setBridgeCalls] = useState<Record<number, BridgeEntry>>({});
 
   const dialOutMutation = trpc.shadowMode.dialOutToBridge.useMutation({
-    onSuccess: (data, vars) => {
+    onSuccess: (data: any, vars) => {
+      const carrier = data.carrier ?? "twilio";
       setBridgeCalls(prev => ({
         ...prev,
-        [vars.sessionId as any]: { callSid: data.callSid, status: data.status, dialing: false },
+        [vars.sessionId as any]: { callSid: data.callSid, status: data.status, dialing: false, carrier },
       }));
-      toast.success("Dialling bridge — DTMF codes will be sent automatically after answer");
+      toast.success(`Dialling via ${carrier === "telnyx" ? "Telnyx ($0.008/min)" : "Twilio ($0.015/min)"} — DTMF codes sent automatically after answer`);
     },
     onError: (e) => {
       toast.error(e.message);
@@ -1671,7 +1672,7 @@ export default function ShadowMode() {
                     <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wide">Dial Path</span>
                   </div>
                   <div className="text-xs text-slate-400 space-y-1">
-                    <p><span className="text-slate-300 font-medium">1.</span> CuraLive calls your conference number via Twilio (or Telnyx fallback)</p>
+                    <p><span className="text-slate-300 font-medium">1.</span> CuraLive calls your conference number via Telnyx ($0.008/min) — Twilio as automatic fallback</p>
                     <p><span className="text-slate-300 font-medium">2.</span> After the bridge answers, DTMF tones are sent automatically: Conference ID → Access Code → Host PIN</p>
                     <p><span className="text-slate-300 font-medium">3.</span> Audio is recorded silently (up to 2 hours) and sent to Whisper AI for transcription</p>
                     <p><span className="text-slate-300 font-medium">4.</span> Sentiment scoring, compliance scanning, and database tagging run on the transcript</p>
@@ -2150,7 +2151,7 @@ export default function ShadowMode() {
                           { label: "Conference Number", value: s.dialInNumber, icon: Phone },
                           { label: "Conference ID", value: s.conferenceId || "—", icon: Hash },
                           { label: "Access Code", value: s.accessCode || "—", icon: KeyRound },
-                          { label: "Call SID", value: bridge?.callSid ? bridge.callSid.slice(0, 16) + "..." : "Pending", icon: Globe },
+                          { label: "Carrier", value: bridge?.carrier === "telnyx" ? "Telnyx ($0.008/min)" : bridge?.carrier === "twilio" ? "Twilio ($0.015/min)" : "Connecting...", icon: Globe },
                         ].map(({ label, value, icon: Icon }) => (
                           <div key={label} className="bg-black/20 rounded-lg p-3">
                             <div className="flex items-center gap-1 mb-1">

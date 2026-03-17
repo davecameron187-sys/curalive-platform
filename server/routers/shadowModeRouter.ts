@@ -344,7 +344,6 @@ export const shadowModeRouter = router({
       hostPin: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const { initiateOutboundBridgeCall } = await import("../webphone/bridgeDial");
       const db = await getDb();
       const conn = (db as any).session?.client ?? (db as any).$client;
 
@@ -352,64 +351,137 @@ export const shadowModeRouter = router({
         ? `https://${process.env.REPLIT_DEV_DOMAIN}`
         : `http://localhost:${process.env.PORT ?? 5000}`;
 
-      const params = new URLSearchParams();
-      if (input.conferenceId) params.set("conferenceId", input.conferenceId);
-      if (input.accessCode) params.set("accessCode", input.accessCode);
-      if (input.hostPin) params.set("hostPin", input.hostPin);
-
-      const twimlUrl = `${domain}/api/shadow/bridge-twiml?${params.toString()}`;
       const statusCallbackUrl = `${domain}/api/shadow/bridge-status`;
+      let callSid = "";
+      let status = "";
+      let fromNumber = "";
+      let carrier = "telnyx";
 
-      const result = await initiateOutboundBridgeCall({
-        dialInNumber: input.dialInNumber,
-        conferenceId: input.conferenceId,
-        accessCode: input.accessCode,
-        hostPin: input.hostPin,
-        twimlUrl,
-        statusCallbackUrl,
-      });
+      const hasTelnyx = !!process.env.TELNYX_API_KEY && !!process.env.TELNYX_PHONE_NUMBER;
+      const hasTwilio = !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN;
+
+      if (hasTelnyx) {
+        try {
+          const { initiateTelnyxBridgeCall, scheduleTelnyxDTMF } = await import("../webphone/telnyxDial");
+          const result = await initiateTelnyxBridgeCall({
+            dialInNumber: input.dialInNumber,
+            conferenceId: input.conferenceId,
+            accessCode: input.accessCode,
+            hostPin: input.hostPin,
+            statusCallbackUrl,
+          });
+          callSid = result.callControlId;
+          status = result.status;
+          fromNumber = result.fromNumber;
+          carrier = "telnyx";
+
+          if (input.conferenceId || input.accessCode || input.hostPin) {
+            scheduleTelnyxDTMF(result.callControlId, input.conferenceId, input.accessCode, input.hostPin);
+          }
+
+          console.log(`[BridgeDial] Telnyx dial-out successful: ${callSid} → ${input.dialInNumber} ($0.008/min)`);
+        } catch (telnyxErr: any) {
+          console.warn(`[BridgeDial] Telnyx dial-out failed: ${telnyxErr.message} — falling back to Twilio`);
+
+          if (!hasTwilio) throw new Error(`Telnyx dial-out failed: ${telnyxErr.message}. Twilio fallback not available.`);
+
+          const { initiateOutboundBridgeCall } = await import("../webphone/bridgeDial");
+          const params = new URLSearchParams();
+          if (input.conferenceId) params.set("conferenceId", input.conferenceId);
+          if (input.accessCode) params.set("accessCode", input.accessCode);
+          if (input.hostPin) params.set("hostPin", input.hostPin);
+          const twimlUrl = `${domain}/api/shadow/bridge-twiml?${params.toString()}`;
+
+          const result = await initiateOutboundBridgeCall({
+            dialInNumber: input.dialInNumber,
+            conferenceId: input.conferenceId,
+            accessCode: input.accessCode,
+            hostPin: input.hostPin,
+            twimlUrl,
+            statusCallbackUrl,
+          });
+          callSid = result.callSid;
+          status = result.status;
+          fromNumber = result.fromNumber;
+          carrier = "twilio";
+          console.log(`[BridgeDial] Twilio fallback successful: ${callSid} → ${input.dialInNumber}`);
+        }
+      } else if (hasTwilio) {
+        const { initiateOutboundBridgeCall } = await import("../webphone/bridgeDial");
+        const params = new URLSearchParams();
+        if (input.conferenceId) params.set("conferenceId", input.conferenceId);
+        if (input.accessCode) params.set("accessCode", input.accessCode);
+        if (input.hostPin) params.set("hostPin", input.hostPin);
+        const twimlUrl = `${domain}/api/shadow/bridge-twiml?${params.toString()}`;
+
+        const result = await initiateOutboundBridgeCall({
+          dialInNumber: input.dialInNumber,
+          conferenceId: input.conferenceId,
+          accessCode: input.accessCode,
+          hostPin: input.hostPin,
+          twimlUrl,
+          statusCallbackUrl,
+        });
+        callSid = result.callSid;
+        status = result.status;
+        fromNumber = result.fromNumber;
+        carrier = "twilio";
+      } else {
+        throw new Error("No dial-out carrier configured. Set TELNYX_API_KEY + TELNYX_PHONE_NUMBER or TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN.");
+      }
 
       await conn.execute(
-        `INSERT INTO bridge_calls (session_id, call_sid, event_name, dial_in_number, conference_id, access_code, host_pin, status, from_number)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO bridge_calls (session_id, call_sid, event_name, dial_in_number, conference_id, access_code, host_pin, status, from_number, carrier)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           input.sessionId,
-          result.callSid,
+          callSid,
           input.eventName,
           input.dialInNumber,
           input.conferenceId ?? null,
           input.accessCode ?? null,
           input.hostPin ?? null,
-          result.status,
-          result.fromNumber,
+          status,
+          fromNumber,
+          carrier,
         ]
       );
 
-      return { success: true, callSid: result.callSid, status: result.status, fromNumber: result.fromNumber };
+      return { success: true, callSid, status, fromNumber, carrier };
     }),
 
   getBridgeCallStatus: publicProcedure
     .input(z.object({ callSid: z.string() }))
     .query(async ({ input }) => {
-      const { getCallStatus } = await import("../webphone/bridgeDial");
       const db = await getDb();
       const conn = (db as any).session?.client ?? (db as any).$client;
 
       const [rows]: any = await conn.execute(
-        `SELECT status, duration_seconds, started_at, ended_at FROM bridge_calls WHERE call_sid = ? ORDER BY created_at DESC LIMIT 1`,
+        `SELECT status, duration_seconds, started_at, ended_at, carrier FROM bridge_calls WHERE call_sid = ? ORDER BY created_at DESC LIMIT 1`,
         [input.callSid]
       );
       const dbRow = rows?.[0];
+      const carrier = dbRow?.carrier ?? "twilio";
 
-      // Also pull live status from Twilio if still in progress
       let liveStatus = dbRow?.status ?? "unknown";
       if (liveStatus === "queued" || liveStatus === "ringing" || liveStatus === "in-progress" || liveStatus === "initiated") {
         try {
-          const live = await getCallStatus(input.callSid);
-          liveStatus = live.status;
-          if (live.duration !== null) {
-            await conn.execute(`UPDATE bridge_calls SET status = ?, duration_seconds = ? WHERE call_sid = ?`,
-              [live.status, live.duration, input.callSid]);
+          if (carrier === "telnyx") {
+            const { getTelnyxCallStatus } = await import("../webphone/telnyxDial");
+            const live = await getTelnyxCallStatus(input.callSid);
+            liveStatus = live.status;
+            if (live.duration !== null) {
+              await conn.execute(`UPDATE bridge_calls SET status = ?, duration_seconds = ? WHERE call_sid = ?`,
+                [live.status, live.duration, input.callSid]);
+            }
+          } else {
+            const { getCallStatus } = await import("../webphone/bridgeDial");
+            const live = await getCallStatus(input.callSid);
+            liveStatus = live.status;
+            if (live.duration !== null) {
+              await conn.execute(`UPDATE bridge_calls SET status = ?, duration_seconds = ? WHERE call_sid = ?`,
+                [live.status, live.duration, input.callSid]);
+            }
           }
         } catch (_) {}
       }
@@ -419,17 +491,30 @@ export const shadowModeRouter = router({
         status: liveStatus,
         durationSeconds: dbRow?.duration_seconds ?? null,
         startedAt: dbRow?.started_at ?? null,
+        carrier,
       };
     }),
 
   hangupBridgeCall: publicProcedure
     .input(z.object({ callSid: z.string() }))
     .mutation(async ({ input }) => {
-      const { hangupCall } = await import("../webphone/bridgeDial");
       const db = await getDb();
       const conn = (db as any).session?.client ?? (db as any).$client;
 
-      await hangupCall(input.callSid);
+      const [rows]: any = await conn.execute(
+        `SELECT carrier FROM bridge_calls WHERE call_sid = ? ORDER BY created_at DESC LIMIT 1`,
+        [input.callSid]
+      );
+      const carrier = rows?.[0]?.carrier ?? "twilio";
+
+      if (carrier === "telnyx") {
+        const { hangupTelnyxCall } = await import("../webphone/telnyxDial");
+        await hangupTelnyxCall(input.callSid);
+      } else {
+        const { hangupCall } = await import("../webphone/bridgeDial");
+        await hangupCall(input.callSid);
+      }
+
       await conn.execute(
         `UPDATE bridge_calls SET status = 'completed', ended_at = ? WHERE call_sid = ?`,
         [new Date(), input.callSid]
