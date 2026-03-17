@@ -51,10 +51,10 @@ function italic(text) {
 }
 
 function bullet(text, indent = 20) {
-  const x = doc.x;
+  const leftMargin = 60;
   doc.font(FONT_NORMAL).fontSize(10);
-  doc.text("•", x + indent, doc.y, { continued: false });
-  doc.text(text, x + indent + 15, doc.y - doc.currentLineHeight(), { width: W - indent - 15, lineGap: 3 });
+  doc.text("•", leftMargin + indent, doc.y, { continued: false });
+  doc.text(text, leftMargin + indent + 15, doc.y - doc.currentLineHeight(), { width: W - indent - 15, lineGap: 3 });
   doc.moveDown(0.15);
 }
 
