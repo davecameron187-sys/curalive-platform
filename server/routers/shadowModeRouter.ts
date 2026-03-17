@@ -334,6 +334,14 @@ export const shadowModeRouter = router({
     }),
 
   // ─── Bridge Dial-Out ───────────────────────────────────────────────────────
+  previewCallRate: publicProcedure
+    .input(z.object({ dialInNumber: z.string().min(7) }))
+    .query(async ({ input }) => {
+      const { getRateComparison, extractCountryCode, getCountryName } = await import("../webphone/rateRouter");
+      const comparison = getRateComparison(input.dialInNumber);
+      return comparison;
+    }),
+
   dialOutToBridge: publicProcedure
     .input(z.object({
       sessionId: z.string(),
@@ -344,6 +352,9 @@ export const shadowModeRouter = router({
       hostPin: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
+      const { routeCall } = await import("../webphone/rateRouter");
+      const route = routeCall(input.dialInNumber);
+
       const db = await getDb();
       const conn = (db as any).session?.client ?? (db as any).$client;
 
@@ -355,65 +366,31 @@ export const shadowModeRouter = router({
       let callSid = "";
       let status = "";
       let fromNumber = "";
-      let carrier = "telnyx";
+      let carrier = route.primary;
+      let ratePerMin = route.primaryRate;
 
-      const hasTelnyx = !!process.env.TELNYX_API_KEY && !!process.env.TELNYX_PHONE_NUMBER;
-      const hasTwilio = !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN;
-
-      if (hasTelnyx) {
-        try {
-          const { initiateTelnyxBridgeCall, scheduleTelnyxDTMF } = await import("../webphone/telnyxDial");
-          const result = await initiateTelnyxBridgeCall({
-            dialInNumber: input.dialInNumber,
-            conferenceId: input.conferenceId,
-            accessCode: input.accessCode,
-            hostPin: input.hostPin,
-            statusCallbackUrl,
-          });
-          callSid = result.callControlId;
-          status = result.status;
-          fromNumber = result.fromNumber;
-          carrier = "telnyx";
-
-          if (input.conferenceId || input.accessCode || input.hostPin) {
-            scheduleTelnyxDTMF(result.callControlId, input.conferenceId, input.accessCode, input.hostPin);
-          }
-
-          console.log(`[BridgeDial] Telnyx dial-out successful: ${callSid} → ${input.dialInNumber} ($0.008/min)`);
-        } catch (telnyxErr: any) {
-          console.warn(`[BridgeDial] Telnyx dial-out failed: ${telnyxErr.message} — falling back to Twilio`);
-
-          if (!hasTwilio) throw new Error(`Telnyx dial-out failed: ${telnyxErr.message}. Twilio fallback not available.`);
-
-          const { initiateOutboundBridgeCall } = await import("../webphone/bridgeDial");
-          const params = new URLSearchParams();
-          if (input.conferenceId) params.set("conferenceId", input.conferenceId);
-          if (input.accessCode) params.set("accessCode", input.accessCode);
-          if (input.hostPin) params.set("hostPin", input.hostPin);
-          const twimlUrl = `${domain}/api/shadow/bridge-twiml?${params.toString()}`;
-
-          const result = await initiateOutboundBridgeCall({
-            dialInNumber: input.dialInNumber,
-            conferenceId: input.conferenceId,
-            accessCode: input.accessCode,
-            hostPin: input.hostPin,
-            twimlUrl,
-            statusCallbackUrl,
-          });
-          callSid = result.callSid;
-          status = result.status;
-          fromNumber = result.fromNumber;
-          carrier = "twilio";
-          console.log(`[BridgeDial] Twilio fallback successful: ${callSid} → ${input.dialInNumber}`);
+      async function dialViaTelnyx() {
+        const { initiateTelnyxBridgeCall, scheduleTelnyxDTMF } = await import("../webphone/telnyxDial");
+        const result = await initiateTelnyxBridgeCall({
+          dialInNumber: input.dialInNumber,
+          conferenceId: input.conferenceId,
+          accessCode: input.accessCode,
+          hostPin: input.hostPin,
+          statusCallbackUrl,
+        });
+        if (input.conferenceId || input.accessCode || input.hostPin) {
+          scheduleTelnyxDTMF(result.callControlId, input.conferenceId, input.accessCode, input.hostPin);
         }
-      } else if (hasTwilio) {
+        return { callSid: result.callControlId, status: result.status, fromNumber: result.fromNumber, carrier: "telnyx" as const };
+      }
+
+      async function dialViaTwilio() {
         const { initiateOutboundBridgeCall } = await import("../webphone/bridgeDial");
         const params = new URLSearchParams();
         if (input.conferenceId) params.set("conferenceId", input.conferenceId);
         if (input.accessCode) params.set("accessCode", input.accessCode);
         if (input.hostPin) params.set("hostPin", input.hostPin);
         const twimlUrl = `${domain}/api/shadow/bridge-twiml?${params.toString()}`;
-
         const result = await initiateOutboundBridgeCall({
           dialInNumber: input.dialInNumber,
           conferenceId: input.conferenceId,
@@ -422,17 +399,43 @@ export const shadowModeRouter = router({
           twimlUrl,
           statusCallbackUrl,
         });
+        return { callSid: result.callSid, status: result.status, fromNumber: result.fromNumber, carrier: "twilio" as const };
+      }
+
+      const dialFns = {
+        telnyx: dialViaTelnyx,
+        twilio: dialViaTwilio,
+      };
+
+      try {
+        const result = await dialFns[route.primary]();
         callSid = result.callSid;
         status = result.status;
         fromNumber = result.fromNumber;
-        carrier = "twilio";
-      } else {
-        throw new Error("No dial-out carrier configured. Set TELNYX_API_KEY + TELNYX_PHONE_NUMBER or TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN.");
+        carrier = result.carrier;
+        ratePerMin = route.primaryRate;
+        console.log(`[RateRouter] ${route.primary} dial-out OK: ${callSid} → ${input.dialInNumber} @ $${route.primaryRate.toFixed(3)}/min`);
+      } catch (primaryErr: any) {
+        if (route.fallback === route.primary) {
+          throw new Error(`${route.primary} dial-out failed: ${primaryErr.message}. No fallback carrier available.`);
+        }
+        console.warn(`[RateRouter] ${route.primary} failed ($${route.primaryRate.toFixed(3)}/min): ${primaryErr.message} — falling back to ${route.fallback} ($${route.fallbackRate.toFixed(3)}/min)`);
+        try {
+          const result = await dialFns[route.fallback]();
+          callSid = result.callSid;
+          status = result.status;
+          fromNumber = result.fromNumber;
+          carrier = result.carrier;
+          ratePerMin = route.fallbackRate;
+          console.log(`[RateRouter] ${route.fallback} fallback OK: ${callSid} → ${input.dialInNumber} @ $${route.fallbackRate.toFixed(3)}/min`);
+        } catch (fallbackErr: any) {
+          throw new Error(`Both carriers failed. ${route.primary}: ${primaryErr.message}. ${route.fallback}: ${fallbackErr.message}`);
+        }
       }
 
       await conn.execute(
-        `INSERT INTO bridge_calls (session_id, call_sid, event_name, dial_in_number, conference_id, access_code, host_pin, status, from_number, carrier)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO bridge_calls (session_id, call_sid, event_name, dial_in_number, conference_id, access_code, host_pin, status, from_number, carrier, rate_per_min)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           input.sessionId,
           callSid,
@@ -444,10 +447,23 @@ export const shadowModeRouter = router({
           status,
           fromNumber,
           carrier,
+          ratePerMin,
         ]
       );
 
-      return { success: true, callSid, status, fromNumber, carrier };
+      return {
+        success: true,
+        callSid,
+        status,
+        fromNumber,
+        carrier,
+        ratePerMin,
+        routeInfo: {
+          countryCode: route.countryCode,
+          numberType: route.numberType,
+          savingsPercent: route.savingsPercent,
+        },
+      };
     }),
 
   getBridgeCallStatus: publicProcedure

@@ -11,7 +11,7 @@ import {
   Building2, RefreshCw, BarChart3, FileText,
   Upload, Database, ChevronRight, BarChart2,
   Mic, FileAudio, Globe, Phone, Copy, Hash,
-  KeyRound, CalendarClock, Info,
+  KeyRound, CalendarClock, Info, DollarSign, TrendingDown,
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -82,6 +82,50 @@ type ArchiveResult = {
   message: string;
 };
 
+function RatePreviewBox({ dialInNumber }: { dialInNumber: string }) {
+  const cleanNum = dialInNumber.replace(/[\s\-\(\)]/g, "");
+  const rateQuery = trpc.shadowMode.previewCallRate.useQuery(
+    { dialInNumber: cleanNum },
+    { enabled: cleanNum.length >= 7, refetchOnWindowFocus: false }
+  );
+
+  if (!rateQuery.data) return null;
+  const r = rateQuery.data;
+
+  return (
+    <div className="bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 border border-emerald-500/20 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wide">Smart Rate Router</span>
+        </div>
+        <span className="text-[10px] text-slate-500">{r.country} · {r.numberType}</span>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-black/20 rounded-lg p-3 text-center">
+          <div className="text-[10px] text-slate-500 mb-1">Telnyx</div>
+          <div className={`text-sm font-bold font-mono ${r.cheapest === "telnyx" ? "text-emerald-400" : "text-slate-400"}`}>
+            ${r.telnyx.toFixed(3)}<span className="text-[10px] text-slate-600">/min</span>
+          </div>
+          {r.cheapest === "telnyx" && <div className="text-[9px] text-emerald-400 mt-1 font-bold">SELECTED</div>}
+        </div>
+        <div className="bg-black/20 rounded-lg p-3 text-center">
+          <div className="text-[10px] text-slate-500 mb-1">Twilio</div>
+          <div className={`text-sm font-bold font-mono ${r.cheapest === "twilio" ? "text-emerald-400" : "text-slate-400"}`}>
+            ${r.twilio.toFixed(3)}<span className="text-[10px] text-slate-600">/min</span>
+          </div>
+          {r.cheapest === "twilio" && <div className="text-[9px] text-emerald-400 mt-1 font-bold">SELECTED</div>}
+        </div>
+        <div className="bg-black/20 rounded-lg p-3 text-center">
+          <div className="text-[10px] text-slate-500 mb-1">Saving</div>
+          <div className="text-sm font-bold text-emerald-400 font-mono">{r.savings.split(" ")[0]}</div>
+          <div className="text-[9px] text-slate-500 mt-1">vs {r.cheapest === "telnyx" ? "Twilio" : "Telnyx"}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ShadowMode() {
   const [, navigate] = useLocation();
 
@@ -116,17 +160,20 @@ export default function ShadowMode() {
   const [ccPlatformMode, setCcPlatformMode] = useState<"dialin" | "webphone">("dialin");
 
   // ── Bridge Dial-Out state ──────────────────────────────────────────────────
-  type BridgeEntry = { callSid: string; status: string; dialing: boolean; carrier?: string };
+  type BridgeEntry = { callSid: string; status: string; dialing: boolean; carrier?: string; ratePerMin?: number; routeInfo?: { countryCode: string; numberType: string; savingsPercent: number } };
   const [bridgeCalls, setBridgeCalls] = useState<Record<number, BridgeEntry>>({});
 
   const dialOutMutation = trpc.shadowMode.dialOutToBridge.useMutation({
     onSuccess: (data: any, vars) => {
       const carrier = data.carrier ?? "twilio";
+      const ratePerMin = data.ratePerMin ?? 0;
+      const routeInfo = data.routeInfo;
       setBridgeCalls(prev => ({
         ...prev,
-        [vars.sessionId as any]: { callSid: data.callSid, status: data.status, dialing: false, carrier },
+        [vars.sessionId as any]: { callSid: data.callSid, status: data.status, dialing: false, carrier, ratePerMin, routeInfo },
       }));
-      toast.success(`Dialling via ${carrier === "telnyx" ? "Telnyx ($0.008/min)" : "Twilio ($0.015/min)"} — DTMF codes sent automatically after answer`);
+      const savingText = routeInfo?.savingsPercent > 0 ? ` (${routeInfo.savingsPercent}% cheaper)` : "";
+      toast.success(`Smart Router selected ${carrier === "telnyx" ? "Telnyx" : "Twilio"} @ $${ratePerMin.toFixed(3)}/min${savingText}`);
     },
     onError: (e) => {
       toast.error(e.message);
@@ -1666,13 +1713,17 @@ export default function ShadowMode() {
                   </div>
                 </div>
 
+                {ccForm.dialInNumber.length >= 7 && (
+                  <RatePreviewBox dialInNumber={ccForm.dialInNumber} />
+                )}
+
                 <div className="bg-white/[0.02] border border-emerald-500/10 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Phone className="w-3.5 h-3.5 text-emerald-400" />
                     <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wide">Dial Path</span>
                   </div>
                   <div className="text-xs text-slate-400 space-y-1">
-                    <p><span className="text-slate-300 font-medium">1.</span> CuraLive calls your conference number via Telnyx ($0.008/min) — Twilio as automatic fallback</p>
+                    <p><span className="text-slate-300 font-medium">1.</span> Smart Rate Router picks the cheapest carrier for this destination automatically</p>
                     <p><span className="text-slate-300 font-medium">2.</span> After the bridge answers, DTMF tones are sent automatically: Conference ID → Access Code → Host PIN</p>
                     <p><span className="text-slate-300 font-medium">3.</span> Audio is recorded silently (up to 2 hours) and sent to Whisper AI for transcription</p>
                     <p><span className="text-slate-300 font-medium">4.</span> Sentiment scoring, compliance scanning, and database tagging run on the transcript</p>
@@ -1683,9 +1734,9 @@ export default function ShadowMode() {
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      Webphone Ready
+                      Smart Rate Router Active
                     </div>
-                    <span className="text-[10px] text-slate-600">Twilio/Telnyx carrier · DTMF auto-entry · Silent recording</span>
+                    <span className="text-[10px] text-slate-600">Auto-selects cheapest carrier · DTMF auto-entry · Silent recording</span>
                   </div>
                   <Button
                     onClick={() => {
@@ -2151,7 +2202,7 @@ export default function ShadowMode() {
                           { label: "Conference Number", value: s.dialInNumber, icon: Phone },
                           { label: "Conference ID", value: s.conferenceId || "—", icon: Hash },
                           { label: "Access Code", value: s.accessCode || "—", icon: KeyRound },
-                          { label: "Carrier", value: bridge?.carrier === "telnyx" ? "Telnyx ($0.008/min)" : bridge?.carrier === "twilio" ? "Twilio ($0.015/min)" : "Connecting...", icon: Globe },
+                          { label: "Carrier", value: bridge?.carrier ? `${bridge.carrier === "telnyx" ? "Telnyx" : "Twilio"} @ $${(bridge.ratePerMin ?? 0).toFixed(3)}/min${bridge.routeInfo?.savingsPercent ? ` (${bridge.routeInfo.savingsPercent}% saved)` : ""}` : "Routing...", icon: DollarSign },
                         ].map(({ label, value, icon: Icon }) => (
                           <div key={label} className="bg-black/20 rounded-lg p-3">
                             <div className="flex items-center gap-1 mb-1">
