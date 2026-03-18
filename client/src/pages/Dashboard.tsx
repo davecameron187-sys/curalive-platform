@@ -13,18 +13,21 @@ import {
   Monitor, Wifi, Database,
 } from "lucide-react";
 
+import { Receipt } from "lucide-react";
 import ShadowMode from "./ShadowMode";
 import OCC from "./OCC";
 import BastionPartner from "./BastionPartner";
 import LumiPartner from "./LumiPartner";
+import AdminBilling from "./AdminBilling";
 
-type DashboardTab = "overview" | "shadow-mode" | "occ" | "partners" | "settings";
+type DashboardTab = "overview" | "shadow-mode" | "occ" | "partners" | "billing" | "settings";
 
 const TAB_CONFIG: { id: DashboardTab; label: string; icon: React.ElementType; color: string; activeColor: string }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard, color: "text-slate-500 hover:text-slate-300", activeColor: "border-violet-400 text-violet-300" },
   { id: "shadow-mode", label: "Shadow Mode", icon: Radio, color: "text-slate-500 hover:text-slate-300", activeColor: "border-emerald-400 text-emerald-300" },
   { id: "occ", label: "OCC", icon: Headphones, color: "text-slate-500 hover:text-slate-300", activeColor: "border-cyan-400 text-cyan-300" },
   { id: "partners", label: "Partners", icon: Handshake, color: "text-slate-500 hover:text-slate-300", activeColor: "border-amber-400 text-amber-300" },
+  { id: "billing", label: "Billing", icon: Receipt, color: "text-slate-500 hover:text-slate-300", activeColor: "border-green-400 text-green-300" },
   { id: "settings", label: "Settings", icon: Settings, color: "text-slate-500 hover:text-slate-300", activeColor: "border-slate-400 text-slate-300" },
 ];
 
@@ -418,6 +421,7 @@ export default function Dashboard() {
         {activeTab === "shadow-mode" && <ShadowMode embedded />}
         {activeTab === "occ" && <OCC />}
         {activeTab === "partners" && <PartnersTab defaultPartner={partnerFromUrl || undefined} />}
+        {activeTab === "billing" && <AdminBilling />}
         {activeTab === "settings" && <SettingsTab />}
       </div>
     </div>

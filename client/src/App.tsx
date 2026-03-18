@@ -173,7 +173,7 @@ function Router() {
       <Route path="/integrations/twilio-direct" component={TwilioDirectGuide} />
       <Route path="/billing/preview" component={BillingPreview} />
       <Route path="/my-events" component={MyEvents} />
-      <Route path="/admin/billing" component={AdminBilling} />
+      <Route path="/admin/billing"><Redirect to="/?tab=billing" /></Route>
       <Route path="/admin/billing/quote/:id" component={QuoteBuilder} />
       <Route path="/admin/billing/invoice/:id" component={InvoiceViewer} />
       <Route path="/billing/ageing" component={AgeingReport} />
