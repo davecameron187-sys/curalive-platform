@@ -89,11 +89,15 @@ async function extractChunkMp3(
 
 async function callTranscribeApi(buffer: Buffer, filename: string): Promise<string> {
   const hasDirectKey = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
+  const hasIntegrationKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim());
   let apiKey: string;
   let baseUrl: string;
 
   if (hasDirectKey) {
     apiKey = process.env.OPENAI_API_KEY!.trim();
+    baseUrl = "https://api.openai.com";
+  } else if (hasIntegrationKey) {
+    apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY!.trim();
     baseUrl = "https://api.openai.com";
   } else if (process.env.BUILT_IN_FORGE_API_KEY && process.env.BUILT_IN_FORGE_API_URL) {
     apiKey = process.env.BUILT_IN_FORGE_API_KEY;
@@ -114,7 +118,7 @@ async function callTranscribeApi(buffer: Buffer, filename: string): Promise<stri
   formData.append("prompt", "Transcribe this investor event recording accurately, including speaker names and financial terminology.");
 
   const url = `${baseUrl}/v1/audio/transcriptions`;
-  console.log(`[AudioTranscribe] Sending ${(buffer.length / 1024 / 1024).toFixed(1)}MB directly to Whisper API...`);
+  console.log(`[AudioTranscribe] Sending ${(buffer.length / 1024 / 1024).toFixed(1)}MB to Whisper API at ${baseUrl} (key: ${apiKey.slice(0, 8)}...)`);
 
   const response = await fetch(url, {
     method: "POST",
