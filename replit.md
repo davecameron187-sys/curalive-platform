@@ -43,7 +43,7 @@ client/          React frontend (Vite root)
 server/          Express backend
   _core/         Server entry, OAuth, Vite middleware, env config
   routers/       tRPC routers (incl. 11 Intelligence Suite routers + 6 CIP patent module routers)
-  services/      BastionInvestorAiService, BastionBookingService, LumiBookingService + 11 Intelligence Suite services
+  services/      BastionInvestorAiService, BastionBookingService, LumiBookingService, WebcastArchiveAiService + 11 Intelligence Suite services
   webphone/      Twilio/Telnyx voice integration
   drizzle/       Drizzle schema + migrations
 shared/          Shared types/constants between client and server
