@@ -31,7 +31,6 @@ import InvestorWaitingRoom from "./pages/InvestorWaitingRoom";
 import SlidePresenter from "./pages/SlidePresenter";
 import RoadshowOrderBook from "./pages/RoadshowOrderBook";
 import BookDemo from "./pages/BookDemo";
-import WebcastingHub from "./pages/WebcastingHub";
 import WebcastStudio from "./pages/WebcastStudio";
 import WebcastRegister from "./pages/WebcastRegister";
 import OnDemandLibrary from "./pages/OnDemandLibrary";
@@ -64,7 +63,6 @@ import DevelopmentDashboard from "./pages/DevelopmentDashboard";
 import AIFeaturesStatus from "./pages/AIFeaturesStatus";
 import PostEventReport from "./pages/PostEventReport";
 import EventScheduler from "./pages/EventScheduler";
-import EventCalendar from "./pages/EventCalendar";
 import AttendeeRoom from "./pages/AttendeeRoom";
 import ClientPortal from "./pages/ClientPortal";
 import AdminClients from "./pages/AdminClients";
@@ -117,7 +115,6 @@ import InvestorQuestionIntelligence from "./pages/InvestorQuestionIntelligence";
 import IntelligenceReportPage from "./pages/IntelligenceReport";
 import CallPreparation from "./pages/CallPreparation";
 import IntelligenceTerminal from "./pages/IntelligenceTerminal";
-import MailingListManager from "./pages/MailingListManager";
 import MailingListConfirm from "./pages/MailingListConfirm";
 import OnboardingFlow from "./pages/OnboardingFlow";
 import OperatorDashboard from "./pages/OperatorDashboard";
@@ -156,7 +153,7 @@ function Router() {
       <Route path="/live-video/roadshow/:roadshowId/present/:meetingId" component={SlidePresenter} />
       <Route path="/live-video/roadshow/:id/order-book" component={RoadshowOrderBook} />
       <Route path="/book-demo" component={BookDemo} />
-      <Route path="/live-video/webcasting" component={WebcastingHub} />
+      <Route path="/live-video/webcasting"><Redirect to="/?tab=events&sub=webcasting" /></Route>
       <Route path="/live-video/webcast/create" component={CreateEventWizard} />
       <Route path="/live-video/webcast/:slug" component={WebcastStudio} />
       <Route path="/live-video/webcast/:slug/attend" component={AttendeeEventRoom} />
@@ -187,7 +184,7 @@ function Router() {
       <Route path="/ai-features" component={AIFeaturesStatus} />
       <Route path="/post-event/:id" component={PostEventReport} />
       <Route path="/events/schedule" component={EventScheduler} />
-      <Route path="/events/calendar" component={EventCalendar} />
+      <Route path="/events/calendar"><Redirect to="/?tab=events&sub=calendar" /></Route>
       <Route path="/m/:eventId" component={AttendeeRoom} />
       <Route path="/portal/:clientSlug" component={ClientPortal} />
       <Route path="/portal/:clientSlug/event/:id" component={EventRoom} />
@@ -225,7 +222,7 @@ function Router() {
       <Route path="/shadow-mode"><Redirect to="/?tab=shadow-mode" /></Route>
       <Route path="/health-guardian" component={HealthGuardian} />
       <Route path="/compliance-engine" component={ComplianceEngineDashboard} />
-      <Route path="/mailing-lists" component={MailingListManager} />
+      <Route path="/mailing-lists"><Redirect to="/?tab=events&sub=mailing" /></Route>
       <Route path="/register/confirm/:token">{(params: any) => <MailingListConfirm params={params} />}</Route>
       <Route path="/bastion"><Redirect to="/?tab=partners" /></Route>
       <Route path="/bastion-partner"><Redirect to="/?tab=partners" /></Route>

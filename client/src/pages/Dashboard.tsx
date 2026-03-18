@@ -10,7 +10,7 @@ import {
   Loader2, Play, BarChart3, Globe, Zap, TrendingUp,
   Building2, LogIn, LogOut, User, Phone, Video,
   Mic, FileText, MessageSquare, Brain, Heart,
-  Monitor, Wifi, Database, Receipt,
+  Monitor, Wifi, Database, Receipt, CalendarDays, Mail, Tv,
 } from "lucide-react";
 
 import ShadowMode from "./ShadowMode";
@@ -18,13 +18,19 @@ import OCC from "./OCC";
 import BastionPartner from "./BastionPartner";
 import LumiPartner from "./LumiPartner";
 import AdminBilling from "./AdminBilling";
+import { lazy, Suspense } from "react";
 
-type DashboardTab = "overview" | "shadow-mode" | "occ" | "partners" | "billing" | "settings";
+const WebcastingHub = lazy(() => import("./WebcastingHub"));
+const EventCalendar = lazy(() => import("./EventCalendar"));
+const MailingListManager = lazy(() => import("./MailingListManager"));
+
+type DashboardTab = "overview" | "shadow-mode" | "occ" | "events" | "partners" | "billing" | "settings";
 
 const TAB_CONFIG: { id: DashboardTab; label: string; icon: React.ElementType; color: string; activeColor: string }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard, color: "text-slate-500 hover:text-slate-300", activeColor: "border-violet-400 text-violet-300" },
   { id: "shadow-mode", label: "Shadow Mode", icon: Radio, color: "text-slate-500 hover:text-slate-300", activeColor: "border-emerald-400 text-emerald-300" },
   { id: "occ", label: "OCC", icon: Headphones, color: "text-slate-500 hover:text-slate-300", activeColor: "border-cyan-400 text-cyan-300" },
+  { id: "events", label: "Events", icon: CalendarDays, color: "text-slate-500 hover:text-slate-300", activeColor: "border-orange-400 text-orange-300" },
   { id: "partners", label: "Partners", icon: Handshake, color: "text-slate-500 hover:text-slate-300", activeColor: "border-amber-400 text-amber-300" },
   { id: "billing", label: "Billing", icon: Receipt, color: "text-slate-500 hover:text-slate-300", activeColor: "border-green-400 text-green-300" },
   { id: "settings", label: "Settings", icon: Settings, color: "text-slate-500 hover:text-slate-300", activeColor: "border-slate-400 text-slate-300" },
@@ -121,7 +127,7 @@ function OverviewTab() {
               { label: "New Live Event", desc: "Join a meeting silently", icon: Play, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", tab: "shadow-mode" as DashboardTab },
               { label: "Upload Recording", desc: "Process archive audio", icon: Mic, color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20", tab: "shadow-mode" as DashboardTab },
               { label: "Open OCC", desc: "Operator call centre", icon: Headphones, color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20", tab: "occ" as DashboardTab },
-              { label: "Partner Hub", desc: "Lumi & Bastion", icon: Handshake, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", tab: "partners" as DashboardTab },
+              { label: "Events Hub", desc: "Webcasting, calendar & mail", icon: CalendarDays, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20", tab: "events" as DashboardTab },
               { label: "AI Dashboard", desc: "AI modules & reports", icon: Brain, color: "text-pink-400", bg: "bg-pink-500/10 border-pink-500/20", href: "/ai-dashboard" },
               { label: "Billing", desc: "Quotes, invoices & clients", icon: Receipt, color: "text-green-400", bg: "bg-green-500/10 border-green-500/20", tab: "billing" as DashboardTab },
             ].map(({ label, desc, icon: Icon, color, bg, tab, href }: any) => (
@@ -302,6 +308,45 @@ function SettingsTab() {
   );
 }
 
+type EventsSubTab = "webcasting" | "calendar" | "mailing";
+
+function EventsTab({ defaultSub }: { defaultSub?: EventsSubTab }) {
+  const [subTab, setSubTab] = useState<EventsSubTab>(defaultSub || "webcasting");
+
+  const subTabs = [
+    { id: "webcasting" as const, label: "Webcasting Hub", icon: Tv, activeClass: "bg-orange-500/10 border-orange-500/20 text-orange-300" },
+    { id: "calendar" as const, label: "Event Calendar", icon: CalendarDays, activeClass: "bg-blue-500/10 border-blue-500/20 text-blue-300" },
+    { id: "mailing" as const, label: "Mailing Lists", icon: Mail, activeClass: "bg-violet-500/10 border-violet-500/20 text-violet-300" },
+  ];
+
+  return (
+    <div>
+      <div className="max-w-7xl mx-auto px-6 pt-4">
+        <div className="flex gap-3 mb-4">
+          {subTabs.map(({ id, label, icon: Icon, activeClass }) => (
+            <button
+              key={id}
+              onClick={() => setSubTab(id)}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                subTab === id
+                  ? activeClass
+                  : "bg-white/[0.03] border border-white/10 text-slate-500 hover:text-slate-300"
+              } border`}>
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 text-slate-500 animate-spin" /></div>}>
+        {subTab === "webcasting" && <WebcastingHub />}
+        {subTab === "calendar" && <EventCalendar />}
+        {subTab === "mailing" && <MailingListManager />}
+      </Suspense>
+    </div>
+  );
+}
+
 function PartnersTab({ defaultPartner }: { defaultPartner?: "bastion" | "lumi" }) {
   const [partnerTab, setPartnerTab] = useState<"bastion" | "lumi">(defaultPartner || "bastion");
 
@@ -343,6 +388,7 @@ export default function Dashboard() {
   const params = new URLSearchParams(searchString);
   const tabFromUrl = params.get("tab") as DashboardTab | null;
   const partnerFromUrl = params.get("partner") as "bastion" | "lumi" | null;
+  const subFromUrl = params.get("sub") as EventsSubTab | null;
   const [activeTab, setActiveTab] = useState<DashboardTab>(
     tabFromUrl && TAB_CONFIG.some(t => t.id === tabFromUrl) ? tabFromUrl : "overview"
   );
@@ -426,6 +472,7 @@ export default function Dashboard() {
         {activeTab === "overview" && <OverviewTab />}
         {activeTab === "shadow-mode" && <ShadowMode embedded />}
         {activeTab === "occ" && <OCC />}
+        {activeTab === "events" && <EventsTab defaultSub={subFromUrl || undefined} />}
         {activeTab === "partners" && <PartnersTab defaultPartner={partnerFromUrl || undefined} />}
         {activeTab === "billing" && <AdminBilling />}
         {activeTab === "settings" && <SettingsTab />}
