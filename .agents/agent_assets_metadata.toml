@@ -144,3 +144,9 @@ id = "-ba38gvTq9t3pY6j0VWac"
 uri = "file://docs/CIP-Module-M-AI-Self-Evolution-Engine.pdf"
 type = "pdf"
 title = "CIP Module M — AI Self-Evolution Engine (Fixed PDF)"
+
+[[outputs]]
+id = "vxovxSkETvhawIXRmNEJD"
+uri = "file://CuraLive_Patent_Submission_Brief_2026.md"
+type = "text"
+title = "CuraLive Patent Submission Brief — March 2026"
