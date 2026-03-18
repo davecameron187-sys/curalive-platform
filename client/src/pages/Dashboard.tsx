@@ -255,7 +255,7 @@ function OverviewTab() {
               { label: "Upload Recording", desc: "Process archive audio", icon: Mic, color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20", tab: "shadow-mode" as DashboardTab },
               { label: "Open OCC", desc: "Operator call centre", icon: Headphones, color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20", tab: "occ" as DashboardTab },
               { label: "Events Hub", desc: "Webcasting, calendar & mail", icon: CalendarDays, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20", tab: "events" as DashboardTab },
-              { label: "AI Dashboard", desc: "AI modules & reports", icon: Brain, color: "text-pink-400", bg: "bg-pink-500/10 border-pink-500/20", href: "/ai-dashboard" },
+              { label: "Intelligence Suite", desc: "5 advanced AI algorithms", icon: Brain, color: "text-pink-400", bg: "bg-pink-500/10 border-pink-500/20", href: "/intelligence-suite" },
               { label: "Billing", desc: "Quotes, invoices & clients", icon: Receipt, color: "text-green-400", bg: "bg-green-500/10 border-green-500/20", tab: "billing" as DashboardTab },
             ].map(({ label, desc, icon: Icon, color, bg, tab, href }: any) => (
               <button key={label} onClick={() => {

@@ -71,6 +71,11 @@ import { conferenceDialoutRouter } from "./routers/conferenceDialoutRouter";
 import { agmGovernanceRouter } from "./routers/agmGovernanceRouter";
 import { lumiBookingRouter } from "./routers/lumiBookingRouter";
 import { bastionBookingRouter } from "./routers/bastionBookingRouter";
+import { evasiveAnswerRouter } from "./routers/evasiveAnswerRouter";
+import { marketImpactPredictorRouter } from "./routers/marketImpactPredictorRouter";
+import { multiModalComplianceRouter } from "./routers/multiModalComplianceRouter";
+import { externalSentimentRouter } from "./routers/externalSentimentRouter";
+import { personalizedBriefingRouter } from "./routers/personalizedBriefingRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -151,6 +156,11 @@ export const appRouter = router({
   agmGovernance: agmGovernanceRouter,
   lumiBooking: lumiBookingRouter,
   bastionBooking: bastionBookingRouter,
+  evasiveAnswer: evasiveAnswerRouter,
+  marketImpactPredictor: marketImpactPredictorRouter,
+  multiModalCompliance: multiModalComplianceRouter,
+  externalSentiment: externalSentimentRouter,
+  personalizedBriefing: personalizedBriefingRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

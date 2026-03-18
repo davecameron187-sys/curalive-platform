@@ -71,6 +71,7 @@ import ComplianceAuditLog from "./pages/ComplianceAuditLog";
 import InvestorFollowUps from "./pages/InvestorFollowUps";
 import SentimentDashboard from "./pages/SentimentDashboard";
 import AIDashboard from "./pages/AIDashboard";
+import IntelligenceSuite from "./pages/IntelligenceSuite";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
@@ -208,6 +209,7 @@ function Router() {
       <Route path="/operator-hub" component={OperatorHub} />
       <Route path="/ai-shop" component={AIShop} />
       <Route path="/ai-onboarding" component={AIOnboarding} />
+      <Route path="/intelligence-suite" component={IntelligenceSuite} />
       <Route path="/agentic-brain" component={AgenticBrain} />
       <Route path="/autonomous-intervention" component={AutonomousIntervention} />
       <Route path="/tagged-metrics" component={TaggedMetricsDashboard} />
