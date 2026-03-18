@@ -1,18 +1,18 @@
 // @ts-nocheck
-import { router, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { MarketImpactPredictorService } from "../services/MarketImpactPredictorService";
 
 export const marketImpactPredictorRouter = router({
-  predictImpact: publicProcedure
+  predictImpact: protectedProcedure
     .input(z.object({
-      sentimentScore: z.number(),
-      topicKeywords: z.array(z.string()),
-      evasivenessScore: z.number().optional(),
-      companyTicker: z.string().optional(),
-      eventType: z.string().optional(),
-      transcriptExcerpt: z.string().optional(),
-      historicalContext: z.string().optional(),
+      sentimentScore: z.number().min(-1).max(1),
+      topicKeywords: z.array(z.string().max(200)).max(20),
+      evasivenessScore: z.number().min(0).max(1).optional(),
+      companyTicker: z.string().max(20).optional(),
+      eventType: z.string().max(50).optional(),
+      transcriptExcerpt: z.string().max(15000).optional(),
+      historicalContext: z.string().max(5000).optional(),
       eventId: z.number().optional(),
       sessionId: z.number().optional(),
     }))
@@ -40,13 +40,13 @@ export const marketImpactPredictorRouter = router({
       return prediction;
     }),
 
-  getEventPredictions: publicProcedure
+  getEventPredictions: protectedProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input }) => {
       return MarketImpactPredictorService.getEventPredictions(input.eventId);
     }),
 
-  getLatestPrediction: publicProcedure
+  getLatestPrediction: protectedProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input }) => {
       return MarketImpactPredictorService.getLatestPrediction(input.eventId);

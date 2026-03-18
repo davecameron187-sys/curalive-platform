@@ -1,30 +1,30 @@
 // @ts-nocheck
-import { router, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { PersonalizedBriefingService } from "../services/PersonalizedBriefingService";
 
 export const personalizedBriefingRouter = router({
-  generateBriefing: publicProcedure
+  generateBriefing: protectedProcedure
     .input(z.object({
       stakeholderType: z.enum(["ceo", "cfo", "ir_head", "board_member", "analyst", "compliance_officer", "investor"]),
-      companyName: z.string(),
-      eventName: z.string(),
-      eventType: z.string(),
-      transcriptExcerpt: z.string(),
-      sentimentScore: z.number().optional(),
+      companyName: z.string().max(200),
+      eventName: z.string().max(500),
+      eventType: z.string().max(50),
+      transcriptExcerpt: z.string().max(20000),
+      sentimentScore: z.number().min(-1).max(1).optional(),
       evasivenessData: z.object({
-        avgScore: z.number(),
-        highEvasionCount: z.number(),
+        avgScore: z.number().min(0).max(1),
+        highEvasionCount: z.number().min(0),
       }).optional(),
       marketImpactData: z.object({
-        volatility: z.number(),
-        direction: z.string(),
+        volatility: z.number().min(0).max(10),
+        direction: z.string().max(20),
       }).optional(),
       complianceData: z.object({
-        overallRisk: z.number(),
-        violationCount: z.number(),
+        overallRisk: z.number().min(0).max(1),
+        violationCount: z.number().min(0),
       }).optional(),
-      previousBriefings: z.string().optional(),
+      previousBriefings: z.string().max(10000).optional(),
       eventId: z.number().optional(),
       sessionId: z.number().optional(),
     }))
@@ -54,10 +54,10 @@ export const personalizedBriefingRouter = router({
       return briefing;
     }),
 
-  getEventBriefings: publicProcedure
+  getEventBriefings: protectedProcedure
     .input(z.object({
       eventId: z.number(),
-      stakeholderType: z.string().optional(),
+      stakeholderType: z.string().max(50).optional(),
     }))
     .query(async ({ input }) => {
       return PersonalizedBriefingService.getEventBriefings(input.eventId, input.stakeholderType);

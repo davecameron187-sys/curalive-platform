@@ -1,22 +1,22 @@
 // @ts-nocheck
-import { router, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { MultiModalComplianceService } from "../services/MultiModalComplianceService";
 
 export const multiModalComplianceRouter = router({
-  scoreComplianceRisk: publicProcedure
+  scoreComplianceRisk: protectedProcedure
     .input(z.object({
-      transcriptText: z.string(),
+      transcriptText: z.string().max(20000),
       sentimentData: z.object({
-        overallSentiment: z.string(),
-        confidence: z.number(),
+        overallSentiment: z.string().max(50),
+        confidence: z.number().min(0).max(1),
         emotionDistribution: z.record(z.number()),
       }).optional(),
-      evasivenessScore: z.number().optional(),
-      speakerRole: z.string().optional(),
-      eventType: z.string().optional(),
-      companyTicker: z.string().optional(),
-      jurisdiction: z.string().optional(),
+      evasivenessScore: z.number().min(0).max(1).optional(),
+      speakerRole: z.string().max(100).optional(),
+      eventType: z.string().max(50).optional(),
+      companyTicker: z.string().max(20).optional(),
+      jurisdiction: z.string().max(50).optional(),
       eventId: z.number().optional(),
       sessionId: z.number().optional(),
     }))
@@ -42,7 +42,7 @@ export const multiModalComplianceRouter = router({
       return score;
     }),
 
-  getEventComplianceScores: publicProcedure
+  getEventComplianceScores: protectedProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input }) => {
       return MultiModalComplianceService.getEventComplianceScores(input.eventId);

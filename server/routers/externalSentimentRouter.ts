@@ -1,17 +1,17 @@
 // @ts-nocheck
-import { router, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { ExternalSentimentService } from "../services/ExternalSentimentService";
 
 export const externalSentimentRouter = router({
-  aggregateExternalSentiment: publicProcedure
+  aggregateExternalSentiment: protectedProcedure
     .input(z.object({
-      companyTicker: z.string(),
-      companyName: z.string(),
-      eventType: z.string(),
-      callSentiment: z.number(),
-      keyTopicsFromCall: z.array(z.string()),
-      transcriptHighlights: z.string().optional(),
+      companyTicker: z.string().max(20),
+      companyName: z.string().max(200),
+      eventType: z.string().max(50),
+      callSentiment: z.number().min(-1).max(1),
+      keyTopicsFromCall: z.array(z.string().max(200)).max(20),
+      transcriptHighlights: z.string().max(15000).optional(),
       eventId: z.number().optional(),
       sessionId: z.number().optional(),
     }))
@@ -36,7 +36,7 @@ export const externalSentimentRouter = router({
       return snapshot;
     }),
 
-  getEventSnapshots: publicProcedure
+  getEventSnapshots: protectedProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input }) => {
       return ExternalSentimentService.getEventSnapshots(input.eventId);

@@ -1,14 +1,14 @@
 // @ts-nocheck
-import { router, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { EvasiveAnswerDetectionService } from "../services/EvasiveAnswerDetectionService";
 
 export const evasiveAnswerRouter = router({
-  detectEvasiveness: publicProcedure
+  detectEvasiveness: protectedProcedure
     .input(z.object({
-      responseText: z.string(),
-      questionText: z.string(),
-      speakerRole: z.string().optional(),
+      responseText: z.string().max(10000),
+      questionText: z.string().max(5000),
+      speakerRole: z.string().max(100).optional(),
       eventId: z.number().optional(),
       sessionId: z.number().optional(),
     }))
@@ -32,26 +32,26 @@ export const evasiveAnswerRouter = router({
       return result;
     }),
 
-  batchAnalyze: publicProcedure
+  batchAnalyze: protectedProcedure
     .input(z.object({
       qaExchanges: z.array(z.object({
-        questionText: z.string(),
-        responseText: z.string(),
-        speakerRole: z.string().optional(),
+        questionText: z.string().max(5000),
+        responseText: z.string().max(10000),
+        speakerRole: z.string().max(100).optional(),
         questionId: z.number().optional(),
-      })),
+      })).max(20),
     }))
     .mutation(async ({ input }) => {
       return EvasiveAnswerDetectionService.batchAnalyzeQA(input.qaExchanges);
     }),
 
-  getEventEvasiveness: publicProcedure
+  getEventEvasiveness: protectedProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input }) => {
       return EvasiveAnswerDetectionService.getEventEvasiveness(input.eventId);
     }),
 
-  getAggregateStats: publicProcedure
+  getAggregateStats: protectedProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input }) => {
       return EvasiveAnswerDetectionService.getAggregateStats(input.eventId);
