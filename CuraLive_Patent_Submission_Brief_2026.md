@@ -35,14 +35,14 @@ Existing investor relations platforms provide basic webcasting and audio confere
 
 ## 4. SUMMARY OF THE INVENTION
 
-CuraLive is a comprehensive real-time investor event intelligence platform comprising 12 novel interconnected subsystems:
+CuraLive is a comprehensive real-time investor event intelligence platform comprising 18 novel interconnected subsystems:
 
 | # | Subsystem | Novel Capability |
 |---|-----------|-----------------|
 | 1 | Shadow Bridge & Silent Intelligence Deployment | Passive AI agent injection into third-party meetings |
 | 2 | AI Automated Moderator (aiAm) | Autonomous regulation-aware event moderation with kill-switch |
 | 3 | Module M — Self-Evolution Engine | Zero-human-input AI self-improvement with evidence decay |
-| 4 | Intelligence Suite — 5 Advanced AI Algorithms | Evasiveness, market impact, compliance, sentiment fusion, RAG briefings |
+| 4 | Intelligence Suite — 11 Advanced AI Algorithms | Evasiveness, market impact, compliance, sentiment fusion, RAG briefings + 6 CIP modules |
 | 5 | Operator Control Console (OCC) | Real-time multi-participant conference management |
 | 6 | Webcasting Engine | End-to-end event lifecycle with RTMP/HLS/WebRTC |
 | 7 | Multi-Carrier Telephony with Autonomous Failover | Dual-carrier (Twilio/Telnyx) with health-based switching |
@@ -51,6 +51,12 @@ CuraLive is a comprehensive real-time investor event intelligence platform compr
 | 10 | Health Guardian | AI-powered infrastructure monitoring with root cause attribution |
 | 11 | EventEchoPipeline | Compliance-aware automated content transformation |
 | 12 | Enterprise Security Architecture | Zero Trust, RBAC, immutable audit chain, threat hunting |
+| 13 | Real-Time Materiality Risk Oracle | MNPI detection + auto-drafted SENS/8-K filings + one-click OCC approval |
+| 14 | Investor Intention Decoder | Hidden agenda detection via dynamic investor graph + multi-agent LLM ensemble |
+| 15 | Cross-Event Consistency Guardian | Persistent vector store of executive statements + live contradiction scoring |
+| 16 | Predictive Volatility Simulator | Monte-Carlo simulations refreshed every 30s with LSTM/transformer time-series |
+| 17 | Autonomous Regulatory Intervention Engine | Reinforcement learning from regulatory outcomes for self-evolving compliance |
+| 18 | Event Integrity Digital Twin & Certificate | SHA-256 hash chain digital twin + blockchain-verified Clean Disclosure Certificate |
 
 ---
 
@@ -407,6 +413,122 @@ CuraLive is a comprehensive real-time investor event intelligence platform compr
 - ISO 27001 control assessment with AI-generated remediation roadmaps
 - Automated compliance certificate generation in PDF format
 
+### 5.13 Real-Time Materiality Risk Oracle (CIP Module 1)
+
+**Implementation:** `server/services/MaterialityRiskOracleService.ts`, `server/routers/materialityRiskRouter.ts`
+
+**Method:**
+1. During a live earnings call, the system continuously ingests audio transcription and scores every executive statement for "material non-public information" (MNPI) risk.
+2. A parallel NLP pipeline executes simultaneously: an evasion model and a materiality classifier trained on historical SEC enforcement actions, JSE queries, and FCA outcomes.
+3. When the materiality score exceeds a configurable threshold, the system auto-generates a draft SENS/8-K/RNS regulatory filing using RAG over the issuer's prior filings.
+4. The draft filing, risk score, MNPI indicators, and suggested corrective language are published via Ably pub/sub to the OCC operator console with one-click approval.
+5. All flagged statements are logged to `materiality_risk_logs` with full audit trail.
+
+**Novel Elements:**
+- No existing tool performs real-time materiality scoring + auto-drafting + live operator intervention during the call.
+- Parallel evasion NLP + materiality classifier + RAG over issuer filings + Ably pub/sub alert to OCC.
+- Multi-jurisdictional support: SEC Reg FD, JSE Listings Requirements 3.4, FCA MAR, EU MAR.
+
+---
+
+### 5.14 Investor Intention Decoder (CIP Module 2)
+
+**Implementation:** `server/services/InvestorIntentionDecoderService.ts`, `server/routers/investorIntentRouter.ts`
+
+**Method:**
+1. Analyses investor questions for underlying intent using linguistic patterns combined with a dynamic graph database of historical investor behaviour.
+2. A multi-agent LLM ensemble classifies each question against 8 investor archetypes: ACTIVIST_PRESSURE, SHORT_SELLER_SIGNAL, RETAIL_CONFUSION, ANALYST_FISHING, SUPPORTIVE_SHAREHOLDER, COMPETITOR_INTELLIGENCE, REGULATORY_PROBE, LITIGATION_SETUP.
+3. Displays "Intent Profile" badges (e.g., "Activist Pressure", "Short Signal") in the Q&A queue with aggression scores (0-100).
+4. Predicts follow-up questions and recommends response strategies for management.
+5. Maintains a persistent memory graph of investor-question vectors across events for longitudinal analysis.
+
+**Novel Elements:**
+- No live system decodes investor psychology/intent with persistent memory graph during calls.
+- Dynamic graph database of investor-question vectors + multi-agent LLM ensemble per investor archetype.
+- Real-time intent badge + aggression score delivery via pub/sub to operator Q&A queue.
+
+---
+
+### 5.15 Cross-Event Consistency Guardian (CIP Module 3)
+
+**Implementation:** `server/services/CrossEventConsistencyService.ts`, `server/routers/crossEventConsistencyRouter.ts`
+
+**Method:**
+1. Maintains a persistent vector store of every executive statement across all prior events (current call + prior quarters + peer companies).
+2. When a new statement is made, the system performs real-time similarity/contradiction scoring against the historical corpus.
+3. Contradictions are flagged with severity levels (critical/high/medium/low) and confidence scores.
+4. RAG-powered corrective language is generated and surfaced to the OCC console before the executive completes their response.
+5. Cross-references against regulatory requirements (SEC Rule 10b5-1, Regulation FD, JSE Listing Requirements, GDPR).
+6. All consistency checks are logged to `consistency_check_logs` with messaging drift analysis.
+
+**Novel Elements:**
+- No live tool maintains cross-event messaging memory at scale with pre-emptive correction.
+- Persistent vector store of historical statements + real-time contradiction scoring + RAG corrective generation.
+- Proactive correction surfaced before response completion — not post-event.
+
+---
+
+### 5.16 Predictive Volatility Simulator (CIP Module 4)
+
+**Implementation:** `server/services/VolatilitySimulatorService.ts`, `server/routers/volatilitySimulatorRouter.ts`
+
+**Method:**
+1. While the call is live, the system runs 100+ micro-simulations using Monte-Carlo methods based on partial transcript data, sentiment vectors, and guidance tone.
+2. A continuously updated LSTM/transformer time-series model produces probability distributions of short-term price impact.
+3. Three forecast scenarios are generated: base case, bull case, and bear case — each with price move percentage, probability, and key drivers.
+4. The system produces a 95% confidence interval for expected price movement and a trading desk recommendation.
+5. Simulations refresh every 30 seconds as new transcript data arrives.
+6. Results are published to the OCC console and can be displayed on the speaker's teleprompter.
+
+**Novel Elements:**
+- No system simulates forward market outcomes in real time using partial live transcript data.
+- Monte-Carlo simulations refreshed every 30 seconds using live-updated time-series model.
+- Alternative phrasing engine suggests lower-volatility wording while maintaining semantic equivalence.
+
+---
+
+### 5.17 Autonomous Regulatory Intervention Engine (CIP Module 5)
+
+**Implementation:** `server/services/RegulatoryInterventionService.ts`, `server/routers/regulatoryInterventionRouter.ts`
+
+**Method:**
+1. Extends Module M's self-evolution capability with a closed-loop reinforcement learning system.
+2. Ingests post-event regulatory outcomes (SEC comment letters, JSE queries, enforcement actions) as training signals.
+3. Autonomously adjusts detection thresholds, classifier parameters, and response templates based on historical outcomes.
+4. Proposes classifier updates with expected improvement metrics and deployment recommendations.
+5. Operates through 5 evolution stages: observing → learning → adapting → calibrated → autonomous.
+6. Generates new response templates per jurisdiction as regulatory landscape evolves.
+7. Deploys updated models before the next issuer event — no human retraining required.
+
+**Novel Elements:**
+- Self-evolving agents exist in research; none applied to live investor comms with regulatory feedback loops.
+- Closed-loop reinforcement learning with regulatory outcomes as training signals.
+- Autonomous deployment of updated models before next event with confidence-gated stages.
+
+---
+
+### 5.18 Event Integrity Digital Twin & Certificate (CIP Module 6)
+
+**Implementation:** `server/services/EventIntegrityTwinService.ts`, `server/routers/eventIntegrityRouter.ts`
+
+**Method:**
+1. Creates a live digital twin of the entire event comprising transcript segments, sentiment scores, compliance scores, and operator actions.
+2. Each segment is cryptographically linked using SHA-256 hash chaining — each segment's hash includes the previous segment's hash, creating an immutable chain of custody.
+3. At event conclusion, the system generates a comprehensive integrity assessment including:
+   - Integrity score (0-1.000)
+   - Certificate grade (AAA through NR)
+   - Disclosure completeness percentage
+   - Regulatory compliance rating
+   - Consistency rating across all segments
+4. A formal "Clean Disclosure Certificate" is generated — suitable for publication to investors, exchanges, and regulatory bodies.
+5. The certificate includes the twin hash (SHA-256 of the complete chain), genesis hash, final hash, and chain length for independent verification.
+6. All certificates are logged to `event_integrity_twins` with full cryptographic proof.
+
+**Novel Elements:**
+- No live event platform issues real-time, immutable regulatory-grade integrity certificates.
+- Cryptographic hash chain of every segment + final certificate publication.
+- Certificate grades (AAA-NR) based on disclosure completeness, regulatory compliance, and messaging consistency.
+
 ---
 
 ## 6. PARTNER INTEGRATION ARCHITECTURE
@@ -587,13 +709,25 @@ CREATE TABLE ir_briefings (
 
 **Claim 5:** An adaptive AI calibration system for investor event intelligence, comprising: capturing operator corrections as weighted training signals; calculating learned threshold values by blending default settings with operator feedback; and automatic progression through maturity stages from Learning to Self-Evolving based on accumulated correction volume and consistency.
 
+**Claim 6 (CIP):** A computer-implemented method for real-time protection against selective disclosure during a live investor communication event, comprising: (a) continuous ingestion of an audio transcription stream; (b) simultaneous execution of an evasion NLP model and a materiality classifier trained on historical enforcement actions; (c) generation of a draft regulatory filing (SENS/8-K/RNS) using retrieval-augmented generation when the materiality risk score exceeds a configurable threshold; (d) publishing the risk score, MNPI indicators, and draft filing via pub/sub to an operator console with one-click approval; and (e) logging all flagged statements with full cryptographic audit trail.
+
+**Claim 7 (CIP):** A system for real-time investor intent classification during a live event, comprising: (a) a dynamic graph database storing vector embeddings of historical questions per investor; (b) a multi-agent LLM ensemble that classifies each question against eight investor archetypes including activist pressure, short-seller signal, and litigation setup; (c) calculation of an aggression score predicting follow-up hostility; (d) pub/sub delivery of an intent badge, aggression score, and response strategy to the operator Q&A queue; and (e) persistent longitudinal investor behaviour tracking across events.
+
+**Claim 8 (CIP):** A method of maintaining live semantic consistency of executive messaging during investor events, comprising: (a) maintaining a persistent vector store of historical executive statements across all prior events and peer companies; (b) real-time similarity and contradiction scoring on each new utterance; (c) generating corrective phrasing via retrieval-augmented generation; (d) surfacing contradiction alerts and suggested corrections to the OCC console before the executive completes their response; and (e) cross-referencing all statements against multi-jurisdictional regulatory requirements.
+
+**Claim 9 (CIP):** A real-time simulation engine for investor events, comprising: (a) continuous ingestion of partial transcript vectors and sentiment scores from a live event; (b) execution of 100+ parallel Monte-Carlo forecast simulations using a continuously updated LSTM/transformer time-series model; (c) generation of base case, bull case, and bear case scenarios with probability distributions; (d) production of a 95% confidence interval for predicted price movement; (e) refreshing all simulations every 30 seconds as new transcript data arrives; and (f) publishing probability distributions and trading recommendations to the OCC console.
+
+**Claim 10 (CIP):** A self-evolving compliance system for live investor communications, comprising: (a) a closed-loop reinforcement learning pipeline ingesting post-event regulatory feedback including SEC comment letters, JSE queries, and enforcement actions as training signals; (b) automatic adjustment of detection thresholds, classifier parameters, and response templates based on historical regulatory outcomes; (c) progression through five evolution stages from observing to autonomous with confidence-gated transitions; (d) generation of jurisdiction-specific response templates as the regulatory landscape evolves; and (e) autonomous deployment of updated models before the next issuer event without human retraining.
+
+**Claim 11 (CIP):** A method for certifying live event integrity, comprising: (a) maintaining a cryptographically linked digital twin of transcript segments, sentiment scores, compliance scores, and operator actions using SHA-256 hash chaining where each segment includes the prior segment's hash; (b) scoring overall event integrity across disclosure completeness, regulatory compliance, and messaging consistency dimensions; (c) assigning a certificate grade from AAA through NR based on the integrity assessment; (d) generating a formal "Clean Disclosure Certificate" suitable for publication to investors, exchanges, and regulatory bodies; and (e) providing the twin hash, genesis hash, final hash, and chain length for independent cryptographic verification.
+
 ---
 
 ## 13. FIGURES AND DRAWINGS
 
 The following diagrams should accompany the patent application:
 
-1. **System Architecture Diagram** — Overall platform architecture showing all 12 subsystems and their interconnections.
+1. **System Architecture Diagram** — Overall platform architecture showing all 18 subsystems and their interconnections.
 2. **Shadow Bridge Data Flow** — Sequence diagram showing silent agent deployment, audio capture, transcription, and intelligence pipeline.
 3. **Module M Self-Evolution Lifecycle** — State diagram showing the 5-stage capability lifecycle (Emerging → Live) with evidence decay curves.
 4. **Intelligence Suite Pipeline** — Data flow diagram showing how the 5 AI algorithms receive inputs and produce outputs.
@@ -603,6 +737,12 @@ The following diagrams should accompany the patent application:
 8. **Multi-Carrier Failover Architecture** — Sequence diagram showing Twilio/Telnyx health monitoring and autonomous switching.
 9. **Immutable Audit Chain Structure** — Diagram showing SHA-256 hash linking between sequential audit entries.
 10. **Webcast Lifecycle** — End-to-end flow from event creation through live broadcast to post-event reporting.
+11. **Materiality Risk Oracle Pipeline** — Data flow from live transcription through parallel evasion NLP + materiality classifier to auto-drafted regulatory filing and OCC one-click approval.
+12. **Investor Intention Decoder Architecture** — Dynamic graph database of investor vectors feeding multi-agent LLM ensemble with intent badge output to Q&A queue.
+13. **Cross-Event Consistency Guardian** — Persistent vector store queried in real-time with contradiction scoring and RAG corrective language generation.
+14. **Predictive Volatility Simulator** — Monte-Carlo simulation engine with LSTM/transformer model, scenario generation, and OCC probability distribution display.
+15. **Autonomous Regulatory Intervention Engine** — Closed-loop reinforcement learning architecture with regulatory outcome ingestion, threshold adjustment, and autonomous deployment.
+16. **Event Integrity Digital Twin** — SHA-256 hash chain construction, integrity scoring, certificate grade assignment, and Clean Disclosure Certificate generation.
 
 ---
 

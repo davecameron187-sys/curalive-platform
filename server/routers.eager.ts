@@ -76,6 +76,12 @@ import { marketImpactPredictorRouter } from "./routers/marketImpactPredictorRout
 import { multiModalComplianceRouter } from "./routers/multiModalComplianceRouter";
 import { externalSentimentRouter } from "./routers/externalSentimentRouter";
 import { personalizedBriefingRouter } from "./routers/personalizedBriefingRouter";
+import { materialityRiskRouter } from "./routers/materialityRiskRouter";
+import { investorIntentRouter } from "./routers/investorIntentRouter";
+import { crossEventConsistencyRouter } from "./routers/crossEventConsistencyRouter";
+import { volatilitySimulatorRouter } from "./routers/volatilitySimulatorRouter";
+import { regulatoryInterventionRouter } from "./routers/regulatoryInterventionRouter";
+import { eventIntegrityRouter } from "./routers/eventIntegrityRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -161,6 +167,12 @@ export const appRouter = router({
   multiModalCompliance: multiModalComplianceRouter,
   externalSentiment: externalSentimentRouter,
   personalizedBriefing: personalizedBriefingRouter,
+  materialityRisk: materialityRiskRouter,
+  investorIntent: investorIntentRouter,
+  crossEventConsistency: crossEventConsistencyRouter,
+  volatilitySimulator: volatilitySimulatorRouter,
+  regulatoryIntervention: regulatoryInterventionRouter,
+  eventIntegrity: eventIntegrityRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
