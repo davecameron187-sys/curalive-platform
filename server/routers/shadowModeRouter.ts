@@ -334,6 +334,8 @@ export const shadowModeRouter = router({
       if (!session) throw new Error("Session not found");
 
       let transcriptSegments: Array<{ speaker: string; text: string; timestamp: number; timeLabel?: string }> = [];
+      let recordingUrl: string | null = null;
+      let botStatus: string | null = null;
 
       if (session.recallBotId) {
         const [bot] = await db
@@ -343,6 +345,12 @@ export const shadowModeRouter = router({
           .limit(1);
         if (bot?.transcriptJson) {
           transcriptSegments = JSON.parse(bot.transcriptJson);
+        }
+        if (bot?.recordingUrl) {
+          recordingUrl = bot.recordingUrl;
+        }
+        if (bot?.status) {
+          botStatus = bot.status;
         }
       }
 
@@ -355,7 +363,7 @@ export const shadowModeRouter = router({
         if (agmSession) agmSessionId = agmSession.id;
       }
 
-      return { ...session, transcriptSegments, agmSessionId };
+      return { ...session, transcriptSegments, agmSessionId, recordingUrl, botStatus };
     }),
 
   updateStatus: publicProcedure

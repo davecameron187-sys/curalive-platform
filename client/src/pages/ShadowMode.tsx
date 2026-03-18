@@ -17,7 +17,7 @@ import {
   TrendingUp, Swords, Lightbulb, ChevronDown, ChevronUp,
   Brain, Gauge, ShieldAlert, LineChart, Banknote, Leaf,
   Newspaper, Share2, Briefcase, Send,
-  Zap, Network,
+  Zap, Network, Download, Video, ExternalLink,
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -887,6 +887,88 @@ export default function ShadowMode() {
                         </div>
                       )}
 
+                      {(() => {
+                        const recUrl = (liveSession as any).recordingUrl;
+                        const bStatus = (liveSession as any).botStatus;
+                        const isCompleted = liveSession.status === "completed" || liveSession.status === "processing";
+                        const isRecording = bStatus === "in_call" || liveSession.status === "live";
+
+                        if (!recUrl && !isRecording && !isCompleted) return null;
+
+                        return (
+                          <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden">
+                            <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Video className="w-4 h-4 text-cyan-400" />
+                                <span className="text-sm text-slate-300 font-medium">Event Recording</span>
+                                {isRecording && !recUrl && (
+                                  <span className="flex items-center gap-1 text-xs text-red-400">
+                                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                    Recording
+                                  </span>
+                                )}
+                              </div>
+                              {recUrl && (
+                                <div className="flex items-center gap-2">
+                                  <a href={recUrl} target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/20 transition-colors">
+                                    <ExternalLink className="w-3 h-3" />
+                                    Open
+                                  </a>
+                                  <a href={recUrl} download
+                                    className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/20 transition-colors">
+                                    <Download className="w-3 h-3" />
+                                    Download MP4
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-4">
+                              {recUrl ? (
+                                <div className="space-y-3">
+                                  <video
+                                    src={recUrl}
+                                    controls
+                                    playsInline
+                                    preload="metadata"
+                                    className="w-full rounded-lg bg-black/50 max-h-[400px]"
+                                  >
+                                    Your browser does not support video playback.
+                                  </video>
+                                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                    <span>Recording captured by Recall AI — available for download and replay</span>
+                                  </div>
+                                </div>
+                              ) : isRecording ? (
+                                <div className="flex items-center gap-3 py-4">
+                                  <div className="relative">
+                                    <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                                      <Video className="w-5 h-5 text-red-400" />
+                                    </div>
+                                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-medium text-slate-300">Recording in progress</div>
+                                    <div className="text-xs text-slate-500 mt-0.5">The meeting is being recorded. The video will be available once the session ends.</div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-3 py-4">
+                                  <div className="w-10 h-10 rounded-full bg-slate-500/10 border border-slate-500/20 flex items-center justify-center">
+                                    <Video className="w-5 h-5 text-slate-600" />
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-medium text-slate-400">Processing recording</div>
+                                    <div className="text-xs text-slate-600 mt-0.5">Recall AI is processing the recording. It will appear here once ready.</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden">
                         <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -894,7 +976,30 @@ export default function ShadowMode() {
                             <span className="text-sm text-slate-300 font-medium">Live Transcript</span>
                             {isActive && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />}
                           </div>
-                          <span className="text-xs text-slate-600">{transcript.length} segments</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-600">{transcript.length} segments</span>
+                            {transcript.length > 0 && (
+                              <button
+                                onClick={() => {
+                                  const text = transcript.map(s =>
+                                    `${(s as any).timeLabel ?? ""} ${s.speaker}: ${s.text}`
+                                  ).join("\n\n");
+                                  const blob = new Blob([text], { type: "text/plain" });
+                                  const url = URL.createObjectURL(blob);
+                                  const a = document.createElement("a");
+                                  a.href = url;
+                                  a.download = `${liveSession.clientName}_${liveSession.eventName}_transcript.txt`.replace(/\s+/g, "_");
+                                  a.click();
+                                  URL.revokeObjectURL(url);
+                                  toast.success("Transcript downloaded");
+                                }}
+                                className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 border border-white/10 transition-colors"
+                              >
+                                <Download className="w-3 h-3" />
+                                Export .txt
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div className="max-h-72 overflow-y-auto">
                           {transcript.length === 0 ? (

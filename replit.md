@@ -153,6 +153,14 @@ Key variables needed:
 - **Frontend**: Archive detail view shows specialised algorithm results in dedicated panel (amber for investor, emerald for governance)
 - **Files modified**: `server/routers/archiveUploadRouter.ts`, `drizzle/schema.ts`, `client/src/pages/ShadowMode.tsx`
 
+## Shadow Mode — Event Recording & Downloads (March 2026)
+
+- **Video recording**: Session detail now shows an "Event Recording" panel with embedded video player, "Open" (new tab), and "Download MP4" buttons when Recall AI captures a recording
+- **Recording states**: Shows "Recording in progress" with pulsing indicator during live sessions, "Processing recording" after session ends, full player once URL is available
+- **Transcript download**: "Export .txt" button on the Live Transcript header — one-click download of the full transcript as a text file
+- **Backend**: `getSession` now returns `recordingUrl` and `botStatus` from the recall_bots table
+- **Files modified**: `server/routers/shadowModeRouter.ts`, `client/src/pages/ShadowMode.tsx`
+
 ## Key Features
 
 - **AI Shop** (`/ai-shop`) — 6 role-based AI bundles (A-F) + 28 individual AI applications browser
