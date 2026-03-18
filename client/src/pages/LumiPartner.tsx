@@ -9,7 +9,9 @@ import {
   TrendingUp, TrendingDown, Minus, Play, Square,
   Building2, Lock, FileText, Users, Radio,
   Layers, ChevronRight, Star, Award, Handshake,
+  Brain, Vote, Scale,
 } from "lucide-react";
+import { Link } from "wouter";
 
 const PLATFORM_OPTIONS = [
   { value: "zoom", label: "Zoom" },
@@ -362,6 +364,52 @@ export default function LumiPartner() {
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="bg-white/[0.02] border border-violet-500/20 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-violet-500/15 border border-violet-500/30 flex items-center justify-center">
+                    <Brain className="w-5 h-5 text-violet-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white">AGM Governance AI</h4>
+                    <p className="text-[11px] text-slate-500">6 Self-Evolving Algorithms — Companies Act 71 · JSE · King IV</p>
+                  </div>
+                </div>
+                <Link href="/agm-governance">
+                  <span className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1 cursor-pointer transition-colors">
+                    Open Dashboard <ChevronRight className="w-3 h-3" />
+                  </span>
+                </Link>
+              </div>
+              <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                Purpose-built for Lumi-hosted AGMs: autonomous algorithms that predict resolution outcomes, detect shareholder dissent patterns, triage governance questions, monitor quorum thresholds, scan for regulatory compliance breaches, and generate board-ready reports. Every AGM makes the system smarter through self-evolving intelligence fed into CuraLive's AI Evolution Engine.
+              </p>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  { icon: Vote, name: "Resolution Predictor", desc: "Predicts approval % from live debate sentiment + historical baselines", color: "text-emerald-400", border: "border-emerald-400/20", bg: "bg-emerald-400/10" },
+                  { icon: Eye, name: "Dissent Pattern Engine", desc: "Cross-AGM institutional memory of shareholder opposition patterns", color: "text-amber-400", border: "border-amber-400/20", bg: "bg-amber-400/10" },
+                  { icon: MessageSquare, name: "Q&A Governance Triage", desc: "Classifies questions by regulatory significance under Companies Act 71", color: "text-blue-400", border: "border-blue-400/20", bg: "bg-blue-400/10" },
+                  { icon: Users, name: "Quorum Intelligence", desc: "Real-time quorum monitoring with jurisdiction-specific thresholds", color: "text-cyan-400", border: "border-cyan-400/20", bg: "bg-cyan-400/10" },
+                  { icon: Shield, name: "Regulatory Guardian", desc: "8 rule categories: Companies Act 71, JSE Listings, King IV, forward-looking", color: "text-red-400", border: "border-red-400/20", bg: "bg-red-400/10" },
+                  { icon: FileText, name: "Governance Report", desc: "12-section board-ready reports generated autonomously post-AGM", color: "text-violet-400", border: "border-violet-400/20", bg: "bg-violet-400/10" },
+                ].map(({ icon: Icon, name, desc, color, border, bg }) => (
+                  <div key={name} className={`bg-white/[0.015] border ${border} rounded-xl p-3.5`}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className={`w-6 h-6 rounded-lg ${bg} border ${border} flex items-center justify-center`}>
+                        <Icon className={`w-3 h-3 ${color}`} />
+                      </div>
+                      <span className="text-xs font-semibold text-white">{name}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">{desc}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-500">
+                <Brain className="w-3 h-3 text-violet-400" />
+                <span>Self-evolving: all 6 algorithms feed observations into the AI Evolution Engine (Module M) after every AGM</span>
               </div>
             </div>
 
