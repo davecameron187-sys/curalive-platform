@@ -37,11 +37,21 @@ const upload = multer({
 });
 
 async function getDurationSeconds(inputPath: string): Promise<number> {
-  const { stdout } = await execFileAsync("ffprobe", [
-    "-v", "quiet", "-print_format", "json", "-show_format", inputPath,
-  ]);
-  const info = JSON.parse(stdout);
-  return parseFloat(info.format.duration ?? "0");
+  try {
+    const { stdout } = await execFileAsync("ffprobe", [
+      "-v", "quiet", "-print_format", "json", "-show_format", inputPath,
+    ]);
+    const info = JSON.parse(stdout);
+    return parseFloat(info.format.duration ?? "0");
+  } catch (e: any) {
+    if (e?.code === "ENOENT") {
+      console.warn("[Audio] ffprobe not found — estimating duration from file size");
+      const fs = await import("fs");
+      const stat = fs.statSync(inputPath);
+      return Math.max(60, Math.round(stat.size / 16000));
+    }
+    throw e;
+  }
 }
 
 async function extractChunkMp3(
