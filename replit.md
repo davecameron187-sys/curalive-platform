@@ -354,6 +354,7 @@ The full Q&A support infrastructure is built and working but the UI widget is cu
 - **Security**: All mutations enforce `assertSessionOwnership(sessionId, userId)` + `assertResolutionBelongsToSession()`. Dissent engine derives `clientName` server-side from session record (prevents cross-tenant contamination)
 - **Self-evolution**: All 6 algorithms feed observations into `ai_evolution_observations` (Module M) using correct schema columns (`sourceType`, `sourceId`, `eventType`, `moduleName`, `observation`, `rawContext`)
 - **UI**: Algorithms tab has expandable "Run" panels for algorithms 2-5 (dissent, Q&A triage, quorum, compliance) with inline forms
+- **Lumi Integration**: When starting a Lumi session with event type "AGM", an AGM Intelligence session is auto-created and linked via `shadowSessionId`. The Lumi session detail shows inline AGM Governance AI controls (resolutions, algorithm runners, report generation) — no need to visit the separate `/agm-governance` page
 
 ## OpenAI API Key Configuration (March 2026)
 

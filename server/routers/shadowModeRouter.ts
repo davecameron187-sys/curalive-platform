@@ -2,8 +2,8 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { shadowSessions, taggedMetrics, recallBots } from "../../drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { shadowSessions, taggedMetrics, recallBots, agmIntelligenceSessions } from "../../drizzle/schema";
+import { eq, desc, and } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
 import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
 
@@ -119,8 +119,9 @@ export const shadowModeRouter = router({
       webhookBaseUrl: z.string().url().optional(),
       notes: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      const userId = ctx.user?.id ?? null;
 
       const [inserted] = await db.insert(shadowSessions).values({
         clientName: input.clientName,
@@ -192,12 +193,33 @@ export const shadowModeRouter = router({
           transcriptJson: JSON.stringify([]),
         });
 
+        let agmSessionId: number | null = null;
+        if (input.eventType === "agm" && userId != null) {
+          try {
+            const [agmInserted] = await db.insert(agmIntelligenceSessions).values({
+              userId,
+              shadowSessionId: sessionId,
+              clientName: input.clientName,
+              agmTitle: input.eventName,
+              jurisdiction: "south_africa",
+              status: "live",
+            });
+            agmSessionId = (agmInserted as { insertId: number }).insertId;
+            console.log(`[Shadow] AGM Intelligence session ${agmSessionId} auto-created for shadow session ${sessionId}`);
+          } catch (err) {
+            console.error("[Shadow] Failed to auto-create AGM session:", err);
+          }
+        }
+
         return {
           sessionId,
           botId: bot.id,
           ablyChannel,
           status: "bot_joining",
-          message: "CuraLive Intelligence bot is joining the meeting. It will appear as a participant within 30–60 seconds.",
+          agmSessionId,
+          message: input.eventType === "agm"
+            ? "CuraLive Intelligence bot is joining the AGM. Governance AI algorithms activated automatically."
+            : "CuraLive Intelligence bot is joining the meeting. It will appear as a participant within 30–60 seconds.",
         };
 
       } catch (err) {
@@ -324,7 +346,16 @@ export const shadowModeRouter = router({
         }
       }
 
-      return { ...session, transcriptSegments };
+      let agmSessionId: number | null = null;
+      if (session.eventType === "agm") {
+        const [agmSession] = await db.select({ id: agmIntelligenceSessions.id })
+          .from(agmIntelligenceSessions)
+          .where(eq(agmIntelligenceSessions.shadowSessionId, session.id))
+          .limit(1);
+        if (agmSession) agmSessionId = agmSession.id;
+      }
+
+      return { ...session, transcriptSegments, agmSessionId };
     }),
 
   updateStatus: publicProcedure
