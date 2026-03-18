@@ -36,6 +36,19 @@ const upload = multer({
   },
 });
 
+let _ffmpegCached: boolean | null = null;
+async function checkFfmpegAvailable(): Promise<boolean> {
+  if (_ffmpegCached !== null) return _ffmpegCached;
+  try {
+    await execFileAsync("ffprobe", ["-version"]);
+    _ffmpegCached = true;
+  } catch {
+    _ffmpegCached = false;
+    console.warn("[Audio] ffmpeg/ffprobe not available in this environment");
+  }
+  return _ffmpegCached;
+}
+
 async function getDurationSeconds(inputPath: string): Promise<number> {
   try {
     const { stdout } = await execFileAsync("ffprobe", [
@@ -155,12 +168,18 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
 
         let transcript: string;
 
+        const ffmpegAvailable = await checkFfmpegAvailable();
+
         if (isAudio && !isVideo && sizeMB <= DIRECT_MAX_MB) {
-          // Small audio file — send directly, no processing needed
           console.log(`[AudioTranscribe] Small audio file, sending directly to API...`);
           transcript = await callTranscribeApi(buffer, originalname);
+        } else if (!ffmpegAvailable) {
+          console.warn(`[AudioTranscribe] ffmpeg not available — sending file directly to Whisper API (${sizeMB.toFixed(1)}MB)`);
+          if (sizeMB > 24) {
+            throw new Error("File is too large to process without ffmpeg. Maximum 24MB without audio processing tools.");
+          }
+          transcript = await callTranscribeApi(buffer, originalname);
         } else {
-          // Large audio or video — chunk into small MP3 segments with ffmpeg
           tmpDir = await mkdtemp(join(tmpdir(), "curalive-audio-"));
           const inputExt = extname(originalname) || (isVideo ? ".mp4" : ".mp3");
           const inputPath = join(tmpDir, `input${inputExt}`);
