@@ -151,7 +151,7 @@ export default function LumiPartner() {
     meetingUrl: "",
     platform: "zoom" as const,
     contactName: "",
-    contactEmail: "",
+    contactEmail: "" as string,
     lumiReference: "",
     lumiRecipients: "",
     notes: "",
@@ -683,15 +683,11 @@ export default function LumiPartner() {
                       <label className="text-xs text-slate-400 mb-1.5 block font-medium">Contact Name</label>
                       <input value={bookingForm.contactName} onChange={e => setBookingForm(f => ({ ...f, contactName: e.target.value }))} placeholder="Company Secretary name" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
                     </div>
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Contact Email</label>
-                      <input type="email" value={bookingForm.contactEmail} onChange={e => setBookingForm(f => ({ ...f, contactEmail: e.target.value }))} placeholder="secretary@company.co.za" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
-                    </div>
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 mb-1.5 block font-medium">Lumi Recipients <span className="text-slate-600">(CC on confirmation email)</span></label>
-                    <textarea value={bookingForm.lumiRecipients} onChange={e => setBookingForm(f => ({ ...f, lumiRecipients: e.target.value }))} placeholder="john@lumiglobal.com, sarah@lumiglobal.com" rows={2} className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 resize-none" />
-                    <p className="text-[10px] text-slate-600 mt-1">Comma-separated email addresses. These contacts will receive the booking confirmation with the client dashboard link.</p>
+                    <label className="text-xs text-slate-400 mb-1.5 block font-medium">Confirmation Recipients</label>
+                    <textarea value={bookingForm.lumiRecipients} onChange={e => setBookingForm(f => ({ ...f, lumiRecipients: e.target.value }))} placeholder="secretary@sasol.co.za, john@lumiglobal.com, sarah@lumiglobal.com" rows={2} className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 resize-none" />
+                    <p className="text-[10px] text-slate-600 mt-1">Everyone who should receive the booking confirmation — client contacts, Lumi team, company secretary. Comma-separated.</p>
                   </div>
                   <div>
                     <label className="text-xs text-slate-400 mb-1.5 block font-medium">Notes</label>
@@ -819,12 +815,12 @@ export default function LumiPartner() {
                           )}
                         </div>
                         <p className="text-xs text-slate-400 mb-3 leading-relaxed">
-                          Send a branded confirmation email to the client contact and Lumi team with event details, the live dashboard link, and what CuraLive intelligence is included.
+                          Send a branded confirmation email with event details, the live dashboard link, and what CuraLive intelligence is included.
                         </p>
-                        {bk.lumiRecipients && (
+                        {(bk.lumiRecipients || bk.contactEmail) && (
                           <div className="mb-3">
-                            <div className="text-[10px] text-slate-500 font-medium mb-1">Lumi Recipients</div>
-                            <div className="text-xs text-slate-300">{bk.lumiRecipients}</div>
+                            <div className="text-[10px] text-slate-500 font-medium mb-1">Recipients</div>
+                            <div className="text-xs text-slate-300">{[bk.contactEmail, bk.lumiRecipients].filter(Boolean).join(", ")}</div>
                           </div>
                         )}
                         <div className="flex items-center gap-2">
@@ -840,7 +836,7 @@ export default function LumiPartner() {
                             }
                           </Button>
                           {!bk.contactEmail && !bk.lumiRecipients && (
-                            <span className="text-[10px] text-amber-400">Add a contact email or Lumi recipients first</span>
+                            <span className="text-[10px] text-amber-400">Add confirmation recipients first</span>
                           )}
                         </div>
                       </div>

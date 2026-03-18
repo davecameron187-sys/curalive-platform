@@ -186,18 +186,17 @@ export class LumiBookingService {
     const booking = await this.getBookingById(bookingId, userId);
     if (!booking) throw new Error("Booking not found");
 
-    const recipients: string[] = [];
+    const allEmails = [booking.contactEmail, booking.lumiRecipients]
+      .filter(Boolean)
+      .join(",");
 
-    if (booking.contactEmail) recipients.push(booking.contactEmail);
-
-    const lumiEmails = (booking.lumiRecipients ?? "")
+    const recipients = allEmails
       .split(/[,;\n]/)
       .map((e: string) => e.trim())
       .filter((e: string) => e.includes("@"));
-    recipients.push(...lumiEmails);
 
     if (recipients.length === 0) {
-      throw new Error("No recipients configured. Add a client contact email or Lumi recipients.");
+      throw new Error("No recipients configured. Add confirmation recipients to this booking.");
     }
 
     const dashboardUrl = `${baseUrl}/live/${booking.dashboardToken}`;
