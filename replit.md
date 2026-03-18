@@ -142,6 +142,17 @@ Key variables needed:
 - **Module M integration**: All 6 algorithms feed observations into `ai_evolution_observations` for self-evolution
 - **Booking fields**: `confirmationRecipients` (unified), `bastionReference`, `sector`, `ticker`, `eventType`
 
+## Archive Upload — Specialised Algorithm Integration (March 2026)
+
+- **What**: Archive uploads now automatically run specialised AI algorithms based on event type, on top of the standard 20-module report
+- **Investor events** (earnings_call, interim_results, capital_markets_day, investor_day, roadshow, special_call): Creates a Bastion intelligence session and runs all 6 Bastion investor algorithms (Earnings Sentiment Decoder, Forward Guidance Tracker, Analyst Question Intelligence, Management Credibility Scorer, Market-Moving Statement Detector, Investment Brief Generator)
+- **Governance events** (agm, board_meeting): Creates an AGM intelligence session and runs 4 governance algorithms (Dissent Pattern Engine, Q&A Governance Triage, Regulatory Speech Guardian, Governance Report Generator)
+- **All observations** feed into Module M (ai_evolution_observations) for self-evolution
+- **New DB columns** on `archive_events`: `specialised_analysis` (JSON), `specialised_algorithms_run`, `specialised_session_id`, `specialised_session_type`
+- **New event types** added across archive/shadow systems: `investor_day`, `roadshow`, `special_call`
+- **Frontend**: Archive detail view shows specialised algorithm results in dedicated panel (amber for investor, emerald for governance)
+- **Files modified**: `server/routers/archiveUploadRouter.ts`, `drizzle/schema.ts`, `client/src/pages/ShadowMode.tsx`
+
 ## Key Features
 
 - **AI Shop** (`/ai-shop`) — 6 role-based AI bundles (A-F) + 28 individual AI applications browser

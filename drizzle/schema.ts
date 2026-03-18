@@ -2335,7 +2335,7 @@ export const shadowSessions = mysqlTable("shadow_sessions", {
   id: int("id").autoincrement().primaryKey(),
   clientName: varchar("client_name", { length: 255 }).notNull(),
   eventName: varchar("event_name", { length: 255 }).notNull(),
-  eventType: mysqlEnum("event_type", ["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other"]).notNull(),
+  eventType: mysqlEnum("event_type", ["earnings_call", "interim_results", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other"]).notNull(),
   platform: mysqlEnum("platform", ["zoom", "teams", "meet", "webex", "other"]).default("zoom").notNull(),
   meetingUrl: varchar("meeting_url", { length: 1000 }).notNull(),
   recallBotId: varchar("recall_bot_id", { length: 255 }),
@@ -2842,7 +2842,7 @@ export const archiveEvents = mysqlTable("archive_events", {
   eventName: varchar("event_name", { length: 255 }).notNull(),
   eventType: mysqlEnum("event_type", [
     "earnings_call", "interim_results", "agm", "capital_markets_day",
-    "ceo_town_hall", "board_meeting", "webcast", "other",
+    "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other",
   ]).notNull(),
   eventDate: varchar("event_date", { length: 32 }),
   platform: varchar("platform", { length: 64 }),
@@ -2855,6 +2855,10 @@ export const archiveEvents = mysqlTable("archive_events", {
   status: mysqlEnum("status", ["processing", "completed", "failed"]).default("processing").notNull(),
   notes: text("notes"),
   aiReport: json("ai_report"),
+  specialisedAnalysis: json("specialised_analysis"),
+  specialisedAlgorithmsRun: int("specialised_algorithms_run").default(0),
+  specialisedSessionId: int("specialised_session_id"),
+  specialisedSessionType: varchar("specialised_session_type", { length: 32 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -113,7 +113,7 @@ export const shadowModeRouter = router({
     .input(z.object({
       clientName: z.string().min(1),
       eventName: z.string().min(1),
-      eventType: z.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other"]),
+      eventType: z.enum(["earnings_call", "interim_results", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other"]),
       platform: z.enum(["zoom", "teams", "meet", "webex", "other"]).default("zoom"),
       meetingUrl: z.string().url(),
       webhookBaseUrl: z.string().url().optional(),

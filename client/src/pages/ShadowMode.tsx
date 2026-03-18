@@ -26,7 +26,8 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   earnings_call: "Earnings Call", interim_results: "Interim Results", agm: "AGM", capital_markets_day: "Capital Markets Day",
-  ceo_town_hall: "CEO Town Hall", board_meeting: "Board Meeting", webcast: "Webcast", other: "Other",
+  ceo_town_hall: "CEO Town Hall", board_meeting: "Board Meeting", webcast: "Webcast",
+  investor_day: "Investor Day", roadshow: "Roadshow", special_call: "Special Call", other: "Other",
 };
 
 const ARCHIVE_PLATFORMS = ["Zoom", "Microsoft Teams", "Google Meet", "Webex", "In-Person", "Other"];
@@ -1908,6 +1909,116 @@ export default function ShadowMode() {
                               <span className="text-xs text-slate-500">All modules run on every event — select which to include in reports</span>
                             </div>
                           )}
+
+                          {(archiveDetail.data as any).specialised_algorithms_run > 0 && (() => {
+                            const sa = (archiveDetail.data as any).specialised_analysis;
+                            const sessionType = (archiveDetail.data as any).specialised_session_type;
+                            const algCount = (archiveDetail.data as any).specialised_algorithms_run;
+                            if (!sa) return null;
+
+                            const isBastion = sessionType === "bastion";
+                            const gradientClass = isBastion
+                              ? "from-amber-500/5 to-orange-500/5 border-amber-500/20"
+                              : "from-emerald-500/5 to-cyan-500/5 border-emerald-500/20";
+                            const accentColor = isBastion ? "text-amber-400" : "text-emerald-400";
+                            const labelColor = isBastion ? "text-amber-300" : "text-emerald-300";
+
+                            return (
+                              <div className="space-y-3 mt-2">
+                                <div className={`bg-gradient-to-r ${gradientClass} border rounded-xl p-4`}>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <Brain className={`w-4 h-4 ${accentColor}`} />
+                                    <span className={`text-xs font-semibold ${labelColor} uppercase tracking-wider`}>
+                                      {algCount} Specialised {isBastion ? "Investor Intelligence" : "Governance"} Algorithms Run
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {isBastion && sa.earningsSentiment && (
+                                      <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Spin Index</div>
+                                        <div className={`text-lg font-bold ${sa.earningsSentiment.spinIndex > 30 ? "text-red-400" : "text-emerald-400"}`}>
+                                          {sa.earningsSentiment.spinIndex}<span className="text-xs text-slate-600">/100</span>
+                                        </div>
+                                        <div className="text-[10px] text-slate-600 mt-0.5">Tone: {sa.earningsSentiment.managementToneScore} | Substance: {sa.earningsSentiment.substanceScore}</div>
+                                      </div>
+                                    )}
+                                    {isBastion && sa.forwardGuidance && (
+                                      <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Forward Guidance</div>
+                                        <div className="text-lg font-bold text-blue-400">{sa.forwardGuidance.guidanceItems}</div>
+                                        <div className="text-[10px] text-slate-600 mt-0.5">
+                                          {sa.forwardGuidance.raised > 0 && <span className="text-emerald-400">{sa.forwardGuidance.raised} raised </span>}
+                                          {sa.forwardGuidance.lowered > 0 && <span className="text-red-400">{sa.forwardGuidance.lowered} lowered </span>}
+                                          {sa.forwardGuidance.newGuidance > 0 && <span className="text-cyan-400">{sa.forwardGuidance.newGuidance} new</span>}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {isBastion && sa.analystQuestions && (
+                                      <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Analyst Q&A</div>
+                                        <div className="text-lg font-bold text-violet-400">{sa.analystQuestions.totalQuestions}</div>
+                                        <div className="text-[10px] text-slate-600 mt-0.5">
+                                          {sa.analystQuestions.hostileCount > 0 && <span className="text-red-400">{sa.analystQuestions.hostileCount} hostile </span>}
+                                          {(sa.analystQuestions.topThemes || []).slice(0, 2).join(", ")}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {isBastion && sa.credibility && (
+                                      <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Credibility</div>
+                                        <div className={`text-lg font-bold ${sa.credibility.credibilityScore >= 70 ? "text-emerald-400" : sa.credibility.credibilityScore >= 50 ? "text-amber-400" : "text-red-400"}`}>
+                                          {sa.credibility.credibilityScore}<span className="text-xs text-slate-600">/100</span>
+                                        </div>
+                                        <div className="text-[10px] text-slate-600 mt-0.5">{sa.credibility.consistencyRating}</div>
+                                      </div>
+                                    )}
+                                    {isBastion && sa.marketMoving && (
+                                      <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Market-Moving</div>
+                                        <div className={`text-lg font-bold ${sa.marketMoving.marketMovingCount > 0 ? "text-orange-400" : "text-slate-500"}`}>
+                                          {sa.marketMoving.marketMovingCount}
+                                        </div>
+                                        <div className="text-[10px] text-slate-600 mt-0.5">Impact: {sa.marketMoving.overallImpact}</div>
+                                      </div>
+                                    )}
+                                    {isBastion && sa.investmentBrief && (
+                                      <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Recommendation</div>
+                                        <div className={`text-sm font-bold ${
+                                          sa.investmentBrief.overallRating === "overweight" ? "text-emerald-400" :
+                                          sa.investmentBrief.overallRating === "underweight" ? "text-red-400" : "text-blue-400"
+                                        }`}>
+                                          {(sa.investmentBrief.overallRating ?? "").replace(/_/g, " ").toUpperCase()}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {!isBastion && sa.regulatoryCompliance && (
+                                      <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Regulatory Alerts</div>
+                                        <div className={`text-lg font-bold ${(sa.regulatoryCompliance.alerts?.length ?? 0) > 0 ? "text-red-400" : "text-emerald-400"}`}>
+                                          {sa.regulatoryCompliance.alerts?.length ?? 0}
+                                        </div>
+                                        <div className="text-[10px] text-slate-600 mt-0.5">{sa.regulatoryCompliance.overallRisk ?? "N/A"} risk</div>
+                                      </div>
+                                    )}
+                                    {!isBastion && sa.dissentPatterns && (
+                                      <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Dissent Patterns</div>
+                                        <div className="text-lg font-bold text-amber-400">{sa.dissentPatterns.patternsFound}</div>
+                                        <div className="text-[10px] text-slate-600 mt-0.5">{sa.dissentPatterns.riskLevel ?? "N/A"} risk</div>
+                                      </div>
+                                    )}
+                                    {!isBastion && sa.governanceQuestions && (
+                                      <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Governance Q&A</div>
+                                        <div className="text-lg font-bold text-cyan-400">{sa.governanceQuestions.governanceQuestionCount ?? 0}</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })() : (

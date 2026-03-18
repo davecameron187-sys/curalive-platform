@@ -334,6 +334,155 @@ ${opts.notes ? `<table width="100%" style="background:#0f172a;border-left:3px so
 </table></td></tr></table></body></html>`;
 }
 
+const BASTION_EVENT_TYPES = ["earnings_call", "interim_results", "capital_markets_day", "investor_day", "roadshow", "special_call"];
+const AGM_EVENT_TYPES = ["agm", "board_meeting"];
+
+function parseTranscriptToSegments(rawText: string): Array<{ speaker: string; text: string; timestamp: number }> {
+  const lines = rawText.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
+  const segments: Array<{ speaker: string; text: string; timestamp: number }> = [];
+  const speakerPattern = /^([A-Z][A-Za-z\s.'-]{1,50})\s*[:–—]\s*(.+)/;
+  let currentSpeaker = "Unknown";
+  let currentText = "";
+  let segIndex = 0;
+
+  for (const line of lines) {
+    const match = line.match(speakerPattern);
+    if (match) {
+      if (currentText.length > 10) {
+        segments.push({ speaker: currentSpeaker, text: currentText.trim(), timestamp: segIndex++ });
+      }
+      currentSpeaker = match[1].trim();
+      currentText = match[2];
+    } else {
+      currentText += " " + line;
+    }
+  }
+  if (currentText.length > 10) {
+    segments.push({ speaker: currentSpeaker, text: currentText.trim(), timestamp: segIndex });
+  }
+
+  if (segments.length === 0) {
+    const chunks = rawText.match(/[\s\S]{1,1500}/g) ?? [rawText];
+    for (let i = 0; i < chunks.length; i++) {
+      segments.push({ speaker: "Transcript", text: chunks[i].trim(), timestamp: i });
+    }
+  }
+
+  return segments;
+}
+
+async function runSpecialisedAlgorithms(
+  archiveId: number,
+  clientName: string,
+  eventName: string,
+  eventType: string,
+  eventDate: string | undefined,
+  transcriptText: string,
+): Promise<{ sessionType: string; sessionId: number; algorithmsRun: number; results: Record<string, any> }> {
+  const segments = parseTranscriptToSegments(transcriptText);
+  const results: Record<string, any> = {};
+  let algorithmsRun = 0;
+  const SYSTEM_USER_ID = 0;
+
+  if (BASTION_EVENT_TYPES.includes(eventType)) {
+    const bastion = await import("../services/BastionInvestorAiService");
+    const { sessionId } = await bastion.createBastionSession(SYSTEM_USER_ID, {
+      clientName,
+      eventTitle: eventName,
+      eventType,
+      eventDate,
+      sector: undefined,
+      ticker: undefined,
+    });
+
+    console.log(`[ArchiveAI] Running Bastion investor algorithms for archive ${archiveId}, session ${sessionId}`);
+
+    try {
+      results.earningsSentiment = await bastion.analyzeEarningsSentiment(SYSTEM_USER_ID, sessionId, segments);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Earnings Sentiment Decoder complete`);
+    } catch (e) { console.error(`[ArchiveAI] Earnings sentiment failed:`, e); }
+
+    try {
+      results.forwardGuidance = await bastion.trackForwardGuidance(SYSTEM_USER_ID, sessionId, segments);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Forward Guidance Tracker complete`);
+    } catch (e) { console.error(`[ArchiveAI] Forward guidance failed:`, e); }
+
+    try {
+      results.analystQuestions = await bastion.analyzeAnalystQuestions(SYSTEM_USER_ID, sessionId, segments);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Analyst Question Intelligence complete`);
+    } catch (e) { console.error(`[ArchiveAI] Analyst questions failed:`, e); }
+
+    try {
+      results.credibility = await bastion.scoreManagementCredibility(SYSTEM_USER_ID, sessionId, segments);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Management Credibility Scorer complete`);
+    } catch (e) { console.error(`[ArchiveAI] Credibility scoring failed:`, e); }
+
+    try {
+      results.marketMoving = await bastion.detectMarketMovingStatements(SYSTEM_USER_ID, sessionId, segments);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Market-Moving Statement Detector complete`);
+    } catch (e) { console.error(`[ArchiveAI] Market-moving detection failed:`, e); }
+
+    try {
+      results.investmentBrief = await bastion.generateInvestmentBrief(SYSTEM_USER_ID, sessionId);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Investment Brief Generator complete`);
+    } catch (e) { console.error(`[ArchiveAI] Investment brief failed:`, e); }
+
+    return { sessionType: "bastion", sessionId, algorithmsRun, results };
+  }
+
+  if (AGM_EVENT_TYPES.includes(eventType)) {
+    const agm = await import("../services/AgmGovernanceAiService");
+    const { sessionId } = await agm.createAgmSession(SYSTEM_USER_ID, {
+      clientName,
+      agmTitle: eventName,
+      agmDate: eventDate,
+      jurisdiction: "south_africa",
+    });
+
+    console.log(`[ArchiveAI] Running AGM governance algorithms for archive ${archiveId}, session ${sessionId}`);
+
+    const questions = segments
+      .filter(s => s.text.includes("?"))
+      .map(s => ({ speaker: s.speaker, question: s.text, timestamp: s.timestamp }));
+
+    try {
+      results.dissentPatterns = await agm.analyzeDissentPatterns(SYSTEM_USER_ID, sessionId);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Dissent Pattern Engine complete`);
+    } catch (e) { console.error(`[ArchiveAI] Dissent patterns failed:`, e); }
+
+    if (questions.length > 0) {
+      try {
+        results.governanceQuestions = await agm.triageGovernanceQuestions(SYSTEM_USER_ID, sessionId, questions);
+        algorithmsRun++;
+        console.log(`[ArchiveAI] ✓ Q&A Governance Triage complete`);
+      } catch (e) { console.error(`[ArchiveAI] Governance triage failed:`, e); }
+    }
+
+    try {
+      results.regulatoryCompliance = await agm.scanRegulatoryCompliance(SYSTEM_USER_ID, sessionId, segments);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Regulatory Speech Guardian complete`);
+    } catch (e) { console.error(`[ArchiveAI] Regulatory compliance failed:`, e); }
+
+    try {
+      results.governanceReport = await agm.generateGovernanceReport(SYSTEM_USER_ID, sessionId);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Governance Report Generator complete`);
+    } catch (e) { console.error(`[ArchiveAI] Governance report failed:`, e); }
+
+    return { sessionType: "agm", sessionId, algorithmsRun, results };
+  }
+
+  return { sessionType: "none", sessionId: 0, algorithmsRun: 0, results: {} };
+}
+
 export const archiveUploadRouter = router({
 
   processTranscript: publicProcedure
@@ -343,7 +492,7 @@ export const archiveUploadRouter = router({
         eventName: z.string().min(1).max(255),
         eventType: z.enum([
           "earnings_call", "interim_results", "agm", "capital_markets_day",
-          "ceo_town_hall", "board_meeting", "webcast", "other",
+          "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other",
         ]),
         eventDate: z.string().optional(),
         platform: z.string().optional(),
@@ -452,6 +601,37 @@ export const archiveUploadRouter = router({
         }
       }
 
+      let specialisedResult = { sessionType: "none", sessionId: 0, algorithmsRun: 0, results: {} as Record<string, any> };
+      try {
+        specialisedResult = await runSpecialisedAlgorithms(
+          archiveId,
+          input.clientName,
+          input.eventName,
+          input.eventType,
+          input.eventDate,
+          input.transcriptText,
+        );
+        if (specialisedResult.algorithmsRun > 0) {
+          await conn.execute(
+            `UPDATE archive_events SET specialised_analysis = ?, specialised_algorithms_run = ?, specialised_session_id = ?, specialised_session_type = ? WHERE id = ?`,
+            [
+              JSON.stringify(specialisedResult.results),
+              specialisedResult.algorithmsRun,
+              specialisedResult.sessionId || null,
+              specialisedResult.sessionType !== "none" ? specialisedResult.sessionType : null,
+              archiveId,
+            ]
+          );
+          console.log(`[ArchiveAI] ✓ Specialised analysis complete: ${specialisedResult.algorithmsRun} ${specialisedResult.sessionType} algorithms run for archive ${archiveId}`);
+        }
+      } catch (err) {
+        console.error("[ArchiveAI] Specialised algorithm pipeline failed (non-fatal):", err);
+      }
+
+      const specialisedLabel = specialisedResult.algorithmsRun > 0
+        ? ` + ${specialisedResult.algorithmsRun} specialised ${specialisedResult.sessionType === "bastion" ? "investor" : "governance"} algorithms`
+        : "";
+
       return {
         success: true,
         archiveId,
@@ -462,7 +642,10 @@ export const archiveUploadRouter = router({
         sentimentAvg,
         complianceFlags,
         metricsGenerated: metricsCount,
-        message: `Archive processed. ${metricsCount} intelligence records added to your Tagged Metrics database.`,
+        specialisedAlgorithmsRun: specialisedResult.algorithmsRun,
+        specialisedSessionType: specialisedResult.sessionType,
+        specialisedSessionId: specialisedResult.sessionId,
+        message: `Archive processed. ${metricsCount} intelligence records${specialisedLabel} added to your database.`,
       };
     }),
 
@@ -476,7 +659,8 @@ export const archiveUploadRouter = router({
       const [rows] = await conn.execute(
         `SELECT id, client_name, event_name, event_type, event_date, platform,
                 word_count, segment_count, sentiment_avg, compliance_flags,
-                tagged_metrics_generated, status, notes, created_at, ai_report
+                tagged_metrics_generated, status, notes, created_at, ai_report,
+                specialised_analysis, specialised_algorithms_run, specialised_session_id, specialised_session_type
          FROM archive_events WHERE id = ? LIMIT 1`,
         [input.archiveId]
       );
@@ -486,12 +670,20 @@ export const archiveUploadRouter = router({
       try {
         parsedReport = typeof row.ai_report === "string" ? JSON.parse(row.ai_report) : row.ai_report;
       } catch {}
-      return { ...row, ai_report: parsedReport } as {
+      let parsedSpecialised = null;
+      try {
+        parsedSpecialised = typeof row.specialised_analysis === "string" ? JSON.parse(row.specialised_analysis) : row.specialised_analysis;
+      } catch {}
+      return { ...row, ai_report: parsedReport, specialised_analysis: parsedSpecialised } as {
         id: number; client_name: string; event_name: string; event_type: string;
         event_date: string | null; platform: string | null; word_count: number;
         segment_count: number; sentiment_avg: number | null; compliance_flags: number;
         tagged_metrics_generated: number; status: string; notes: string | null; created_at: string;
         ai_report: AiReport | null;
+        specialised_analysis: any | null;
+        specialised_algorithms_run: number;
+        specialised_session_id: number | null;
+        specialised_session_type: string | null;
       };
     }),
 
