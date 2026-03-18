@@ -21,6 +21,7 @@ export const lumiBookingRouter = router({
       contactName: z.string().optional(),
       contactEmail: z.string().email().optional(),
       lumiReference: z.string().optional(),
+      lumiRecipients: z.string().optional(),
       notes: z.string().optional(),
       resolutionsJson: z.any().optional(),
     }))
@@ -56,6 +57,7 @@ export const lumiBookingRouter = router({
       contactName: z.string().optional(),
       contactEmail: z.string().email().optional(),
       lumiReference: z.string().optional(),
+      lumiRecipients: z.string().optional(),
       notes: z.string().optional(),
       resolutionsJson: z.any().optional(),
       status: z.enum(["booked", "setup", "ready", "live", "completed", "cancelled"]).optional(),
@@ -95,6 +97,16 @@ export const lumiBookingRouter = router({
       const booking = await lumiBookingService.getBookingById(input.id, userId);
       if (!booking) throw new Error("Booking not found");
       return lumiBookingService.completeBooking(input.id);
+    }),
+
+  sendConfirmation: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = assertUser(ctx);
+      const booking = await lumiBookingService.getBookingById(input.id, userId);
+      if (!booking) throw new Error("Booking not found");
+      const baseUrl = `${ctx.req.protocol}://${ctx.req.get("host")}`;
+      return lumiBookingService.sendBookingConfirmation(input.id, baseUrl, userId);
     }),
 
   clientDashboard: publicProcedure

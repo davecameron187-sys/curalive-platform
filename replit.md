@@ -368,6 +368,8 @@ The full Q&A support infrastructure is built and working but the UI widget is cu
 - **Pre-Event Checklist**: Evaluates meeting URL, platform, date, jurisdiction, resolutions, contact info, Recall.ai API key — shows green/amber/red indicators
 - **Deploy from Booking**: When deploying intelligence from a booking, the shadow session + AGM session are auto-linked back to the booking record
 - **Copy Dashboard Link**: One-click copy of the client dashboard URL to share with Lumi/client
+- **Booking Confirmation Email**: Branded HTML email sent to client contact + Lumi recipients with event details, live dashboard link, and CuraLive intelligence summary. Lumi Recipients field accepts comma-separated emails. Confirmation sent status tracked with timestamp. Resend supported. Uses Resend transactional email via `sendEmail()`
+- **DB columns**: `lumi_recipients` (text, comma-separated emails), `confirmation_sent_at` (timestamp)
 
 ## OpenAI API Key Configuration (March 2026)
 

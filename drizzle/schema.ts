@@ -3049,6 +3049,8 @@ export const lumiBookings = mysqlTable("lumi_bookings", {
   contactName: varchar("contact_name", { length: 255 }),
   contactEmail: varchar("contact_email", { length: 255 }),
   lumiReference: varchar("lumi_reference", { length: 128 }),
+  lumiRecipients: text("lumi_recipients"),
+  confirmationSentAt: timestamp("confirmation_sent_at"),
   dashboardToken: varchar("dashboard_token", { length: 64 }).notNull(),
   status: mysqlEnum("status", ["booked", "setup", "ready", "live", "completed", "cancelled"]).default("booked").notNull(),
   checklist: json("checklist"),

@@ -153,6 +153,7 @@ export default function LumiPartner() {
     contactName: "",
     contactEmail: "",
     lumiReference: "",
+    lumiRecipients: "",
     notes: "",
   });
 
@@ -241,7 +242,7 @@ export default function LumiPartner() {
       setShowBookingForm(false);
       setSelectedBookingId(data.bookingId);
       bookings.refetch();
-      setBookingForm({ clientName: "", agmTitle: "", agmDate: "", agmTime: "", jurisdiction: "south_africa", expectedAttendees: "", meetingUrl: "", platform: "zoom", contactName: "", contactEmail: "", lumiReference: "", notes: "" });
+      setBookingForm({ clientName: "", agmTitle: "", agmDate: "", agmTime: "", jurisdiction: "south_africa", expectedAttendees: "", meetingUrl: "", platform: "zoom", contactName: "", contactEmail: "", lumiReference: "", lumiRecipients: "", notes: "" });
     },
     onError: (e) => toast.error(e.message),
   });
@@ -263,6 +264,15 @@ export default function LumiPartner() {
 
   const completeBookingMut = trpc.lumiBooking.complete.useMutation({
     onSuccess: () => { toast.success("Booking completed"); bookings.refetch(); selectedBooking.refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const sendConfirmationMut = trpc.lumiBooking.sendConfirmation.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Booking confirmation sent to ${data.recipientCount} recipient(s)`);
+      bookings.refetch();
+      selectedBooking.refetch();
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -679,6 +689,11 @@ export default function LumiPartner() {
                     </div>
                   </div>
                   <div>
+                    <label className="text-xs text-slate-400 mb-1.5 block font-medium">Lumi Recipients <span className="text-slate-600">(CC on confirmation email)</span></label>
+                    <textarea value={bookingForm.lumiRecipients} onChange={e => setBookingForm(f => ({ ...f, lumiRecipients: e.target.value }))} placeholder="john@lumiglobal.com, sarah@lumiglobal.com" rows={2} className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 resize-none" />
+                    <p className="text-[10px] text-slate-600 mt-1">Comma-separated email addresses. These contacts will receive the booking confirmation with the client dashboard link.</p>
+                  </div>
+                  <div>
                     <label className="text-xs text-slate-400 mb-1.5 block font-medium">Notes</label>
                     <input value={bookingForm.notes} onChange={e => setBookingForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any special requirements or context" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
                   </div>
@@ -788,6 +803,46 @@ export default function LumiPartner() {
                           </Button>
                         </div>
                         <p className="text-[10px] text-slate-500 mt-2">Share this link with the client or Lumi. No login required — live sentiment, quorum, and resolution data visible during the AGM.</p>
+                      </div>
+
+                      {/* Booking confirmation email */}
+                      <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Handshake className="w-4 h-4 text-emerald-400" />
+                            <span className="text-sm font-semibold text-white">Booking Confirmation</span>
+                          </div>
+                          {bk.confirmationSentAt && (
+                            <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Sent {new Date(bk.confirmationSentAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 mb-3 leading-relaxed">
+                          Send a branded confirmation email to the client contact and Lumi team with event details, the live dashboard link, and what CuraLive intelligence is included.
+                        </p>
+                        {bk.lumiRecipients && (
+                          <div className="mb-3">
+                            <div className="text-[10px] text-slate-500 font-medium mb-1">Lumi Recipients</div>
+                            <div className="text-xs text-slate-300">{bk.lumiRecipients}</div>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={() => sendConfirmationMut.mutate({ id: bk.id })}
+                            disabled={sendConfirmationMut.isPending || (!bk.contactEmail && !bk.lumiRecipients)}
+                            className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs gap-1.5"
+                            size="sm"
+                          >
+                            {sendConfirmationMut.isPending
+                              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending...</>
+                              : <><Globe className="w-3.5 h-3.5" /> {bk.confirmationSentAt ? "Resend Confirmation" : "Send Confirmation"}</>
+                            }
+                          </Button>
+                          {!bk.contactEmail && !bk.lumiRecipients && (
+                            <span className="text-[10px] text-amber-400">Add a contact email or Lumi recipients first</span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Pre-event checklist */}

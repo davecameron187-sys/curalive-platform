@@ -21,6 +21,8 @@ async function main() {
       contact_name VARCHAR(255),
       contact_email VARCHAR(255),
       lumi_reference VARCHAR(128),
+      lumi_recipients TEXT,
+      confirmation_sent_at TIMESTAMP NULL,
       dashboard_token VARCHAR(64) NOT NULL,
       status ENUM('booked','setup','ready','live','completed','cancelled') NOT NULL DEFAULT 'booked',
       checklist JSON,
