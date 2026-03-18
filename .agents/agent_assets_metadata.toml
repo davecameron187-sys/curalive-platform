@@ -156,3 +156,9 @@ id = "SAIPqm9k9GUD8OZUIIR92"
 uri = "file://CuraLive_Patent_Submission_Brief_2026.docx"
 type = "word_document"
 title = "CuraLive Patent Submission Brief 2026 — Final (18 Subsystems + 16 Diagrams)"
+
+[[outputs]]
+id = "a7xNvVsMkaaRNCsm7igwH"
+uri = "file://CuraLive_CIPC_CIP_Submission_2_Modules_19-25.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 2 - Modules 19-25"
