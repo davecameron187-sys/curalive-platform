@@ -20,6 +20,12 @@ The platform has been consolidated to two main pages:
   - **OCC**: Operator Control Console (telephony, conference dial-out)
   - **Partners**: Bastion Capital Partners + Lumi Global (sub-tab toggle)
   - **Settings**: Account, system status, integrations
+- **`/intelligence-suite`** — Intelligence Suite: 5 advanced AI algorithms
+  - Evasive Answer Detection (NLP + vocal forensics)
+  - Market Impact Forecast (predictive volatility)
+  - Multi-Modal Compliance Risk Scoring (text+tone+behavioral)
+  - External Sentiment Aggregation (social/media fusion)
+  - IR Briefing Generator (RAG-powered personalized briefings)
 - **`/live/:token`** — Client-facing live dashboard (read-only, no auth needed)
 - Old routes (`/shadow-mode`, `/occ`, `/bastion`, `/lumi`) redirect to dashboard tabs
 
@@ -27,11 +33,11 @@ The platform has been consolidated to two main pages:
 
 ```
 client/          React frontend (Vite root)
-  src/pages/     Dashboard.tsx (main), ShadowMode.tsx, OCC.tsx, BastionPartner.tsx, LumiPartner.tsx
+  src/pages/     Dashboard.tsx (main), IntelligenceSuite.tsx, ShadowMode.tsx, OCC.tsx, BastionPartner.tsx, LumiPartner.tsx
 server/          Express backend
   _core/         Server entry, OAuth, Vite middleware, env config
-  routers/       tRPC routers
-  services/      BastionInvestorAiService, BastionBookingService, LumiBookingService
+  routers/       tRPC routers (incl. 5 Intelligence Suite routers)
+  services/      BastionInvestorAiService, BastionBookingService, LumiBookingService + 5 Intelligence Suite services
   webphone/      Twilio/Telnyx voice integration
   drizzle/       Drizzle schema + migrations
 shared/          Shared types/constants between client and server
