@@ -120,6 +120,7 @@ import MailingListConfirm from "./pages/MailingListConfirm";
 import OnboardingFlow from "./pages/OnboardingFlow";
 import OperatorDashboard from "./pages/OperatorDashboard";
 import ConferenceDialout from "./pages/ConferenceDialout";
+import AgmGovernanceAi from "./pages/AgmGovernanceAi";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -218,6 +219,7 @@ function Router() {
       <Route path="/call-preparation" component={CallPreparation} />
       <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
       <Route path="/conference-dialout" component={ConferenceDialout} />
+      <Route path="/agm-governance" component={AgmGovernanceAi} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/health-guardian" component={HealthGuardian} />
       <Route path="/compliance-engine" component={ComplianceEngineDashboard} />

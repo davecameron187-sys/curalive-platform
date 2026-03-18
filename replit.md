@@ -338,6 +338,23 @@ The full Q&A support infrastructure is built and working but the UI widget is cu
 - **UI**: `client/src/pages/ConferenceDialout.tsx` — conference setup with bulk paste, real-time status monitor with 3s polling, participant status table, cancel controls
 - **Number format**: Accepts `0821234567`, `+27821234567`, or `0027821234567` — auto-normalised to E.164
 
+## AGM Governance AI (March 2026)
+
+- **Route**: `/agm-governance` — AGM-specific autonomous intelligence with 6 self-evolving algorithms
+- **Service**: `server/services/AgmGovernanceAiService.ts` — 6 algorithms:
+  1. **Resolution Sentiment Predictor** — Predicts approval % from debate sentiment + historical baselines + category weights. Learns from accuracy vs actual outcomes; feeds weak predictions to evolution engine
+  2. **Shareholder Dissent Pattern Engine** — Builds cross-AGM institutional memory of opposition patterns. Uses evidence decay (14-day half-life). Detects category dissent, threshold breaches, institutional blocks
+  3. **Q&A Governance Triage** — Classifies shareholder questions by governance category + regulatory significance (must_address / should_address / optional) under Companies Act 71, JSE Listings, King IV
+  4. **Quorum & Participation Intelligence** — Monitors quorum thresholds by jurisdiction (SA: 25%). Benchmarks against decay-weighted historical averages. Alerts on thin margins and unusual proxy patterns
+  5. **Regulatory Speech Guardian** — 8 rule categories: Companies Act 71 (notice, director duty, resolution procedure, shareholder rights), JSE Listings (price-sensitive, cautionary), King IV governance, forward-looking statements
+  6. **Post-AGM Governance Report Generator** — 12-section board-ready reports. Auto-feeds weak predictions, defeated resolutions, and critical compliance observations to Module M evolution engine
+- **Router**: `server/routers/agmGovernanceRouter.ts` — registered in `server/routers.eager.ts`
+- **DB tables**: `agm_resolutions`, `agm_intelligence_sessions` (with `user_id` ownership), `agm_dissent_patterns`, `agm_governance_observations`
+- **Migration**: `scripts/create-agm-tables.ts` (includes `user_id` column)
+- **Security**: All mutations enforce `assertSessionOwnership(sessionId, userId)` + `assertResolutionBelongsToSession()`. Dissent engine derives `clientName` server-side from session record (prevents cross-tenant contamination)
+- **Self-evolution**: All 6 algorithms feed observations into `ai_evolution_observations` (Module M) using correct schema columns (`sourceType`, `sourceId`, `eventType`, `moduleName`, `observation`, `rawContext`)
+- **UI**: Algorithms tab has expandable "Run" panels for algorithms 2-5 (dissent, Q&A triage, quorum, compliance) with inline forms
+
 ## OpenAI API Key Configuration (March 2026)
 
 - **Priority order** (`server/_core/env.ts`): `OPENAI_API_KEY` → `BUILT_IN_FORGE_API_KEY` → `AI_INTEGRATIONS_OPENAI_API_KEY`

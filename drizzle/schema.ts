@@ -2935,3 +2935,102 @@ export const conferenceDialoutParticipants = mysqlTable("conference_dialout_part
   errorMessage: varchar("error_message", { length: 512 }),
 });
 export type ConferenceDialoutParticipant = typeof conferenceDialoutParticipants.$inferSelect;
+
+export const agmResolutions = mysqlTable("agm_resolutions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("session_id").notNull(),
+  resolutionNumber: int("resolution_number").notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  category: mysqlEnum("category", [
+    "ordinary", "special", "advisory",
+    "remuneration", "board_election", "auditor_appointment",
+    "share_repurchase", "dividend", "esg", "other",
+  ]).default("ordinary").notNull(),
+  proposedBy: varchar("proposed_by", { length: 255 }),
+  sentimentDuringDebate: float("sentiment_during_debate"),
+  predictedApprovalPct: float("predicted_approval_pct"),
+  actualApprovalPct: float("actual_approval_pct"),
+  predictionAccuracy: float("prediction_accuracy"),
+  dissenterCount: int("dissenter_count").default(0),
+  complianceFlags: json("compliance_flags"),
+  aiAnalysis: json("ai_analysis"),
+  status: mysqlEnum("status", ["pending", "debating", "voted", "carried", "defeated", "withdrawn"]).default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type AgmResolution = typeof agmResolutions.$inferSelect;
+
+export const agmIntelligenceSessions = mysqlTable("agm_intelligence_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  shadowSessionId: int("shadow_session_id"),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  agmTitle: varchar("agm_title", { length: 512 }).notNull(),
+  agmDate: varchar("agm_date", { length: 32 }),
+  jurisdiction: mysqlEnum("jurisdiction", [
+    "south_africa", "united_kingdom", "united_states", "australia", "other",
+  ]).default("south_africa").notNull(),
+  totalResolutions: int("total_resolutions").default(0),
+  resolutionsCarried: int("resolutions_carried").default(0),
+  resolutionsDefeated: int("resolutions_defeated").default(0),
+  quorumMet: boolean("quorum_met").default(false),
+  quorumPercentage: float("quorum_percentage"),
+  attendanceCount: int("attendance_count").default(0),
+  proxyCount: int("proxy_count").default(0),
+  overallSentiment: float("overall_sentiment"),
+  governanceScore: float("governance_score"),
+  dissentIndex: float("dissent_index"),
+  regulatoryAlerts: int("regulatory_alerts").default(0),
+  qaQuestionsTotal: int("qa_questions_total").default(0),
+  qaQuestionsGovernance: int("qa_questions_governance").default(0),
+  aiGovernanceReport: json("ai_governance_report"),
+  evolutionObservationsGenerated: int("evolution_observations_generated").default(0),
+  status: mysqlEnum("status", ["setup", "live", "processing", "completed", "failed"]).default("setup").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type AgmIntelligenceSession = typeof agmIntelligenceSessions.$inferSelect;
+
+export const agmDissentPatterns = mysqlTable("agm_dissent_patterns", {
+  id: int("id").autoincrement().primaryKey(),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  patternType: mysqlEnum("pattern_type", [
+    "recurring_dissenter", "category_dissent", "threshold_breach",
+    "institutional_block", "cross_client_trend", "emerging_risk",
+  ]).notNull(),
+  category: varchar("category", { length: 128 }),
+  description: text("description").notNull(),
+  frequency: int("frequency").default(1),
+  confidence: float("confidence").default(0.5),
+  firstSeen: timestamp("first_seen").defaultNow().notNull(),
+  lastSeen: timestamp("last_seen").defaultNow().notNull(),
+  sessionIds: json("session_ids"),
+  evidenceData: json("evidence_data"),
+  actionRecommendation: text("action_recommendation"),
+  decayedScore: float("decayed_score").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type AgmDissentPattern = typeof agmDissentPatterns.$inferSelect;
+
+export const agmGovernanceObservations = mysqlTable("agm_governance_observations", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("session_id").notNull(),
+  algorithmSource: mysqlEnum("algorithm_source", [
+    "resolution_sentiment", "dissent_pattern", "qa_governance_triage",
+    "quorum_intelligence", "regulatory_guardian", "governance_report",
+  ]).notNull(),
+  observationType: mysqlEnum("observation_type", [
+    "prediction_made", "risk_detected", "compliance_flag",
+    "pattern_identified", "benchmark_deviation", "intervention_suggested",
+  ]).notNull(),
+  severity: mysqlEnum("severity", ["info", "low", "medium", "high", "critical"]).default("info").notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  detail: text("detail").notNull(),
+  confidence: float("confidence").default(0.5),
+  relatedResolutionId: int("related_resolution_id"),
+  rawData: json("raw_data"),
+  fedToEvolution: boolean("fed_to_evolution").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type AgmGovernanceObservation = typeof agmGovernanceObservations.$inferSelect;

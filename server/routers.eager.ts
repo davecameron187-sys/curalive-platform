@@ -68,6 +68,7 @@ import { adaptiveIntelligenceRouter } from "./routers/adaptiveIntelligenceRouter
 import { sustainabilityRouter } from "./routers/sustainabilityRouter";
 import { broadcasterRouter } from "./routers/broadcasterRouter";
 import { conferenceDialoutRouter } from "./routers/conferenceDialoutRouter";
+import { agmGovernanceRouter } from "./routers/agmGovernanceRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -145,6 +146,7 @@ export const appRouter = router({
   sustainability: sustainabilityRouter,
   broadcaster: broadcasterRouter,
   conferenceDialout: conferenceDialoutRouter,
+  agmGovernance: agmGovernanceRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
