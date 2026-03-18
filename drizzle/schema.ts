@@ -3034,3 +3034,30 @@ export const agmGovernanceObservations = mysqlTable("agm_governance_observations
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type AgmGovernanceObservation = typeof agmGovernanceObservations.$inferSelect;
+
+export const lumiBookings = mysqlTable("lumi_bookings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  agmTitle: varchar("agm_title", { length: 512 }).notNull(),
+  agmDate: varchar("agm_date", { length: 32 }),
+  agmTime: varchar("agm_time", { length: 16 }),
+  jurisdiction: mysqlEnum("jurisdiction", ["south_africa", "united_kingdom", "united_states", "australia", "other"]).default("south_africa").notNull(),
+  expectedAttendees: int("expected_attendees"),
+  meetingUrl: varchar("meeting_url", { length: 1000 }),
+  platform: mysqlEnum("platform", ["zoom", "teams", "meet", "webex", "webphone", "other"]).default("zoom").notNull(),
+  contactName: varchar("contact_name", { length: 255 }),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  lumiReference: varchar("lumi_reference", { length: 128 }),
+  dashboardToken: varchar("dashboard_token", { length: 64 }).notNull(),
+  status: mysqlEnum("status", ["booked", "setup", "ready", "live", "completed", "cancelled"]).default("booked").notNull(),
+  checklist: json("checklist"),
+  shadowSessionId: int("shadow_session_id"),
+  agmSessionId: int("agm_session_id"),
+  notes: text("notes"),
+  resolutionsJson: json("resolutions_json"),
+  reportDelivered: boolean("report_delivered").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type LumiBooking = typeof lumiBookings.$inferSelect;

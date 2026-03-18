@@ -356,6 +356,19 @@ The full Q&A support infrastructure is built and working but the UI widget is cu
 - **UI**: Algorithms tab has expandable "Run" panels for algorithms 2-5 (dissent, Q&A triage, quorum, compliance) with inline forms
 - **Lumi Integration**: When starting a Lumi session with event type "AGM", an AGM Intelligence session is auto-created and linked via `shadowSessionId`. The Lumi session detail shows inline AGM Governance AI controls (resolutions, algorithm runners, report generation) — no need to visit the separate `/agm-governance` page
 
+## Lumi Booking Pipeline & Client Live Dashboard (March 2026)
+
+- **Booking Pipeline**: Full booking flow on the Lumi page (`/lumi` → Booking Pipeline tab) with stages: Booked → Setup → Ready → Live → Completed
+- **Route**: `/live/:token` — client-facing read-only AGM dashboard, no login required, secured by unique token
+- **DB table**: `lumi_bookings` — stores booking details, dashboard token, checklist state, linked sessions
+- **Migration**: `scripts/create-lumi-bookings.ts`
+- **Service**: `server/services/LumiBookingService.ts` — createBooking (generates dashboard token), updateBooking, getByToken, runChecklist, linkSessions, completeBooking, getClientDashboardData
+- **Router**: `server/routers/lumiBookingRouter.ts` — registered as `lumiBooking` in `server/routers.eager.ts`. Operator endpoints require login; `clientDashboard` endpoint is public (token-secured)
+- **Client Dashboard UI**: `client/src/pages/ClientLiveDashboard.tsx` — shows real-time sentiment, quorum status, resolution predictions, compliance alerts, intelligence feed. Auto-refreshes every 4s when live, 10s otherwise
+- **Pre-Event Checklist**: Evaluates meeting URL, platform, date, jurisdiction, resolutions, contact info, Recall.ai API key — shows green/amber/red indicators
+- **Deploy from Booking**: When deploying intelligence from a booking, the shadow session + AGM session are auto-linked back to the booking record
+- **Copy Dashboard Link**: One-click copy of the client dashboard URL to share with Lumi/client
+
 ## OpenAI API Key Configuration (March 2026)
 
 - **Priority order** (`server/_core/env.ts`): `OPENAI_API_KEY` → `BUILT_IN_FORGE_API_KEY` → `AI_INTEGRATIONS_OPENAI_API_KEY`

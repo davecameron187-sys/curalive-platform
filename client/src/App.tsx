@@ -93,6 +93,7 @@ import HealthGuardian from "./pages/HealthGuardian";
 import ComplianceEngineDashboard from "./pages/ComplianceEngineDashboard";
 import Bastion from "./pages/Bastion";
 import LumiPartner from "./pages/LumiPartner";
+import ClientLiveDashboard from "./pages/ClientLiveDashboard";
 import ArchiveUpload from "./pages/ArchiveUpload";
 import Benchmarks from "./pages/Benchmarks";
 import SocialMediaPage from "./pages/SocialMediaPage";
@@ -227,6 +228,7 @@ function Router() {
       <Route path="/register/confirm/:token">{(params: any) => <MailingListConfirm params={params} />}</Route>
       <Route path="/bastion" component={Bastion} />
       <Route path="/lumi" component={LumiPartner} />
+      <Route path="/live/:token" component={ClientLiveDashboard} />
       <Route path="/archive-upload" component={ArchiveUpload} />
       <Route path="/benchmarks" component={Benchmarks} />
       <Route path="/social" component={SocialMediaPage} />

@@ -129,7 +129,7 @@ function SentimentBar({ value }: { value: number | null }) {
 export default function LumiPartner() {
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<"package" | "sessions">("package");
+  const [activeTab, setActiveTab] = useState<"package" | "sessions" | "bookings">("package");
   const [form, setForm] = useState({
     clientName: "Lumi Global",
     eventName: "",
@@ -139,11 +139,30 @@ export default function LumiPartner() {
     notes: "",
   });
 
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
+  const [bookingForm, setBookingForm] = useState({
+    clientName: "",
+    agmTitle: "",
+    agmDate: "",
+    agmTime: "",
+    jurisdiction: "south_africa" as const,
+    expectedAttendees: "",
+    meetingUrl: "",
+    platform: "zoom" as const,
+    contactName: "",
+    contactEmail: "",
+    lumiReference: "",
+    notes: "",
+  });
+
   const sessions = trpc.shadowMode.listSessions.useQuery(undefined, { refetchInterval: 5000 });
   const activeSession = trpc.shadowMode.getSession.useQuery(
     { sessionId: activeSessionId! },
     { enabled: activeSessionId != null, refetchInterval: 3000 }
   );
+
+  const [deployingBookingId, setDeployingBookingId] = useState<number | null>(null);
 
   const startSession = trpc.shadowMode.startSession.useMutation({
     onSuccess: (data) => {
@@ -155,6 +174,15 @@ export default function LumiPartner() {
       setShowForm(false);
       setActiveTab("sessions");
       sessions.refetch();
+
+      if (deployingBookingId) {
+        linkSessionsMut.mutate({
+          bookingId: deployingBookingId,
+          shadowSessionId: data.sessionId,
+          agmSessionId: data.agmSessionId ?? null,
+        });
+        setDeployingBookingId(null);
+      }
     },
     onError: (e) => toast.error(e.message),
   });
@@ -200,6 +228,95 @@ export default function LumiPartner() {
     onSuccess: () => { toast.success("Governance report generated"); agmDashboard.refetch(); },
     onError: (e) => toast.error(e.message),
   });
+
+  const bookings = trpc.lumiBooking.list.useQuery(undefined, { refetchInterval: 8000 });
+  const selectedBooking = trpc.lumiBooking.getById.useQuery(
+    { id: selectedBookingId! },
+    { enabled: selectedBookingId != null, refetchInterval: 5000 }
+  );
+
+  const createBookingMut = trpc.lumiBooking.create.useMutation({
+    onSuccess: (data) => {
+      toast.success("Booking created — dashboard link generated");
+      setShowBookingForm(false);
+      setSelectedBookingId(data.bookingId);
+      bookings.refetch();
+      setBookingForm({ clientName: "", agmTitle: "", agmDate: "", agmTime: "", jurisdiction: "south_africa", expectedAttendees: "", meetingUrl: "", platform: "zoom", contactName: "", contactEmail: "", lumiReference: "", notes: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const updateBookingMut = trpc.lumiBooking.update.useMutation({
+    onSuccess: () => { toast.success("Booking updated"); bookings.refetch(); selectedBooking.refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const runChecklistMut = trpc.lumiBooking.runChecklist.useMutation({
+    onSuccess: () => { toast.success("Checklist evaluated"); bookings.refetch(); selectedBooking.refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const linkSessionsMut = trpc.lumiBooking.linkSessions.useMutation({
+    onSuccess: () => { toast.success("Sessions linked — booking is live"); bookings.refetch(); selectedBooking.refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const completeBookingMut = trpc.lumiBooking.complete.useMutation({
+    onSuccess: () => { toast.success("Booking completed"); bookings.refetch(); selectedBooking.refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleCreateBooking = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bookingForm.clientName.trim() || !bookingForm.agmTitle.trim()) {
+      toast.error("Client name and AGM title are required");
+      return;
+    }
+    createBookingMut.mutate({
+      ...bookingForm,
+      expectedAttendees: bookingForm.expectedAttendees ? parseInt(bookingForm.expectedAttendees) : undefined,
+      contactEmail: bookingForm.contactEmail || undefined,
+    } as any);
+  };
+
+  const handleDeployFromBooking = () => {
+    const bk = selectedBooking.data;
+    if (!bk?.meetingUrl) { toast.error("Set a meeting URL before deploying"); return; }
+    setDeployingBookingId(bk.id);
+    const platformMap: Record<string, string> = { zoom: "zoom", teams: "teams", meet: "meet", webex: "webex", webphone: "other", other: "other" };
+    startSession.mutate({
+      clientName: bk.clientName,
+      eventName: bk.agmTitle,
+      eventType: "agm",
+      platform: (platformMap[bk.platform] ?? "other") as any,
+      meetingUrl: bk.meetingUrl,
+      notes: bk.notes ?? "",
+    });
+  };
+
+  const BOOKING_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
+    booked: { label: "Booked", color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20", icon: Clock },
+    setup: { label: "Setup", color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20", icon: Layers },
+    ready: { label: "Ready", color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20", icon: CheckCircle2 },
+    live: { label: "Live", color: "text-red-400", bg: "bg-red-400/10 border-red-400/20", icon: Radio },
+    completed: { label: "Completed", color: "text-violet-400", bg: "bg-violet-400/10 border-violet-400/20", icon: CheckCircle2 },
+    cancelled: { label: "Cancelled", color: "text-slate-400", bg: "bg-slate-400/10 border-slate-400/20", icon: Square },
+  };
+
+  const JURISDICTION_LABELS: Record<string, string> = {
+    south_africa: "South Africa", united_kingdom: "United Kingdom",
+    united_states: "United States", australia: "Australia", other: "Other",
+  };
+
+  const getDashboardUrl = (token: string) => {
+    const base = typeof window !== "undefined" ? window.location.origin : "";
+    return `${base}/live/${token}`;
+  };
+
+  const copyDashboardLink = (token: string) => {
+    navigator.clipboard.writeText(getDashboardUrl(token));
+    toast.success("Dashboard link copied to clipboard");
+  };
 
   const [agmTab, setAgmTab] = useState<"resolutions" | "algorithms" | "report">("resolutions");
   const [newRes, setNewRes] = useState({ number: "", title: "", category: "ordinary" });
@@ -255,6 +372,7 @@ export default function LumiPartner() {
         <div className="max-w-7xl mx-auto px-6 flex gap-1 border-t border-white/[0.04]">
           {[
             { id: "package", label: "Integration Package" },
+            { id: "bookings", label: "Booking Pipeline" },
             { id: "sessions", label: "Live Sessions" },
           ].map(tab => (
             <button
@@ -451,6 +569,289 @@ export default function LumiPartner() {
                 <Play className="w-4 h-4" />
                 Run Intelligence on a Lumi Event
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Bookings tab */}
+        {activeTab === "bookings" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-cyan-400" />
+                Booking Pipeline
+              </h3>
+              <Button
+                onClick={() => setShowBookingForm(true)}
+                className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold gap-2 text-xs"
+                size="sm"
+              >
+                <Play className="w-3.5 h-3.5" />
+                New Booking
+              </Button>
+            </div>
+
+            {/* Pipeline stage overview */}
+            {(() => {
+              const allBookings = bookings.data ?? [];
+              const stages = ["booked", "setup", "ready", "live", "completed"];
+              return (
+                <div className="grid grid-cols-5 gap-2">
+                  {stages.map(stage => {
+                    const cfg = BOOKING_STATUS_CONFIG[stage];
+                    const count = allBookings.filter(b => b.status === stage).length;
+                    const StageIcon = cfg?.icon ?? Clock;
+                    return (
+                      <div key={stage} className={`bg-white/[0.02] border ${cfg?.bg ?? ""} rounded-xl p-3 text-center`}>
+                        <StageIcon className={`w-4 h-4 ${cfg?.color ?? "text-slate-400"} mx-auto mb-1`} />
+                        <div className={`text-lg font-bold ${cfg?.color ?? "text-slate-400"}`}>{count}</div>
+                        <div className="text-[10px] text-slate-500">{cfg?.label ?? stage}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* New booking form */}
+            {showBookingForm && (
+              <div className="bg-white/[0.02] border border-cyan-500/30 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <Handshake className="w-4 h-4 text-cyan-400" />
+                    <h3 className="text-sm font-semibold text-white">New Lumi AGM Booking</h3>
+                  </div>
+                  <button onClick={() => setShowBookingForm(false)} className="text-slate-500 hover:text-slate-300 text-xs">Cancel</button>
+                </div>
+                <form onSubmit={handleCreateBooking} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Client / Company *</label>
+                      <input value={bookingForm.clientName} onChange={e => setBookingForm(f => ({ ...f, clientName: e.target.value }))} placeholder="e.g. Sasol Limited" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">AGM Title *</label>
+                      <input value={bookingForm.agmTitle} onChange={e => setBookingForm(f => ({ ...f, agmTitle: e.target.value }))} placeholder="e.g. Sasol AGM 2026" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">AGM Date</label>
+                      <input type="date" value={bookingForm.agmDate} onChange={e => setBookingForm(f => ({ ...f, agmDate: e.target.value }))} className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">AGM Time</label>
+                      <input type="time" value={bookingForm.agmTime} onChange={e => setBookingForm(f => ({ ...f, agmTime: e.target.value }))} className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Jurisdiction</label>
+                      <select value={bookingForm.jurisdiction} onChange={e => setBookingForm(f => ({ ...f, jurisdiction: e.target.value as any }))} className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/50">
+                        <option value="south_africa">South Africa</option>
+                        <option value="united_kingdom">United Kingdom</option>
+                        <option value="united_states">United States</option>
+                        <option value="australia">Australia</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Expected Attendees</label>
+                      <input type="number" value={bookingForm.expectedAttendees} onChange={e => setBookingForm(f => ({ ...f, expectedAttendees: e.target.value }))} placeholder="e.g. 250" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Platform</label>
+                      <select value={bookingForm.platform} onChange={e => setBookingForm(f => ({ ...f, platform: e.target.value as any }))} className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/50">
+                        {PLATFORM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Meeting URL</label>
+                      <input value={bookingForm.meetingUrl} onChange={e => setBookingForm(f => ({ ...f, meetingUrl: e.target.value }))} placeholder="https://zoom.us/j/..." className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Lumi Reference</label>
+                      <input value={bookingForm.lumiReference} onChange={e => setBookingForm(f => ({ ...f, lumiReference: e.target.value }))} placeholder="e.g. LUMI-2026-0042" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Contact Name</label>
+                      <input value={bookingForm.contactName} onChange={e => setBookingForm(f => ({ ...f, contactName: e.target.value }))} placeholder="Company Secretary name" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Contact Email</label>
+                      <input type="email" value={bookingForm.contactEmail} onChange={e => setBookingForm(f => ({ ...f, contactEmail: e.target.value }))} placeholder="secretary@company.co.za" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1.5 block font-medium">Notes</label>
+                    <input value={bookingForm.notes} onChange={e => setBookingForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any special requirements or context" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50" />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={createBookingMut.isPending} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold gap-2">
+                      {createBookingMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin" />Creating...</> : <><Handshake className="w-4 h-4" />Create Booking</>}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Booking list */}
+              <div className="space-y-2">
+                <div className="text-[11px] text-slate-500 font-medium uppercase tracking-wider mb-2">All Bookings</div>
+                {(bookings.data ?? []).length === 0 && (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    No bookings yet. Create one to get started.
+                  </div>
+                )}
+                {(bookings.data ?? []).map(bk => {
+                  const cfg = BOOKING_STATUS_CONFIG[bk.status] ?? BOOKING_STATUS_CONFIG.booked;
+                  const BkIcon = cfg.icon;
+                  return (
+                    <div
+                      key={bk.id}
+                      onClick={() => setSelectedBookingId(bk.id)}
+                      className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
+                        selectedBookingId === bk.id
+                          ? "bg-cyan-400/5 border-cyan-400/30"
+                          : "bg-white/[0.015] border-white/[0.06] hover:border-white/[0.12]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-white truncate">{bk.agmTitle}</span>
+                        <span className={`text-[10px] ${cfg.color} ${cfg.bg} border px-2 py-0.5 rounded-full flex items-center gap-1`}>
+                          <BkIcon className="w-3 h-3" /> {cfg.label}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500">{bk.clientName}</div>
+                      {bk.agmDate && <div className="text-[10px] text-slate-600 mt-1">{bk.agmDate}</div>}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Booking detail */}
+              <div className="lg:col-span-2">
+                {selectedBookingId && selectedBooking.data ? (() => {
+                  const bk = selectedBooking.data;
+                  const cfg = BOOKING_STATUS_CONFIG[bk.status] ?? BOOKING_STATUS_CONFIG.booked;
+                  const BkIcon = cfg.icon;
+                  const checklist = (bk.checklist as any[]) ?? [];
+                  const allChecksPassed = checklist.length > 0 && checklist.every((c: any) => c.status !== "fail");
+                  const stages = ["booked", "setup", "ready", "live", "completed"];
+                  const currentStageIdx = stages.indexOf(bk.status);
+
+                  return (
+                    <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 space-y-5">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-bold text-white">{bk.agmTitle}</h3>
+                          <p className="text-sm text-slate-400">{bk.clientName}</p>
+                        </div>
+                        <span className={`text-xs ${cfg.color} ${cfg.bg} border px-3 py-1 rounded-full flex items-center gap-1.5 font-semibold`}>
+                          <BkIcon className="w-3.5 h-3.5" /> {cfg.label}
+                        </span>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="flex items-center gap-1">
+                        {stages.map((stage, i) => {
+                          const sCfg = BOOKING_STATUS_CONFIG[stage];
+                          const isActive = i <= currentStageIdx;
+                          return (
+                            <div key={stage} className="flex-1 flex flex-col items-center gap-1">
+                              <div className={`h-1.5 w-full rounded-full transition-all ${isActive ? (i === currentStageIdx ? "bg-cyan-400" : "bg-cyan-400/40") : "bg-white/[0.06]"}`} />
+                              <span className={`text-[9px] ${isActive ? sCfg?.color ?? "text-slate-400" : "text-slate-600"}`}>{sCfg?.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Details grid */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><span className="text-slate-500">Date:</span> <span className="text-white">{bk.agmDate || "Not set"}</span></div>
+                        <div><span className="text-slate-500">Time:</span> <span className="text-white">{bk.agmTime || "Not set"}</span></div>
+                        <div><span className="text-slate-500">Jurisdiction:</span> <span className="text-white capitalize">{JURISDICTION_LABELS[bk.jurisdiction] ?? bk.jurisdiction}</span></div>
+                        <div><span className="text-slate-500">Platform:</span> <span className="text-white">{PLATFORM_LABELS[bk.platform] ?? bk.platform}</span></div>
+                        <div><span className="text-slate-500">Attendees:</span> <span className="text-white">{bk.expectedAttendees ?? "—"}</span></div>
+                        <div><span className="text-slate-500">Lumi Ref:</span> <span className="text-white">{bk.lumiReference || "—"}</span></div>
+                        {bk.contactName && <div><span className="text-slate-500">Contact:</span> <span className="text-white">{bk.contactName}</span></div>}
+                        {bk.contactEmail && <div><span className="text-slate-500">Email:</span> <span className="text-white">{bk.contactEmail}</span></div>}
+                      </div>
+
+                      {/* Client dashboard link */}
+                      <div className="bg-violet-500/5 border border-violet-500/20 rounded-xl p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-xs text-slate-400 font-medium mb-1">Client Live Dashboard</div>
+                            <div className="text-xs text-violet-300 font-mono break-all">{getDashboardUrl(bk.dashboardToken)}</div>
+                          </div>
+                          <Button onClick={() => copyDashboardLink(bk.dashboardToken)} className="bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 border border-violet-500/30 text-xs gap-1.5" size="sm">
+                            <FileText className="w-3.5 h-3.5" /> Copy Link
+                          </Button>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-2">Share this link with the client or Lumi. No login required — live sentiment, quorum, and resolution data visible during the AGM.</p>
+                      </div>
+
+                      {/* Pre-event checklist */}
+                      {(bk.status === "booked" || bk.status === "setup" || bk.status === "ready") && (
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Pre-Event Checklist
+                            </h4>
+                            <Button onClick={() => {
+                              if (bk.status === "booked") updateBookingMut.mutate({ id: bk.id, status: "setup" });
+                              runChecklistMut.mutate({ id: bk.id });
+                            }} disabled={runChecklistMut.isPending} className="text-xs bg-white/[0.05] hover:bg-white/[0.08] text-slate-300 border border-white/10" size="sm">
+                              {runChecklistMut.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Run Checklist"}
+                            </Button>
+                          </div>
+                          {checklist.length > 0 ? (
+                            <div className="space-y-2">
+                              {checklist.map((c: any) => (
+                                <div key={c.key} className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2">
+                                  <span className={`w-2 h-2 rounded-full ${c.status === "pass" ? "bg-emerald-400" : c.status === "warn" ? "bg-amber-400" : "bg-red-400"}`} />
+                                  <span className="text-sm text-white flex-1">{c.label}</span>
+                                  <span className={`text-xs ${c.status === "pass" ? "text-emerald-400" : c.status === "warn" ? "text-amber-400" : "text-red-400"}`}>{c.detail}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-500">Run the checklist to evaluate readiness.</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-3 pt-2 border-t border-white/[0.04]">
+                        {(bk.status === "ready" || bk.status === "setup") && (
+                          <Button onClick={handleDeployFromBooking} disabled={startSession.isPending || !bk.meetingUrl} className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold gap-2 text-xs">
+                            {startSession.isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Deploying...</> : <><Globe className="w-3.5 h-3.5" />Deploy Intelligence</>}
+                          </Button>
+                        )}
+                        {bk.status === "live" && (
+                          <Button onClick={() => completeBookingMut.mutate({ id: bk.id })} disabled={completeBookingMut.isPending} className="bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 border border-violet-500/30 text-xs gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Mark Completed
+                          </Button>
+                        )}
+                        {bk.status === "booked" && (
+                          <Button onClick={() => updateBookingMut.mutate({ id: bk.id, status: "setup" })} className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs gap-1.5">
+                            <Layers className="w-3.5 h-3.5" /> Begin Setup
+                          </Button>
+                        )}
+                        {bk.shadowSessionId && (
+                          <Button onClick={() => { setActiveSessionId(bk.shadowSessionId); setActiveTab("sessions"); }} className="bg-white/[0.05] hover:bg-white/[0.08] text-slate-300 border border-white/10 text-xs gap-1.5">
+                            <Eye className="w-3.5 h-3.5" /> View Session
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })() : (
+                  <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-12 text-center">
+                    <Layers className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+                    <p className="text-sm text-slate-500">Select a booking to view details and manage the pipeline.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
