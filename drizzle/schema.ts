@@ -2335,7 +2335,7 @@ export const shadowSessions = mysqlTable("shadow_sessions", {
   id: int("id").autoincrement().primaryKey(),
   clientName: varchar("client_name", { length: 255 }).notNull(),
   eventName: varchar("event_name", { length: 255 }).notNull(),
-  eventType: mysqlEnum("event_type", ["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).notNull(),
+  eventType: mysqlEnum("event_type", ["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other"]).notNull(),
   platform: mysqlEnum("platform", ["zoom", "teams", "meet", "webex", "other"]).default("zoom").notNull(),
   meetingUrl: varchar("meeting_url", { length: 1000 }).notNull(),
   recallBotId: varchar("recall_bot_id", { length: 255 }),
@@ -3063,3 +3063,105 @@ export const lumiBookings = mysqlTable("lumi_bookings", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 export type LumiBooking = typeof lumiBookings.$inferSelect;
+
+// ─── Bastion Capital Partners — Investor Intelligence Tables ─────────────────
+
+export const bastionIntelligenceSessions = mysqlTable("bastion_intelligence_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  shadowSessionId: int("shadow_session_id"),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  eventTitle: varchar("event_title", { length: 512 }).notNull(),
+  eventType: mysqlEnum("event_type", [
+    "earnings_call", "agm", "investor_day", "roadshow", "capital_markets_day", "special_call", "other",
+  ]).default("earnings_call").notNull(),
+  eventDate: varchar("event_date", { length: 32 }),
+  sector: varchar("sector", { length: 128 }),
+  ticker: varchar("ticker", { length: 32 }),
+  overallSentiment: float("overall_sentiment"),
+  managementToneScore: float("management_tone_score"),
+  credibilityScore: float("credibility_score"),
+  marketMovingStatements: int("market_moving_statements").default(0),
+  forwardGuidanceCount: int("forward_guidance_count").default(0),
+  analystQuestionsTotal: int("analyst_questions_total").default(0),
+  analystQuestionsHostile: int("analyst_questions_hostile").default(0),
+  investmentBrief: json("investment_brief"),
+  evolutionObservationsGenerated: int("evolution_observations_generated").default(0),
+  status: mysqlEnum("status", ["setup", "live", "processing", "completed", "failed"]).default("setup").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type BastionIntelligenceSession = typeof bastionIntelligenceSessions.$inferSelect;
+
+export const bastionInvestorObservations = mysqlTable("bastion_investor_observations", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("session_id").notNull(),
+  algorithmSource: mysqlEnum("algorithm_source", [
+    "earnings_sentiment", "forward_guidance", "analyst_question_intel",
+    "credibility_scorer", "market_moving_detector", "investment_brief",
+  ]).notNull(),
+  observationType: mysqlEnum("observation_type", [
+    "prediction_made", "risk_detected", "compliance_flag",
+    "pattern_identified", "benchmark_deviation", "intervention_suggested",
+  ]).notNull(),
+  severity: mysqlEnum("severity", ["info", "low", "medium", "high", "critical"]).default("info").notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  detail: text("detail").notNull(),
+  confidence: float("confidence").default(0.5),
+  rawData: json("raw_data"),
+  fedToEvolution: boolean("fed_to_evolution").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type BastionInvestorObservation = typeof bastionInvestorObservations.$inferSelect;
+
+export const bastionGuidanceTracker = mysqlTable("bastion_guidance_tracker", {
+  id: int("id").autoincrement().primaryKey(),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  ticker: varchar("ticker", { length: 32 }),
+  sessionId: int("session_id").notNull(),
+  guidanceType: mysqlEnum("guidance_type", [
+    "revenue", "earnings", "margins", "capex", "headcount", "market_share", "other",
+  ]).notNull(),
+  statement: text("statement").notNull(),
+  confidenceLevel: mysqlEnum("confidence_level", ["firm", "tentative", "aspirational"]).default("tentative").notNull(),
+  numericValue: varchar("numeric_value", { length: 128 }),
+  timeframe: varchar("timeframe", { length: 64 }),
+  priorGuidanceId: int("prior_guidance_id"),
+  priorValue: varchar("prior_value", { length: 128 }),
+  delta: varchar("delta", { length: 64 }),
+  metOrMissed: mysqlEnum("met_or_missed", ["met", "missed", "exceeded", "pending"]).default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type BastionGuidanceEntry = typeof bastionGuidanceTracker.$inferSelect;
+
+export const bastionBookings = mysqlTable("bastion_bookings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  eventTitle: varchar("event_title", { length: 512 }).notNull(),
+  eventType: mysqlEnum("event_type", [
+    "earnings_call", "agm", "investor_day", "roadshow", "capital_markets_day", "special_call", "other",
+  ]).default("earnings_call").notNull(),
+  eventDate: varchar("event_date", { length: 32 }),
+  eventTime: varchar("event_time", { length: 16 }),
+  sector: varchar("sector", { length: 128 }),
+  ticker: varchar("ticker", { length: 32 }),
+  expectedAttendees: int("expected_attendees"),
+  meetingUrl: varchar("meeting_url", { length: 1000 }),
+  platform: mysqlEnum("platform", ["zoom", "teams", "meet", "webex", "webphone", "other"]).default("zoom").notNull(),
+  contactName: varchar("contact_name", { length: 255 }),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  bastionReference: varchar("bastion_reference", { length: 128 }),
+  confirmationRecipients: text("confirmation_recipients"),
+  confirmationSentAt: timestamp("confirmation_sent_at"),
+  dashboardToken: varchar("dashboard_token", { length: 64 }).notNull(),
+  status: mysqlEnum("status", ["booked", "setup", "ready", "live", "completed", "cancelled"]).default("booked").notNull(),
+  checklist: json("checklist"),
+  shadowSessionId: int("shadow_session_id"),
+  bastionSessionId: int("bastion_session_id"),
+  notes: text("notes"),
+  reportDelivered: boolean("report_delivered").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type BastionBooking = typeof bastionBookings.$inferSelect;

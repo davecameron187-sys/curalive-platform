@@ -124,6 +124,24 @@ Key variables needed:
 - **Server router**: `server/routers/mailingListRouter.ts` — `mailingList.zeroClickRegister` (new endpoint)
 - **How it works**: Each mailing list entry gets a unique tokenised link. When a recipient clicks the link, they are automatically registered for the event without any form submission — using their pre-existing contact data from the CSV import. The token is consumed on first click (idempotent). Confirmation email sent automatically.
 
+## Bastion Capital Partners Integration (March 2026)
+
+- **Route**: `/bastion` — Full partner page with 3 tabs: Integration Package, Booking Pipeline, Live Sessions
+- **Frontend**: `client/src/pages/BastionPartner.tsx` — Amber/gold branding, mirrors LumiPartner pattern
+- **Backend Service**: `server/services/BastionBookingService.ts` — CRUD, pre-event checklist (ticker, event type, platform, meeting URL, contact, Recall API), session linking, Bastion-branded confirmation email
+- **AI Service**: `server/services/BastionInvestorAiService.ts` — 6 autonomous investor algorithms:
+  1. Earnings Sentiment Decoder — management tone vs actual results, spin index
+  2. Forward Guidance Tracker — captures, scores, cross-references guidance statements across quarters
+  3. Analyst Question Intelligence — analyst identification, categorisation, hostility detection
+  4. Management Credibility Scorer — cross-quarter consistency, moved goalpost detection
+  5. Market-Moving Statement Detector — flags share-price-impacting statements with severity
+  6. Investment Brief Generator — autonomous PM-ready post-event report with recommendation
+- **Router**: `server/routers/bastionBookingRouter.ts` — `bastionBooking.create`, `list`, `getById`, `update`, `runChecklist`, `linkSessions`, `complete`, `sendConfirmation`, `clientDashboard`
+- **DB tables**: `bastion_bookings`, `bastion_intelligence_sessions`, `bastion_investor_observations`, `bastion_guidance_tracker`
+- **Migration**: `scripts/create-bastion-tables.ts`
+- **Module M integration**: All 6 algorithms feed observations into `ai_evolution_observations` for self-evolution
+- **Booking fields**: `confirmationRecipients` (unified), `bastionReference`, `sector`, `ticker`, `eventType`
+
 ## Key Features
 
 - **AI Shop** (`/ai-shop`) — 6 role-based AI bundles (A-F) + 28 individual AI applications browser
