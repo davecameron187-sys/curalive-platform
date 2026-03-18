@@ -30,7 +30,7 @@ import { LoadIRContactsButton } from "@/components/LoadIRContactsButton";
 type OperatorState = "absent" | "present" | "in_call" | "break";
 type ParticipantState = "free" | "incoming" | "connected" | "muted" | "parked" | "speaking" | "waiting_operator" | "web_participant" | "dropped";
 type FilterMode = "all" | "moderators" | "participants" | "unmuted" | "muted" | "parked" | "connected" | "waiting" | "web" | "speak_requests";
-type FeatureTab = "monitoring" | "connection" | "history" | "audio" | "chat" | "notes" | "qa_queue" | "direct_access";
+type FeatureTab = "monitoring" | "connection" | "history" | "audio" | "chat" | "notes" | "qa_queue" | "direct_access" | "conf_dialout";
 type OverviewTab = "running" | "pending" | "planned" | "completed" | "alarms";
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
@@ -2939,6 +2939,7 @@ export default function OCC() {
                       { key: "notes", label: "Notes", icon: List },
                       { key: "qa_queue", label: "Q&A", icon: MessageSquare },
                       { key: "direct_access", label: "Direct", icon: KeyRound },
+                      { key: "conf_dialout", label: "Dial-Out", icon: PhoneForwarded },
                     ] as const).map(({ key, label, icon: Icon }) => (
                       <button
                         key={key}
@@ -3485,6 +3486,9 @@ export default function OCC() {
                         </div>
                         <p className="text-[10px] text-slate-600 italic">IVR endpoint: POST /api/voice/inbound — configure this as the Voice URL on your Twilio number to enable CuraLive Direct.</p>
                       </div>
+                    )}
+                    {featureTab === "conf_dialout" && (
+                      <ConfDialoutPanel />
                     )}
                   </div>
                 </div>
@@ -4951,6 +4955,174 @@ export default function OCC() {
           <span className="px-3 border-l border-slate-800">{new Date().toLocaleTimeString()}</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+const DIALOUT_STATUS_CFG: Record<string, { label: string; color: string }> = {
+  queued: { label: "Queued", color: "bg-slate-500" },
+  ringing: { label: "Ringing", color: "bg-amber-500" },
+  "in-progress": { label: "Connected", color: "bg-emerald-500" },
+  completed: { label: "Done", color: "bg-slate-400" },
+  busy: { label: "Busy", color: "bg-orange-500" },
+  "no-answer": { label: "No Answer", color: "bg-orange-500" },
+  failed: { label: "Failed", color: "bg-red-600" },
+  cancelled: { label: "Cancelled", color: "bg-slate-400" },
+};
+
+function ConfDialoutPanel() {
+  const [mode, setMode] = useState<"setup" | "monitor">("setup");
+  const [confName, setConfName] = useState("");
+  const [rawNumbers, setRawNumbers] = useState("");
+  const [activeId, setActiveId] = useState<number | null>(null);
+
+  const createMut = trpc.conferenceDialout.create.useMutation();
+  const startMut = trpc.conferenceDialout.start.useMutation();
+  const cancelMut = trpc.conferenceDialout.cancel.useMutation();
+  const statusQ = trpc.conferenceDialout.status.useQuery(
+    { dialoutId: activeId ?? 0 },
+    { enabled: !!activeId, refetchInterval: activeId ? 3000 : false }
+  );
+  const historyQ = trpc.conferenceDialout.list.useQuery({ limit: 5 });
+
+  const handleStart = async () => {
+    const lines = rawNumbers.split("\n").map(l => l.trim()).filter(Boolean);
+    const participants = lines.map(line => {
+      const parts = line.split(/[,\t]/).map(s => s.trim());
+      return { phoneNumber: parts[0] ?? "", label: parts[1] };
+    }).filter(p => p.phoneNumber.length >= 5);
+
+    if (!confName.trim()) { toast.error("Enter a conference name"); return; }
+    if (participants.length === 0) { toast.error("Add at least one number"); return; }
+
+    try {
+      const result = await createMut.mutateAsync({ name: confName.trim(), participants });
+      setActiveId(result.dialoutId);
+      await startMut.mutateAsync({ dialoutId: result.dialoutId });
+      toast.success(`Dialling ${participants.length} numbers`);
+      setMode("monitor");
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to start dial-out");
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!activeId) return;
+    try {
+      const r = await cancelMut.mutateAsync({ dialoutId: activeId });
+      toast.success(`Cancelled ${r.cancelledCalls} calls`);
+      statusQ.refetch();
+    } catch (err: any) { toast.error(err.message ?? "Cancel failed"); }
+  };
+
+  const data = statusQ.data;
+  const isActive = data && ["dialling", "active"].includes(data.status);
+
+  if (mode === "monitor" && activeId) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setMode("setup"); setActiveId(null); }} className="text-[10px] text-slate-500 hover:text-slate-300">← Back</button>
+            {data && <span className="text-xs font-semibold text-slate-300">{data.name}</span>}
+            {data && (
+              <span className={`text-[9px] font-semibold text-white px-1.5 py-0.5 rounded-full ${
+                data.status === "active" ? "bg-emerald-600" : data.status === "dialling" ? "bg-amber-600" : "bg-slate-500"
+              }`}>{data.status}</span>
+            )}
+          </div>
+          <div className="flex gap-1.5">
+            {isActive && (
+              <button onClick={handleCancel} disabled={cancelMut.isPending}
+                className="flex items-center gap-1 px-2 py-1 bg-red-900/50 hover:bg-red-800 text-red-300 rounded text-[10px] font-semibold">
+                <PhoneOff className="w-3 h-3" /> End All
+              </button>
+            )}
+            <button onClick={() => statusQ.refetch()} className="px-1.5 py-1 bg-slate-700 hover:bg-slate-600 text-slate-400 rounded text-[10px]">
+              <RefreshCw className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+        {data && (
+          <div className="flex gap-2">
+            {[
+              { l: "Total", v: data.totalParticipants, c: "text-slate-300" },
+              { l: "Connected", v: data.connectedCount, c: "text-emerald-400" },
+              { l: "Failed", v: data.failedCount, c: "text-red-400" },
+            ].map(s => (
+              <div key={s.l} className="flex items-center gap-1.5 px-2 py-1 bg-slate-800 rounded border border-slate-700">
+                <span className={`text-sm font-bold font-mono ${s.c}`}>{s.v}</span>
+                <span className="text-[9px] text-slate-500">{s.l}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="overflow-auto" style={{ maxHeight: "180px" }}>
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr className="text-slate-500 border-b border-slate-700">
+                <th className="text-left py-0.5 pr-2 font-medium">Number</th>
+                <th className="text-left py-0.5 pr-2 font-medium">Name</th>
+                <th className="text-left py-0.5 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data?.participants ?? []).map((p: any) => {
+                const cfg = DIALOUT_STATUS_CFG[p.status] ?? { label: p.status, color: "bg-slate-500" };
+                return (
+                  <tr key={p.id} className="border-b border-slate-800/40">
+                    <td className="py-0.5 pr-2 font-mono text-slate-300">{p.phoneNumber}</td>
+                    <td className="py-0.5 pr-2 text-slate-500">{p.label || "—"}</td>
+                    <td className="py-0.5">
+                      <span className={`inline-flex text-[9px] font-semibold text-white px-1.5 py-0.5 rounded-full ${cfg.color}`}>{cfg.label}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <input value={confName} onChange={e => setConfName(e.target.value)} placeholder="Conference name"
+          className="flex-1 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white placeholder:text-slate-600" />
+      </div>
+      <textarea value={rawNumbers} onChange={e => setRawNumbers(e.target.value)} rows={5}
+        placeholder={`Paste numbers, one per line:\n0821234567, John Smith\n+27839876543, Jane Doe`}
+        className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-[10px] text-white font-mono placeholder:text-slate-600 resize-y" />
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-slate-500">
+          {rawNumbers.split("\n").filter(l => l.trim().length >= 5).length} numbers
+        </span>
+        <button onClick={handleStart} disabled={createMut.isPending || startMut.isPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs font-semibold disabled:opacity-50">
+          {(createMut.isPending || startMut.isPending)
+            ? <><RefreshCw className="w-3 h-3 animate-spin" /> Connecting...</>
+            : <><PhoneForwarded className="w-3 h-3" /> Start Dial-Out</>
+          }
+        </button>
+      </div>
+      {(historyQ.data ?? []).length > 0 && (
+        <div className="border-t border-slate-700 pt-2 mt-1">
+          <span className="text-[9px] text-slate-500 uppercase tracking-wider">Recent</span>
+          <div className="mt-1 space-y-1">
+            {(historyQ.data ?? []).map((d: any) => (
+              <button key={d.id} onClick={() => { setActiveId(d.id); setMode("monitor"); }}
+                className="w-full flex items-center justify-between px-2 py-1 bg-slate-800/50 hover:bg-slate-700/50 rounded text-[10px] text-left">
+                <span className="text-slate-300">{d.name}</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold text-white ${
+                  d.status === "active" ? "bg-emerald-600" : d.status === "dialling" ? "bg-amber-600" : "bg-slate-500"
+                }`}>{d.status}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
