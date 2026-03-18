@@ -150,3 +150,9 @@ id = "vxovxSkETvhawIXRmNEJD"
 uri = "file://CuraLive_Patent_Submission_Brief_2026.md"
 type = "text"
 title = "CuraLive Patent Submission Brief — March 2026"
+
+[[outputs]]
+id = "SAIPqm9k9GUD8OZUIIR92"
+uri = "file://CuraLive_Patent_Submission_Brief_2026.docx"
+type = "word_document"
+title = "CuraLive Patent Submission Brief 2026 (.docx)"
