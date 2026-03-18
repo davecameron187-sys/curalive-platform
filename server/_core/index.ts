@@ -751,7 +751,8 @@ async function startServer() {
     serveStatic(app);
   }
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
+  const deployPort = process.env.NODE_ENV === "production" ? 23636 : null;
+  const preferredPort = deployPort ?? parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
@@ -760,22 +761,6 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
-
-    if (process.env.NODE_ENV === "production" && port !== 23636) {
-      const net = require("net");
-      const proxy = net.createServer((socket: any) => {
-        const target = net.createConnection({ port }, () => {
-          socket.pipe(target);
-          target.pipe(socket);
-        });
-        target.on("error", () => socket.destroy());
-        socket.on("error", () => target.destroy());
-      });
-      proxy.listen(23636, () => {
-        console.log(`[Deploy] Port bridge: 23636 → ${port}`);
-      });
-      proxy.on("error", () => {});
-    }
     const origin = process.env.APP_ORIGIN ?? `http://localhost:${port}`;
     startReminderScheduler(origin);
 
