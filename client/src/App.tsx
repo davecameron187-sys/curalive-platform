@@ -119,6 +119,7 @@ import MailingListManager from "./pages/MailingListManager";
 import MailingListConfirm from "./pages/MailingListConfirm";
 import OnboardingFlow from "./pages/OnboardingFlow";
 import OperatorDashboard from "./pages/OperatorDashboard";
+import ConferenceDialout from "./pages/ConferenceDialout";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -216,6 +217,7 @@ function Router() {
       <Route path="/intelligence-report" component={IntelligenceReportPage} />
       <Route path="/call-preparation" component={CallPreparation} />
       <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
+      <Route path="/conference-dialout" component={ConferenceDialout} />
       <Route path="/shadow-mode" component={ShadowMode} />
       <Route path="/health-guardian" component={HealthGuardian} />
       <Route path="/compliance-engine" component={ComplianceEngineDashboard} />

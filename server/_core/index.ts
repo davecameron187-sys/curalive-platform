@@ -109,6 +109,40 @@ async function startServer() {
   app.use("/api/oauth", authLimiter);
   app.use("/api/auth", authLimiter);
 
+  // ─── Conference Dial-Out TwiML + Status Endpoints ─────────────────────────
+  app.post("/api/conference-dialout/twiml", express.urlencoded({ extended: false }), async (req, res) => {
+    const conferenceName = (req.query.conferenceName as string) ?? "";
+    if (!conferenceName) {
+      res.type("text/xml").send("<Response><Say>Conference not found.</Say></Response>");
+      return;
+    }
+    const { buildConferenceTwiml } = await import("../services/ConferenceDialoutService");
+    res.type("text/xml").send(buildConferenceTwiml(conferenceName));
+  });
+
+  app.post("/api/conference-dialout/status", express.urlencoded({ extended: false }), async (req, res) => {
+    try {
+      const { handleCallStatusUpdate, validateTwilioSignature } = await import("../services/ConferenceDialoutService");
+      const twilioSig = req.headers["x-twilio-signature"] as string | undefined;
+      if (twilioSig) {
+        const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+        if (!validateTwilioSignature(fullUrl, req.body ?? {}, twilioSig)) {
+          console.warn("[ConferenceDialout] Invalid Twilio signature — rejecting");
+          res.sendStatus(403);
+          return;
+        }
+      }
+      await handleCallStatusUpdate({
+        callSid: req.body?.CallSid ?? "",
+        callStatus: req.body?.CallStatus ?? "",
+        callDuration: req.body?.CallDuration,
+      });
+    } catch (err) {
+      console.error("[ConferenceDialout] Status callback error:", err);
+    }
+    res.sendStatus(200);
+  });
+
   // Twilio TwiML voice endpoint — Twilio calls this URL when a WebRTC call is placed.
   // Must use urlencoded body (Twilio sends application/x-www-form-urlencoded).
   app.post("/api/webphone/twiml", express.urlencoded({ extended: false }), (req, res) => {

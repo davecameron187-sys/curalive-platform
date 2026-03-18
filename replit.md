@@ -327,6 +327,17 @@ The full Q&A support infrastructure is built and working but the UI widget is cu
 - **PDF generation**: `server/compliancePdf.ts` (pdfmake) — compliance certificate PDF export
 - **Patent extension**: `docs/CIPC-Patent-Extension-AI-Compliance.md` — 5 claims covering autonomous compliance monitoring, multi-signal predictive fraud detection, cross-system health-compliance correlation, AI-assessed threat severity, automated remediation lifecycle
 
+## Conference Dial-Out (March 2026)
+
+- **Route**: `/conference-dialout` — Batch dial-out facility for conference calls
+- **Use case**: Dial out to 20–200 South African cell numbers and join them all into a single Twilio Conference bridge
+- **Server service**: `server/services/ConferenceDialoutService.ts` — SA number normalisation, batched calling (10/batch with 500ms delay), Twilio Conference TwiML, status webhook handler, ownership-enforced CRUD
+- **Router**: `server/routers/conferenceDialoutRouter.ts` — `conferenceDialout.create`, `.start`, `.status`, `.cancel`, `.list` (all `protectedProcedure` with userId ownership)
+- **Express endpoints**: `POST /api/conference-dialout/twiml` (TwiML for connecting to conference), `POST /api/conference-dialout/status` (Twilio status callbacks with signature validation)
+- **DB tables**: `conference_dialouts` (conference metadata + counts), `conference_dialout_participants` (per-number call tracking with callSid, status, duration)
+- **UI**: `client/src/pages/ConferenceDialout.tsx` — conference setup with bulk paste, real-time status monitor with 3s polling, participant status table, cancel controls
+- **Number format**: Accepts `0821234567`, `+27821234567`, or `0027821234567` — auto-normalised to E.164
+
 ## OpenAI API Key Configuration (March 2026)
 
 - **Priority order** (`server/_core/env.ts`): `OPENAI_API_KEY` → `BUILT_IN_FORGE_API_KEY` → `AI_INTEGRATIONS_OPENAI_API_KEY`

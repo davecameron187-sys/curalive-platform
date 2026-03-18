@@ -2904,3 +2904,34 @@ export const aiToolProposals = mysqlTable("ai_tool_proposals", {
 });
 
 export type AiToolProposal = typeof aiToolProposals.$inferSelect;
+
+export const conferenceDialouts = mysqlTable("conference_dialouts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  conferenceName: varchar("conference_name", { length: 128 }).notNull(),
+  callerId: varchar("caller_id", { length: 32 }).notNull(),
+  totalParticipants: int("total_participants").notNull().default(0),
+  connectedCount: int("connected_count").notNull().default(0),
+  failedCount: int("failed_count").notNull().default(0),
+  status: mysqlEnum("status", ["pending", "dialling", "active", "completed", "cancelled"]).default("pending").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  endedAt: bigint("ended_at", { mode: "number" }),
+});
+export type ConferenceDialout = typeof conferenceDialouts.$inferSelect;
+
+export const conferenceDialoutParticipants = mysqlTable("conference_dialout_participants", {
+  id: int("id").autoincrement().primaryKey(),
+  dialoutId: int("dialout_id").notNull(),
+  phoneNumber: varchar("phone_number", { length: 32 }).notNull(),
+  label: varchar("label", { length: 255 }),
+  callSid: varchar("call_sid", { length: 128 }),
+  status: mysqlEnum("status", [
+    "queued", "ringing", "in-progress", "completed", "busy", "no-answer", "failed", "cancelled",
+  ]).default("queued").notNull(),
+  durationSecs: int("duration_secs"),
+  answeredAt: bigint("answered_at", { mode: "number" }),
+  endedAt: bigint("ended_at", { mode: "number" }),
+  errorMessage: varchar("error_message", { length: 512 }),
+});
+export type ConferenceDialoutParticipant = typeof conferenceDialoutParticipants.$inferSelect;
