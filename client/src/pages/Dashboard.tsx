@@ -10,10 +10,9 @@ import {
   Loader2, Play, BarChart3, Globe, Zap, TrendingUp,
   Building2, LogIn, LogOut, User, Phone, Video,
   Mic, FileText, MessageSquare, Brain, Heart,
-  Monitor, Wifi, Database,
+  Monitor, Wifi, Database, Receipt,
 } from "lucide-react";
 
-import { Receipt } from "lucide-react";
 import ShadowMode from "./ShadowMode";
 import OCC from "./OCC";
 import BastionPartner from "./BastionPartner";
@@ -32,6 +31,7 @@ const TAB_CONFIG: { id: DashboardTab; label: string; icon: React.ElementType; co
 ];
 
 function OverviewTab() {
+  const [, navigate] = useLocation();
   const { data: healthStatus } = trpc.healthGuardian.currentStatus.useQuery(undefined, {
     refetchInterval: 30000,
     retry: false,
@@ -116,16 +116,22 @@ function OverviewTab() {
             <Zap className="w-4 h-4 text-amber-400" />
             Quick Actions
           </h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {[
               { label: "New Live Event", desc: "Join a meeting silently", icon: Play, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", tab: "shadow-mode" as DashboardTab },
               { label: "Upload Recording", desc: "Process archive audio", icon: Mic, color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20", tab: "shadow-mode" as DashboardTab },
               { label: "Open OCC", desc: "Operator call centre", icon: Headphones, color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20", tab: "occ" as DashboardTab },
               { label: "Partner Hub", desc: "Lumi & Bastion", icon: Handshake, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", tab: "partners" as DashboardTab },
-            ].map(({ label, desc, icon: Icon, color, bg, tab }) => (
+              { label: "AI Dashboard", desc: "AI modules & reports", icon: Brain, color: "text-pink-400", bg: "bg-pink-500/10 border-pink-500/20", href: "/ai-dashboard" },
+              { label: "Billing", desc: "Quotes, invoices & clients", icon: Receipt, color: "text-green-400", bg: "bg-green-500/10 border-green-500/20", tab: "billing" as DashboardTab },
+            ].map(({ label, desc, icon: Icon, color, bg, tab, href }: any) => (
               <button key={label} onClick={() => {
-                const event = new CustomEvent("dashboard-navigate", { detail: { tab } });
-                window.dispatchEvent(event);
+                if (href) {
+                  navigate(href);
+                } else {
+                  const event = new CustomEvent("dashboard-navigate", { detail: { tab } });
+                  window.dispatchEvent(event);
+                }
               }}
                 className={`text-left p-4 rounded-xl border ${bg} hover:scale-[1.02] transition-transform`}>
                 <Icon className={`w-5 h-5 ${color} mb-2`} />
