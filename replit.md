@@ -10,13 +10,28 @@ A real-time investor events platform providing live transcription, sentiment ana
 - **Build system**: pnpm + tsx (dev), esbuild (prod)
 - **Package manager**: pnpm 10.4.1
 
+## UI Architecture (Consolidated March 2026)
+
+The platform has been consolidated to two main pages:
+
+- **`/`** — Unified Operator Dashboard (`Dashboard.tsx`) with 5 tabs:
+  - **Overview**: System health, quick actions, recent sessions, platform capabilities
+  - **Shadow Mode**: Full Shadow Mode (embedded via `ShadowMode.tsx` with `embedded` prop)
+  - **OCC**: Operator Control Console (telephony, conference dial-out)
+  - **Partners**: Bastion Capital Partners + Lumi Global (sub-tab toggle)
+  - **Settings**: Account, system status, integrations
+- **`/live/:token`** — Client-facing live dashboard (read-only, no auth needed)
+- Old routes (`/shadow-mode`, `/occ`, `/bastion`, `/lumi`) redirect to dashboard tabs
+
 ## Project Structure
 
 ```
 client/          React frontend (Vite root)
+  src/pages/     Dashboard.tsx (main), ShadowMode.tsx, OCC.tsx, BastionPartner.tsx, LumiPartner.tsx
 server/          Express backend
   _core/         Server entry, OAuth, Vite middleware, env config
   routers/       tRPC routers
+  services/      BastionInvestorAiService, BastionBookingService, LumiBookingService
   webphone/      Twilio/Telnyx voice integration
   drizzle/       Drizzle schema + migrations
 shared/          Shared types/constants between client and server

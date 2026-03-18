@@ -1,11 +1,12 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import BackToLinks from "./components/BackToLinks";
 import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
 import EventRoom from "./pages/EventRoom";
 import OperatorConsole from "./pages/OperatorConsole";
 import Registration from "./pages/Registration";
@@ -127,7 +128,7 @@ function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={Dashboard} />
       <Route path="/onboarding" component={OnboardingFlow} />
       <Route path="/event/:id" component={EventRoom} />
       <Route path="/moderator/:id" component={Moderator} />
@@ -146,7 +147,7 @@ function Router() {
       <Route path="/test-guide" component={TestGuide} />
       <Route path="/tech-handover" component={TechHandover} />
       <Route path="/summit-console" component={SummitConsole} />
-      <Route path="/occ" component={OCC} />
+      <Route path="/occ"><Redirect to="/?tab=occ" /></Route>
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/live-video" component={LiveVideoMeetings} />
       <Route path="/live-video/roadshow/:roadshowId" component={RoadshowDetail} />
@@ -221,13 +222,15 @@ function Router() {
       <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
       <Route path="/conference-dialout" component={ConferenceDialout} />
       <Route path="/agm-governance" component={AgmGovernanceAi} />
-      <Route path="/shadow-mode" component={ShadowMode} />
+      <Route path="/shadow-mode"><Redirect to="/?tab=shadow-mode" /></Route>
       <Route path="/health-guardian" component={HealthGuardian} />
       <Route path="/compliance-engine" component={ComplianceEngineDashboard} />
       <Route path="/mailing-lists" component={MailingListManager} />
       <Route path="/register/confirm/:token">{(params: any) => <MailingListConfirm params={params} />}</Route>
-      <Route path="/bastion" component={BastionPartner} />
-      <Route path="/lumi" component={LumiPartner} />
+      <Route path="/bastion"><Redirect to="/?tab=partners" /></Route>
+      <Route path="/bastion-partner"><Redirect to="/?tab=partners" /></Route>
+      <Route path="/lumi"><Redirect to="/?tab=partners&partner=lumi" /></Route>
+      <Route path="/lumi-partner"><Redirect to="/?tab=partners&partner=lumi" /></Route>
       <Route path="/live/:token" component={ClientLiveDashboard} />
       <Route path="/archive-upload" component={ArchiveUpload} />
       <Route path="/benchmarks" component={Benchmarks} />

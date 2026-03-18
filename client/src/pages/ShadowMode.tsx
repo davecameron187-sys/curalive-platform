@@ -89,10 +89,11 @@ type ArchiveResult = {
   message: string;
 };
 
-export default function ShadowMode() {
+export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   const [, navigate] = useLocation();
 
   useEffect(() => {
+    if (embedded) return;
     window.history.pushState(null, "", "/shadow-mode");
     const handlePopState = () => {
       navigate("/shadow-mode");
@@ -100,7 +101,7 @@ export default function ShadowMode() {
     };
     window.addEventListener("popstate", handlePopState, true);
     return () => window.removeEventListener("popstate", handlePopState, true);
-  }, []);
+  }, [embedded]);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "recording" | "ailearning">("live");
@@ -457,10 +458,11 @@ export default function ShadowMode() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className={embedded ? "bg-[#0a0a0f] text-white" : "min-h-screen bg-[#0a0a0f] text-white"}>
 
       {/* Header */}
       <div className="border-b border-white/10 bg-[#0d0d14]">
+        {!embedded && (
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
@@ -477,16 +479,6 @@ export default function ShadowMode() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/lumi"
-              className="flex items-center gap-1.5 text-xs text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 px-3 py-1.5 rounded-full hover:bg-cyan-400/20 transition-colors">
-              <Globe className="w-3.5 h-3.5" />
-              Lumi Integration
-            </a>
-            <a href="/bastion"
-              className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-1.5 rounded-full hover:bg-amber-400/20 transition-colors">
-              <Shield className="w-3.5 h-3.5" />
-              Bastion Testing
-            </a>
             <Button onClick={() => {
               if (activeTab !== "live") setActiveTab("live");
               setShowForm(true);
@@ -497,6 +489,7 @@ export default function ShadowMode() {
             </Button>
           </div>
         </div>
+        )}
 
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-6">
