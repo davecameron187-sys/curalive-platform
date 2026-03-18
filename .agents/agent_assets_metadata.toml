@@ -162,3 +162,9 @@ id = "a7xNvVsMkaaRNCsm7igwH"
 uri = "file://CuraLive_CIPC_CIP_Submission_2_Modules_19-25.docx"
 type = "word_document"
 title = "CuraLive CIPC CIP Submission 2 - Modules 19-25"
+
+[[outputs]]
+id = "Ot4rfNCXsr_62lK-qUbnY"
+uri = "file://CuraLive_CIPC_CIP_Submission_2_Modules_14-20.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 2 (Corrected) - Modules 14-20"
