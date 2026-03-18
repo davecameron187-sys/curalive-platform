@@ -8,17 +8,27 @@ import {
 } from "lucide-react";
 
 const EVENT_TYPES = [
-  { value: "earnings_call", label: "Earnings Call" },
-  { value: "agm", label: "AGM / Annual General Meeting" },
-  { value: "capital_markets_day", label: "Capital Markets Day" },
-  { value: "ceo_town_hall", label: "CEO Town Hall" },
-  { value: "board_meeting", label: "Board Meeting" },
-  { value: "webcast", label: "Webcast / Investor Day" },
-  { value: "other", label: "Other" },
+  { value: "earnings_call", label: "Earnings Call", group: "Investor Relations" },
+  { value: "interim_results", label: "Interim Results Presentation", group: "Investor Relations" },
+  { value: "capital_markets_day", label: "Capital Markets Day", group: "Investor Relations" },
+  { value: "investor_day", label: "Investor Day", group: "Investor Relations" },
+  { value: "roadshow", label: "Roadshow", group: "Investor Relations" },
+  { value: "special_call", label: "Special / Ad-hoc Call", group: "Investor Relations" },
+  { value: "agm", label: "AGM / Annual General Meeting", group: "Governance" },
+  { value: "board_meeting", label: "Board Meeting", group: "Governance" },
+  { value: "webcast", label: "Webcast (General)", group: "Webcast" },
+  { value: "partner_webcast", label: "Partner Event Webcast", group: "Webcast" },
+  { value: "results_webcast", label: "Results Presentation Webcast", group: "Webcast" },
+  { value: "product_launch_webcast", label: "Product Launch Webcast", group: "Webcast" },
+  { value: "thought_leadership_webcast", label: "Thought Leadership Webcast", group: "Webcast" },
+  { value: "hybrid_webcast", label: "Hybrid Event Webcast", group: "Webcast" },
+  { value: "ceo_town_hall", label: "CEO Town Hall", group: "Other" },
+  { value: "other", label: "Other", group: "Other" },
 ];
 
 const PLATFORMS = [
-  "Zoom", "Microsoft Teams", "Google Meet", "Webex", "In-Person", "Other",
+  "CuraLive Webcast", "Zoom", "Microsoft Teams", "Google Meet", "Webex",
+  "Lumi Global", "BrightTALK", "ON24", "Vimeo", "In-Person", "Hybrid", "Other",
 ];
 
 type ProcessResult = {
@@ -30,6 +40,8 @@ type ProcessResult = {
   sentimentAvg: number;
   complianceFlags: number;
   metricsGenerated: number;
+  specialisedAlgorithmsRun?: number;
+  specialisedSessionType?: string;
   message: string;
 };
 
@@ -102,6 +114,7 @@ export default function ArchiveUpload() {
   }
 
   const wordCount = transcriptText.trim().split(/\s+/).filter(Boolean).length;
+  const isWebcastType = ["webcast", "partner_webcast", "product_launch_webcast", "thought_leadership_webcast", "results_webcast", "hybrid_webcast"].includes(eventType);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -128,9 +141,10 @@ export default function ArchiveUpload() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground bg-muted/30 border border-border rounded-lg px-4 py-3">
-            Paste or upload any past event transcript — earnings calls, AGMs, town halls. CuraLive scores sentiment,
-            scans for compliance keywords, and adds 4 intelligence records to your Tagged Metrics database, exactly
-            as if the event had run through Shadow Mode.
+            Upload any past event transcript — webcasts, partner events, earnings calls, AGMs, town halls. CuraLive
+            runs full AI intelligence including sentiment scoring, compliance scanning, and specialized algorithms
+            based on event type. Webcast uploads get 6 additional algorithms: presentation effectiveness, key message
+            extraction, speaker performance, content pack generation, audience engagement, and executive reporting.
           </p>
         </div>
 
@@ -184,6 +198,9 @@ export default function ArchiveUpload() {
                   <Database className="h-4 w-4 text-primary" />
                   <span className="font-medium text-sm">
                     {result.metricsGenerated} Intelligence Records Added
+                    {result.specialisedAlgorithmsRun && result.specialisedAlgorithmsRun > 0
+                      ? ` + ${result.specialisedAlgorithmsRun} ${result.specialisedSessionType === "webcast" ? "Webcast Intelligence" : result.specialisedSessionType === "bastion" ? "Investor" : "Governance"} Algorithms`
+                      : ""}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
@@ -199,6 +216,26 @@ export default function ArchiveUpload() {
                     </div>
                   ))}
                 </div>
+                {result.specialisedSessionType === "webcast" && result.specialisedAlgorithmsRun && result.specialisedAlgorithmsRun > 0 && (
+                  <div className="mt-3 pt-3 border-t border-primary/20">
+                    <p className="text-xs font-medium text-primary mb-2">Webcast Intelligence Generated:</p>
+                    <div className="grid grid-cols-2 gap-1.5 text-xs text-muted-foreground">
+                      {[
+                        "Presentation Effectiveness Score",
+                        "Key Messages & Guidance Extracted",
+                        "Speaker Performance Analysis",
+                        "Content Pack (Social, Press, Newsletter)",
+                        "Audience Engagement Assessment",
+                        "Executive Webcast Report",
+                      ].map((item) => (
+                        <div key={item} className="flex items-center gap-1.5">
+                          <CheckCircle className="h-3 w-3 text-green-400 shrink-0" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
@@ -299,8 +336,12 @@ export default function ArchiveUpload() {
                     required
                   >
                     <option value="">Select type...</option>
-                    {EVENT_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
+                    {["Webcast", "Investor Relations", "Governance", "Other"].map((group) => (
+                      <optgroup key={group} label={group}>
+                        {EVENT_TYPES.filter((t) => t.group === group).map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </div>
@@ -449,6 +490,29 @@ export default function ArchiveUpload() {
                   </div>
                 ))}
               </div>
+
+              {isWebcastType && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-xs font-medium text-primary uppercase tracking-wide mb-3">
+                    + Webcast Intelligence Algorithms
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {[
+                      "Presentation Effectiveness",
+                      "Key Message Extraction",
+                      "Speaker Performance",
+                      "Content Pack Generation",
+                      "Audience Engagement",
+                      "Executive Report",
+                    ].map((algo) => (
+                      <div key={algo} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle className="h-3 w-3 text-primary shrink-0" />
+                        <span>{algo}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Submit */}

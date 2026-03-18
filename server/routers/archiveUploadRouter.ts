@@ -336,6 +336,7 @@ ${opts.notes ? `<table width="100%" style="background:#0f172a;border-left:3px so
 
 const BASTION_EVENT_TYPES = ["earnings_call", "interim_results", "capital_markets_day", "investor_day", "roadshow", "special_call"];
 const AGM_EVENT_TYPES = ["agm", "board_meeting"];
+const WEBCAST_EVENT_TYPES = ["webcast", "partner_webcast", "product_launch_webcast", "thought_leadership_webcast", "results_webcast", "hybrid_webcast"];
 
 function parseTranscriptToSegments(rawText: string): Array<{ speaker: string; text: string; timestamp: number }> {
   const lines = rawText.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
@@ -480,6 +481,56 @@ async function runSpecialisedAlgorithms(
     return { sessionType: "agm", sessionId, algorithmsRun, results };
   }
 
+  if (WEBCAST_EVENT_TYPES.includes(eventType)) {
+    const webcast = await import("../services/WebcastArchiveAiService");
+    const { sessionId } = await webcast.createWebcastSession(SYSTEM_USER_ID, {
+      clientName,
+      eventTitle: eventName,
+      eventType,
+      eventDate,
+    });
+
+    console.log(`[ArchiveAI] Running webcast intelligence algorithms for archive ${archiveId}, session ${sessionId}`);
+
+    try {
+      results.presentationEffectiveness = await webcast.analyzePresentationEffectiveness(SYSTEM_USER_ID, sessionId, segments);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Presentation Effectiveness Analysis complete`);
+    } catch (e) { console.error(`[ArchiveAI] Presentation effectiveness failed:`, e); }
+
+    try {
+      results.keyMessages = await webcast.extractKeyMessages(SYSTEM_USER_ID, sessionId, segments);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Key Message Extraction complete`);
+    } catch (e) { console.error(`[ArchiveAI] Key messages failed:`, e); }
+
+    try {
+      results.speakerPerformance = await webcast.analyzeSpeakerPerformance(SYSTEM_USER_ID, sessionId, segments);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Speaker Performance Analysis complete`);
+    } catch (e) { console.error(`[ArchiveAI] Speaker performance failed:`, e); }
+
+    try {
+      results.contentPack = await webcast.generateWebcastContentPack(SYSTEM_USER_ID, sessionId, segments, clientName, eventName);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Content Pack Generation complete`);
+    } catch (e) { console.error(`[ArchiveAI] Content pack failed:`, e); }
+
+    try {
+      results.audienceEngagement = await webcast.analyzeAudienceEngagement(SYSTEM_USER_ID, sessionId, segments);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Audience Engagement Analysis complete`);
+    } catch (e) { console.error(`[ArchiveAI] Audience engagement failed:`, e); }
+
+    try {
+      results.executiveReport = await webcast.generateWebcastReport(SYSTEM_USER_ID, sessionId);
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Executive Webcast Report complete`);
+    } catch (e) { console.error(`[ArchiveAI] Executive report failed:`, e); }
+
+    return { sessionType: "webcast", sessionId, algorithmsRun, results };
+  }
+
   return { sessionType: "none", sessionId: 0, algorithmsRun: 0, results: {} };
 }
 
@@ -492,7 +543,9 @@ export const archiveUploadRouter = router({
         eventName: z.string().min(1).max(255),
         eventType: z.enum([
           "earnings_call", "interim_results", "agm", "capital_markets_day",
-          "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other",
+          "ceo_town_hall", "board_meeting", "webcast", "partner_webcast",
+          "product_launch_webcast", "thought_leadership_webcast", "results_webcast",
+          "hybrid_webcast", "investor_day", "roadshow", "special_call", "other",
         ]),
         eventDate: z.string().optional(),
         platform: z.string().optional(),
@@ -628,8 +681,12 @@ export const archiveUploadRouter = router({
         console.error("[ArchiveAI] Specialised algorithm pipeline failed (non-fatal):", err);
       }
 
+      const sessionTypeLabel = specialisedResult.sessionType === "bastion" ? "investor"
+        : specialisedResult.sessionType === "agm" ? "governance"
+        : specialisedResult.sessionType === "webcast" ? "webcast intelligence"
+        : "specialised";
       const specialisedLabel = specialisedResult.algorithmsRun > 0
-        ? ` + ${specialisedResult.algorithmsRun} specialised ${specialisedResult.sessionType === "bastion" ? "investor" : "governance"} algorithms`
+        ? ` + ${specialisedResult.algorithmsRun} ${sessionTypeLabel} algorithms`
         : "";
 
       return {
