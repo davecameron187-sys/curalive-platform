@@ -20,12 +20,18 @@ The platform has been consolidated to two main pages:
   - **OCC**: Operator Control Console (telephony, conference dial-out)
   - **Partners**: Bastion Capital Partners + Lumi Global (sub-tab toggle)
   - **Settings**: Account, system status, integrations
-- **`/intelligence-suite`** — Intelligence Suite: 5 advanced AI algorithms
+- **`/intelligence-suite`** — Intelligence Suite: 11 advanced AI algorithms
   - Evasive Answer Detection (NLP + vocal forensics)
   - Market Impact Forecast (predictive volatility)
   - Multi-Modal Compliance Risk Scoring (text+tone+behavioral)
   - External Sentiment Aggregation (social/media fusion)
   - IR Briefing Generator (RAG-powered personalized briefings)
+  - Materiality Risk Oracle (MNPI detection + auto-drafted SENS/8-K filings)
+  - Investor Intention Decoder (hidden agenda detection via multi-agent LLM)
+  - Cross-Event Consistency Guardian (contradiction scoring across events)
+  - Predictive Volatility Simulator (Monte-Carlo price impact simulations)
+  - Autonomous Regulatory Intervention Engine (RL-based self-evolving compliance)
+  - Event Integrity Digital Twin (SHA-256 hash chain + Clean Disclosure Certificate)
 - **`/live/:token`** — Client-facing live dashboard (read-only, no auth needed)
 - Old routes (`/shadow-mode`, `/occ`, `/bastion`, `/lumi`) redirect to dashboard tabs
 
@@ -36,8 +42,8 @@ client/          React frontend (Vite root)
   src/pages/     Dashboard.tsx (main), IntelligenceSuite.tsx, ShadowMode.tsx, OCC.tsx, BastionPartner.tsx, LumiPartner.tsx
 server/          Express backend
   _core/         Server entry, OAuth, Vite middleware, env config
-  routers/       tRPC routers (incl. 5 Intelligence Suite routers)
-  services/      BastionInvestorAiService, BastionBookingService, LumiBookingService + 5 Intelligence Suite services
+  routers/       tRPC routers (incl. 11 Intelligence Suite routers + 6 CIP patent module routers)
+  services/      BastionInvestorAiService, BastionBookingService, LumiBookingService + 11 Intelligence Suite services
   webphone/      Twilio/Telnyx voice integration
   drizzle/       Drizzle schema + migrations
 shared/          Shared types/constants between client and server
