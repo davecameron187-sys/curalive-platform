@@ -260,6 +260,11 @@ export default function AIDashboard({ sessions }: AIDashboardProps) {
   const [emailTo, setEmailTo] = useState("");
   const [emailName, setEmailName] = useState("");
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  const [recFile, setRecFile] = useState<File | null>(null);
+  const [recDragOver, setRecDragOver] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "transcribing" | "done" | "error">("idle");
+  const recFileRef = useRef<HTMLInputElement>(null);
 
   const completedSessions = useMemo(() =>
     sessions.filter(s => s.status === "completed").sort((a, b) =>
@@ -369,6 +374,65 @@ export default function AIDashboard({ sessions }: AIDashboardProps) {
       setIsRunning(false);
     }
   }, [session, selectedSessionId, selectedServices, sessions]);
+
+  const uploadRecording = useCallback(async () => {
+    if (!recFile || !selectedSessionId) return;
+    setIsUploading(true);
+    setUploadStatus("transcribing");
+    try {
+      const formData = new FormData();
+      formData.append("recording", recFile);
+      const uploadRes = await fetch(`/api/shadow/recording/${selectedSessionId}`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!uploadRes.ok) throw new Error("Failed to upload recording");
+
+      if (selectedServices.has("transcription")) {
+        const fd2 = new FormData();
+        fd2.append("file", recFile);
+        const transRes = await fetch("/api/transcribe-audio", { method: "POST", body: fd2 });
+        if (transRes.ok) {
+          const { transcript } = await transRes.json();
+          const sessionData = sessions.find(s => s.id === selectedSessionId);
+          processTranscript.mutate({
+            clientName: sessionData?.clientName ?? "Unknown",
+            eventName: sessionData?.eventName ?? "Unknown",
+            eventType: (sessionData?.eventType ?? "other") as any,
+            transcriptText: transcript,
+            notes: `Auto-processed from AI Dashboard — session #${selectedSessionId}`,
+          }, {
+            onSuccess: () => {
+              toast.success("Recording uploaded and transcribed — AI report generated");
+              archives.refetch();
+              sessionDetail.refetch();
+              setUploadStatus("done");
+              setRecFile(null);
+              setIsUploading(false);
+            },
+            onError: () => {
+              toast.success("Recording uploaded but AI report failed — you can retry");
+              sessionDetail.refetch();
+              setUploadStatus("done");
+              setRecFile(null);
+              setIsUploading(false);
+            },
+          });
+          return;
+        }
+      }
+
+      toast.success("Recording uploaded successfully");
+      sessionDetail.refetch();
+      setUploadStatus("done");
+      setRecFile(null);
+    } catch (err: any) {
+      toast.error(err.message ?? "Upload failed");
+      setUploadStatus("error");
+    } finally {
+      setIsUploading(false);
+    }
+  }, [recFile, selectedSessionId, selectedServices, sessions]);
 
   const exportReport = useCallback(() => {
     if (!session || !aiReport) return;
@@ -729,23 +793,100 @@ export default function AIDashboard({ sessions }: AIDashboardProps) {
             )}
           </div>
 
-          {session.recordingUrl && selectedServices.has("recording") && (
+          {selectedServices.has("recording") && (
             <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Volume2 className="w-4 h-4 text-cyan-400" />
                   <span className="text-sm font-medium text-slate-200">Recording</span>
                 </div>
-                <a href={session.recordingUrl} download
-                  className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/20 transition-colors">
-                  <Download className="w-3 h-3" />
-                  Download
-                </a>
+                {session.recordingUrl && (
+                  <a href={session.recordingUrl} download
+                    className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/20 transition-colors">
+                    <Download className="w-3 h-3" />
+                    Download
+                  </a>
+                )}
               </div>
-              {session.recordingUrl.startsWith("/api/shadow/recording/") ? (
-                <audio src={session.recordingUrl} controls preload="metadata" className="w-full" />
+
+              {session.recordingUrl ? (
+                <>
+                  {session.recordingUrl.startsWith("/api/shadow/recording/") ? (
+                    <audio src={session.recordingUrl} controls preload="metadata" className="w-full" />
+                  ) : (
+                    <video src={session.recordingUrl} controls playsInline preload="metadata" className="w-full rounded-lg bg-black/50 max-h-[250px]" />
+                  )}
+                </>
+              ) : isUploading ? (
+                <div className="py-6 flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                  <div className="text-sm font-medium text-slate-300">
+                    {uploadStatus === "transcribing" ? "Uploading & transcribing..." : "Processing..."}
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    {selectedServices.has("transcription")
+                      ? "Uploading recording, transcribing with Whisper AI, then running full intelligence pipeline. Large files may take 3-10 minutes."
+                      : "Uploading and saving recording to the session."}
+                  </p>
+                </div>
               ) : (
-                <video src={session.recordingUrl} controls playsInline preload="metadata" className="w-full rounded-lg bg-black/50 max-h-[250px]" />
+                <div className="space-y-3">
+                  <div
+                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+                      recDragOver ? "border-cyan-400 bg-cyan-500/10" : "border-white/10 hover:border-cyan-500/40 hover:bg-cyan-500/5"
+                    }`}
+                    onClick={() => recFileRef.current?.click()}
+                    onDragOver={e => { e.preventDefault(); setRecDragOver(true); }}
+                    onDragLeave={e => { e.preventDefault(); setRecDragOver(false); }}
+                    onDrop={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setRecDragOver(false);
+                      const f = e.dataTransfer.files?.[0];
+                      if (f) setRecFile(f);
+                    }}
+                  >
+                    {recDragOver ? (
+                      <div>
+                        <Upload className="w-8 h-8 text-cyan-400 mx-auto mb-2 animate-bounce" />
+                        <p className="text-sm font-medium text-cyan-300">Drop your recording here</p>
+                      </div>
+                    ) : recFile ? (
+                      <div>
+                        <FileAudio className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
+                        <p className="text-sm font-medium text-slate-200">{recFile.name}</p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {(recFile.size / 1024 / 1024).toFixed(1)} MB
+                          {recFile.size > 20 * 1024 * 1024 && (
+                            <span className="text-amber-400 ml-2">· Large file — allow 5-10 min for processing</span>
+                          )}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <Upload className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                        <p className="text-sm font-medium text-slate-300">Click to upload or drag & drop</p>
+                        <p className="text-xs text-slate-600 mt-1">MP3, MP4, WAV, M4A, WebM, OGG, MOV · Up to 500MB</p>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    ref={recFileRef}
+                    type="file"
+                    accept="audio/*,video/*,.mp3,.mp4,.wav,.m4a,.webm,.mov,.avi,.ogg,.flac"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) setRecFile(f); }}
+                    className="hidden"
+                  />
+                  {recFile && (
+                    <Button
+                      onClick={uploadRecording}
+                      className="w-full bg-cyan-600 hover:bg-cyan-500 gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload Recording{selectedServices.has("transcription") ? " & Transcribe" : ""}
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           )}
