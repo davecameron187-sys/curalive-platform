@@ -104,11 +104,16 @@ const doc = new Document({
         spacer(600),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: "INTERNATIONAL PATENT APPLICATION", bold: true, font: FONT, size: 36, color: "1E3A5F" })],
+          children: [new TextRun({ text: "CONTINUATION-IN-PART (CIP)", bold: true, font: FONT, size: 36, color: "1E3A5F" })],
         }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: "Under the Patent Cooperation Treaty (PCT)", font: FONT, size: 24, color: "4B5563" })],
+          children: [new TextRun({ text: "SUPPLEMENTARY PATENT SPECIFICATION", bold: true, font: FONT, size: 30, color: "1E3A5F" })],
+          spacing: { after: 80 },
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: "Fourth Submission to CIPC", font: FONT, size: 24, color: "4B5563" })],
           spacing: { after: 400 },
         }),
         spacer(200),
@@ -121,8 +126,24 @@ const doc = new Document({
         new Paragraph({
           alignment: AlignmentType.CENTER,
           children: [new TextRun({
-            text: "System and Method for Autonomous Investor Relations Intelligence,\nSelf-Expanding Communication Systems, Real-Time Crisis Prediction,\nMulti-Jurisdiction Compliance Orchestration, and Valuation Impact Analysis",
+            text: "Autonomous IR Assistant Layer — Module 30",
             font: FONT, size: 22, italics: true, color: "374151",
+          })],
+          spacing: { after: 40 },
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({
+            text: "Autonomous Self-Expansion Engine for AGI Transition — Module 31",
+            font: FONT, size: 22, italics: true, color: "374151",
+          })],
+          spacing: { after: 80 },
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({
+            text: "(Extending Modules 1–28 and Claims 1–43 of the Parent Provisional, CIP Submission 2, and CIP Submission 3)",
+            font: FONT, size: 18, color: "6B7280",
           })],
           spacing: { after: 600 },
         }),
@@ -150,17 +171,32 @@ const doc = new Document({
         spacer(200),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: "Filing Date: 19 March 2026", font: FONT, size: 20 })],
+          children: [new TextRun({ text: "Prepared: 19 March 2026", font: FONT, size: 20 })],
           spacing: { after: 40 },
         }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: "Priority: Application No. 1773575338868 (12 March 2026, South Africa)", font: FONT, size: 20 })],
+          children: [new TextRun({ text: "Parent Application: No. 1773575338868 (12 March 2026)", font: FONT, size: 20 })],
           spacing: { after: 40 },
         }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: "International Classification: G06Q 10/10 | G06N 20/00 | H04L 9/32", font: FONT, size: 20, color: "6B7280" })],
+          children: [new TextRun({ text: "Filing Authority: Companies and Intellectual Property Commission (CIPC)", font: FONT, size: 20, color: "6B7280" })],
+          spacing: { after: 40 },
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: "Jurisdiction: Republic of South Africa — Companies and Intellectual Property Commission (CIPC)", font: FONT, size: 20, color: "6B7280" })],
+          spacing: { after: 40 },
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: "Production URL: https://curalive-platform.replit.app", font: FONT, size: 18, color: "9CA3AF" })],
+          spacing: { after: 40 },
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: "GitHub: github.com/davecameron187-sys/curalive-platform", font: FONT, size: 18, color: "9CA3AF" })],
           spacing: { after: 40 },
         }),
         new Paragraph({
@@ -175,28 +211,27 @@ const doc = new Document({
         spacer(100),
         p("1.  Title of Invention"),
         p("2.  Abstract"),
-        p("3.  Priority Data and Cross-References"),
-        p("4.  International Classification"),
-        p("5.  Designated States"),
-        p("6.  Field of the Invention"),
-        p("7.  Background of the Invention"),
-        p("8.  Summary of the Invention"),
-        p("9.  Complete Module Registry (Modules 1–31)"),
-        p("10. Detailed Description — Module 30: Autonomous IR Assistant Layer"),
-        p("11. Detailed Description — Module 31: Self-Expansion Engine for AGI Transition"),
-        p("12. Embodiments"),
-        p("13. Industrial Applicability"),
-        p("14. Alternative Implementations"),
-        p("15. Claims (1–12)"),
-        p("16. Drawings (FIG 1–7)"),
-        p("17. Incorporation by Reference"),
-        p("18. Declaration"),
+        p("3.  Cross-Reference to Related Applications"),
+        p("4.  Field of the Invention"),
+        p("5.  Relationship to Parent and Prior CIP Specifications"),
+        p("6.  Background of the Invention"),
+        p("7.  Summary of the Invention"),
+        p("8.  Complete Module Registry (Modules 1–31)"),
+        p("9.  Detailed Description — Module 30: Autonomous IR Assistant Layer"),
+        p("10. Detailed Description — Module 31: Self-Expansion Engine for AGI Transition"),
+        p("11. Embodiments"),
+        p("12. Industrial Applicability"),
+        p("13. Alternative Implementations"),
+        p("14. New Claims (CIP Submission 4)"),
+        p("15. Updated Drawings (FIG 28–34)"),
+        p("16. Incorporation by Reference"),
+        p("17. Declaration"),
 
         pageBreak(),
 
         // ──────────────── 1. TITLE ────────────────
         h1("1. Title of Invention"),
-        p("System and Method for Autonomous Investor Relations Intelligence, Self-Expanding Communication Systems, Real-Time Crisis Prediction, Multi-Jurisdiction Compliance Orchestration, and Valuation Impact Analysis"),
+        p("System and Method for Autonomous Intelligence Orchestration, Self-Healing Regulatory Compliance, Multi-Event Integrity Certification, Autonomous Agent Swarm Command, Real-Time Valuation Simulation, Self-Auditing Investor Engagement ROI, Autonomous IR Assistant Layer, and Self-Expansion Engine for AGI Transition for Investor Communication Events"),
         spacer(),
 
         // ──────────────── 2. ABSTRACT ────────────────
@@ -206,45 +241,22 @@ const doc = new Document({
         p("The platform maintains quantum-resistant blockchain certification for all outputs, ensuring audit-proof integrity across all jurisdictions including JSE, SEC, FCA, EU MAR, and equivalent regulatory frameworks."),
         spacer(),
 
-        // ──────────────── 3. PRIORITY DATA ────────────────
-        h1("3. Priority Data and Cross-References"),
+        // ──────────────── 3. CROSS-REFERENCES ────────────────
+        h1("3. Cross-Reference to Related Applications"),
         new Table({
           rows: [
-            new TableRow({ children: [hCell("Application", 2500), hCell("Filing Date", 2000), hCell("Status", 1500), hCell("Scope", 4000)] }),
-            new TableRow({ children: [tCell("1773575338868", 2500), tCell("12 March 2026", 2000), tCell("Filed (Parent)", 1500), tCell("Provisional — Modules 1–13, Claims 1–25, FIG 1–12", 4000)] }),
+            new TableRow({ children: [hCell("Application ID", 2500), hCell("Filing Date", 2000), hCell("Status", 1500), hCell("Scope", 4000)] }),
+            new TableRow({ children: [tCell("1773575338868", 2500), tCell("12 March 2026", 2000), tCell("Filed (Parent Provisional)", 1500), tCell("Modules 1–13, Claims 1–25, FIG 1–12", 4000)] }),
             new TableRow({ children: [tCell("CIP Submission 2", 2500), tCell("16 March 2026", 2000), tCell("Filed", 1500), tCell("Modules 19–27, Claims 26–33, FIG 13–20", 4000)] }),
             new TableRow({ children: [tCell("CIP Submission 3", 2500), tCell("18 March 2026", 2000), tCell("Filed", 1500), tCell("Module 28, Claims 34–43, FIG 21–27", 4000)] }),
-            new TableRow({ children: [tCell("CIP Submission 4 / This PCT", 2500), tCell("19 March 2026", 2000), tCell("This filing", 1500), tCell("Modules 30–31, Claims 44–55, FIG 28–34", 4000)] }),
+            new TableRow({ children: [tCell("This Filing (CIP 4)", 2500), tCell("19 March 2026", 2000), tCell("Pending", 1500), tCell("Modules 30–31, Claims 44–55, FIG 28–34", 4000)] }),
           ],
           width: { size: 10000, type: WidthType.DXA },
         }),
         spacer(),
 
-        // ──────────────── 4. IPC ────────────────
-        h1("4. International Patent Classification"),
-        bullet("G06Q 10/10 — Office automation; time management; administration of business processes"),
-        bullet("G06Q 40/06 — Investment and portfolio management"),
-        bullet("G06N 20/00 — Machine learning"),
-        bullet("G06N 5/04 — Inference engines; knowledge-based systems"),
-        bullet("G06F 21/64 — Protecting data integrity"),
-        bullet("H04L 9/32 — Arrangements for secret or secure communications (blockchain integrity)"),
-        bullet("G06Q 10/06 — Resources, workflows, human or project management; enterprise planning"),
-        spacer(),
-
-        // ──────────────── 5. DESIGNATED STATES ────────────────
-        h1("5. Designated States"),
-        p("All contracting states of the PCT are designated. The applicant intends to pursue national phase entry in at least the following jurisdictions:"),
-        bullet("South Africa (CIPC) — home jurisdiction"),
-        bullet("United States (USPTO) — primary commercial market"),
-        bullet("United Kingdom (UKIPO) — London financial centre"),
-        bullet("European Patent Office (EPO) — EU market coverage"),
-        bullet("Australia (IP Australia) — Asia-Pacific financial centre"),
-        bullet("Singapore (IPOS) — Southeast Asian financial hub"),
-        bullet("United Arab Emirates (MoE) — Middle East financial centre"),
-        spacer(),
-
-        // ──────────────── 6. FIELD ────────────────
-        h1("6. Field of the Invention"),
+        // ──────────────── 4. FIELD ────────────────
+        h1("4. Field of the Invention"),
         p("The present invention relates to artificial intelligence systems for corporate and non-profit communications. More particularly, the invention relates to:"),
         bullet("Investor relations platforms capable of autonomous, proactive execution of IR, ESG, AGM, and crisis communication workflows without human initiation"),
         bullet("Multi-jurisdiction compliance orchestration systems that automatically adapt outputs to the regulatory requirements of different securities exchanges and financial regulators"),
@@ -254,9 +266,26 @@ const doc = new Document({
         bullet("Shadow intelligence platforms that silently capture and analyse communications across any conferencing platform without requiring configuration by the end user"),
         spacer(),
 
-        // ──────────────── 7. BACKGROUND ────────────────
-        h1("7. Background of the Invention"),
-        h2("7.1 Current State of the Art"),
+        // ──────────────── 5. RELATIONSHIP TO PARENT ────────────────
+        h1("5. Relationship to Parent and Prior CIP Specifications"),
+        p("This CIP Submission 4 builds upon and extends the following prior filings:"),
+        spacer(60),
+        pBold("Parent Provisional Specification (Application ID 1773575338868, filed 12 March 2026):"),
+        p("Disclosed 13 subsystems (Modules 1–13) with 25 independent claims and 12 figures covering real-time event monitoring, AI communication analysis, cross-platform capture via silent agents, OCC operator integration, anonymised benchmarking, autonomous compliance intervention, self-improving models, predictive intelligence, communication indexes, autonomous event intervention, and autonomous self-evolving platform intelligence."),
+        spacer(60),
+        pBold("CIP Submission 2 (filed 16 March 2026):"),
+        p("Extended the parent with 9 autonomous modules (Modules 19–27) adding 8 new independent claims (Claims 26–33) and 8 new figures (FIG 13–20). Modules 14–18 are operational expansion modules (Conference Dial-Out, enhanced OCC, partner integrations, Intelligence Suite) that are part of the built platform but not separately claimed."),
+        spacer(60),
+        pBold("CIP Submission 3 (filed 18 March 2026):"),
+        p("Added Module 28 (Autonomous AI Self-Evolution Engine with Algorithmic Evidence Scoring), contributing 10 new claims (Claims 34–43) and 7 new figures (FIG 21–27). Module 28 comprises six interconnected algorithms that enable the AI to evaluate, improve, and extend itself without any human input."),
+        spacer(60),
+        pBold("This CIP Submission 4 (19 March 2026):"),
+        p("Adds Module 30 (Autonomous IR Assistant Layer) and Module 31 (Autonomous Self-Expansion Engine for AGI Transition), contributing 12 new claims (Claims 44–55) and 7 new figures (FIG 28–34). These modules close the final gap between autonomous intelligence generation and autonomous proactive action."),
+        spacer(),
+
+        // ──────────────── 6. BACKGROUND ────────────────
+        h1("6. Background of the Invention (Updated)"),
+        h2("6.1 Current State of the Art"),
         p("Investor communication events — including earnings calls, investor briefings, capital markets days, annual general meetings, and analyst presentations — are critical touchpoints between listed companies and the investment community. The quality of these communications directly impacts investor confidence, share price stability, regulatory compliance, and corporate reputation."),
         p("Existing systems in this domain fall into several categories, none of which address the full scope of the problem:"),
         spacer(60),
@@ -276,7 +305,7 @@ const doc = new Document({
         p("Monitor for regulatory violations in financial communications. Operate reactively — flagging violations after they occur. No predictive crisis capability. No integration with IR workflow execution."),
         spacer(),
 
-        h2("7.2 Unsolved Problems"),
+        h2("6.2 Unsolved Problems"),
         p("No known system — in any domain — combines all of the following capabilities in a single platform:"),
         bullet("Silent, platform-agnostic capture across any conferencing system without end-user configuration"),
         bullet("Proactive, zero-input execution of IR, ESG, AGM, crisis, and NGO communication workflows"),
@@ -287,9 +316,9 @@ const doc = new Document({
         bullet("Blockchain-certified audit trail for all intelligence outputs"),
         spacer(),
 
-        // ──────────────── 8. SUMMARY ────────────────
-        h1("8. Summary of the Invention"),
-        p("The platform comprises 31 interconnected subsystems, established across four CIPC filings and this PCT application. This filing introduces two new modules that complete the platform's autonomous capability:"),
+        // ──────────────── 7. SUMMARY ────────────────
+        h1("7. Summary of the Invention (Updated)"),
+        p("With this CIP Submission 4, the platform now comprises 31 interconnected subsystems. This filing introduces two new modules that complete the platform's autonomous capability:"),
         spacer(60),
         pBold("Module 30 — Autonomous IR Assistant Layer"),
         p("A fully autonomous background assistant that silently monitors every internal and external meeting across any platform, proactively executes the full scope of IR, ESG, AGM, crisis communications, and NGO workflows, and delivers strategic support outputs — all with zero operator input after initial calendar integration."),
@@ -300,8 +329,8 @@ const doc = new Document({
         p("Together with the 29 previously disclosed modules, the platform provides a complete closed-loop intelligence system: events are captured silently, analysed autonomously, actioned proactively, certified immutably, and the system continuously improves itself."),
         spacer(),
 
-        // ──────────────── 9. MODULE REGISTRY ────────────────
-        h1("9. Complete Module Registry"),
+        // ──────────────── 8. MODULE REGISTRY ────────────────
+        h1("8. Complete Module Registry"),
         new Table({
           rows: [
             new TableRow({ children: [hCell("Module", 800), hCell("Subsystem Name", 5200), hCell("Source", 4000)] }),
@@ -317,8 +346,8 @@ const doc = new Document({
             new TableRow({ children: [tCell("26", 800), tCell("Autonomous Dual-Purpose Compliance & Capital-Raising Advisor", 5200), tCell("CIP Submission 2", 4000)] }),
             new TableRow({ children: [tCell("27", 800), tCell("Self-Optimising Global Event Intelligence Network", 5200), tCell("CIP Submission 2", 4000)] }),
             new TableRow({ children: [tCell("28", 800), tCell("Autonomous AI Self-Evolution Engine with Algorithmic Evidence Scoring", 5200), tCell("CIP Submission 3", 4000)] }),
-            new TableRow({ children: [tCell("30", 800), tCell("Autonomous IR Assistant Layer", 5200), tCell("This Filing (CIP 4 / PCT)", 4000)] }),
-            new TableRow({ children: [tCell("31", 800), tCell("Autonomous Self-Expansion Engine for AGI Transition", 5200), tCell("This Filing (CIP 4 / PCT)", 4000)] }),
+            new TableRow({ children: [tCell("30", 800), tCell("Autonomous IR Assistant Layer", 5200), tCell("This Filing (CIP Submission 4)", 4000)] }),
+            new TableRow({ children: [tCell("31", 800), tCell("Autonomous Self-Expansion Engine for AGI Transition", 5200), tCell("This Filing (CIP Submission 4)", 4000)] }),
           ],
           width: { size: 10000, type: WidthType.DXA },
         }),
@@ -327,27 +356,27 @@ const doc = new Document({
 
         pageBreak(),
 
-        // ──────────────── 10. MODULE 30 DETAILED ────────────────
-        h1("10. Detailed Description — Module 30: Autonomous IR Assistant Layer"),
+        // ──────────────── 9. MODULE 30 DETAILED ────────────────
+        h1("9. Detailed Description — New Module 30: Autonomous IR Assistant Layer"),
         p("Refer: FIG 28, FIG 29, FIG 30"),
         spacer(60),
 
-        h2("10.1 Purpose"),
+        h2("9.1 Purpose"),
         p("Module 30 provides a fully autonomous background IR Assistant that silently monitors every internal and external meeting across any conferencing platform, proactively executes the full scope of Investor Relations, ESG, AGM, crisis communications, and NGO workflows, and delivers strategic support outputs — all with zero operator input after initial one-time calendar integration."),
         spacer(60),
 
-        h2("10.2 System Architecture"),
+        h2("9.2 System Architecture"),
         p("The Autonomous IR Assistant Layer comprises five interconnected subsystems:"),
         spacer(60),
 
-        h3("10.2.1 Calendar Integration Engine"),
+        h3("9.2.1 Calendar Integration Engine"),
         p("The system integrates with the organisation's calendar infrastructure (Microsoft 365, Google Workspace, or equivalent) through a one-time OAuth authentication. Once connected, the engine continuously monitors all scheduled meetings across all employees in the organisation, regardless of platform."),
         bullet("Automatic event detection: every new calendar entry is classified by context (earnings call, board meeting, investor briefing, internal strategy, AGM, ESG review, donor meeting, crisis response, media briefing)"),
         bullet("Platform detection: the system identifies the conferencing platform (Zoom, Teams, Meet, Webex, telephony bridge, or other) and prepares the appropriate silent capture method"),
         bullet("Pre-meeting trigger: the system activates proactive workflows 24 hours before each detected meeting"),
         spacer(60),
 
-        h3("10.2.2 Proactive Pre-Meeting Workflow Engine"),
+        h3("9.2.2 Proactive Pre-Meeting Workflow Engine"),
         p("For each detected meeting, the system autonomously executes context-appropriate preparation workflows:"),
         bulletBold("Earnings Calls: ", "Generates AI-powered preparation brief including predicted analyst questions (based on historical patterns from Module 10), peer company sentiment comparison, compliance risk areas, and suggested talking points"),
         bulletBold("Board Meetings: ", "Prepares board-ready intelligence summary, outstanding action items from prior meetings, regulatory updates relevant to agenda items, and ESG metric summaries"),
@@ -357,7 +386,7 @@ const doc = new Document({
         bulletBold("NGO/Donor Meetings: ", "Generates donor impact scoring, programme effectiveness metrics, grant compliance status, and stakeholder engagement analysis"),
         spacer(60),
 
-        h3("10.2.3 Silent Capture and Real-Time Analysis"),
+        h3("9.2.3 Silent Capture and Real-Time Analysis"),
         p("During each meeting, the system deploys a silent AI agent (using the cross-platform capture methods described in Module 5 of the parent specification) to:"),
         bullet("Capture full audio transcription with speaker attribution"),
         bullet("Perform real-time sentiment analysis per speaker"),
@@ -366,7 +395,7 @@ const doc = new Document({
         bullet("Record the session for post-meeting analysis and audit purposes"),
         spacer(60),
 
-        h3("10.2.4 Proactive Post-Meeting Workflow Engine"),
+        h3("9.2.4 Proactive Post-Meeting Workflow Engine"),
         p("Immediately after each meeting concludes, the system autonomously executes:"),
         bullet("AI-generated meeting intelligence report with full analysis across all 20 intelligence modules (Module 28)"),
         bullet("Draft follow-up communications (investor thank-you notes, media statements, regulatory notifications) appropriate to meeting type"),
@@ -377,7 +406,7 @@ const doc = new Document({
         bullet("Valuation impact simulation predicting market reaction to disclosed information (Module 24)"),
         spacer(60),
 
-        h3("10.2.5 Monthly Executive Intelligence Report"),
+        h3("9.2.5 Monthly Executive Intelligence Report"),
         p("The system automatically compiles a monthly executive intelligence report aggregating all meetings processed during the period:"),
         bullet("Communication Health Score trending across all events"),
         bullet("Sentiment trajectory analysis by stakeholder category"),
@@ -390,7 +419,7 @@ const doc = new Document({
         p("This report is delivered as a formatted PDF with an accompanying private AI advisory bot that can answer questions about any meeting or metric covered in the report."),
         spacer(60),
 
-        h2("10.3 Novel Elements"),
+        h2("9.3 Novel Elements"),
         bullet("First system to provide fully autonomous proactive execution of IR, ESG, AGM, crisis, and NGO workflows from silent background monitoring — no human initiation required at any stage"),
         bullet("First platform that combines calendar-driven automatic meeting detection with context-classified pre-meeting preparation, silent capture, post-meeting workflow execution, and monthly aggregated reporting in a single closed-loop system"),
         bullet("First system to deliver a private AI advisory bot as part of a monthly intelligence report, providing interactive analysis of all captured communications"),
@@ -398,22 +427,22 @@ const doc = new Document({
 
         pageBreak(),
 
-        // ──────────────── 11. MODULE 31 DETAILED ────────────────
-        h1("11. Detailed Description — Module 31: Autonomous Self-Expansion Engine for AGI Transition"),
+        // ──────────────── 10. MODULE 31 DETAILED ────────────────
+        h1("10. Detailed Description — New Module 31: Autonomous Self-Expansion Engine for AGI Transition"),
         p("Refer: FIG 31, FIG 32, FIG 33, FIG 34"),
         spacer(60),
 
-        h2("11.1 Purpose"),
+        h2("10.1 Purpose"),
         p("Module 31 provides an autonomous self-expansion engine that continuously observes its own performance across all corporate and non-profit communications (listed companies, NGOs, regulators, asset managers), identifies new capability gaps, proposes entirely new AI tools, tests them in shadow mode, and seamlessly integrates them into the platform — without any human input — to ensure the system evolves toward advanced autonomous intelligence as the technology matures."),
         spacer(60),
 
-        h2("11.2 Relationship to Module 28"),
+        h2("10.2 Relationship to Module 28"),
         p("Module 28 (Autonomous AI Self-Evolution Engine, CIP Submission 3) established the foundation for autonomous self-improvement through six algorithms: Module Quality Scoring, Evidence Decay, Cross-Event Correlation, Autonomous Promotion Pipeline, Gap Detection Matrix, and Impact Estimation. Module 28 identifies what needs improving. Module 31 extends this by autonomously building and deploying the improvements — closing the final gap between identifying a capability need and fulfilling it."),
         spacer(60),
 
-        h2("11.3 System Architecture"),
+        h2("10.3 System Architecture"),
 
-        h3("11.3.1 Capability Gap Identification"),
+        h3("10.3.1 Capability Gap Identification"),
         p("The engine continuously monitors every output from Modules 1–30 using:"),
         bullet("Algorithmic quality scoring from Module 28's six algorithms"),
         bullet("Cross-event correlation identifying systematic platform limitations"),
@@ -422,14 +451,14 @@ const doc = new Document({
         bullet("Competitive intelligence monitoring detecting capabilities offered by emerging competitors"),
         spacer(60),
 
-        h3("11.3.2 Autonomous Tool Proposal Generation"),
+        h3("10.3.2 Autonomous Tool Proposal Generation"),
         p("When systematic gaps are detected, the engine autonomously generates tool proposals:"),
         bullet("Each proposal includes: capability description, expected inputs, expected outputs, integration points with existing modules, estimated complexity, and predicted impact score"),
         bullet("Proposals are generated using a large language model (LLM) with full context of the existing module architecture, available data sources, and regulatory requirements"),
         bullet("Multiple proposals may be generated for the same gap, representing alternative implementation approaches"),
         spacer(60),
 
-        h3("11.3.3 Shadow Mode Testing"),
+        h3("10.3.3 Shadow Mode Testing"),
         p("Each proposed tool is tested in shadow mode before any production deployment:"),
         bullet("The tool is built automatically using code generation capabilities"),
         bullet("Historical data from the platform's event archive is used as test input"),
@@ -439,7 +468,7 @@ const doc = new Document({
         bullet("Shadow testing runs in an isolated environment that cannot affect production outputs"),
         spacer(60),
 
-        h3("11.3.4 Autonomous Integration"),
+        h3("10.3.4 Autonomous Integration"),
         p("Tools that pass shadow mode validation are automatically integrated:"),
         bullet("The tool is deployed to the production platform as a new intelligence module"),
         bullet("It is activated for all clients automatically (with per-client opt-out capability)"),
@@ -448,7 +477,7 @@ const doc = new Document({
         bullet("If quality degrades below acceptable thresholds post-deployment, the tool is automatically deactivated"),
         spacer(60),
 
-        h3("11.3.5 Capability Roadmap"),
+        h3("10.3.5 Capability Roadmap"),
         p("The engine maintains a predictive capability roadmap:"),
         bullet("Based on observed gap trajectories, the system predicts which new capabilities will be needed in the next 30, 60, and 90 days"),
         bullet("Architecture preparations (data schema extensions, API endpoints, UI placeholders) are made in advance"),
@@ -462,7 +491,7 @@ const doc = new Document({
         bullet("No expansion can be retroactively hidden or modified"),
         spacer(60),
 
-        h2("11.4 Novel Elements"),
+        h2("10.4 Novel Elements"),
         bullet("First system to provide fully autonomous self-expansion of new AI capabilities across the entire spectrum of corporate and non-profit communications without human intervention"),
         bullet("First platform that combines universal silent capture, proactive IR assistance, and self-expansion mechanisms designed to evolve toward advanced autonomous intelligence"),
         bullet("First system to implement shadow-mode testing of autonomously generated AI tools using historical event data as validation"),
@@ -472,11 +501,11 @@ const doc = new Document({
 
         pageBreak(),
 
-        // ──────────────── 12. EMBODIMENTS ────────────────
-        h1("12. Embodiments"),
+        // ──────────────── 11. EMBODIMENTS ────────────────
+        h1("11. Embodiments"),
         spacer(60),
 
-        h2("12.1 Listed Company Embodiment"),
+        h2("11.1 Listed Company Embodiment"),
         p("For publicly listed companies, the system operates as a comprehensive IR intelligence platform:"),
         bullet("Full IR workflow automation including earnings call preparation, post-event drafting, and SENS/RNS notification preparation"),
         bullet("Valuation impact analysis simulating the effect of each communication on fair value and share price (Module 24)"),
@@ -485,7 +514,7 @@ const doc = new Document({
         bullet("Private AI advisory bot for the C-suite and IR team"),
         spacer(60),
 
-        h2("12.2 NGO / Non-Profit Embodiment"),
+        h2("11.2 NGO / Non-Profit Embodiment"),
         p("For non-governmental organisations and non-profits, the system adapts its workflows:"),
         bullet("Stakeholder impact scoring replacing investor sentiment analysis"),
         bullet("Donor engagement analysis replacing investor engagement ROI"),
@@ -494,7 +523,7 @@ const doc = new Document({
         bullet("Board governance reporting tailored to NGO accountability frameworks"),
         spacer(60),
 
-        h2("12.3 Multi-Jurisdiction Embodiment"),
+        h2("11.3 Multi-Jurisdiction Embodiment"),
         p("For organisations operating across multiple regulatory jurisdictions:"),
         bullet("Automatic detection of applicable regulations based on listing venue, investor domicile, and meeting context"),
         bullet("Parallel compliance checking against JSE Listings Requirements, SEC Regulation FD, FCA Disclosure Rules, EU Market Abuse Regulation, and other frameworks"),
@@ -502,7 +531,7 @@ const doc = new Document({
         bullet("Conflict-of-law detection when communications may trigger obligations in multiple jurisdictions simultaneously"),
         spacer(60),
 
-        h2("12.4 Crisis Embodiment"),
+        h2("11.4 Crisis Embodiment"),
         p("For crisis communication scenarios:"),
         bullet("Real-time prediction of emerging crises based on communication signal deterioration patterns"),
         bullet("Automated crisis classification (financial, operational, reputational, regulatory, environmental)"),
@@ -511,8 +540,8 @@ const doc = new Document({
         bullet("Post-crisis communication effectiveness scoring and lessons-learned generation"),
         spacer(),
 
-        // ──────────────── 13. INDUSTRIAL APPLICABILITY ────────────────
-        h1("13. Industrial Applicability"),
+        // ──────────────── 12. INDUSTRIAL APPLICABILITY ────────────────
+        h1("12. Industrial Applicability"),
         p("The invention is directly applicable to the following industries and use cases:"),
         bullet("Listed companies (any exchange worldwide) — for comprehensive IR automation and compliance"),
         bullet("Investment banks and asset managers — for meeting intelligence and investor engagement analysis"),
@@ -523,8 +552,8 @@ const doc = new Document({
         p("The system reduces manual IR and communications workload by an estimated 80%+ while providing audit-proof compliance documentation and strategic communication intelligence that is not achievable through manual processes."),
         spacer(),
 
-        // ──────────────── 14. ALTERNATIVE IMPLEMENTATIONS ────────────────
-        h1("14. Alternative Implementations"),
+        // ──────────────── 13. ALTERNATIVE IMPLEMENTATIONS ────────────────
+        h1("13. Alternative Implementations"),
         p("The systems and methods described in this specification may be implemented using a variety of computational architectures and analytical techniques."),
         p("The AI analysis engines may operate using machine learning models, neural networks, natural language processing systems, large language models (including but not limited to GPT-4o, Claude, Gemini, Llama, or domain-specific fine-tuned models), rule-based systems, statistical models, hybrid analytical systems, or equivalent computational mechanisms."),
         p("Communication signals may be captured from any communication platform including telephony systems, web conferencing platforms, video conferencing platforms, webcast platforms, messaging platforms, or other communication infrastructures."),
@@ -535,8 +564,8 @@ const doc = new Document({
 
         pageBreak(),
 
-        // ──────────────── 15. CLAIMS ────────────────
-        h1("15. Claims"),
+        // ──────────────── 14. CLAIMS ────────────────
+        h1("14. Claims"),
         p("The following claims supplement Claims 1–43 of the prior filings incorporated by reference."),
         spacer(60),
 
@@ -603,9 +632,9 @@ const doc = new Document({
             new TableRow({ children: [tCell("21–25", 1500), tCell("Autonomous", 2000), tCell("Self-evolving platform, pattern discovery, predictive briefings, benchmark evolution", 4000), tCell("Parent Provisional", 2500)] }),
             new TableRow({ children: [tCell("26–33", 1500), tCell("CIP System", 2000), tCell("Autonomous Modules 19–27", 4000), tCell("CIP Submission 2", 2500)] }),
             new TableRow({ children: [tCell("34–43", 1500), tCell("CIP System/Method", 2000), tCell("Module 28: Self-Evolution Engine (6 algorithms)", 4000), tCell("CIP Submission 3", 2500)] }),
-            new TableRow({ children: [tCell("44–49", 1500), tCell("System", 2000), tCell("Module 30: IR Assistant + compliance + crisis + valuation", 4000), tCell("This PCT Filing", 2500)] }),
-            new TableRow({ children: [tCell("50–53", 1500), tCell("Method", 2000), tCell("Module 31: Self-Expansion Engine + shadow testing + roadmap", 4000), tCell("This PCT Filing", 2500)] }),
-            new TableRow({ children: [tCell("54–55", 1500), tCell("System (Dependent)", 2000), tCell("NGO adaptation + Private AI Bot", 4000), tCell("This PCT Filing", 2500)] }),
+            new TableRow({ children: [tCell("44–49", 1500), tCell("System", 2000), tCell("Module 30: IR Assistant + compliance + crisis + valuation", 4000), tCell("CIP Submission 4", 2500)] }),
+            new TableRow({ children: [tCell("50–53", 1500), tCell("Method", 2000), tCell("Module 31: Self-Expansion Engine + shadow testing + roadmap", 4000), tCell("CIP Submission 4", 2500)] }),
+            new TableRow({ children: [tCell("54–55", 1500), tCell("System (Dependent)", 2000), tCell("NGO adaptation + Private AI Bot", 4000), tCell("CIP Submission 4", 2500)] }),
           ],
           width: { size: 10000, type: WidthType.DXA },
         }),
@@ -614,8 +643,8 @@ const doc = new Document({
 
         pageBreak(),
 
-        // ──────────────── 16. DRAWINGS ────────────────
-        h1("16. Drawings"),
+        // ──────────────── 15. DRAWINGS ────────────────
+        h1("15. Drawings"),
         p("The following figures (FIG 28–34) supplement Figures 1–12 of the parent provisional, Figures 13–20 of CIP Submission 2, and Figures 21–27 of CIP Submission 3."),
         spacer(),
 
@@ -973,8 +1002,8 @@ const doc = new Document({
 
         pageBreak(),
 
-        // ──────────────── 17. INCORPORATION ────────────────
-        h1("17. Incorporation by Reference"),
+        // ──────────────── 16. INCORPORATION ────────────────
+        h1("16. Incorporation by Reference"),
         p("The full specification, claims (1–43), drawings (FIG 1–FIG 27), definitions, detailed description, and all alternative implementations described in the following filings are incorporated by reference in their entirety:"),
         bullet("Parent provisional specification (Application ID 1773575338868, filed 12 March 2026): 13 modules, 25 claims, 12 figures"),
         bullet("CIP Submission 2 (filed 16 March 2026): 9 modules, 8 claims, 8 figures"),
@@ -982,8 +1011,8 @@ const doc = new Document({
         p("The new matter described in this filing supplements and extends the prior filings without modifying or replacing any of the parent claims or described embodiments."),
         spacer(),
 
-        // ──────────────── 18. DECLARATION ────────────────
-        h1("18. Declaration"),
+        // ──────────────── 17. DECLARATION ────────────────
+        h1("17. Declaration"),
         p("I, David Cameron, the applicant and inventor, declare that:"),
         bullet("The new matter described in this filing (Module 30 — Autonomous IR Assistant Layer, and Module 31 — Autonomous Self-Expansion Engine for AGI Transition) was not disclosed in the parent provisional patent specification (Application ID 1773575338868, filed 12 March 2026), CIP Submission 2 (filed 16 March 2026), or CIP Submission 3 (filed 18 March 2026)."),
         bullet("The new matter has been reduced to practice in a working implementation of the CuraLive platform, accessible at https://curalive-platform.replit.app."),
@@ -999,7 +1028,7 @@ const doc = new Document({
         p("Date: 19 March 2026"),
         spacer(200),
 
-        pItalic("This document is prepared for filing under the Patent Cooperation Treaty (PCT) and with the Companies and Intellectual Property Commission (CIPC) of South Africa in accordance with the Patents Act 57 of 1978 and the Patent Regulations."),
+        pItalic("This document is prepared for filing as a Continuation-in-Part (CIP) Submission with the Companies and Intellectual Property Commission (CIPC) of South Africa in accordance with the Patents Act 57 of 1978 and the Patent Regulations."),
         spacer(),
 
         new Paragraph({
@@ -1012,6 +1041,6 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then((buffer) => {
-  fs.writeFileSync("attached_assets/CuraLive_PCT_Submission_4_Complete.docx", buffer);
-  console.log("PCT DOCX generated successfully — " + (buffer.length / 1024).toFixed(0) + " KB");
+  fs.writeFileSync("attached_assets/CuraLive_CIPC_CIP_Submission_4_Complete.docx", buffer);
+  console.log("CIPC CIP 4 DOCX generated successfully — " + (buffer.length / 1024).toFixed(0) + " KB");
 });

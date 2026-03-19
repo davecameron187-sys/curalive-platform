@@ -198,3 +198,9 @@ id = "FdOciJUHLIaw9xsRdpDq_"
 uri = "file://attached_assets/CuraLive_PCT_Submission_4_Complete.docx"
 type = "word_document"
 title = "CuraLive PCT Submission 4 — Complete Filing (Word Document)"
+
+[[outputs]]
+id = "q-cz1LW5PZZ4eLzrsKNOV"
+uri = "file://attached_assets/CuraLive_CIPC_CIP_Submission_4_Complete.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 4 — Complete"
