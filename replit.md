@@ -96,21 +96,28 @@ Key variables needed:
 - **Handover document** — `MANUS_DEPLOYMENT_STATUS.md` with full route reference, DB schema, tRPC procedures, and demo walkthrough guide
 - **GitHub** — main `9695a98` + manus-demo branch `3dde94d` (30 batches, all files)
 
-## AI Dashboard (Intelligence Control Centre)
+## AI Services Dashboard (Intelligence Control Centre)
 
 - **Route**: `/shadow-mode` → "AI Dashboard" tab
 - **Component**: `client/src/components/AIDashboard.tsx`
 - **Features**:
-  - **Session selector**: Pick any completed shadow session
-  - **Recording player**: Audio/video playback with download button
-  - **Transcript viewer**: Searchable with speaker labels, timestamps, export to .txt
-  - **20 AI Module cards**: Each with toggle switch, tier badge, expandable data view
-  - **Package tier selector**: Essential (4 modules) / Professional (10) / Enterprise (all 20)
-  - **Module search**: Filter modules by name or description
-  - **Report export**: Export enabled modules as text report
-  - **Data rendering**: Custom visualizations for sentiment scores, communication scores, sentiment arc, speaking pace, toxicity screen, board-ready summary, compliance review
-- **Data flow**: Links shadow sessions to archive events via `event_id = shadow-{sessionId}` to retrieve AI reports; shows tagged metrics summary
-- **Purpose**: Single view for recordings, transcripts, and all AI analysis — foundation for client-facing packages and monthly subscriptions
+  - **22 AI Services** listed with checkboxes across 4 categories:
+    - Capture & Transcription (Recording, AI Transcription)
+    - Essential Intelligence (Executive Summary, Sentiment, Compliance, Key Topics)
+    - Professional Analytics (Speaker, Q&A, Action Items, Investor Signals, Communication, Risk)
+    - Enterprise Suite (Competitive Intel, Recommendations, Pace Coaching, Toxicity, Sentiment Arc, Financial, ESG, Press Release, Social Media, Board Summary)
+  - **Tier presets**: Essential (6) / Professional (12) / Enterprise (all 22) — quick selection shortcuts
+  - **Individual selection**: Tick/untick any service independently outside tier presets
+  - **Category controls**: Select All / Deselect All per category, collapsible sections
+  - **Run Selected Services**: Processes transcript through selected AI modules
+  - **Save Report**: Export results as text file
+  - **Email Report**: Send results to any email address
+  - **Regenerate**: Re-run analysis on existing sessions
+  - **Recording player**: Audio/video playback with download
+  - **Transcript viewer**: With speaker labels, timestamps, export
+  - **Custom data renderers**: Sentiment scores, compliance review, communication score, sentiment arc, speaking pace, toxicity screen, board-ready summary
+- **Data flow**: Links shadow sessions to archive events via `event_id = shadow-{sessionId}` to retrieve AI reports
+- **Note**: Event Recording & Transcriptions tab removed — functionality consolidated into AI Dashboard
 
 ## Self-Improving AI (Operator Feedback Loop)
 
