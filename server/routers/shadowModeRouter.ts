@@ -663,4 +663,59 @@ export const shadowModeRouter = router({
       return { success: true, message: "Session deleted" };
     }),
 
+  deleteSessions: publicProcedure
+    .input(z.object({ sessionIds: z.array(z.number()).min(1).max(100) }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const sessions = await db
+        .select()
+        .from(shadowSessions)
+        .where(inArray(shadowSessions.id, input.sessionIds));
+
+      const deletable = sessions.filter(
+        (s) => s.status !== "live" && s.status !== "bot_joining"
+      );
+      if (deletable.length === 0) {
+        throw new Error("No deletable sessions found (active sessions cannot be deleted).");
+      }
+
+      const ids = deletable.map((s) => s.id);
+      const eventIds = ids.map((id) => `shadow-${id}`);
+
+      await db.delete(taggedMetrics).where(inArray(taggedMetrics.eventId, eventIds));
+
+      const recallBotIds = deletable
+        .map((s) => s.recallBotId)
+        .filter(Boolean) as string[];
+      if (recallBotIds.length > 0) {
+        try {
+          await db.delete(recallBots).where(inArray(recallBots.recallBotId, recallBotIds));
+        } catch {}
+      }
+
+      const agmIds = deletable
+        .filter((s) => s.eventType === "agm")
+        .map((s) => s.id);
+      if (agmIds.length > 0) {
+        try {
+          await db.delete(agmIntelligenceSessions).where(inArray(agmIntelligenceSessions.shadowSessionId, agmIds));
+        } catch {}
+      }
+
+      for (const s of deletable) {
+        if (s.localRecordingPath) {
+          try {
+            const { unlinkSync } = await import("fs");
+            const { join } = await import("path");
+            unlinkSync(join(process.cwd(), s.localRecordingPath));
+          } catch {}
+        }
+      }
+
+      await db.delete(shadowSessions).where(inArray(shadowSessions.id, ids));
+
+      console.log(`[Shadow] Bulk deleted ${ids.length} sessions: ${ids.join(", ")}`);
+      return { success: true, deleted: ids.length, message: `${ids.length} session${ids.length > 1 ? "s" : ""} deleted` };
+    }),
+
 });

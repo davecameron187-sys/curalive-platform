@@ -178,6 +178,58 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
+  const deleteSessions = trpc.shadowMode.deleteSessions.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setSelectedSessionIds(new Set());
+      setConfirmBulkDelete(false);
+      if (activeSessionId && selectedSessionIds.has(activeSessionId)) {
+        setActiveSessionId(null);
+      }
+      sessions.refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<number>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const toggleSessionSelect = useCallback((id: number) => {
+    setSelectedSessionIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleGroup = useCallback((group: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  }, []);
+
+  const groupedSessions = useMemo(() => {
+    if (!sessions.data) return { active: [], completed: [], failed: [] };
+    const active: typeof sessions.data = [];
+    const completed: typeof sessions.data = [];
+    const failed: typeof sessions.data = [];
+    for (const s of sessions.data) {
+      if (s.status === "live" || s.status === "bot_joining" || s.status === "pending" || s.status === "processing") {
+        active.push(s);
+      } else if (s.status === "completed") {
+        completed.push(s);
+      } else {
+        failed.push(s);
+      }
+    }
+    return { active, completed, failed };
+  }, [sessions.data]);
+
   const liveSession = activeSession.data;
   const isLive = liveSession?.status === "live" || liveSession?.status === "bot_joining";
 
@@ -775,11 +827,46 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-              {/* Session list */}
-              <div className="space-y-3">
-                <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-                  Sessions ({sessions.data?.length ?? 0})
-                </h2>
+              {/* Session list — grouped into folders */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                    Sessions ({sessions.data?.length ?? 0})
+                  </h2>
+                  {selectedSessionIds.size > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      {confirmBulkDelete ? (
+                        <>
+                          <Button size="sm"
+                            onClick={() => deleteSessions.mutate({ sessionIds: Array.from(selectedSessionIds) })}
+                            disabled={deleteSessions.isPending}
+                            className="bg-red-600 hover:bg-red-500 text-white gap-1 text-xs h-7 px-2">
+                            {deleteSessions.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                            Delete {selectedSessionIds.size}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setConfirmBulkDelete(false)} className="text-slate-400 text-xs h-7 px-2">
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="ghost"
+                            onClick={() => setConfirmBulkDelete(true)}
+                            className="text-red-400 hover:text-red-300 gap-1 text-xs h-7 px-2">
+                            <Trash2 className="w-3 h-3" />
+                            Delete ({selectedSessionIds.size})
+                          </Button>
+                          <Button size="sm" variant="ghost"
+                            onClick={() => setSelectedSessionIds(new Set())}
+                            className="text-slate-500 text-xs h-7 px-2">
+                            Clear
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {sessions.isLoading && <div className="text-slate-500 text-sm">Loading sessions...</div>}
                 {sessions.data?.length === 0 && !sessions.isLoading && (
                   <div className="bg-white/[0.02] border border-white/10 rounded-xl p-6 text-center">
@@ -788,14 +875,93 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                     <div className="text-xs text-slate-600 mt-1">Start your first shadow session above</div>
                   </div>
                 )}
-                {sessions.data?.map(session => (
-                  <SessionCard
-                    key={session.id}
-                    session={session}
-                    onSelect={() => setActiveSessionId(session.id)}
-                    isSelected={activeSessionId === session.id}
-                  />
-                ))}
+
+                {[
+                  { key: "active", label: "Active", sessions: groupedSessions.active, color: "text-emerald-400", dotColor: "bg-emerald-400", icon: Radio, canSelect: false },
+                  { key: "completed", label: "Completed", sessions: groupedSessions.completed, color: "text-violet-400", dotColor: "bg-violet-400", icon: CheckCircle2, canSelect: true },
+                  { key: "failed", label: "Failed", sessions: groupedSessions.failed, color: "text-red-400", dotColor: "bg-red-400", icon: AlertTriangle, canSelect: true },
+                ].map(group => {
+                  if (group.sessions.length === 0) return null;
+                  const isCollapsed = collapsedGroups.has(group.key);
+                  const GroupIcon = group.icon;
+                  const allSelected = group.canSelect && group.sessions.every(s => selectedSessionIds.has(s.id));
+                  const someSelected = group.canSelect && group.sessions.some(s => selectedSessionIds.has(s.id));
+
+                  return (
+                    <div key={group.key} className="space-y-1.5">
+                      <button
+                        onClick={() => toggleGroup(group.key)}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
+                      >
+                        {isCollapsed
+                          ? <FolderClosed className={`w-4 h-4 ${group.color}`} />
+                          : <FolderOpen className={`w-4 h-4 ${group.color}`} />
+                        }
+                        <span className={`text-xs font-semibold uppercase tracking-wider ${group.color}`}>
+                          {group.label}
+                        </span>
+                        <span className="text-xs text-slate-600">({group.sessions.length})</span>
+                        <div className="flex-1" />
+                        {group.canSelect && !isCollapsed && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSessionIds(prev => {
+                                const next = new Set(prev);
+                                if (allSelected) {
+                                  group.sessions.forEach(s => next.delete(s.id));
+                                } else {
+                                  group.sessions.forEach(s => next.add(s.id));
+                                }
+                                return next;
+                              });
+                            }}
+                            className="text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
+                            title={allSelected ? "Deselect all" : "Select all"}
+                          >
+                            {allSelected
+                              ? <CheckSquare className="w-3.5 h-3.5 text-violet-400" />
+                              : someSelected
+                                ? <CheckSquare className="w-3.5 h-3.5 text-slate-500" />
+                                : <Square className="w-3.5 h-3.5" />
+                            }
+                          </span>
+                        )}
+                        {isCollapsed
+                          ? <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                          : <ChevronDown className="w-3.5 h-3.5 text-slate-600" />
+                        }
+                      </button>
+
+                      {!isCollapsed && (
+                        <div className="space-y-1.5 pl-1">
+                          {group.sessions.map(session => (
+                            <div key={session.id} className="flex items-start gap-1.5">
+                              {group.canSelect && (
+                                <button
+                                  onClick={() => toggleSessionSelect(session.id)}
+                                  className="mt-4 shrink-0 text-slate-600 hover:text-slate-400 transition-colors"
+                                >
+                                  {selectedSessionIds.has(session.id)
+                                    ? <CheckSquare className="w-4 h-4 text-violet-400" />
+                                    : <Square className="w-4 h-4" />
+                                  }
+                                </button>
+                              )}
+                              <div className="flex-1">
+                                <SessionCard
+                                  session={session}
+                                  onSelect={() => setActiveSessionId(session.id)}
+                                  isSelected={activeSessionId === session.id}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Active session detail */}
