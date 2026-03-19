@@ -180,3 +180,9 @@ id = "oXDdVBHlfrWMF0yXpU2MA"
 uri = "file://CuraLive_CIPC_CIP_Submission_3_Module_28.docx"
 type = "word_document"
 title = "CuraLive CIPC CIP Submission 3 — Module 28 (Self-Evolution Engine)"
+
+[[outputs]]
+id = "0y3DdaRE4M2hqZ3Vq0tKg"
+uri = "file://attached_assets/CIP_Submission_4_Alignment_Brief.md"
+type = "text"
+title = "CIP Submission 4 — Alignment Brief for Manus"
