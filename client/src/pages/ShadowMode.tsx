@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   Brain, Gauge, ShieldAlert, LineChart, Banknote, Leaf,
   Newspaper, Share2, Briefcase, Send,
   Zap, Network, Download, Video, ExternalLink, Trash2,
+  FolderOpen, FolderClosed, CheckSquare,
 } from "lucide-react";
 import LocalAudioCapture from "@/components/LocalAudioCapture";
 
