@@ -724,11 +724,11 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                         }));
                       }}
                     />
-                    {form.platform && !RECALL_SUPPORTED_PLATFORMS.has(form.platform) && form.platform !== "other" ? (
-                      <div className="mt-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                        <p className="text-[11px] text-amber-300 flex items-center gap-1.5">
+                    {form.platform && !RECALL_SUPPORTED_PLATFORMS.has(form.platform) ? (
+                      <div className="mt-2 p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                        <p className="text-[11px] text-cyan-300 flex items-center gap-1.5">
                           <Info className="w-3.5 h-3.5 shrink-0" />
-                          <span><strong>{PLATFORM_LABELS[form.platform]}</strong> uses a proprietary webphone — the AI bot cannot join directly. CuraLive will start in <strong>Manual Capture mode</strong>: open the webphone separately, and CuraLive will track the session for transcript upload &amp; analysis after the call.</span>
+                          <span>CuraLive will use <strong>Local Audio Capture</strong> — once the session starts, click "Start Local Audio Capture" and share the tab with the call. CuraLive transcribes and records everything in real-time.</span>
                         </p>
                       </div>
                     ) : (
@@ -753,7 +753,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                     {startSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                     {startSession.isPending
                       ? (RECALL_SUPPORTED_PLATFORMS.has(form.platform) ? "Deploying bot..." : "Starting session...")
-                      : (RECALL_SUPPORTED_PLATFORMS.has(form.platform) ? "Start Shadow Intelligence" : "Start Manual Capture")}
+                      : (RECALL_SUPPORTED_PLATFORMS.has(form.platform) ? "Start Shadow Intelligence" : "Start Local Capture Session")}
                   </Button>
                   <Button variant="ghost" onClick={() => setShowForm(false)} className="text-slate-400">Cancel</Button>
                 </div>

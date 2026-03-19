@@ -159,7 +159,7 @@ export const shadowModeRouter = router({
 
       if (!isRecallSupported) {
         const platformName = input.platform === "choruscall" ? "Chorus Call" : input.platform;
-        console.log(`[Shadow] Session ${sessionId}: ${platformName} detected — starting Manual Capture mode (no Recall.ai bot)`);
+        console.log(`[Shadow] Session ${sessionId}: ${platformName} detected — starting Local Audio Capture mode (no Recall.ai bot)`);
 
         await db.update(shadowSessions)
           .set({
@@ -176,7 +176,7 @@ export const shadowModeRouter = router({
           status: "live" as const,
           agmSessionId,
           manualCapture: true,
-          message: `${platformName} session started in Manual Capture mode. Open the ${platformName} webphone in a separate tab — CuraLive is tracking this session for transcript upload and analysis.`,
+          message: `Session started — click "Start Local Audio Capture" and share the tab with the call. CuraLive will transcribe and record in real-time.`,
         };
       }
 
