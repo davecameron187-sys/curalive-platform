@@ -17,7 +17,7 @@ import {
   TrendingUp, Swords, Lightbulb, ChevronDown, ChevronUp,
   Brain, Gauge, ShieldAlert, LineChart, Banknote, Leaf,
   Newspaper, Share2, Briefcase, Send,
-  Zap, Network, Download, Video, ExternalLink,
+  Zap, Network, Download, Video, ExternalLink, Trash2,
 } from "lucide-react";
 import LocalAudioCapture from "@/components/LocalAudioCapture";
 
@@ -164,6 +164,18 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const deleteSession = trpc.shadowMode.deleteSession.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setActiveSessionId(null);
+      setConfirmDeleteId(null);
+      sessions.refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const liveSession = activeSession.data;
   const isLive = liveSession?.status === "live" || liveSession?.status === "bot_joining";
@@ -845,7 +857,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                                 End Session
                               </Button>
                             )}
-                            {liveSession.status === "failed" && (
+                            {liveSession.status === "failed" && RECALL_SUPPORTED_PLATFORMS.has(liveSession.platform) && (
                               <Button size="sm"
                                 onClick={() => retrySession.mutate({ sessionId: liveSession.id })}
                                 disabled={retrySession.isPending}
@@ -853,6 +865,28 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                                 {retrySession.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
                                 {retrySession.isPending ? "Retrying..." : "Retry Bot Join"}
                               </Button>
+                            )}
+                            {(liveSession.status === "completed" || liveSession.status === "failed") && (
+                              confirmDeleteId === liveSession.id ? (
+                                <div className="flex items-center gap-1.5">
+                                  <Button size="sm"
+                                    onClick={() => deleteSession.mutate({ sessionId: liveSession.id })}
+                                    disabled={deleteSession.isPending}
+                                    className="bg-red-600 hover:bg-red-500 text-white gap-1.5">
+                                    {deleteSession.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                    Confirm Delete
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => setConfirmDeleteId(null)} className="text-slate-400">
+                                    Cancel
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button size="sm" variant="ghost"
+                                  onClick={() => setConfirmDeleteId(liveSession.id)}
+                                  className="text-slate-500 hover:text-red-400 gap-1.5">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              )
                             )}
                           </div>
                         </div>
@@ -890,16 +924,24 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                         <div className="bg-red-900/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3">
                           <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-red-300">Bot failed to join the meeting</div>
-                            <div className="text-xs text-slate-500 mt-0.5">The meeting may have ended, the URL may be invalid, or the bot was blocked. You can retry if the meeting is still active.</div>
+                            <div className="text-sm font-medium text-red-300">
+                              {RECALL_SUPPORTED_PLATFORMS.has(liveSession.platform) ? "Bot failed to join the meeting" : "Session failed to start"}
+                            </div>
+                            <div className="text-xs text-slate-500 mt-0.5">
+                              {RECALL_SUPPORTED_PLATFORMS.has(liveSession.platform)
+                                ? "The meeting may have ended, the URL may be invalid, or the bot was blocked. You can retry if the meeting is still active."
+                                : "Something went wrong starting this session. Please create a new session to try again."}
+                            </div>
                           </div>
-                          <Button size="sm"
-                            onClick={() => retrySession.mutate({ sessionId: liveSession.id })}
-                            disabled={retrySession.isPending}
-                            className="bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/20 gap-1.5 shrink-0">
-                            {retrySession.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
-                            {retrySession.isPending ? "Retrying..." : "Retry"}
-                          </Button>
+                          {RECALL_SUPPORTED_PLATFORMS.has(liveSession.platform) && (
+                            <Button size="sm"
+                              onClick={() => retrySession.mutate({ sessionId: liveSession.id })}
+                              disabled={retrySession.isPending}
+                              className="bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/20 gap-1.5 shrink-0">
+                              {retrySession.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
+                              {retrySession.isPending ? "Retrying..." : "Retry"}
+                            </Button>
+                          )}
                         </div>
                       )}
 
@@ -918,6 +960,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                         const bStatus = (liveSession as any).botStatus;
                         const isCompleted = liveSession.status === "completed" || liveSession.status === "processing";
                         const isRecording = bStatus === "in_call" || liveSession.status === "live";
+                        const isLocalRecording = recUrl && recUrl.startsWith("/api/shadow/recording/");
 
                         if (!recUrl && !isRecording && !isCompleted) return null;
 
@@ -936,15 +979,17 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                               </div>
                               {recUrl && (
                                 <div className="flex items-center gap-2">
-                                  <a href={recUrl} target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/20 transition-colors">
-                                    <ExternalLink className="w-3 h-3" />
-                                    Open
-                                  </a>
+                                  {!isLocalRecording && (
+                                    <a href={recUrl} target="_blank" rel="noopener noreferrer"
+                                      className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/20 transition-colors">
+                                      <ExternalLink className="w-3 h-3" />
+                                      Open
+                                    </a>
+                                  )}
                                   <a href={recUrl} download
                                     className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/20 transition-colors">
                                     <Download className="w-3 h-3" />
-                                    Download MP4
+                                    {isLocalRecording ? "Download Recording" : "Download MP4"}
                                   </a>
                                 </div>
                               )}
@@ -952,18 +997,30 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                             <div className="p-4">
                               {recUrl ? (
                                 <div className="space-y-3">
-                                  <video
-                                    src={recUrl}
-                                    controls
-                                    playsInline
-                                    preload="metadata"
-                                    className="w-full rounded-lg bg-black/50 max-h-[400px]"
-                                  >
-                                    Your browser does not support video playback.
-                                  </video>
+                                  {isLocalRecording ? (
+                                    <audio
+                                      src={recUrl}
+                                      controls
+                                      preload="metadata"
+                                      className="w-full"
+                                    />
+                                  ) : (
+                                    <video
+                                      src={recUrl}
+                                      controls
+                                      playsInline
+                                      preload="metadata"
+                                      className="w-full rounded-lg bg-black/50 max-h-[400px]"
+                                    >
+                                      Your browser does not support video playback.
+                                    </video>
+                                  )}
                                   <div className="flex items-center gap-2 text-xs text-slate-600">
                                     <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                                    <span>Recording captured by Recall AI — available for download and replay</span>
+                                    <span>{isLocalRecording
+                                      ? "Recording captured via Local Audio Capture — available for download and replay"
+                                      : "Recording captured by Recall AI — available for download and replay"
+                                    }</span>
                                   </div>
                                 </div>
                               ) : isRecording ? (
@@ -976,7 +1033,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                                   </div>
                                   <div>
                                     <div className="text-sm font-medium text-slate-300">Recording in progress</div>
-                                    <div className="text-xs text-slate-500 mt-0.5">The meeting is being recorded. The video will be available once the session ends.</div>
+                                    <div className="text-xs text-slate-500 mt-0.5">The meeting is being recorded. The recording will be available once the session ends.</div>
                                   </div>
                                 </div>
                               ) : (
@@ -986,7 +1043,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                                   </div>
                                   <div>
                                     <div className="text-sm font-medium text-slate-400">Processing recording</div>
-                                    <div className="text-xs text-slate-600 mt-0.5">Recall AI is processing the recording. It will appear here once ready.</div>
+                                    <div className="text-xs text-slate-600 mt-0.5">The recording is being processed. It will appear here once ready.</div>
                                   </div>
                                 </div>
                               )}

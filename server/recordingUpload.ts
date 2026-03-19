@@ -2,11 +2,13 @@
 import { Express } from "express";
 import multer from "multer";
 import { join } from "path";
+import { mkdirSync } from "fs";
 import { getDb } from "./db";
 import { shadowSessions } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 const RECORDINGS_DIR = join(process.cwd(), "uploads", "recordings");
+mkdirSync(RECORDINGS_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, RECORDINGS_DIR),

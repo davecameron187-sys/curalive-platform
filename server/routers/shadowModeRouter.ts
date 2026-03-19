@@ -619,4 +619,48 @@ export const shadowModeRouter = router({
       return { success: true, segmentCount: existingTranscript.length };
     }),
 
+  deleteSession: publicProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db
+        .select()
+        .from(shadowSessions)
+        .where(eq(shadowSessions.id, input.sessionId))
+        .limit(1);
+
+      if (!session) throw new Error("Session not found");
+      if (session.status === "live" || session.status === "bot_joining") {
+        throw new Error("Cannot delete an active session. End it first.");
+      }
+
+      const eventId = `shadow-${session.id}`;
+      await db.delete(taggedMetrics).where(eq(taggedMetrics.eventId, eventId));
+
+      if (session.recallBotId) {
+        try {
+          await db.delete(recallBots).where(eq(recallBots.recallBotId, session.recallBotId));
+        } catch {}
+      }
+
+      if (session.eventType === "agm") {
+        try {
+          await db.delete(agmIntelligenceSessions).where(eq(agmIntelligenceSessions.shadowSessionId, session.id));
+        } catch {}
+      }
+
+      if (session.localRecordingPath) {
+        try {
+          const { unlinkSync } = await import("fs");
+          const { join } = await import("path");
+          unlinkSync(join(process.cwd(), session.localRecordingPath));
+        } catch {}
+      }
+
+      await db.delete(shadowSessions).where(eq(shadowSessions.id, input.sessionId));
+
+      console.log(`[Shadow] Session ${input.sessionId} deleted`);
+      return { success: true, message: "Session deleted" };
+    }),
+
 });
