@@ -1309,7 +1309,18 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                     <div>
                       <div
                         className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center cursor-pointer hover:border-violet-500/40 hover:bg-violet-500/5 transition-colors"
-                        onClick={() => archiveAudioRef.current?.click()}>
+                        onClick={() => archiveAudioRef.current?.click()}
+                        onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                        onDragLeave={e => { e.preventDefault(); e.stopPropagation(); }}
+                        onDrop={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const f = e.dataTransfer.files?.[0];
+                          if (f) {
+                            setArchiveRecFile(f);
+                            setArchiveFileName(f.name);
+                          }
+                        }}>
                         <Mic className="w-8 h-8 text-slate-600 mx-auto mb-3" />
                         {archiveRecFile ? (
                           <div>
@@ -1332,7 +1343,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                           </div>
                         )}
                       </div>
-                      <input ref={archiveAudioRef} type="file" onChange={handleArchiveAudioChange} className="hidden" />
+                      <input ref={archiveAudioRef} type="file" accept="audio/*,video/*,.mp3,.mp4,.wav,.m4a,.webm,.mov,.avi,.ogg,.flac" onChange={handleArchiveAudioChange} className="hidden" />
                       {archiveTranscribing && (
                         <div className="mt-3 flex items-center gap-2 text-sm text-violet-400">
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -2477,6 +2488,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                   <input
                     ref={audioFileRef}
                     type="file"
+                    accept="audio/*,video/*,.mp3,.mp4,.wav,.m4a,.webm,.mov,.avi,.ogg,.flac"
                     onChange={handleAudioFileChange}
                     className="hidden"
                   />
