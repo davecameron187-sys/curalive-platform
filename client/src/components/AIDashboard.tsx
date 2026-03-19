@@ -11,6 +11,7 @@ import {
   Loader2, Eye, EyeOff, Volume2, Clock, Tag, Play,
   Settings, Package, Crown, Star, Mail, Save, Upload,
   ChevronUp, Cpu, FileAudio, SquareCheck, Square, PlayCircle,
+  Flame, DollarSign, ShieldCheck, Map, ScrollText,
 } from "lucide-react";
 
 const AI_SERVICES = [
@@ -36,6 +37,11 @@ const AI_SERVICES = [
   { key: "pressReleaseDraft", label: "Press Release Draft", icon: Newspaper, color: "text-sky-400", category: "enterprise", description: "Auto-generated SENS/RNS-style summary" },
   { key: "socialMediaContent", label: "Social Media Content", icon: Share2, color: "text-fuchsia-400", category: "enterprise", description: "Ready-to-post content for LinkedIn/Twitter" },
   { key: "boardReadySummary", label: "Board-Ready Summary", icon: Briefcase, color: "text-purple-400", category: "enterprise", description: "High-level verdict with risks and opportunities" },
+  { key: "crisisPrediction", label: "Crisis Prediction Engine", icon: Flame, color: "text-red-500", category: "strategic", description: "Predictive crisis detection from communication signal trajectories" },
+  { key: "valuationImpact", label: "Valuation Impact Oracle", icon: DollarSign, color: "text-emerald-500", category: "strategic", description: "Model effect on fair value from material disclosures and guidance" },
+  { key: "disclosureCertificate", label: "Clean Disclosure Certificate", icon: ShieldCheck, color: "text-teal-400", category: "strategic", description: "SHA-256 hash-chain compliance attestation per event" },
+  { key: "monthlyReport", label: "Monthly Intelligence Report", icon: ScrollText, color: "text-sky-400", category: "strategic", description: "Aggregate monthly executive intelligence brief" },
+  { key: "evolutionAudit", label: "Evolution Audit Trail", icon: Map, color: "text-orange-400", category: "strategic", description: "Blockchain-style audit trail of autonomous AI evolution decisions" },
 ];
 
 const CATEGORIES = [
@@ -43,6 +49,7 @@ const CATEGORIES = [
   { key: "essential", label: "Essential Intelligence", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
   { key: "professional", label: "Professional Analytics", color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
   { key: "enterprise", label: "Enterprise Suite", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+  { key: "strategic", label: "Strategic Intelligence (CIP 4)", color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
 ];
 
 const TIER_PRESETS = {
@@ -51,7 +58,7 @@ const TIER_PRESETS = {
   professional: { label: "Professional", count: 12, icon: Crown, color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20",
     keys: new Set(["recording", "transcription", "executiveSummary", "sentimentAnalysis", "complianceReview", "keyTopics",
       "speakerAnalysis", "questionsAsked", "actionItems", "investorSignals", "communicationScore", "riskFactors"]) },
-  enterprise: { label: "Enterprise", count: 22, icon: Package, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20",
+  enterprise: { label: "Enterprise", count: AI_SERVICES.length, icon: Package, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20",
     keys: new Set(AI_SERVICES.map(s => s.key)) },
 };
 
@@ -221,6 +228,156 @@ function ModuleDataRenderer({ moduleKey, data }: { moduleKey: string; data: any 
         {data.recommendedActions?.length > 0 && (
           <div><div className="text-xs text-blue-400/70 mb-0.5">Actions</div><ul>{data.recommendedActions.map((a: string, i: number) => <li key={i} className="text-xs text-slate-400">• {a}</li>)}</ul></div>
         )}
+      </div>
+    );
+  }
+
+  if (moduleKey === "crisisPrediction" && typeof data === "object") {
+    const levelColors: Record<string, string> = { low: "text-emerald-400", moderate: "text-amber-400", elevated: "text-orange-400", high: "text-red-400", critical: "text-red-500" };
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div className={`text-2xl font-bold ${levelColors[data.riskLevel] || "text-slate-400"}`}>{data.riskScore ?? "—"}/100</div>
+          <span className={`text-sm font-semibold uppercase ${levelColors[data.riskLevel] || "text-slate-400"}`}>{data.riskLevel}</span>
+          {data.predictedCrisisType && data.predictedCrisisType !== "none" && (
+            <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">{data.predictedCrisisType}</span>
+          )}
+        </div>
+        {data.earlyWarnings?.length > 0 && (
+          <div><div className="text-xs text-amber-400/70 mb-1">Early Warnings</div>
+            <ul className="space-y-0.5">{data.earlyWarnings.map((w: string, i: number) => <li key={i} className="text-xs text-slate-400">⚠ {w}</li>)}</ul>
+          </div>
+        )}
+        {data.indicators?.length > 0 && (
+          <div><div className="text-xs text-slate-500 mb-1">Risk Indicators</div>
+            <ul className="space-y-1">{data.indicators.slice(0, 5).map((ind: any, i: number) => (
+              <li key={i} className="text-xs"><span className={ind.severity === "high" ? "text-red-300" : ind.severity === "medium" ? "text-amber-300" : "text-slate-300"}>{ind.signal}</span></li>
+            ))}</ul>
+          </div>
+        )}
+        {data.holdingStatement && (
+          <div className="bg-white/[0.03] rounded-lg p-3 border border-white/5">
+            <div className="text-xs text-red-400/70 mb-1">Draft Holding Statement</div>
+            <p className="text-xs text-slate-300 leading-relaxed">{data.holdingStatement}</p>
+          </div>
+        )}
+        {data.recommendedActions?.length > 0 && (
+          <div><div className="text-xs text-blue-400/70 mb-1">Recommended Actions</div>
+            <ul className="space-y-0.5">{data.recommendedActions.map((a: string, i: number) => <li key={i} className="text-xs text-slate-400">• {a}</li>)}</ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (moduleKey === "valuationImpact" && typeof data === "object") {
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-white/[0.03] rounded-lg p-2 text-center">
+            <div className="text-lg font-bold text-slate-300">{data.priorSentiment ?? "—"}</div>
+            <div className="text-[10px] text-slate-600">Pre-Event</div>
+          </div>
+          <div className="bg-white/[0.03] rounded-lg p-2 text-center">
+            <div className="text-lg font-bold text-slate-300">{data.postSentiment ?? "—"}</div>
+            <div className="text-[10px] text-slate-600">Post-Event</div>
+          </div>
+          <div className="bg-white/[0.03] rounded-lg p-2 text-center">
+            <div className={`text-lg font-bold ${(data.sentimentDelta ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>{(data.sentimentDelta ?? 0) >= 0 ? "+" : ""}{data.sentimentDelta ?? "—"}</div>
+            <div className="text-[10px] text-slate-600">Delta</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-slate-200">Predicted Impact:</span>
+          <span className={`text-sm font-bold ${String(data.predictedShareImpact ?? "").startsWith("+") ? "text-emerald-400" : String(data.predictedShareImpact ?? "").startsWith("-") ? "text-red-400" : "text-slate-400"}`}>{data.predictedShareImpact ?? "—"}</span>
+        </div>
+        {data.materialDisclosures?.length > 0 && (
+          <div><div className="text-xs text-slate-500 mb-1">Material Disclosures</div>
+            <ul className="space-y-1">{data.materialDisclosures.slice(0, 5).map((d: any, i: number) => (
+              <li key={i} className="text-xs"><span className={d.impact === "positive" ? "text-emerald-300" : d.impact === "negative" ? "text-red-300" : "text-slate-300"}>{d.disclosure}</span> <span className="text-slate-600">({d.magnitude})</span></li>
+            ))}</ul>
+          </div>
+        )}
+        {data.marketReactionPrediction && <p className="text-xs text-slate-400 leading-relaxed italic">{data.marketReactionPrediction}</p>}
+      </div>
+    );
+  }
+
+  if (moduleKey === "disclosureCertificate" && typeof data === "object") {
+    const statusColors: Record<string, string> = { clean: "text-emerald-400", flagged: "text-amber-400", review_required: "text-red-400" };
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <ShieldCheck className={`w-6 h-6 ${statusColors[data.complianceStatus] || "text-slate-400"}`} />
+          <span className={`text-sm font-semibold uppercase ${statusColors[data.complianceStatus] || "text-slate-400"}`}>{(data.complianceStatus ?? "unknown").replace("_", " ")}</span>
+          {data.jurisdictions?.length > 0 && data.jurisdictions.map((j: string, i: number) => (
+            <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">{j}</span>
+          ))}
+        </div>
+        <div className="bg-white/[0.03] rounded-lg p-3 border border-white/5 space-y-1">
+          <div className="text-[10px] text-slate-600">Certificate Hash</div>
+          <div className="text-xs text-teal-300 font-mono break-all">{data.certificateHash ?? "—"}</div>
+        </div>
+        {data.hashChain?.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-xs text-slate-500">Hash Chain ({data.hashChain.length} steps)</div>
+            {data.hashChain.map((step: any, i: number) => (
+              <div key={i} className="flex items-center gap-2 text-[10px]">
+                <span className="text-teal-400">{i + 1}.</span>
+                <span className="text-slate-400">{step.step}</span>
+                <span className="text-slate-600 font-mono truncate flex-1">{step.hash?.slice(0, 16)}...</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (moduleKey === "monthlyReport" && typeof data === "object") {
+    return (
+      <div className="space-y-3">
+        {data.headline && <div className="text-sm font-medium text-slate-200">{data.headline}</div>}
+        {data.communicationHealthScore != null && (
+          <div className="flex items-center gap-3">
+            <div className={`text-2xl font-bold ${data.communicationHealthScore >= 70 ? "text-emerald-400" : data.communicationHealthScore >= 50 ? "text-amber-400" : "text-red-400"}`}>{data.communicationHealthScore}/100</div>
+            <span className="text-xs text-slate-500">Communication Health</span>
+            {data.sentimentTrend && <span className={`text-xs px-2 py-0.5 rounded ${data.sentimentTrend === "improving" ? "bg-emerald-500/10 text-emerald-400" : data.sentimentTrend === "declining" ? "bg-red-500/10 text-red-400" : "bg-slate-500/10 text-slate-400"}`}>{data.sentimentTrend}</span>}
+          </div>
+        )}
+        {data.executiveSummary && <p className="text-xs text-slate-400 leading-relaxed">{data.executiveSummary}</p>}
+        {data.topRisks?.length > 0 && (
+          <div><div className="text-xs text-red-400/70 mb-1">Top Risks</div>
+            <ul className="space-y-0.5">{data.topRisks.map((r: any, i: number) => <li key={i} className="text-xs text-slate-400">• {r.risk} <span className="text-slate-600">({r.severity})</span></li>)}</ul>
+          </div>
+        )}
+        {data.recommendations?.length > 0 && (
+          <div><div className="text-xs text-blue-400/70 mb-1">Recommendations</div>
+            <ul className="space-y-0.5">{data.recommendations.map((r: string, i: number) => <li key={i} className="text-xs text-slate-400">• {r}</li>)}</ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (moduleKey === "evolutionAudit" && typeof data === "object") {
+    return (
+      <div className="space-y-2">
+        {data.totalEntries != null && (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-slate-200">{data.totalEntries} audit entries</span>
+            <span className={`text-xs px-2 py-0.5 rounded ${data.valid ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"}`}>{data.valid ? "Chain Intact" : "Chain Broken"}</span>
+          </div>
+        )}
+        {Array.isArray(data) && data.slice(0, 10).map((entry: any, i: number) => (
+          <div key={i} className="bg-white/[0.03] rounded-lg p-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-orange-400 font-medium">{entry.actionType}</span>
+              <span className="text-slate-500">{entry.proposalTitle}</span>
+            </div>
+            <div className="text-[10px] text-slate-600 font-mono mt-0.5">{entry.blockchainHash?.slice(0, 24)}...</div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -694,7 +851,7 @@ export default function AIDashboard({ sessions }: AIDashboardProps) {
               <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
               <div className="flex-1">
                 <div className="text-sm font-medium text-emerald-300">AI Report Available</div>
-                <div className="text-xs text-slate-500">All 20 AI modules have been processed for this session. Expand any service above to view results.</div>
+                <div className="text-xs text-slate-500">All {AI_SERVICES.filter(s => s.category !== "capture" && s.category !== "strategic").length} AI modules have been processed for this session. Strategic modules run independently via dedicated engines.</div>
               </div>
             </div>
           )}
@@ -942,7 +1099,7 @@ export default function AIDashboard({ sessions }: AIDashboardProps) {
               { label: "Session", value: session.eventName, sub: session.clientName, color: "text-slate-300" },
               { label: "Sentiment", value: session.sentimentAvg != null ? `${Math.round(session.sentimentAvg)}%` : "—", sub: "Average score", color: session.sentimentAvg != null && session.sentimentAvg >= 70 ? "text-emerald-400" : session.sentimentAvg != null && session.sentimentAvg >= 50 ? "text-amber-400" : "text-red-400" },
               { label: "Metrics", value: session.taggedMetricsGenerated ?? 0, sub: "Tagged records", color: "text-violet-400" },
-              { label: "AI Report", value: hasReport ? "Complete" : "Pending", sub: hasReport ? "20 modules" : "Run to generate", color: hasReport ? "text-emerald-400" : "text-amber-400" },
+              { label: "AI Report", value: hasReport ? "Complete" : "Pending", sub: hasReport ? `${AI_SERVICES.filter(s => s.category !== "capture" && s.category !== "strategic").length} modules` : "Run to generate", color: hasReport ? "text-emerald-400" : "text-amber-400" },
             ].map(stat => (
               <div key={stat.label} className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
                 <div className="text-xs text-slate-600 mb-1">{stat.label}</div>
