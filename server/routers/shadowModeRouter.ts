@@ -114,7 +114,7 @@ export const shadowModeRouter = router({
       clientName: z.string().min(1),
       eventName: z.string().min(1),
       eventType: z.enum(["earnings_call", "interim_results", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other"]),
-      platform: z.enum(["zoom", "teams", "meet", "webex", "other"]).default("zoom"),
+      platform: z.enum(["zoom", "teams", "meet", "webex", "choruscall", "other"]).default("zoom"),
       meetingUrl: z.string().url(),
       webhookBaseUrl: z.string().url().optional(),
       notes: z.string().optional(),
@@ -122,6 +122,9 @@ export const shadowModeRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       const userId = ctx.user?.id ?? null;
+
+      const RECALL_SUPPORTED = new Set(["zoom", "teams", "meet", "webex"]);
+      const isRecallSupported = RECALL_SUPPORTED.has(input.platform);
 
       const [inserted] = await db.insert(shadowSessions).values({
         clientName: input.clientName,
@@ -134,6 +137,48 @@ export const shadowModeRouter = router({
       });
 
       const sessionId = (inserted as { insertId: number }).insertId;
+      const ablyChannel = `shadow-${sessionId}-${Date.now()}`;
+
+      let agmSessionId: number | null = null;
+      if (input.eventType === "agm" && userId != null) {
+        try {
+          const [agmInserted] = await db.insert(agmIntelligenceSessions).values({
+            userId,
+            shadowSessionId: sessionId,
+            clientName: input.clientName,
+            agmTitle: input.eventName,
+            jurisdiction: "south_africa",
+            status: "live",
+          });
+          agmSessionId = (agmInserted as { insertId: number }).insertId;
+          console.log(`[Shadow] AGM Intelligence session ${agmSessionId} auto-created for shadow session ${sessionId}`);
+        } catch (err) {
+          console.error("[Shadow] Failed to auto-create AGM session:", err);
+        }
+      }
+
+      if (!isRecallSupported) {
+        const platformName = input.platform === "choruscall" ? "Chorus Call" : input.platform;
+        console.log(`[Shadow] Session ${sessionId}: ${platformName} detected — starting Manual Capture mode (no Recall.ai bot)`);
+
+        await db.update(shadowSessions)
+          .set({
+            ablyChannel,
+            status: "live",
+            startedAt: Date.now(),
+          })
+          .where(eq(shadowSessions.id, sessionId));
+
+        return {
+          sessionId,
+          botId: null,
+          ablyChannel,
+          status: "live" as const,
+          agmSessionId,
+          manualCapture: true,
+          message: `${platformName} session started in Manual Capture mode. Open the ${platformName} webphone in a separate tab — CuraLive is tracking this session for transcript upload and analysis.`,
+        };
+      }
 
       if (!RECALL_API_KEY) {
         await db.update(shadowSessions)
@@ -143,9 +188,7 @@ export const shadowModeRouter = router({
       }
 
       const resolvedBase = getWebhookBaseUrl();
-      const ablyChannel = `shadow-${sessionId}-${Date.now()}`;
       const webhookUrl = `${resolvedBase}/api/recall/webhook`;
-      const eventSlug = `shadow-${sessionId}`;
 
       console.log(`[Shadow] Session ${sessionId}: webhook URL → ${webhookUrl}`);
 
@@ -193,30 +236,13 @@ export const shadowModeRouter = router({
           transcriptJson: JSON.stringify([]),
         });
 
-        let agmSessionId: number | null = null;
-        if (input.eventType === "agm" && userId != null) {
-          try {
-            const [agmInserted] = await db.insert(agmIntelligenceSessions).values({
-              userId,
-              shadowSessionId: sessionId,
-              clientName: input.clientName,
-              agmTitle: input.eventName,
-              jurisdiction: "south_africa",
-              status: "live",
-            });
-            agmSessionId = (agmInserted as { insertId: number }).insertId;
-            console.log(`[Shadow] AGM Intelligence session ${agmSessionId} auto-created for shadow session ${sessionId}`);
-          } catch (err) {
-            console.error("[Shadow] Failed to auto-create AGM session:", err);
-          }
-        }
-
         return {
           sessionId,
           botId: bot.id,
           ablyChannel,
           status: "bot_joining",
           agmSessionId,
+          manualCapture: false,
           message: input.eventType === "agm"
             ? "CuraLive Intelligence bot is joining the AGM. Governance AI algorithms activated automatically."
             : "CuraLive Intelligence bot is joining the meeting. It will appear as a participant within 30–60 seconds.",

@@ -2336,7 +2336,7 @@ export const shadowSessions = mysqlTable("shadow_sessions", {
   clientName: varchar("client_name", { length: 255 }).notNull(),
   eventName: varchar("event_name", { length: 255 }).notNull(),
   eventType: mysqlEnum("event_type", ["earnings_call", "interim_results", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other"]).notNull(),
-  platform: mysqlEnum("platform", ["zoom", "teams", "meet", "webex", "other"]).default("zoom").notNull(),
+  platform: mysqlEnum("platform", ["zoom", "teams", "meet", "webex", "choruscall", "other"]).default("zoom").notNull(),
   meetingUrl: varchar("meeting_url", { length: 1000 }).notNull(),
   recallBotId: varchar("recall_bot_id", { length: 255 }),
   ablyChannel: varchar("ably_channel", { length: 255 }),

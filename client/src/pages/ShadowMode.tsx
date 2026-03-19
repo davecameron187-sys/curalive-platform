@@ -21,8 +21,21 @@ import {
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
-  zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", other: "Other",
+  zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", choruscall: "Chorus Call", other: "Other",
 };
+
+const RECALL_SUPPORTED_PLATFORMS = new Set(["zoom", "teams", "meet", "webex"]);
+
+function detectPlatformFromUrl(url: string): string | null {
+  if (!url) return null;
+  const lower = url.toLowerCase();
+  if (lower.includes("choruscall.com")) return "choruscall";
+  if (lower.includes("zoom.us") || lower.includes("zoom.com")) return "zoom";
+  if (lower.includes("teams.microsoft.com") || lower.includes("teams.live.com")) return "teams";
+  if (lower.includes("meet.google.com")) return "meet";
+  if (lower.includes("webex.com")) return "webex";
+  return null;
+}
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   earnings_call: "Earnings Call", interim_results: "Interim Results", agm: "AGM", capital_markets_day: "Capital Markets Day",
@@ -125,7 +138,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
 
   const startSession = trpc.shadowMode.startSession.useMutation({
     onSuccess: (data) => {
-      toast.success("CuraLive Intelligence bot is joining the meeting");
+      toast.success(data.message);
       setActiveSessionId(data.sessionId);
       setShowForm(false);
       sessions.refetch();
@@ -695,14 +708,31 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                     </div>
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-xs text-slate-500 block mb-1.5">Meeting URL * (Zoom / Teams / Meet invite link)</label>
+                    <label className="text-xs text-slate-500 block mb-1.5">Meeting URL * (Zoom / Teams / Meet / Webex / Chorus Call)</label>
                     <input
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 font-mono"
-                      placeholder="https://zoom.us/j/... or https://teams.microsoft.com/..."
+                      placeholder="https://zoom.us/j/... or https://hdeu.choruscall.com/..."
                       value={form.meetingUrl}
-                      onChange={e => setForm(f => ({ ...f, meetingUrl: e.target.value }))}
+                      onChange={e => {
+                        const url = e.target.value;
+                        const detected = detectPlatformFromUrl(url);
+                        setForm(f => ({
+                          ...f,
+                          meetingUrl: url,
+                          ...(detected ? { platform: detected as typeof f.platform } : {}),
+                        }));
+                      }}
                     />
-                    <p className="text-[11px] text-slate-600 mt-1.5">The bot joins this meeting link as "CuraLive Intelligence" — a regular participant. No software needed on the client's side.</p>
+                    {form.platform && !RECALL_SUPPORTED_PLATFORMS.has(form.platform) && form.platform !== "other" ? (
+                      <div className="mt-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <p className="text-[11px] text-amber-300 flex items-center gap-1.5">
+                          <Info className="w-3.5 h-3.5 shrink-0" />
+                          <span><strong>{PLATFORM_LABELS[form.platform]}</strong> uses a proprietary webphone — the AI bot cannot join directly. CuraLive will start in <strong>Manual Capture mode</strong>: open the webphone separately, and CuraLive will track the session for transcript upload &amp; analysis after the call.</span>
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-600 mt-1.5">The bot joins this meeting link as "CuraLive Intelligence" — a regular participant. No software needed on the client's side.</p>
+                    )}
                   </div>
                   <div className="sm:col-span-2">
                     <label className="text-xs text-slate-500 block mb-1.5">Notes (optional)</label>
@@ -720,7 +750,9 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                     disabled={startSession.isPending || !form.clientName || !form.eventName || !form.meetingUrl}
                     className="bg-emerald-600 hover:bg-emerald-500 gap-2">
                     {startSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                    {startSession.isPending ? "Deploying bot..." : "Start Shadow Intelligence"}
+                    {startSession.isPending
+                      ? (RECALL_SUPPORTED_PLATFORMS.has(form.platform) ? "Deploying bot..." : "Starting session...")
+                      : (RECALL_SUPPORTED_PLATFORMS.has(form.platform) ? "Start Shadow Intelligence" : "Start Manual Capture")}
                   </Button>
                   <Button variant="ghost" onClick={() => setShowForm(false)} className="text-slate-400">Cancel</Button>
                 </div>
