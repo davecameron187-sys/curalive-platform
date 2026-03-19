@@ -357,6 +357,7 @@ export default function AIDashboard({ sessions }: AIDashboardProps) {
         eventType: (sessionData?.eventType ?? session.eventType ?? "other") as any,
         transcriptText,
         notes: `Auto-processed from Shadow Mode session #${selectedSessionId}`,
+        selectedModules: Array.from(selectedServices),
       }, {
         onSuccess: () => {
           toast.success("All selected AI services completed successfully");
@@ -401,6 +402,7 @@ export default function AIDashboard({ sessions }: AIDashboardProps) {
             eventType: (sessionData?.eventType ?? "other") as any,
             transcriptText: transcript,
             notes: `Auto-processed from AI Dashboard — session #${selectedSessionId}`,
+            selectedModules: Array.from(selectedServices),
           }, {
             onSuccess: () => {
               toast.success("Recording uploaded and transcribed — AI report generated");

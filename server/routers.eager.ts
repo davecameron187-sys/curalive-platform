@@ -82,6 +82,12 @@ import { crossEventConsistencyRouter } from "./routers/crossEventConsistencyRout
 import { volatilitySimulatorRouter } from "./routers/volatilitySimulatorRouter";
 import { regulatoryInterventionRouter } from "./routers/regulatoryInterventionRouter";
 import { eventIntegrityRouter } from "./routers/eventIntegrityRouter";
+import { crisisPredictionRouter } from "./routers/crisisPredictionRouter";
+import { valuationImpactRouter } from "./routers/valuationImpactRouter";
+import { disclosureCertificateRouter } from "./routers/disclosureCertificateRouter";
+import { monthlyReportRouter } from "./routers/monthlyReportRouter";
+import { advisoryBotRouter } from "./routers/advisoryBotRouter";
+import { evolutionAuditRouter } from "./routers/evolutionAuditRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -173,6 +179,12 @@ export const appRouter = router({
   volatilitySimulator: volatilitySimulatorRouter,
   regulatoryIntervention: regulatoryInterventionRouter,
   eventIntegrity: eventIntegrityRouter,
+  crisisPrediction: crisisPredictionRouter,
+  valuationImpact: valuationImpactRouter,
+  disclosureCertificate: disclosureCertificateRouter,
+  monthlyReport: monthlyReportRouter,
+  advisoryBot: advisoryBotRouter,
+  evolutionAudit: evolutionAuditRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

@@ -53,11 +53,11 @@ router.post("/api/webhooks/recall/ai-am", async (req: Request, res: Response) =>
       timestamp: payload.timestamp,
     });
 
-    // Verify webhook signature (implement in production)
-    // const isValid = verifyRecallWebhookSignature(req);
-    // if (!isValid) {
-    //   return res.status(401).json({ error: "Invalid signature" });
-    // }
+    const isValid = verifyRecallWebhookSignature(req);
+    if (!isValid) {
+      console.warn("[AI-AM Recall Webhook] Invalid signature — rejecting request");
+      return res.status(401).json({ error: "Invalid webhook signature" });
+    }
 
     // Get event ID from Recall bot ID
     const eventId = await getEventIdFromRecallBot(payload.bot_id);
@@ -237,29 +237,50 @@ async function handleBotStatusUpdate(payload: RecallWebhookPayload, eventId: str
   }
 }
 
-/**
- * Get event ID from Recall bot ID
- */
 async function getEventIdFromRecallBot(botId: string): Promise<string | null> {
   try {
-    // Query database for recall bot association
-    // This assumes you have a table linking recall bots to events
-    // For now, return null (implement based on your schema)
-    return null;
+    const db = await getDb();
+    if (!db) return null;
+    const { recallBots, shadowSessions } = await import("../../drizzle/schema");
+    const [bot] = await db.select({ id: recallBots.id }).from(recallBots).where(eq(recallBots.recallBotId, botId)).limit(1);
+    if (!bot) return null;
+    const { sql: sqlHelper } = await import("drizzle-orm");
+    const conn = (db as any).session?.client ?? (db as any).$client;
+    const [rows] = await conn.execute(
+      `SELECT id FROM shadow_sessions WHERE recall_bot_id = ? LIMIT 1`,
+      [botId]
+    );
+    const row = (rows as any[])?.[0];
+    return row ? `shadow-${row.id}` : null;
   } catch (error) {
     console.error("[AI-AM] Error getting event ID from bot:", error);
     return null;
   }
 }
 
-/**
- * Verify Recall.ai webhook signature
- * Implement this with Recall.ai's provided verification method
- */
 function verifyRecallWebhookSignature(req: Request): boolean {
-  // TODO: Implement signature verification
-  // See: https://docs.recall.ai/webhooks
-  return true;
+  const secret = process.env.MUX_WEBHOOK_SECRET;
+  if (!secret) {
+    console.warn("[AI-AM Recall Webhook] No webhook secret configured — allowing request in dev mode");
+    return process.env.NODE_ENV === "development" || !process.env.NODE_ENV;
+  }
+
+  const signature = req.headers["x-recall-signature"] || req.headers["x-webhook-signature"];
+  if (!signature) {
+    console.warn("[AI-AM Recall Webhook] No signature header present");
+    return false;
+  }
+
+  try {
+    const crypto = require("crypto");
+    const body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    const expected = crypto.createHmac("sha256", secret).update(body).digest("hex");
+    const provided = Array.isArray(signature) ? signature[0] : signature;
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(provided));
+  } catch (err) {
+    console.error("[AI-AM Recall Webhook] Signature verification error:", err);
+    return false;
+  }
 }
 
 export default router;

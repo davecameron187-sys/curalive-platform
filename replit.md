@@ -458,6 +458,33 @@ The full Q&A support infrastructure is built and working but the UI widget is cu
 - **Booking Confirmation Email**: Branded HTML email sent to client contact + Lumi recipients with event details, live dashboard link, and CuraLive intelligence summary. Lumi Recipients field accepts comma-separated emails. Confirmation sent status tracked with timestamp. Resend supported. Uses Resend transactional email via `sendEmail()`
 - **DB columns**: `lumi_recipients` (text, comma-separated emails), `confirmation_sent_at` (timestamp)
 
+## CIP Submission 4 — Module 30/31 Implementation (March 2026)
+
+All 14 gap-analysis items from CIP Submission 4 are now implemented. New routers, services, and DB tables:
+
+### New Routers
+- `server/routers/crisisPredictionRouter.ts` — **Crisis Prediction Engine** (T006): LLM-powered predictive crisis detection from communication signal trajectories (6 risk dimensions). Auto-runs on session end. DB table: `crisis_predictions`
+- `server/routers/valuationImpactRouter.ts` — **Valuation Impact Oracle** (T007): Module 24 — models effect on fair value from material disclosures, forward guidance, risk factors. DB table: `valuation_impacts`
+- `server/routers/disclosureCertificateRouter.ts` — **Clean Disclosure Certificate** (T008): SHA-256 hash-chain certificate for compliance attestation per event. Auto-generated on session end. Includes chain verification endpoint. DB table: `disclosure_certificates`
+- `server/routers/monthlyReportRouter.ts` — **Monthly Executive Intelligence Report** (T009): Aggregates all sessions/archives for a month, generates comprehensive executive report via GPT-4o. DB table: `monthly_reports`
+- `server/routers/advisoryBotRouter.ts` — **Private AI Advisory Bot** (T010): Chat interface for querying across captured event data with full context retrieval. DB table: `advisory_chat_messages`
+- `server/routers/evolutionAuditRouter.ts` — **Evolution Audit + Roadmap + Shadow Testing** (T012/T013/T014): Blockchain-style audit trail for all evolution decisions, shadow testing of AI tool proposals against historical data, 30/60/90-day capability roadmap generation. DB tables: `evolution_audit_log`, `capability_roadmap`
+
+### Enhanced Existing Files
+- `server/routers/archiveUploadRouter.ts` — **Module Selection** (T003): `generateFullAiReport` now accepts `selectedModules` parameter. Backend focuses analysis depth on selected modules only
+- `server/routers/shadowModeRouter.ts` — Multiple enhancements:
+  - **Auto-retry** (T004): Bot deploy retries up to 2 times with exponential backoff on failure
+  - **Calendar auto-session** (T005): `createFromCalendar` mutation pre-creates sessions from calendar events with dedup by `calendarEventId`
+  - **AGM governance piping** (T011): `pipeAgmGovernance` mutation pipes live transcript segments into AGM governance analysis during session
+  - **Auto crisis prediction + disclosure cert**: Both fire automatically in background after AI report generation on session end
+- `client/src/components/AIDashboard.tsx` — Passes `selectedModules` from service selection to backend
+
+### New DB Tables (7 total)
+`disclosure_certificates`, `crisis_predictions`, `valuation_impacts`, `monthly_reports`, `advisory_chat_messages`, `evolution_audit_log`, `capability_roadmap`
+
+### Migration
+`scripts/create-cip4-tables.ts` — Creates all 7 tables via raw SQL
+
 ## OpenAI API Key Configuration (March 2026)
 
 - **Priority order** (`server/_core/env.ts`): `OPENAI_API_KEY` → `BUILT_IN_FORGE_API_KEY` → `AI_INTEGRATIONS_OPENAI_API_KEY`

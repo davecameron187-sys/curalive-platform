@@ -3172,3 +3172,104 @@ export const bastionBookings = mysqlTable("bastion_bookings", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 export type BastionBooking = typeof bastionBookings.$inferSelect;
+
+export const disclosureCertificates = mysqlTable("disclosure_certificates", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  sessionId: int("session_id"),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  eventName: varchar("event_name", { length: 255 }).notNull(),
+  eventType: varchar("event_type", { length: 64 }).notNull(),
+  transcriptHash: varchar("transcript_hash", { length: 128 }).notNull(),
+  reportHash: varchar("report_hash", { length: 128 }).notNull(),
+  complianceStatus: mysqlEnum("compliance_status", ["clean", "flagged", "review_required"]).default("clean").notNull(),
+  complianceFlags: int("compliance_flags").default(0),
+  jurisdictions: json("jurisdictions"),
+  hashChain: json("hash_chain"),
+  previousCertHash: varchar("previous_cert_hash", { length: 128 }),
+  certificateHash: varchar("certificate_hash", { length: 128 }).notNull(),
+  issuedAt: timestamp("issued_at").defaultNow().notNull(),
+});
+
+export const crisisPredictions = mysqlTable("crisis_predictions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("session_id"),
+  eventId: varchar("event_id", { length: 128 }),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  eventName: varchar("event_name", { length: 255 }).notNull(),
+  riskLevel: mysqlEnum("risk_level", ["low", "moderate", "elevated", "high", "critical"]).default("low").notNull(),
+  riskScore: float("risk_score").default(0),
+  predictedCrisisType: varchar("predicted_crisis_type", { length: 128 }),
+  indicators: json("indicators"),
+  sentimentTrajectory: json("sentiment_trajectory"),
+  holdingStatement: text("holding_statement"),
+  regulatoryChecklist: json("regulatory_checklist"),
+  alertSent: boolean("alert_sent").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const valuationImpacts = mysqlTable("valuation_impacts", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  eventName: varchar("event_name", { length: 255 }).notNull(),
+  priorSentiment: float("prior_sentiment"),
+  postSentiment: float("post_sentiment"),
+  sentimentDelta: float("sentiment_delta"),
+  predictedShareImpact: varchar("predicted_share_impact", { length: 64 }),
+  fairValueGap: varchar("fair_value_gap", { length: 64 }),
+  materialDisclosures: json("material_disclosures"),
+  riskFactors: json("risk_factors"),
+  analystConsensusImpact: varchar("analyst_consensus_impact", { length: 128 }),
+  marketReactionPrediction: text("market_reaction_prediction"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const monthlyReports = mysqlTable("monthly_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  reportMonth: varchar("report_month", { length: 7 }).notNull(),
+  clientName: varchar("client_name", { length: 255 }),
+  totalEvents: int("total_events").default(0),
+  avgSentiment: float("avg_sentiment"),
+  totalComplianceFlags: int("total_compliance_flags").default(0),
+  communicationHealthScore: float("communication_health_score"),
+  reportData: json("report_data"),
+  status: mysqlEnum("status", ["generating", "completed", "failed"]).default("generating").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const advisoryChatMessages = mysqlTable("advisory_chat_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionKey: varchar("session_key", { length: 128 }).notNull(),
+  role: mysqlEnum("role", ["user", "assistant"]).notNull(),
+  content: text("content").notNull(),
+  eventIds: json("event_ids"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const evolutionAuditLog = mysqlTable("evolution_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  actionType: mysqlEnum("action_type", [
+    "tool_proposed", "shadow_test_started", "shadow_test_passed", "shadow_test_failed",
+    "tool_deployed", "tool_deactivated", "tool_promoted", "roadmap_updated"
+  ]).notNull(),
+  proposalId: int("proposal_id"),
+  proposalTitle: varchar("proposal_title", { length: 255 }),
+  details: json("details"),
+  blockchainHash: varchar("blockchain_hash", { length: 128 }),
+  previousHash: varchar("previous_hash", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const capabilityRoadmap = mysqlTable("capability_roadmap", {
+  id: int("id").autoincrement().primaryKey(),
+  timeframe: mysqlEnum("timeframe", ["30_days", "60_days", "90_days"]).notNull(),
+  capability: varchar("capability", { length: 255 }).notNull(),
+  rationale: text("rationale"),
+  gapScore: float("gap_score"),
+  priority: mysqlEnum("priority", ["low", "medium", "high", "critical"]).default("medium").notNull(),
+  status: mysqlEnum("status", ["predicted", "in_progress", "completed", "dismissed"]).default("predicted").notNull(),
+  proposalId: int("proposal_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});

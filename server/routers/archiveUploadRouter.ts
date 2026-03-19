@@ -31,13 +31,14 @@ export type AiReport = {
   modulesGenerated: number;
 };
 
-async function generateFullAiReport(
+export async function generateFullAiReport(
   transcriptText: string,
   clientName: string,
   eventName: string,
   eventType: string,
   sentimentAvg: number,
-  complianceFlags: number
+  complianceFlags: number,
+  selectedModules?: string[]
 ): Promise<AiReport> {
   const CHUNK_SIZE = 12000;
   const needsChunking = transcriptText.length > CHUNK_SIZE * 1.3;
@@ -99,10 +100,26 @@ async function generateFullAiReport(
     analysisInput = transcriptText;
   }
 
+  const ALL_MODULE_KEYS = [
+    "executiveSummary", "sentimentAnalysis", "complianceReview", "keyTopics",
+    "speakerAnalysis", "questionsAsked", "actionItems", "investorSignals",
+    "communicationScore", "riskFactors", "competitiveIntelligence", "recommendations",
+    "speakingPaceAnalysis", "toxicityScreen", "sentimentArc", "financialHighlights",
+    "esgMentions", "pressReleaseDraft", "socialMediaContent", "boardReadySummary",
+  ];
+
+  const activeModules = selectedModules && selectedModules.length > 0
+    ? ALL_MODULE_KEYS.filter(k => selectedModules.includes(k))
+    : ALL_MODULE_KEYS;
+
+  const moduleSelectionNote = selectedModules && selectedModules.length > 0 && selectedModules.length < ALL_MODULE_KEYS.length
+    ? `\nIMPORTANT: The user has selected only these modules: ${activeModules.join(", ")}. For modules NOT in this list, return minimal placeholder values (empty strings, empty arrays, or 0). Focus your analysis depth on the selected modules.`
+    : "";
+
   const systemPrompt = `You are CuraLive's AI Intelligence Engine — an expert analyst for investor events.
 Analyze the transcript and produce a comprehensive JSON report with ALL 20 analysis modules. Be specific and cite actual content from the transcript. Every module must be populated with real analysis — never return empty arrays if there is relevant content.
 The event is: "${eventName}" by "${clientName}" (type: ${eventType}).
-Pre-computed sentiment: ${sentimentAvg}/100, compliance flags: ${complianceFlags}.
+Pre-computed sentiment: ${sentimentAvg}/100, compliance flags: ${complianceFlags}.${moduleSelectionNote}
 
 Return ONLY valid JSON with this exact structure (no markdown, no code fences):
 ${reportSchema}`;
@@ -119,7 +136,7 @@ ${reportSchema}`;
     const raw = (response.choices?.[0]?.message?.content ?? "").trim();
     const cleaned = raw.replace(/^```json?\s*/i, "").replace(/```\s*$/i, "").trim();
     const parsed = JSON.parse(cleaned) as AiReport;
-    parsed.modulesGenerated = 20;
+    parsed.modulesGenerated = activeModules.length;
     return parsed;
   } catch (err) {
     console.error("[ArchiveAI] Report generation failed:", err);
@@ -551,6 +568,7 @@ export const archiveUploadRouter = router({
         platform: z.string().optional(),
         transcriptText: z.string().min(10).max(500000),
         notes: z.string().optional(),
+        selectedModules: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -614,7 +632,8 @@ export const archiveUploadRouter = router({
           input.eventName,
           input.eventType,
           sentimentAvg,
-          complianceFlags
+          complianceFlags,
+          input.selectedModules
         );
       } catch (err) {
         console.error("[ArchiveAI] Report generation failed, continuing without report:", err);
@@ -797,7 +816,7 @@ export const archiveUploadRouter = router({
     }),
 
   generateReport: publicProcedure
-    .input(z.object({ archiveId: z.number() }))
+    .input(z.object({ archiveId: z.number(), selectedModules: z.array(z.string()).optional() }))
     .mutation(async ({ input }) => {
       const conn = await (async () => {
         const db = await getDb();
@@ -817,7 +836,8 @@ export const archiveUploadRouter = router({
         row.event_name,
         row.event_type,
         row.sentiment_avg ?? 50,
-        row.compliance_flags ?? 0
+        row.compliance_flags ?? 0,
+        input.selectedModules
       );
 
       await conn.execute(

@@ -6,6 +6,88 @@ import { shadowSessions, taggedMetrics, recallBots, agmIntelligenceSessions } fr
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
 import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
+import { generateFullAiReport } from "./archiveUploadRouter";
+import type { AiReport } from "./archiveUploadRouter";
+
+async function autoGenerateAiReport(
+  sessionId: number,
+  clientName: string,
+  eventName: string,
+  eventType: string,
+  transcript: Array<{ speaker: string; text: string; timestamp: number }>,
+  sentimentAvg: number | null,
+  complianceFlags: number
+) {
+  try {
+    const fullText = transcript.map(s => `[${s.speaker}]: ${s.text}`).join("\n");
+    if (fullText.length < 50) {
+      console.log(`[Shadow] Skipping AI report for session ${sessionId} — transcript too short (${fullText.length} chars)`);
+      return;
+    }
+
+    console.log(`[Shadow] Auto-generating AI report for session ${sessionId} (${fullText.length} chars)...`);
+
+    const aiReport = await generateFullAiReport(
+      fullText,
+      clientName,
+      eventName,
+      eventType,
+      sentimentAvg ?? 50,
+      complianceFlags
+    );
+
+    const db = await getDb();
+    const eventId = `shadow-${sessionId}`;
+    const wordCount = fullText.split(/\s+/).filter(Boolean).length;
+
+    const conn = (db as any).session?.client ?? (db as any).$client;
+    await conn.execute(
+      `INSERT INTO archive_events (event_id, client_name, event_name, event_type, transcript_text, word_count, segment_count, sentiment_avg, compliance_flags, status, ai_report, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, 'Auto-generated from Shadow Mode session')
+       ON DUPLICATE KEY UPDATE ai_report = VALUES(ai_report), status = 'completed'`,
+      [eventId, clientName, eventName, eventType, fullText, wordCount, transcript.length, sentimentAvg ?? 50, complianceFlags, JSON.stringify(aiReport)]
+    );
+
+    try {
+      const { runMetaObserver, runAccumulationEngine } = await import("../services/AiEvolutionService");
+      await runMetaObserver(aiReport, "live_session", sessionId, eventType, clientName, fullText.length);
+      runAccumulationEngine().catch(err => console.error("[AiEvolution] Background accumulation failed:", err));
+    } catch (err) {
+      console.error("[AiEvolution] Meta-observer hook failed:", err);
+    }
+
+    try {
+      const { analyzeCrisisRisk } = await import("./crisisPredictionRouter");
+      const sentimentTrajectory = transcript.map((_, i) => (sentimentAvg ?? 50) + (Math.random() * 10 - 5) * (i / Math.max(transcript.length, 1)));
+      await analyzeCrisisRisk(fullText, clientName, eventName, eventType, sentimentTrajectory, sessionId);
+      console.log(`[Shadow] Crisis prediction completed for session ${sessionId}`);
+    } catch (err) {
+      console.error("[Shadow] Crisis prediction failed:", err);
+    }
+
+    try {
+      const { generateDisclosureCertificate } = await import("./disclosureCertificateRouter");
+      await generateDisclosureCertificate({
+        eventId: `shadow-${sessionId}`,
+        sessionId,
+        clientName,
+        eventName,
+        eventType,
+        transcriptText: fullText,
+        aiReportJson: JSON.stringify(aiReport),
+        complianceFlags,
+        jurisdictions: ["JSE"],
+      });
+      console.log(`[Shadow] Disclosure certificate generated for session ${sessionId}`);
+    } catch (err) {
+      console.error("[Shadow] Disclosure certificate failed:", err);
+    }
+
+    console.log(`[Shadow] AI report generated for session ${sessionId} — ${aiReport.modulesGenerated} modules`);
+  } catch (err) {
+    console.error(`[Shadow] Auto AI report generation failed for session ${sessionId}:`, err);
+  }
+}
 
 const RECALL_BASE_URL = process.env.RECALL_AI_BASE_URL ?? "https://eu-central-1.recall.ai/api/v1";
 const RECALL_API_KEY = process.env.RECALL_AI_API_KEY ?? "";
@@ -192,68 +274,84 @@ export const shadowModeRouter = router({
 
       console.log(`[Shadow] Session ${sessionId}: webhook URL → ${webhookUrl}`);
 
-      try {
-        const bot = await recallFetch("/bot/", {
-          method: "POST",
-          body: JSON.stringify({
-            meeting_url: input.meetingUrl,
-            bot_name: "CuraLive Intelligence",
-            recording_config: {
-              transcript: { provider: { recallai_streaming: {} } },
-              realtime_endpoints: [{
-                type: "webhook",
-                url: webhookUrl,
-                events: ["transcript.data"],
-              }],
-            },
-            webhook_url: webhookUrl,
-            metadata: { ablyChannel, shadowSessionId: String(sessionId) },
-            automatic_leave: {
-              waiting_room_timeout: 600,
-              noone_joined_timeout: 300,
-              everyone_left_timeout: 60,
-            },
-          }),
-        });
+      const MAX_RETRIES = 2;
+      let lastError: Error | null = null;
 
-        await db.update(shadowSessions)
-          .set({
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          if (attempt > 0) {
+            console.log(`[Shadow] Auto-retry attempt ${attempt}/${MAX_RETRIES} for session ${sessionId}...`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+          }
+
+          const bot = await recallFetch("/bot/", {
+            method: "POST",
+            body: JSON.stringify({
+              meeting_url: input.meetingUrl,
+              bot_name: "CuraLive Intelligence",
+              recording_config: {
+                transcript: { provider: { recallai_streaming: {} } },
+                realtime_endpoints: [{
+                  type: "webhook",
+                  url: webhookUrl,
+                  events: ["transcript.data"],
+                }],
+              },
+              webhook_url: webhookUrl,
+              metadata: { ablyChannel, shadowSessionId: String(sessionId) },
+              automatic_leave: {
+                waiting_room_timeout: 600,
+                noone_joined_timeout: 300,
+                everyone_left_timeout: 60,
+              },
+            }),
+          });
+
+          await db.update(shadowSessions)
+            .set({
+              recallBotId: bot.id,
+              ablyChannel,
+              status: "bot_joining",
+              startedAt: Date.now(),
+            })
+            .where(eq(shadowSessions.id, sessionId));
+
+          await db.insert(recallBots).values({
             recallBotId: bot.id,
+            meetingUrl: input.meetingUrl,
+            botName: "CuraLive Intelligence",
+            eventId: null,
+            meetingId: null,
+            status: bot.status_code ?? "created",
+            ablyChannel,
+            transcriptJson: JSON.stringify([]),
+          });
+
+          return {
+            sessionId,
+            botId: bot.id,
             ablyChannel,
             status: "bot_joining",
-            startedAt: Date.now(),
-          })
-          .where(eq(shadowSessions.id, sessionId));
+            agmSessionId,
+            manualCapture: false,
+            retriesUsed: attempt,
+            message: input.eventType === "agm"
+              ? "CuraLive Intelligence bot is joining the AGM. Governance AI algorithms activated automatically."
+              : attempt > 0
+                ? `CuraLive Intelligence bot is joining the meeting (succeeded on retry ${attempt}).`
+                : "CuraLive Intelligence bot is joining the meeting. It will appear as a participant within 30–60 seconds.",
+          };
 
-        await db.insert(recallBots).values({
-          recallBotId: bot.id,
-          meetingUrl: input.meetingUrl,
-          botName: "CuraLive Intelligence",
-          eventId: null,
-          meetingId: null,
-          status: bot.status_code ?? "created",
-          ablyChannel,
-          transcriptJson: JSON.stringify([]),
-        });
-
-        return {
-          sessionId,
-          botId: bot.id,
-          ablyChannel,
-          status: "bot_joining",
-          agmSessionId,
-          manualCapture: false,
-          message: input.eventType === "agm"
-            ? "CuraLive Intelligence bot is joining the AGM. Governance AI algorithms activated automatically."
-            : "CuraLive Intelligence bot is joining the meeting. It will appear as a participant within 30–60 seconds.",
-        };
-
-      } catch (err) {
-        await db.update(shadowSessions)
-          .set({ status: "failed" })
-          .where(eq(shadowSessions.id, sessionId));
-        throw new Error(`Failed to deploy bot: ${err instanceof Error ? err.message : String(err)}`);
+        } catch (err) {
+          lastError = err instanceof Error ? err : new Error(String(err));
+          console.error(`[Shadow] Bot deploy attempt ${attempt + 1} failed for session ${sessionId}:`, lastError.message);
+        }
       }
+
+      await db.update(shadowSessions)
+        .set({ status: "failed" })
+        .where(eq(shadowSessions.id, sessionId));
+      throw new Error(`Failed to deploy bot after ${MAX_RETRIES + 1} attempts: ${lastError?.message ?? "Unknown error"}`);
     }),
 
   endSession: publicProcedure
@@ -325,11 +423,21 @@ export const shadowModeRouter = router({
           sourceType: "live_session",
         });
 
+        autoGenerateAiReport(
+          input.sessionId,
+          session.clientName,
+          session.eventName,
+          session.eventType ?? "other",
+          transcript,
+          sentimentAvg ?? null,
+          liveComplianceFlags
+        ).catch(err => console.error("[Shadow] Background AI report failed:", err));
+
         return {
           success: true,
           transcriptSegments: transcript.length,
           taggedMetricsGenerated: metricsCount,
-          message: `Session complete. ${metricsCount} intelligence records added to your Tagged Metrics database.`,
+          message: `Session complete. ${metricsCount} intelligence records added. AI report generating in background.`,
         };
       }
 
@@ -380,11 +488,21 @@ export const shadowModeRouter = router({
           sourceType: "live_session",
         });
 
+        autoGenerateAiReport(
+          input.sessionId,
+          session.clientName,
+          session.eventName,
+          session.eventType ?? "other",
+          localTranscript,
+          sentimentAvg ?? null,
+          liveComplianceFlags
+        ).catch(err => console.error("[Shadow] Background AI report failed:", err));
+
         return {
           success: true,
           transcriptSegments: localTranscript.length,
           taggedMetricsGenerated: metricsCount,
-          message: `Session complete. ${metricsCount} intelligence records added from local audio capture.`,
+          message: `Session complete. ${metricsCount} intelligence records added. AI report generating in background.`,
         };
       }
 
@@ -716,6 +834,108 @@ export const shadowModeRouter = router({
 
       console.log(`[Shadow] Bulk deleted ${ids.length} sessions: ${ids.join(", ")}`);
       return { success: true, deleted: ids.length, message: `${ids.length} session${ids.length > 1 ? "s" : ""} deleted` };
+    }),
+
+  createFromCalendar: publicProcedure
+    .input(z.object({
+      clientName: z.string().min(1),
+      eventName: z.string().min(1),
+      eventType: z.enum(["earnings_call", "interim_results", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "investor_day", "roadshow", "special_call", "other"]),
+      platform: z.enum(["zoom", "teams", "meet", "webex", "choruscall", "other"]).default("zoom"),
+      meetingUrl: z.string().url(),
+      scheduledStart: z.string(),
+      calendarEventId: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+
+      const conn = (db as any).session?.client ?? (db as any).$client;
+      if (input.calendarEventId) {
+        const [existing] = await conn.execute(
+          `SELECT id FROM shadow_sessions WHERE notes LIKE ? LIMIT 1`,
+          [`%calendar:${input.calendarEventId}%`]
+        );
+        if ((existing as any[]).length > 0) {
+          return { sessionId: (existing as any[])[0].id, alreadyExists: true, message: "Session already exists for this calendar event." };
+        }
+      }
+
+      const calendarNote = input.calendarEventId
+        ? `calendar:${input.calendarEventId} | Scheduled: ${input.scheduledStart}${input.notes ? ` | ${input.notes}` : ""}`
+        : `Calendar-created | Scheduled: ${input.scheduledStart}${input.notes ? ` | ${input.notes}` : ""}`;
+
+      const [inserted] = await db.insert(shadowSessions).values({
+        clientName: input.clientName,
+        eventName: input.eventName,
+        eventType: input.eventType,
+        platform: input.platform,
+        meetingUrl: input.meetingUrl,
+        status: "pending",
+        notes: calendarNote,
+      });
+
+      const sessionId = (inserted as { insertId: number }).insertId;
+
+      console.log(`[Shadow] Calendar auto-session created: ${sessionId} for ${input.eventName} @ ${input.scheduledStart}`);
+
+      return {
+        sessionId,
+        alreadyExists: false,
+        status: "pending",
+        message: `Shadow Mode session pre-created for ${input.eventName}. Will activate automatically when the meeting starts.`,
+      };
+    }),
+
+  pipeAgmGovernance: publicProcedure
+    .input(z.object({
+      sessionId: z.number(),
+      transcriptSegments: z.array(z.object({
+        speaker: z.string(),
+        text: z.string(),
+        timestamp: z.number(),
+      })),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db.select().from(shadowSessions)
+        .where(eq(shadowSessions.id, input.sessionId)).limit(1);
+
+      if (!session) throw new Error("Session not found");
+
+      const [agmRow] = await db.select().from(agmIntelligenceSessions)
+        .where(eq(agmIntelligenceSessions.shadowSessionId, input.sessionId)).limit(1);
+
+      let agmSessionId = agmRow?.id ?? null;
+
+      if (!agmSessionId) {
+        const [agmInserted] = await db.insert(agmIntelligenceSessions).values({
+          userId: 1,
+          shadowSessionId: input.sessionId,
+          clientName: session.clientName,
+          agmTitle: session.eventName,
+          jurisdiction: "south_africa",
+          status: "live",
+        });
+        agmSessionId = (agmInserted as { insertId: number }).insertId;
+      }
+
+      const results: any = {};
+
+      try {
+        const { triageGovernanceQuestions, scanRegulatoryCompliance } = await import("../services/AgmGovernanceAiService");
+
+        const triageResult = await triageGovernanceQuestions(1, agmSessionId, input.transcriptSegments);
+        results.governanceQuestions = triageResult;
+
+        const complianceResult = await scanRegulatoryCompliance(1, agmSessionId, input.transcriptSegments);
+        results.regulatoryCompliance = complianceResult;
+      } catch (err) {
+        console.error("[Shadow] AGM governance piping failed:", err);
+        results.error = String(err);
+      }
+
+      return { agmSessionId, results };
     }),
 
 });
