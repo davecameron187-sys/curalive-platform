@@ -24,6 +24,8 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
   const [segmentCount, setSegmentCount] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
   const [isListening, setIsListening] = useState(false);
+  const [isSavingRecording, setIsSavingRecording] = useState(false);
+  const [recordingSaved, setRecordingSaved] = useState(false);
 
   const recognitionRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -203,6 +205,34 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
     }
   }, [captureMode, startSpeechRecognition, startAudioLevelMonitor]);
 
+  const saveRecording = useCallback(async () => {
+    if (chunksRef.current.length === 0) return;
+    setIsSavingRecording(true);
+    try {
+      const blob = new Blob(chunksRef.current, { type: "audio/webm;codecs=opus" });
+      const formData = new FormData();
+      formData.append("recording", blob, `shadow-${sessionId}.webm`);
+
+      const res = await fetch(`/api/shadow/recording/${sessionId}`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        setRecordingSaved(true);
+        toast.success("Recording saved — available for download in the session");
+      } else {
+        toast.error("Failed to save recording");
+      }
+    } catch (err) {
+      console.error("[LocalAudio] Recording save failed:", err);
+      toast.error("Failed to save recording");
+    } finally {
+      setIsSavingRecording(false);
+      chunksRef.current = [];
+    }
+  }, [sessionId]);
+
   const stopCapture = useCallback(() => {
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch {}
@@ -221,15 +251,24 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
       audioContextRef.current = null;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      try { mediaRecorderRef.current.stop(); } catch {}
-      mediaRecorderRef.current = null;
+      try {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.onstop = () => {
+          saveRecording();
+        };
+      } catch {
+        saveRecording();
+      }
+    } else {
+      saveRecording();
     }
+    mediaRecorderRef.current = null;
 
     setIsCapturing(false);
     setIsPaused(false);
     setAudioLevel(0);
     setIsListening(false);
-  }, []);
+  }, [saveRecording]);
 
   const togglePause = useCallback(() => {
     if (isPaused) {
@@ -286,6 +325,20 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
           <div className="mb-4 p-3 rounded-lg bg-red-900/20 border border-red-500/20 flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
             <p className="text-xs text-red-300">{error}</p>
+          </div>
+        )}
+
+        {isSavingRecording && (
+          <div className="mb-4 p-3 rounded-lg bg-cyan-900/20 border border-cyan-500/20 flex items-center gap-2">
+            <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
+            <p className="text-xs text-cyan-300">Saving recording...</p>
+          </div>
+        )}
+
+        {recordingSaved && !isCapturing && (
+          <div className="mb-4 p-3 rounded-lg bg-emerald-900/20 border border-emerald-500/20 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <p className="text-xs text-emerald-300">Recording saved — you can download it from the Event Recording section above after ending the session.</p>
           </div>
         )}
 

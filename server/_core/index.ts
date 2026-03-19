@@ -11,6 +11,7 @@ import { serveStatic, setupVite } from "./vite";
 import { registerSlideDeckUploadRoute } from "../slideDeckUpload";
 import { registerAudioTranscribeRoute } from "../audioTranscribe";
 import { registerRecallWebhookRoute } from "../recallWebhook";
+import { registerRecordingUploadRoute } from "../recordingUpload";
 import { startReminderScheduler } from "../reminderScheduler";
 import { startComplianceDigestScheduler } from "../complianceDigestScheduler";
 import { registerBillingPdfRoutes } from "../billingPdf";
@@ -542,6 +543,7 @@ async function startServer() {
   registerAudioTranscribeRoute(app);
   // Recall.ai webhook (raw body, HMAC-verified)
   registerRecallWebhookRoute(app);
+  registerRecordingUploadRoute(app);
   registerBillingPdfRoutes(app);
 
   // Architecture doc download — serves the generated Word document

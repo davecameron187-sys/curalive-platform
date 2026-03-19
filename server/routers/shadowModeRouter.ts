@@ -450,7 +450,11 @@ export const shadowModeRouter = router({
         if (agmSession) agmSessionId = agmSession.id;
       }
 
-      return { ...session, transcriptSegments, agmSessionId, recordingUrl, botStatus };
+      const localRecordingUrl = session.localRecordingPath
+        ? `/api/shadow/recording/${session.id}`
+        : null;
+
+      return { ...session, transcriptSegments, agmSessionId, recordingUrl: recordingUrl || localRecordingUrl, botStatus };
     }),
 
   updateStatus: publicProcedure
