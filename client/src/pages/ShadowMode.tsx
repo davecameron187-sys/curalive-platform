@@ -21,6 +21,7 @@ import {
   FolderOpen, FolderClosed, CheckSquare,
 } from "lucide-react";
 import LocalAudioCapture from "@/components/LocalAudioCapture";
+import AIDashboard from "@/components/AIDashboard";
 
 const PLATFORM_LABELS: Record<string, string> = {
   zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", choruscall: "Chorus Call", other: "Other",
@@ -119,7 +120,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   }, [embedded]);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "recording" | "ailearning">("live");
+  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "recording" | "ailearning" | "aidashboard">("live");
 
 
   // ── Live Intelligence state ────────────────────────────────────────────────
@@ -621,7 +622,17 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                   : "border-transparent text-slate-500 hover:text-slate-300"
               }`}>
               <Mic className="w-4 h-4" />
-              Event Recording
+              Event Recording &amp; Transcriptions
+            </button>
+            <button
+              onClick={() => setActiveTab("aidashboard")}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "aidashboard"
+                  ? "border-amber-400 text-amber-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              <Brain className="w-4 h-4" />
+              AI Dashboard
             </button>
             <button
               onClick={() => setActiveTab("ailearning")}
@@ -2746,6 +2757,13 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
               </form>
             )}
           </>
+        )}
+
+        {/* ══════════════════════════════════════════════════
+            AI DASHBOARD TAB
+        ══════════════════════════════════════════════════ */}
+        {activeTab === "aidashboard" && (
+          <AIDashboard sessions={sessions.data ?? []} />
         )}
 
         {/* ══════════════════════════════════════════════════

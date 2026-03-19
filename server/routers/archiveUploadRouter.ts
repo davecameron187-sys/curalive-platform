@@ -850,13 +850,14 @@ export const archiveUploadRouter = router({
         return (db as any).session?.client ?? (db as any).$client;
       })();
       const [rows] = await conn.execute(
-        `SELECT id, client_name, event_name, event_type, event_date, platform,
+        `SELECT id, event_id, client_name, event_name, event_type, event_date, platform,
                 word_count, segment_count, sentiment_avg, compliance_flags,
                 tagged_metrics_generated, status, notes, created_at
          FROM archive_events ORDER BY created_at DESC LIMIT 50`
       );
       return rows as Array<{
         id: number;
+        event_id: string;
         client_name: string;
         event_name: string;
         event_type: string;
