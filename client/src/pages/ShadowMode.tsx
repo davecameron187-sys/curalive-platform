@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import LocalAudioCapture from "@/components/LocalAudioCapture";
 import AIDashboard from "@/components/AIDashboard";
+import SystemDiagnostics from "@/components/SystemDiagnostics";
 
 const PLATFORM_LABELS: Record<string, string> = {
   zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", choruscall: "Chorus Call", other: "Other",
@@ -120,7 +121,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   }, [embedded]);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "ailearning" | "aidashboard" | "advisory">("live");
+  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "ailearning" | "aidashboard" | "advisory" | "diagnostics">("live");
 
 
   // ── Live Intelligence state ────────────────────────────────────────────────
@@ -643,6 +644,16 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
               }`}>
               <MessageCircle className="w-4 h-4" />
               AI Advisory
+            </button>
+            <button
+              onClick={() => setActiveTab("diagnostics")}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "diagnostics"
+                  ? "border-indigo-400 text-indigo-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              <Shield className="w-4 h-4" />
+              System Test
             </button>
           </div>
         </div>
@@ -2565,6 +2576,13 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
         ══════════════════════════════════════════════════ */}
         {activeTab === "advisory" && (
           <AdvisoryBotPanel />
+        )}
+
+        {/* ══════════════════════════════════════════════════
+            SYSTEM DIAGNOSTICS TAB
+        ══════════════════════════════════════════════════ */}
+        {activeTab === "diagnostics" && (
+          <SystemDiagnostics />
         )}
 
       </div>
