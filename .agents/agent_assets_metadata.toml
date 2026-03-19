@@ -186,3 +186,9 @@ id = "0y3DdaRE4M2hqZ3Vq0tKg"
 uri = "file://attached_assets/CIP_Submission_4_Alignment_Brief.md"
 type = "text"
 title = "CIP Submission 4 — Alignment Brief for Manus"
+
+[[outputs]]
+id = "Joars4VwjwHItnzCDeBxb"
+uri = "file://attached_assets/CIP_Submission_4_Alignment_Brief.docx"
+type = "word_document"
+title = "CIP Submission 4 — Alignment Brief (Word Document)"
