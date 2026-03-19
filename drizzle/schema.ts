@@ -2340,6 +2340,7 @@ export const shadowSessions = mysqlTable("shadow_sessions", {
   meetingUrl: varchar("meeting_url", { length: 1000 }).notNull(),
   recallBotId: varchar("recall_bot_id", { length: 255 }),
   ablyChannel: varchar("ably_channel", { length: 255 }),
+  localTranscriptJson: text("local_transcript_json"),
   status: mysqlEnum("status", ["pending", "bot_joining", "live", "processing", "completed", "failed"]).default("pending").notNull(),
   transcriptSegments: int("transcript_segments").default(0),
   sentimentAvg: float("sentiment_avg"),

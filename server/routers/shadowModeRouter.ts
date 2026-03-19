@@ -333,6 +333,61 @@ export const shadowModeRouter = router({
         };
       }
 
+      const localTranscript: Array<{ speaker: string; text: string; timestamp: number }> =
+        session.localTranscriptJson ? JSON.parse(session.localTranscriptJson as string) : [];
+
+      if (localTranscript.length > 0) {
+        const sentimentAvg = session.sentimentAvg;
+        const bundle = session.eventType === "earnings_call" || session.eventType === "capital_markets_day"
+          ? "Investor Relations" : session.eventType === "agm" || session.eventType === "board_meeting"
+          ? "Compliance & Risk" : "Webcasting";
+
+        const eventId = `shadow-${session.id}`;
+        const eventTitle = `${session.clientName} — ${session.eventName}`;
+
+        await db.update(shadowSessions)
+          .set({ status: "processing", endedAt: Date.now() })
+          .where(eq(shadowSessions.id, input.sessionId));
+
+        const metricsCount = await generateTaggedMetricsFromSession(
+          input.sessionId,
+          eventId,
+          eventTitle,
+          bundle,
+          localTranscript,
+          sentimentAvg
+        );
+
+        await db.update(shadowSessions)
+          .set({
+            status: "completed",
+            transcriptSegments: localTranscript.length,
+            taggedMetricsGenerated: metricsCount,
+          })
+          .where(eq(shadowSessions.id, input.sessionId));
+
+        const fullText = localTranscript.map(s => s.text).join(" ");
+        const complianceKeywords = ["forward-looking", "guidance", "forecast", "predict", "expect", "material", "non-public", "insider"];
+        const liveComplianceFlags = complianceKeywords.filter(k => fullText.toLowerCase().includes(k)).length;
+
+        await writeAnonymizedRecord({
+          eventType: session.eventType ?? "other",
+          sentimentScore: session.sentimentAvg ?? null,
+          segmentCount: localTranscript.length,
+          complianceFlags: liveComplianceFlags,
+          wordCount: fullText.split(/\s+/).filter(Boolean).length,
+          eventDate: null,
+          sourceType: "live_session",
+        });
+
+        return {
+          success: true,
+          transcriptSegments: localTranscript.length,
+          taggedMetricsGenerated: metricsCount,
+          message: `Session complete. ${metricsCount} intelligence records added from local audio capture.`,
+        };
+      }
+
       await db.update(shadowSessions)
         .set({ status: "completed", endedAt: Date.now() })
         .where(eq(shadowSessions.id, input.sessionId));
@@ -378,6 +433,12 @@ export const shadowModeRouter = router({
         if (bot?.status) {
           botStatus = bot.status;
         }
+      }
+
+      if (session.localTranscriptJson && transcriptSegments.length === 0) {
+        try {
+          transcriptSegments = JSON.parse(session.localTranscriptJson as string);
+        } catch {}
       }
 
       let agmSessionId: number | null = null;
@@ -487,6 +548,71 @@ export const shadowModeRouter = router({
       } catch (err) {
         throw new Error(`Retry failed: ${err instanceof Error ? err.message : String(err)}`);
       }
+    }),
+
+  pushTranscriptSegment: publicProcedure
+    .input(z.object({
+      sessionId: z.number(),
+      speaker: z.string().default("Speaker"),
+      text: z.string().min(1),
+      timestamp: z.number(),
+      timeLabel: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db
+        .select()
+        .from(shadowSessions)
+        .where(eq(shadowSessions.id, input.sessionId))
+        .limit(1);
+
+      if (!session) throw new Error("Session not found");
+      if (session.status !== "live" && session.status !== "bot_joining") {
+        throw new Error("Session is not active");
+      }
+
+      const segment = {
+        speaker: input.speaker,
+        text: input.text,
+        timestamp: input.timestamp,
+        timeLabel: input.timeLabel ?? new Date(input.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      };
+
+      const existingTranscript: Array<{ speaker: string; text: string; timestamp: number; timeLabel?: string }> =
+        session.localTranscriptJson ? JSON.parse(session.localTranscriptJson as string) : [];
+      existingTranscript.push(segment);
+
+      await db.update(shadowSessions)
+        .set({
+          transcriptSegments: existingTranscript.length,
+          localTranscriptJson: JSON.stringify(existingTranscript),
+        })
+        .where(eq(shadowSessions.id, input.sessionId));
+
+      if (session.ablyChannel) {
+        const ABLY_API_KEY = process.env.ABLY_API_KEY ?? "";
+        if (ABLY_API_KEY) {
+          const url = `https://rest.ably.io/channels/${encodeURIComponent(session.ablyChannel)}/messages`;
+          const body = JSON.stringify({
+            name: "curalive",
+            data: JSON.stringify({ type: "transcript.segment", data: segment }),
+          });
+          try {
+            await fetch(url, {
+              method: "POST",
+              headers: {
+                Authorization: `Basic ${Buffer.from(ABLY_API_KEY).toString("base64")}`,
+                "Content-Type": "application/json",
+              },
+              body,
+            });
+          } catch (err) {
+            console.warn("[Shadow] Ably publish for local segment failed:", err);
+          }
+        }
+      }
+
+      return { success: true, segmentCount: existingTranscript.length };
     }),
 
 });

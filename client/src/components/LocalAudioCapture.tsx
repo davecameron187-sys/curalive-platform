@@ -1,0 +1,399 @@
+// @ts-nocheck
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+import {
+  Mic, MicOff, Radio, Square, Volume2, VolumeX,
+  Monitor, Loader2, AlertTriangle, CheckCircle2,
+} from "lucide-react";
+
+type CaptureMode = "mic" | "tab" | "system";
+
+interface LocalAudioCaptureProps {
+  sessionId: number;
+  isActive: boolean;
+  onSegment?: (segment: { speaker: string; text: string; timestamp: number; timeLabel: string }) => void;
+}
+
+export default function LocalAudioCapture({ sessionId, isActive, onSegment }: LocalAudioCaptureProps) {
+  const [captureMode, setCaptureMode] = useState<CaptureMode>("tab");
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [segmentCount, setSegmentCount] = useState(0);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [isListening, setIsListening] = useState(false);
+
+  const recognitionRef = useRef<any>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const interimRef = useRef<string>("");
+
+  const pushSegment = trpc.shadowMode.pushTranscriptSegment.useMutation();
+
+  const sendSegment = useCallback((text: string) => {
+    if (!text.trim() || text.trim().length < 2) return;
+    const now = Date.now();
+    const timeLabel = new Date(now).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    const segment = { speaker: "Local Audio", text: text.trim(), timestamp: now, timeLabel };
+
+    setSegmentCount(c => c + 1);
+    onSegment?.(segment);
+
+    pushSegment.mutate({
+      sessionId,
+      speaker: segment.speaker,
+      text: segment.text,
+      timestamp: segment.timestamp,
+      timeLabel: segment.timeLabel,
+    });
+  }, [sessionId, onSegment, pushSegment]);
+
+  const startSpeechRecognition = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+      return null;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = "";
+      let interimTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript;
+        } else {
+          interimTranscript += result[0].transcript;
+        }
+      }
+
+      if (finalTranscript) {
+        sendSegment(finalTranscript);
+        interimRef.current = "";
+      } else {
+        interimRef.current = interimTranscript;
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error === "no-speech" || event.error === "aborted") return;
+      console.warn("[LocalAudio] Speech recognition error:", event.error);
+      if (event.error === "not-allowed") {
+        setError("Microphone access denied. Please allow microphone access and try again.");
+        stopCapture();
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      if (isCapturing && !isPaused) {
+        try {
+          recognition.start();
+          setIsListening(true);
+        } catch {}
+      }
+    };
+
+    return recognition;
+  }, [sendSegment, isCapturing, isPaused]);
+
+  const startAudioLevelMonitor = useCallback((stream: MediaStream) => {
+    try {
+      const ctx = new AudioContext();
+      audioContextRef.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(dataArray);
+        const avg = dataArray.reduce((sum, v) => sum + v, 0) / dataArray.length;
+        setAudioLevel(Math.min(100, Math.round((avg / 128) * 100)));
+        animFrameRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch {}
+  }, []);
+
+  const startCapture = useCallback(async () => {
+    setError(null);
+
+    try {
+      let stream: MediaStream;
+
+      if (captureMode === "tab" || captureMode === "system") {
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            audio: true,
+            video: true,
+          });
+
+          const videoTracks = stream.getVideoTracks();
+          videoTracks.forEach(track => {
+            track.enabled = false;
+          });
+        } catch (err: any) {
+          if (err.name === "NotAllowedError") {
+            setError("Screen sharing was cancelled. You need to share a tab/window and check 'Share audio' to capture the call audio.");
+            return;
+          }
+          throw err;
+        }
+
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length === 0) {
+          stream.getTracks().forEach(t => t.stop());
+          setError("No audio track found. When sharing, make sure to check 'Share tab audio' or 'Share system audio' at the bottom of the dialog.");
+          return;
+        }
+      } else {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+
+      streamRef.current = stream;
+
+      stream.getTracks().forEach(track => {
+        track.onended = () => {
+          stopCapture();
+          toast.info("Audio capture stopped — the shared tab or audio source was closed.");
+        };
+      });
+
+      startAudioLevelMonitor(stream);
+
+      try {
+        const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+        chunksRef.current = [];
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunksRef.current.push(e.data);
+        };
+        recorder.start(5000);
+        mediaRecorderRef.current = recorder;
+      } catch {}
+
+      const recognition = startSpeechRecognition();
+      if (recognition) {
+        recognitionRef.current = recognition;
+        recognition.start();
+        setIsListening(true);
+      }
+
+      setIsCapturing(true);
+      setIsPaused(false);
+      toast.success("Local audio capture started — CuraLive is now listening");
+    } catch (err: any) {
+      console.error("[LocalAudio] Start failed:", err);
+      setError(`Failed to start audio capture: ${err.message}`);
+    }
+  }, [captureMode, startSpeechRecognition, startAudioLevelMonitor]);
+
+  const stopCapture = useCallback(() => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try { audioContextRef.current.close(); } catch {}
+      audioContextRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try { mediaRecorderRef.current.stop(); } catch {}
+      mediaRecorderRef.current = null;
+    }
+
+    setIsCapturing(false);
+    setIsPaused(false);
+    setAudioLevel(0);
+    setIsListening(false);
+  }, []);
+
+  const togglePause = useCallback(() => {
+    if (isPaused) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.start(); setIsListening(true); } catch {}
+      }
+      setIsPaused(false);
+    } else {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch {}
+      }
+      setIsPaused(true);
+      setIsListening(false);
+    }
+  }, [isPaused]);
+
+  useEffect(() => {
+    return () => {
+      stopCapture();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isActive && isCapturing) {
+      stopCapture();
+    }
+  }, [isActive]);
+
+  if (!isActive) return null;
+
+  return (
+    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden">
+      <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Mic className="w-4 h-4 text-cyan-400" />
+          <span className="text-sm text-slate-300 font-medium">Local Audio Capture</span>
+          {isCapturing && !isPaused && (
+            <span className="flex items-center gap-1 text-xs text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Listening
+            </span>
+          )}
+          {isPaused && (
+            <span className="text-xs text-amber-400">Paused</span>
+          )}
+        </div>
+        {isCapturing && (
+          <span className="text-xs text-slate-500">{segmentCount} segments captured</span>
+        )}
+      </div>
+
+      <div className="p-4">
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-900/20 border border-red-500/20 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-red-300">{error}</p>
+          </div>
+        )}
+
+        {!isCapturing ? (
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-slate-500 block mb-2">Audio Source</label>
+              <div className="flex gap-2">
+                {[
+                  { mode: "tab" as CaptureMode, label: "Tab / Window Audio", icon: Monitor, desc: "Captures audio from a Chorus Call webphone or any browser tab" },
+                  { mode: "mic" as CaptureMode, label: "Microphone", icon: Mic, desc: "Captures audio from your device microphone (speakerphone mode)" },
+                ].map(({ mode, label, icon: Icon }) => (
+                  <button
+                    key={mode}
+                    onClick={() => setCaptureMode(mode)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border transition-all ${
+                      captureMode === mode
+                        ? "bg-cyan-500/20 border-cyan-500/60 text-cyan-300"
+                        : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-600 mt-2">
+                {captureMode === "tab"
+                  ? "You'll be asked to share a tab — select the tab with the Chorus Call webphone. Make sure to tick 'Share tab audio' at the bottom of the share dialog."
+                  : "Uses your device microphone — put the call on speaker or use a speakerphone. Works with any audio source."}
+              </p>
+            </div>
+
+            <Button
+              onClick={startCapture}
+              className="bg-cyan-600 hover:bg-cyan-500 gap-2 w-full"
+            >
+              <Radio className="w-4 h-4" />
+              Start Local Audio Capture
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs text-slate-500">Audio Level</span>
+                  {audioLevel > 5 ? (
+                    <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : (
+                    <VolumeX className="w-3.5 h-3.5 text-slate-600" />
+                  )}
+                </div>
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-100"
+                    style={{
+                      width: `${audioLevel}%`,
+                      backgroundColor: audioLevel > 60 ? "#10b981" : audioLevel > 20 ? "#06b6d4" : "#64748b",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={togglePause}
+                  className={isPaused ? "text-amber-400 hover:text-amber-300" : "text-slate-400 hover:text-white"}
+                >
+                  {isPaused ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                  {isPaused ? "Resume" : "Pause"}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={stopCapture}
+                  className="bg-red-600/20 hover:bg-red-600/40 text-red-300 border border-red-500/20 gap-1.5"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  Stop
+                </Button>
+              </div>
+            </div>
+
+            {isListening && (
+              <div className="flex items-center gap-2 text-xs text-emerald-400">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Speech recognition active — transcribing audio in real-time</span>
+              </div>
+            )}
+
+            {interimRef.current && (
+              <div className="p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                <span className="text-xs text-slate-600 italic">{interimRef.current}</span>
+              </div>
+            )}
+
+            <div className="p-3 rounded-lg bg-cyan-900/10 border border-cyan-500/10">
+              <p className="text-[11px] text-cyan-300/70">
+                {captureMode === "tab"
+                  ? "Capturing audio from the shared tab. Keep the tab open and active. The transcript appears in the Live Transcript panel above."
+                  : "Capturing audio from your microphone. Speak clearly or place your device near the audio source. The transcript appears in the Live Transcript panel above."}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -19,6 +19,7 @@ import {
   Newspaper, Share2, Briefcase, Send,
   Zap, Network, Download, Video, ExternalLink,
 } from "lucide-react";
+import LocalAudioCapture from "@/components/LocalAudioCapture";
 
 const PLATFORM_LABELS: Record<string, string> = {
   zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", choruscall: "Chorus Call", other: "Other",
@@ -993,6 +994,14 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                           </div>
                         );
                       })()}
+
+                      <LocalAudioCapture
+                        sessionId={liveSession.id}
+                        isActive={isActive}
+                        onSegment={(seg) => {
+                          setRealtimeSegments(prev => [...prev, seg]);
+                        }}
+                      />
 
                       <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden">
                         <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
