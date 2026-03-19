@@ -354,10 +354,10 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       try {
-        mediaRecorderRef.current.stop();
         mediaRecorderRef.current.onstop = () => {
           saveRecording();
         };
+        mediaRecorderRef.current.stop();
       } catch {
         saveRecording();
       }
@@ -404,7 +404,7 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
     }
   }, [isActive]);
 
-  if (!isActive) return null;
+  if (!isActive && !isSavingRecording) return null;
 
   return (
     <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden">

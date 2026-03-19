@@ -2840,6 +2840,7 @@ export type StudioSession = typeof studioSessions.$inferSelect;
 
 export const archiveEvents = mysqlTable("archive_events", {
   id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }),
   clientName: varchar("client_name", { length: 255 }).notNull(),
   eventName: varchar("event_name", { length: 255 }).notNull(),
   eventType: mysqlEnum("event_type", [

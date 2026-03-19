@@ -1214,14 +1214,22 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                                     <div className="text-xs text-slate-500 mt-0.5">The meeting is being recorded. The recording will be available once the session ends.</div>
                                   </div>
                                 </div>
+                              ) : liveSession.status === "processing" ? (
+                                <div className="flex items-center gap-3 py-4">
+                                  <Loader2 className="w-8 h-8 text-cyan-400 animate-spin shrink-0" />
+                                  <div>
+                                    <div className="text-sm font-medium text-slate-400">Saving recording...</div>
+                                    <div className="text-xs text-slate-600 mt-0.5">The recording is being saved. This usually takes a few seconds.</div>
+                                  </div>
+                                </div>
                               ) : (
                                 <div className="flex items-center gap-3 py-4">
                                   <div className="w-10 h-10 rounded-full bg-slate-500/10 border border-slate-500/20 flex items-center justify-center">
                                     <Video className="w-5 h-5 text-slate-600" />
                                   </div>
                                   <div>
-                                    <div className="text-sm font-medium text-slate-400">Processing recording</div>
-                                    <div className="text-xs text-slate-600 mt-0.5">The recording is being processed. It will appear here once ready.</div>
+                                    <div className="text-sm font-medium text-slate-400">No recording available</div>
+                                    <div className="text-xs text-slate-600 mt-0.5">Start Local Audio Capture before the session to record the event.</div>
                                   </div>
                                 </div>
                               )}

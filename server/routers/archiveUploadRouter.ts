@@ -7,7 +7,7 @@ import { invokeLLM } from "../_core/llm";
 import { desc, sql } from "drizzle-orm";
 import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
 
-type AiReport = {
+export type AiReport = {
   executiveSummary: string;
   sentimentAnalysis: { score: number; narrative: string; keyDrivers: string[] };
   complianceReview: { riskLevel: string; flaggedPhrases: string[]; recommendations: string[] };
@@ -574,10 +574,11 @@ export const archiveUploadRouter = router({
       const conn = (db as any).session?.client ?? (db as any).$client;
       const [result] = await conn.execute(
         `INSERT INTO archive_events
-          (client_name, event_name, event_type, event_date, platform, transcript_text,
+          (event_id, client_name, event_name, event_type, event_date, platform, transcript_text,
            word_count, segment_count, sentiment_avg, compliance_flags, status, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?)`,
         [
+          null,
           input.clientName,
           input.eventName,
           input.eventType,
@@ -593,6 +594,7 @@ export const archiveUploadRouter = router({
       );
 
       const archiveId: number = (result as any).insertId;
+      await conn.execute(`UPDATE archive_events SET event_id = ? WHERE id = ?`, [`archive-${archiveId}`, archiveId]);
 
       const metricsPromise = generateMetricsFromArchive(
         archiveId,
