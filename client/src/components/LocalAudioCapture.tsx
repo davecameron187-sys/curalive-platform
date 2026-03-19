@@ -16,6 +16,8 @@ interface LocalAudioCaptureProps {
   onSegment?: (segment: { speaker: string; text: string; timestamp: number; timeLabel: string }) => void;
 }
 
+const WHISPER_CHUNK_INTERVAL_MS = 15000;
+
 export default function LocalAudioCapture({ sessionId, isActive, onSegment }: LocalAudioCaptureProps) {
   const [captureMode, setCaptureMode] = useState<CaptureMode>("tab");
   const [isCapturing, setIsCapturing] = useState(false);
@@ -26,6 +28,7 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
   const [isListening, setIsListening] = useState(false);
   const [isSavingRecording, setIsSavingRecording] = useState(false);
   const [recordingSaved, setRecordingSaved] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const recognitionRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -36,13 +39,23 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
   const chunksRef = useRef<Blob[]>([]);
   const interimRef = useRef<string>("");
 
+  const whisperRecorderRef = useRef<MediaRecorder | null>(null);
+  const whisperChunksRef = useRef<Blob[]>([]);
+  const whisperIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const whisperActiveRef = useRef(false);
+  const captureModeRef = useRef<CaptureMode>(captureMode);
+
+  useEffect(() => {
+    captureModeRef.current = captureMode;
+  }, [captureMode]);
+
   const pushSegment = trpc.shadowMode.pushTranscriptSegment.useMutation();
 
-  const sendSegment = useCallback((text: string) => {
+  const sendSegment = useCallback((text: string, speaker?: string) => {
     if (!text.trim() || text.trim().length < 2) return;
     const now = Date.now();
     const timeLabel = new Date(now).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-    const segment = { speaker: "Local Audio", text: text.trim(), timestamp: now, timeLabel };
+    const segment = { speaker: speaker || "Call Audio", text: text.trim(), timestamp: now, timeLabel };
 
     setSegmentCount(c => c + 1);
     onSegment?.(segment);
@@ -55,6 +68,83 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
       timeLabel: segment.timeLabel,
     });
   }, [sessionId, onSegment, pushSegment]);
+
+  const sendWhisperChunk = useCallback(async () => {
+    if (whisperChunksRef.current.length === 0) return;
+
+    const blob = new Blob(whisperChunksRef.current, { type: "audio/webm;codecs=opus" });
+    whisperChunksRef.current = [];
+
+    if (blob.size < 1000) return;
+
+    setIsTranscribing(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", blob, "chunk.webm");
+      const res = await fetch("/api/transcribe-audio", { method: "POST", body: fd });
+      if (res.ok) {
+        const { transcript } = await res.json();
+        if (transcript && transcript.trim().length > 1) {
+          sendSegment(transcript, "Call Audio");
+        }
+      } else {
+        console.warn("[LocalAudio] Whisper chunk transcription failed:", res.status);
+      }
+    } catch (err) {
+      console.warn("[LocalAudio] Whisper chunk error:", err);
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, [sendSegment]);
+
+  const startWhisperTranscription = useCallback((stream: MediaStream) => {
+    try {
+      const audioStream = new MediaStream(stream.getAudioTracks());
+      const recorder = new MediaRecorder(audioStream, { mimeType: "audio/webm;codecs=opus" });
+      whisperChunksRef.current = [];
+      whisperActiveRef.current = true;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          whisperChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.start(1000);
+      whisperRecorderRef.current = recorder;
+
+      whisperIntervalRef.current = setInterval(() => {
+        if (whisperActiveRef.current) {
+          sendWhisperChunk();
+        }
+      }, WHISPER_CHUNK_INTERVAL_MS);
+
+      console.log("[LocalAudio] Whisper chunked transcription started (output audio)");
+    } catch (err) {
+      console.warn("[LocalAudio] Failed to start Whisper transcription:", err);
+    }
+  }, [sendWhisperChunk]);
+
+  const stopWhisperTranscription = useCallback(() => {
+    whisperActiveRef.current = false;
+    if (whisperIntervalRef.current) {
+      clearInterval(whisperIntervalRef.current);
+      whisperIntervalRef.current = null;
+    }
+    if (whisperRecorderRef.current && whisperRecorderRef.current.state !== "inactive") {
+      try {
+        whisperRecorderRef.current.onstop = () => {
+          sendWhisperChunk();
+        };
+        whisperRecorderRef.current.stop();
+      } catch {
+        sendWhisperChunk();
+      }
+    } else {
+      sendWhisperChunk();
+    }
+    whisperRecorderRef.current = null;
+  }, [sendWhisperChunk]);
 
   const startSpeechRecognition = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -83,7 +173,7 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
       }
 
       if (finalTranscript) {
-        sendSegment(finalTranscript);
+        sendSegment(finalTranscript, "Microphone");
         interimRef.current = "";
       } else {
         interimRef.current = interimTranscript;
@@ -189,21 +279,30 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
         mediaRecorderRef.current = recorder;
       } catch {}
 
-      const recognition = startSpeechRecognition();
-      if (recognition) {
-        recognitionRef.current = recognition;
-        recognition.start();
+      if (captureMode === "tab" || captureMode === "system") {
+        startWhisperTranscription(stream);
         setIsListening(true);
+      } else {
+        const recognition = startSpeechRecognition();
+        if (recognition) {
+          recognitionRef.current = recognition;
+          recognition.start();
+          setIsListening(true);
+        }
       }
 
       setIsCapturing(true);
       setIsPaused(false);
-      toast.success("Local audio capture started — CuraLive is now listening");
+      toast.success(
+        captureMode === "tab" || captureMode === "system"
+          ? "Capturing call audio — transcribing output via Whisper AI"
+          : "Local audio capture started — CuraLive is now listening"
+      );
     } catch (err: any) {
       console.error("[LocalAudio] Start failed:", err);
       setError(`Failed to start audio capture: ${err.message}`);
     }
-  }, [captureMode, startSpeechRecognition, startAudioLevelMonitor]);
+  }, [captureMode, startSpeechRecognition, startAudioLevelMonitor, startWhisperTranscription]);
 
   const saveRecording = useCallback(async () => {
     if (chunksRef.current.length === 0) return;
@@ -238,6 +337,9 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
       try { recognitionRef.current.stop(); } catch {}
       recognitionRef.current = null;
     }
+
+    stopWhisperTranscription();
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
@@ -268,18 +370,23 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
     setIsPaused(false);
     setAudioLevel(0);
     setIsListening(false);
-  }, [saveRecording]);
+  }, [saveRecording, stopWhisperTranscription]);
 
   const togglePause = useCallback(() => {
     if (isPaused) {
-      if (recognitionRef.current) {
+      if (captureModeRef.current === "mic" && recognitionRef.current) {
         try { recognitionRef.current.start(); setIsListening(true); } catch {}
+      }
+      if (captureModeRef.current === "tab" || captureModeRef.current === "system") {
+        whisperActiveRef.current = true;
+        setIsListening(true);
       }
       setIsPaused(false);
     } else {
       if (recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch {}
       }
+      whisperActiveRef.current = false;
       setIsPaused(true);
       setIsListening(false);
     }
@@ -308,7 +415,7 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
           {isCapturing && !isPaused && (
             <span className="flex items-center gap-1 text-xs text-emerald-400">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Listening
+              {captureModeRef.current === "mic" ? "Listening" : "Capturing Output"}
             </span>
           )}
           {isPaused && (
@@ -348,7 +455,7 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
               <label className="text-xs text-slate-500 block mb-2">Audio Source</label>
               <div className="flex gap-2">
                 {[
-                  { mode: "tab" as CaptureMode, label: "Tab / Window Audio", icon: Monitor, desc: "Captures audio from a Chorus Call webphone or any browser tab" },
+                  { mode: "tab" as CaptureMode, label: "Tab / Window Audio", icon: Monitor, desc: "Captures and transcribes the call audio output (what participants are saying)" },
                   { mode: "mic" as CaptureMode, label: "Microphone", icon: Mic, desc: "Captures audio from your device microphone (speakerphone mode)" },
                 ].map(({ mode, label, icon: Icon }) => (
                   <button
@@ -367,7 +474,7 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
               </div>
               <p className="text-[11px] text-slate-600 mt-2">
                 {captureMode === "tab"
-                  ? "You'll be asked to share a tab — select the tab with the Chorus Call webphone. Make sure to tick 'Share tab audio' at the bottom of the share dialog."
+                  ? "Share the tab with the call — CuraLive captures the call's audio output and transcribes what participants are saying via Whisper AI. Transcription updates every ~15 seconds."
                   : "Uses your device microphone — put the call on speaker or use a speakerphone. Works with any audio source."}
               </p>
             </div>
@@ -427,11 +534,22 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
             {isListening && (
               <div className="flex items-center gap-2 text-xs text-emerald-400">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Speech recognition active — transcribing audio in real-time</span>
+                <span>
+                  {captureModeRef.current === "mic"
+                    ? "Speech recognition active — transcribing microphone input in real-time"
+                    : "Whisper AI active — transcribing call output audio every ~15 seconds"}
+                </span>
               </div>
             )}
 
-            {interimRef.current && (
+            {isTranscribing && (
+              <div className="flex items-center gap-2 text-xs text-cyan-400">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Processing audio chunk with Whisper AI...</span>
+              </div>
+            )}
+
+            {captureModeRef.current === "mic" && interimRef.current && (
               <div className="p-2 rounded-lg bg-white/[0.02] border border-white/5">
                 <span className="text-xs text-slate-600 italic">{interimRef.current}</span>
               </div>
@@ -439,8 +557,8 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
 
             <div className="p-3 rounded-lg bg-cyan-900/10 border border-cyan-500/10">
               <p className="text-[11px] text-cyan-300/70">
-                {captureMode === "tab"
-                  ? "Capturing audio from the shared tab. Keep the tab open and active. The transcript appears in the Live Transcript panel above."
+                {captureModeRef.current === "tab"
+                  ? "Capturing and transcribing the call's audio output. Whisper AI processes chunks every ~15 seconds. Keep the shared tab open. The transcript appears in the Live Transcript panel above."
                   : "Capturing audio from your microphone. Speak clearly or place your device near the audio source. The transcript appears in the Live Transcript panel above."}
               </p>
             </div>
