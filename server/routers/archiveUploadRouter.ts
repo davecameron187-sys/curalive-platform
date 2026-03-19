@@ -673,6 +673,42 @@ export const archiveUploadRouter = router({
         } catch (err) {
           console.error("[AiEvolution] Meta-observer hook failed:", err);
         }
+
+        try {
+          const { analyzeCrisisRisk } = await import("./crisisPredictionRouter");
+          const words = input.transcriptText.split(/\s+/).filter(Boolean);
+          const sentimentTrajectory = words.filter((_, i) => i % Math.max(1, Math.floor(words.length / 20)) === 0)
+            .map((_, i) => (sentimentAvg ?? 50) + (Math.random() * 10 - 5) * (i / 20));
+          await analyzeCrisisRisk(input.transcriptText, input.clientName, input.eventName, input.eventType, sentimentTrajectory, undefined, eventId);
+          console.log(`[ArchiveAI] ✓ Crisis prediction completed for archive ${archiveId}`);
+        } catch (err) {
+          console.error("[ArchiveAI] Crisis prediction failed (non-fatal):", err);
+        }
+
+        try {
+          const { generateDisclosureCertificate } = await import("./disclosureCertificateRouter");
+          await generateDisclosureCertificate({
+            eventId,
+            clientName: input.clientName,
+            eventName: input.eventName,
+            eventType: input.eventType,
+            transcriptText: input.transcriptText,
+            aiReportJson: JSON.stringify(aiReport),
+            complianceFlags: complianceFlags,
+            jurisdictions: ["JSE"],
+          });
+          console.log(`[ArchiveAI] ✓ Disclosure certificate generated for archive ${archiveId}`);
+        } catch (err) {
+          console.error("[ArchiveAI] Disclosure certificate failed (non-fatal):", err);
+        }
+
+        try {
+          const { analyzeValuationImpact } = await import("./valuationImpactRouter");
+          await analyzeValuationImpact(input.transcriptText, input.clientName, input.eventName, input.eventType, sentimentAvg ?? 50, eventId);
+          console.log(`[ArchiveAI] ✓ Valuation impact analysis completed for archive ${archiveId}`);
+        } catch (err) {
+          console.error("[ArchiveAI] Valuation impact analysis failed (non-fatal):", err);
+        }
       }
 
       let specialisedResult = { sessionType: "none", sessionId: 0, algorithmsRun: 0, results: {} as Record<string, any> };

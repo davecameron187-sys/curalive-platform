@@ -12,7 +12,8 @@ export async function analyzeCrisisRisk(
   eventName: string,
   eventType: string,
   sentimentTrajectory: number[],
-  sessionId?: number
+  sessionId?: number,
+  explicitEventId?: string
 ) {
   const db = await getDb();
 
@@ -62,7 +63,7 @@ ${transcript.slice(-4000)}`
   const cleaned = raw.replace(/^```json?\s*/i, "").replace(/```\s*$/i, "").trim();
   const analysis = JSON.parse(cleaned);
 
-  const eventId = sessionId ? `shadow-${sessionId}` : `analysis-${Date.now()}`;
+  const eventId = explicitEventId ?? (sessionId ? `shadow-${sessionId}` : `analysis-${Date.now()}`);
 
   await db.insert(crisisPredictions).values({
     sessionId: sessionId ?? null,

@@ -83,6 +83,14 @@ async function autoGenerateAiReport(
       console.error("[Shadow] Disclosure certificate failed:", err);
     }
 
+    try {
+      const { analyzeValuationImpact } = await import("./valuationImpactRouter");
+      await analyzeValuationImpact(fullText, clientName, eventName, eventType, sentimentAvg ?? 50, `shadow-${sessionId}`);
+      console.log(`[Shadow] Valuation impact analysis completed for session ${sessionId}`);
+    } catch (err) {
+      console.error("[Shadow] Valuation impact analysis failed:", err);
+    }
+
     console.log(`[Shadow] AI report generated for session ${sessionId} — ${aiReport.modulesGenerated} modules`);
   } catch (err) {
     console.error(`[Shadow] Auto AI report generation failed for session ${sessionId}:`, err);
