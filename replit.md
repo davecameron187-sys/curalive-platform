@@ -282,6 +282,31 @@ Shadow Mode is the intelligence factory. Every event (live, uploaded, or pasted)
 
 **Database:** `archive_events` table defined in `drizzle/schema.ts` and created via `scripts/create-archive-events-table.ts` + `scripts/add-ai-report-column.ts`
 
+## Shadow Mode Guardian — Resilience & Backup
+
+Three-layer protection system ensuring Shadow Mode never loses data:
+
+**1. Graceful Shutdown** — On SIGTERM/SIGINT, annotates all active sessions so they're recoverable on restart.
+
+**2. Startup Reconciliation** — On server boot, scans for sessions stuck in `live`, `bot_joining`, or `processing`:
+- Sessions with transcript data → auto-recovered to `completed`
+- Stale sessions with no data → marked `failed`
+- Sessions stuck in `processing` > 15min → marked `failed`
+
+**3. Watchdog (60s interval)** — Continuous monitoring of active sessions:
+- `bot_joining` > 10 minutes → marked `failed` (bot never connected)
+- `live` > 6 hours → auto-completed (maximum session duration safety net)
+
+**Files:**
+- `server/services/ShadowModeGuardianService.ts` — All three layers
+- `server/_core/index.ts` — Wired into startup + shutdown signals
+
+**Key safety design:**
+- Recall.ai bots are external — they stay in meetings even if CuraLive restarts
+- Transcripts are saved incrementally via webhooks, not batched
+- All strategic AI modules (crisis, valuation, disclosure) use non-fatal error handling
+- Bot deployment auto-retries 3× with exponential backoff
+
 ## AI Self-Evolution Engine
 
 Autonomous system that observes its own AI report quality, detects gaps, and proposes new tools.

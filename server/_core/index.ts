@@ -772,10 +772,28 @@ async function startServer() {
 
     import("../services/ComplianceEngineService").then(({ startComplianceEngine, seedFrameworkControls }) => {
       startComplianceEngine();
-      // Seed SOC2 / ISO27001 framework controls on first boot (idempotent — skips existing rows)
       seedFrameworkControls().catch(e => console.warn("[ComplianceEngine] Seed failed:", e.message));
     }).catch(e => console.warn("[ComplianceEngine] Failed to start:", e.message));
+
+    import("../services/ShadowModeGuardianService").then(({ reconcileShadowSessions, startShadowWatchdog }) => {
+      reconcileShadowSessions().then(result => {
+        if (result.total > 0) {
+          console.log(`[ShadowGuardian] Startup reconciliation: ${result.recovered} recovered, ${result.failed} failed, ${result.active} active`);
+        }
+      });
+      startShadowWatchdog();
+    }).catch(e => console.warn("[ShadowGuardian] Failed to start:", e.message));
   });
+
+  const shutdown = async (signal: string) => {
+    try {
+      const { gracefulShutdown } = await import("../services/ShadowModeGuardianService");
+      await gracefulShutdown(signal);
+    } catch {}
+    process.exit(0);
+  };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 startServer().catch(console.error);
