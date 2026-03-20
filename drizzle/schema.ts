@@ -3273,3 +3273,61 @@ export const capabilityRoadmap = mysqlTable("capability_roadmap", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
+
+export const liveQaSessions = mysqlTable("live_qa_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionCode: varchar("session_code", { length: 20 }).notNull().unique(),
+  shadowSessionId: int("shadow_session_id"),
+  eventName: varchar("event_name", { length: 500 }).notNull(),
+  clientName: varchar("client_name", { length: 255 }),
+  status: mysqlEnum("qa_session_status", ["active", "paused", "closed"]).default("active").notNull(),
+  totalQuestions: int("total_questions").default(0),
+  totalApproved: int("total_approved").default(0),
+  totalRejected: int("total_rejected").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  closedAt: timestamp("closed_at"),
+});
+
+export const liveQaQuestions = mysqlTable("live_qa_questions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("session_id").notNull(),
+  questionText: text("question_text").notNull(),
+  submitterName: varchar("submitter_name", { length: 200 }),
+  submitterEmail: varchar("submitter_email", { length: 255 }),
+  submitterCompany: varchar("submitter_company", { length: 200 }),
+  category: mysqlEnum("question_category", ["financial", "operational", "esg", "governance", "strategy", "general"]).default("general").notNull(),
+  status: mysqlEnum("question_status", ["pending", "triaged", "approved", "answered", "rejected", "flagged"]).default("pending").notNull(),
+  upvotes: int("upvotes").default(0),
+  triageScore: float("triage_score"),
+  triageClassification: varchar("triage_classification", { length: 32 }),
+  triageReason: text("triage_reason"),
+  complianceRiskScore: float("compliance_risk_score"),
+  priorityScore: float("priority_score"),
+  isAnonymous: boolean("is_anonymous").default(false),
+  operatorNotes: text("operator_notes"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).$defaultFn(() => Date.now()),
+});
+
+export const liveQaAnswers = mysqlTable("live_qa_answers", {
+  id: int("id").autoincrement().primaryKey(),
+  questionId: int("question_id").notNull(),
+  answerText: text("answer_text").notNull(),
+  isAutoDraft: boolean("is_auto_draft").default(false),
+  autoDraftReasoning: text("auto_draft_reasoning"),
+  approvedByOperator: boolean("approved_by_operator").default(false),
+  answeredAt: bigint("answered_at", { mode: "number" }).$defaultFn(() => Date.now()),
+});
+
+export const liveQaComplianceFlags = mysqlTable("live_qa_compliance_flags", {
+  id: int("id").autoincrement().primaryKey(),
+  questionId: int("question_id").notNull(),
+  jurisdiction: varchar("jurisdiction", { length: 50 }).notNull(),
+  riskScore: float("risk_score").notNull(),
+  riskType: varchar("risk_type", { length: 100 }).notNull(),
+  riskDescription: text("risk_description"),
+  recommendedAction: mysqlEnum("recommended_action", ["forward", "route_to_bot", "legal_review", "delay_24h"]).default("forward").notNull(),
+  autoRemediationSuggestion: text("auto_remediation_suggestion"),
+  resolved: boolean("resolved").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

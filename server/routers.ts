@@ -85,6 +85,7 @@ import { monthlyReportRouter } from "./routers/monthlyReportRouter";
 import { advisoryBotRouter } from "./routers/advisoryBotRouter";
 import { evolutionAuditRouter } from "./routers/evolutionAuditRouter";
 import { systemDiagnosticsRouter } from "./routers/systemDiagnosticsRouter";
+import { liveQaRouter } from "./routers/liveQaRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -180,6 +181,7 @@ export const appRouter = router({
   advisoryBot: advisoryBotRouter,
   evolutionAudit: evolutionAuditRouter,
   systemDiagnostics: systemDiagnosticsRouter,
+  liveQa: liveQaRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

@@ -121,6 +121,7 @@ import OnboardingFlow from "./pages/OnboardingFlow";
 import OperatorDashboard from "./pages/OperatorDashboard";
 import ConferenceDialout from "./pages/ConferenceDialout";
 import AgmGovernanceAi from "./pages/AgmGovernanceAi";
+import AttendeeQA from "./pages/AttendeeQA";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -221,6 +222,7 @@ function Router() {
       <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
       <Route path="/conference-dialout" component={ConferenceDialout} />
       <Route path="/agm-governance" component={AgmGovernanceAi} />
+      <Route path="/qa/:accessCode" component={AttendeeQA} />
       <Route path="/shadow-mode"><Redirect to="/?tab=shadow-mode" /></Route>
       <Route path="/health-guardian" component={HealthGuardian} />
       <Route path="/compliance-engine" component={ComplianceEngineDashboard} />

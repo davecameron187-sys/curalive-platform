@@ -23,6 +23,7 @@ import {
 import LocalAudioCapture from "@/components/LocalAudioCapture";
 import AIDashboard from "@/components/AIDashboard";
 import SystemDiagnostics from "@/components/SystemDiagnostics";
+import LiveQaDashboard from "@/components/LiveQaDashboard";
 
 const PLATFORM_LABELS: Record<string, string> = {
   zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", choruscall: "Chorus Call", other: "Other",
@@ -121,7 +122,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   }, [embedded]);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "ailearning" | "aidashboard" | "advisory" | "diagnostics">("live");
+  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "ailearning" | "aidashboard" | "advisory" | "diagnostics" | "liveqa">("live");
 
 
   // ── Live Intelligence state ────────────────────────────────────────────────
@@ -644,6 +645,16 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
               }`}>
               <MessageCircle className="w-4 h-4" />
               AI Advisory
+            </button>
+            <button
+              onClick={() => setActiveTab("liveqa")}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "liveqa"
+                  ? "border-teal-400 text-teal-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              <MessageCircle className="w-4 h-4" />
+              Live Q&A
             </button>
             <button
               onClick={() => setActiveTab("diagnostics")}
@@ -2576,6 +2587,17 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
         ══════════════════════════════════════════════════ */}
         {activeTab === "advisory" && (
           <AdvisoryBotPanel />
+        )}
+
+        {/* ══════════════════════════════════════════════════
+            LIVE Q&A TAB
+        ══════════════════════════════════════════════════ */}
+        {activeTab === "liveqa" && (
+          <LiveQaDashboard
+            shadowSessionId={activeSessionId || undefined}
+            eventName={sessions.data?.find((s: any) => s.id === activeSessionId)?.eventName || "Live Event"}
+            clientName={sessions.data?.find((s: any) => s.id === activeSessionId)?.clientName || ""}
+          />
         )}
 
         {/* ══════════════════════════════════════════════════

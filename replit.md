@@ -35,6 +35,23 @@ The platform has been consolidated to two main pages:
 - **`/live/:token`** — Client-facing live dashboard (read-only, no auth needed)
 - Old routes (`/shadow-mode`, `/occ`, `/bastion`, `/lumi`) redirect to dashboard tabs
 
+## Module 31: Live Q&A Intelligence Engine (CIP5, Claims 46-55)
+
+- **Operator Dashboard Tab**: "Live Q&A" tab in Shadow Mode (`ShadowMode.tsx`)
+- **Attendee Page**: Public `/qa/:accessCode` — no login required, mobile-friendly
+- **Backend Router**: `server/routers/liveQaRouter.ts` → `liveQa.*` tRPC namespace
+- **AI Triage Service**: `server/services/LiveQaTriageService.ts` — auto-categorises questions, compliance risk scoring, auto-draft responses
+- **DB Tables**: `live_qa_sessions`, `live_qa_questions`, `live_qa_answers`, `live_qa_compliance_flags`
+- **Migration Script**: `scripts/create-live-qa-tables.ts`
+- **Features**:
+  - Real-time question submission and upvoting
+  - AI triage with 6 categories (financial, operational, ESG, governance, strategy, general)
+  - Multi-jurisdictional compliance screening (JSE/SEC/FCA/ESMA)
+  - Auto-draft response generation via GPT-4o-mini
+  - Operator approve/reject/flag workflow
+  - Session lifecycle (active/paused/closed)
+  - Shareable Q&A link generation
+
 ## Project Structure
 
 ```
