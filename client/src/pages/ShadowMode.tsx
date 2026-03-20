@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 const PLATFORM_LABELS: Record<string, string> = {
-  zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", other: "Other",
+  zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", webphone: "Webphone", other: "Other",
 };
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -104,8 +104,9 @@ export default function ShadowMode() {
     eventType: "earnings_call",
     dialInNumber: "", conferenceId: "",
     accessCode: "", hostPin: "",
-    scheduledAt: "", notes: "",
+    scheduledAt: "", notes: "", platform: "dial-in", webphoneId: "",
   });
+  const [ccPlatform, setCcPlatform] = useState<"dial-in" | "webphone">("dial-in");
   const [ccSessions, setCcSessions] = useState<Array<{
     id: number; clientName: string; eventName: string; eventType: string;
     dialInNumber: string; conferenceId: string; accessCode: string;
@@ -453,7 +454,7 @@ export default function ShadowMode() {
               <div>
                 <div className="text-sm font-semibold text-slate-200 mb-1">How Shadow Mode works</div>
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  Paste any Zoom, Teams, or Meet link from a live event. CuraLive deploys an invisible intelligence bot that joins as{" "}
+                  Paste any Zoom, Teams, or Meet link from a live event, or use Webphone for internal testing. CuraLive deploys an invisible intelligence bot that joins as{" "}
                   <span className="text-slate-200 font-medium">"CuraLive Intelligence"</span> — it transcribes the entire event in real time, scores sentiment every 5 segments, detects compliance keywords, and automatically stores everything in your Tagged Metrics database when the session ends. Your clients see a regular participant name. You get a full intelligence record of every event you run.
                 </p>
               </div>
@@ -513,10 +514,10 @@ export default function ShadowMode() {
                     </div>
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-xs text-slate-500 block mb-1.5">Meeting URL * (Zoom / Teams / Meet invite link)</label>
+                    <label className="text-xs text-slate-500 block mb-1.5">Meeting URL or Webphone ID * (Zoom/Teams/Meet link or webphone-call-id)</label>
                     <input
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 font-mono"
-                      placeholder="https://zoom.us/j/... or https://teams.microsoft.com/..."
+                      placeholder="https://zoom.us/j/... or webphone-test-001"
                       value={form.meetingUrl}
                       onChange={e => setForm(f => ({ ...f, meetingUrl: e.target.value }))}
                     />
@@ -1287,8 +1288,16 @@ export default function ShadowMode() {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    if (!ccForm.eventName.trim() || !ccForm.dialInNumber.trim()) {
-                      toast.error("Event name and dial-in number are required");
+                    if (!ccForm.eventName.trim()) {
+                      toast.error("Event name is required");
+                      return;
+                    }
+                    if (ccPlatform === "dial-in" && !ccForm.dialInNumber.trim()) {
+                      toast.error("Dial-in number is required");
+                      return;
+                    }
+                    if (ccPlatform === "webphone" && !ccForm.webphoneId.trim()) {
+                      toast.error("Webphone ID is required");
                       return;
                     }
                     const newSession = {
@@ -1301,7 +1310,7 @@ export default function ShadowMode() {
                     setCcForm({
                       clientName: "", eventName: "", eventType: "earnings_call",
                       dialInNumber: "", conferenceId: "", accessCode: "",
-                      hostPin: "", scheduledAt: "", notes: "",
+                      hostPin: "", scheduledAt: "", notes: "", platform: ccPlatform, webphoneId: "",
                     });
                     setCcShowForm(false);
                     toast.success("Dial-in details logged");
@@ -1357,7 +1366,38 @@ export default function ShadowMode() {
                     </div>
                   </div>
 
+                  {/* Platform selection */}
+                  <div className="bg-white/[0.015] border border-orange-500/10 rounded-xl p-4 space-y-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Phone className="w-3.5 h-3.5 text-orange-400" />
+                      <span className="text-xs font-semibold text-orange-300 uppercase tracking-wide">Connection Type</span>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setCcPlatform("dial-in")}
+                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          ccPlatform === "dial-in"
+                            ? "bg-orange-500 text-white"
+                            : "bg-white/5 text-slate-400 hover:bg-white/10"
+                        }`}>
+                        📞 Dial-In Number
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCcPlatform("webphone")}
+                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          ccPlatform === "webphone"
+                            ? "bg-orange-500 text-white"
+                            : "bg-white/5 text-slate-400 hover:bg-white/10"
+                        }`}>
+                        📱 Webphone
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Dial-in details */}
+                  {ccPlatform === "dial-in" && (
                   <div className="bg-white/[0.015] border border-orange-500/10 rounded-xl p-4 space-y-4">
                     <div className="flex items-center gap-2 mb-1">
                       <Phone className="w-3.5 h-3.5 text-orange-400" />
@@ -1413,6 +1453,26 @@ export default function ShadowMode() {
                       </div>
                     </div>
                   </div>
+                  )}
+
+                  {ccPlatform === "webphone" && (
+                  <div className="bg-white/[0.015] border border-orange-500/10 rounded-xl p-4 space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Phone className="w-3.5 h-3.5 text-orange-400" />
+                      <span className="text-xs font-semibold text-orange-300 uppercase tracking-wide">Webphone Details</span>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1.5 block font-medium">Webphone ID *</label>
+                      <input
+                        value={ccForm.webphoneId}
+                        onChange={e => setCcForm(f => ({ ...f, webphoneId: e.target.value }))}
+                        placeholder="e.g. internal-standup-001"
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 font-mono"
+                      />
+                      <p className="text-[10px] text-slate-600 mt-1">Alphanumeric ID for this Webphone call (no spaces).</p>
+                    </div>
+                  </div>
+                  )}
 
                   <div>
                     <label className="text-xs text-slate-400 mb-1.5 block font-medium">Notes <span className="text-slate-600">(optional)</span></label>

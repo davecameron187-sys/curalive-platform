@@ -609,3 +609,195 @@ All core features implemented and production-ready.
 - [ ] Write deployment checklist
 - [ ] Save final checkpoint
 
+
+
+## GROK2 IMPLEMENTATION ROADMAP (Module 31 - Live Q&A Intelligence Engine)
+
+### Phase 1-2: Foundation & Intelligence Layer (Weeks 1-4)
+- [ ] Database schema: questions, answers, triage_events, investor_context, compliance_flags tables
+- [ ] tRPC router: createQuestion, answerQuestion, getQuestionStats, getTriageMetrics
+- [ ] Ably channels: questions, answers, triage-events, compliance-alerts
+- [ ] React Attendee Interface: question submission, upvoting, real-time updates
+- [ ] React Operator Dashboard: question moderation, triage queue, compliance view
+- [ ] AI Triage Swarm: multi-agent question classification and prioritization
+- [ ] Predictive Anticipation: question prediction before submission (using Recall.ai transcript)
+- [ ] Investor Context Cards: auto-generated context for each question
+- [ ] Compliance Firewall: real-time compliance risk assessment (JSE, SEC, EU MAR, POPIA)
+- [ ] Smart Queue Optimization: dynamic question ordering based on relevance + compliance
+- [ ] Private AI Bot: confidential question routing for sensitive topics
+- [ ] Blockchain Certification: Clean Disclosure Certificate generation for each answer
+- [ ] Write comprehensive vitest tests (100+ tests)
+- [ ] Verify TypeScript compilation: 0 errors
+- [ ] Save checkpoint: "Phase 1-2 Complete: Foundation & Intelligence Layer"
+
+### Phase 3: Autonomy & AGI Core (Weeks 5-6)
+- [ ] Database schema: agentStates, autonomyLogs, agentDecisions tables
+- [ ] Implement autonomous agent orchestration service
+- [ ] Build predictive anticipation ML model (question pre-detection)
+- [ ] Create smart queue optimization algorithm (relevance + compliance scoring)
+- [ ] Implement auto-draft response generation (using invokeLLM)
+- [ ] Build AGI decision logging and audit trail
+- [ ] Create operator override mechanism with reasoning capture
+- [ ] Implement feedback loop for continuous improvement
+- [ ] Add real-time autonomy metrics dashboard
+- [ ] Write comprehensive vitest tests (80+ tests)
+- [ ] Verify TypeScript compilation: 0 errors
+- [ ] Save checkpoint: "Phase 3 Complete: Autonomy & AGI Core"
+
+### Phase 4: AGI Tool Generator (Weeks 7-8) — GROK2 Section 3.4
+- [ ] Database schema: tool_proposals, tool_evidence, tool_promotion_pipeline tables
+- [ ] Implement AgiToolGeneratorService.ts with 6-step closed loop:
+  - [ ] Domain Detection: scan Q&A sessions for unhandled patterns
+  - [ ] Gap Analysis: use Module 28 Gap Detection Matrix
+  - [ ] Tool Proposal Generation: create complete tool spec (name, purpose, prompts, schema, compliance rules)
+  - [ ] Validation & Evidence Building: shadow test mode on historical events
+  - [ ] Promotion Pipeline: 5-stage lifecycle with configurable thresholds
+  - [ ] Self-Evolution Feedback: feed results back into Module 28
+- [ ] Implement key patentable algorithms:
+  - [ ] Evidence Decay Function (exponential half-life weighting)
+  - [ ] Cross-Domain Correlation Engine (vector embeddings)
+  - [ ] Autonomous Promotion Pipeline (5-stage lifecycle)
+  - [ ] Impact Estimation Model (Monte-Carlo ROI simulation)
+  - [ ] Tool Quality Scoring (depth + breadth + specificity + generic-phrase penalty)
+- [ ] Build real-world tool examples:
+  - [ ] NGO Impact Reporting Q&A (donor sentiment + SDG scoring)
+  - [ ] Crisis Communications Mode (misinformation detection + approved messaging)
+  - [ ] Government Regulatory Briefing Tool (auto-alignment with PFMA, SEC, etc.)
+  - [ ] Private Company Board Meeting Assistant (voting simulation + director prediction)
+  - [ ] Stakeholder Townhall for Asset Managers (competitor benchmarking + sentiment)
+- [ ] Create super-admin dashboard for monitoring auto-generated tools
+- [ ] Implement tool promotion workflow with optional manual review
+- [ ] Add tRPC procedures: scanForNewDomains, generateToolProposal, promoteToolToProduction, getToolStats
+- [ ] Write comprehensive vitest tests (120+ tests)
+- [ ] Verify TypeScript compilation: 0 errors
+- [ ] Save checkpoint: "Phase 4 Complete: AGI Tool Generator"
+
+### Phase 5: AGI Corporate Compliance Layer (Weeks 9-10) — GROK2 Section 3.5
+- [ ] Database schema: compliance_policies, compliance_decisions, regulatory_updates tables
+- [ ] Implement AgiComplianceService.ts with 6-step closed loop:
+  - [ ] Real-Time Predictive Risk Engine: Monte-Carlo scenario simulation
+  - [ ] Multi-Jurisdictional Firewall: cross-check against 12+ jurisdictions (JSE, SEC, EU MAR, POPIA, etc.)
+  - [ ] Autonomous Policy Generator: create new compliance rules when patterns detected
+  - [ ] Self-Healing Remediation: auto-draft compliant responses
+  - [ ] Blockchain Audit Trail: log all compliance decisions with Clean Disclosure Certificates
+  - [ ] AGI Evolution: feed compliance events back into AGI Tool Generator
+- [ ] Implement key patentable algorithms:
+  - [ ] Predictive Selective Disclosure Simulator (Monte-Carlo + Module 24 valuation cones)
+  - [ ] Jurisdictional Vector Alignment Engine (real-time regulatory embeddings)
+  - [ ] Autonomous Compliance Policy Generator (invokeLLM + Module 28 promotion)
+  - [ ] Self-Healing Risk Decay Model (exponential breach weighting)
+  - [ ] Multi-Agent Compliance Swarm (dynamic jurisdiction-specific agents)
+- [ ] Build real-world compliance examples:
+  - [ ] JSE-listed company: capital raise question detection + auto-SENS generation
+  - [ ] US Reg FD: retail investor question routing to private AI Bot
+  - [ ] EU MAR: inside-information detection + 24-hour delay protocol
+  - [ ] NGO/Government: donor confidentiality + anti-bribery auto-enforcement
+- [ ] Create compliance co-pilot UI for operators (risk scores, auto-drafts, policy suggestions)
+- [ ] Implement regulatory database update mechanism (daily cron for law changes)
+- [ ] Add tRPC procedures: assessQuestionRisk, generateCompliancePolicy, autoRemediateResponse, getComplianceStats
+- [ ] Write comprehensive vitest tests (150+ tests)
+- [ ] Verify TypeScript compilation: 0 errors
+- [ ] Save checkpoint: "Phase 5 Complete: AGI Corporate Compliance Layer"
+
+### Phase 6: Polish, Scale & Patent Filing (Weeks 11-12)
+- [ ] Performance optimization: query caching, index optimization, connection pooling
+- [ ] Load testing: simulate 10,000+ concurrent users, 1,000+ questions/minute
+- [ ] White-labeling: custom branding, custom compliance rules per customer
+- [ ] Voice-to-text integration: Recall.ai + Whisper for live transcription
+- [ ] Analytics dashboard: tool generation stats, compliance decision history, AGI evolution metrics
+- [ ] Documentation: API docs, deployment guide, compliance guide, AGI training guide
+- [ ] Security audit: penetration testing, compliance review, data privacy audit
+- [ ] Production deployment: load balancing, auto-scaling, disaster recovery
+- [ ] Create CIPC Submission 5 filing package:
+  - [ ] Update technical brief with Sections 3.4 & 3.5
+  - [ ] Create 4 new patent diagrams (AGI Tool Generator, Compliance Workflow, etc.)
+  - [ ] Generate 18-24 new claims (Claims 62-79 or 62-85)
+  - [ ] Prepare formal CIPC filing document
+- [ ] Create board presentation: GROK2 capabilities, patent value increase, acquisition valuation impact
+- [ ] Write comprehensive vitest tests (200+ tests)
+- [ ] Verify TypeScript compilation: 0 errors
+- [ ] Save checkpoint: "Phase 6 Complete: Polish, Scale & Patent Filing"
+
+### Delivery
+- [ ] Submit CIPC Submission 5 to patents@cipc.co.za
+- [ ] Present GROK2 platform to board of directors
+- [ ] Launch Live Q&A platform to beta customers
+- [ ] Achieve $40M-$63.5M patent portfolio valuation
+- [ ] Target $108M-$175M acquisition valuation with GROK2
+
+
+## GROK2 PHASE 2 — FRONTEND UI + INTELLIGENCE LAYER (Weeks 1-4)
+
+### Live Q&A Interface Components
+- [ ] Create LiveQaSession component (main event room)
+- [ ] Build QuestionSubmissionForm with category selection
+- [ ] Create QuestionCard component with upvote/downvote
+- [ ] Build AnswerPanel for approved answers
+- [ ] Implement real-time question list with Ably
+- [ ] Add sentiment indicator badges on questions
+- [ ] Create compliance risk visual indicators
+- [ ] Build private Q&A chat interface
+
+### Moderator Dashboard
+- [ ] Create ModeratorDashboard layout with sidebar
+- [ ] Build QuestionQueue component (pending approval)
+- [ ] Create ApprovalPanel for triaging questions
+- [ ] Build ComplianceFlagsPanel for risk review
+- [ ] Implement real-time metrics display (total Q&A, compliance flags)
+- [ ] Add bulk action controls (approve/reject multiple)
+- [ ] Create session controls (start/end/pause)
+- [ ] Build moderator analytics dashboard
+
+### Real-Time Updates & Ably Integration
+- [ ] Setup Ably channel subscription for live questions
+- [ ] Implement auto-refresh for question lists
+- [ ] Add real-time notification badges
+- [ ] Create presence tracking (who's online)
+- [ ] Build message broadcasting for moderator announcements
+- [ ] Add connection status indicator
+- [ ] Implement optimistic updates for instant feedback
+
+### Sentiment Analysis Visualization
+- [ ] Create SentimentChart component (real-time line chart)
+- [ ] Build SentimentGauge for current sentiment score
+- [ ] Create SentimentTrend component showing sentiment over time
+- [ ] Add emotion breakdown visualization (happy/neutral/sad)
+- [ ] Build sentiment alerts for negative spikes
+- [ ] Create sentiment comparison across questions
+- [ ] Add sentiment filter for question list
+
+### Compliance & Risk Management UI
+- [ ] Create ComplianceRiskBadge component
+- [ ] Build JurisdictionFilter component
+- [ ] Create RiskScoreVisualization (color-coded scale)
+- [ ] Build AutoRemediationSuggestions panel
+- [ ] Create ComplianceFlagHistory timeline
+- [ ] Add legal review request workflow
+- [ ] Build compliance report generator
+
+### Private Q&A Bot Interface
+- [ ] Create PrivateQaChat component
+- [ ] Build confidentiality level selector
+- [ ] Create AI response streaming display
+- [ ] Build conversation history viewer
+- [ ] Add legal routing workflow UI
+- [ ] Create private conversation export
+- [ ] Build privacy controls and access logs
+
+### Testing & Validation
+- [ ] Write vitest tests for all React components
+- [ ] Create integration tests for tRPC mutations
+- [ ] Build E2E tests for moderator workflows
+- [ ] Test real-time Ably updates
+- [ ] Validate sentiment analysis accuracy
+- [ ] Test compliance flag detection
+- [ ] Performance testing with 1000+ questions
+
+### UI/UX Polish
+- [ ] Design system setup (colors, typography, spacing)
+- [ ] Create responsive layouts for mobile/tablet/desktop
+- [ ] Add loading states and skeleton screens
+- [ ] Implement error boundaries and fallbacks
+- [ ] Add accessibility features (ARIA labels, keyboard nav)
+- [ ] Create dark mode support
+- [ ] Build animation transitions
