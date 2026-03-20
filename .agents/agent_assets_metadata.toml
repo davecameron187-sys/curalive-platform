@@ -204,3 +204,9 @@ id = "q-cz1LW5PZZ4eLzrsKNOV"
 uri = "file://attached_assets/CuraLive_CIPC_CIP_Submission_4_Complete.docx"
 type = "word_document"
 title = "CuraLive CIPC CIP Submission 4 — Complete"
+
+[[outputs]]
+id = "7t3_B0A4oIPY_nQNqv1_P"
+uri = "file://CuraLive_Infrastructure_Costs.xlsx"
+type = "table"
+title = "CuraLive Infrastructure Costs — Full Breakdown"
