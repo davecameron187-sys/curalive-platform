@@ -41,8 +41,11 @@ The platform has been consolidated to two main pages:
 - **Attendee Page**: Public `/qa/:accessCode` — no login required, mobile-friendly
 - **Backend Router**: `server/routers/liveQaRouter.ts` → `liveQa.*` tRPC namespace
 - **AI Triage Service**: `server/services/LiveQaTriageService.ts` — auto-categorises questions, compliance risk scoring, auto-draft responses
-- **DB Tables**: `live_qa_sessions`, `live_qa_questions`, `live_qa_answers`, `live_qa_compliance_flags`
-- **Migration Script**: `scripts/create-live-qa-tables.ts`
+- **DB Tables**: `live_qa_sessions`, `live_qa_questions`, `live_qa_answers`, `live_qa_compliance_flags`, `live_qa_platform_shares`
+- **Migration Scripts**: `scripts/create-live-qa-tables.ts`, `scripts/create-platform-shares-table.ts`
+- **Platform Embed Service**: `server/services/PlatformEmbedService.ts` — share link generation, embed code, event summaries
+- **Platform Embed Router**: `server/routers/platformEmbedRouter.ts` → `platformEmbed.*` tRPC namespace
+- **Embeddable Widget**: `/embed/qa/:accessCode` — compact iFrame-friendly Q&A widget with white-label support
 - **Features**:
   - Real-time question submission and upvoting
   - AI triage with 6 categories (financial, operational, ESG, governance, strategy, general)
@@ -55,6 +58,9 @@ The platform has been consolidated to two main pages:
   - Ably real-time publishing on question submission and status changes (`curalive-qa-{sessionId}`)
   - Question cards with triage score (HIGH/MED/LOW), compliance risk indicator (GREEN/AMBER/RED), investor context
   - Collapsible insights panel with category distribution and question matching
+  - Platform Share: one-click share to Zoom/Teams/Webex/Meet chat with platform-optimized messages
+  - Embeddable Widget: iFrame-friendly `/embed/qa/:accessCode` with white-label support (brand name, color, hide branding)
+  - Post-Event Intelligence Report: auto-generated summary with metrics, category breakdown, compliance flags, top questions, JSON export
 
 ## Project Structure
 

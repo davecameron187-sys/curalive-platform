@@ -6,6 +6,7 @@ import {
   Copy, Check, Pause, Play, StopCircle, AlertTriangle,
   ThumbsUp, ThumbsDown, Zap, Send, ExternalLink, Bot,
   Scale, TrendingUp, Eye, Clock, Users, BarChart3,
+  Share2, Code2, FileText, Download,
 } from "lucide-react";
 
 interface Props {
@@ -288,6 +289,13 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
   const [copiedLink, setCopiedLink] = useState(false);
   const [creating, setCreating] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showPlatformPanel, setShowPlatformPanel] = useState(false);
+  const [showEmbedPanel, setShowEmbedPanel] = useState(false);
+  const [showReportPanel, setShowReportPanel] = useState(false);
+  const [embedWhiteLabel, setEmbedWhiteLabel] = useState(false);
+  const [embedBrandName, setEmbedBrandName] = useState("");
+  const [embedBrandColor, setEmbedBrandColor] = useState("#6366f1");
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
 
   const sessionByShadow = trpc.liveQa.getSessionByShadow.useQuery(
     { shadowSessionId: shadowSessionId || 0 },
@@ -306,6 +314,11 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
   const submitAnswer = trpc.liveQa.submitAnswer.useMutation();
   const generateDraftMut = trpc.liveQa.generateDraft.useMutation();
   const updateSessionStatus = trpc.liveQa.updateSessionStatus.useMutation();
+  const generateShareLinkMut = trpc.platformEmbed.generateShareLink.useMutation();
+  const eventSummaryQuery = trpc.platformEmbed.getEventSummary.useQuery(
+    { sessionId: qaSessionId || 0 },
+    { enabled: !!qaSessionId && showReportPanel }
+  );
 
   useEffect(() => {
     if (sessionByShadow.data) {
@@ -412,6 +425,41 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
     setTimeout(() => setCopiedLink(false), 2000);
   }, [sessionCode]);
 
+  const handlePlatformShare = useCallback(async (platform: "zoom" | "teams" | "webex" | "meet" | "generic") => {
+    if (!qaSessionId) return;
+    try {
+      const result = await generateShareLinkMut.mutateAsync({ sessionId: qaSessionId, sessionCode, platform });
+      navigator.clipboard.writeText(result.chatMessage);
+      toast.success(`${platform.charAt(0).toUpperCase() + platform.slice(1)} message copied — paste into meeting chat`);
+    } catch { toast.error("Failed to generate share link"); }
+  }, [qaSessionId, sessionCode, generateShareLinkMut]);
+
+  const copyEmbedCode = useCallback(() => {
+    const params = new URLSearchParams();
+    if (embedWhiteLabel) params.set("theme", "platform");
+    if (embedBrandName) params.set("brandName", embedBrandName);
+    if (embedBrandColor && embedBrandColor !== "#6366f1") params.set("brandColor", embedBrandColor);
+    const qs = params.toString();
+    const url = `${window.location.origin}/embed/qa/${sessionCode}${qs ? `?${qs}` : ""}`;
+    const code = `<iframe\n  src="${url}"\n  width="400"\n  height="640"\n  frameborder="0"\n  allow="clipboard-write"\n  style="border-radius: 12px; border: 1px solid #2a2a4a;"\n></iframe>`;
+    navigator.clipboard.writeText(code);
+    setCopiedEmbed(true);
+    toast.success("Embed code copied to clipboard");
+    setTimeout(() => setCopiedEmbed(false), 2000);
+  }, [sessionCode, embedWhiteLabel, embedBrandName, embedBrandColor]);
+
+  const downloadReport = useCallback(() => {
+    if (!eventSummaryQuery.data) return;
+    const blob = new Blob([JSON.stringify(eventSummaryQuery.data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `curalive-qa-report-${sessionCode}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Report downloaded");
+  }, [eventSummaryQuery.data, sessionCode]);
+
   const questions = questionsQuery.data || [];
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -506,12 +554,153 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
                 <StopCircle className="w-3.5 h-3.5" /> End Q&A
               </button>
             )}
+            <button onClick={() => setShowPlatformPanel(!showPlatformPanel)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25 transition-colors">
+              <Share2 className="w-3.5 h-3.5" /> Platform Share
+            </button>
+            <button onClick={() => setShowEmbedPanel(!showEmbedPanel)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/30 hover:bg-violet-500/25 transition-colors">
+              <Code2 className="w-3.5 h-3.5" /> Embed
+            </button>
+            <button onClick={() => setShowReportPanel(!showReportPanel)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors">
+              <FileText className="w-3.5 h-3.5" /> Report
+            </button>
             <button onClick={() => setShowSidebar(!showSidebar)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0a0a18] text-slate-400 border border-[#1e1e3a] hover:text-slate-200 transition-colors">
               <BarChart3 className="w-3.5 h-3.5" /> {showSidebar ? "Hide" : "Show"} Insights
             </button>
           </div>
         </div>
       </div>
+
+      {showPlatformPanel && (
+        <div className="bg-[#0d0d20] border border-blue-500/20 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Share2 className="w-4 h-4 text-blue-400" /> Share to Platform Chat</h4>
+            <button onClick={() => setShowPlatformPanel(false)} className="text-slate-500 text-xs hover:text-slate-300">&times;</button>
+          </div>
+          <p className="text-xs text-slate-400 mb-3">Generate a platform-optimized share message. Click to copy, then paste into your meeting chat.</p>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { platform: "zoom" as const, label: "Zoom", color: "#2d8cff" },
+              { platform: "teams" as const, label: "Teams", color: "#6264a7" },
+              { platform: "webex" as const, label: "Webex", color: "#07c160" },
+              { platform: "meet" as const, label: "Google Meet", color: "#00897b" },
+              { platform: "generic" as const, label: "Other", color: "#6366f1" },
+            ]).map(({ platform, label, color }) => (
+              <button
+                key={platform}
+                onClick={() => handlePlatformShare(platform)}
+                disabled={generateShareLinkMut.isPending}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white hover:opacity-80 transition-opacity disabled:opacity-50"
+                style={{ background: color }}
+              >
+                <ExternalLink className="w-3 h-3" /> {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {showEmbedPanel && (
+        <div className="bg-[#0d0d20] border border-violet-500/20 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Code2 className="w-4 h-4 text-violet-400" /> Embeddable Widget</h4>
+            <button onClick={() => setShowEmbedPanel(false)} className="text-slate-500 text-xs hover:text-slate-300">&times;</button>
+          </div>
+          <p className="text-xs text-slate-400 mb-3">Embed this Q&A widget directly inside any platform or website. One line of code.</p>
+          <div className="flex flex-wrap gap-4 mb-4">
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" checked={embedWhiteLabel} onChange={e => setEmbedWhiteLabel(e.target.checked)} className="accent-violet-500" />
+              White-label mode
+            </label>
+            {embedWhiteLabel && (
+              <>
+                <input value={embedBrandName} onChange={e => setEmbedBrandName(e.target.value)} placeholder="Brand name" className="bg-[#0a0a18] border border-[#2a2a4a] rounded-lg px-2 py-1 text-xs text-white w-32 outline-none" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-slate-400">Color:</span>
+                  <input type="color" value={embedBrandColor} onChange={e => setEmbedBrandColor(e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                </div>
+              </>
+            )}
+          </div>
+          <div className="bg-[#0a0a18] border border-[#1e1e3a] rounded-lg p-3 mb-3">
+            <code className="text-xs text-emerald-400 whitespace-pre-wrap break-all">
+              {`<iframe src="${window.location.origin}/embed/qa/${sessionCode}${embedWhiteLabel ? `?theme=platform${embedBrandName ? `&brandName=${encodeURIComponent(embedBrandName)}` : ""}${embedBrandColor !== "#6366f1" ? `&brandColor=${encodeURIComponent(embedBrandColor)}` : ""}` : ""}" width="400" height="640" frameborder="0"></iframe>`}
+            </code>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={copyEmbedCode} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-violet-500 text-white hover:bg-violet-400 transition-colors">
+              {copiedEmbed ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copiedEmbed ? "Copied!" : "Copy Embed Code"}
+            </button>
+            <a href={`/embed/qa/${sessionCode}${embedWhiteLabel ? `?theme=platform${embedBrandName ? `&brandName=${encodeURIComponent(embedBrandName)}` : ""}${embedBrandColor !== "#6366f1" ? `&brandColor=${encodeURIComponent(embedBrandColor)}` : ""}` : ""}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#1e1e3a] text-slate-300 hover:text-white transition-colors">
+              <ExternalLink className="w-3 h-3" /> Preview Widget
+            </a>
+          </div>
+        </div>
+      )}
+
+      {showReportPanel && (
+        <div className="bg-[#0d0d20] border border-emerald-500/20 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2"><FileText className="w-4 h-4 text-emerald-400" /> Post-Event Intelligence Report</h4>
+            <div className="flex items-center gap-2">
+              <button onClick={downloadReport} disabled={!eventSummaryQuery.data} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors disabled:opacity-50">
+                <Download className="w-3 h-3" /> Export JSON
+              </button>
+              <button onClick={() => setShowReportPanel(false)} className="text-slate-500 text-xs hover:text-slate-300">&times;</button>
+            </div>
+          </div>
+          {eventSummaryQuery.isLoading ? (
+            <div className="text-center py-6"><p className="text-slate-400 text-sm">Generating report...</p></div>
+          ) : eventSummaryQuery.data ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { label: "Total Questions", value: eventSummaryQuery.data.metrics.totalQuestions, color: "#818cf8" },
+                  { label: "Answered", value: eventSummaryQuery.data.metrics.totalAnswered, color: "#22c55e" },
+                  { label: "Response Rate", value: `${eventSummaryQuery.data.metrics.responseRate}%`, color: "#3b82f6" },
+                  { label: "Sentiment", value: eventSummaryQuery.data.metrics.overallSentiment, color: eventSummaryQuery.data.metrics.overallSentiment === "Positive" ? "#22c55e" : eventSummaryQuery.data.metrics.overallSentiment === "Cautious" ? "#f59e0b" : "#818cf8" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="bg-[#0a0a18] rounded-lg p-3 text-center">
+                    <p className="text-lg font-bold" style={{ color }}>{value}</p>
+                    <p className="text-[0.65rem] text-slate-500 mt-0.5">{label}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-[#0a0a18] rounded-lg p-3">
+                  <h5 className="text-xs font-bold text-slate-400 mb-2">Category Breakdown</h5>
+                  {Object.entries(eventSummaryQuery.data.categoryBreakdown).map(([cat, count]) => (
+                    <div key={cat} className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-slate-300 capitalize">{cat}</span>
+                      <span className="text-slate-500">{count as number}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-[#0a0a18] rounded-lg p-3">
+                  <h5 className="text-xs font-bold text-slate-400 mb-2">Compliance Summary</h5>
+                  <div className="flex justify-between text-xs mb-1"><span className="text-slate-300">Total Flags</span><span className="text-slate-500">{eventSummaryQuery.data.compliance.totalFlags}</span></div>
+                  <div className="flex justify-between text-xs mb-1"><span className="text-slate-300">Unresolved</span><span className="text-amber-400">{eventSummaryQuery.data.compliance.unresolvedFlags}</span></div>
+                  <div className="flex justify-between text-xs"><span className="text-slate-300">High Risk</span><span className="text-red-400">{eventSummaryQuery.data.compliance.highRiskFlags.length}</span></div>
+                </div>
+              </div>
+              {eventSummaryQuery.data.topQuestions.length > 0 && (
+                <div className="bg-[#0a0a18] rounded-lg p-3">
+                  <h5 className="text-xs font-bold text-slate-400 mb-2">Top Questions by Upvotes</h5>
+                  {eventSummaryQuery.data.topQuestions.slice(0, 5).map((q: any) => (
+                    <div key={q.id} className="flex items-start gap-2 text-xs mb-2 last:mb-0">
+                      <span className="text-indigo-400 font-mono min-w-[2rem] text-right">{q.upvotes}▲</span>
+                      <span className="text-slate-300 flex-1">{q.text.length > 120 ? q.text.slice(0, 120) + "..." : q.text}</span>
+                      <span className="text-slate-500 capitalize whitespace-nowrap">{q.category}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-slate-400 text-sm text-center py-4">No data available yet.</p>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-2 flex-wrap">
         {(["all", "pending", "triaged", "approved", "answered", "rejected", "flagged"] as StatusFilter[]).map(f => {

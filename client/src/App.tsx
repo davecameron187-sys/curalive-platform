@@ -122,6 +122,7 @@ import OperatorDashboard from "./pages/OperatorDashboard";
 import ConferenceDialout from "./pages/ConferenceDialout";
 import AgmGovernanceAi from "./pages/AgmGovernanceAi";
 import AttendeeQA from "./pages/AttendeeQA";
+import EmbeddableQaWidget from "./pages/EmbeddableQaWidget";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -223,6 +224,7 @@ function Router() {
       <Route path="/conference-dialout" component={ConferenceDialout} />
       <Route path="/agm-governance" component={AgmGovernanceAi} />
       <Route path="/qa/:accessCode" component={AttendeeQA} />
+      <Route path="/embed/qa/:accessCode" component={EmbeddableQaWidget} />
       <Route path="/shadow-mode"><Redirect to="/?tab=shadow-mode" /></Route>
       <Route path="/health-guardian" component={HealthGuardian} />
       <Route path="/compliance-engine" component={ComplianceEngineDashboard} />

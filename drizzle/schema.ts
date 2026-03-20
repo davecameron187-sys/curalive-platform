@@ -3331,3 +3331,16 @@ export const liveQaComplianceFlags = mysqlTable("live_qa_compliance_flags", {
   resolved: boolean("resolved").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const liveQaPlatformShares = mysqlTable("live_qa_platform_shares", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("session_id").notNull(),
+  platform: mysqlEnum("platform", ["zoom", "teams", "webex", "meet", "generic"]).notNull(),
+  shareType: mysqlEnum("share_type", ["link", "embed", "widget"]).default("link").notNull(),
+  shareLink: varchar("share_link", { length: 1000 }).notNull(),
+  whiteLabel: boolean("white_label").default(false),
+  brandName: varchar("brand_name", { length: 255 }),
+  brandColor: varchar("brand_color", { length: 7 }),
+  clickCount: int("click_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

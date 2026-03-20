@@ -90,6 +90,7 @@ import { advisoryBotRouter } from "./routers/advisoryBotRouter";
 import { evolutionAuditRouter } from "./routers/evolutionAuditRouter";
 import { systemDiagnosticsRouter } from "./routers/systemDiagnosticsRouter";
 import { liveQaRouter } from "./routers/liveQaRouter";
+import { platformEmbedRouter } from "./routers/platformEmbedRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -189,6 +190,7 @@ export const appRouter = router({
   evolutionAudit: evolutionAuditRouter,
   systemDiagnostics: systemDiagnosticsRouter,
   liveQa: liveQaRouter,
+  platformEmbed: platformEmbedRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
