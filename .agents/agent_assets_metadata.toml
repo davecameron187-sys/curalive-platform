@@ -270,3 +270,9 @@ id = "SawYCpbIfZImLDkiwo2fJ"
 uri = "file://attached_assets/CuraLive_Infrastructure_Costs_Updated.xlsx"
 type = "table"
 title = "CuraLive Infrastructure Costs — Updated 20 March 2026 (Styled)"
+
+[[outputs]]
+id = "lRi7aXu_7APUKHyJ01cM7"
+uri = "file://attached_assets/CuraLive_Financial_Model_Updated.xlsx"
+type = "table"
+title = "CuraLive Financial Model — Updated 20 March 2026"
