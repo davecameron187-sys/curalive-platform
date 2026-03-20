@@ -305,3 +305,60 @@ export const blockchainCertificates = mysqlTable("blockchain_certificates", {
 
 export type BlockchainCertificate = typeof blockchainCertificates.$inferSelect;
 export type InsertBlockchainCertificate = typeof blockchainCertificates.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AGI TOOL GENERATOR (Phase 4)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * AGI Generated Tools table — stores autonomously generated Q&A tools
+ * GROK2 Phase 4: Tool Generator
+ */
+export const agiGeneratedTools = mysqlTable("agi_generated_tools", {
+  id: varchar("id", { length: 128 }).primaryKey(), // tool-{timestamp}-{random}
+  name: varchar("name", { length: 255 }).notNull(),
+  domain: varchar("domain", { length: 128 }).notNull(),
+  description: text("description").notNull(),
+  questionPatterns: json("questionPatterns"), // Array<string>
+  responseTemplate: text("responseTemplate"),
+  validationRules: json("validationRules"), // Array<string>
+  riskIndicators: json("riskIndicators"), // Array<string>
+  status: mysqlEnum("status", ["draft", "testing", "staging", "production", "deprecated"])
+    .default("draft")
+    .notNull(),
+  accuracy: float("accuracy").default(0), // 0-1
+  coverage: float("coverage").default(0), // 0-1
+  readinessScore: float("readinessScore").default(0), // 0-1
+  performanceMetrics: json("performanceMetrics"), // {questionsProcessed, accuracyScore, userSatisfaction, improvementSuggestions}
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  promotedAt: timestamp("promotedAt"),
+  lastUpdatedAt: timestamp("lastUpdatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AgiGeneratedTool = typeof agiGeneratedTools.$inferSelect;
+export type InsertAgiGeneratedTool = typeof agiGeneratedTools.$inferInsert;
+
+/**
+ * AGI Compliance Rules table — stores autonomously generated compliance rules
+ * GROK2 Phase 5: Corporate Compliance Layer
+ */
+export const agiComplianceRules = mysqlTable("agi_compliance_rules", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  jurisdiction: varchar("jurisdiction", { length: 128 }).notNull(),
+  ruleType: varchar("ruleType", { length: 128 }).notNull(), // "anti_bribery", "data_privacy", "market_abuse", etc.
+  description: text("description").notNull(),
+  detectionPatterns: json("detectionPatterns"), // Array<string>
+  remediationSteps: json("remediationSteps"), // Array<string>
+  escalationThreshold: float("escalationThreshold").default(0.7),
+  status: mysqlEnum("status", ["draft", "testing", "active", "archived"])
+    .default("draft")
+    .notNull(),
+  effectivenessScore: float("effectivenessScore").default(0),
+  falsePositiveRate: float("falsePositiveRate").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  activatedAt: timestamp("activatedAt"),
+  lastUpdatedAt: timestamp("lastUpdatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AgiComplianceRule = typeof agiComplianceRules.$inferSelect;
+export type InsertAgiComplianceRule = typeof agiComplianceRules.$inferInsert;
