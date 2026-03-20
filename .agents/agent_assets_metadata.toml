@@ -276,3 +276,9 @@ id = "lRi7aXu_7APUKHyJ01cM7"
 uri = "file://attached_assets/CuraLive_Financial_Model_Updated.xlsx"
 type = "table"
 title = "CuraLive Financial Model — Updated 20 March 2026"
+
+[[outputs]]
+id = "9Ykvv-9W9HjuVN8AsKFkV"
+uri = "file://docs/CuraLive_Operator_Managed_Live_QA_Brief.docx"
+type = "word_document"
+title = "CuraLive Operator-Managed Live Q&A — Strategic Options Brief"
