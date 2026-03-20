@@ -5,6 +5,7 @@ import { getDb } from "../db";
 import { liveQaSessions, liveQaQuestions, liveQaAnswers, liveQaComplianceFlags } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { triageQuestion, generateAutoDraft } from "../services/LiveQaTriageService";
+import { publishToChannel } from "../_core/ably";
 
 function generateSessionCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -168,6 +169,18 @@ export const liveQaRouter = router({
         .set({ totalQuestions: sql`total_questions + 1` })
         .where(eq(liveQaSessions.id, session.id));
 
+      publishToChannel(`curalive-qa-${session.id}`, "qa.submitted", {
+        questionId,
+        questionText: input.questionText,
+        category: triage.category,
+        triageClassification: triage.triageClassification,
+        triageScore: triage.triageScore,
+        priorityScore: triage.priorityScore,
+        complianceRiskScore: triage.complianceRiskScore,
+        status: triage.complianceRiskScore > 70 ? "flagged" : "triaged",
+        timestamp: Date.now(),
+      }).catch(() => {});
+
       return {
         questionId,
         category: triage.category,
@@ -275,6 +288,13 @@ export const liveQaRouter = router({
           const conn = (db as any).session?.client ?? (db as any).$client;
           await conn.execute(`UPDATE live_qa_sessions SET ${col} = ${col} + 1 WHERE id = ?`, [q.sessionId]);
         }
+
+        publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
+          questionId: input.questionId,
+          newStatus: input.status,
+          operatorNotes: input.operatorNotes || null,
+          timestamp: Date.now(),
+        }).catch(() => {});
       }
 
       return { success: true };
@@ -324,6 +344,16 @@ export const liveQaRouter = router({
       await db.update(liveQaQuestions)
         .set({ status: "answered", updatedAt: Date.now() })
         .where(eq(liveQaQuestions.id, input.questionId));
+
+      const [q] = await db.select().from(liveQaQuestions).where(eq(liveQaQuestions.id, input.questionId));
+      if (q) {
+        publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
+          questionId: input.questionId,
+          newStatus: "answered",
+          timestamp: Date.now(),
+        }).catch(() => {});
+      }
+
       return { success: true };
     }),
 

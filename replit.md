@@ -48,9 +48,13 @@ The platform has been consolidated to two main pages:
   - AI triage with 6 categories (financial, operational, ESG, governance, strategy, general)
   - Multi-jurisdictional compliance screening (JSE/SEC/FCA/ESMA)
   - Auto-draft response generation via GPT-4o-mini
-  - Operator approve/reject/flag workflow
+  - Operator approve/reject/flag workflow with 4 one-click actions (Approve & Forward, Route to Bot, Legal Review, Reject)
   - Session lifecycle (active/paused/closed)
   - Shareable Q&A link generation
+  - Predictive Sidebar with session analytics, live sentiment, materiality heatmap, anticipated questions
+  - Ably real-time publishing on question submission and status changes (`curalive-qa-{sessionId}`)
+  - Question cards with triage score (HIGH/MED/LOW), compliance risk indicator (GREEN/AMBER/RED), investor context
+  - Collapsible insights panel with category distribution and question matching
 
 ## Project Structure
 
