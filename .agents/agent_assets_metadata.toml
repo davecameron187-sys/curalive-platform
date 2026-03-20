@@ -216,3 +216,15 @@ id = "23UjscrVMTaf2vcVEBJKg"
 uri = "file://CuraLive_LiveQA_Technical_Brief.docx"
 type = "word_document"
 title = "CuraLive Live Q&A — Technical Brief for Tech Team"
+
+[[outputs]]
+id = "uU8e_5md-QxfLUeIRtlu1"
+uri = "file://CuraLive_Consolidated_Tech_Brief.docx"
+type = "word_document"
+title = "CuraLive Consolidated Tech Brief — Module 31 (For Tech Team)"
+
+[[outputs]]
+id = "w0CwEQJ3C-xCN20esmVDh"
+uri = "file://CuraLive_CIPC_CIP_Submission_5_Module_31.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 5 — Module 31 (Patent Filing)"
