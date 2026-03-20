@@ -252,3 +252,9 @@ id = "B0Zyvd8dlfQ69O-snK_YJ"
 uri = "file://attached_assets/CuraLive_CIPC_CIP_Submission_5_Complete.docx"
 type = "word_document"
 title = "CuraLive CIP Submission 5 — Complete CIPC Filing (Module 31)"
+
+[[outputs]]
+id = "Q3u1THQK_Yb9auN16kvXn"
+uri = "file://docs/specs/live-qa-intelligence-workflow.md"
+type = "text"
+title = "Manus Workflow Brief — Live Q&A Intelligence Engine"
