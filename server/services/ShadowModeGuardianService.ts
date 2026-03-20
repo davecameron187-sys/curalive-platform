@@ -39,12 +39,12 @@ export async function reconcileShadowSessions() {
 
       if ((session.status === "live" || session.status === "bot_joining") && age > STALE_THRESHOLD_MS) {
         const [botRows] = await conn.execute(
-          `SELECT id, transcript FROM recall_bots WHERE shadow_session_id = ? ORDER BY created_at DESC LIMIT 1`,
+          `SELECT id, transcript_json FROM recall_bots WHERE event_id = ? ORDER BY created_at DESC LIMIT 1`,
           [session.id]
         );
 
         const bot = (botRows as any[])[0];
-        const hasTranscript = bot?.transcript && JSON.parse(bot.transcript || "[]").length > 0;
+        const hasTranscript = bot?.transcript_json && JSON.parse(bot.transcript_json || "[]").length > 0;
 
         if (hasTranscript) {
           await conn.execute(
@@ -84,9 +84,9 @@ async function watchdogCheck() {
 
     const [liveSessions] = await conn.execute(
       `SELECT s.id, s.client_name, s.event_name, s.status, s.started_at, s.created_at,
-              b.id as bot_id, b.last_activity_at
+              b.id as bot_id, b.created_at as bot_created_at
        FROM shadow_sessions s
-       LEFT JOIN recall_bots b ON b.shadow_session_id = s.id
+       LEFT JOIN recall_bots b ON b.event_id = s.id
        WHERE s.status IN ('live', 'bot_joining')
        ORDER BY s.created_at DESC`
     );
