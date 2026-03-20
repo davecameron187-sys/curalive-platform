@@ -258,3 +258,9 @@ id = "Q3u1THQK_Yb9auN16kvXn"
 uri = "file://docs/specs/live-qa-intelligence-workflow.md"
 type = "text"
 title = "Manus Workflow Brief — Live Q&A Intelligence Engine"
+
+[[outputs]]
+id = "K46OZ1tTbeaapyKT2prBp"
+uri = "file://attached_assets/CuraLive_Module31_Manus_Workflow_Brief.docx"
+type = "word_document"
+title = "Manus Workflow Brief — Live Q&A Intelligence Engine"
