@@ -40,27 +40,36 @@ The platform has been consolidated to two main pages:
 - **Operator Dashboard Tab**: "Live Q&A" tab in Shadow Mode (`ShadowMode.tsx`)
 - **Attendee Page**: Public `/qa/:accessCode` — no login required, mobile-friendly
 - **Backend Router**: `server/routers/liveQaRouter.ts` → `liveQa.*` tRPC namespace
-- **AI Triage Service**: `server/services/LiveQaTriageService.ts` — auto-categorises questions, compliance risk scoring, auto-draft responses
+- **AI Triage Service**: `server/services/LiveQaTriageService.ts` — auto-categorises questions, compliance risk scoring, auto-draft with AGI compliance pass
+- **AGI Tool Generator**: `server/services/AgiToolGeneratorService.ts` — autonomous micro-tool generation based on session patterns
+- **AGI Compliance Service**: `server/services/AgiComplianceService.ts` — predictive risk analysis, auto-policy generation, compliance-safe response verification
 - **DB Tables**: `live_qa_sessions`, `live_qa_questions`, `live_qa_answers`, `live_qa_compliance_flags`, `live_qa_platform_shares`
 - **Migration Scripts**: `scripts/create-live-qa-tables.ts`, `scripts/create-platform-shares-table.ts`
 - **Platform Embed Service**: `server/services/PlatformEmbedService.ts` — share link generation, embed code, event summaries
 - **Platform Embed Router**: `server/routers/platformEmbedRouter.ts` → `platformEmbed.*` tRPC namespace
 - **Embeddable Widget**: `/embed/qa/:accessCode` — compact iFrame-friendly Q&A widget with white-label support
 - **Features**:
-  - Real-time question submission and upvoting
+  - Real-time question submission and upvoting with voice-to-text (Web Speech API)
   - AI triage with 6 categories (financial, operational, ESG, governance, strategy, general)
   - Multi-jurisdictional compliance screening (JSE/SEC/FCA/ESMA)
-  - Auto-draft response generation via GPT-4o-mini
-  - Operator approve/reject/flag workflow with 4 one-click actions (Approve & Forward, Route to Bot, Legal Review, Reject)
+  - Auto-draft response generation via GPT-4o-mini with AGI compliance verification pass
+  - AGI Tool Generator — autonomously proposes session-specific tools based on live patterns
+  - AGI Corporate Compliance Layer — predictive risk analysis, auto-policy generation, jurisdiction alerts
+  - Operator approve/reject/flag workflow with 5 one-click actions (Approve, Send to Speaker, Route to Bot, Legal Review, Reject)
+  - Send to Speaker — forwards approved questions with AI-suggested response via Ably real-time
+  - IR Team Chat — real-time operator-to-IR/legal communication panel
+  - Broadcast to Team — urgent message broadcast to speaker, IR team, and legal
+  - Blockchain Clean Disclosure Certificate — SHA-256 hash-chained certificate per Q&A session
   - Session lifecycle (active/paused/closed)
   - Shareable Q&A link generation
   - Predictive Sidebar with session analytics, live sentiment, materiality heatmap, anticipated questions
-  - Ably real-time publishing on question submission and status changes (`curalive-qa-{sessionId}`)
+  - Ably real-time publishing on question submission, status changes, speaker routing, team broadcasts, IR chat
   - Question cards with triage score (HIGH/MED/LOW), compliance risk indicator (GREEN/AMBER/RED), investor context
   - Collapsible insights panel with category distribution and question matching
   - Platform Share: one-click share to Zoom/Teams/Webex/Meet chat with platform-optimized messages
   - Embeddable Widget: iFrame-friendly `/embed/qa/:accessCode` with white-label support (brand name, color, hide branding)
   - Post-Event Intelligence Report: auto-generated summary with metrics, category breakdown, compliance flags, top questions, JSON export
+- **Total new code**: ~2,944 lines across 9 core files
 
 ## Project Structure
 

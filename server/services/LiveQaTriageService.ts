@@ -1,4 +1,5 @@
 import { invokeLLM } from "../_core/llm";
+import { generateComplianceSafeResponse } from "./AgiComplianceService";
 
 export interface TriageResult {
   category: "financial" | "operational" | "esg" | "governance" | "strategy" | "general";
@@ -128,8 +129,27 @@ Return ONLY valid JSON:
     });
 
     const parsed = JSON.parse(result.text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+    let answerText = parsed.answerText || "Draft unavailable — please compose manually.";
+
+    try {
+      const complianceCheck = await generateComplianceSafeResponse(
+        questionText,
+        category,
+        ["ZA_JSE", "US_SEC", "UK_FCA", "EU_ESMA"],
+        answerText
+      );
+      if (complianceCheck.safeResponse) {
+        answerText = complianceCheck.safeResponse;
+      }
+      if (complianceCheck.disclaimers.length > 0) {
+        answerText += "\n\n" + complianceCheck.disclaimers.join("\n");
+      }
+    } catch {
+      console.log("[LiveQaTriage] AGI compliance pass skipped — using base draft");
+    }
+
     return {
-      answerText: parsed.answerText || "Draft unavailable — please compose manually.",
+      answerText,
       reasoning: parsed.reasoning || "",
     };
   } catch (err) {

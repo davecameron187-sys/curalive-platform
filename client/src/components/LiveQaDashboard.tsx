@@ -6,7 +6,8 @@ import {
   Copy, Check, Pause, Play, StopCircle, AlertTriangle,
   ThumbsUp, ThumbsDown, Zap, Send, ExternalLink, Bot,
   Scale, TrendingUp, Eye, Clock, Users, BarChart3,
-  Share2, Code2, FileText, Download,
+  Share2, Code2, FileText, Download, Radio, Hash,
+  Megaphone, Lock, Wrench,
 } from "lucide-react";
 
 interface Props {
@@ -53,12 +54,12 @@ function ComplianceIndicator({ score }: { score: number }) {
 }
 
 function QuestionCard({
-  q, onApprove, onReject, onFlag, onRouteBot, onLegalReview, onDraft, onAnswer,
+  q, onApprove, onReject, onFlag, onRouteBot, onLegalReview, onDraft, onAnswer, onSendToSpeaker,
   expanded, onToggle, draftText, onDraftChange,
 }: {
   q: any; onApprove: () => void; onReject: () => void; onFlag: () => void;
   onRouteBot: () => void; onLegalReview: () => void;
-  onDraft: () => void; onAnswer: () => void;
+  onDraft: () => void; onAnswer: () => void; onSendToSpeaker: () => void;
   expanded: boolean; onToggle: () => void;
   draftText: string; onDraftChange: (t: string) => void;
 }) {
@@ -121,6 +122,9 @@ function QuestionCard({
                 <Check className="w-3.5 h-3.5" /> Approve
               </button>
             )}
+            <button onClick={onSendToSpeaker} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25 transition-colors">
+              <Radio className="w-3.5 h-3.5" /> Send to Speaker
+            </button>
             <button onClick={onRouteBot} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/30 hover:bg-violet-500/25 transition-colors">
               <Bot className="w-3.5 h-3.5" /> Route to Bot
             </button>
@@ -296,6 +300,13 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
   const [embedBrandName, setEmbedBrandName] = useState("");
   const [embedBrandColor, setEmbedBrandColor] = useState("#6366f1");
   const [copiedEmbed, setCopiedEmbed] = useState(false);
+  const [showIrChat, setShowIrChat] = useState(false);
+  const [irChatMessage, setIrChatMessage] = useState("");
+  const [irChatMessages, setIrChatMessages] = useState<Array<{ message: string; senderRole: string; timestamp: number }>>([]);
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [showCertPanel, setShowCertPanel] = useState(false);
+  const [certificate, setCertificate] = useState<any>(null);
+  const [certGenerating, setCertGenerating] = useState(false);
 
   const sessionByShadow = trpc.liveQa.getSessionByShadow.useQuery(
     { shadowSessionId: shadowSessionId || 0 },
@@ -315,6 +326,10 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
   const generateDraftMut = trpc.liveQa.generateDraft.useMutation();
   const updateSessionStatus = trpc.liveQa.updateSessionStatus.useMutation();
   const generateShareLinkMut = trpc.platformEmbed.generateShareLink.useMutation();
+  const sendToSpeakerMut = trpc.liveQa.sendToSpeaker.useMutation();
+  const broadcastToTeamMut = trpc.liveQa.broadcastToTeam.useMutation();
+  const postIrChatMut = trpc.liveQa.postIrChatMessage.useMutation();
+  const generateCertMut = trpc.liveQa.generateQaCertificate.useMutation();
   const eventSummaryQuery = trpc.platformEmbed.getEventSummary.useQuery(
     { sessionId: qaSessionId || 0 },
     { enabled: !!qaSessionId && showReportPanel }
@@ -433,6 +448,57 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
       toast.success(`${platform.charAt(0).toUpperCase() + platform.slice(1)} message copied — paste into meeting chat`);
     } catch { toast.error("Failed to generate share link"); }
   }, [qaSessionId, sessionCode, generateShareLinkMut]);
+
+  const handleSendToSpeaker = useCallback(async (questionId: number) => {
+    try {
+      const suggestedAnswer = draftAnswer[questionId] || undefined;
+      await sendToSpeakerMut.mutateAsync({ questionId, suggestedAnswer });
+      questionsQuery.refetch();
+      toast.success("Question sent to speaker with AI-suggested response");
+    } catch { toast.error("Failed to send to speaker"); }
+  }, [sendToSpeakerMut, questionsQuery, draftAnswer]);
+
+  const handleBroadcast = useCallback(async () => {
+    if (!qaSessionId || !broadcastMessage.trim()) return;
+    try {
+      await broadcastToTeamMut.mutateAsync({ sessionId: qaSessionId, message: broadcastMessage.trim(), priority: "urgent" });
+      setBroadcastMessage("");
+      toast.success("Broadcast sent to IR team & speaker");
+    } catch { toast.error("Broadcast failed"); }
+  }, [qaSessionId, broadcastMessage, broadcastToTeamMut]);
+
+  const handlePostIrChat = useCallback(async () => {
+    if (!qaSessionId || !irChatMessage.trim()) return;
+    try {
+      await postIrChatMut.mutateAsync({ sessionId: qaSessionId, message: irChatMessage.trim() });
+      setIrChatMessages(prev => [...prev, { message: irChatMessage.trim(), senderRole: "operator", timestamp: Date.now() }]);
+      setIrChatMessage("");
+    } catch { toast.error("Failed to send message"); }
+  }, [qaSessionId, irChatMessage, postIrChatMut]);
+
+  const handleGenerateCertificate = useCallback(async () => {
+    if (!qaSessionId) return;
+    setCertGenerating(true);
+    try {
+      const cert = await generateCertMut.mutateAsync({ sessionId: qaSessionId });
+      setCertificate(cert);
+      setShowCertPanel(true);
+      toast.success("Blockchain-certified Clean Disclosure Certificate generated");
+    } catch { toast.error("Failed to generate certificate"); }
+    finally { setCertGenerating(false); }
+  }, [qaSessionId, generateCertMut]);
+
+  const downloadCertificate = useCallback(() => {
+    if (!certificate) return;
+    const blob = new Blob([JSON.stringify(certificate, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${certificate.certificateId}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Certificate downloaded");
+  }, [certificate]);
 
   const copyEmbedCode = useCallback(() => {
     const params = new URLSearchParams();
@@ -560,8 +626,14 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
             <button onClick={() => setShowEmbedPanel(!showEmbedPanel)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/30 hover:bg-violet-500/25 transition-colors">
               <Code2 className="w-3.5 h-3.5" /> Embed
             </button>
+            <button onClick={() => setShowIrChat(!showIrChat)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/25 transition-colors">
+              <Megaphone className="w-3.5 h-3.5" /> IR Chat
+            </button>
             <button onClick={() => setShowReportPanel(!showReportPanel)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors">
               <FileText className="w-3.5 h-3.5" /> Report
+            </button>
+            <button onClick={handleGenerateCertificate} disabled={certGenerating} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors disabled:opacity-50">
+              <Hash className="w-3.5 h-3.5" /> {certGenerating ? "Generating..." : "Certificate"}
             </button>
             <button onClick={() => setShowSidebar(!showSidebar)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0a0a18] text-slate-400 border border-[#1e1e3a] hover:text-slate-200 transition-colors">
               <BarChart3 className="w-3.5 h-3.5" /> {showSidebar ? "Hide" : "Show"} Insights
@@ -635,6 +707,97 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
               <ExternalLink className="w-3 h-3" /> Preview Widget
             </a>
           </div>
+        </div>
+      )}
+
+      {showIrChat && (
+        <div className="bg-[#0d0d20] border border-cyan-500/20 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Megaphone className="w-4 h-4 text-cyan-400" /> IR Team Chat & Broadcast</h4>
+            <button onClick={() => setShowIrChat(false)} className="text-slate-500 text-xs hover:text-slate-300">&times;</button>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <h5 className="text-xs font-bold text-slate-400 mb-2">Team Chat</h5>
+              <div className="bg-[#0a0a18] border border-[#1e1e3a] rounded-lg p-3 h-40 overflow-y-auto mb-2 space-y-2">
+                {irChatMessages.length === 0 && <p className="text-xs text-slate-600 text-center pt-6">No messages yet</p>}
+                {irChatMessages.map((m, i) => (
+                  <div key={i} className="text-xs">
+                    <span className="font-semibold text-cyan-400">{m.senderRole}:</span>{" "}
+                    <span className="text-slate-300">{m.message}</span>
+                    <span className="text-slate-600 ml-2 text-[0.6rem]">{new Date(m.timestamp).toLocaleTimeString()}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={irChatMessage}
+                  onChange={e => setIrChatMessage(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handlePostIrChat()}
+                  placeholder="Message IR team..."
+                  className="flex-1 bg-[#0a0a18] border border-[#2a2a4a] rounded-lg px-3 py-1.5 text-xs text-white outline-none"
+                />
+                <button onClick={handlePostIrChat} disabled={!irChatMessage.trim()} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500 text-white hover:bg-cyan-400 transition-colors disabled:opacity-50">
+                  <Send className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+            <div>
+              <h5 className="text-xs font-bold text-slate-400 mb-2">Broadcast to All</h5>
+              <p className="text-xs text-slate-500 mb-2">Send an urgent message to speaker, IR team, and legal via real-time channel.</p>
+              <textarea
+                value={broadcastMessage}
+                onChange={e => setBroadcastMessage(e.target.value)}
+                placeholder="Type broadcast message..."
+                className="w-full h-24 bg-[#0a0a18] border border-[#2a2a4a] rounded-lg text-xs text-white p-3 outline-none resize-none"
+              />
+              <button onClick={handleBroadcast} disabled={!broadcastMessage.trim() || broadcastToTeamMut.isPending} className="mt-2 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-orange-500 text-white hover:bg-orange-400 transition-colors disabled:opacity-50 w-full justify-center">
+                <Megaphone className="w-3 h-3" /> Broadcast Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCertPanel && certificate && (
+        <div className="bg-[#0d0d20] border border-amber-500/20 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Hash className="w-4 h-4 text-amber-400" /> Clean Disclosure Certificate</h4>
+            <div className="flex items-center gap-2">
+              <button onClick={downloadCertificate} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors">
+                <Download className="w-3 h-3" /> Download
+              </button>
+              <button onClick={() => setShowCertPanel(false)} className="text-slate-500 text-xs hover:text-slate-300">&times;</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-3 mb-4">
+            <div className="bg-[#0a0a18] rounded-lg p-3 text-center">
+              <p className="text-lg font-bold text-amber-400">{certificate.certificateGrade}</p>
+              <p className="text-[0.65rem] text-slate-500">Grade</p>
+            </div>
+            <div className="bg-[#0a0a18] rounded-lg p-3 text-center">
+              <p className="text-lg font-bold" style={{ color: certificate.complianceStatus === "CLEAN" ? "#22c55e" : "#f59e0b" }}>{certificate.complianceStatus === "CLEAN" ? "CLEAN" : "FLAGS"}</p>
+              <p className="text-[0.65rem] text-slate-500">Status</p>
+            </div>
+            <div className="bg-[#0a0a18] rounded-lg p-3 text-center">
+              <p className="text-lg font-bold text-indigo-400">{certificate.chainLength}</p>
+              <p className="text-[0.65rem] text-slate-500">Chain Blocks</p>
+            </div>
+            <div className="bg-[#0a0a18] rounded-lg p-3 text-center">
+              <p className="text-lg font-bold text-emerald-400">{certificate.metrics.responseRate}%</p>
+              <p className="text-[0.65rem] text-slate-500">Response Rate</p>
+            </div>
+          </div>
+          <div className="bg-[#0a0a18] rounded-lg p-3 mb-3">
+            <h5 className="text-xs font-bold text-slate-400 mb-1">Certificate ID</h5>
+            <p className="text-xs text-amber-400 font-mono">{certificate.certificateId}</p>
+          </div>
+          <div className="bg-[#0a0a18] rounded-lg p-3 mb-3">
+            <h5 className="text-xs font-bold text-slate-400 mb-1">Certificate Hash (SHA-256)</h5>
+            <p className="text-[0.6rem] text-emerald-400 font-mono break-all">{certificate.certificateHash}</p>
+          </div>
+          <p className="text-[0.6rem] text-slate-600 italic">{certificate.disclaimer}</p>
+          <p className="text-[0.6rem] text-slate-600 mt-1">{certificate.cipcPatent}</p>
         </div>
       )}
 
@@ -746,6 +909,7 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
               onFlag={() => handleStatusUpdate(q.id, "flagged")}
               onRouteBot={() => handleRouteBot(q.id)}
               onLegalReview={() => handleLegalReview(q.id)}
+              onSendToSpeaker={() => handleSendToSpeaker(q.id)}
               onDraft={() => handleGenerateDraft(q.id)}
               onAnswer={() => handleSubmitAnswer(q.id)}
               expanded={expandedQ === q.id}

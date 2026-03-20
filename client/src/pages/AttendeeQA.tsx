@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
 
@@ -13,6 +13,9 @@ export default function AttendeeQA() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported] = useState(() => typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window));
+  const recognitionRef = useRef<any>(null);
 
   const sessionQuery = trpc.liveQa.getSessionByCode.useQuery(
     { accessCode },
@@ -69,6 +72,31 @@ export default function AttendeeQA() {
     } catch {
       toast.error("Failed to upvote");
     }
+  }
+
+  function toggleVoiceInput() {
+    if (!speechSupported) return;
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      setIsListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => { setIsListening(false); recognitionRef.current = null; };
+    recognition.onerror = () => { setIsListening(false); recognitionRef.current = null; toast.error("Voice input failed — please try again"); };
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setQuestionText(prev => prev ? `${prev} ${transcript}` : transcript);
+      toast.success("Voice captured!");
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
   }
 
   if (!accessCode) {
@@ -129,15 +157,37 @@ export default function AttendeeQA() {
         {!isClosed && !isPaused && (
           <form onSubmit={handleSubmit} style={{ background: "#111128", border: "1px solid #2a2a4a", borderRadius: 12, padding: "1.25rem", marginBottom: "2rem" }}>
             <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "1rem", color: "#fff" }}>Ask a Question</h2>
-            <textarea
-              value={questionText}
-              onChange={e => setQuestionText(e.target.value)}
-              placeholder="Type your question here..."
-              maxLength={2000}
-              style={{ width: "100%", minHeight: 80, background: "#0a0a1a", border: "1px solid #2a2a4a", borderRadius: 8, color: "#fff", padding: "0.75rem", fontSize: "0.95rem", resize: "vertical", outline: "none", boxSizing: "border-box" }}
-            />
+            <div style={{ position: "relative" }}>
+              <textarea
+                value={questionText}
+                onChange={e => setQuestionText(e.target.value)}
+                placeholder={isListening ? "🎤 Listening... speak your question" : "Type your question here..."}
+                maxLength={2000}
+                style={{ width: "100%", minHeight: 80, background: "#0a0a1a", border: `1px solid ${isListening ? "#6366f1" : "#2a2a4a"}`, borderRadius: 8, color: "#fff", padding: "0.75rem", paddingRight: "3rem", fontSize: "0.95rem", resize: "vertical", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }}
+              />
+              {speechSupported && (
+                <button
+                  type="button"
+                  onClick={toggleVoiceInput}
+                  style={{
+                    position: "absolute", right: 8, top: 8,
+                    width: 36, height: 36, borderRadius: "50%",
+                    background: isListening ? "#6366f1" : "#1a1a2e",
+                    border: `1px solid ${isListening ? "#818cf8" : "#2a2a4a"}`,
+                    color: isListening ? "#fff" : "#888",
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "1.1rem", transition: "all 0.2s",
+                    animation: isListening ? "pulse 1.5s infinite" : "none",
+                  }}
+                  title={isListening ? "Stop listening" : "Speak your question"}
+                >
+                  🎤
+                </button>
+              )}
+            </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#666", margin: "0.25rem 0 0.75rem" }}>
               <span>{questionText.length}/2000</span>
+              {speechSupported && <span style={{ color: isListening ? "#818cf8" : "#444" }}>{isListening ? "🎤 Listening..." : "Voice input available"}</span>}
             </div>
 
             {!isAnonymous && (

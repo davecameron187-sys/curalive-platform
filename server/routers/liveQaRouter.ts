@@ -6,6 +6,9 @@ import { liveQaSessions, liveQaQuestions, liveQaAnswers, liveQaComplianceFlags }
 import { eq, desc, and, sql } from "drizzle-orm";
 import { triageQuestion, generateAutoDraft } from "../services/LiveQaTriageService";
 import { publishToChannel } from "../_core/ably";
+import { generateAutonomousTools } from "../services/AgiToolGeneratorService";
+import { predictiveRiskAnalysis } from "../services/AgiComplianceService";
+import { createHash } from "crypto";
 
 function generateSessionCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -134,7 +137,7 @@ export const liveQaRouter = router({
           session.id,
           input.questionText,
           input.isAnonymous ? null : (input.submitterName || null),
-          input.submitterEmail || null,
+          input.isAnonymous ? null : (input.submitterEmail || null),
           input.isAnonymous ? null : (input.submitterCompany || null),
           triage.category,
           triage.complianceRiskScore > 70 ? "flagged" : "triaged",
@@ -385,4 +388,209 @@ export const liveQaRouter = router({
     const db = await getDb();
     return db.select().from(liveQaSessions).orderBy(desc(liveQaSessions.createdAt));
   }),
+
+  sendToSpeaker: operatorProcedure
+    .input(z.object({
+      questionId: z.number(),
+      speakerNote: z.string().optional(),
+      suggestedAnswer: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [q] = await db.select().from(liveQaQuestions).where(eq(liveQaQuestions.id, input.questionId));
+      if (!q) throw new Error("Question not found");
+
+      await db.update(liveQaQuestions)
+        .set({ status: "approved", operatorNotes: input.speakerNote || "Sent to speaker", updatedAt: Date.now() })
+        .where(eq(liveQaQuestions.id, input.questionId));
+
+      publishToChannel(`curalive-qa-${q.sessionId}`, "qa.sentToSpeaker", {
+        questionId: input.questionId,
+        questionText: q.questionText,
+        speakerNote: input.speakerNote || null,
+        suggestedAnswer: input.suggestedAnswer || null,
+        timestamp: Date.now(),
+      }).catch(() => {});
+
+      return { success: true };
+    }),
+
+  broadcastToTeam: operatorProcedure
+    .input(z.object({
+      sessionId: z.number(),
+      message: z.string().min(1).max(2000),
+      priority: z.enum(["normal", "urgent"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      publishToChannel(`curalive-qa-${input.sessionId}`, "qa.teamBroadcast", {
+        message: input.message,
+        priority: input.priority || "normal",
+        timestamp: Date.now(),
+      }).catch(() => {});
+
+      return { success: true, broadcastedAt: Date.now() };
+    }),
+
+  postIrChatMessage: operatorProcedure
+    .input(z.object({
+      sessionId: z.number(),
+      message: z.string().min(1).max(2000),
+      senderRole: z.enum(["operator", "ir_team", "legal", "speaker"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const messageId = Date.now();
+
+      publishToChannel(`curalive-qa-${input.sessionId}`, "qa.irChat", {
+        id: messageId,
+        message: input.message,
+        senderRole: input.senderRole || "operator",
+        timestamp: Date.now(),
+      }).catch(() => {});
+
+      return { success: true, messageId };
+    }),
+
+  generateQaCertificate: operatorProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db.select().from(liveQaSessions).where(eq(liveQaSessions.id, input.sessionId));
+      if (!session) throw new Error("Session not found");
+
+      const questions = await db.select().from(liveQaQuestions)
+        .where(eq(liveQaQuestions.sessionId, input.sessionId))
+        .orderBy(liveQaQuestions.createdAt);
+
+      const answers = await db.select().from(liveQaAnswers)
+        .where(sql`${liveQaAnswers.questionId} IN (SELECT id FROM live_qa_questions WHERE session_id = ${input.sessionId})`);
+
+      const flags = await db.select().from(liveQaComplianceFlags)
+        .where(sql`${liveQaComplianceFlags.questionId} IN (SELECT id FROM live_qa_questions WHERE session_id = ${input.sessionId})`);
+
+      let previousHash = "GENESIS";
+      const hashChain: Array<{ index: number; hash: string; previousHash: string; type: string; summary: string }> = [];
+
+      const sessionPayload = JSON.stringify({
+        sessionId: session.id,
+        eventName: session.eventName,
+        clientName: session.clientName,
+        sessionCode: session.sessionCode,
+        startedAt: session.createdAt,
+        previousHash,
+      });
+      const sessionHash = createHash("sha256").update(sessionPayload).digest("hex");
+      hashChain.push({ index: 0, hash: sessionHash, previousHash, type: "session_genesis", summary: `Session created: ${session.eventName}` });
+      previousHash = sessionHash;
+
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        const qPayload = JSON.stringify({
+          questionId: q.id,
+          text: q.questionText,
+          category: q.category,
+          status: q.status,
+          triageScore: q.triageScore,
+          complianceRiskScore: q.complianceRiskScore,
+          createdAt: q.createdAt,
+          previousHash,
+        });
+        const qHash = createHash("sha256").update(qPayload).digest("hex");
+        hashChain.push({ index: i + 1, hash: qHash, previousHash, type: "question", summary: `Q${i + 1}: ${q.questionText?.slice(0, 60)}...` });
+        previousHash = qHash;
+      }
+
+      const certificateHash = createHash("sha256").update(JSON.stringify(hashChain)).digest("hex");
+
+      const totalAnswered = answers.filter(a => !a.isAutoDraft || a.approvedByOperator).length;
+      const unresolvedFlags = flags.filter(f => !f.resolved).length;
+      const complianceClean = unresolvedFlags === 0;
+
+      const certificate = {
+        certificateId: `CDC-QA-${session.sessionCode}-${Date.now()}`,
+        type: "Clean Disclosure Certificate — Live Q&A Session",
+        eventName: session.eventName,
+        clientName: session.clientName,
+        sessionCode: session.sessionCode,
+        issuedAt: new Date().toISOString(),
+        metrics: {
+          totalQuestions: questions.length,
+          totalAnswered,
+          totalFlagged: flags.length,
+          unresolvedFlags,
+          responseRate: questions.length > 0 ? Math.round((totalAnswered / questions.length) * 100) : 0,
+        },
+        complianceStatus: complianceClean ? "CLEAN" : "FLAGS_OUTSTANDING",
+        certificateGrade: complianceClean
+          ? (questions.length > 0 && totalAnswered / questions.length > 0.8 ? "AAA" : "AA")
+          : (unresolvedFlags > 3 ? "B" : "BBB"),
+        hashChain,
+        certificateHash,
+        chainLength: hashChain.length,
+        verificationInstructions: "To verify: recompute SHA-256 hash chain from genesis block through each question segment. Final certificate hash must match.",
+        disclaimer: "This certificate attests that all Q&A interactions during the specified session were processed through CuraLive's compliance screening engine. It does not constitute legal advice.",
+        cipcPatent: "CIPC Patent App ID 1773575338868 | CIP5 | Claims 46-55",
+      };
+
+      return certificate;
+    }),
+
+  generateAgiTools: operatorProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db.select().from(liveQaSessions).where(eq(liveQaSessions.id, input.sessionId));
+      if (!session) throw new Error("Session not found");
+
+      const questions = await db.select().from(liveQaQuestions)
+        .where(eq(liveQaQuestions.sessionId, input.sessionId));
+
+      const categories: Record<string, number> = {};
+      let totalRisk = 0;
+      const themes: string[] = [];
+      questions.forEach(q => {
+        categories[q.category] = (categories[q.category] || 0) + 1;
+        totalRisk += q.complianceRiskScore || 0;
+        if (q.triageClassification === "high_priority") themes.push(q.questionText?.slice(0, 50) || "");
+      });
+
+      return generateAutonomousTools({
+        eventName: session.eventName,
+        clientName: session.clientName || "",
+        totalQuestions: questions.length,
+        categories,
+        avgComplianceRisk: questions.length > 0 ? totalRisk / questions.length : 0,
+        flaggedCount: questions.filter(q => q.status === "flagged").length,
+        topThemes: themes.slice(0, 5),
+      });
+    }),
+
+  predictiveRisk: operatorProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db.select().from(liveQaSessions).where(eq(liveQaSessions.id, input.sessionId));
+      if (!session) throw new Error("Session not found");
+
+      const questions = await db.select().from(liveQaQuestions)
+        .where(eq(liveQaQuestions.sessionId, input.sessionId));
+
+      const flags = await db.select().from(liveQaComplianceFlags)
+        .where(sql`${liveQaComplianceFlags.questionId} IN (SELECT id FROM live_qa_questions WHERE session_id = ${input.sessionId})`);
+
+      return predictiveRiskAnalysis({
+        eventName: session.eventName,
+        clientName: session.clientName || "",
+        questions: questions.map(q => ({
+          text: q.questionText,
+          category: q.category,
+          complianceRiskScore: q.complianceRiskScore || 0,
+          status: q.status,
+        })),
+        existingFlags: flags.map(f => ({
+          jurisdiction: f.jurisdiction,
+          riskType: f.riskType,
+          riskScore: f.riskScore || 0,
+        })),
+      });
+    }),
 });
