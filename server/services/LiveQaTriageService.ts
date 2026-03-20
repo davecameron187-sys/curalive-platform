@@ -1,6 +1,62 @@
 import { invokeLLM } from "../_core/llm";
 import { generateComplianceSafeResponse } from "./AgiComplianceService";
 
+export interface SentimentPolarity {
+  polarity: "positive" | "neutral" | "negative" | "adversarial";
+  polarityScore: number;
+  disclosureUrgency: number;
+  p2pRank: number;
+}
+
+export interface GoLiveAuthorisation {
+  authorised: boolean;
+  triageScore: number;
+  complianceCleared: boolean;
+  minimumThreshold: number;
+  reason: string;
+}
+
+const DEFAULT_GO_LIVE_THRESHOLD = 40;
+
+export function computeP2P(
+  sentimentPolarity: "positive" | "neutral" | "negative" | "adversarial",
+  polarityScore: number,
+  disclosureUrgency: number
+): number {
+  const polarityWeights: Record<string, number> = {
+    adversarial: 1.0,
+    negative: 0.75,
+    neutral: 0.4,
+    positive: 0.2,
+  };
+  const polarityWeight = polarityWeights[sentimentPolarity] ?? 0.4;
+  const normalizedPolarity = Math.min(1, Math.max(0, polarityScore / 100));
+  const normalizedUrgency = Math.min(1, Math.max(0, disclosureUrgency / 100));
+  const p2pRank = (polarityWeight * 0.4) + (normalizedPolarity * 0.25) + (normalizedUrgency * 0.35);
+  return Math.round(p2pRank * 100);
+}
+
+export function authoriseGoLive(
+  triageScore: number,
+  complianceRiskScore: number,
+  threshold: number = DEFAULT_GO_LIVE_THRESHOLD
+): GoLiveAuthorisation {
+  const complianceCleared = complianceRiskScore <= 70;
+  const meetsThreshold = triageScore >= threshold;
+  const authorised = meetsThreshold && complianceCleared;
+
+  let reason: string;
+  if (authorised) {
+    reason = `Authorised: triage score ${triageScore} meets threshold ${threshold}, compliance risk ${complianceRiskScore} within limits`;
+  } else if (!complianceCleared) {
+    reason = `Blocked: compliance risk score ${complianceRiskScore} exceeds safety limit (max 70). Manual review required.`;
+  } else {
+    reason = `Blocked: triage score ${triageScore} below minimum threshold ${threshold}. Operator override available.`;
+  }
+
+  return { authorised, triageScore, complianceCleared, minimumThreshold: threshold, reason };
+}
+
 export interface TriageResult {
   category: "financial" | "operational" | "esg" | "governance" | "strategy" | "general";
   triageScore: number;
@@ -9,6 +65,8 @@ export interface TriageResult {
   complianceRiskScore: number;
   priorityScore: number;
   complianceFlags: ComplianceFlag[];
+  sentimentPolarity: SentimentPolarity;
+  goLiveAuthorisation: GoLiveAuthorisation;
 }
 
 export interface ComplianceFlag {
@@ -54,6 +112,9 @@ Return ONLY valid JSON with these fields:
   "triageReason": "brief explanation",
   "complianceRiskScore": 0-100 (regulatory risk),
   "priorityScore": 0-100 (combined priority for queue ordering),
+  "sentimentPolarity": one of "positive"|"neutral"|"negative"|"adversarial",
+  "polarityScore": 0-100 (intensity of sentiment polarity),
+  "disclosureUrgency": 0-100 (how urgently this requires a disclosure-sensitive response),
   "complianceFlags": [
     {
       "jurisdiction": "ZA_JSE|US_SEC|UK_FCA|EU_ESMA|global",
@@ -72,14 +133,27 @@ Return ONLY valid JSON with these fields:
     });
 
     const parsed = JSON.parse(result.text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+    const triageScore = Math.min(100, Math.max(0, parsed.triageScore || 50));
+    const complianceRiskScore = Math.min(100, Math.max(0, parsed.complianceRiskScore || 0));
+    const polarity = (["positive", "neutral", "negative", "adversarial"].includes(parsed.sentimentPolarity) ? parsed.sentimentPolarity : "neutral") as "positive" | "neutral" | "negative" | "adversarial";
+    const polarityScore = Math.min(100, Math.max(0, parsed.polarityScore || 50));
+    const disclosureUrgency = Math.min(100, Math.max(0, parsed.disclosureUrgency || 30));
+    const p2pRank = computeP2P(polarity, polarityScore, disclosureUrgency);
+    const goLive = authoriseGoLive(triageScore, complianceRiskScore);
+
+    const basePriority = Math.min(100, Math.max(0, parsed.priorityScore || 50));
+    const effectivePriority = Math.min(100, Math.round((basePriority * 0.6) + (p2pRank * 0.4)));
+
     return {
       category: parsed.category || "general",
-      triageScore: Math.min(100, Math.max(0, parsed.triageScore || 50)),
+      triageScore,
       triageClassification: parsed.triageClassification || "standard",
       triageReason: parsed.triageReason || "Auto-triaged",
-      complianceRiskScore: Math.min(100, Math.max(0, parsed.complianceRiskScore || 0)),
-      priorityScore: Math.min(100, Math.max(0, parsed.priorityScore || 50)),
+      complianceRiskScore,
+      priorityScore: effectivePriority,
       complianceFlags: Array.isArray(parsed.complianceFlags) ? parsed.complianceFlags : [],
+      sentimentPolarity: { polarity, polarityScore, disclosureUrgency, p2pRank },
+      goLiveAuthorisation: goLive,
     };
   } catch (err) {
     console.error("[LiveQaTriage] Triage failed:", err);
@@ -91,6 +165,8 @@ Return ONLY valid JSON with these fields:
       complianceRiskScore: 0,
       priorityScore: 50,
       complianceFlags: [],
+      sentimentPolarity: { polarity: "neutral" as const, polarityScore: 50, disclosureUrgency: 30, p2pRank: computeP2P("neutral", 50, 30) },
+      goLiveAuthorisation: authoriseGoLive(50, 0),
     };
   }
 }

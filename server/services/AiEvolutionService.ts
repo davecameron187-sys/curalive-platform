@@ -232,9 +232,69 @@ function detectCrossEventPatterns(observations: Array<{
 
 // ─── Algorithm 4: Autonomous Promotion ───────────────────────────────────────
 
-async function runAutonomousPromotion(): Promise<{ promoted: string[] }> {
+const GOVERNANCE_GATEWAY = {
+  stabilityThreshold: 0.65,
+  minConsistentObservations: 3,
+  maxFailureRate: 0.30,
+  complianceBoundaryModules: ["complianceReview", "toxicityScreen", "riskFactors", "boardReadySummary"],
+};
+
+type GovernanceResult = {
+  passed: boolean;
+  stabilityScore: number;
+  consistencyRate: number;
+  complianceBoundaryCheck: boolean;
+  reason: string;
+};
+
+function evaluateGovernanceGateway(
+  observations: Array<{ confidence: number | null; createdAt: Date | string; moduleName?: string | null; observationType?: string }>,
+  proposalCategory?: string | null
+): GovernanceResult {
+  if (observations.length === 0) {
+    return { passed: false, stabilityScore: 0, consistencyRate: 0, complianceBoundaryCheck: false, reason: "No observations — insufficient evidence for governance clearance" };
+  }
+
+  const decayedScore = computeDecayedEvidenceScore(observations);
+  const recentObs = observations.filter(o => decayWeight(o.createdAt) > 0.25);
+  const consistentObs = recentObs.filter(o => (o.confidence ?? 0) >= 0.5);
+  const consistencyRate = recentObs.length > 0 ? consistentObs.length / recentObs.length : 0;
+  const failureRate = recentObs.length > 0 ? recentObs.filter(o => (o.confidence ?? 0) < 0.3).length / recentObs.length : 1;
+
+  const stabilityScore = (decayedScore * 0.5) + (consistencyRate * 0.3) + ((1 - failureRate) * 0.2);
+
+  const complianceModules = GOVERNANCE_GATEWAY.complianceBoundaryModules;
+  const touchesCompliance = observations.some(o =>
+    o.moduleName && complianceModules.includes(o.moduleName)
+  );
+  const complianceBoundaryCheck = !touchesCompliance || stabilityScore >= 0.75;
+
+  const passed =
+    stabilityScore >= GOVERNANCE_GATEWAY.stabilityThreshold &&
+    consistentObs.length >= GOVERNANCE_GATEWAY.minConsistentObservations &&
+    failureRate <= GOVERNANCE_GATEWAY.maxFailureRate &&
+    complianceBoundaryCheck;
+
+  let reason: string;
+  if (passed) {
+    reason = `Governance gateway passed: stability ${stabilityScore.toFixed(3)}, consistency ${(consistencyRate * 100).toFixed(0)}%, failure rate ${(failureRate * 100).toFixed(0)}%`;
+  } else if (stabilityScore < GOVERNANCE_GATEWAY.stabilityThreshold) {
+    reason = `Blocked: stability score ${stabilityScore.toFixed(3)} below threshold ${GOVERNANCE_GATEWAY.stabilityThreshold}`;
+  } else if (!complianceBoundaryCheck) {
+    reason = `Blocked: tool impacts compliance-critical modules but stability ${stabilityScore.toFixed(3)} below compliance threshold 0.75`;
+  } else if (failureRate > GOVERNANCE_GATEWAY.maxFailureRate) {
+    reason = `Blocked: failure rate ${(failureRate * 100).toFixed(0)}% exceeds maximum ${(GOVERNANCE_GATEWAY.maxFailureRate * 100).toFixed(0)}%`;
+  } else {
+    reason = `Blocked: insufficient consistent observations (${consistentObs.length} < ${GOVERNANCE_GATEWAY.minConsistentObservations})`;
+  }
+
+  return { passed, stabilityScore, consistencyRate, complianceBoundaryCheck, reason };
+}
+
+async function runAutonomousPromotion(): Promise<{ promoted: string[]; governanceResults: Array<{ title: string; governance: GovernanceResult }> }> {
   const db = await getDb();
   const promoted: string[] = [];
+  const governanceResults: Array<{ title: string; governance: GovernanceResult }> = [];
 
   const proposals = await db
     .select()
@@ -263,7 +323,15 @@ async function runAutonomousPromotion(): Promise<{ promoted: string[] }> {
     } else if (proposal.status === "proposed") {
       const t = PROMOTION_THRESHOLDS.proposed_to_approved;
       if (activeEvidence >= t.minEvidence && decayedScore >= t.minScore) {
-        newStatus = "approved";
+        const governance = evaluateGovernanceGateway(observations, proposal.category);
+        governanceResults.push({ title: proposal.title, governance });
+        if (!governance.passed) {
+          console.log(`[AiEvolution] Governance gateway BLOCKED "${proposal.title}": ${governance.reason}`);
+          newStatus = proposal.status;
+        } else {
+          console.log(`[AiEvolution] Governance gateway PASSED "${proposal.title}": stability=${governance.stabilityScore.toFixed(3)}`);
+          newStatus = "approved";
+        }
       }
     }
 
@@ -280,7 +348,7 @@ async function runAutonomousPromotion(): Promise<{ promoted: string[] }> {
     }
   }
 
-  return { promoted };
+  return { promoted, governanceResults };
 }
 
 // ─── Algorithm 5: Gap Detection Matrix ───────────────────────────────────────

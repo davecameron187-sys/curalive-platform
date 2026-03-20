@@ -4,7 +4,7 @@ import { router, publicProcedure, protectedProcedure, operatorProcedure } from "
 import { getDb } from "../db";
 import { liveQaSessions, liveQaQuestions, liveQaAnswers, liveQaComplianceFlags } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
-import { triageQuestion, generateAutoDraft } from "../services/LiveQaTriageService";
+import { triageQuestion, generateAutoDraft, authoriseGoLive } from "../services/LiveQaTriageService";
 import { publishToChannel } from "../_core/ably";
 import { generateAutonomousTools } from "../services/AgiToolGeneratorService";
 import { predictiveRiskAnalysis } from "../services/AgiComplianceService";
@@ -562,6 +562,51 @@ export const liveQaRouter = router({
         flaggedCount: questions.filter(q => q.status === "flagged").length,
         topThemes: themes.slice(0, 5),
       });
+    }),
+
+  goLive: operatorProcedure
+    .input(z.object({
+      questionId: z.number(),
+      minimumThreshold: z.number().min(0).max(100).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [q] = await db.select().from(liveQaQuestions).where(eq(liveQaQuestions.id, input.questionId));
+      if (!q) throw new Error("Question not found");
+
+      const authorisation = authoriseGoLive(
+        q.triageScore || 0,
+        q.complianceRiskScore || 0,
+        input.minimumThreshold
+      );
+
+      if (authorisation.authorised) {
+        await db.update(liveQaQuestions)
+          .set({ status: "approved", operatorNotes: `Go Live authorised: ${authorisation.reason}`, updatedAt: Date.now() })
+          .where(eq(liveQaQuestions.id, input.questionId));
+
+        const conn = (db as any).session?.client ?? (db as any).$client;
+        await conn.execute(`UPDATE live_qa_sessions SET total_approved = total_approved + 1 WHERE id = ?`, [q.sessionId]);
+
+        publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
+          questionId: input.questionId,
+          newStatus: "approved",
+          operatorNotes: `Go Live authorised: ${authorisation.reason}`,
+          timestamp: Date.now(),
+        }).catch(() => {});
+
+        publishToChannel(`curalive-qa-${q.sessionId}`, "qa.goLive", {
+          questionId: input.questionId,
+          questionText: q.questionText,
+          submitterName: q.submitterName,
+          submitterCompany: q.submitterCompany,
+          triageScore: q.triageScore,
+          authorisation,
+          timestamp: Date.now(),
+        }).catch(() => {});
+      }
+
+      return authorisation;
     }),
 
   predictiveRisk: operatorProcedure
