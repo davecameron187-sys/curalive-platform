@@ -228,3 +228,9 @@ id = "w0CwEQJ3C-xCN20esmVDh"
 uri = "file://CuraLive_CIPC_CIP_Submission_5_Module_31.docx"
 type = "word_document"
 title = "CuraLive CIPC CIP Submission 5 — Module 31 (Patent Filing)"
+
+[[outputs]]
+id = "q_LaYYdZs7Tei9YEFSmHk"
+uri = "file://CuraLive_Module31_LiveQA_TechBrief_March2026.md"
+type = "text"
+title = "Module 31: Live Q&A Intelligence Engine — Technical Build Brief (March 2026)"
