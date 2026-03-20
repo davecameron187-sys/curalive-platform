@@ -282,3 +282,9 @@ id = "9Ykvv-9W9HjuVN8AsKFkV"
 uri = "file://docs/CuraLive_Operator_Managed_Live_QA_Brief.docx"
 type = "word_document"
 title = "CuraLive Operator-Managed Live Q&A — Strategic Options Brief"
+
+[[outputs]]
+id = "KDNeUBEoJ_quKkemtYKOw"
+uri = "file://docs/CuraLive_CIPC_CIP_Submission_6.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 6 — Claims 56–66"
