@@ -86,7 +86,7 @@ async function startServer() {
     serveStatic(app);
   } else {
     // Setup Vite dev server in development
-    await setupVite(app);
+    await setupVite(app, server);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
