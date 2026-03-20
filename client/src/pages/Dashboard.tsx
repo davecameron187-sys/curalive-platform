@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import {
-  Radio, Headphones, Handshake, Settings, LayoutDashboard,
+  Radio, Handshake, Settings, LayoutDashboard,
   Activity, Shield, Users, CheckCircle2, AlertTriangle, Clock,
   Loader2, Play, BarChart3, Globe, Zap, TrendingUp,
   Building2, LogIn, LogOut, User, Phone, Video,
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 import ShadowMode from "./ShadowMode";
-import OCC from "./OCC";
+
 import BastionPartner from "./BastionPartner";
 import LumiPartner from "./LumiPartner";
 import AdminBilling from "./AdminBilling";
@@ -24,12 +24,12 @@ const WebcastingHub = lazy(() => import("./WebcastingHub"));
 const EventCalendar = lazy(() => import("./EventCalendar"));
 const MailingListManager = lazy(() => import("./MailingListManager"));
 
-type DashboardTab = "overview" | "shadow-mode" | "occ" | "events" | "partners" | "billing" | "settings";
+type DashboardTab = "overview" | "shadow-mode" | "events" | "partners" | "billing" | "settings";
 
 const TAB_CONFIG: { id: DashboardTab; label: string; icon: React.ElementType; color: string; activeColor: string }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard, color: "text-slate-500 hover:text-slate-300", activeColor: "border-violet-400 text-violet-300" },
   { id: "shadow-mode", label: "Shadow Mode", icon: Radio, color: "text-slate-500 hover:text-slate-300", activeColor: "border-emerald-400 text-emerald-300" },
-  { id: "occ", label: "OCC", icon: Headphones, color: "text-slate-500 hover:text-slate-300", activeColor: "border-cyan-400 text-cyan-300" },
+
   { id: "events", label: "Events", icon: CalendarDays, color: "text-slate-500 hover:text-slate-300", activeColor: "border-orange-400 text-orange-300" },
   { id: "partners", label: "Partners", icon: Handshake, color: "text-slate-500 hover:text-slate-300", activeColor: "border-amber-400 text-amber-300" },
   { id: "billing", label: "Billing", icon: Receipt, color: "text-slate-500 hover:text-slate-300", activeColor: "border-green-400 text-green-300" },
@@ -253,7 +253,7 @@ function OverviewTab() {
             {[
               { label: "New Live Event", desc: "Join a meeting silently", icon: Play, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", tab: "shadow-mode" as DashboardTab },
               { label: "Upload Recording", desc: "Process archive audio", icon: Mic, color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20", tab: "shadow-mode" as DashboardTab },
-              { label: "Open OCC", desc: "Operator call centre", icon: Headphones, color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20", tab: "occ" as DashboardTab },
+
               { label: "Events Hub", desc: "Webcasting, calendar & mail", icon: CalendarDays, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20", tab: "events" as DashboardTab },
               { label: "Intelligence Suite", desc: "5 advanced AI algorithms", icon: Brain, color: "text-pink-400", bg: "bg-pink-500/10 border-pink-500/20", href: "/intelligence-suite" },
               { label: "Billing", desc: "Quotes, invoices & clients", icon: Receipt, color: "text-green-400", bg: "bg-green-500/10 border-green-500/20", tab: "billing" as DashboardTab },
@@ -598,7 +598,7 @@ export default function Dashboard() {
       <div>
         {activeTab === "overview" && <OverviewTab />}
         {activeTab === "shadow-mode" && <ShadowMode embedded />}
-        {activeTab === "occ" && <OCC />}
+
         {activeTab === "events" && <EventsTab defaultSub={subFromUrl || undefined} />}
         {activeTab === "partners" && <PartnersTab defaultPartner={partnerFromUrl || undefined} />}
         {activeTab === "billing" && <AdminBilling />}
