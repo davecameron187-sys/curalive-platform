@@ -246,3 +246,9 @@ id = "CWvrbtlFA67_Qaxo4eKWw"
 uri = "file://attached_assets/CuraLive_Module31_LiveQA_TechBrief_March2026_UPDATED.docx"
 type = "word_document"
 title = "Module 31 Technical Brief — Updated March 2026"
+
+[[outputs]]
+id = "B0Zyvd8dlfQ69O-snK_YJ"
+uri = "file://attached_assets/CuraLive_CIPC_CIP_Submission_5_Complete.docx"
+type = "word_document"
+title = "CuraLive CIP Submission 5 — Complete CIPC Filing (Module 31)"
