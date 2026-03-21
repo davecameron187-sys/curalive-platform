@@ -38,7 +38,7 @@ The platform has been consolidated to two main pages:
 ## Module 31: Live Q&A Intelligence Engine (CIP5, Claims 46-55)
 
 - **Operator Dashboard Tab**: "Live Q&A" tab in Shadow Mode (`ShadowMode.tsx`)
-- **Attendee Page**: Public `/qa/:accessCode` — no login required, mobile-friendly
+- **Attendee Webphone Page**: Public `/qa/:accessCode` — browser-based "webphone link" with live transcript streaming via Ably (no PSTN dial-in needed), plus Q&A submission
 - **Backend Router**: `server/routers/liveQaRouter.ts` → `liveQa.*` tRPC namespace
 - **AI Triage Service**: `server/services/LiveQaTriageService.ts` — auto-categorises questions, compliance risk scoring, auto-draft with AGI compliance pass
 - **AGI Tool Generator**: `server/services/AgiToolGeneratorService.ts` — autonomous micro-tool generation based on session patterns

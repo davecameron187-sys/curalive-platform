@@ -436,7 +436,7 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
     const link = `${window.location.origin}/qa/${sessionCode}`;
     navigator.clipboard.writeText(link);
     setCopiedLink(true);
-    toast.success("Q&A attendee link copied to clipboard");
+    toast.success("Webphone Q&A link copied to clipboard");
     setTimeout(() => setCopiedLink(false), 2000);
   }, [sessionCode]);
 
@@ -604,7 +604,7 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
             </div>
             <button onClick={copyShareLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/25 transition-colors">
               {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copiedLink ? "Copied!" : "Share Link"}
+              {copiedLink ? "Copied!" : "Webphone Link"}
             </button>
             {sessionStatus === "active" ? (
               <button onClick={() => handleSessionStatusChange("paused")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors">
@@ -896,7 +896,7 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
                 <MessageCircle className="w-6 h-6 text-slate-500" />
               </div>
               <p className="text-slate-400 text-sm">No questions yet.</p>
-              <p className="text-slate-500 text-xs mt-1">Share the Q&A link with attendees to start receiving questions.</p>
+              <p className="text-slate-500 text-xs mt-1">Share the webphone link with attendees — they'll see the live transcript and submit questions from their browser. No dial-in required.</p>
             </div>
           )}
 

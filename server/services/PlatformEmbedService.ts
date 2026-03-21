@@ -36,7 +36,7 @@ export async function generateShareLink(
   });
 
   const platformLabel = PLATFORM_LABELS[platform];
-  const chatMessage = `${platformLabel} Smart Q&A is live! Ask questions, upvote, and get AI-powered responses:\n${shareLink}`;
+  const chatMessage = `${platformLabel} Live Q&A is open! Join via your browser — follow the live transcript and submit questions. No dial-in needed:\n${shareLink}`;
 
   return { shareLink, chatMessage };
 }

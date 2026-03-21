@@ -2,8 +2,9 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, operatorProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { liveQaSessions, liveQaQuestions, liveQaAnswers, liveQaComplianceFlags } from "../../drizzle/schema";
+import { liveQaSessions, liveQaQuestions, liveQaAnswers, liveQaComplianceFlags, shadowSessions } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
+import { getAblyClient } from "../_core/ably";
 import { triageQuestion, generateAutoDraft, authoriseGoLive } from "../services/LiveQaTriageService";
 import { publishToChannel } from "../_core/ably";
 import { generateAutonomousTools } from "../services/AgiToolGeneratorService";
@@ -63,6 +64,20 @@ export const liveQaRouter = router({
         .from(liveQaSessions)
         .where(eq(liveQaSessions.sessionCode, input.accessCode.toUpperCase()));
       if (!session) return null;
+
+      let ablyChannel: string | null = null;
+      let shadowStatus: string | null = null;
+      if (session.shadowSessionId) {
+        const [shadow] = await db
+          .select({ ablyChannel: shadowSessions.ablyChannel, status: shadowSessions.status })
+          .from(shadowSessions)
+          .where(eq(shadowSessions.id, session.shadowSessionId));
+        if (shadow) {
+          ablyChannel = shadow.ablyChannel;
+          shadowStatus = shadow.status;
+        }
+      }
+
       return {
         id: session.id,
         sessionCode: session.sessionCode,
@@ -70,7 +85,44 @@ export const liveQaRouter = router({
         clientName: session.clientName,
         status: session.status,
         totalQuestions: session.totalQuestions,
+        ablyChannel,
+        isLiveStreaming: shadowStatus === "live" || shadowStatus === "bot_joining",
       };
+    }),
+
+  getAttendeeAblyToken: publicProcedure
+    .input(z.object({ accessCode: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db
+        .select()
+        .from(liveQaSessions)
+        .where(eq(liveQaSessions.sessionCode, input.accessCode.toUpperCase()));
+      if (!session || !session.shadowSessionId) return { tokenRequest: null };
+      if (session.status === "closed") return { tokenRequest: null };
+
+      const [shadow] = await db
+        .select({ ablyChannel: shadowSessions.ablyChannel, status: shadowSessions.status })
+        .from(shadowSessions)
+        .where(eq(shadowSessions.id, session.shadowSessionId));
+      if (!shadow?.ablyChannel) return { tokenRequest: null };
+      if (shadow.status !== "live" && shadow.status !== "bot_joining") return { tokenRequest: null };
+
+      try {
+        const client = await getAblyClient();
+        if (!client) return { tokenRequest: null };
+        const tokenRequest = await client.auth.createTokenRequest({
+          clientId: `attendee-${input.accessCode}-${Date.now()}`,
+          ttl: 900000,
+          capability: JSON.stringify({
+            [shadow.ablyChannel]: ["subscribe"],
+          }),
+        });
+        return { tokenRequest, channel: shadow.ablyChannel };
+      } catch (err) {
+        console.error("[LiveQA] Failed to generate attendee Ably token:", err);
+        return { tokenRequest: null };
+      }
     }),
 
   getSessionByShadow: operatorProcedure
