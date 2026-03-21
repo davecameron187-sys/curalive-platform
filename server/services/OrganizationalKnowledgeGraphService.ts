@@ -377,3 +377,366 @@ export function getGraphStats(clientId: string): {
     goalCount: graph.goals.goals.length,
   };
 }
+
+// ─── Eigenvector Centrality for Relationship Graph ───────────────────────────
+//
+// Identifies the most influential nodes in the Knowledge Graph.
+// Uses power iteration on the adjacency matrix:
+//   x(k+1) = A × x(k) / ‖A × x(k)‖
+//
+// Convergence: ‖x(k+1) - x(k)‖₂ < ε  or  max iterations reached
+// Edge weights are decay-adjusted: w_eff = w_original × W(age)
+
+const EIGEN_MAX_ITER = 100;
+const EIGEN_TOLERANCE = 1e-8;
+
+export type NodeCentrality = {
+  nodeId: string;
+  nodeType: RelationshipNode["type"];
+  label: string;
+  eigenvectorCentrality: number;
+  degreeCentrality: number;
+  betweennessCentrality: number;
+  clusteringCoefficient: number;
+  influenceRank: number;
+};
+
+export function computeGraphCentrality(clientId: string, topN: number = 10): NodeCentrality[] {
+  const graph = clientGraphs.get(clientId);
+  if (!graph || graph.nodes.length === 0) return [];
+
+  const nodes = graph.nodes;
+  const n = nodes.length;
+  const nodeIndex = new Map<string, number>();
+  nodes.forEach((node, i) => nodeIndex.set(node.id, i));
+
+  const adj: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+  for (const edge of graph.edges) {
+    const i = nodeIndex.get(edge.from);
+    const j = nodeIndex.get(edge.to);
+    if (i !== undefined && j !== undefined) {
+      const timeWeight = decayWeight(edge.timestamp);
+      adj[i][j] += edge.weight * timeWeight;
+      adj[j][i] += edge.weight * timeWeight;
+    }
+  }
+
+  let x = new Array(n).fill(1 / Math.sqrt(n));
+
+  for (let iter = 0; iter < EIGEN_MAX_ITER; iter++) {
+    const xNew = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        xNew[i] += adj[i][j] * x[j];
+      }
+    }
+    const norm = Math.sqrt(xNew.reduce((s, v) => s + v * v, 0)) || 1;
+    for (let i = 0; i < n; i++) xNew[i] /= norm;
+
+    const delta = Math.sqrt(xNew.reduce((s, v, i) => s + Math.pow(v - x[i], 2), 0));
+    x = xNew;
+    if (delta < EIGEN_TOLERANCE) break;
+  }
+
+  const degree: number[] = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      if (adj[i][j] > 0) degree[i]++;
+    }
+    degree[i] /= Math.max(1, n - 1);
+  }
+
+  const betweenness = computeBetweennessCentrality(adj, n);
+  const clustering = computeClusteringCoefficients(adj, n);
+
+  const results: NodeCentrality[] = nodes.map((node, i) => ({
+    nodeId: node.id,
+    nodeType: node.type,
+    label: node.label,
+    eigenvectorCentrality: r4(x[i]),
+    degreeCentrality: r4(degree[i]),
+    betweennessCentrality: r4(betweenness[i]),
+    clusteringCoefficient: r4(clustering[i]),
+    influenceRank: 0,
+  }));
+
+  results.sort((a, b) => b.eigenvectorCentrality - a.eigenvectorCentrality);
+  results.forEach((r, i) => { r.influenceRank = i + 1; });
+
+  return results.slice(0, topN);
+}
+
+// ─── Betweenness Centrality (Brandes' Algorithm) ─────────────────────────────
+//
+// For each source s:
+//   1. BFS from s to compute shortest path counts σ(s,v) and distances d(s,v)
+//   2. Backtrack from leaves to accumulate dependency:
+//      δ(s,v) = Σ_w (σ(s,v)/σ(s,w)) × (1 + δ(s,w))
+//   3. C_B(v) += δ(s,v) for all v ≠ s
+//
+// Normalised: C_B(v) = C_B(v) / ((n-1)(n-2)/2)
+
+function computeBetweennessCentrality(adj: number[][], n: number): number[] {
+  const cb = new Array(n).fill(0);
+
+  for (let s = 0; s < n; s++) {
+    const stack: number[] = [];
+    const predecessors: number[][] = Array.from({ length: n }, () => []);
+    const sigma = new Array(n).fill(0);
+    sigma[s] = 1;
+    const dist = new Array(n).fill(-1);
+    dist[s] = 0;
+    const queue: number[] = [s];
+
+    while (queue.length > 0) {
+      const v = queue.shift()!;
+      stack.push(v);
+      for (let w = 0; w < n; w++) {
+        if (adj[v][w] <= 0) continue;
+        if (dist[w] < 0) {
+          dist[w] = dist[v] + 1;
+          queue.push(w);
+        }
+        if (dist[w] === dist[v] + 1) {
+          sigma[w] += sigma[v];
+          predecessors[w].push(v);
+        }
+      }
+    }
+
+    const delta = new Array(n).fill(0);
+    while (stack.length > 0) {
+      const w = stack.pop()!;
+      for (const v of predecessors[w]) {
+        delta[v] += (sigma[v] / sigma[w]) * (1 + delta[w]);
+      }
+      if (w !== s) cb[w] += delta[w];
+    }
+  }
+
+  const normaliser = Math.max(1, ((n - 1) * (n - 2)) / 2);
+  for (let i = 0; i < n; i++) cb[i] /= normaliser;
+
+  return cb;
+}
+
+// ─── Clustering Coefficient ──────────────────────────────────────────────────
+//
+// C(v) = 2 × T(v) / (k(v) × (k(v) - 1))
+// where T(v) = number of triangles through v, k(v) = degree of v
+
+function computeClusteringCoefficients(adj: number[][], n: number): number[] {
+  const cc = new Array(n).fill(0);
+
+  for (let v = 0; v < n; v++) {
+    const neighbours: number[] = [];
+    for (let j = 0; j < n; j++) {
+      if (adj[v][j] > 0) neighbours.push(j);
+    }
+    const k = neighbours.length;
+    if (k < 2) continue;
+
+    let triangles = 0;
+    for (let i = 0; i < neighbours.length; i++) {
+      for (let j = i + 1; j < neighbours.length; j++) {
+        if (adj[neighbours[i]][neighbours[j]] > 0) triangles++;
+      }
+    }
+    cc[v] = (2 * triangles) / (k * (k - 1));
+  }
+
+  return cc;
+}
+
+// ─── Shortest Path Query (Dijkstra) ──────────────────────────────────────────
+//
+// Finds the shortest weighted path between any two nodes in the Knowledge Graph.
+// Weight = 1 / (edge_weight × decay_weight)  so stronger/more-recent edges are preferred.
+
+export type PathResult = {
+  from: string;
+  to: string;
+  path: string[];
+  totalCost: number;
+  hopCount: number;
+  found: boolean;
+};
+
+export function findShortestPath(clientId: string, fromNodeId: string, toNodeId: string): PathResult {
+  const graph = clientGraphs.get(clientId);
+  if (!graph) return { from: fromNodeId, to: toNodeId, path: [], totalCost: Infinity, hopCount: 0, found: false };
+
+  const nodes = graph.nodes;
+  const n = nodes.length;
+  const nodeIndex = new Map<string, number>();
+  nodes.forEach((node, i) => nodeIndex.set(node.id, i));
+
+  const src = nodeIndex.get(fromNodeId);
+  const dst = nodeIndex.get(toNodeId);
+  if (src === undefined || dst === undefined) {
+    return { from: fromNodeId, to: toNodeId, path: [], totalCost: Infinity, hopCount: 0, found: false };
+  }
+
+  const adj: Array<Array<{ to: number; cost: number }>> = Array.from({ length: n }, () => []);
+  for (const edge of graph.edges) {
+    const i = nodeIndex.get(edge.from);
+    const j = nodeIndex.get(edge.to);
+    if (i !== undefined && j !== undefined) {
+      const timeWeight = decayWeight(edge.timestamp);
+      const cost = 1 / (edge.weight * timeWeight + 0.001);
+      adj[i].push({ to: j, cost });
+      adj[j].push({ to: i, cost });
+    }
+  }
+
+  const dist = new Array(n).fill(Infinity);
+  const prev = new Array(n).fill(-1);
+  const visited = new Array(n).fill(false);
+  dist[src] = 0;
+
+  for (let iter = 0; iter < n; iter++) {
+    let u = -1;
+    let minDist = Infinity;
+    for (let i = 0; i < n; i++) {
+      if (!visited[i] && dist[i] < minDist) {
+        u = i;
+        minDist = dist[i];
+      }
+    }
+    if (u === -1 || u === dst) break;
+    visited[u] = true;
+
+    for (const edge of adj[u]) {
+      const alt = dist[u] + edge.cost;
+      if (alt < dist[edge.to]) {
+        dist[edge.to] = alt;
+        prev[edge.to] = u;
+      }
+    }
+  }
+
+  if (dist[dst] === Infinity) {
+    return { from: fromNodeId, to: toNodeId, path: [], totalCost: Infinity, hopCount: 0, found: false };
+  }
+
+  const pathIndices: number[] = [];
+  for (let at = dst; at !== -1; at = prev[at]) pathIndices.push(at);
+  pathIndices.reverse();
+
+  return {
+    from: fromNodeId,
+    to: toNodeId,
+    path: pathIndices.map(i => nodes[i].id),
+    totalCost: r4(dist[dst]),
+    hopCount: pathIndices.length - 1,
+    found: true,
+  };
+}
+
+// ─── Community Detection (Label Propagation) ─────────────────────────────────
+//
+// Iterative algorithm:
+//   1. Assign each node a unique label
+//   2. For each node, adopt the label most frequent among weighted neighbours
+//   3. Repeat until convergence or max iterations
+//
+// Identifies natural clusters in the relationship graph (e.g., groups of
+// attendees who consistently appear together across events).
+
+export type CommunityResult = {
+  communityId: string;
+  members: Array<{ nodeId: string; nodeType: string; label: string }>;
+  size: number;
+  cohesion: number;
+};
+
+export function detectCommunities(clientId: string): CommunityResult[] {
+  const graph = clientGraphs.get(clientId);
+  if (!graph || graph.nodes.length === 0) return [];
+
+  const nodes = graph.nodes;
+  const n = nodes.length;
+  const nodeIndex = new Map<string, number>();
+  nodes.forEach((node, i) => nodeIndex.set(node.id, i));
+
+  const adj: Array<Array<{ to: number; weight: number }>> = Array.from({ length: n }, () => []);
+  for (const edge of graph.edges) {
+    const i = nodeIndex.get(edge.from);
+    const j = nodeIndex.get(edge.to);
+    if (i !== undefined && j !== undefined) {
+      const w = edge.weight * decayWeight(edge.timestamp);
+      adj[i].push({ to: j, weight: w });
+      adj[j].push({ to: i, weight: w });
+    }
+  }
+
+  const labels = nodes.map((_, i) => i);
+  const MAX_ITER = 50;
+
+  for (let iter = 0; iter < MAX_ITER; iter++) {
+    let changed = false;
+    const order = Array.from({ length: n }, (_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+
+    for (const i of order) {
+      const labelWeights: Record<number, number> = {};
+      for (const edge of adj[i]) {
+        const l = labels[edge.to];
+        labelWeights[l] = (labelWeights[l] || 0) + edge.weight;
+      }
+      if (Object.keys(labelWeights).length === 0) continue;
+
+      let maxWeight = -1;
+      let bestLabel = labels[i];
+      for (const [l, w] of Object.entries(labelWeights)) {
+        if (w > maxWeight) {
+          maxWeight = w;
+          bestLabel = parseInt(l);
+        }
+      }
+      if (bestLabel !== labels[i]) {
+        labels[i] = bestLabel;
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+
+  const communities = new Map<number, number[]>();
+  for (let i = 0; i < n; i++) {
+    const members = communities.get(labels[i]) ?? [];
+    members.push(i);
+    communities.set(labels[i], members);
+  }
+
+  const results: CommunityResult[] = [];
+  for (const [communityLabel, memberIndices] of communities) {
+    if (memberIndices.length < 2) continue;
+
+    let internalEdges = 0;
+    let totalPossible = (memberIndices.length * (memberIndices.length - 1)) / 2;
+    const memberSet = new Set(memberIndices);
+
+    for (const i of memberIndices) {
+      for (const edge of adj[i]) {
+        if (memberSet.has(edge.to) && edge.to > i) internalEdges++;
+      }
+    }
+
+    results.push({
+      communityId: `community-${communityLabel}`,
+      members: memberIndices.map(i => ({ nodeId: nodes[i].id, nodeType: nodes[i].type, label: nodes[i].label })),
+      size: memberIndices.length,
+      cohesion: r4(totalPossible > 0 ? internalEdges / totalPossible : 0),
+    });
+  }
+
+  return results.sort((a, b) => b.size - a.size);
+}
+
+function r4(v: number): number {
+  return Math.round(v * 10000) / 10000;
+}

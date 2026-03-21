@@ -71,10 +71,22 @@ The platform has been consolidated to two main pages:
   - Post-Event Intelligence Report: auto-generated summary with metrics, category breakdown, compliance flags, top questions, JSON export
 - **Total new code**: ~2,944 lines across 9 core files
 
+## Module 29: Predictive Event Intelligence Engine
+
+- **Service**: `server/services/PredictiveEventIntelligenceService.ts` (767 lines)
+- **Algorithms**:
+  - Bayesian Anomaly Detector — prior × likelihood with adaptive z-threshold, posterior P(anomaly|z)
+  - Holt-Winters Triple Exponential Smoothing — level/trend/seasonal decomposition with MAPE
+  - TF-IDF Topic Predictor — term frequency–inverse document frequency with recency weighting
+  - Monte Carlo Risk Simulator — 10,000-trial Box-Muller stochastic simulation, percentile distribution
+  - Eigenvector Centrality — power iteration on adjacency matrix for influence ranking
+  - Wilson Score Confidence Intervals — proportion estimates robust to small samples
+  - Cross-Client Pattern Detection — industry-wide topic convergence and sentiment divergence
+
 ## Module 32: Autonomous Enterprise Operating System — AEOS (CIP6, Claims 71-75)
 
-- **Q2C State Machine**: `server/services/AeosQuoteToCashService.ts` (378 lines) — Deterministic Financial State Machine with 4 stages: Predictive Quoting → Autonomous Registration → Event-Triggered Invoicing → Self-Healing Reconciliation. SHA-256 hash-chained audit trail, governance gate on financial transitions.
-- **Knowledge Graph Digital Twin**: `server/services/OrganizationalKnowledgeGraphService.ts` (379 lines) — Company profile, historical intelligence with 14-day decay weighting, relationship map (Client→Event→Attendee→Question→Sentiment), goal framework with KPI tracking, crisis brief generation, staffing forecasts.
+- **Q2C State Machine**: `server/services/AeosQuoteToCashService.ts` (487 lines) — Deterministic Financial State Machine with 4 stages, Bayesian demand estimation (conjugate Normal-Normal posterior), resource scarcity premium, confidence-range quoting, SHA-256 hash-chained audit trail, governance gate on financial transitions.
+- **Knowledge Graph Digital Twin**: `server/services/OrganizationalKnowledgeGraphService.ts` (742 lines) — Company profile, decay-weighted history, relationship map, eigenvector/betweenness/clustering centrality (power iteration), Brandes' betweenness, Dijkstra shortest path, label propagation community detection, goal framework with KPI tracking, crisis brief generation, staffing forecasts.
 - **Semantic API**: `server/services/AeosSemanticApiService.ts` (357 lines) — Modal-Agnostic API describing all platform capabilities in structured natural language. 10 registered capabilities, 2 multi-module workflows, natural language command resolution.
 - **Sovereign Data**: `server/services/AeosSovereignDataService.ts` (249 lines) — Per-client Knowledge Graph isolation, zero-trust token issuance/validation with SHA-256 integrity, data residency compliance (POPIA/GDPR/SOX).
 

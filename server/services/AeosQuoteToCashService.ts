@@ -136,27 +136,125 @@ const BASE_RATE_PER_HOUR = 4250;
 const COMPLIANCE_MONITORING_RATE = 2100;
 const OPERATOR_RATE = 1500;
 
+// ─── Historical Quote Store for Bayesian Learning ────────────────────────────
+
+type HistoricalQuote = {
+  eventType: string;
+  attendeeCount: number;
+  durationHours: number;
+  actualCost: number;
+  acceptedAmount: number;
+  margin: number;
+  timestamp: number;
+};
+
+const quoteHistory: HistoricalQuote[] = [];
+
+export function recordQuoteOutcome(outcome: HistoricalQuote): void {
+  quoteHistory.push(outcome);
+}
+
+// ─── Bayesian Demand Estimation ──────────────────────────────────────────────
+//
+// Prior:  μ₀ = base demand multiplier (1.0), σ₀² = 0.25 (broad prior)
+// Likelihood: Each historical event contributes an observed demand ratio
+//   observed_ratio = acceptedAmount / baseCost
+//
+// Posterior (conjugate Normal-Normal):
+//   μ_post = (μ₀/σ₀² + Σ(xᵢ/σ²)) / (1/σ₀² + n/σ²)
+//   σ²_post = 1 / (1/σ₀² + n/σ²)
+//
+// where σ² is estimated from the observed variance of demand ratios
+
+export function computeBayesianDemandEstimate(
+  eventType: string,
+  demandVector: PredictiveDemandVector
+): { posteriorMean: number; posteriorStdDev: number; confidenceLower: number; confidenceUpper: number; sampleSize: number; priorWeight: number } {
+  const PRIOR_MEAN = 1.0;
+  const PRIOR_VARIANCE = 0.25;
+  const WILSON_Z = 1.96;
+
+  const relevant = quoteHistory.filter(h => h.eventType === eventType && h.acceptedAmount > 0);
+
+  if (relevant.length < 2) {
+    const pointEstimate = 1 +
+      (demandVector.historicalDemandFactor * 0.3) +
+      (demandVector.seasonalAdjustment * 0.25) +
+      (demandVector.eventComplexityScore * 0.25) +
+      (demandVector.jurisdictionRiskMultiplier * 0.2);
+
+    return {
+      posteriorMean: Math.round(pointEstimate * 1000) / 1000,
+      posteriorStdDev: Math.round(Math.sqrt(PRIOR_VARIANCE) * 1000) / 1000,
+      confidenceLower: Math.round((pointEstimate - WILSON_Z * Math.sqrt(PRIOR_VARIANCE)) * 1000) / 1000,
+      confidenceUpper: Math.round((pointEstimate + WILSON_Z * Math.sqrt(PRIOR_VARIANCE)) * 1000) / 1000,
+      sampleSize: relevant.length,
+      priorWeight: 1.0,
+    };
+  }
+
+  const ratios = relevant.map(h => h.margin);
+  const n = ratios.length;
+  const sampleMean = ratios.reduce((a, b) => a + b, 0) / n;
+  const sampleVariance = ratios.reduce((s, r) => s + Math.pow(r - sampleMean, 2), 0) / (n - 1);
+  const sigma2 = Math.max(sampleVariance, 0.01);
+
+  const posteriorVariance = 1 / (1 / PRIOR_VARIANCE + n / sigma2);
+  const posteriorMean = posteriorVariance * (PRIOR_MEAN / PRIOR_VARIANCE + ratios.reduce((s, r) => s + r, 0) / sigma2);
+  const posteriorStdDev = Math.sqrt(posteriorVariance);
+
+  const vectorAdjustment =
+    (demandVector.historicalDemandFactor * 0.15) +
+    (demandVector.seasonalAdjustment * 0.15) +
+    (demandVector.eventComplexityScore * 0.15) +
+    (demandVector.jurisdictionRiskMultiplier * 0.10);
+
+  const adjustedMean = posteriorMean + vectorAdjustment;
+
+  return {
+    posteriorMean: Math.round(adjustedMean * 1000) / 1000,
+    posteriorStdDev: Math.round(posteriorStdDev * 1000) / 1000,
+    confidenceLower: Math.round((adjustedMean - WILSON_Z * posteriorStdDev) * 1000) / 1000,
+    confidenceUpper: Math.round((adjustedMean + WILSON_Z * posteriorStdDev) * 1000) / 1000,
+    sampleSize: n,
+    priorWeight: Math.round((posteriorVariance / PRIOR_VARIANCE) * 1000) / 1000,
+  };
+}
+
 export function computePredictiveQuote(
   eventType: string,
   attendeeCount: number,
   durationHours: number,
   resources: ResourceAvailability,
   demandVector: PredictiveDemandVector
-): { totalAmount: number; breakdown: Record<string, number>; demandMultiplier: number } {
+): {
+  totalAmount: number;
+  breakdown: Record<string, number>;
+  demandMultiplier: number;
+  bayesianEstimate: ReturnType<typeof computeBayesianDemandEstimate>;
+  resourceUtilisation: number;
+  confidenceRange: { low: number; high: number };
+} {
   const baseCost = BASE_RATE_PER_HOUR * durationHours;
   const complianceCost = COMPLIANCE_MONITORING_RATE * durationHours;
-  const operatorCost = OPERATOR_RATE * Math.max(1, Math.ceil(attendeeCount / 50)) * durationHours;
+  const requiredOperators = Math.max(1, Math.ceil(attendeeCount / 50));
+  const operatorCost = OPERATOR_RATE * requiredOperators * durationHours;
 
-  const demandMultiplier = 1 +
-    (demandVector.historicalDemandFactor * 0.3) +
-    (demandVector.seasonalAdjustment * 0.25) +
-    (demandVector.eventComplexityScore * 0.25) +
-    (demandVector.jurisdictionRiskMultiplier * 0.2);
+  const resourceUtilisation = Math.min(1, (requiredOperators / Math.max(1, resources.operators)) * 0.5 +
+    (1 / Math.max(1, resources.complianceAnalysts)) * 0.3 +
+    (attendeeCount / Math.max(1, resources.infrastructureCapacity * 100)) * 0.2);
 
-  const cappedMultiplier = Math.min(2.5, Math.max(0.8, demandMultiplier));
+  const scarcityPremium = resourceUtilisation > 0.8 ? 1 + (resourceUtilisation - 0.8) * 0.5 : 1;
 
-  const subtotal = (baseCost + complianceCost + operatorCost) * cappedMultiplier;
+  const bayesian = computeBayesianDemandEstimate(eventType, demandVector);
+  const demandMultiplier = Math.min(2.5, Math.max(0.8, bayesian.posteriorMean * scarcityPremium));
+
+  const subtotal = (baseCost + complianceCost + operatorCost) * demandMultiplier;
   const totalAmount = Math.round(subtotal * 100) / 100;
+
+  const lowMultiplier = Math.max(0.8, bayesian.confidenceLower * scarcityPremium);
+  const highMultiplier = Math.min(2.5, bayesian.confidenceUpper * scarcityPremium);
+  const rawCost = baseCost + complianceCost + operatorCost;
 
   return {
     totalAmount,
@@ -164,8 +262,15 @@ export function computePredictiveQuote(
       baseCost: Math.round(baseCost * 100) / 100,
       complianceCost: Math.round(complianceCost * 100) / 100,
       operatorCost: Math.round(operatorCost * 100) / 100,
+      scarcityPremium: Math.round((scarcityPremium - 1) * rawCost * 100) / 100,
     },
-    demandMultiplier: Math.round(cappedMultiplier * 1000) / 1000,
+    demandMultiplier: Math.round(demandMultiplier * 1000) / 1000,
+    bayesianEstimate: bayesian,
+    resourceUtilisation: Math.round(resourceUtilisation * 1000) / 1000,
+    confidenceRange: {
+      low: Math.round(rawCost * lowMultiplier * 100) / 100,
+      high: Math.round(rawCost * highMultiplier * 100) / 100,
+    },
   };
 }
 
