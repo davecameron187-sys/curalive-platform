@@ -1,6 +1,14 @@
 import { invokeLLM } from "../_core/llm";
 import { generateComplianceSafeResponse } from "./AgiComplianceService";
 
+function extractLLMText(result: any): string {
+  if (result?.text) return result.text;
+  const content = result?.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) return content.map((p: any) => p.text || "").join("");
+  return "";
+}
+
 export interface SentimentPolarity {
   polarity: "positive" | "neutral" | "negative" | "adversarial";
   polarityScore: number;
@@ -132,7 +140,9 @@ Return ONLY valid JSON with these fields:
       temperature: 0.2,
     });
 
-    const parsed = JSON.parse(result.text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+    const llmText = extractLLMText(result);
+    if (!llmText) throw new Error("Empty LLM response");
+    const parsed = JSON.parse(llmText.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
     const triageScore = Math.min(100, Math.max(0, parsed.triageScore || 50));
     const complianceRiskScore = Math.min(100, Math.max(0, parsed.complianceRiskScore || 0));
     const polarity = (["positive", "neutral", "negative", "adversarial"].includes(parsed.sentimentPolarity) ? parsed.sentimentPolarity : "neutral") as "positive" | "neutral" | "negative" | "adversarial";
@@ -204,7 +214,9 @@ Return ONLY valid JSON:
       temperature: 0.3,
     });
 
-    const parsed = JSON.parse(result.text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+    const llmText = extractLLMText(result);
+    if (!llmText) throw new Error("Empty LLM response");
+    const parsed = JSON.parse(llmText.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
     let answerText = parsed.answerText || "Draft unavailable — please compose manually.";
 
     try {
