@@ -1,6 +1,7 @@
 // @ts-nocheck
 /**
  * CuraLive AI Evolution Engine
+ * CIPC Patent App ID 1773575338868 | CIP6 | Claims 57, 58, 64, 69, 75
  *
  * Autonomous self-improving intelligence system that observes its own outputs,
  * identifies weaknesses, detects cross-event patterns, and proposes new AI tools.
@@ -12,7 +13,9 @@
  *   4. Autonomous Promotion     — proposals auto-promote based on composite evidence score
  *   5. Gap Detection Matrix     — identifies systematic blind spots across the module grid
  *   6. Impact Estimation Model  — scores potential tools by frequency × breadth × severity
+ *   7. SHA-256 Governance Audit — hash-chained immutable log of all governance decisions
  */
+import { createHash } from "crypto";
 
 import { getDb } from "../db";
 import { aiEvolutionObservations, aiToolProposals } from "../../drizzle/schema";
@@ -291,6 +294,87 @@ function evaluateGovernanceGateway(
   return { passed, stabilityScore, consistencyRate, complianceBoundaryCheck, reason };
 }
 
+type GovernanceAuditEntry = {
+  timestamp: string;
+  proposalTitle: string;
+  decision: "passed" | "blocked" | "deferred";
+  stabilityScore: number;
+  consistencyRate: number;
+  complianceBoundaryCheck: boolean;
+  reason: string;
+  previousHash: string;
+  hash: string;
+};
+
+const governanceAuditChain: GovernanceAuditEntry[] = [];
+let lastGovernanceHash = "GOVERNANCE_GENESIS";
+
+function computeGovernanceHash(entry: Omit<GovernanceAuditEntry, "hash">): string {
+  const payload = JSON.stringify({
+    timestamp: entry.timestamp,
+    proposalTitle: entry.proposalTitle,
+    decision: entry.decision,
+    stabilityScore: entry.stabilityScore,
+    consistencyRate: entry.consistencyRate,
+    complianceBoundaryCheck: entry.complianceBoundaryCheck,
+    reason: entry.reason,
+    previousHash: entry.previousHash,
+  });
+  return createHash("sha256").update(payload).digest("hex");
+}
+
+function recordGovernanceDecision(
+  proposalTitle: string,
+  governance: GovernanceResult
+): GovernanceAuditEntry {
+  const decision: "passed" | "blocked" | "deferred" = governance.passed ? "passed" : "blocked";
+  const partial: Omit<GovernanceAuditEntry, "hash"> = {
+    timestamp: new Date().toISOString(),
+    proposalTitle,
+    decision,
+    stabilityScore: governance.stabilityScore,
+    consistencyRate: governance.consistencyRate,
+    complianceBoundaryCheck: governance.complianceBoundaryCheck,
+    reason: governance.reason,
+    previousHash: lastGovernanceHash,
+  };
+  const hash = computeGovernanceHash(partial);
+  const entry: GovernanceAuditEntry = { ...partial, hash };
+  governanceAuditChain.push(entry);
+  lastGovernanceHash = hash;
+  console.log(`[AiEvolution] Governance audit: ${decision} "${proposalTitle}" | hash=${hash.slice(0, 16)}… | chain length=${governanceAuditChain.length}`);
+  return entry;
+}
+
+export function getGovernanceAuditChain(): GovernanceAuditEntry[] {
+  return [...governanceAuditChain];
+}
+
+export function verifyGovernanceAuditIntegrity(): { valid: boolean; chainLength: number; brokenAt?: number } {
+  let prevHash = "GOVERNANCE_GENESIS";
+  for (let i = 0; i < governanceAuditChain.length; i++) {
+    const entry = governanceAuditChain[i];
+    if (entry.previousHash !== prevHash) {
+      return { valid: false, chainLength: governanceAuditChain.length, brokenAt: i };
+    }
+    const recomputed = computeGovernanceHash({
+      timestamp: entry.timestamp,
+      proposalTitle: entry.proposalTitle,
+      decision: entry.decision,
+      stabilityScore: entry.stabilityScore,
+      consistencyRate: entry.consistencyRate,
+      complianceBoundaryCheck: entry.complianceBoundaryCheck,
+      reason: entry.reason,
+      previousHash: entry.previousHash,
+    });
+    if (recomputed !== entry.hash) {
+      return { valid: false, chainLength: governanceAuditChain.length, brokenAt: i };
+    }
+    prevHash = entry.hash;
+  }
+  return { valid: true, chainLength: governanceAuditChain.length };
+}
+
 async function runAutonomousPromotion(): Promise<{ promoted: string[]; governanceResults: Array<{ title: string; governance: GovernanceResult }> }> {
   const db = await getDb();
   const promoted: string[] = [];
@@ -325,6 +409,7 @@ async function runAutonomousPromotion(): Promise<{ promoted: string[]; governanc
       if (activeEvidence >= t.minEvidence && decayedScore >= t.minScore) {
         const governance = evaluateGovernanceGateway(observations, proposal.category);
         governanceResults.push({ title: proposal.title, governance });
+        recordGovernanceDecision(proposal.title, governance);
         if (!governance.passed) {
           console.log(`[AiEvolution] Governance gateway BLOCKED "${proposal.title}": ${governance.reason}`);
           newStatus = proposal.status;

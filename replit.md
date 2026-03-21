@@ -71,6 +71,23 @@ The platform has been consolidated to two main pages:
   - Post-Event Intelligence Report: auto-generated summary with metrics, category breakdown, compliance flags, top questions, JSON export
 - **Total new code**: ~2,944 lines across 9 core files
 
+## Module 32: Autonomous Enterprise Operating System — AEOS (CIP6, Claims 71-75)
+
+- **Q2C State Machine**: `server/services/AeosQuoteToCashService.ts` (378 lines) — Deterministic Financial State Machine with 4 stages: Predictive Quoting → Autonomous Registration → Event-Triggered Invoicing → Self-Healing Reconciliation. SHA-256 hash-chained audit trail, governance gate on financial transitions.
+- **Knowledge Graph Digital Twin**: `server/services/OrganizationalKnowledgeGraphService.ts` (379 lines) — Company profile, historical intelligence with 14-day decay weighting, relationship map (Client→Event→Attendee→Question→Sentiment), goal framework with KPI tracking, crisis brief generation, staffing forecasts.
+- **Semantic API**: `server/services/AeosSemanticApiService.ts` (357 lines) — Modal-Agnostic API describing all platform capabilities in structured natural language. 10 registered capabilities, 2 multi-module workflows, natural language command resolution.
+- **Sovereign Data**: `server/services/AeosSovereignDataService.ts` (249 lines) — Per-client Knowledge Graph isolation, zero-trust token issuance/validation with SHA-256 integrity, data residency compliance (POPIA/GDPR/SOX).
+
+## CIP6 Cross-Cutting Innovations (Claims 56-70)
+
+- **Dual-Carrier Failover**: `server/services/ConferenceDialoutService.ts` (402 lines) — Twilio primary → Telnyx secondary for bulk dial-out with carrier-aware cancel support (Claim 67)
+- **SHA-256 Governance Audit Chain**: `server/services/AiEvolutionService.ts` (913 lines) — Hash-chained immutable log of all governance decisions with GENESIS block, verification function (Claim 69)
+- **P2P Algorithm**: `server/services/LiveQaTriageService.ts` — Polarity-to-Priority with formula P2P = (PW×0.40) + (NPS×0.25) + (NDU×0.35) (Claim 65)
+- **Go Live Gate**: `server/services/LiveQaTriageService.ts` — Dual threshold: triage≥40, compliance≤70 (Claim 62)
+- **Jitter-Buffer Sync**: `server/services/TranscriptSyncService.ts` — 50-sample rolling buffer, aligned timestamps, 8h TTL (Claim 66)
+- **DTMF Handshake**: `client/src/components/Webphone.tsx` — Web Audio API dual-tone generation + Twilio sendDigits (Claim 56)
+- **Total CIP6 new code**: ~2,678 lines across 6 core files
+
 ## Project Structure
 
 ```

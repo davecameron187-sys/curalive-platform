@@ -6,12 +6,52 @@ import { eq, and, sql, desc } from "drizzle-orm";
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID ?? "";
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN ?? "";
 const TWILIO_CALLER_ID = process.env.TWILIO_CALLER_ID ?? "";
+const TELNYX_API_KEY = process.env.TELNYX_API_KEY ?? "";
+const TELNYX_CALLER_ID = process.env.TELNYX_CALLER_ID ?? "";
+const TELNYX_CONNECTION_ID = process.env.TELNYX_CONNECTION_ID ?? "";
+
+type CarrierType = "twilio" | "telnyx";
 
 function getTwilioClient() {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
     throw new Error("Twilio credentials not configured (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN)");
   }
   return twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+}
+
+function isTelnyxAvailable(): boolean {
+  return !!(TELNYX_API_KEY && TELNYX_CALLER_ID && TELNYX_CONNECTION_ID);
+}
+
+async function dialViaTelnyx(params: {
+  to: string;
+  from: string;
+  webhookUrl: string;
+  statusUrl: string;
+  conferenceName: string;
+}): Promise<{ callSid: string; carrier: CarrierType }> {
+  const response = await fetch("https://api.telnyx.com/v2/calls", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${TELNYX_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      connection_id: TELNYX_CONNECTION_ID,
+      to: params.to,
+      from: params.from,
+      webhook_url: params.statusUrl,
+      timeout_secs: 45,
+      answering_machine_detection: "detect",
+      custom_headers: [{ name: "X-Conference", value: params.conferenceName }],
+    }),
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Telnyx API error ${response.status}: ${body}`);
+  }
+  const data = await response.json() as any;
+  return { callSid: data.data?.call_control_id ?? data.data?.id ?? "telnyx-unknown", carrier: "telnyx" };
 }
 
 function resolveWebhookBaseUrl(): string {
@@ -115,7 +155,12 @@ export async function startDialling(dialoutId: number, userId: number) {
 
   const participants = await db.select().from(conferenceDialoutParticipants).where(eq(conferenceDialoutParticipants.dialoutId, dialoutId));
 
-  const client = getTwilioClient();
+  let twilioClient: ReturnType<typeof getTwilioClient> | null = null;
+  try {
+    twilioClient = getTwilioClient();
+  } catch {
+    console.warn("[ConferenceDialout] Twilio client unavailable — will attempt Telnyx for all participants");
+  }
   const baseUrl = resolveWebhookBaseUrl();
   const twimlUrl = `${baseUrl}/api/conference-dialout/twiml?conferenceName=${encodeURIComponent(dialout.conferenceName)}`;
   const statusUrl = `${baseUrl}/api/conference-dialout/status`;
@@ -127,8 +172,26 @@ export async function startDialling(dialoutId: number, userId: number) {
     const batch = participants.slice(i, i + BATCH_SIZE);
 
     const promises = batch.map(async (p) => {
+      let carrier: CarrierType = "twilio";
+
+      if (!twilioClient) {
+        if (isTelnyxAvailable()) {
+          try {
+            carrier = "telnyx";
+            const telnyxResult = await dialViaTelnyx({ to: p.phoneNumber, from: TELNYX_CALLER_ID, webhookUrl: twimlUrl, statusUrl, conferenceName: dialout.conferenceName });
+            await db.update(conferenceDialoutParticipants).set({ callSid: telnyxResult.callSid, status: "ringing" }).where(eq(conferenceDialoutParticipants.id, p.id));
+            console.log(`[ConferenceDialout] Called ${p.phoneNumber} via Telnyx (primary unavailable) → SID ${telnyxResult.callSid}`);
+          } catch (err: any) {
+            await db.update(conferenceDialoutParticipants).set({ status: "failed", errorMessage: `No Twilio; Telnyx failed: ${err.message?.slice(0, 400)}` }).where(eq(conferenceDialoutParticipants.id, p.id));
+          }
+        } else {
+          await db.update(conferenceDialoutParticipants).set({ status: "failed", errorMessage: "No telephony carrier available" }).where(eq(conferenceDialoutParticipants.id, p.id));
+        }
+        return;
+      }
+
       try {
-        const call = await client.calls.create({
+        const call = await twilioClient.calls.create({
           to: p.phoneNumber,
           from: dialout.callerId,
           url: twimlUrl,
@@ -143,12 +206,38 @@ export async function startDialling(dialoutId: number, userId: number) {
           .set({ callSid: call.sid, status: "ringing" })
           .where(eq(conferenceDialoutParticipants.id, p.id));
 
-        console.log(`[ConferenceDialout] Called ${p.phoneNumber} → SID ${call.sid}`);
-      } catch (err: any) {
-        console.error(`[ConferenceDialout] Failed to call ${p.phoneNumber}:`, err.message);
-        await db.update(conferenceDialoutParticipants)
-          .set({ status: "failed", errorMessage: err.message?.slice(0, 500) ?? "Unknown error" })
-          .where(eq(conferenceDialoutParticipants.id, p.id));
+        console.log(`[ConferenceDialout] Called ${p.phoneNumber} via Twilio → SID ${call.sid}`);
+      } catch (twilioErr: any) {
+        console.warn(`[ConferenceDialout] Twilio failed for ${p.phoneNumber}: ${twilioErr.message} — attempting Telnyx failover`);
+
+        if (isTelnyxAvailable()) {
+          try {
+            carrier = "telnyx";
+            const telnyxResult = await dialViaTelnyx({
+              to: p.phoneNumber,
+              from: TELNYX_CALLER_ID,
+              webhookUrl: twimlUrl,
+              statusUrl,
+              conferenceName: dialout.conferenceName,
+            });
+
+            await db.update(conferenceDialoutParticipants)
+              .set({ callSid: telnyxResult.callSid, status: "ringing" })
+              .where(eq(conferenceDialoutParticipants.id, p.id));
+
+            console.log(`[ConferenceDialout] Called ${p.phoneNumber} via Telnyx failover → SID ${telnyxResult.callSid}`);
+          } catch (telnyxErr: any) {
+            console.error(`[ConferenceDialout] Telnyx failover also failed for ${p.phoneNumber}:`, telnyxErr.message);
+            await db.update(conferenceDialoutParticipants)
+              .set({ status: "failed", errorMessage: `Twilio: ${twilioErr.message?.slice(0, 250)}; Telnyx: ${telnyxErr.message?.slice(0, 250)}` })
+              .where(eq(conferenceDialoutParticipants.id, p.id));
+          }
+        } else {
+          console.error(`[ConferenceDialout] No Telnyx failover available for ${p.phoneNumber}`);
+          await db.update(conferenceDialoutParticipants)
+            .set({ status: "failed", errorMessage: twilioErr.message?.slice(0, 500) ?? "Unknown error" })
+            .where(eq(conferenceDialoutParticipants.id, p.id));
+        }
       }
     });
 
@@ -254,14 +343,24 @@ export async function cancelDialout(dialoutId: number, userId: number) {
   const participants = await db.select().from(conferenceDialoutParticipants)
     .where(eq(conferenceDialoutParticipants.dialoutId, dialoutId));
 
-  const client = getTwilioClient();
+  let twilioClient: ReturnType<typeof getTwilioClient> | null = null;
+  try { twilioClient = getTwilioClient(); } catch { /* Twilio unavailable */ }
+
   const activeParticipants = participants.filter((p) =>
     p.callSid && ["queued", "ringing", "in-progress"].includes(p.status)
   );
 
   for (const p of activeParticipants) {
+    const isTelnyxCall = p.callSid?.startsWith("telnyx-") || (!twilioClient && isTelnyxAvailable());
     try {
-      await client.calls(p.callSid!).update({ status: "completed" });
+      if (isTelnyxCall && isTelnyxAvailable()) {
+        await fetch(`https://api.telnyx.com/v2/calls/${p.callSid}/actions/hangup`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${TELNYX_API_KEY}`, "Content-Type": "application/json" },
+        });
+      } else if (twilioClient) {
+        await twilioClient.calls(p.callSid!).update({ status: "completed" });
+      }
       await db.update(conferenceDialoutParticipants)
         .set({ status: "cancelled", endedAt: Date.now() })
         .where(eq(conferenceDialoutParticipants.id, p.id));
