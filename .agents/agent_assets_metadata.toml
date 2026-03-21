@@ -294,3 +294,9 @@ id = "GvCi4p8539YzSrohVZUBL"
 uri = "file://docs/CIP6_Line_Count_Correction_Brief.md"
 type = "text"
 title = "CIP6 Line Count Correction Brief for Claude"
+
+[[outputs]]
+id = "aSbA6wo63zR4w5dkBxICO"
+uri = "file://docs/Module29_AEOS_Deepening_Brief.docx"
+type = "word_document"
+title = "Module 29 & AEOS Algorithmic Deepening — Brief for Claude"
