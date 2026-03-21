@@ -288,3 +288,9 @@ id = "KDNeUBEoJ_quKkemtYKOw"
 uri = "file://docs/CuraLive_CIPC_CIP_Submission_6.docx"
 type = "word_document"
 title = "CuraLive CIPC CIP Submission 6 — 75 Claims, 32 Modules (Final)"
+
+[[outputs]]
+id = "GvCi4p8539YzSrohVZUBL"
+uri = "file://docs/CIP6_Line_Count_Correction_Brief.md"
+type = "text"
+title = "CIP6 Line Count Correction Brief for Claude"
