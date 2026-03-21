@@ -300,3 +300,9 @@ id = "aSbA6wo63zR4w5dkBxICO"
 uri = "file://docs/Module29_AEOS_Deepening_Brief.docx"
 type = "word_document"
 title = "Module 29 & AEOS Algorithmic Deepening — Brief for Claude"
+
+[[outputs]]
+id = "TR5Z2WmNl7-G4nd_V_Em0"
+uri = "file://docs/Live_QA_User_Guide.md"
+type = "text"
+title = "CuraLive Live Q&A User Guide"
