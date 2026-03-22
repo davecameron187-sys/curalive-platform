@@ -354,6 +354,10 @@ ${opts.notes ? `<table width="100%" style="background:#0f172a;border-left:3px so
 const BASTION_EVENT_TYPES = ["earnings_call", "interim_results", "capital_markets_day", "investor_day", "roadshow", "special_call"];
 const AGM_EVENT_TYPES = ["agm", "board_meeting"];
 const WEBCAST_EVENT_TYPES = ["webcast", "partner_webcast", "product_launch_webcast", "thought_leadership_webcast", "results_webcast", "hybrid_webcast"];
+const IPO_EVENT_TYPES = ["ipo_roadshow", "ipo_listing", "pre_ipo"];
+const MANDA_EVENT_TYPES = ["manda_call", "takeover_announcement", "merger_announcement", "scheme_of_arrangement"];
+const CREDIT_EVENT_TYPES = ["credit_rating_call", "bondholder_meeting", "debt_restructuring"];
+const PROXY_EVENT_TYPES = ["proxy_contest", "activist_meeting", "extraordinary_general_meeting"];
 
 function parseTranscriptToSegments(rawText: string): Array<{ speaker: string; text: string; timestamp: number }> {
   const lines = rawText.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
@@ -548,6 +552,143 @@ async function runSpecialisedAlgorithms(
     return { sessionType: "webcast", sessionId, algorithmsRun, results };
   }
 
+  if (IPO_EVENT_TYPES.includes(eventType)) {
+    const { IpoIntelligenceService } = await import("../services/IpoMandAIntelligenceService");
+    const transcript = segments.map(s => `${s.speaker}: ${s.text}`).join("\n");
+
+    console.log(`[ArchiveAI] Running IPO intelligence algorithms for archive ${archiveId}`);
+
+    try {
+      results.pricingSensitivity = await IpoIntelligenceService.analyzePricingSensitivity({
+        transcript, companyName: clientName, sector: "general",
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ IPO Pricing Sensitivity Analyzer complete`);
+    } catch (e) { console.error(`[ArchiveAI] IPO pricing sensitivity failed:`, e); }
+
+    try {
+      results.bookBuilding = await IpoIntelligenceService.detectBookBuildingSignals({
+        transcript, companyName: clientName, targetRaise: "undisclosed",
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Book-Building Signal Detector complete`);
+    } catch (e) { console.error(`[ArchiveAI] Book-building signals failed:`, e); }
+
+    try {
+      results.ipoRegulatory = await IpoIntelligenceService.scanRegulatoryRedFlags({
+        transcript, jurisdiction: "JSE", isQuietPeriod: false,
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ IPO Regulatory Red Flag Scanner complete`);
+    } catch (e) { console.error(`[ArchiveAI] IPO regulatory scan failed:`, e); }
+
+    try {
+      results.ipoReadiness = await IpoIntelligenceService.assessIPOReadiness({
+        companyName: clientName, sector: "general",
+        financialSummary: transcript.slice(0, 3000),
+        governanceNotes: "Extracted from transcript",
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ IPO Readiness Scorecard complete`);
+    } catch (e) { console.error(`[ArchiveAI] IPO readiness failed:`, e); }
+
+    return { sessionType: "ipo", sessionId: 0, algorithmsRun, results };
+  }
+
+  if (MANDA_EVENT_TYPES.includes(eventType)) {
+    const { MandAIntelligenceService } = await import("../services/IpoMandAIntelligenceService");
+    const transcript = segments.map(s => `${s.speaker}: ${s.text}`).join("\n");
+
+    console.log(`[ArchiveAI] Running M&A intelligence algorithms for archive ${archiveId}`);
+
+    try {
+      results.offerCompliance = await MandAIntelligenceService.monitorOfferPeriodCompliance({
+        transcript, dealType: "friendly", jurisdiction: "JSE",
+        targetCompany: eventName, acquirerCompany: clientName,
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Offer Period Compliance Monitor complete`);
+    } catch (e) { console.error(`[ArchiveAI] Offer compliance failed:`, e); }
+
+    try {
+      results.leakDetection = await MandAIntelligenceService.detectInformationLeaks({
+        transcript, isPreAnnouncement: false, knownInsiders: [],
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Leak Detection Engine complete`);
+    } catch (e) { console.error(`[ArchiveAI] Leak detection failed:`, e); }
+
+    try {
+      results.synergyValidation = await MandAIntelligenceService.analyzeSynergyValidation({
+        transcript, acquirerCompany: clientName, targetCompany: eventName, sector: "general",
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Synergy Validation Analyzer complete`);
+    } catch (e) { console.error(`[ArchiveAI] Synergy validation failed:`, e); }
+
+    try {
+      results.stakeholderImpact = await MandAIntelligenceService.mapStakeholderImpact({
+        transcript, acquirerCompany: clientName, targetCompany: eventName,
+        dealSize: "undisclosed", sector: "general",
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Stakeholder Impact Mapper complete`);
+    } catch (e) { console.error(`[ArchiveAI] Stakeholder impact failed:`, e); }
+
+    try {
+      results.dealCertainty = await MandAIntelligenceService.predictDealCertainty({
+        transcript, acquirerCompany: clientName, targetCompany: eventName,
+        dealType: "friendly", jurisdiction: "JSE",
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Deal Certainty Predictor complete`);
+    } catch (e) { console.error(`[ArchiveAI] Deal certainty prediction failed:`, e); }
+
+    return { sessionType: "manda", sessionId: 0, algorithmsRun, results };
+  }
+
+  if (CREDIT_EVENT_TYPES.includes(eventType)) {
+    const { CreditBondholderIntelligenceService } = await import("../services/IpoMandAIntelligenceService");
+    const transcript = segments.map(s => `${s.speaker}: ${s.text}`).join("\n");
+
+    console.log(`[ArchiveAI] Running credit & bondholder algorithms for archive ${archiveId}`);
+
+    try {
+      results.creditSpreadImpact = await CreditBondholderIntelligenceService.analyzeCreditSpreadImpact({
+        transcript, companyName: clientName, currentRating: "unrated", sector: "general",
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Credit Spread Impact Analyzer complete`);
+    } catch (e) { console.error(`[ArchiveAI] Credit spread impact failed:`, e); }
+
+    try {
+      results.covenantCompliance = await CreditBondholderIntelligenceService.scanCovenantCompliance({
+        transcript, companyName: clientName,
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Covenant Compliance Scanner complete`);
+    } catch (e) { console.error(`[ArchiveAI] Covenant compliance failed:`, e); }
+
+    return { sessionType: "credit", sessionId: 0, algorithmsRun, results };
+  }
+
+  if (PROXY_EVENT_TYPES.includes(eventType)) {
+    const { ActivistProxyIntelligenceService } = await import("../services/IpoMandAIntelligenceService");
+    const transcript = segments.map(s => `${s.speaker}: ${s.text}`).join("\n");
+
+    console.log(`[ArchiveAI] Running activist & proxy algorithms for archive ${archiveId}`);
+
+    try {
+      results.activistCampaign = await ActivistProxyIntelligenceService.detectActivistCampaign({
+        transcript, companyName: clientName,
+      });
+      algorithmsRun++;
+      console.log(`[ArchiveAI] ✓ Activist Campaign Detector complete`);
+    } catch (e) { console.error(`[ArchiveAI] Activist detection failed:`, e); }
+
+    return { sessionType: "activist", sessionId: 0, algorithmsRun, results };
+  }
+
   return { sessionType: "none", sessionId: 0, algorithmsRun: 0, results: {} };
 }
 
@@ -562,7 +703,12 @@ export const archiveUploadRouter = router({
           "earnings_call", "interim_results", "agm", "capital_markets_day",
           "ceo_town_hall", "board_meeting", "webcast", "partner_webcast",
           "product_launch_webcast", "thought_leadership_webcast", "results_webcast",
-          "hybrid_webcast", "investor_day", "roadshow", "special_call", "other",
+          "hybrid_webcast", "investor_day", "roadshow", "special_call",
+          "ipo_roadshow", "ipo_listing", "pre_ipo",
+          "manda_call", "takeover_announcement", "merger_announcement", "scheme_of_arrangement",
+          "credit_rating_call", "bondholder_meeting", "debt_restructuring",
+          "proxy_contest", "activist_meeting", "extraordinary_general_meeting",
+          "other",
         ]),
         eventDate: z.string().optional(),
         platform: z.string().optional(),
@@ -741,6 +887,10 @@ export const archiveUploadRouter = router({
       const sessionTypeLabel = specialisedResult.sessionType === "bastion" ? "investor"
         : specialisedResult.sessionType === "agm" ? "governance"
         : specialisedResult.sessionType === "webcast" ? "webcast intelligence"
+        : specialisedResult.sessionType === "ipo" ? "IPO intelligence"
+        : specialisedResult.sessionType === "manda" ? "M&A intelligence"
+        : specialisedResult.sessionType === "credit" ? "credit & bondholder"
+        : specialisedResult.sessionType === "activist" ? "activist & proxy"
         : "specialised";
       const specialisedLabel = specialisedResult.algorithmsRun > 0
         ? ` + ${specialisedResult.algorithmsRun} ${sessionTypeLabel} algorithms`

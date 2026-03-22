@@ -4,7 +4,7 @@
  */
 
 export type Sector = 'financial-services' | 'healthcare' | 'technology' | 'government' | 'corporate' | 'media-entertainment' | 'education' | 'non-profit';
-export type EventType = 'earnings-call' | 'investor-day' | 'roadshow' | 'audio-webcast' | 'video-webcast';
+export type EventType = 'earnings-call' | 'investor-day' | 'roadshow' | 'audio-webcast' | 'video-webcast' | 'ipo-roadshow' | 'manda-call' | 'credit-rating-call' | 'bondholder-meeting' | 'proxy-contest';
 
 export interface AIApplicationMetadata {
   id: string;
@@ -994,6 +994,374 @@ export const aiApplications: Record<string, AIApplicationMetadata> = {
     estimatedROI: '+40% response rate',
     timeToValue: 'Immediate post-event'
   },
+
+  // ─── Module 33: Investor Engagement Scoring ──────────────────────────────
+  'investor-engagement-scoring': {
+    id: 'investor-engagement-scoring',
+    name: 'Investor Engagement Scoring',
+    category: 'Investor Intelligence',
+    description: 'Track individual investors across multiple events to build relationship intelligence — attendance patterns, question history, sentiment trends, engagement score, and churn prediction.',
+    benefits: [
+      'Track investor engagement across events over time',
+      'Predict investor churn before it happens',
+      'Identify your most loyal and at-risk investors',
+      'AI-powered relationship insights with next-best-action',
+      'Cohort analysis per event (new vs returning)'
+    ],
+    stats: [
+      { metric: 'Engagement Dimensions', value: '5 factors' },
+      { metric: 'Lifecycle Stages', value: '6 classifications' },
+      { metric: 'Churn Prediction', value: '30-day decay model' },
+      { metric: 'Investor Types', value: '6 categories' }
+    ],
+    sectors: ['financial-services', 'technology', 'corporate', 'healthcare'],
+    eventTypes: ['earnings-call', 'investor-day', 'roadshow', 'ipo-roadshow', 'manda-call', 'proxy-contest', 'audio-webcast', 'video-webcast'],
+    priority: 'high',
+    estimatedROI: '+30% investor retention',
+    timeToValue: 'After 2+ events'
+  },
+
+  // ─── Module 34: Multi-Language Live Subtitles ────────────────────────────
+  'live-subtitle-translation': {
+    id: 'live-subtitle-translation',
+    name: 'Multi-Language Live Subtitles',
+    category: 'Accessibility & Reach',
+    description: 'Real-time translation of live transcripts into 25+ languages with financial terminology glossary enforcement and translation memory caching.',
+    benefits: [
+      'Reach non-English speaking investors in real-time',
+      'Financial terminology accuracy via curated glossaries',
+      'Support for 7 South African official languages',
+      'Translation memory improves speed over time',
+      'Quality verification with back-translation scoring'
+    ],
+    stats: [
+      { metric: 'Languages Supported', value: '25+' },
+      { metric: 'SA Languages', value: '7 official' },
+      { metric: 'Financial Glossaries', value: '10+ languages' },
+      { metric: 'Cache Size', value: '5,000 phrases/lang' }
+    ],
+    sectors: ['financial-services', 'technology', 'corporate', 'government', 'healthcare', 'media-entertainment', 'education', 'non-profit'],
+    eventTypes: ['earnings-call', 'investor-day', 'roadshow', 'ipo-roadshow', 'manda-call', 'audio-webcast', 'video-webcast', 'bondholder-meeting', 'proxy-contest', 'credit-rating-call'],
+    priority: 'high',
+    estimatedROI: '+50% international reach',
+    timeToValue: 'Immediate (during event)'
+  },
+
+  // ─── Module 35: IPO Intelligence ─────────────────────────────────────────
+  'ipo-pricing-sensitivity': {
+    id: 'ipo-pricing-sensitivity',
+    name: 'IPO Pricing Sensitivity Analyzer',
+    category: 'IPO Intelligence',
+    description: 'Detect pricing signals, valuation anchoring language, and institutional demand cues from IPO roadshow transcripts.',
+    benefits: [
+      'Identify bullish/bearish pricing signals in real-time',
+      'Detect valuation anchoring by management',
+      'Gauge institutional demand from questions',
+      'Risk assessment for IPO pricing'
+    ],
+    stats: [
+      { metric: 'Signal Types', value: 'Bullish/Bearish/Neutral' },
+      { metric: 'Valuation Metrics', value: 'Auto-detected' },
+      { metric: 'Demand Cues', value: 'Confidence-scored' },
+      { metric: 'Risk Levels', value: 'High/Medium/Low' }
+    ],
+    sectors: ['financial-services', 'technology', 'healthcare', 'corporate'],
+    eventTypes: ['ipo-roadshow', 'roadshow', 'investor-day'],
+    priority: 'high',
+    estimatedROI: 'Optimal IPO pricing',
+    timeToValue: 'During roadshow'
+  },
+
+  'ipo-book-building': {
+    id: 'ipo-book-building',
+    name: 'Book-Building Signal Detector',
+    category: 'IPO Intelligence',
+    description: 'Identify institutional demand patterns, allocation fairness signals, and cornerstone investor indicators during IPO book-building.',
+    benefits: [
+      'Detect oversubscription/undersubscription signals',
+      'Monitor allocation fairness',
+      'Identify cornerstone investor commitments',
+      'Track institutional vs retail balance'
+    ],
+    stats: [
+      { metric: 'Demand States', value: '3 classifications' },
+      { metric: 'Fairness Score', value: '0-100' },
+      { metric: 'Momentum Tracking', value: 'Accelerating/Steady/Decelerating' },
+      { metric: 'Risk Flags', value: 'Auto-detected' }
+    ],
+    sectors: ['financial-services', 'technology', 'healthcare'],
+    eventTypes: ['ipo-roadshow', 'roadshow'],
+    priority: 'high',
+    estimatedROI: 'Improved allocation decisions',
+    timeToValue: 'During book-building'
+  },
+
+  'ipo-readiness-scorecard': {
+    id: 'ipo-readiness-scorecard',
+    name: 'IPO Readiness Scorecard',
+    category: 'IPO Intelligence',
+    description: 'Composite readiness assessment across 6 dimensions: Financial Strength, Governance, Regulatory Compliance, Market Conditions, Management Team, and Investor Story.',
+    benefits: [
+      'Holistic listing readiness assessment',
+      'Gap identification per dimension',
+      'Critical blocker detection',
+      'Exchange recommendation (JSE/NYSE/LSE/NASDAQ)'
+    ],
+    stats: [
+      { metric: 'Dimensions', value: '6 scored areas' },
+      { metric: 'Verdict Levels', value: 'Ready/Conditional/Not Ready' },
+      { metric: 'Timeline Estimate', value: 'Auto-generated' },
+      { metric: 'Comparable Analysis', value: 'Recent IPOs' }
+    ],
+    sectors: ['financial-services', 'technology', 'healthcare', 'corporate'],
+    eventTypes: ['ipo-roadshow', 'investor-day'],
+    priority: 'medium',
+    estimatedROI: 'Reduced IPO preparation time',
+    timeToValue: 'Pre-IPO assessment'
+  },
+
+  'ipo-regulatory-scanner': {
+    id: 'ipo-regulatory-scanner',
+    name: 'IPO Regulatory Red Flag Scanner',
+    category: 'IPO Intelligence',
+    description: 'Scan for IPO-specific compliance violations across JSE, SEC, FCA, HKEX, and ASX — including quiet period enforcement and prospectus consistency.',
+    benefits: [
+      'Multi-jurisdiction regulatory scanning',
+      'Quiet period violation detection',
+      'Prospectus consistency checking',
+      'Immediate remediation recommendations'
+    ],
+    stats: [
+      { metric: 'Jurisdictions', value: 'JSE/SEC/FCA/HKEX/ASX' },
+      { metric: 'Severity Levels', value: 'Critical/High/Medium/Low' },
+      { metric: 'Quiet Period', value: 'Active monitoring' },
+      { metric: 'Prospectus Check', value: 'Consistency scored' }
+    ],
+    sectors: ['financial-services', 'technology', 'healthcare', 'corporate'],
+    eventTypes: ['ipo-roadshow', 'roadshow', 'investor-day'],
+    priority: 'high',
+    estimatedROI: 'Regulatory risk mitigation',
+    timeToValue: 'During event'
+  },
+
+  // ─── Module 35: M&A Intelligence ─────────────────────────────────────────
+  'manda-offer-compliance': {
+    id: 'manda-offer-compliance',
+    name: 'Offer Period Compliance Monitor',
+    category: 'M&A Intelligence',
+    description: 'Monitor takeover code compliance, mandatory offer triggers, and deal certainty language across JSE, SEC, FCA, and EU jurisdictions.',
+    benefits: [
+      'Real-time takeover code compliance',
+      'Mandatory offer trigger detection',
+      'Deal certainty language analysis',
+      'Binding vs indicative classification'
+    ],
+    stats: [
+      { metric: 'Jurisdictions', value: 'JSE/SEC/FCA/EU' },
+      { metric: 'Deal Types', value: '4 classifications' },
+      { metric: 'Trigger Tracking', value: 'Threshold monitoring' },
+      { metric: 'Compliance Status', value: 'Real-time' }
+    ],
+    sectors: ['financial-services', 'technology', 'healthcare', 'corporate'],
+    eventTypes: ['manda-call', 'earnings-call'],
+    priority: 'high',
+    estimatedROI: 'Regulatory compliance assurance',
+    timeToValue: 'During deal announcement'
+  },
+
+  'manda-leak-detection': {
+    id: 'manda-leak-detection',
+    name: 'M&A Leak Detection Engine',
+    category: 'M&A Intelligence',
+    description: 'Detect unusual language patterns suggesting information asymmetry, foreknowledge of deal terms, or insider trading indicators.',
+    benefits: [
+      'Information asymmetry scoring',
+      'Unusual knowledge pattern detection',
+      'Trading window concern identification',
+      'Forensic investigation recommendations'
+    ],
+    stats: [
+      { metric: 'Suspicion Levels', value: 'High/Medium/Low' },
+      { metric: 'Asymmetry Score', value: '0-100' },
+      { metric: 'Leak Risk', value: 'Critical/Elevated/Normal' },
+      { metric: 'Forensic Actions', value: 'Auto-recommended' }
+    ],
+    sectors: ['financial-services', 'technology', 'healthcare', 'corporate'],
+    eventTypes: ['manda-call', 'earnings-call', 'investor-day'],
+    priority: 'high',
+    estimatedROI: 'Insider trading risk mitigation',
+    timeToValue: 'During event'
+  },
+
+  'manda-synergy-validation': {
+    id: 'manda-synergy-validation',
+    name: 'Synergy Validation Analyzer',
+    category: 'M&A Intelligence',
+    description: 'Evaluate management synergy claims against industry benchmarks, assess integration risks, and compare to historical M&A outcomes.',
+    benefits: [
+      'Benchmark synergy claims against industry norms',
+      'Integration risk assessment',
+      'Timeline realism checking',
+      'Historical deal comparison'
+    ],
+    stats: [
+      { metric: 'Synergy Types', value: 'Revenue/Cost/Operational/Strategic' },
+      { metric: 'Credibility Score', value: '0-100' },
+      { metric: 'Risk Severity', value: 'High/Medium/Low' },
+      { metric: 'Timeline Gap', value: 'Stated vs Realistic' }
+    ],
+    sectors: ['financial-services', 'technology', 'healthcare', 'corporate'],
+    eventTypes: ['manda-call', 'investor-day'],
+    priority: 'medium',
+    estimatedROI: 'Better M&A due diligence',
+    timeToValue: 'Post-announcement'
+  },
+
+  'manda-stakeholder-impact': {
+    id: 'manda-stakeholder-impact',
+    name: 'Stakeholder Impact Mapper',
+    category: 'M&A Intelligence',
+    description: 'Map impact on all stakeholder groups — employees, customers, suppliers, regulators, shareholders — with opposition risk scoring.',
+    benefits: [
+      'Comprehensive stakeholder impact mapping',
+      'Employee headcount and retention risk',
+      'Regulatory hurdle identification',
+      'Public sentiment forecasting'
+    ],
+    stats: [
+      { metric: 'Stakeholder Groups', value: '7+ mapped' },
+      { metric: 'Cultural Fit', value: '0-100 scored' },
+      { metric: 'Opposition Risk', value: 'Per-group scoring' },
+      { metric: 'Regulatory Authorities', value: 'Auto-identified' }
+    ],
+    sectors: ['financial-services', 'technology', 'healthcare', 'corporate'],
+    eventTypes: ['manda-call', 'earnings-call', 'investor-day'],
+    priority: 'medium',
+    estimatedROI: 'Reduced integration surprises',
+    timeToValue: 'Post-announcement'
+  },
+
+  'manda-deal-certainty': {
+    id: 'manda-deal-certainty',
+    name: 'Deal Certainty Predictor',
+    category: 'M&A Intelligence',
+    description: 'Predict probability of M&A deal completion based on transcript language, regulatory landscape, financing certainty, and historical completion rates.',
+    benefits: [
+      'Completion probability with confidence interval',
+      'Multi-factor risk decomposition',
+      'Positive/negative factor weighting',
+      'Timeline estimation'
+    ],
+    stats: [
+      { metric: 'Risk Components', value: '4 factors' },
+      { metric: 'Confidence Interval', value: 'Upper/Lower bounds' },
+      { metric: 'Verdict Levels', value: '5 classifications' },
+      { metric: 'Watch Items', value: 'Auto-generated' }
+    ],
+    sectors: ['financial-services', 'technology', 'healthcare', 'corporate'],
+    eventTypes: ['manda-call', 'earnings-call'],
+    priority: 'high',
+    estimatedROI: 'Better deal risk assessment',
+    timeToValue: 'During event'
+  },
+
+  // ─── Module 35: Credit & Bondholder Intelligence ─────────────────────────
+  'credit-spread-impact': {
+    id: 'credit-spread-impact',
+    name: 'Credit Spread Impact Analyzer',
+    category: 'Credit & Bondholder Intelligence',
+    description: 'Predict the impact of event language on credit spreads and credit ratings — widening, tightening, or neutral with magnitude estimates.',
+    benefits: [
+      'Credit spread direction prediction',
+      'Rating action risk assessment',
+      'Credit-positive/negative signal detection',
+      'Key metrics tracking'
+    ],
+    stats: [
+      { metric: 'Spread Direction', value: 'Widening/Tightening/Neutral' },
+      { metric: 'Rating Risk', value: '4 classifications' },
+      { metric: 'Sentiment Score', value: '0-100 (creditor view)' },
+      { metric: 'Magnitude', value: 'Basis point estimate' }
+    ],
+    sectors: ['financial-services', 'corporate'],
+    eventTypes: ['credit-rating-call', 'earnings-call', 'bondholder-meeting', 'manda-call'],
+    priority: 'high',
+    estimatedROI: 'Fixed income risk insight',
+    timeToValue: 'During event'
+  },
+
+  'covenant-compliance-scanner': {
+    id: 'covenant-compliance-scanner',
+    name: 'Covenant Compliance Scanner',
+    category: 'Credit & Bondholder Intelligence',
+    description: 'Detect references to debt covenants, leverage ratios, interest coverage, and other bondholder protections with breach risk scoring.',
+    benefits: [
+      'Covenant reference detection',
+      'Headroom and trend tracking',
+      'Breach risk probability scoring',
+      'Management tone on debt assessment'
+    ],
+    stats: [
+      { metric: 'Covenant Types', value: 'Auto-detected' },
+      { metric: 'Breach Risk', value: '0-100 scored' },
+      { metric: 'Debt Tone', value: '4 classifications' },
+      { metric: 'Refinancing Signals', value: 'Auto-detected' }
+    ],
+    sectors: ['financial-services', 'corporate'],
+    eventTypes: ['credit-rating-call', 'earnings-call', 'bondholder-meeting'],
+    priority: 'high',
+    estimatedROI: 'Bondholder protection insight',
+    timeToValue: 'During event'
+  },
+
+  // ─── Module 35: Activist & Proxy Intelligence ────────────────────────────
+  'activist-campaign-detector': {
+    id: 'activist-campaign-detector',
+    name: 'Activist Campaign Detector',
+    category: 'Activist & Proxy Intelligence',
+    description: 'Identify activist investor language patterns, escalation signals, campaign themes, and board pressure indicators.',
+    benefits: [
+      'Early warning of activist campaigns',
+      'Escalation level classification',
+      'Coalition building detection',
+      'Defensive recommendations'
+    ],
+    stats: [
+      { metric: 'Escalation Levels', value: 'Exploratory → Hostile' },
+      { metric: 'Threat Assessment', value: '5 levels' },
+      { metric: 'Coordination Detection', value: 'Boolean flag' },
+      { metric: 'Predicted Moves', value: 'Auto-generated' }
+    ],
+    sectors: ['financial-services', 'technology', 'corporate', 'healthcare'],
+    eventTypes: ['proxy-contest', 'earnings-call', 'investor-day'],
+    priority: 'high',
+    estimatedROI: 'Activist defense preparedness',
+    timeToValue: 'During event'
+  },
+
+  'proxy-vote-predictor': {
+    id: 'proxy-vote-predictor',
+    name: 'Proxy Vote Prediction Engine',
+    category: 'Activist & Proxy Intelligence',
+    description: 'Predict proxy vote outcomes per resolution based on shareholder sentiment analysis, dissident voice detection, and management credibility scoring.',
+    benefits: [
+      'Per-resolution vote prediction',
+      'Risk of defeat scoring',
+      'Dissident voice counting',
+      'Management credibility assessment'
+    ],
+    stats: [
+      { metric: 'Vote Prediction', value: 'For/Against/Abstain %' },
+      { metric: 'Confidence', value: '0-1 scored' },
+      { metric: 'Defeat Risk', value: '0-100 per resolution' },
+      { metric: 'Governance Risk', value: '0-100 overall' }
+    ],
+    sectors: ['financial-services', 'technology', 'corporate', 'healthcare'],
+    eventTypes: ['proxy-contest', 'earnings-call'],
+    priority: 'high',
+    estimatedROI: 'Governance risk mitigation',
+    timeToValue: 'Pre-vote/during AGM'
+  },
 };
 
 /**
@@ -1044,5 +1412,5 @@ export function getAllSectors(): Sector[] {
  * Get all unique event types
  */
 export function getAllEventTypes(): EventType[] {
-  return ['earnings-call', 'investor-day', 'roadshow', 'audio-webcast', 'video-webcast'];
+  return ['earnings-call', 'investor-day', 'roadshow', 'audio-webcast', 'video-webcast', 'ipo-roadshow', 'manda-call', 'credit-rating-call', 'bondholder-meeting', 'proxy-contest'];
 }

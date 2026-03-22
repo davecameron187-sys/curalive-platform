@@ -45,7 +45,12 @@ function detectPlatformFromUrl(url: string): string | null {
 const EVENT_TYPE_LABELS: Record<string, string> = {
   earnings_call: "Earnings Call", interim_results: "Interim Results", agm: "AGM", capital_markets_day: "Capital Markets Day",
   ceo_town_hall: "CEO Town Hall", board_meeting: "Board Meeting", webcast: "Webcast",
-  investor_day: "Investor Day", roadshow: "Roadshow", special_call: "Special Call", other: "Other",
+  investor_day: "Investor Day", roadshow: "Roadshow", special_call: "Special Call",
+  ipo_roadshow: "IPO Roadshow", ipo_listing: "IPO Listing", pre_ipo: "Pre-IPO",
+  manda_call: "M&A Deal Call", takeover_announcement: "Takeover Announcement", merger_announcement: "Merger Announcement", scheme_of_arrangement: "Scheme of Arrangement",
+  credit_rating_call: "Credit Rating Call", bondholder_meeting: "Bondholder Meeting", debt_restructuring: "Debt Restructuring",
+  proxy_contest: "Proxy Contest", activist_meeting: "Activist Meeting", extraordinary_general_meeting: "Extraordinary General Meeting",
+  other: "Other",
 };
 
 const ARCHIVE_PLATFORMS = ["Zoom", "Microsoft Teams", "Google Meet", "Webex", "In-Person", "Other"];

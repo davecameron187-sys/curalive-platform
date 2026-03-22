@@ -42,7 +42,7 @@ export const aiApplicationsRouter = router({
     .input(
       z.object({
         sector: z.enum(['financial-services', 'healthcare', 'technology', 'government', 'corporate', 'media-entertainment', 'education', 'non-profit'] as const),
-        eventType: z.enum(['earnings-call', 'investor-day', 'roadshow', 'audio-webcast', 'video-webcast'] as const),
+        eventType: z.enum(['earnings-call', 'investor-day', 'roadshow', 'audio-webcast', 'video-webcast', 'ipo-roadshow', 'manda-call', 'credit-rating-call', 'bondholder-meeting', 'proxy-contest'] as const),
       })
     )
     .query(({ input }) => {
@@ -56,7 +56,7 @@ export const aiApplicationsRouter = router({
     .input(
       z.object({
         sector: z.enum(['financial-services', 'healthcare', 'technology', 'government', 'corporate', 'media-entertainment', 'education', 'non-profit'] as const),
-        eventType: z.enum(['earnings-call', 'investor-day', 'roadshow', 'audio-webcast', 'video-webcast'] as const),
+        eventType: z.enum(['earnings-call', 'investor-day', 'roadshow', 'audio-webcast', 'video-webcast', 'ipo-roadshow', 'manda-call', 'credit-rating-call', 'bondholder-meeting', 'proxy-contest'] as const),
         limit: z.number().int().min(1).max(28).default(5),
       })
     )
