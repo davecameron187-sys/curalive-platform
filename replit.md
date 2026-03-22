@@ -90,6 +90,58 @@ The platform has been consolidated to two main pages:
 - **Semantic API**: `server/services/AeosSemanticApiService.ts` (357 lines) — Modal-Agnostic API describing all platform capabilities in structured natural language. 10 registered capabilities, 2 multi-module workflows, natural language command resolution.
 - **Sovereign Data**: `server/services/AeosSovereignDataService.ts` (249 lines) — Per-client Knowledge Graph isolation, zero-trust token issuance/validation with SHA-256 integrity, data residency compliance (POPIA/GDPR/SOX).
 
+## Module 33: Investor Engagement Scoring (Cross-Event Relationship Intelligence)
+
+- **Service**: `server/services/InvestorEngagementScoringService.ts`
+- **Router**: `server/routers/investorEngagementRouter.ts` → `investorEngagement.*` tRPC namespace
+- **Formula**: EngagementScore = (Attendance×0.25) + (Participation×0.30) + (Recency×0.20) + (Consistency×0.15) + (Depth×0.10)
+- **Features**:
+  - Cross-event investor tracking (attendance patterns, question history, sentiment trends)
+  - Lifecycle classification: new → engaged → loyal → at_risk → churned → reactivated
+  - Churn probability prediction with 5-factor decay model (30-day half-life)
+  - Cohort analysis per event (new vs returning, retention rate, engagement distribution)
+  - AI relationship insights with recommended next-best-action
+  - Dashboard stats: by lifecycle, by type, top engaged, high churn risk
+  - Investor types: institutional, retail, analyst, activist, insider
+  - Sentiment trend detection (improving / stable / declining)
+
+## Module 34: Multi-Language Live Subtitle Translation
+
+- **Service**: `server/services/LiveSubtitleTranslationService.ts`
+- **Router**: `server/routers/liveSubtitleRouter.ts` → `liveSubtitle.*` tRPC namespace
+- **Features**:
+  - 25 supported languages (incl. 7 South African languages: Afrikaans, Zulu, Xhosa, Sotho, Tswana, Tsonga, Swahili)
+  - Real-time segment translation via GPT-4o-mini
+  - Financial terminology glossary enforcement per language (10+ languages covered)
+  - Translation memory cache (5,000 phrases per language, LRU eviction)
+  - Batch translation for post-event subtitle generation
+  - Automatic source language detection
+  - Quality verification with back-translation scoring
+  - Session management with cache hit rate tracking
+
+## Module 35: IPO & M&A Intelligence Engine
+
+- **Service**: `server/services/IpoMandAIntelligenceService.ts`
+- **Router**: `server/routers/ipoMandARouter.ts` → `ipoMandA.*` tRPC namespace
+- **IPO Algorithms** (4):
+  1. Pricing Sensitivity Analyzer — detects pricing signals, valuation anchoring, demand cues
+  2. Book-Building Signal Detector — institutional demand patterns, allocation fairness, cornerstone indicators
+  3. IPO Readiness Scorecard — 6-dimension composite assessment (financial, governance, regulatory, market, management, story)
+  4. Regulatory Red Flag Scanner — IPO-specific compliance across JSE/SEC/FCA/HKEX/ASX, quiet period enforcement
+- **M&A Algorithms** (5):
+  5. Offer Period Compliance Monitor — takeover code compliance, mandatory offer triggers (JSE/SEC/FCA/EU)
+  6. Leak Detection Engine — information asymmetry patterns, unusual knowledge, trading window concerns
+  7. Synergy Validation Analyzer — management synergy claims vs industry benchmarks, integration risk
+  8. Stakeholder Impact Mapper — employees, customers, suppliers, regulators, shareholders impact
+  9. Deal Certainty Predictor — completion probability with regulatory/financing/shareholder/MAC risk components
+- **Credit & Bondholder Algorithms** (2):
+  10. Credit Spread Impact Analyzer — predicted spread widening/tightening, rating action risk
+  11. Covenant Compliance Scanner — covenant references, headroom tracking, breach risk
+- **Activist & Proxy Algorithms** (2):
+  12. Activist Campaign Detector — escalation signals, campaign themes, board pressure
+  13. Vote Prediction Engine — proxy vote outcome prediction per resolution
+- **Total**: 13 specialised algorithms across 4 sub-verticals
+
 ## CIP6 Cross-Cutting Innovations (Claims 56-70)
 
 - **Dual-Carrier Failover**: `server/services/ConferenceDialoutService.ts` (402 lines) — Twilio primary → Telnyx secondary for bulk dial-out with carrier-aware cancel support (Claim 67)
