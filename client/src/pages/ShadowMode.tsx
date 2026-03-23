@@ -43,7 +43,7 @@ function detectPlatformFromUrl(url: string): string | null {
 }
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
-  earnings_call: "Earnings Call", interim_results: "Interim Results", annual_results: "Annual Results", results_call: "Results Call", agm: "AGM", capital_markets_day: "Capital Markets Day",
+  earnings_call: "Earnings Call", interim_results: "Interim Results", annual_results: "Annual Results", results_call: "Results Call", media_call: "Media Call", agm: "AGM", capital_markets_day: "Capital Markets Day",
   ceo_town_hall: "CEO Town Hall", board_meeting: "Board Meeting", webcast: "Webcast",
   investor_day: "Investor Day", roadshow: "Roadshow", special_call: "Special Call",
   ipo_roadshow: "IPO Roadshow", ipo_listing: "IPO Listing", pre_ipo: "Pre-IPO",
