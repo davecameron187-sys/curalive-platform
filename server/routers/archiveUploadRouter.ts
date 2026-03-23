@@ -357,7 +357,7 @@ ${opts.notes ? `<table width="100%" style="background:#0f172a;border-left:3px so
 </table></td></tr></table></body></html>`;
 }
 
-const BASTION_EVENT_TYPES = ["earnings_call", "interim_results", "annual_results", "capital_markets_day", "investor_day", "roadshow", "special_call"];
+const BASTION_EVENT_TYPES = ["earnings_call", "interim_results", "annual_results", "results_call", "capital_markets_day", "investor_day", "roadshow", "special_call"];
 const AGM_EVENT_TYPES = ["agm", "board_meeting"];
 const WEBCAST_EVENT_TYPES = ["webcast", "partner_webcast", "product_launch_webcast", "thought_leadership_webcast", "results_webcast", "hybrid_webcast"];
 const IPO_EVENT_TYPES = ["ipo_roadshow", "ipo_listing", "pre_ipo"];
@@ -706,7 +706,7 @@ export const archiveUploadRouter = router({
         clientName: z.string().min(1).max(255),
         eventName: z.string().min(1).max(255),
         eventType: z.enum([
-          "earnings_call", "interim_results", "annual_results", "agm", "capital_markets_day",
+          "earnings_call", "interim_results", "annual_results", "results_call", "agm", "capital_markets_day",
           "ceo_town_hall", "board_meeting", "webcast", "partner_webcast",
           "product_launch_webcast", "thought_leadership_webcast", "results_webcast",
           "hybrid_webcast", "investor_day", "roadshow", "special_call",
