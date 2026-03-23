@@ -1,11 +1,17 @@
 // @ts-nocheck
 import { z } from "zod";
+import { createHash } from "crypto";
 import { router, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { taggedMetrics } from "../../drizzle/schema";
 import { invokeLLM } from "../_core/llm";
 import { desc, sql } from "drizzle-orm";
 import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
+
+function computeTranscriptFingerprint(text: string): string {
+  const normalized = text.replace(/\s+/g, " ").trim().toLowerCase();
+  return createHash("sha256").update(normalized).digest("hex").slice(0, 32);
+}
 
 export type AiReport = {
   executiveSummary: string;
@@ -719,6 +725,39 @@ export const archiveUploadRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+      const conn = (db as any).session?.client ?? (db as any).$client;
+      const fingerprint = computeTranscriptFingerprint(input.transcriptText);
+
+      const [existingRows] = await conn.execute(
+        `SELECT id, event_id, client_name, event_name, event_type, created_at
+         FROM archive_events
+         WHERE client_name = ? AND event_name = ? AND event_type = ?
+         LIMIT 1`,
+        [input.clientName, input.eventName, input.eventType]
+      );
+
+      if ((existingRows as any[])?.length > 0) {
+        const existing = (existingRows as any[])[0];
+        const existingDate = existing.created_at
+          ? new Date(existing.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })
+          : "unknown date";
+        throw new Error(
+          `Duplicate upload detected: "${input.eventName}" for ${input.clientName} (${input.eventType.replace(/_/g, " ")}) was already uploaded on ${existingDate}. Archive ID: ${existing.event_id || existing.id}. If this is a different version of the same event, please rename the event to distinguish it.`
+        );
+      }
+
+      const [fingerprintRows] = await conn.execute(
+        `SELECT id, event_id, client_name, event_name FROM archive_events
+         WHERE transcript_fingerprint = ?
+         LIMIT 1`,
+        [fingerprint]
+      );
+      if ((fingerprintRows as any[])?.length > 0) {
+        const match = (fingerprintRows as any[])[0];
+        throw new Error(
+          `Duplicate content detected: This transcript has already been uploaded as "${match.event_name}" for ${match.client_name} (Archive ID: ${match.event_id || match.id}). The content matches an existing archive even though the event details differ.`
+        );
+      }
 
       const rawSegments = input.transcriptText
         .split(/\n{2,}|\n/)
@@ -735,12 +774,11 @@ export const archiveUploadRouter = router({
 
       const sentimentAvg = await scoreSentimentFromText(input.transcriptText);
 
-      const conn = (db as any).session?.client ?? (db as any).$client;
       const [result] = await conn.execute(
         `INSERT INTO archive_events
           (event_id, client_name, event_name, event_type, event_date, platform, transcript_text,
-           word_count, segment_count, sentiment_avg, compliance_flags, status, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?)`,
+           word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?)`,
         [
           null,
           input.clientName,
@@ -754,6 +792,7 @@ export const archiveUploadRouter = router({
           sentimentAvg,
           complianceFlags,
           input.notes ?? null,
+          fingerprint,
         ]
       );
 
