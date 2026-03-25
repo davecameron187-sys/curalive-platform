@@ -5,6 +5,7 @@ import { useSmartBack } from "@/lib/useSmartBack";
 import {
   ArrowLeft, Upload, FileText, CheckCircle, AlertTriangle,
   BarChart2, Shield, Users, Database, ChevronRight, Clock,
+  Download, Mic, ChevronDown,
 } from "lucide-react";
 
 const EVENT_TYPES = [
@@ -59,6 +60,7 @@ export default function ArchiveUpload() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [result, setResult] = useState<ProcessResult | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [expandedArchiveId, setExpandedArchiveId] = useState<number | null>(null);
 
   const processTranscript = trpc.archiveUpload.processTranscript.useMutation({
     onSuccess: (data) => {
@@ -71,6 +73,11 @@ export default function ArchiveUpload() {
   });
 
   const { data: archives, refetch } = trpc.archiveUpload.listArchives.useQuery();
+
+  const archiveDetail = trpc.archiveUpload.getArchiveDetail.useQuery(
+    { archiveId: expandedArchiveId ?? 0 },
+    { enabled: expandedArchiveId != null }
+  );
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -265,25 +272,71 @@ export default function ArchiveUpload() {
                   All Uploaded Archives ({archives.length})
                 </h3>
                 <div className="space-y-3">
-                  {archives.map((a) => (
-                    <div key={a.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                      <div>
-                        <div className="font-medium text-sm">{a.client_name} — {a.event_name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {a.event_date ?? "Date not specified"} &nbsp;·&nbsp;
-                          {a.word_count.toLocaleString()} words &nbsp;·&nbsp;
-                          {a.tagged_metrics_generated} records
-                        </div>
+                  {archives.map((a) => {
+                    const isExpanded = expandedArchiveId === a.id;
+                    const detail = isExpanded ? archiveDetail.data : null;
+                    return (
+                      <div key={a.id} className="border-b border-border last:border-0">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedArchiveId(isExpanded ? null : a.id)}
+                          className="flex items-center justify-between py-3 w-full text-left hover:bg-muted/30 transition-colors rounded-lg px-2 -mx-2"
+                        >
+                          <div>
+                            <div className="font-medium text-sm">{a.client_name} — {a.event_name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {a.event_date ?? "Date not specified"} &nbsp;·&nbsp;
+                              {a.word_count.toLocaleString()} words &nbsp;·&nbsp;
+                              {a.tagged_metrics_generated} records
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              a.status === "completed"
+                                ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                                : "bg-muted text-muted-foreground border border-border"
+                            }`}>
+                              {a.status}
+                            </span>
+                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                          </div>
+                        </button>
+                        {isExpanded && (
+                          <div className="pb-3 px-2 -mx-2">
+                            {archiveDetail.isLoading ? (
+                              <div className="text-xs text-muted-foreground py-2">Loading details...</div>
+                            ) : detail ? (
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {detail.has_transcript && (
+                                  <a
+                                    href={`/api/archives/${a.id}/transcript`}
+                                    download
+                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20"
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                    Download Transcript
+                                  </a>
+                                )}
+                                {detail.has_recording && (
+                                  <a
+                                    href={`/api/archives/${a.id}/recording`}
+                                    download
+                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
+                                  >
+                                    <Mic className="h-4 w-4" />
+                                    Download Recording
+                                  </a>
+                                )}
+                                {!detail.has_transcript && !detail.has_recording && (
+                                  <div className="text-xs text-muted-foreground py-1">No transcript or recording available for this archive.</div>
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
                       </div>
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        a.status === "completed"
-                          ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                          : "bg-muted text-muted-foreground border border-border"
-                      }`}>
-                        {a.status}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
