@@ -55,15 +55,17 @@ async function getDurationSeconds(inputPath: string): Promise<number> {
       "-v", "quiet", "-print_format", "json", "-show_format", inputPath,
     ]);
     const info = JSON.parse(stdout);
-    return parseFloat(info.format.duration ?? "0");
+    const duration = parseFloat(info.format?.duration ?? "0");
+    if (duration > 0) return duration;
+    console.warn("[Audio] ffprobe returned 0 duration — estimating from file size");
+    const fs = await import("fs");
+    const stat = fs.statSync(inputPath);
+    return Math.max(10, Math.round(stat.size / 16000));
   } catch (e: any) {
-    if (e?.code === "ENOENT") {
-      console.warn("[Audio] ffprobe not found — estimating duration from file size");
-      const fs = await import("fs");
-      const stat = fs.statSync(inputPath);
-      return Math.max(60, Math.round(stat.size / 16000));
-    }
-    throw e;
+    console.warn("[Audio] ffprobe failed — estimating duration from file size:", e?.message || e);
+    const fs = await import("fs");
+    const stat = fs.statSync(inputPath);
+    return Math.max(10, Math.round(stat.size / 16000));
   }
 }
 
@@ -174,8 +176,8 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
 
         const ffmpegAvailable = await checkFfmpegAvailable();
 
-        if (isAudio && !isVideo && sizeMB <= DIRECT_MAX_MB) {
-          console.log(`[AudioTranscribe] Small audio file, sending directly to API...`);
+        if (sizeMB <= DIRECT_MAX_MB) {
+          console.log(`[AudioTranscribe] Small file (${sizeMB.toFixed(1)}MB), sending directly to Whisper API...`);
           transcript = await callTranscribeApi(buffer, originalname);
         } else if (!ffmpegAvailable) {
           console.warn(`[AudioTranscribe] ffmpeg not available — sending file directly to Whisper API (${sizeMB.toFixed(1)}MB)`);
