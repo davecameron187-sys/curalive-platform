@@ -1,50 +1,41 @@
-# CuraLive — Replit Publish Issue: Diagnostic Brief for GitHub Codespaces
+# CuraLive — Replit Publish Issue: Diagnostic Brief
+
+## CRITICAL WARNING FOR CODESPACES
+**DO NOT modify the `.replit` file from GitHub.** Replit manages this file with special protections. External edits cause merge conflicts that cannot be resolved inside Replit. A previous Codespaces commit (`7a9ad46`) added a **duplicate `[deployment]` section** to `.replit` which had to be force-reverted. All `.replit` changes must be made from within the Replit editor only.
+
+---
 
 ## Repository
 - **Repo**: github.com/davecameron187-sys/curalive-platform
 - **Branch**: `main`
-- **Latest commit**: `add3d7c`
+
+## Problem
+CuraLive cannot publish new deployments on Replit. The Publish button in the Replit UI is unresponsive. No build logs appear, no error messages shown. The last successful publish was **2026-03-25T09:47:42Z** (Deployment ID: `4b80a6ba-d5e8-4e07-9979-e999e11345d5`).
 
 ---
 
-## Summary
-CuraLive is unable to publish new deployments on Replit. The Publish button in the Replit UI is unresponsive. The last successful publish was **2026-03-25T09:47:42Z**.
+## What Happened
+
+### Timeline
+| Time (UTC) | Event |
+|------------|-------|
+| 08:47 | Publish successful — `deploymentTarget = "vm"` |
+| 09:47 | Publish successful — `deploymentTarget = "vm"` — **LAST WORKING** |
+| 10:00 | Publish successful — `deploymentTarget = "vm"` |
+| 10:56 | Major DB migration committed: MySQL → PostgreSQL (58 files, 2 new packages) |
+| ~13:30 | `deploymentTarget` accidentally changed from `"vm"` to `"autoscale"` by Replit agent tool |
+| 13:30+ | All publish attempts fail |
+| ~15:13 | `deploymentTarget` reverted to `"vm"` |
+| 15:13+ | Still failing |
+| ~15:26 | Codespaces commit added duplicate `[deployment]` section to `.replit` — force-reverted |
+| Current | `.replit` is back to exact working state but publishing still fails |
+
+### The Only Config Change
+Every successful publish used `deploymentTarget = "vm"`. The switch to `"autoscale"` broke it. Even after reverting, publishing remains broken — suggesting Replit's internal deployment state is stuck.
 
 ---
 
-## Critical Finding: What Changed
-
-The **only config change** between working and broken state is the `deploymentTarget` in `.replit`:
-
-| Setting | Last Working Publish (commit `afd0d28`) | After Publish Broke |
-|---------|----------------------------------------|---------------------|
-| `deploymentTarget` | `"vm"` | Changed to `"autoscale"` |
-| `build` | `["npm", "run", "build"]` | Unchanged |
-| `run` | `["npm", "run", "start"]` | Unchanged |
-
-The target has been reverted to `"vm"` but publishing still fails. This suggests the Replit deployment state may be stuck or corrupted from the target switch.
-
----
-
-## Timeline of Events
-
-| Time (UTC) | Commit | Event |
-|------------|--------|-------|
-| 08:47 | `f380c25` | ✅ Publish successful (`deploymentTarget = "vm"`) |
-| 09:47 | `afd0d28` | ✅ Publish successful (`deploymentTarget = "vm"`) — **LAST WORKING** |
-| 10:00 | `47017ec` | ✅ Publish successful (`deploymentTarget = "vm"`) |
-| 10:56 | `b788770` | Major DB migration: MySQL → PostgreSQL (schema, db.ts, 58 files changed) |
-| 12:48–13:20 | Various | PostgreSQL fixes, download tabs, email report rebuild |
-| ~13:30 | — | `deploymentTarget` changed from `"vm"` to `"autoscale"` (via agent tool) |
-| 13:30+ | — | ❌ All publish attempts fail — button unresponsive |
-| 15:13 | — | `deploymentTarget` reverted to `"vm"` |
-| 15:13+ | — | ❌ Still failing |
-
----
-
-## What Was Working at Last Successful Publish
-
-### `.replit` (exact content at commit `afd0d28`)
+## Current `.replit` (verified correct — matches all successful publishes)
 ```toml
 modules = ["nodejs-20", "web"]
 
@@ -110,7 +101,19 @@ run = ["npm", "run", "start"]
 build = ["npm", "run", "build"]
 ```
 
-### `package.json` scripts (at last publish)
+---
+
+## What Works Right Now
+- `npm run build` — Produces `dist/index.js` (1.8MB) successfully
+- `npm run start` — Server boots on port 23636
+- Git fully synced (local = GitHub `main`)
+- `.replit` matches exact working state from last successful publish
+- App runs correctly in development on port 5000
+- PostgreSQL 16.10 database is healthy
+
+---
+
+## Build & Start Scripts (`package.json`)
 ```json
 {
   "build": "NODE_OPTIONS='--max-old-space-size=4096' vite build --logLevel warn && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
@@ -118,107 +121,84 @@ build = ["npm", "run", "build"]
 }
 ```
 
-### Key differences since last publish
-- **2 new packages added**: `pg` and `@types/pg` (PostgreSQL driver)
-- **58 files changed** across the full MySQL → PostgreSQL migration
-- **`pnpm-lock.yaml`** updated with 134 line changes
-- **No `.replit` structural changes** (only the `deploymentTarget` value was toggled)
+---
+
+## Possible Root Causes
+
+### 1. Deployment state corrupted by target switch (MOST LIKELY)
+The `deploymentTarget` was switched from `"vm"` → `"autoscale"` → `"vm"`. Replit's internal deployment pipeline may be stuck between the two targets. The Replit UI may be looking for an autoscale deployment slot that doesn't exist on the current plan, while the config says `"vm"`.
+
+### 2. Account/plan limitation triggered
+Switching to `"autoscale"` may have triggered a plan check that locked the deployment pipeline. The lock may persist even after reverting to `"vm"`.
+
+### 3. Cached deployment manifest
+Replit caches deployment images. The target switch may have invalidated the cache in a way that prevents new deploys from being queued.
+
+### 4. Stale deployment session in browser
+The Replit UI may have cached a stale deployment session in the browser. A hard refresh or different browser may fix it.
 
 ---
 
-## What Works Right Now
-1. ✅ `npm run build` — Produces `dist/index.js` (1.8MB) successfully
-2. ✅ `npm run start` — Server boots cleanly on port 23636
-3. ✅ Git fully synced (local = GitHub `main`)
-4. ✅ `.replit` config is valid TOML and matches last working state
-5. ✅ App runs correctly in development on port 5000
-6. ✅ Production database (PostgreSQL 16.10) is healthy
+## Recommended Actions
+
+### From Replit (user should try these):
+1. **Hard refresh** the Replit page (Ctrl+Shift+R / Cmd+Shift+R)
+2. **Try a different browser** or incognito window
+3. **Check the Deployments tab** in Replit sidebar for stuck/pending deployments
+4. **Contact Replit support** with:
+   - Last successful Deployment ID: `4b80a6ba-d5e8-4e07-9979-e999e11345d5`
+   - Last successful deploy: `2026-03-25T09:47:42Z`
+   - Issue: Publish button unresponsive after `deploymentTarget` was changed from `"vm"` to `"autoscale"` and back
+   - Request: Reset deployment state for this Repl
+
+### From Codespaces (code fixes only):
+- DO NOT touch `.replit`
+- Fix any code-level issues that might affect the build or startup
+- Verify `pnpm install && npm run build && npm run start` all work cleanly
 
 ---
 
-## Production Runtime Errors (in currently deployed old code)
-These are NOT blocking publish but should be fixed in next deploy:
+## Production Runtime Errors (fix in code, will deploy when publish works)
 
-### 1. Whisper API — Invalid file format (recurring)
+### 1. Whisper API — Invalid file format
 ```
 [AudioTranscribe] Error: Whisper API failed (400): Invalid file format.
 ```
-- **Fix applied in commit `add3d7c`**: Updated audio transcription handling
+- File: `server/audioTranscribe.ts`
+- Fix applied in commit `add3d7c`
 
-### 2. Bastion Intelligence — MySQL backtick syntax
+### 2. Bastion Intelligence — MySQL backtick syntax in PostgreSQL
 ```
 DrizzleQueryError: insert into `bastion_intelligence_sessions` ...
-cause: Data truncated for column 'event_type' at row 1
+cause: Data truncated for column 'event_type'
 ```
-- **Fix applied in commit `add3d7c`**: Changed `event_type` to text column
+- File: `server/services/BastionIntelligenceService.ts`
+- Fix applied in commit `add3d7c` (changed `event_type` to text column)
 
-### 3. Auth — Missing session cookie (noisy but non-critical)
+### 3. Auth — Missing session cookie (non-critical, noisy)
 ```
 [Auth] Missing session cookie
 ```
-- Webhook/health check endpoints hit without auth context
-
----
-
-## Possible Root Causes for Publish Failure
-
-### Theory 1: Deployment state corrupted by target switch
-The `deploymentTarget` was changed from `"vm"` to `"autoscale"` and back. Replit's internal deployment state may be stuck in an inconsistent state between the two targets. **Resolution**: Contact Replit support to reset deployment state.
-
-### Theory 2: Replit account/plan limitation
-The `"autoscale"` target may have triggered a plan check that put the deployment in a locked state. Even after reverting to `"vm"`, the lock persists. **Resolution**: Check account billing/plan status in Replit dashboard.
-
-### Theory 3: Cached deployment manifest
-Replit caches the deployment image. The target switch may have invalidated the cache in a way that prevents new deploys. **Resolution**: Try changing a port number or workflow name slightly to force a fresh deployment pipeline.
-
-### Theory 4: Large changeset since last deploy
-58 files changed with a major DB migration. The deploy builder may be encountering an issue with the new `pg` package or lockfile. **Resolution**: Verify `pnpm install` completes cleanly in a fresh environment.
-
----
-
-## Recommended Debug Steps (in order)
-
-1. **Verify `.replit` file byte-for-byte** — Check for hidden characters or BOM:
-   ```bash
-   xxd .replit | head -5
-   file .replit
-   ```
-
-2. **Test clean install + build**:
-   ```bash
-   rm -rf node_modules && pnpm install && npm run build
-   ```
-
-3. **Try Replit CLI deploy** (if available):
-   ```bash
-   replit deploy
-   ```
-
-4. **Check Replit deployment dashboard** — Look for stuck/pending deployments at:
-   `https://replit.com/@<username>/<repl-name> → Deployments tab`
-
-5. **Force new deployment state** — Make a trivial `.replit` change (e.g., add a comment) to trigger Replit's config watcher
-
-6. **Contact Replit support** with:
-   - Last successful Deployment ID: `4b80a6ba-d5e8-4e07-9979-e999e11345d5`
-   - Last successful deploy time: `2026-03-25T09:47:42Z`
-   - Symptom: Publish button unresponsive after `deploymentTarget` was changed from `vm` to `autoscale` and back
+- Webhook/health check endpoints being hit without auth — cosmetic noise
 
 ---
 
 ## Key Files
 | File | Purpose |
 |------|---------|
-| `.replit` | Deployment + workflow config |
-| `package.json` | Build/start scripts (build + start) |
-| `pnpm-lock.yaml` | Dependency lockfile |
-| `server/_core/index.ts` | Express server entry (port 23636 in prod) |
+| `.replit` | **DO NOT EDIT FROM CODESPACES** — Deployment + workflow config |
+| `package.json` | Build (`vite build + esbuild`) and start (`node dist/index.js`) scripts |
+| `pnpm-lock.yaml` | Dependency lockfile (includes new `pg` package) |
+| `server/_core/index.ts` | Express server entry point (port 23636 in production) |
 | `vite.config.ts` | Vite frontend build config |
 | `drizzle/schema.ts` | PostgreSQL database schema |
 | `server/db.ts` | DB connection + rawSql() compatibility layer |
+| `server/audioTranscribe.ts` | Audio transcription (Whisper API) |
+| `server/services/BastionIntelligenceService.ts` | Bastion intelligence session management |
 
 ## Build Verification
 ```bash
+pnpm install
 npm run build        # Should produce dist/index.js (~1.8MB)
 npm run start        # Should listen on port 23636
 ```
