@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuraLive — Operator Quick Reference</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #0d0d1a 100%);
+            color: #e2e8f0;
+            line-height: 1.6;
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        header {
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid #7c3aed;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        header h1 { color: #a78bfa; font-size: 2em; margin-bottom: 8px; }
+        header p { color: #94a3b8; font-size: 1em; }
+
+        .status-bar {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+            color: #6ee7b7;
+        }
+
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite; flex-shrink: 0; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .section-title {
+            color: #a78bfa;
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 32px 0 14px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(124, 58, 237, 0.3);
+        }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; margin-bottom: 8px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 8px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 8px; }
+
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .card:hover {
+            background: rgba(30, 41, 59, 0.9);
+            border-color: rgba(124, 58, 237, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+        }
+
+        .card-label {
+            font-size: 0.7em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+        }
+
+        .card h3 { color: #e2e8f0; font-size: 1em; font-weight: 600; }
+        .card p { color: #94a3b8; font-size: 0.85em; line-height: 1.5; flex: 1; }
+
+        .card a.btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.82em;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+
+        .btn-purple { background: rgba(124, 58, 237, 0.2); color: #a78bfa; border: 1px solid rgba(124, 58, 237, 0.3); }
+        .btn-purple:hover { background: rgba(124, 58, 237, 0.4); }
+        .btn-green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .btn-green:hover { background: rgba(16, 185, 129, 0.4); }
+        .btn-blue { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .btn-blue:hover { background: rgba(59, 130, 246, 0.4); }
+        .btn-amber { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .btn-amber:hover { background: rgba(245, 158, 11, 0.4); }
+        .btn-red { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-red:hover { background: rgba(239, 68, 68, 0.4); }
+
+        .badge {
+            display: inline-block;
+            font-size: 0.68em;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-new { background: rgba(124, 58, 237, 0.2); color: #a78bfa; border: 1px solid rgba(124, 58, 237, 0.3); }
+        .badge-live { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-test { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .main-link-card {
+            background: rgba(124, 58, 237, 0.08);
+            border: 2px solid rgba(124, 58, 237, 0.4);
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 28px;
+        }
+
+        .main-link-card h2 { color: #a78bfa; font-size: 1.1em; margin-bottom: 12px; }
+
+        .url-block {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(124, 58, 237, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.82em;
+            color: #c4b5fd;
+            word-break: break-all;
+            margin: 8px 0;
+        }
+
+        .url-block a { color: #c4b5fd; text-decoration: none; }
+        .url-block a:hover { color: #a78bfa; text-decoration: underline; }
+
+        .checklist { list-style: none; }
+        .checklist li {
+            padding: 7px 0;
+            color: #94a3b8;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(148,163,184,0.07);
+        }
+        .checklist li:last-child { border-bottom: none; }
+        .checklist li::before { content: "☐"; color: #7c3aed; font-size: 1.1em; flex-shrink: 0; }
+        .checklist li.done::before { content: "✓"; color: #10b981; }
+        .checklist li a { color: #93c5fd; text-decoration: none; }
+        .checklist li a:hover { text-decoration: underline; }
+
+        .footer {
+            text-align: center;
+            color: #475569;
+            margin-top: 48px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 0.85em;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            header h1 { font-size: 1.4em; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Header -->
+    <header>
+        <h1>CuraLive — Operator Quick Reference</h1>
+        <p>All platform links in one place &nbsp;·&nbsp; March 2026 &nbsp;·&nbsp; Internal Use Only</p>
+    </header>
+
+    <!-- Live status -->
+    <div class="status-bar">
+        <div class="dot"></div>
+        <strong>Platform is live and ready for testing.</strong>&nbsp; Server running · Database connected · All AI features active
+    </div>
+
+    <!-- Main platform link -->
+    <div class="main-link-card">
+        <h2>Platform Base URL — Bookmark This</h2>
+        <div class="url-block">
+            <a href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev" target="_blank">
+                https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev
+            </a>
+        </div>
+        <p style="color:#64748b; font-size:0.82em; margin-top:8px;">
+            Note: This is the development URL. When deployed to production it will be replaced with a permanent clean URL. All paths below (/shadow-mode, /operator-links etc.) stay the same.
+        </p>
+    </div>
+
+    <!-- START HERE: Shadow Mode -->
+    <div class="section-title">Start Here — Shadow Mode Testing</div>
+    <div class="grid-2">
+        <div class="card" style="border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.05);">
+            <div class="card-label"><span class="badge badge-live">Ready to Test</span></div>
+            <h3>Shadow Mode — Live Intelligence</h3>
+            <p>Start here. Paste any Zoom or Teams link from a Bastion Group webcast. CuraLive deploys an invisible bot that transcribes, scores sentiment, and builds your intelligence database automatically.</p>
+            <a class="btn btn-green" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/shadow-mode" target="_blank">Open Shadow Mode →</a>
+        </div>
+        <div class="card" style="border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.05);">
+            <div class="card-label"><span class="badge badge-new">After Each Session</span></div>
+            <h3>Tagged Metrics Dashboard</h3>
+            <p>After every shadow session or archive upload ends, check here. You will see 4 new intelligence records: sentiment score, engagement score, compliance risk score, and session confirmation.</p>
+            <a class="btn btn-purple" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/tagged-metrics" target="_blank">View Intelligence Database →</a>
+        </div>
+        <div class="card" style="border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.05);">
+            <div class="card-label"><span class="badge badge-new">Historical Events</span></div>
+            <h3>Archive Upload</h3>
+            <p>Upload any past event transcript — paste text or upload a .txt file. CuraLive scores sentiment, scans compliance, and adds 4 tagged intelligence records instantly. Builds your database retroactively.</p>
+            <a class="btn btn-blue" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/archive-upload" target="_blank">Upload Archive →</a>
+        </div>
+    </div>
+
+    <!-- Main navigation -->
+    <div class="section-title">All Platform Pages</div>
+    <div class="grid-3">
+
+        <div class="card">
+            <div class="card-label">Home</div>
+            <h3>Operator Platform Links</h3>
+            <p>The main navigation hub. All sections, all features, all tools in one place.</p>
+            <a class="btn btn-purple" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/operator-links" target="_blank">Open →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Operator Console</div>
+            <h3>OCC — Live Event Control</h3>
+            <p>Full live event control panel: CCP, Q&A management, participant states, green room, compliance monitoring.</p>
+            <a class="btn btn-blue" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/occ" target="_blank">Open OCC →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">AI Intelligence</div>
+            <h3>Agentic Event Brain</h3>
+            <p>3-question wizard → proprietary scoring algorithm → GPT-4o recommendation → ROI projection. Every result logged to database.</p>
+            <a class="btn btn-purple" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/agentic-brain" target="_blank">Activate Brain →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">AI Intelligence</div>
+            <h3>Autonomous Intervention Engine</h3>
+            <p>6 live rules that fire automatically during events. Sentiment drop, Q&A overload, compliance risk, engagement drop — agents act without human input.</p>
+            <a class="btn btn-red" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/autonomous-intervention" target="_blank">View Engine →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Analytics</div>
+            <h3>Interconnection Analytics</h3>
+            <p>Real-time adoption metrics, ROI tracking, feature distribution, workflow completion rates, and customer segment analytics.</p>
+            <a class="btn btn-blue" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/admin/interconnection-analytics" target="_blank">View Analytics →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Visualisation</div>
+            <h3>Feature Interconnection Map</h3>
+            <p>Interactive map showing how all 16 AI features connect across 6 bundles. See activation sequences and ROI multipliers.</p>
+            <a class="btn btn-blue" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/feature-map" target="_blank">View Map →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Training</div>
+            <h3>Operator Hub</h3>
+            <p>Full learning path, call-type guides, quick reference, and AI feature tutorials. Start here for onboarding.</p>
+            <a class="btn btn-amber" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/operator-hub" target="_blank">Access Hub →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Training</div>
+            <h3>Training Mode Console</h3>
+            <p>Isolated sandbox — practice running Earnings Calls, Audio Bridges, Video Webcasts, and Board Meetings. Nothing here affects production.</p>
+            <a class="btn btn-amber" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/training-mode" target="_blank">Practice →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">AI Features</div>
+            <h3>AI Shop</h3>
+            <p>Browse all 16 AI features with interconnection badges, see related features, and activate new capabilities with one click.</p>
+            <a class="btn btn-purple" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/ai-shop" target="_blank">Browse →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Broadcast</div>
+            <h3>Virtual Studio</h3>
+            <p>Bundle-specific broadcast environments with AI overlays, avatar styles, ESG flags, and real-time preview.</p>
+            <a class="btn btn-blue" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/virtual-studio" target="_blank">Open Studio →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Post-Event</div>
+            <h3>Post-Event Report</h3>
+            <p>AI-generated summaries, full transcripts, sentiment analysis, Q&A highlights, and ROI tracking for Q4 Earnings demo event.</p>
+            <a class="btn btn-blue" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/post-event/q4-earnings-2026" target="_blank">View Report →</a>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Content</div>
+            <h3>Webcast Recap Generator</h3>
+            <p>Automatically generate video recaps, podcast conversions, and social media content from completed events.</p>
+            <a class="btn btn-purple" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/webcast-recap" target="_blank">Generate →</a>
+        </div>
+
+    </div>
+
+    <!-- Demo events -->
+    <div class="section-title">Demo Events — Live Data</div>
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-label"><span class="badge badge-live">Capital Markets</span></div>
+            <h3>Q4 2025 Earnings Call Demo</h3>
+            <p>Full earnings call simulation with live participants, Q&A queue, sentiment monitoring, compliance flags, and post-event report.</p>
+            <a class="btn btn-blue" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/event/q4-earnings-2026" target="_blank">Open Event →</a>
+        </div>
+        <div class="card">
+            <div class="card-label"><span class="badge badge-live">Webcasting</span></div>
+            <h3>CEO Town Hall Q1 2026 Demo</h3>
+            <p>CEO town hall simulation with video webcasting bundle, engagement tracking, and full intelligence collection.</p>
+            <a class="btn btn-blue" href="https://1f99a8d9-3543-48bc-8564-b0463564e29d-00-35t44cvw87il9.picard.replit.dev/event/ceo-town-hall-q1-2026" target="_blank">Open Event →</a>
+        </div>
+    </div>
+
+    <!-- Testing checklist -->
+    <div class="section-title">Testing Checklist — Shadow Mode</div>
+    <div class="grid-2">
+        <div class="card">
+            <h3>Before the event</h3>
+            <ul class="checklist">
+                <li>Platform is open at the base URL above</li>
+                <li>Shadow Mode page loads at /shadow-mode</li>
+                <li>Meeting host briefed — admit "CuraLive Intelligence"</li>
+                <li>Valid Zoom / Teams join link in hand</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>After the session</h3>
+            <ul class="checklist">
+                <li>Session status shows "Completed"</li>
+                <li>Transcript segments count is above 0</li>
+                <li>Tagged Metrics Dashboard shows 4 new records</li>
+                <li>Sentiment score populated (or noted as short event)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Troubleshooting -->
+    <div class="section-title">Quick Troubleshooting</div>
+    <div class="grid-3">
+        <div class="card">
+            <div class="card-label" style="color:#fcd34d;">Bot does not join</div>
+            <p>Check the meeting link is correct and the meeting is actually running. If there is a waiting room, the host must admit the bot.</p>
+        </div>
+        <div class="card">
+            <div class="card-label" style="color:#fca5a5;">Session shows Failed</div>
+            <p>Meeting link is wrong or meeting has not started yet. Create a new session with the correct link.</p>
+        </div>
+        <div class="card">
+            <div class="card-label" style="color:#94a3b8;">No transcript captured</div>
+            <p>Bot was not admitted to the meeting. For Zoom accounts with strict security, a Zoom admin must allow third-party bots.</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p><strong>CuraLive Operator Quick Reference</strong></p>
+        <p>Updated March 11, 2026 &nbsp;·&nbsp; All features live and tested &nbsp;·&nbsp; Internal Use Only</p>
+        <p style="margin-top:6px; color:#334155;">When deployed to production, replace the base URL throughout this document. All page paths remain unchanged.</p>
+    </div>
+
+</div>
+</body>
+</html>

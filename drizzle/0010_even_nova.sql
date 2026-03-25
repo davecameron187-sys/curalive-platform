@@ -1,0 +1,20 @@
+CREATE TABLE `event_branding` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`roadshow_id` varchar(100) NOT NULL,
+	`client_name` varchar(200) NOT NULL,
+	`logo_url` varchar(500),
+	`primary_color` varchar(20) DEFAULT '#3b82f6',
+	`accent_color` varchar(20) DEFAULT '#10b981',
+	`background_color` varchar(20) DEFAULT '#0f172a',
+	`text_color` varchar(20) DEFAULT '#f8fafc',
+	`font_family` varchar(100) DEFAULT 'Space Grotesk',
+	`tagline` varchar(300),
+	`footer_text` varchar(500),
+	`favicon_url` varchar(500),
+	`show_chorus_watermark` boolean DEFAULT true,
+	`custom_css` text,
+	`created_at` bigint NOT NULL,
+	`updated_at` bigint NOT NULL,
+	CONSTRAINT `event_branding_id` PRIMARY KEY(`id`),
+	CONSTRAINT `event_branding_roadshow_id_unique` UNIQUE(`roadshow_id`)
+);

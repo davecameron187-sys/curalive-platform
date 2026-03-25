@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuraLive Post-Event - Reports & Delivery</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; line-height: 1.6; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(148, 163, 184, 0.2); padding: 20px; border-radius: 8px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        header h1 { font-size: 24px; background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .nav-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .nav-btn { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.3s ease; text-decoration: none; display: inline-block; }
+        .nav-btn:hover { background: rgba(96, 165, 250, 0.2); border-color: #60a5fa; }
+        .content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .section { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; padding: 25px; backdrop-filter: blur(10px); }
+        .section h2 { font-size: 18px; color: #60a5fa; margin-bottom: 20px; }
+        .event-summary { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .summary-item { margin-bottom: 10px; font-size: 13px; }
+        .summary-label { color: #94a3b8; }
+        .summary-value { color: #cbd5e1; font-weight: 500; }
+        .report-item { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; padding: 15px; margin-bottom: 15px; }
+        .report-title { font-weight: 600; color: #cbd5e1; margin-bottom: 8px; }
+        .report-desc { font-size: 12px; color: #94a3b8; margin-bottom: 10px; }
+        .report-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .action-btn { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .action-btn:hover { background: rgba(96, 165, 250, 0.2); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(148, 163, 184, 0.2); }
+        .tab { padding: 10px 15px; cursor: pointer; border-bottom: 2px solid transparent; color: #94a3b8; font-size: 13px; }
+        .tab:hover { color: #cbd5e1; }
+        .tab.active { border-bottom-color: #60a5fa; color: #60a5fa; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .checkbox-group { display: flex; flex-direction: column; gap: 10px; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; }
+        .checkbox-item input { width: 16px; height: 16px; accent-color: #60a5fa; }
+        .checkbox-item label { cursor: pointer; font-size: 13px; }
+        .btn { background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(96, 165, 250, 0.3); }
+        .status-icon { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .status-sent { background: #86efac; }
+        .status-pending { background: #fbbf24; }
+        @media (max-width: 768px) { .content { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Post-Event - Reports & Delivery</h1>
+            <div class="nav-buttons">
+                <a href="testing-occ.html" class="nav-btn">← OCC</a>
+                <a href="operational-testing-v2.html" class="nav-btn">Testing Guide →</a>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="section">
+                <h2>📋 Event Summary</h2>
+                <div class="event-summary">
+                    <div class="summary-item"><div class="summary-label">Event Name</div><div class="summary-value">Q4 2025 Earnings Call</div></div>
+                    <div class="summary-item"><div class="summary-label">Duration</div><div class="summary-value">Mar 15, 2026 • 1h 23m</div></div>
+                    <div class="summary-item"><div class="summary-label">Participants</div><div class="summary-value">1,247 registered • 1,173 attended (94%)</div></div>
+                    <div class="summary-item"><div class="summary-label">Questions</div><div class="summary-value">342 questions • 87 answered live</div></div>
+                    <div class="summary-item"><div class="summary-label">Sentiment</div><div class="summary-value">+78% (Positive)</div></div>
+                </div>
+
+                <h2>📥 Available Reports</h2>
+                <div class="report-item">
+                    <div class="report-title">📄 Executive Summary</div>
+                    <div class="report-desc">AI-generated overview with key metrics</div>
+                    <div class="report-actions">
+                        <button class="action-btn">📥 PDF</button>
+                        <button class="action-btn">👁 Preview</button>
+                    </div>
+                </div>
+                <div class="report-item">
+                    <div class="report-title">📝 Full Transcript</div>
+                    <div class="report-desc">Complete transcription with timestamps</div>
+                    <div class="report-actions">
+                        <button class="action-btn">📥 PDF</button>
+                        <button class="action-btn">📥 DOCX</button>
+                    </div>
+                </div>
+                <div class="report-item">
+                    <div class="report-title">🎥 Video Recording</div>
+                    <div class="report-desc">Full event recording with speaker ID</div>
+                    <div class="report-actions">
+                        <button class="action-btn">📥 MP4</button>
+                        <button class="action-btn">▶ Stream</button>
+                    </div>
+                </div>
+                <div class="report-item">
+                    <div class="report-title">📊 Analytics Report</div>
+                    <div class="report-desc">Sentiment, engagement, Q&A analytics</div>
+                    <div class="report-actions">
+                        <button class="action-btn">📥 PDF</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📧 Distribution & Delivery</h2>
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab(event, 'auto')">Auto-Send</div>
+                    <div class="tab" onclick="switchTab(event, 'manual')">Manual</div>
+                    <div class="tab" onclick="switchTab(event, 'history')">History</div>
+                </div>
+
+                <div id="auto" class="tab-content active">
+                    <h3 style="color: #cbd5e1; margin-bottom: 15px; font-size: 14px;">Auto-Send Configuration</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item"><input type="checkbox" checked><label>Send to Executives (24h)</label></div>
+                        <div class="checkbox-item"><input type="checkbox" checked><label>Send to Investors (48h)</label></div>
+                        <div class="checkbox-item"><input type="checkbox" checked><label>Send to Analysts (72h)</label></div>
+                        <div class="checkbox-item"><input type="checkbox"><label>Send to Media (manual)</label></div>
+                    </div>
+                    <button class="btn" style="margin-top: 15px;">✓ Confirm Auto-Send</button>
+                </div>
+
+                <div id="manual" class="tab-content">
+                    <h3 style="color: #cbd5e1; margin-bottom: 15px; font-size: 14px;">Manual Distribution</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 6px; color: #cbd5e1; font-size: 13px;">Recipients</label>
+                        <textarea style="width: 100%; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; padding: 10px; border-radius: 4px; font-size: 12px; min-height: 80px;" placeholder="investor@example.com"></textarea>
+                    </div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item"><input type="checkbox" checked><label>Executive Summary</label></div>
+                        <div class="checkbox-item"><input type="checkbox" checked><label>Full Transcript</label></div>
+                        <div class="checkbox-item"><input type="checkbox" checked><label>Video Recording</label></div>
+                        <div class="checkbox-item"><input type="checkbox"><label>Analytics Report</label></div>
+                    </div>
+                    <button class="btn" style="margin-top: 15px;">📧 Send Now</button>
+                </div>
+
+                <div id="history" class="tab-content">
+                    <h3 style="color: #cbd5e1; margin-bottom: 15px; font-size: 14px;">Delivery History</h3>
+                    <div class="report-item">
+                        <div style="display: flex; justify-content: space-between;">
+                            <div class="report-title" style="margin: 0;">Executive Summary to 45 Execs</div>
+                            <span><span class="status-icon status-sent"></span>Sent</span>
+                        </div>
+                        <div class="report-desc">Mar 15, 4:30 PM</div>
+                    </div>
+                    <div class="report-item">
+                        <div style="display: flex; justify-content: space-between;">
+                            <div class="report-title" style="margin: 0;">Full Transcript to 1,173</div>
+                            <span><span class="status-icon status-sent"></span>Sent</span>
+                        </div>
+                        <div class="report-desc">Mar 16, 9:00 AM</div>
+                    </div>
+                    <div class="report-item">
+                        <div style="display: flex; justify-content: space-between;">
+                            <div class="report-title" style="margin: 0;">Video Recording to 342</div>
+                            <span><span class="status-icon status-pending"></span>Pending</span>
+                        </div>
+                        <div class="report-desc">Scheduled Mar 17, 8:00 AM</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(e, tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            e.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,344 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "wFOr7C13ODPZHL29DJNAY"
+uri = "file://curalive-update.tar.gz"
+type = "unspecified"
+title = "CuraLive Platform — Full Source Update (no media files)"
+
+[[outputs]]
+id = "V07_eZDRy3LgabPhql3C9"
+uri = "file://CURALIVE_TECH_STACK_BRIEF.md"
+type = "text"
+title = "CuraLive Tech Stack Brief — March 2026"
+
+[[outputs]]
+id = "D262WME-QJLNAZP0XVN3M"
+uri = "file://public/CuraLive_Platform_Architecture.docx"
+type = "word_document"
+title = "CuraLive — Flow Map (AI in OCC)"
+
+[[outputs]]
+id = "exVMT7-rSC8e1pNNfKVgp"
+uri = "file://public/CuraLive_ShadowBridge.docx"
+type = "word_document"
+title = "Shadow Bridge — How It All Works (updated)"
+
+[[outputs]]
+id = "VfuKnoru8GhexcwGMbIDy"
+uri = "file://public/CuraLive_Resilience_BYOC.docx"
+type = "word_document"
+title = "CuraLive — Resilience, DR & Bring Your Own Carrier"
+
+[[outputs]]
+id = "ln-L3zKJhDy8PIZBjt2vu"
+uri = "file://public/CuraLive_Mirroring_Brief.docx"
+type = "word_document"
+title = "CuraLive — Multi-Region Mirroring & Infrastructure Brief"
+
+[[outputs]]
+id = "sfvb1DcVspcFOS6BpoG3Z"
+uri = "file://public/CuraLive_AI_Reports.docx"
+type = "word_document"
+title = "CuraLive — AI Reports: Storage, Access & Delivery"
+
+[[outputs]]
+id = "PTCQrbiWim-WlWMcdHTAq"
+uri = "file://public/CuraLive_Patent_v2.docx"
+type = "word_document"
+title = "CuraLive Patent Specification v2.0 (Enhanced)"
+
+[[outputs]]
+id = "-wE_3qlqVzxzfzNjSkGHa"
+uri = "file://public/CuraLive_Patent_CIPC_Submission.docx"
+type = "word_document"
+title = "CuraLive Patent — CIPC Submission (37 Claims, 19 Figures)"
+
+[[outputs]]
+id = "zplLVVR7m9BGrlWFQeCUX"
+uri = "file://public/CuraLive_Transition_Strategy.docx"
+type = "word_document"
+title = "CuraLive — Founder Transition Strategy, Shareholding & Patent Timeline"
+
+[[outputs]]
+id = "z1TvL6TCmBlnDyXGU5VbN"
+uri = "file://public/CuraLive_Mirroring_Response_v2.docx"
+type = "word_document"
+title = "CuraLive Mirroring & Infrastructure Brief — Response to Steve v2"
+
+[[outputs]]
+id = "jn9DE3wh6vTJp3UfMIV2w"
+uri = "file://CuraLive_Mirroring_Response_v3.docx"
+type = "word_document"
+title = "CuraLive Mirroring Response v3 — Updated for Steve"
+
+[[outputs]]
+id = "EEiDct1_490aNWmoxIgvE"
+uri = "file://docs/CuraLive-System-Architecture.pdf"
+type = "pdf"
+title = "CuraLive System Architecture — Fixed overlaps"
+
+[[outputs]]
+id = "IFb-YtNm0TCyayPWRd5dV"
+uri = "file://docs/AI_AntiHijack_Patent_CIPC_Submission.pdf"
+type = "pdf"
+title = "AI AntiHijack — CIPC Patent Submission (68 Claims, Updated)"
+
+[[outputs]]
+id = "FKtZbaR2Wuw-sNb4wDGdA"
+uri = "file://docs/AI_AntiHijack_Patent_CIPC_Submission.md"
+type = "text"
+title = "AI AntiHijack — CIPC Patent Submission (Markdown Source)"
+
+[[outputs]]
+id = "VjmT089hj3C_ZUTWL2DXj"
+uri = "file://docs/AI_AntiHijack_Market_Traction_Playbook.docx"
+type = "word_document"
+title = "AI AntiHijack — Market Traction & Acquisition Value Playbook"
+
+[[outputs]]
+id = "zBbjZgXMrMvSlU7bqlpBe"
+uri = "file://docs/AI_AntiHijack_Tragar_Pilot_Proposal.docx"
+type = "word_document"
+title = "AI AntiHijack — Tragar Pilot Proposal (with Implementation Plan)"
+
+[[outputs]]
+id = "LSOvLRqQCntBrVlI7SxCa"
+uri = "file://docs/AI_AntiHijack_Implementation_Guide.docx"
+type = "word_document"
+title = "AI AntiHijack — Complete Implementation Guide"
+
+[[outputs]]
+id = "VGJIy9VsTsa7qMqAopRTv"
+uri = "file://docs/AI_AntiHijack_Patent_CIPC_Submission.docx"
+type = "word_document"
+title = "AI AntiHijack — CIPC Patent (68 Claims + All 17 Diagrams, Word)"
+
+[[outputs]]
+id = "8b7Flhz02iVA9KmeUXWhX"
+uri = "file://CuraLive_CIP_CIPC_Submission.docx"
+type = "word_document"
+title = "CuraLive CIP Patent Submission (CIPC)"
+
+[[outputs]]
+id = "ZG57V3Nd0lJu33rOEV7Gt"
+uri = "file://CuraLive_Self_Improving_AI_Brief.docx"
+type = "word_document"
+title = "CuraLive Self-Improving AI — Executive Brief"
+
+[[outputs]]
+id = "Uud3nY_niqcppV3zoQ6_7"
+uri = "file://CuraLive_Patent_Modules_Brief.docx"
+type = "word_document"
+title = "CuraLive Patent Modules Brief — 6 New Builds"
+
+[[outputs]]
+id = "G1QVV04dgbCIurelesfRy"
+uri = "file://docs/CIP-Module-M-AI-Self-Evolution-Engine.md"
+type = "text"
+title = "CIP Module M — AI Self-Evolution Engine Patent Amendment"
+
+[[outputs]]
+id = "-ba38gvTq9t3pY6j0VWac"
+uri = "file://docs/CIP-Module-M-AI-Self-Evolution-Engine.pdf"
+type = "pdf"
+title = "CIP Module M — AI Self-Evolution Engine (Fixed PDF)"
+
+[[outputs]]
+id = "vxovxSkETvhawIXRmNEJD"
+uri = "file://CuraLive_Patent_Submission_Brief_2026.md"
+type = "text"
+title = "CuraLive Patent Submission Brief — March 2026"
+
+[[outputs]]
+id = "SAIPqm9k9GUD8OZUIIR92"
+uri = "file://CuraLive_Patent_Submission_Brief_2026.docx"
+type = "word_document"
+title = "CuraLive Patent Submission Brief 2026 — Final (18 Subsystems + 16 Diagrams)"
+
+[[outputs]]
+id = "a7xNvVsMkaaRNCsm7igwH"
+uri = "file://CuraLive_CIPC_CIP_Submission_2_Modules_19-25.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 2 - Modules 19-25"
+
+[[outputs]]
+id = "Ot4rfNCXsr_62lK-qUbnY"
+uri = "file://CuraLive_CIPC_CIP_Submission_2_Modules_14-20.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 2 (Corrected) - Modules 14-20"
+
+[[outputs]]
+id = "xTJ_7srOOPoDWhXh0xirk"
+uri = "file://CuraLive_CIPC_CIP_Submission_2_Final_Modules_19-27.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 2 — Final (Modules 19-27)"
+
+[[outputs]]
+id = "oXDdVBHlfrWMF0yXpU2MA"
+uri = "file://CuraLive_CIPC_CIP_Submission_3_Module_28.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 3 — Module 28 (Self-Evolution Engine)"
+
+[[outputs]]
+id = "0y3DdaRE4M2hqZ3Vq0tKg"
+uri = "file://attached_assets/CIP_Submission_4_Alignment_Brief.md"
+type = "text"
+title = "CIP Submission 4 — Alignment Brief for Manus"
+
+[[outputs]]
+id = "Joars4VwjwHItnzCDeBxb"
+uri = "file://attached_assets/CIP_Submission_4_Alignment_Brief.docx"
+type = "word_document"
+title = "CIP Submission 4 — Alignment Brief (Word Document)"
+
+[[outputs]]
+id = "FdOciJUHLIaw9xsRdpDq_"
+uri = "file://attached_assets/CuraLive_PCT_Submission_4_Complete.docx"
+type = "word_document"
+title = "CuraLive PCT Submission 4 — Complete Filing (Word Document)"
+
+[[outputs]]
+id = "q-cz1LW5PZZ4eLzrsKNOV"
+uri = "file://attached_assets/CuraLive_CIPC_CIP_Submission_4_Complete.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 4 — Complete"
+
+[[outputs]]
+id = "7t3_B0A4oIPY_nQNqv1_P"
+uri = "file://CuraLive_Infrastructure_Costs.xlsx"
+type = "table"
+title = "CuraLive Infrastructure Costs — Updated with Platform Comparison"
+
+[[outputs]]
+id = "23UjscrVMTaf2vcVEBJKg"
+uri = "file://CuraLive_LiveQA_Technical_Brief.docx"
+type = "word_document"
+title = "CuraLive Live Q&A — Technical Brief for Tech Team"
+
+[[outputs]]
+id = "uU8e_5md-QxfLUeIRtlu1"
+uri = "file://CuraLive_Consolidated_Tech_Brief.docx"
+type = "word_document"
+title = "CuraLive Consolidated Tech Brief — Module 31 (For Tech Team)"
+
+[[outputs]]
+id = "w0CwEQJ3C-xCN20esmVDh"
+uri = "file://CuraLive_CIPC_CIP_Submission_5_Module_31.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 5 — Module 31 (Patent Filing)"
+
+[[outputs]]
+id = "q_LaYYdZs7Tei9YEFSmHk"
+uri = "file://CuraLive_Module31_LiveQA_TechBrief_March2026.md"
+type = "text"
+title = "Module 31: Live Q&A Intelligence Engine — Technical Build Brief (March 2026)"
+
+[[outputs]]
+id = "wNzK1FZ5xpsiKvAkpdLxC"
+uri = "file://CuraLive_Module31_LiveQA_TechBrief_March2026.docx"
+type = "word_document"
+title = "Module 31: Live Q&A Intelligence Engine — Technical Build Brief (.docx)"
+
+[[outputs]]
+id = "CWvrbtlFA67_Qaxo4eKWw"
+uri = "file://attached_assets/CuraLive_Module31_LiveQA_TechBrief_March2026_UPDATED.docx"
+type = "word_document"
+title = "Module 31 Technical Brief — Updated March 2026"
+
+[[outputs]]
+id = "B0Zyvd8dlfQ69O-snK_YJ"
+uri = "file://attached_assets/CuraLive_CIPC_CIP_Submission_5_Complete.docx"
+type = "word_document"
+title = "CuraLive CIP Submission 5 — Complete CIPC Filing (Module 31)"
+
+[[outputs]]
+id = "Q3u1THQK_Yb9auN16kvXn"
+uri = "file://docs/specs/live-qa-intelligence-workflow.md"
+type = "text"
+title = "Manus Workflow Brief — Live Q&A Intelligence Engine"
+
+[[outputs]]
+id = "K46OZ1tTbeaapyKT2prBp"
+uri = "file://attached_assets/CuraLive_Module31_Manus_Workflow_Brief.docx"
+type = "word_document"
+title = "Manus Workflow Brief — Live Q&A Intelligence Engine"
+
+[[outputs]]
+id = "SawYCpbIfZImLDkiwo2fJ"
+uri = "file://attached_assets/CuraLive_Infrastructure_Costs_Updated.xlsx"
+type = "table"
+title = "CuraLive Infrastructure Costs — Updated 20 March 2026 (Styled)"
+
+[[outputs]]
+id = "lRi7aXu_7APUKHyJ01cM7"
+uri = "file://attached_assets/CuraLive_Financial_Model_Updated.xlsx"
+type = "table"
+title = "CuraLive Financial Model — Updated 20 March 2026"
+
+[[outputs]]
+id = "9Ykvv-9W9HjuVN8AsKFkV"
+uri = "file://docs/CuraLive_Operator_Managed_Live_QA_Brief.docx"
+type = "word_document"
+title = "CuraLive Operator-Managed Live Q&A — Strategic Options Brief"
+
+[[outputs]]
+id = "KDNeUBEoJ_quKkemtYKOw"
+uri = "file://docs/CuraLive_CIPC_CIP_Submission_6.docx"
+type = "word_document"
+title = "CuraLive CIPC CIP Submission 6 — 75 Claims, 32 Modules (Final)"
+
+[[outputs]]
+id = "GvCi4p8539YzSrohVZUBL"
+uri = "file://docs/CIP6_Line_Count_Correction_Brief.md"
+type = "text"
+title = "CIP6 Line Count Correction Brief for Claude"
+
+[[outputs]]
+id = "aSbA6wo63zR4w5dkBxICO"
+uri = "file://docs/Module29_AEOS_Deepening_Brief.docx"
+type = "word_document"
+title = "Module 29 & AEOS Algorithmic Deepening — Brief for Claude"
+
+[[outputs]]
+id = "TR5Z2WmNl7-G4nd_V_Em0"
+uri = "file://docs/Live_QA_User_Guide.md"
+type = "text"
+title = "CuraLive Live Q&A User Guide"
+
+[[outputs]]
+id = "Q9RM07xRRTjA_1UJ-Ol5U"
+uri = "file://GITHUB-CUSTODIAN-BRIEF.md"
+type = "text"
+title = "GitHub Custodian Migration Brief"
+
+[[outputs]]
+id = "cH33OSdrGtVtZFuh9Sv3Q"
+uri = "file://GITHUB-WORKFLOWS-TO-ADD.md"
+type = "text"
+title = "GitHub Actions Workflows (add manually)"
+
+[[outputs]]
+id = "Qv5kaGQ93ONExNN8ViZeu"
+uri = "file://CODESPACE-SETUP.md"
+type = "text"
+title = "Codespaces Quick-Start Guide"
+
+[[outputs]]
+id = "q-v1Yal27CyL90DBf1AxA"
+uri = "file://CURALIVE-STATUS-BRIEF.md"
+type = "text"
+title = "CuraLive Status Brief — 25 March 2026"
+
+[[outputs]]
+id = "vp3Wj8eVAbq-GlLvpn1Ml"
+uri = "file://CuraLive-Status-Brief-25-March-2026.docx"
+type = "word_document"
+title = "CuraLive Status Brief — 25 March 2026 (Word)"
+
+[[outputs]]
+id = "1DO6PfnMXu8xw8QOgIFRC"
+uri = "file://CuraLive-GitHub-Custodian-Brief.docx"
+type = "word_document"
+title = "CuraLive GitHub Custodian Brief (Word)"

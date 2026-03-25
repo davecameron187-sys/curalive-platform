@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuraLive OCC - Operator Console</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; line-height: 1.6; min-height: 100vh; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(148, 163, 184, 0.2); padding: 20px; border-radius: 8px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        header h1 { font-size: 24px; background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .nav-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .nav-btn { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.3s ease; text-decoration: none; display: inline-block; }
+        .nav-btn:hover { background: rgba(96, 165, 250, 0.2); border-color: #60a5fa; }
+        .content { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .section { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; padding: 25px; backdrop-filter: blur(10px); }
+        .section h2 { font-size: 18px; color: #60a5fa; margin-bottom: 20px; }
+        .event-header { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .event-title { font-size: 16px; font-weight: bold; color: #cbd5e1; margin-bottom: 8px; }
+        .event-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; color: #94a3b8; }
+        .live-status { display: inline-block; padding: 6px 12px; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-radius: 4px; font-size: 12px; font-weight: 600; margin-bottom: 15px; }
+        .controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .control-btn { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 10px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; }
+        .control-btn:hover { background: rgba(96, 165, 250, 0.2); border-color: #60a5fa; }
+        .control-btn.active { background: rgba(96, 165, 250, 0.3); border-color: #60a5fa; }
+        .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .metric { background: rgba(15, 23, 42, 0.5); padding: 12px; border-radius: 6px; }
+        .metric-label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+        .metric-value { font-size: 18px; font-weight: bold; color: #60a5fa; }
+        .transcript-box { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; padding: 12px; height: 250px; overflow-y: auto; font-size: 12px; line-height: 1.6; }
+        .transcript-entry { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
+        .transcript-speaker { color: #60a5fa; font-weight: 600; margin-bottom: 3px; }
+        .transcript-text { color: #cbd5e1; }
+        .sentiment-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .sentiment-positive { background: #86efac; }
+        .sentiment-neutral { background: #94a3b8; }
+        .sentiment-negative { background: #fca5a5; }
+        .qa-item { background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 12px; }
+        .qa-question { color: #cbd5e1; margin-bottom: 4px; }
+        .qa-votes { color: #94a3b8; font-size: 11px; }
+        .sidebar-section { margin-bottom: 20px; }
+        .sidebar-section h3 { font-size: 14px; color: #60a5fa; margin-bottom: 12px; }
+        @media (max-width: 1024px) { .content { grid-template-columns: 1fr; } .controls { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎚️ OCC - Operator Console</h1>
+            <div class="nav-buttons">
+                <a href="testing-registrations.html" class="nav-btn">← Registrations</a>
+                <a href="testing-post-event.html" class="nav-btn">Post-Event →</a>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="section">
+                <div class="event-header">
+                    <div class="event-title">Q4 2025 Earnings Call</div>
+                    <div class="event-meta">
+                        <div>📅 Mar 15, 2026 • 2:00 PM</div>
+                        <div>👥 1,247 Participants</div>
+                    </div>
+                </div>
+
+                <div class="live-status">● LIVE - 42:18 elapsed</div>
+
+                <h2>🎮 Event Controls</h2>
+                <div class="controls">
+                    <button class="control-btn active">▶ Start Event</button>
+                    <button class="control-btn">⏸ Pause</button>
+                    <button class="control-btn">🔴 Stop Event</button>
+                    <button class="control-btn">📊 Metrics</button>
+                </div>
+
+                <h2>📊 Live Metrics</h2>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-label">Active Participants</div>
+                        <div class="metric-value">1,173</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Avg Sentiment</div>
+                        <div class="metric-value">+78%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Questions</div>
+                        <div class="metric-value">342</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Compliance Issues</div>
+                        <div class="metric-value">0</div>
+                    </div>
+                </div>
+
+                <h2>📝 Live Transcription</h2>
+                <div class="transcript-box">
+                    <div class="transcript-entry">
+                        <div class="transcript-speaker">CEO John Smith:</div>
+                        <div class="transcript-text">Good afternoon everyone. Thank you for joining us for our Q4 2025 earnings call. We're pleased to report strong results across all business segments.</div>
+                    </div>
+                    <div class="transcript-entry">
+                        <div class="transcript-speaker">CFO Sarah Johnson:</div>
+                        <div class="transcript-text">Revenue increased 23% year-over-year to $2.3 billion. Operating margins expanded by 150 basis points to 28%.</div>
+                    </div>
+                    <div class="transcript-entry">
+                        <div class="transcript-speaker">CEO John Smith:</div>
+                        <div class="transcript-text">We're now ready for your questions. Please go ahead.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section sidebar-section">
+                    <h2>😊 Sentiment Analysis</h2>
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span class="sentiment-indicator sentiment-positive"></span>
+                            <span>Positive: 68%</span>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span class="sentiment-indicator sentiment-neutral"></span>
+                            <span>Neutral: 28%</span>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <span class="sentiment-indicator sentiment-negative"></span>
+                            <span>Negative: 4%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section sidebar-section">
+                    <h2>❓ Top Questions</h2>
+                    <div class="qa-item">
+                        <div class="qa-question">What's your guidance for 2026?</div>
+                        <div class="qa-votes">👍 87 votes</div>
+                    </div>
+                    <div class="qa-item">
+                        <div class="qa-question">How will AI impact margins?</div>
+                        <div class="qa-votes">👍 64 votes</div>
+                    </div>
+                    <div class="qa-item">
+                        <div class="qa-question">M&A pipeline status?</div>
+                        <div class="qa-votes">👍 52 votes</div>
+                    </div>
+                </div>
+
+                <div class="section sidebar-section">
+                    <h2>🎤 Recall.ai Transcription</h2>
+                    <div id="recall-ai-bot" style="space-y: 12px;">
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 12px; color: #94a3b8; margin-bottom: 6px;">Meeting URL</label>
+                            <input type="text" id="meetingUrl" placeholder="https://zoom.us/j/123456789" style="width: 100%; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; padding: 8px; border-radius: 4px; font-size: 12px;">
+                        </div>
+                        <button id="startBotBtn" onclick="startTranscription()" style="width: 100%; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">▶ Start Transcription</button>
+                        <div id="botStatus" style="margin-top: 12px; padding: 8px; background: rgba(15, 23, 42, 0.5); border-radius: 4px; font-size: 11px; color: #94a3b8; display: none;">
+                            <div style="color: #60a5fa; margin-bottom: 4px;">Bot Status: <span id="botStatusText">Idle</span></div>
+                            <div id="botId" style="color: #cbd5e1;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section sidebar-section">
+                    <h2>⚠️ Compliance Alerts</h2>
+                    <div id="compliance-dashboard" style="font-size: 12px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                            <div style="background: rgba(15, 23, 42, 0.5); padding: 8px; border-radius: 4px; text-align: center;">
+                                <div style="font-size: 16px; font-weight: bold; color: #86efac;">0</div>
+                                <div style="font-size: 10px; color: #94a3b8;">Errors</div>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.5); padding: 8px; border-radius: 4px; text-align: center;">
+                                <div style="font-size: 16px; font-weight: bold; color: #fbbf24;">0</div>
+                                <div style="font-size: 10px; color: #94a3b8;">Warnings</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(86, 180, 86, 0.1); border: 1px solid rgba(86, 180, 86, 0.3); padding: 8px; border-radius: 4px; color: #86efac; font-size: 11px;">
+                            ✓ No compliance violations detected
+                        </div>
+                        <div id="complianceAlerts" style="margin-top: 12px; max-height: 150px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Control button functionality
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // WebSocket metrics connection
+        let metricsWs = null;
+        function connectMetricsWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/metrics`;
+            
+            try {
+                metricsWs = new WebSocket(wsUrl);
+                metricsWs.onopen = () => {
+                    console.log('[WebSocket] Connected to metrics server');
+                    metricsWs.send(JSON.stringify({
+                        type: 'subscribe',
+                        conferenceId: 'q4-earnings-2026'
+                    }));
+                };
+                
+                metricsWs.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        if (message.type === 'metrics_update' || message.type === 'metrics_snapshot') {
+                            updateMetricsDisplay(message.data);
+                        }
+                    } catch (error) {
+                        console.error('[WebSocket] Error parsing message:', error);
+                    }
+                };
+                
+                metricsWs.onerror = (error) => {
+                    console.error('[WebSocket] Error:', error);
+                };
+            } catch (error) {
+                console.log('[WebSocket] Connection failed, using mock data');
+            }
+        }
+
+        function updateMetricsDisplay(metrics) {
+            if (metrics.activeParticipants !== undefined) {
+                const participantsEl = document.querySelector('[data-metric="participants"]');
+                if (participantsEl) participantsEl.textContent = metrics.activeParticipants.toLocaleString();
+            }
+            if (metrics.sentimentScores) {
+                const sentiment = metrics.sentimentScores;
+                const total = sentiment.positive + sentiment.neutral + sentiment.negative;
+                const positivePercent = total > 0 ? Math.round((sentiment.positive / total) * 100) : 0;
+                const sentimentEl = document.querySelector('[data-metric="sentiment"]');
+                if (sentimentEl) sentimentEl.textContent = `+${positivePercent}%`;
+            }
+        }
+
+        // Recall.ai bot functions
+        function startTranscription() {
+            const meetingUrl = document.getElementById('meetingUrl').value;
+            if (!meetingUrl) {
+                alert('Please enter a meeting URL');
+                return;
+            }
+
+            const botId = `bot_${Date.now()}`;
+            document.getElementById('botStatus').style.display = 'block';
+            document.getElementById('botStatusText').textContent = 'Connecting...';
+            document.getElementById('botStatusText').style.color = '#fbbf24';
+            document.getElementById('botId').textContent = `Bot ID: ${botId}`;
+            document.getElementById('startBotBtn').disabled = true;
+            document.getElementById('startBotBtn').textContent = '⏸ Recording...';
+
+            setTimeout(() => {
+                document.getElementById('botStatusText').textContent = 'Recording';
+                document.getElementById('botStatusText').style.color = '#ef4444';
+            }, 2000);
+        }
+
+        // Initialize
+        connectMetricsWebSocket();
+    </script>
+</body>
+</html>
