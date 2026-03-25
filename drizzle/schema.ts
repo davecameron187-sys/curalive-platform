@@ -3133,7 +3133,7 @@ export const bastionIntelligenceSessions = pgTable("bastion_intelligence_session
   shadowSessionId: integer("shadow_session_id"),
   clientName: varchar("client_name", { length: 255 }).notNull(),
   eventTitle: varchar("event_title", { length: 512 }).notNull(),
-  eventType: varchar("event_type", { length: 64 }).default("earnings_call").notNull(),
+  eventType: text("event_type").default("earnings_call").notNull(),
   eventDate: varchar("event_date", { length: 32 }),
   sector: varchar("sector", { length: 128 }),
   ticker: varchar("ticker", { length: 32 }),
