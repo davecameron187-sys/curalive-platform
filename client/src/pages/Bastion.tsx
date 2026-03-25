@@ -206,7 +206,10 @@ export default function Bastion() {
       toast.error("Client name, event name, and meeting URL are required");
       return;
     }
-    startSession.mutate(form);
+    startSession.mutate({
+      ...form,
+      webhookBaseUrl: window.location.origin,
+    });
   };
 
   const session = activeSession.data;

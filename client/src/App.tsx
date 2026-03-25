@@ -226,6 +226,7 @@ function Router() {
       <Route path="/qa/:accessCode" component={AttendeeQA} />
       <Route path="/embed/qa/:accessCode" component={EmbeddableQaWidget} />
       <Route path="/shadow-mode"><Redirect to="/?tab=shadow-mode" /></Route>
+      <Route path="/shadow-mode/"><Redirect to="/?tab=shadow-mode" /></Route>
       <Route path="/health-guardian" component={HealthGuardian} />
       <Route path="/compliance-engine" component={ComplianceEngineDashboard} />
       <Route path="/mailing-lists"><Redirect to="/?tab=events&sub=mailing" /></Route>
