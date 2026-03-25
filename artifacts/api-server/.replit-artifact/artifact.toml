@@ -11,11 +11,11 @@ name = "CuraLive Server"
 paths = ["/"]
 
 [services.development]
-run = "pnpm run dev"
+run = "pnpm --filter @workspace/api-server run dev"
 
 [services.production]
-build = "pnpm run build"
-run = "pnpm run start"
+build = "pnpm --filter @workspace/api-server run build"
+run = "pnpm --filter @workspace/api-server run start"
 
 [services.env]
 PORT = "3000"
