@@ -110,14 +110,17 @@ Core (auto-provisioned by Replit):
 Configured secrets:
 - `RECALL_AI_API_KEY` — Recall.ai for bot deployment
 - `MUX_WEBHOOK_SECRET` — Mux webhook verification
+- `JWT_SECRET` — Session cookie signing
+- `DEFAULT_OBJECT_STORAGE_BUCKET_ID` — Replit Object Storage (replaces AWS S3)
 
-Optional (not yet configured, non-critical for app loading):
+Optional (not yet configured — user manages these credentials directly, not via Replit integrations):
 - `OAUTH_SERVER_URL` — OAuth server URL
 - `ABLY_API_KEY` — Real-time messaging
 - `TWILIO_*` / `TELNYX_*` — Telephony
-- `STRIPE_SECRET_KEY` — Billing
-- `RESEND_API_KEY` — Email
-- `AWS_*` / `S3_*` — Object storage
+- `STRIPE_SECRET_KEY` — Billing (user dismissed Replit Stripe integration)
+- `RESEND_API_KEY` — Email (user dismissed Replit Resend integration)
+
+Note: Stripe, Resend, and Twilio Replit integrations were dismissed by the user. Provide API keys as secrets directly when ready.
 
 ## tRPC Routers (86 total)
 

@@ -226,7 +226,6 @@ class SDKServer {
         name,
       };
     } catch (error) {
-      console.warn("[Auth] Session verification failed", String(error));
       return null;
     }
   }
