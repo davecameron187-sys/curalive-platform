@@ -57,10 +57,10 @@ export async function generateDisclosureCertificate(opts: {
     hashChain,
     previousCertHash,
     certificateHash,
-  });
+  }).returning();
 
   return {
-    certificateId: (result as any).insertId,
+    certificateId: result.id,
     certificateHash,
     complianceStatus,
     transcriptHash,

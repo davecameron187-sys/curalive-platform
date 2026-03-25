@@ -45,16 +45,24 @@ export async function getDb() {
 export async function rawSql(sql: string, params: any[] = []): Promise<[any[], any]> {
   const pool = getPool();
   if (!pool) throw new Error("Database not available");
-  const pgSql = mysqlToPostgres(sql);
+  let pgSql = mysqlToPostgres(sql);
   const pgParams = params.filter(p => p !== undefined).map(p => {
     if (typeof p === "number" && p > 1_000_000_000_000 && p < 10_000_000_000_000) {
       return new Date(p);
     }
     return p;
   });
+  const isInsert = /^\s*INSERT\s+INTO\s+/i.test(pgSql);
+  if (isInsert && !/RETURNING\s+/i.test(pgSql)) {
+    pgSql = pgSql.replace(/;?\s*$/, ' RETURNING id');
+  }
   try {
     const result = await pool.query(pgSql, pgParams);
-    return [result.rows, result.fields];
+    const rows = result.rows;
+    if (isInsert && rows.length > 0 && rows[0]?.id != null) {
+      (rows as any).insertId = rows[0].id;
+    }
+    return [rows, result.fields];
   } catch (err: any) {
     console.error("[rawSql] Query failed:", pgSql.slice(0, 200), "\nParams:", pgParams.length, "\nError:", err.message);
     throw err;
@@ -72,6 +80,10 @@ function mysqlToPostgres(sql: string): string {
   });
   s = s.replace(/IFNULL\(/gi, 'COALESCE(');
   s = s.replace(/NOW\(\)/gi, 'NOW()');
+  s = s.replace(/DATE_SUB\(\s*NOW\(\)\s*,\s*INTERVAL\s+(\d+)\s+(SECOND|MINUTE|HOUR|DAY|WEEK|MONTH|YEAR)\s*\)/gi,
+    (_, num, unit) => `(NOW() - INTERVAL '${num} ${unit.toLowerCase()}s')`);
+  s = s.replace(/DATE_ADD\(\s*NOW\(\)\s*,\s*INTERVAL\s+(\d+)\s+(SECOND|MINUTE|HOUR|DAY|WEEK|MONTH|YEAR)\s*\)/gi,
+    (_, num, unit) => `(NOW() + INTERVAL '${num} ${unit.toLowerCase()}s')`);
   s = s.replace(/LIMIT\s+\$(\d+)\s*,\s*\$(\d+)/gi, 'LIMIT $$$2 OFFSET $$$1');
   return s;
 }
@@ -267,15 +279,15 @@ export async function submitFeedback(input: {
 }): Promise<{ id: number }> {
   const dbInstance = await getDb();
   if (!dbInstance) throw new Error("Database not available");
-  const result = await dbInstance.insert(userFeedback).values({
+  const [result] = await dbInstance.insert(userFeedback).values({
     rating: input.rating,
     suggestion: input.suggestion ?? null,
     email: input.email ?? null,
     userId: input.userId ?? null,
     pageUrl: input.pageUrl ?? null,
     ipAddress: input.ipAddress ?? null,
-  });
-  return { id: (result as any).insertId ?? 0 };
+  }).returning();
+  return { id: result.id };
 }
 
 export async function getRecentFeedback(limit = 20) {

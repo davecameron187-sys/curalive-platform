@@ -53,7 +53,7 @@ export const aiAmRouter = router({
           input.endTimeMs
         );
 
-        const violationId = Number(result.insertId);
+        const violationId = Number(result.id);
 
         // Broadcast alert via Ably in real-time
         const ably = getAblyClient();

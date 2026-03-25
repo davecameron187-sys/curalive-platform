@@ -231,9 +231,9 @@ export const shadowModeRouter = router({
         meetingUrl: input.meetingUrl,
         status: "pending",
         notes: input.notes ?? null,
-      });
+      }).returning();
 
-      const sessionId = (inserted as { insertId: number }).insertId;
+      const sessionId = inserted.id;
       const ablyChannel = `shadow-${sessionId}-${Date.now()}`;
 
       let agmSessionId: number | null = null;
@@ -246,8 +246,8 @@ export const shadowModeRouter = router({
             agmTitle: input.eventName,
             jurisdiction: "south_africa",
             status: "live",
-          });
-          agmSessionId = (agmInserted as { insertId: number }).insertId;
+          }).returning();
+          agmSessionId = agmInserted.id;
           console.log(`[Shadow] AGM Intelligence session ${agmSessionId} auto-created for shadow session ${sessionId}`);
         } catch (err) {
           console.error("[Shadow] Failed to auto-create AGM session:", err);
@@ -907,9 +907,9 @@ export const shadowModeRouter = router({
         meetingUrl: input.meetingUrl,
         status: "pending",
         notes: calendarNote,
-      });
+      }).returning();
 
-      const sessionId = (inserted as { insertId: number }).insertId;
+      const sessionId = inserted.id;
 
       console.log(`[Shadow] Calendar auto-session created: ${sessionId} for ${input.eventName} @ ${input.scheduledStart}`);
 
@@ -950,8 +950,8 @@ export const shadowModeRouter = router({
           agmTitle: session.eventName,
           jurisdiction: "south_africa",
           status: "live",
-        });
-        agmSessionId = (agmInserted as { insertId: number }).insertId;
+        }).returning();
+        agmSessionId = agmInserted.id;
       }
 
       const results: any = {};

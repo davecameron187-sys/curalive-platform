@@ -854,8 +854,8 @@ export async function createAgmSession(userId: number, data: {
     jurisdiction: (data.jurisdiction as any) ?? "south_africa",
     shadowSessionId: data.shadowSessionId ?? null,
     status: "setup",
-  });
-  return { sessionId: (result as any).insertId };
+  }).returning();
+  return { sessionId: result.id };
 }
 
 export async function addResolution(userId: number, sessionId: number, data: {
@@ -872,8 +872,8 @@ export async function addResolution(userId: number, sessionId: number, data: {
     title: data.title,
     category: (data.category as any) ?? "ordinary",
     proposedBy: data.proposedBy ?? null,
-  });
-  return { resolutionId: (result as any).insertId };
+  }).returning();
+  return { resolutionId: result.id };
 }
 
 export async function getSessionDashboard(userId: number, sessionId: number) {

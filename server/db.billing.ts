@@ -81,8 +81,8 @@ export async function getBillingClient(id: number) {
 
 export async function createBillingClient(data: InsertBillingClient) {
   const db = await requireDb();
-  const [result] = await db.insert(billingClients).values(data);
-  return (result as any).insertId as number;
+  const [result] = await db.insert(billingClients).values(data).returning();
+  return result.id;
 }
 
 export async function updateBillingClient(id: number, data: Partial<InsertBillingClient>) {
@@ -101,8 +101,8 @@ export async function getClientContacts(clientId: number) {
 
 export async function createClientContact(data: InsertBillingClientContact) {
   const db = await requireDb();
-  const [result] = await db.insert(billingClientContacts).values(data);
-  return (result as any).insertId as number;
+  const [result] = await db.insert(billingClientContacts).values(data).returning();
+  return result.id;
 }
 
 export async function updateClientContact(id: number, data: Partial<InsertBillingClientContact>) {
@@ -168,8 +168,8 @@ export async function createBillingQuote(data: Omit<InsertBillingQuote, "quoteNu
   const seq = await nextSeq("quote");
   const quoteNumber = generateQuoteNumber(seq);
   const accessToken = generateAccessToken();
-  const [result] = await db.insert(billingQuotes).values({ ...data, quoteNumber, accessToken });
-  return { id: (result as any).insertId as number, quoteNumber, accessToken };
+  const [result] = await db.insert(billingQuotes).values({ ...data, quoteNumber, accessToken }).returning();
+  return { id: result.id, quoteNumber, accessToken };
 }
 
 export async function updateBillingQuote(id: number, data: Partial<InsertBillingQuote>) {
@@ -188,8 +188,8 @@ export async function getQuoteVersions(quoteId: number) {
 
 export async function createQuoteVersion(data: InsertBillingQuoteVersion) {
   const db = await requireDb();
-  const [result] = await db.insert(billingQuoteVersions).values(data);
-  return (result as any).insertId as number;
+  const [result] = await db.insert(billingQuoteVersions).values(data).returning();
+  return result.id;
 }
 
 //  Line Items 
@@ -283,8 +283,8 @@ export async function createBillingInvoice(data: Omit<InsertBillingInvoice, "inv
   const seq = await nextSeq("invoice");
   const invoiceNumber = generateInvoiceNumber(seq);
   const accessToken = generateAccessToken();
-  const [result] = await db.insert(billingInvoices).values({ ...data, invoiceNumber, accessToken });
-  return { id: (result as any).insertId as number, invoiceNumber, accessToken };
+  const [result] = await db.insert(billingInvoices).values({ ...data, invoiceNumber, accessToken }).returning();
+  return { id: result.id, invoiceNumber, accessToken };
 }
 
 export async function updateBillingInvoice(id: number, data: Partial<InsertBillingInvoice>) {
@@ -303,7 +303,7 @@ export async function getPayments(invoiceId: number) {
 
 export async function recordPayment(data: InsertBillingPayment) {
   const db = await requireDb();
-  const [result] = await db.insert(billingPayments).values(data);
+  const [result] = await db.insert(billingPayments).values(data).returning();
   const payments = await getPayments(data.invoiceId);
   const paidCents = payments.reduce((s: number, p: { amountCents: number }) => s + p.amountCents, 0);
   const invoice = await getBillingInvoice(data.invoiceId);
@@ -315,7 +315,7 @@ export async function recordPayment(data: InsertBillingPayment) {
       paidAt: newStatus === "paid" ? new Date() : undefined,
     });
   }
-  return (result as any).insertId as number;
+  return result.id;
 }
 
 //  Credit Notes 
@@ -332,8 +332,8 @@ export async function createCreditNote(data: Omit<InsertBillingCreditNote, "cred
   const seq = await nextSeq("credit_note");
   const creditNoteNumber = generateCreditNoteNumber(seq);
   const accessToken = generateAccessToken();
-  const [result] = await db.insert(billingCreditNotes).values({ ...data, creditNoteNumber, accessToken });
-  return { id: (result as any).insertId as number, creditNoteNumber, accessToken };
+  const [result] = await db.insert(billingCreditNotes).values({ ...data, creditNoteNumber, accessToken }).returning();
+  return { id: result.id, creditNoteNumber, accessToken };
 }
 
 export async function updateCreditNote(id: number, data: Partial<InsertBillingCreditNote>) {
@@ -382,8 +382,8 @@ export async function getLineItemTemplates() {
 
 export async function createLineItemTemplate(data: InsertBillingLineItemTemplate) {
   const db = await requireDb();
-  const [result] = await db.insert(billingLineItemTemplates).values(data);
-  return (result as any).insertId as number;
+  const [result] = await db.insert(billingLineItemTemplates).values(data).returning();
+  return result.id;
 }
 
 export async function updateLineItemTemplate(id: number, data: Partial<InsertBillingLineItemTemplate>) {
@@ -433,8 +433,8 @@ export async function upsertFxRate(base: string, target: string, rate: string) {
 
 export async function createEmailEvent(data: InsertBillingEmailEvent) {
   const db = await requireDb();
-  const [result] = await db.insert(billingEmailEvents).values(data);
-  return (result as any).insertId as number;
+  const [result] = await db.insert(billingEmailEvents).values(data).returning();
+  return result.id;
 }
 
 export async function recordEmailOpen(trackingToken: string, ip: string, userAgent: string) {
@@ -481,8 +481,8 @@ export async function getRecurringTemplates() {
 
 export async function createRecurringTemplate(data: InsertBillingRecurringTemplate) {
   const db = await requireDb();
-  const [result] = await db.insert(billingRecurringTemplates).values(data);
-  return (result as any).insertId as number;
+  const [result] = await db.insert(billingRecurringTemplates).values(data).returning();
+  return result.id;
 }
 
 export async function updateRecurringTemplate(id: number, data: Partial<InsertBillingRecurringTemplate>) {

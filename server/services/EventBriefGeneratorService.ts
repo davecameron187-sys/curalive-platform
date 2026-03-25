@@ -220,7 +220,7 @@ Respond with a JSON object containing all required fields.`;
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const result = await db.insert(eventBriefResults).values({
+      const [insertedRow] = await db.insert(eventBriefResults).values({
         conferenceId,
         eventId,
         operatorId,
@@ -233,10 +233,9 @@ Respond with a JSON object containing all required fields.`;
         anticipatedQuestions: brief.anticipatedQuestions,
         financialHighlights: brief.financialHighlights,
         generationConfidence: brief.generationConfidence,
-      });
+      }).returning();
 
-      // Get the inserted ID
-      const insertedId = result[0].insertId;
+      const insertedId = insertedRow.id;
 
       return {
         id: insertedId,

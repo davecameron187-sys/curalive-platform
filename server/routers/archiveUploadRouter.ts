@@ -777,7 +777,8 @@ export const archiveUploadRouter = router({
         `INSERT INTO archive_events
           (event_id, client_name, event_name, event_type, event_date, platform, transcript_text,
            word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?)
+         RETURNING id`,
         [
           null,
           input.clientName,
@@ -795,7 +796,7 @@ export const archiveUploadRouter = router({
         ]
       );
 
-      const archiveId: number = (result as any).insertId;
+      const archiveId: number = Array.isArray(result) ? (result[0]?.id ?? 0) : ((result as any).insertId ?? 0);
       await rawSql(`UPDATE archive_events SET event_id = ? WHERE id = ?`, [`archive-${archiveId}`, archiveId]);
 
       const metricsPromise = generateMetricsFromArchive(

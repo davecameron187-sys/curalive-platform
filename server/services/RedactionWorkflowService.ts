@@ -190,7 +190,7 @@ Return a JSON object with:
     const result = await this.applyRedaction(redactionRequest);
 
     // Create edit in database
-    const edit = await db.insert(transcriptEdits).values({
+    const [edit] = await db.insert(transcriptEdits).values({
       transcriptionSegmentId: transcriptionSegmentId as any,
       conferenceId: conferenceId as any,
       originalText,
@@ -201,10 +201,10 @@ Return a JSON object with:
       approved: false,
       operatorId: operatorId as any,
       operatorName,
-    } as any);
+    } as any).returning();
 
     return {
-      editId: (edit as any).insertId,
+      editId: edit.id,
       redactionResult: result,
     };
   }
