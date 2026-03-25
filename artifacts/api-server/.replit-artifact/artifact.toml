@@ -1,0 +1,21 @@
+kind = "api"
+previewPath = "/"
+title = "CuraLive Platform"
+version = "1.0.0"
+id = "artifacts/api-server"
+router = "path"
+
+[[services]]
+localPort = 3000
+name = "CuraLive Server"
+paths = ["/"]
+
+[services.development]
+run = "pnpm run dev"
+
+[services.production]
+build = "pnpm run build"
+run = "pnpm run start"
+
+[services.env]
+PORT = "3000"
