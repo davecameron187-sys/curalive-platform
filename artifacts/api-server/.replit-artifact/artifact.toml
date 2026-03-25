@@ -1,4 +1,4 @@
-kind = "api"
+kind = "web"
 previewPath = "/"
 title = "CuraLive Platform"
 version = "1.0.0"
