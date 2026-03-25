@@ -6,7 +6,7 @@ A real-time investor events platform providing live transcription, sentiment ana
 
 - **Frontend**: React 19 + Vite + TailwindCSS 4 + tRPC client, served via Express middleware in dev
 - **Backend**: Express + tRPC server (`server/_core/index.ts`)
-- **Database**: PostgreSQL (Replit Helium) via Drizzle ORM + `pg` driver. Connection constructed from PG* env vars (`PGHOST`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`, `PGPORT`). Raw SQL compatibility layer (`rawSql()`) in `server/db.ts` auto-translates MySQL-style `?` params to `$1/$2` and converts epoch-ms numbers to Date objects for timestamp columns.
+- **Database**: PostgreSQL (Replit Helium) via Drizzle ORM + `pg` driver. Connection constructed from PG* env vars (`PGHOST`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`, `PGPORT`). Raw SQL compatibility layer (`rawSql()`) in `server/db.ts` auto-translates MySQL-style `?` params to `$1/$2`, converts epoch-ms numbers to Date objects for timestamp columns, auto-appends `RETURNING id` to INSERT queries, and sets `insertId` on result rows for MySQL compatibility. All Drizzle ORM `db.insert()` calls that need the inserted ID use `.returning()` (PostgreSQL doesn't support MySQL's `insertId`).
 - **Build system**: pnpm + tsx (dev), esbuild (prod)
 - **Package manager**: pnpm 10.4.1
 
