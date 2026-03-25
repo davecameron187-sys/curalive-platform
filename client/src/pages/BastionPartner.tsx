@@ -237,7 +237,10 @@ export default function BastionPartner() {
       toast.error("Event name and meeting URL are required");
       return;
     }
-    startSession.mutate(form);
+    startSession.mutate({
+      ...form,
+      webhookBaseUrl: window.location.origin,
+    });
   };
 
   const session = activeSession.data;
@@ -314,6 +317,7 @@ export default function BastionPartner() {
       platform: (platformMap[bk.platform] ?? "other") as any,
       meetingUrl: bk.meetingUrl,
       notes: bk.notes ?? "",
+      webhookBaseUrl: window.location.origin,
     });
   };
 

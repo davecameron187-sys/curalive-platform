@@ -850,7 +850,10 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                 </div>
                 <div className="flex items-center gap-3 mt-5">
                   <Button
-                    onClick={() => startSession.mutate(form)}
+                    onClick={() => startSession.mutate({
+                      ...form,
+                      webhookBaseUrl: window.location.origin,
+                    })}
                     disabled={startSession.isPending || !form.clientName || !form.eventName || !form.meetingUrl}
                     className="bg-emerald-600 hover:bg-emerald-500 gap-2">
                     {startSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}

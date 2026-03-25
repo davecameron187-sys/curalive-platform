@@ -98,11 +98,24 @@ async function autoGenerateAiReport(
 const RECALL_BASE_URL = process.env.RECALL_AI_BASE_URL ?? "https://eu-central-1.recall.ai/api/v1";
 const RECALL_API_KEY = process.env.RECALL_AI_API_KEY ?? "";
 
-function getWebhookBaseUrl(): string {
-  if (process.env.RECALL_WEBHOOK_BASE_URL) return process.env.RECALL_WEBHOOK_BASE_URL;
+function normalizeBaseUrl(url: string): string {
+  // Remove trailing slashes and whitespace
+  return url.trim().replace(/\/+$/, "");
+}
+
+function getWebhookBaseUrl(overrideUrl?: string): string {
+  if (overrideUrl && overrideUrl.trim()) {
+    return normalizeBaseUrl(overrideUrl);
+  }
+  if (process.env.RECALL_WEBHOOK_BASE_URL) return normalizeBaseUrl(process.env.RECALL_WEBHOOK_BASE_URL);
   if (process.env.REPLIT_DEPLOYMENT_URL) return `https://${process.env.REPLIT_DEPLOYMENT_URL}`;
   if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`;
-  throw new Error("Cannot determine webhook URL. Set RECALL_WEBHOOK_BASE_URL, or ensure REPLIT_DEV_DOMAIN / REPLIT_DEPLOYMENT_URL is available.");
+  if (process.env.PUBLIC_URL) return normalizeBaseUrl(process.env.PUBLIC_URL);
+  if (process.env.APP_URL) return normalizeBaseUrl(process.env.APP_URL);
+
+  throw new Error(
+    "Cannot determine webhook URL. Set RECALL_WEBHOOK_BASE_URL or APP_URL, or ensure REPLIT_DEV_DOMAIN / REPLIT_DEPLOYMENT_URL is available."
+  );
 }
 
 async function recallFetch(path: string, options: RequestInit = {}) {
@@ -284,7 +297,7 @@ export const shadowModeRouter = router({
         throw new Error("RECALL_AI_API_KEY is not configured. Please add it to environment secrets.");
       }
 
-      const resolvedBase = getWebhookBaseUrl();
+      const resolvedBase = getWebhookBaseUrl(input.webhookBaseUrl);
       const webhookUrl = `${resolvedBase}/api/recall/webhook`;
 
       console.log(`[Shadow] Session ${sessionId}: webhook URL → ${webhookUrl}`);

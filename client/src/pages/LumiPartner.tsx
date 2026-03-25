@@ -203,7 +203,10 @@ export default function LumiPartner() {
       toast.error("Event name and meeting URL are required");
       return;
     }
-    startSession.mutate(form);
+    startSession.mutate({
+      ...form,
+      webhookBaseUrl: window.location.origin,
+    });
   };
 
   const session = activeSession.data;
