@@ -16,12 +16,12 @@ const CHUNK_MINUTES = 8;         // 8 min × 32kbps = ~1.9MB per chunk — safel
 const CHUNK_BITRATE = "32k";
 
 const AUDIO_EXTENSIONS = /\.(mp3|wav|m4a|ogg|flac|aac|mpeg)$/i;
-const VIDEO_EXTENSIONS = /\.(mp4|mov|avi|mkv)$/i;
+const VIDEO_EXTENSIONS = /\.(mp4|webm|mov|avi|mkv)$/i;
 
 const ALLOWED_MIMES = [
   "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav",
   "audio/mp4", "audio/m4a", "audio/x-m4a",
-  "video/mp4", "audio/ogg",
+  "video/mp4", "audio/webm", "video/webm", "audio/ogg",
   "audio/flac", "audio/aac",
 ];
 
@@ -32,7 +32,7 @@ const upload = multer({
     const ok = ALLOWED_MIMES.includes(file.mimetype) ||
       /\.(mp3|mp4|wav|m4a|webm|ogg|flac|aac|mpeg)$/i.test(file.originalname);
     if (ok) cb(null, true);
-    else cb(new Error("Audio or video files only (MP3, MP4, WAV, M4A, OGG, FLAC, AAC, MPEG)"));
+    else cb(new Error("Audio or video files only (MP3, MP4, WAV, M4A, WebM)"));
   },
 });
 
@@ -109,7 +109,7 @@ async function callTranscribeApi(buffer: Buffer, filename: string): Promise<stri
   }
 
   const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
-  const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "mp4"].includes(ext) ? ext : "mp3";
+  const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4"].includes(ext) ? ext : "mp3";
   const mimeType = safeExt === "mp4" ? "video/mp4" : `audio/${safeExt}`;
 
   const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
