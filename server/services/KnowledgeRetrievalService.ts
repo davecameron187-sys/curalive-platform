@@ -1,4 +1,4 @@
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 
 export interface KnowledgeEntry {
   id: number;
@@ -11,8 +11,7 @@ export interface KnowledgeEntry {
 
 async function rawQuery(sql: string, params: any[] = []) {
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  const [rows] = await conn.execute(sql, params);
+    const [rows] = await rawSql(sql, params);
   return rows as any[];
 }
 

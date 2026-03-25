@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 
 const STALE_THRESHOLD_MS = 30 * 60 * 1000;
 const PROCESSING_TIMEOUT_MS = 15 * 60 * 1000;
@@ -10,10 +10,9 @@ let watchdogTimer: ReturnType<typeof setInterval> | null = null;
 export async function reconcileShadowSessions() {
   try {
     const db = await getDb();
-    const conn = (db as any).session?.client ?? (db as any).$client;
     const now = Date.now();
 
-    const [liveRows] = await conn.execute(
+    const [liveRows] = await rawSql(
       `SELECT id, client_name, event_name, status, started_at, ended_at, created_at
        FROM shadow_sessions
        WHERE status IN ('live', 'bot_joining', 'processing')
@@ -28,7 +27,7 @@ export async function reconcileShadowSessions() {
       const age = now - startedAt;
 
       if (session.status === "processing" && age > PROCESSING_TIMEOUT_MS) {
-        await conn.execute(
+        await rawSql(
           `UPDATE shadow_sessions SET status = 'failed', notes = CONCAT(COALESCE(notes, ''), '\n[Guardian] Processing timed out after restart — marked failed at ${new Date().toISOString()}') WHERE id = ?`,
           [session.id]
         );
@@ -38,7 +37,7 @@ export async function reconcileShadowSessions() {
       }
 
       if ((session.status === "live" || session.status === "bot_joining") && age > STALE_THRESHOLD_MS) {
-        const [botRows] = await conn.execute(
+        const [botRows] = await rawSql(
           `SELECT id, transcript_json FROM recall_bots WHERE event_id = ? ORDER BY created_at DESC LIMIT 1`,
           [session.id]
         );
@@ -47,14 +46,14 @@ export async function reconcileShadowSessions() {
         const hasTranscript = bot?.transcript_json && JSON.parse(bot.transcript_json || "[]").length > 0;
 
         if (hasTranscript) {
-          await conn.execute(
+          await rawSql(
             `UPDATE shadow_sessions SET status = 'completed', ended_at = ?, notes = CONCAT(COALESCE(notes, ''), '\n[Guardian] Auto-recovered after server restart at ${new Date().toISOString()}') WHERE id = ?`,
             [now, session.id]
           );
           recovered++;
           console.log(`[ShadowGuardian] Session ${session.id} (${session.event_name}) had transcript — auto-recovered to completed`);
         } else {
-          await conn.execute(
+          await rawSql(
             `UPDATE shadow_sessions SET status = 'failed', notes = CONCAT(COALESCE(notes, ''), '\n[Guardian] Stale session with no transcript — marked failed at ${new Date().toISOString()}') WHERE id = ?`,
             [session.id]
           );
@@ -79,10 +78,9 @@ export async function reconcileShadowSessions() {
 async function watchdogCheck() {
   try {
     const db = await getDb();
-    const conn = (db as any).session?.client ?? (db as any).$client;
     const now = Date.now();
 
-    const [liveSessions] = await conn.execute(
+    const [liveSessions] = await rawSql(
       `SELECT s.id, s.client_name, s.event_name, s.status, s.started_at, s.created_at,
               b.id as bot_id, b.created_at as bot_created_at
        FROM shadow_sessions s
@@ -96,7 +94,7 @@ async function watchdogCheck() {
       const age = now - startedAt;
 
       if (session.status === "bot_joining" && age > 10 * 60 * 1000) {
-        await conn.execute(
+        await rawSql(
           `UPDATE shadow_sessions SET status = 'failed', notes = CONCAT(COALESCE(notes, ''), '\n[Watchdog] Bot never joined after 10min — marked failed at ${new Date().toISOString()}') WHERE id = ?`,
           [session.id]
         );
@@ -104,7 +102,7 @@ async function watchdogCheck() {
       }
 
       if (session.status === "live" && age > 6 * 60 * 60 * 1000) {
-        await conn.execute(
+        await rawSql(
           `UPDATE shadow_sessions SET status = 'completed', ended_at = ?, notes = CONCAT(COALESCE(notes, ''), '\n[Watchdog] Session exceeded 6h max duration — auto-completed at ${new Date().toISOString()}') WHERE id = ?`,
           [now, session.id]
         );
@@ -135,16 +133,15 @@ export async function gracefulShutdown(signal: string) {
 
   try {
     const db = await getDb();
-    const conn = (db as any).session?.client ?? (db as any).$client;
     const now = Date.now();
 
-    const [activeSessions] = await conn.execute(
+    const [activeSessions] = await rawSql(
       `SELECT id, event_name, status FROM shadow_sessions WHERE status IN ('live', 'bot_joining', 'processing')`
     );
 
     const count = (activeSessions as any[]).length;
     if (count > 0) {
-      await conn.execute(
+      await rawSql(
         `UPDATE shadow_sessions SET notes = CONCAT(COALESCE(notes, ''), '\n[Guardian] Server shutting down (${signal}) at ${new Date().toISOString()} — session will be reconciled on restart') WHERE status IN ('live', 'bot_joining', 'processing')`
       );
       console.log(`[ShadowGuardian] Marked ${count} active session(s) for recovery on restart`);

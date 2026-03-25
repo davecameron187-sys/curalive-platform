@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { router, publicProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 
 interface DiagnosticResult {
   name: string;
@@ -25,16 +25,14 @@ export const systemDiagnosticsRouter = router({
 
     results.push(await runDiagnostic("Database Connection", async () => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute("SELECT 1 AS ok");
+    const [rows] = await rawSql("SELECT 1 AS ok");
       if (!(rows as any[])[0]?.ok) throw new Error("SELECT 1 returned no result");
       return "Connected and responsive";
     }));
 
     results.push(await runDiagnostic("Shadow Sessions Table", async () => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(
+    const [rows] = await rawSql(
         `SELECT COUNT(*) as total,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
                 SUM(CASE WHEN status = 'live' THEN 1 ELSE 0 END) as live,
@@ -47,8 +45,7 @@ export const systemDiagnosticsRouter = router({
 
     results.push(await runDiagnostic("Archive Events Table", async () => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(
+    const [rows] = await rawSql(
         `SELECT COUNT(*) as total,
                 SUM(CASE WHEN ai_report IS NOT NULL THEN 1 ELSE 0 END) as with_report
          FROM archive_events`
@@ -59,50 +56,43 @@ export const systemDiagnosticsRouter = router({
 
     results.push(await runDiagnostic("Crisis Prediction Table", async () => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(`SELECT COUNT(*) as total FROM crisis_predictions`);
+    const [rows] = await rawSql(`SELECT COUNT(*) as total FROM crisis_predictions`);
       return `${(rows as any[])[0].total} predictions stored`;
     }));
 
     results.push(await runDiagnostic("Valuation Impact Table", async () => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(`SELECT COUNT(*) as total FROM valuation_impacts`);
+    const [rows] = await rawSql(`SELECT COUNT(*) as total FROM valuation_impacts`);
       return `${(rows as any[])[0].total} analyses stored`;
     }));
 
     results.push(await runDiagnostic("Disclosure Certificates Table", async () => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(`SELECT COUNT(*) as total FROM disclosure_certificates`);
+    const [rows] = await rawSql(`SELECT COUNT(*) as total FROM disclosure_certificates`);
       return `${(rows as any[])[0].total} certificates stored`;
     }));
 
     results.push(await runDiagnostic("Evolution Audit Trail", async () => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(`SELECT COUNT(*) as total FROM evolution_audit_log`);
+    const [rows] = await rawSql(`SELECT COUNT(*) as total FROM evolution_audit_log`);
       return `${(rows as any[])[0].total} audit entries`;
     }));
 
     results.push(await runDiagnostic("Advisory Bot Messages", async () => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(`SELECT COUNT(*) as total FROM advisory_chat_messages`);
+    const [rows] = await rawSql(`SELECT COUNT(*) as total FROM advisory_chat_messages`);
       return `${(rows as any[])[0].total} messages stored`;
     }));
 
     results.push(await runDiagnostic("Monthly Reports Table", async () => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(`SELECT COUNT(*) as total FROM monthly_reports`);
+    const [rows] = await rawSql(`SELECT COUNT(*) as total FROM monthly_reports`);
       return `${(rows as any[])[0].total} reports generated`;
     }));
 
     results.push(await runDiagnostic("Tagged Metrics", async () => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(`SELECT COUNT(*) as total FROM tagged_metrics`);
+    const [rows] = await rawSql(`SELECT COUNT(*) as total FROM tagged_metrics`);
       return `${(rows as any[])[0].total} intelligence records`;
     }));
 

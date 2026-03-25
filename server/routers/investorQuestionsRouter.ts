@@ -1,20 +1,18 @@
 // @ts-nocheck
 import { router, publicProcedure } from "../_core/trpc";
 import { z } from "zod";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { invokeLLM } from "../_core/llm";
 
 async function rawQuery(sql: string, params: any[] = []) {
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  const [rows] = await conn.execute(sql, params);
+    const [rows] = await rawSql(sql, params);
   return rows;
 }
 
 async function rawExecute(sql: string, params: any[] = []) {
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  const [result] = await conn.execute(sql, params);
+    const [result] = await rawSql(sql, params);
   return result;
 }
 

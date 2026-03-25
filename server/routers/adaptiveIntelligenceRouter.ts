@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { z } from "zod";
 import { router, publicProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { operatorCorrections, taggedMetrics, complianceVocabulary, adaptiveThresholds } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -42,9 +42,7 @@ async function recalculateThreshold(
   eventType: string | null
 ) {
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-
-  const correctionTypeMap: Record<string, string[]> = {
+    const correctionTypeMap: Record<string, string[]> = {
     sentiment: ["sentiment_override"],
     compliance: ["compliance_dismiss"],
     engagement: ["severity_change"],
@@ -64,7 +62,7 @@ async function recalculateThreshold(
     params.push(eventType);
   }
 
-  const [rows] = await conn.execute(query, params);
+  const [rows] = await rawSql(query, params);
   const row = (rows as any[])[0];
 
   if (!row || row.cnt < 1 || row.avg_corrected == null) return;
@@ -78,7 +76,7 @@ async function recalculateThreshold(
   const weight = Math.min(sampleCount / 10, 0.8);
   const learnedValue = Math.round(defaultVal * (1 - weight) + avgCorrected * weight);
 
-  await conn.execute(
+  await rawSql(
     `INSERT INTO adaptive_thresholds (threshold_key, event_type, metric_type, default_value, learned_value, sample_count, last_correction_at)
      VALUES (?, ?, ?, ?, ?, ?, NOW())
      ON DUPLICATE KEY UPDATE learned_value = ?, sample_count = ?, last_correction_at = NOW()`,
@@ -134,9 +132,8 @@ export const adaptiveIntelligenceRouter = router({
       }
 
       if (input.correctionType === "compliance_dismiss" && input.dismissedKeywords) {
-        const conn = (db as any).session?.client ?? (db as any).$client;
-        for (const keyword of input.dismissedKeywords) {
-          await conn.execute(
+    for (const keyword of input.dismissedKeywords) {
+          await rawSql(
             `UPDATE compliance_vocabulary 
              SET times_dismissed = times_dismissed + 1, 
                  effective_weight = GREATEST(0.1, severity_weight * (1 - (times_dismissed + 1) / (times_flagged + times_dismissed + 2)))
@@ -147,8 +144,7 @@ export const adaptiveIntelligenceRouter = router({
       }
 
       if (input.correctionType === "compliance_add" && input.correctedLabel) {
-        const conn = (db as any).session?.client ?? (db as any).$client;
-        await conn.execute(
+    await rawSql(
           `INSERT INTO compliance_vocabulary (keyword, source, severity_weight, effective_weight, added_by)
            VALUES (?, 'operator', 1.0, 1.0, 'operator')
            ON DUPLICATE KEY UPDATE times_flagged = times_flagged + 1, active = 1`,
@@ -217,8 +213,7 @@ export const adaptiveIntelligenceRouter = router({
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      await conn.execute(
+    await rawSql(
         `INSERT INTO compliance_vocabulary (keyword, source, severity_weight, effective_weight, sector, added_by)
          VALUES (?, 'operator', 1.0, 1.0, ?, 'operator')
          ON DUPLICATE KEY UPDATE active = 1, source = 'operator'`,
@@ -239,15 +234,13 @@ export const adaptiveIntelligenceRouter = router({
 
   getLearningStats: publicProcedure.query(async () => {
     const db = await getDb();
-    const conn = (db as any).session?.client ?? (db as any).$client;
-
-    const [correctionRows] = await conn.execute(
+    const [correctionRows] = await rawSql(
       `SELECT correction_type, COUNT(*) as cnt FROM operator_corrections GROUP BY correction_type`
     );
-    const [totalRow] = await conn.execute(
+    const [totalRow] = await rawSql(
       `SELECT COUNT(*) as total FROM operator_corrections`
     );
-    const [vocabRow] = await conn.execute(
+    const [vocabRow] = await rawSql(
       `SELECT 
          COUNT(*) as total_keywords,
          SUM(CASE WHEN source = 'operator' THEN 1 ELSE 0 END) as operator_added,
@@ -255,7 +248,7 @@ export const adaptiveIntelligenceRouter = router({
          SUM(CASE WHEN active = 0 THEN 1 ELSE 0 END) as deactivated
        FROM compliance_vocabulary`
     );
-    const [thresholdRow] = await conn.execute(
+    const [thresholdRow] = await rawSql(
       `SELECT COUNT(*) as adapted FROM adaptive_thresholds WHERE sample_count >= 3`
     );
 

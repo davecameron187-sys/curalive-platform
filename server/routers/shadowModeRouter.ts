@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { shadowSessions, taggedMetrics, recallBots, agmIntelligenceSessions } from "../../drizzle/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
@@ -39,9 +39,7 @@ async function autoGenerateAiReport(
     const db = await getDb();
     const eventId = `shadow-${sessionId}`;
     const wordCount = fullText.split(/\s+/).filter(Boolean).length;
-
-    const conn = (db as any).session?.client ?? (db as any).$client;
-    await conn.execute(
+    await rawSql(
       `INSERT INTO archive_events (event_id, client_name, event_name, event_type, transcript_text, word_count, segment_count, sentiment_avg, compliance_flags, status, ai_report, notes)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, 'Auto-generated from Shadow Mode session')
        ON DUPLICATE KEY UPDATE ai_report = VALUES(ai_report), status = 'completed'`,
@@ -592,8 +590,7 @@ export const shadowModeRouter = router({
       let aiReport: AiReport | null = null;
       try {
         const eventId = `shadow-${session.id}`;
-        const conn = (db as any).session?.client ?? (db as any).$client;
-        const [rows] = await conn.execute(
+    const [rows] = await rawSql(
           `SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`,
           [eventId]
         );
@@ -888,10 +885,8 @@ export const shadowModeRouter = router({
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      if (input.calendarEventId) {
-        const [existing] = await conn.execute(
+    if (input.calendarEventId) {
+        const [existing] = await rawSql(
           `SELECT id FROM shadow_sessions WHERE notes LIKE ? LIMIT 1`,
           [`%calendar:${input.calendarEventId}%`]
         );

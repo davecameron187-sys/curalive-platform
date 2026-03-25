@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { createHash } from "crypto";
 import { router, publicProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { taggedMetrics } from "../../drizzle/schema";
 import { invokeLLM } from "../_core/llm";
 import { desc, sql } from "drizzle-orm";
@@ -725,10 +725,9 @@ export const archiveUploadRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const fingerprint = computeTranscriptFingerprint(input.transcriptText);
+    const fingerprint = computeTranscriptFingerprint(input.transcriptText);
 
-      const [existingRows] = await conn.execute(
+      const [existingRows] = await rawSql(
         `SELECT id, event_id, client_name, event_name, event_type, created_at
          FROM archive_events
          WHERE client_name = ? AND event_name = ? AND event_type = ?
@@ -746,7 +745,7 @@ export const archiveUploadRouter = router({
         );
       }
 
-      const [fingerprintRows] = await conn.execute(
+      const [fingerprintRows] = await rawSql(
         `SELECT id, event_id, client_name, event_name FROM archive_events
          WHERE transcript_fingerprint = ?
          LIMIT 1`,
@@ -774,7 +773,7 @@ export const archiveUploadRouter = router({
 
       const sentimentAvg = await scoreSentimentFromText(input.transcriptText);
 
-      const [result] = await conn.execute(
+      const [result] = await rawSql(
         `INSERT INTO archive_events
           (event_id, client_name, event_name, event_type, event_date, platform, transcript_text,
            word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint)
@@ -797,7 +796,7 @@ export const archiveUploadRouter = router({
       );
 
       const archiveId: number = (result as any).insertId;
-      await conn.execute(`UPDATE archive_events SET event_id = ? WHERE id = ?`, [`archive-${archiveId}`, archiveId]);
+      await rawSql(`UPDATE archive_events SET event_id = ? WHERE id = ?`, [`archive-${archiveId}`, archiveId]);
 
       const metricsPromise = generateMetricsFromArchive(
         archiveId,
@@ -826,7 +825,7 @@ export const archiveUploadRouter = router({
 
       const { eventId, eventTitle, metricsCount } = await metricsPromise;
 
-      await conn.execute(
+      await rawSql(
         `UPDATE archive_events SET status = 'completed', tagged_metrics_generated = ?, ai_report = ? WHERE id = ?`,
         [metricsCount, aiReport ? JSON.stringify(aiReport) : null, archiveId]
       );
@@ -907,7 +906,7 @@ export const archiveUploadRouter = router({
           input.transcriptText,
         );
         if (specialisedResult.algorithmsRun > 0) {
-          await conn.execute(
+          await rawSql(
             `UPDATE archive_events SET specialised_analysis = ?, specialised_algorithms_run = ?, specialised_session_id = ?, specialised_session_type = ? WHERE id = ?`,
             [
               JSON.stringify(specialisedResult.results),
@@ -959,7 +958,7 @@ export const archiveUploadRouter = router({
         const db = await getDb();
         return (db as any).session?.client ?? (db as any).$client;
       })();
-      const [rows] = await conn.execute(
+      const [rows] = await rawSql(
         `SELECT id, client_name, event_name, event_type, event_date, platform,
                 word_count, segment_count, sentiment_avg, compliance_flags,
                 tagged_metrics_generated, status, notes, created_at, ai_report,
@@ -1001,7 +1000,7 @@ export const archiveUploadRouter = router({
         const db = await getDb();
         return (db as any).session?.client ?? (db as any).$client;
       })();
-      const [rows] = await conn.execute(
+      const [rows] = await rawSql(
         `SELECT id, client_name, event_name, event_type, event_date,
                 word_count, segment_count, sentiment_avg, compliance_flags,
                 tagged_metrics_generated, notes
@@ -1047,7 +1046,7 @@ export const archiveUploadRouter = router({
         const db = await getDb();
         return (db as any).session?.client ?? (db as any).$client;
       })();
-      const [rows] = await conn.execute(
+      const [rows] = await rawSql(
         `SELECT id, client_name, event_name, event_type, transcript_text, sentiment_avg, compliance_flags
          FROM archive_events WHERE id = ? LIMIT 1`,
         [input.archiveId]
@@ -1065,7 +1064,7 @@ export const archiveUploadRouter = router({
         input.selectedModules
       );
 
-      await conn.execute(
+      await rawSql(
         `UPDATE archive_events SET ai_report = ? WHERE id = ?`,
         [JSON.stringify(aiReport), input.archiveId]
       );
@@ -1096,7 +1095,7 @@ export const archiveUploadRouter = router({
         const db = await getDb();
         return (db as any).session?.client ?? (db as any).$client;
       })();
-      const [rows] = await conn.execute(
+      const [rows] = await rawSql(
         `SELECT id, event_id, client_name, event_name, event_type, event_date, platform,
                 word_count, segment_count, sentiment_avg, compliance_flags,
                 tagged_metrics_generated, status, notes, created_at

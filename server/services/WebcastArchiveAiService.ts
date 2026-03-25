@@ -1,5 +1,5 @@
 import { invokeLLM } from "../_core/llm";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 
 type WebcastSegment = { speaker: string; text: string; timestamp: number };
 
@@ -21,9 +21,7 @@ export async function createWebcastSession(
   }
 ): Promise<WebcastSession> {
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-
-  const [result] = await conn.execute(
+    const [result] = await rawSql(
     `INSERT INTO webcast_archive_sessions (user_id, client_name, event_title, event_type, event_date, status)
      VALUES (?, ?, ?, ?, ?, 'active')`,
     [userId, opts.clientName, opts.eventTitle, opts.eventType, opts.eventDate ?? null]
@@ -74,8 +72,7 @@ Return ONLY valid JSON.`,
   const result = JSON.parse(cleaned);
 
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  await conn.execute(
+    await rawSql(
     `INSERT INTO webcast_archive_results (session_id, algorithm_name, result_data) VALUES (?, 'presentation_effectiveness', ?)`,
     [sessionId, JSON.stringify(result)]
   );
@@ -117,8 +114,7 @@ Return ONLY valid JSON.`,
   const result = JSON.parse(cleaned);
 
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  await conn.execute(
+    await rawSql(
     `INSERT INTO webcast_archive_results (session_id, algorithm_name, result_data) VALUES (?, 'key_messages', ?)`,
     [sessionId, JSON.stringify(result)]
   );
@@ -170,8 +166,7 @@ Return ONLY valid JSON.`,
   const result = JSON.parse(cleaned);
 
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  await conn.execute(
+    await rawSql(
     `INSERT INTO webcast_archive_results (session_id, algorithm_name, result_data) VALUES (?, 'speaker_performance', ?)`,
     [sessionId, JSON.stringify(result)]
   );
@@ -218,8 +213,7 @@ Return ONLY valid JSON. All content must exclude forward-looking statements and 
   const result = JSON.parse(cleaned);
 
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  await conn.execute(
+    await rawSql(
     `INSERT INTO webcast_archive_results (session_id, algorithm_name, result_data) VALUES (?, 'content_pack', ?)`,
     [sessionId, JSON.stringify(result)]
   );
@@ -266,8 +260,7 @@ Return ONLY valid JSON.`,
   const result = JSON.parse(cleaned);
 
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  await conn.execute(
+    await rawSql(
     `INSERT INTO webcast_archive_results (session_id, algorithm_name, result_data) VALUES (?, 'audience_engagement', ?)`,
     [sessionId, JSON.stringify(result)]
   );
@@ -280,9 +273,7 @@ export async function generateWebcastReport(
   sessionId: number
 ): Promise<any> {
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-
-  const [rows] = await conn.execute(
+    const [rows] = await rawSql(
     `SELECT algorithm_name, result_data FROM webcast_archive_results WHERE session_id = ?`,
     [sessionId]
   );
@@ -325,12 +316,12 @@ Return ONLY valid JSON.`,
   const cleaned = raw.replace(/^```json?\s*/i, "").replace(/```\s*$/i, "").trim();
   const result = JSON.parse(cleaned);
 
-  await conn.execute(
+  await rawSql(
     `INSERT INTO webcast_archive_results (session_id, algorithm_name, result_data) VALUES (?, 'executive_report', ?)`,
     [sessionId, JSON.stringify(result)]
   );
 
-  await conn.execute(
+  await rawSql(
     `UPDATE webcast_archive_sessions SET status = 'completed' WHERE id = ?`,
     [sessionId]
   );

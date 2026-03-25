@@ -1,21 +1,79 @@
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, desc } from "drizzle-orm";
 import { InsertUser, users, speakerPaceResults, InsertSpeakerPaceResult } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import pg from "pg";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: pg.Pool | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
+function getConnectionString(): string | undefined {
+  const url = process.env.DATABASE_URL;
+  if (url && (url.startsWith("postgresql://") || url.startsWith("postgres://"))) return url;
+  const { PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE } = process.env;
+  if (PGHOST && PGUSER && PGPASSWORD && PGDATABASE) {
+    return `postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT || "5432"}/${PGDATABASE}`;
+  }
+  return undefined;
+}
+
+function getPool(): pg.Pool | null {
+  if (!_pool) {
+    const connStr = getConnectionString();
+    if (connStr) {
+      _pool = new pg.Pool({ connectionString: connStr });
+    }
+  }
+  return _pool;
+}
+
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      _db = drizzle(process.env.DATABASE_URL);
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _db = null;
+  if (!_db) {
+    const connStr = getConnectionString();
+    if (connStr) {
+      try {
+        _db = drizzle(connStr);
+      } catch (error) {
+        console.warn("[Database] Failed to connect:", error);
+        _db = null;
+      }
     }
   }
   return _db;
+}
+
+export async function rawSql(sql: string, params: any[] = []): Promise<[any[], any]> {
+  const pool = getPool();
+  if (!pool) throw new Error("Database not available");
+  const pgSql = mysqlToPostgres(sql);
+  const pgParams = params.filter(p => p !== undefined).map(p => {
+    if (typeof p === "number" && p > 1_000_000_000_000 && p < 10_000_000_000_000) {
+      return new Date(p);
+    }
+    return p;
+  });
+  try {
+    const result = await pool.query(pgSql, pgParams);
+    return [result.rows, result.fields];
+  } catch (err: any) {
+    console.error("[rawSql] Query failed:", pgSql.slice(0, 200), "\nParams:", pgParams.length, "\nError:", err.message);
+    throw err;
+  }
+}
+
+function mysqlToPostgres(sql: string): string {
+  let s = sql;
+  s = s.replace(/`/g, '"');
+  let idx = 0;
+  s = s.replace(/\?/g, () => `$${++idx}`);
+  s = s.replace(/ON DUPLICATE KEY UPDATE\s+(.+?)(?:;|\s*$)/gi, (_, updates) => {
+    const cleanUpdates = updates.replace(/VALUES\(([^)]+)\)/gi, 'EXCLUDED.$1');
+    return `ON CONFLICT DO UPDATE SET ${cleanUpdates}`;
+  });
+  s = s.replace(/IFNULL\(/gi, 'COALESCE(');
+  s = s.replace(/NOW\(\)/gi, 'NOW()');
+  s = s.replace(/LIMIT\s+\$(\d+)\s*,\s*\$(\d+)/gi, 'LIMIT $$$2 OFFSET $$$1');
+  return s;
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -68,7 +126,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -171,11 +230,11 @@ export async function getEventPaceResults(eventId: string) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 function buildSyncDb() {
-  if (process.env.DATABASE_URL) {
+  const connStr = getConnectionString();
+  if (connStr) {
     try {
-      return drizzle(process.env.DATABASE_URL);
+      return drizzle(connStr);
     } catch {
-      // ignore — tests may not have a real DB
     }
   }
   // Return a proxy that throws a clear error on first use

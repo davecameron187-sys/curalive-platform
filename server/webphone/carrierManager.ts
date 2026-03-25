@@ -36,7 +36,7 @@ export async function seedCarrierStatus(): Promise<void> {
     await db
       .insert(webphoneCarrierStatus)
       .values({ carrier, status: "healthy", failoverActive: false, lastCheckedAt: Date.now() })
-      .onDuplicateKeyUpdate({ set: { lastCheckedAt: Date.now() } });
+      .onConflictDoNothing();
   }
 }
 

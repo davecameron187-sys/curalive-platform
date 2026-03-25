@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { z } from "zod";
 import { router, publicProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { evolutionAuditLog, capabilityRoadmap, aiToolProposals } from "../../drizzle/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import { createHash } from "crypto";
@@ -46,8 +46,7 @@ export async function shadowTestProposal(proposalId: number) {
   await logEvolutionAction("shadow_test_started", proposalId, proposal.title, { status: "testing" });
 
   try {
-    const conn = (db as any).session?.client ?? (db as any).$client;
-    const [archiveRows] = await conn.execute(
+    const [archiveRows] = await rawSql(
       `SELECT id, client_name, event_name, event_type, transcript_text, sentiment_avg
        FROM archive_events WHERE status = 'completed' ORDER BY created_at DESC LIMIT 10`
     );

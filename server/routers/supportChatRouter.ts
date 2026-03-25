@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { invokeLLM } from "../_core/llm";
 import { retrieveRelevantEntries, buildContextBlock } from "../services/KnowledgeRetrievalService";
 
@@ -52,8 +52,7 @@ const PAGE_LABELS: Record<string, string> = {
 
 async function rawExecute(sql: string, params: any[] = []) {
   const db = await getDb();
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  await conn.execute(sql, params);
+    await rawSql(sql, params);
 }
 
 export const supportChatRouter = router({
@@ -145,8 +144,7 @@ export const supportChatRouter = router({
     .input(z.object({ limit: z.number().optional().default(20) }))
     .query(async ({ input }) => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(
+    const [rows] = await rawSql(
         `SELECT id, conversation_id, user_message, ai_response, needs_escalation,
                 user_email, event_id, event_name, created_at
          FROM support_queries

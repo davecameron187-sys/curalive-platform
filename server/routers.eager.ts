@@ -413,20 +413,11 @@ export const appRouter = router({
           platform: input.platform,
           status: input.status,
           accessCode: input.accessCode || null,
-        }).onDuplicateKeyUpdate({
-          set: {
-            title: input.title,
-            company: input.company,
-            platform: input.platform,
-            status: input.status,
-            accessCode: input.accessCode || null,
-          },
-        });
+        }).onConflictDoNothing();
 
         return { success: true };
       }),
 
-    // Set or remove access code for an event
     setAccessCode: publicProcedure
       .input(z.object({
         eventId: z.string(),
@@ -436,17 +427,14 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) return { success: false, error: "Database unavailable" };
 
-        // Upsert the event with the new access code
         await db.insert(events).values({
           eventId: input.eventId,
-          title: input.eventId, // placeholder if event doesn't exist yet
+          title: input.eventId,
           company: "CuraLive Inc.",
           platform: "Unknown",
           status: "upcoming",
           accessCode: input.accessCode,
-        }).onDuplicateKeyUpdate({
-          set: { accessCode: input.accessCode },
-        });
+        }).onConflictDoNothing();
 
         return {
           success: true,
@@ -788,7 +776,7 @@ Produce a JSON response with this exact structure:
           company: input.company || null,
           role: input.role || null,
           phoneNumber: input.phoneNumber || null,
-        }).onDuplicateKeyUpdate({ set: { active: true, phoneNumber: input.phoneNumber || null } });
+        }).onConflictDoNothing();
         return { success: true };
       }),
 

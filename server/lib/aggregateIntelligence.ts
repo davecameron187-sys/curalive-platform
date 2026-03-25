@@ -1,4 +1,4 @@
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 
 type SourceType = "live_session" | "archive_upload";
 
@@ -42,9 +42,7 @@ export async function writeAnonymizedRecord(opts: {
 }) {
   try {
     const db = await getDb();
-    const conn = (db as any).session?.client ?? (db as any).$client;
-
-    await conn.execute(
+    await rawSql(
       `INSERT INTO aggregate_intelligence
         (event_type, sentiment_score, engagement_level, compliance_risk,
          word_count_range, event_quarter, source_type)

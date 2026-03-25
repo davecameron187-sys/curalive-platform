@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { z } from "zod";
 import { router, publicProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { advisoryChatMessages } from "../../drizzle/schema";
 import { desc, eq } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
@@ -15,9 +15,7 @@ export const advisoryBotRouter = router({
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-
-      await db.insert(advisoryChatMessages).values({
+    await db.insert(advisoryChatMessages).values({
         sessionKey: input.sessionKey,
         role: "user",
         content: input.message,
@@ -35,7 +33,7 @@ export const advisoryBotRouter = router({
       const targetEventIds = input.eventIds ?? [];
       if (targetEventIds.length > 0) {
         const placeholders = targetEventIds.map(() => "?").join(",");
-        const [archiveRows] = await conn.execute(
+        const [archiveRows] = await rawSql(
           `SELECT event_id, client_name, event_name, event_type, sentiment_avg, compliance_flags, ai_report, created_at
            FROM archive_events WHERE event_id IN (${placeholders}) LIMIT 10`,
           targetEventIds
@@ -59,7 +57,7 @@ Date: ${row.created_at}
 ${reportSummary}\n`;
         }
       } else {
-        const [recentRows] = await conn.execute(
+        const [recentRows] = await rawSql(
           `SELECT event_id, client_name, event_name, event_type, sentiment_avg, compliance_flags, created_at
            FROM archive_events ORDER BY created_at DESC LIMIT 10`
         );
@@ -112,8 +110,7 @@ ${contextData || "No event data available yet. Suggest the user run some Shadow 
     .input(z.object({ sessionKey: z.string() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      await conn.execute(`DELETE FROM advisory_chat_messages WHERE session_key = ?`, [input.sessionKey]);
+    await rawSql(`DELETE FROM advisory_chat_messages WHERE session_key = ?`, [input.sessionKey]);
       return { success: true };
     }),
 });

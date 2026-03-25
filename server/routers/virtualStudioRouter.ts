@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { virtualStudioService } from "../services/VirtualStudioService";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { esgStudioFlags, virtualStudios } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
@@ -22,16 +22,14 @@ const LAYOUT_TEMPLATES = [
 async function rawQuery<T = any>(query: string, params: any[] = []): Promise<T[]> {
   const db = await getDb();
   if (!db) return [];
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  const [rows] = await conn.execute(query, params);
+    const [rows] = await rawSql(query, params);
   return rows as T[];
 }
 
 async function rawExecute(query: string, params: any[] = []): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  await conn.execute(query, params);
+    await rawSql(query, params);
 }
 
 export const virtualStudioRouter = router({

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { complianceViolations } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { detectViolation, createViolationAlert } from "../_core/compliance";
@@ -245,8 +245,7 @@ async function getEventIdFromRecallBot(botId: string): Promise<string | null> {
     const [bot] = await db.select({ id: recallBots.id }).from(recallBots).where(eq(recallBots.recallBotId, botId)).limit(1);
     if (!bot) return null;
     const { sql: sqlHelper } = await import("drizzle-orm");
-    const conn = (db as any).session?.client ?? (db as any).$client;
-    const [rows] = await conn.execute(
+    const [rows] = await rawSql(
       `SELECT id FROM shadow_sessions WHERE recall_bot_id = ? LIMIT 1`,
       [botId]
     );

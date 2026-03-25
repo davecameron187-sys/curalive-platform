@@ -406,15 +406,7 @@ export const appRouter = router({
           platform: input.platform,
           status: input.status,
           accessCode: input.accessCode || null,
-        }).onDuplicateKeyUpdate({
-          set: {
-            title: input.title,
-            company: input.company,
-            platform: input.platform,
-            status: input.status,
-            accessCode: input.accessCode || null,
-          },
-        });
+        }).onConflictDoNothing();
 
         return { success: true };
       }),
@@ -437,9 +429,7 @@ export const appRouter = router({
           platform: "Unknown",
           status: "upcoming",
           accessCode: input.accessCode,
-        }).onDuplicateKeyUpdate({
-          set: { accessCode: input.accessCode },
-        });
+        }).onConflictDoNothing();
 
         return {
           success: true,
@@ -734,7 +724,7 @@ Produce a JSON response with this exact structure:
           company: input.company || null,
           role: input.role || null,
           phoneNumber: input.phoneNumber || null,
-        }).onDuplicateKeyUpdate({ set: { active: true, phoneNumber: input.phoneNumber || null } });
+        }).onConflictDoNothing();
         return { success: true };
       }),
 

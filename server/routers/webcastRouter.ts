@@ -227,7 +227,7 @@ export const webcastRouter = router({
       const existing = await db.select({ id: webcastEvents.id }).from(webcastEvents).limit(1);
       if (existing.length === 0) {
         for (const ev of DEMO_EVENTS) {
-          await db.insert(webcastEvents).values(ev as any).onDuplicateKeyUpdate({ set: { title: ev.title } });
+          await db.insert(webcastEvents).values(ev as any).onConflictDoNothing();
         }
       }
       const events = await db.select().from(webcastEvents).orderBy(desc(webcastEvents.createdAt)).limit(input?.limit ?? 20);

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { invokeLLM } from "../_core/llm";
 import { complianceThreats, complianceFrameworkChecks } from "../../drizzle/schema";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
@@ -42,8 +42,7 @@ interface FrameworkSummary {
 async function rawQuery(query: string, params: any[] = []) {
   const db = await getDb();
   if (!db) throw new Error("Database connection unavailable");
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  const [rows] = await conn.execute(query, params);
+    const [rows] = await rawSql(query, params);
   return rows;
 }
 

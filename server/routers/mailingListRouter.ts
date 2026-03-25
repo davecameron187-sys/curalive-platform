@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { mailingLists, mailingListEntries, attendeeRegistrations, events } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { generateUniquePin } from "../directAccess";
@@ -327,9 +327,7 @@ export const mailingListRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { success: false, error: "Database unavailable" };
-      const conn = (db as any).session?.client ?? (db as any).$client;
-
-      const [entryRows] = await conn.execute(
+    const [entryRows] = await rawSql(
         `SELECT id, mailing_list_id, first_name, last_name, email, company, job_title, access_pin, status, join_method FROM mailing_list_entries WHERE confirm_token = ? LIMIT 1`,
         [input.token]
       );
@@ -341,7 +339,7 @@ export const mailingListRouter = router({
         return { success: true, alreadyRegistered: true, firstName: entry.first_name, lastName: entry.last_name, joinMethod: entry.join_method };
       }
 
-      const [claimResult] = await conn.execute(
+      const [claimResult] = await rawSql(
         `UPDATE mailing_list_entries SET status = 'registered', confirm_token = NULL, clicked_at = COALESCE(clicked_at, NOW()), registered_at = NOW(), join_method = ? WHERE id = ? AND confirm_token = ? AND status != 'registered'`,
         [input.joinMethod, entry.id, input.token]
       );
@@ -350,14 +348,14 @@ export const mailingListRouter = router({
         return { success: true, alreadyRegistered: true, firstName: entry.first_name, lastName: entry.last_name, joinMethod: entry.join_method };
       }
 
-      const [listRows] = await conn.execute(
+      const [listRows] = await rawSql(
         `SELECT id, event_id FROM mailing_lists WHERE id = ? LIMIT 1`,
         [entry.mailing_list_id]
       );
       if (listRows.length === 0) return { success: false, error: "Mailing list not found" };
       const list = listRows[0];
 
-      const [existingRegRows] = await conn.execute(
+      const [existingRegRows] = await rawSql(
         `SELECT id, access_pin FROM attendee_registrations WHERE eventId = ? AND email = ? LIMIT 1`,
         [list.event_id, entry.email]
       );
@@ -372,7 +370,7 @@ export const mailingListRouter = router({
         if (needsPin && !effectivePin) {
           effectivePin = await generateUniquePin(list.event_id).catch(() => null);
         }
-        await conn.execute(
+        await rawSql(
           `UPDATE attendee_registrations SET join_method = ?, dialIn = ?, access_pin = COALESCE(?, access_pin) WHERE id = ?`,
           [input.joinMethod, needsPin ? 1 : 0, effectivePin, registrationId]
         );
@@ -381,24 +379,24 @@ export const mailingListRouter = router({
           effectivePin = entry.access_pin || await generateUniquePin(list.event_id).catch(() => null);
         }
 
-        const [regResult] = await conn.execute(
+        const [regResult] = await rawSql(
           `INSERT INTO attendee_registrations (eventId, name, email, company, jobTitle, language, dialIn, accessGranted, access_pin, join_method) VALUES (?, ?, ?, ?, ?, 'English', ?, 1, ?, ?)`,
           [list.event_id, `${entry.first_name} ${entry.last_name}`.trim(), entry.email, entry.company || null, entry.job_title || null, needsPin ? 1 : 0, effectivePin, input.joinMethod]
         );
         registrationId = regResult.insertId;
       }
 
-      await conn.execute(
+      await rawSql(
         `UPDATE mailing_list_entries SET registration_id = ?, access_pin = ? WHERE id = ?`,
         [registrationId, effectivePin, entry.id]
       );
 
-      await conn.execute(
+      await rawSql(
         `UPDATE mailing_lists SET registered_entries = registered_entries + 1 WHERE id = ?`,
         [entry.mailing_list_id]
       );
 
-      const [eventRows] = await conn.execute(
+      const [eventRows] = await rawSql(
         `SELECT title, company FROM events WHERE eventId = ? LIMIT 1`,
         [list.event_id]
       );
@@ -467,9 +465,7 @@ export const mailingListRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { success: false, error: "Database unavailable", registered: 0, skipped: 0 };
-      const conn = (db as any).session?.client ?? (db as any).$client;
-
-      const [list] = await db.select().from(mailingLists).where(eq(mailingLists.id, input.mailingListId)).limit(1);
+    const [list] = await db.select().from(mailingLists).where(eq(mailingLists.id, input.mailingListId)).limit(1);
       if (!list) return { success: false, error: "Mailing list not found", registered: 0, skipped: 0 };
 
       const entries = await db.select().from(mailingListEntries)
@@ -505,7 +501,7 @@ export const mailingListRouter = router({
           if (needsPin && !effectivePin) {
             effectivePin = await generateUniquePin(list.eventId).catch(() => null);
           }
-          await conn.execute(
+          await rawSql(
             `UPDATE attendee_registrations SET join_method = ?, dialIn = ?, access_pin = COALESCE(?, access_pin) WHERE id = ?`,
             [input.defaultJoinMethod, needsPin ? 1 : 0, effectivePin, registrationId]
           );
@@ -570,9 +566,7 @@ export const mailingListRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { success: false, error: "Database unavailable" };
-      const conn = (db as any).session?.client ?? (db as any).$client;
-
-      const [entryRows] = await conn.execute(
+    const [entryRows] = await rawSql(
         `SELECT id, mailing_list_id, first_name, last_name, email, company, job_title, access_pin, status, join_method FROM mailing_list_entries WHERE confirm_token = ? LIMIT 1`,
         [input.token]
       );
@@ -584,7 +578,7 @@ export const mailingListRouter = router({
         return { success: true, alreadyRegistered: true, firstName: entry.first_name, lastName: entry.last_name };
       }
 
-      const [claimResult] = await conn.execute(
+      const [claimResult] = await rawSql(
         `UPDATE mailing_list_entries SET status = 'registered', confirm_token = NULL, clicked_at = COALESCE(clicked_at, NOW()), registered_at = NOW(), join_method = 'web' WHERE id = ? AND confirm_token = ? AND status != 'registered'`,
         [entry.id, input.token]
       );
@@ -593,14 +587,14 @@ export const mailingListRouter = router({
         return { success: true, alreadyRegistered: true, firstName: entry.first_name, lastName: entry.last_name };
       }
 
-      const [listRows] = await conn.execute(
+      const [listRows] = await rawSql(
         `SELECT id, event_id FROM mailing_lists WHERE id = ? LIMIT 1`,
         [entry.mailing_list_id]
       );
       if (listRows.length === 0) return { success: false, error: "Mailing list not found" };
       const list = listRows[0];
 
-      const [existingRegRows] = await conn.execute(
+      const [existingRegRows] = await rawSql(
         `SELECT id FROM attendee_registrations WHERE eventId = ? AND email = ? LIMIT 1`,
         [list.event_id, entry.email]
       );
@@ -609,24 +603,24 @@ export const mailingListRouter = router({
       if (existingRegRows.length > 0) {
         registrationId = existingRegRows[0].id;
       } else {
-        const [regResult] = await conn.execute(
+        const [regResult] = await rawSql(
           `INSERT INTO attendee_registrations (eventId, name, email, company, jobTitle, language, dialIn, accessGranted, access_pin, join_method) VALUES (?, ?, ?, ?, ?, 'English', 0, 1, ?, 'web')`,
           [list.event_id, `${entry.first_name} ${entry.last_name}`.trim(), entry.email, entry.company || null, entry.job_title || null, entry.access_pin || null]
         );
         registrationId = regResult.insertId;
       }
 
-      await conn.execute(
+      await rawSql(
         `UPDATE mailing_list_entries SET registration_id = ? WHERE id = ?`,
         [registrationId, entry.id]
       );
 
-      await conn.execute(
+      await rawSql(
         `UPDATE mailing_lists SET registered_entries = registered_entries + 1 WHERE id = ?`,
         [entry.mailing_list_id]
       );
 
-      const [eventRows] = await conn.execute(
+      const [eventRows] = await rawSql(
         `SELECT title, company FROM events WHERE eventId = ? LIMIT 1`,
         [list.event_id]
       );

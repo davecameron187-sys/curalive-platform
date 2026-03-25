@@ -64,16 +64,7 @@ export class SocialMediaService {
         linkedEvents: options.linkedEvents ? JSON.stringify(options.linkedEvents) : null,
         isActive: true,
       })
-      .onDuplicateKeyUpdate({
-        set: {
-          accountName,
-          accessToken,
-          refreshToken: options.refreshToken ?? null,
-          expiresAt: options.expiresAt ?? null,
-          isActive: true,
-          updatedAt: new Date(),
-        },
-      });
+      .onConflictDoNothing();
 
     const accounts = await db
       .select()

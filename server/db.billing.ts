@@ -3,7 +3,7 @@
  * All helpers return raw Drizzle rows. Business logic lives in the router.
  */
 import { getDb } from "./db";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, and, desc, asc, lt, lte, or, sql } from "drizzle-orm";
 import {
   billingClients, billingClientContacts, billingQuotes, billingLineItems,

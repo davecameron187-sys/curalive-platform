@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { router, publicProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { invokeLLM } from "../_core/llm";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
@@ -8,16 +8,14 @@ import { sql } from "drizzle-orm";
 async function rawQuery<T = any>(query: string, params: any[] = []): Promise<T[]> {
   const db = await getDb();
   if (!db) return [];
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  const [rows] = await conn.execute(query, params);
+    const [rows] = await rawSql(query, params);
   return rows as T[];
 }
 
 async function rawExecute(query: string, params: any[] = []): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  const conn = (db as any).session?.client ?? (db as any).$client;
-  await conn.execute(query, params);
+    await rawSql(query, params);
 }
 
 function computeCorrelationCoefficient(xs: number[], ys: number[]): number {

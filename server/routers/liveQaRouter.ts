@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, operatorProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { liveQaSessions, liveQaQuestions, liveQaAnswers, liveQaComplianceFlags, shadowSessions } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { getAblyClient } from "../_core/ably";
@@ -180,9 +180,7 @@ export const liveQaRouter = router({
         session.clientName || "",
         existingQs.map(q => q.text)
       );
-
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [insertResult] = await conn.execute(
+    const [insertResult] = await rawSql(
         `INSERT INTO live_qa_questions (session_id, question_text, submitter_name, submitter_email, submitter_company, question_category, question_status, upvotes, triage_score, triage_classification, triage_reason, compliance_risk_score, priority_score, is_anonymous, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -251,8 +249,7 @@ export const liveQaRouter = router({
     }))
     .query(async ({ input }) => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      let query = `SELECT q.*, 
+    let query = `SELECT q.*, 
         (SELECT COUNT(*) FROM live_qa_answers a WHERE a.question_id = q.id) as answer_count,
         (SELECT COUNT(*) FROM live_qa_compliance_flags f WHERE f.question_id = q.id AND f.resolved = 0) as unresolved_flags
         FROM live_qa_questions q WHERE q.session_id = ?`;
@@ -265,7 +262,7 @@ export const liveQaRouter = router({
 
       query += ` ORDER BY q.priority_score DESC, q.created_at DESC`;
 
-      const [rows] = await conn.execute(query, params);
+      const [rows] = await rawSql(query, params);
       return rows || [];
     }),
 
@@ -278,9 +275,7 @@ export const liveQaRouter = router({
         .from(liveQaSessions)
         .where(eq(liveQaSessions.sessionCode, input.sessionCode.toUpperCase()));
       if (!session) return [];
-
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(
+    const [rows] = await rawSql(
         `SELECT id, question_text, question_category as category, question_status as status, 
                 upvotes, submitter_name, submitter_company, is_anonymous, created_at
          FROM live_qa_questions 
@@ -340,8 +335,7 @@ export const liveQaRouter = router({
                       input.status === "rejected" ? "totalRejected" : null;
         if (field) {
           const col = field === "totalApproved" ? "total_approved" : "total_rejected";
-          const conn = (db as any).session?.client ?? (db as any).$client;
-          await conn.execute(`UPDATE live_qa_sessions SET ${col} = ${col} + 1 WHERE id = ?`, [q.sessionId]);
+    await rawSql(`UPDATE live_qa_sessions SET ${col} = ${col} + 1 WHERE id = ?`, [q.sessionId]);
         }
 
         publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
@@ -636,9 +630,7 @@ export const liveQaRouter = router({
         await db.update(liveQaQuestions)
           .set({ status: "approved", operatorNotes: `Go Live authorised: ${authorisation.reason}`, updatedAt: Date.now() })
           .where(eq(liveQaQuestions.id, input.questionId));
-
-        const conn = (db as any).session?.client ?? (db as any).$client;
-        await conn.execute(`UPDATE live_qa_sessions SET total_approved = total_approved + 1 WHERE id = ?`, [q.sessionId]);
+    await rawSql(`UPDATE live_qa_sessions SET total_approved = total_approved + 1 WHERE id = ?`, [q.sessionId]);
 
         publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
           questionId: input.questionId,

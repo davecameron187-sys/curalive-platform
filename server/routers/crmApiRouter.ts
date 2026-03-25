@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { crmApiKeys, mailingLists, mailingListEntries, attendeeRegistrations, events } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { generateUniquePin } from "../directAccess";
@@ -167,8 +167,7 @@ export const crmApiRouter = router({
       if (existingReg) {
         registrationId = existingReg.id;
         accessPin = existingReg.accessPin || accessPin;
-        const conn = (db as any).session?.client ?? (db as any).$client;
-        await conn.execute(
+    await rawSql(
           `UPDATE attendee_registrations SET join_method = ?, dialIn = ?, access_pin = COALESCE(?, access_pin) WHERE id = ?`,
           [input.joinMethod, needsPin ? 1 : 0, accessPin, registrationId]
         );
@@ -450,9 +449,7 @@ export const crmApiRouter = router({
       }
 
       await db.update(crmApiKeys).set({ lastUsedAt: new Date() }).where(eq(crmApiKeys.id, apiKeyRow.id));
-
-      const conn = (db as any).session?.client ?? (db as any).$client;
-      const [rows] = await conn.execute(
+    const [rows] = await rawSql(
         `SELECT 
           COUNT(*) as total,
           SUM(CASE WHEN join_method = 'phone' THEN 1 ELSE 0 END) as phone_count,

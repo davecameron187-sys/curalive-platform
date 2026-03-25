@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { z } from "zod";
 import { router, publicProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import {getDb, rawSql } from "../db";
 import { monthlyReports } from "../../drizzle/schema";
 import { desc, eq } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
@@ -14,9 +14,7 @@ export const monthlyReportRouter = router({
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      const conn = (db as any).session?.client ?? (db as any).$client;
-
-      const [inserted] = await db.insert(monthlyReports).values({
+    const [inserted] = await db.insert(monthlyReports).values({
         reportMonth: input.month,
         clientName: input.clientName ?? null,
         status: "generating",
@@ -29,14 +27,14 @@ export const monthlyReportRouter = router({
         const endDate = new Date(y, m, 0);
         const endStr = `${y}-${String(m).padStart(2, "0")}-${endDate.getDate()}`;
 
-        const [archiveRows] = await conn.execute(
+        const [archiveRows] = await rawSql(
           `SELECT id, client_name, event_name, event_type, sentiment_avg, compliance_flags, ai_report, created_at
            FROM archive_events WHERE created_at >= ? AND created_at <= ? ORDER BY created_at ASC`,
           [startDate, endStr + " 23:59:59"]
         );
         const archives = archiveRows as any[];
 
-        const [shadowRows] = await conn.execute(
+        const [shadowRows] = await rawSql(
           `SELECT id, client_name, event_name, event_type, sentiment_avg, compliance_flags, created_at
            FROM shadow_sessions WHERE status = 'completed' AND created_at >= ? AND created_at <= ?
            ORDER BY created_at ASC`,
