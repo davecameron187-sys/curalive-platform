@@ -69,29 +69,55 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
     });
   }, [sessionId, onSegment, pushSegment]);
 
+  const [chunksSent, setChunksSent] = useState(0);
+  const [lastChunkSize, setLastChunkSize] = useState(0);
+  const [lastChunkStatus, setLastChunkStatus] = useState<string>("");
+
   const sendWhisperChunk = useCallback(async () => {
-    if (whisperChunksRef.current.length === 0) return;
+    const chunkCount = whisperChunksRef.current.length;
+    if (chunkCount === 0) {
+      console.log("[LocalAudio] sendWhisperChunk: no chunks collected yet");
+      return;
+    }
 
     const blob = new Blob(whisperChunksRef.current, { type: "audio/webm;codecs=opus" });
     whisperChunksRef.current = [];
 
-    if (blob.size < 1000) return;
+    console.log(`[LocalAudio] sendWhisperChunk: ${chunkCount} sub-chunks, blob size=${blob.size} bytes`);
+    setLastChunkSize(blob.size);
+
+    if (blob.size < 1000) {
+      console.log("[LocalAudio] Chunk too small, skipping (< 1000 bytes — likely silence)");
+      setLastChunkStatus("too small (silence?)");
+      return;
+    }
 
     setIsTranscribing(true);
+    setLastChunkStatus("sending...");
     try {
       const fd = new FormData();
       fd.append("file", blob, "chunk.webm");
       const res = await fetch("/api/transcribe-audio", { method: "POST", body: fd });
+      const statusCode = res.status;
       if (res.ok) {
-        const { transcript } = await res.json();
+        const data = await res.json();
+        const transcript = data.transcript;
+        console.log(`[LocalAudio] Whisper response OK: "${transcript?.slice(0, 80)}..." (${transcript?.length || 0} chars)`);
+        setChunksSent(c => c + 1);
         if (transcript && transcript.trim().length > 1) {
           sendSegment(transcript, "Call Audio");
+          setLastChunkStatus(`transcribed (${transcript.trim().split(/\s+/).length} words)`);
+        } else {
+          setLastChunkStatus("empty transcript returned");
         }
       } else {
-        console.warn("[LocalAudio] Whisper chunk transcription failed:", res.status);
+        const errText = await res.text().catch(() => "");
+        console.warn(`[LocalAudio] Whisper failed (${statusCode}):`, errText.slice(0, 200));
+        setLastChunkStatus(`failed (${statusCode})`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn("[LocalAudio] Whisper chunk error:", err);
+      setLastChunkStatus(`error: ${err.message}`);
     } finally {
       setIsTranscribing(false);
     }
@@ -104,14 +130,24 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
       whisperChunksRef.current = [];
       whisperActiveRef.current = true;
 
+      let subChunkCount = 0;
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           whisperChunksRef.current.push(e.data);
+          subChunkCount++;
+          if (subChunkCount <= 3 || subChunkCount % 10 === 0) {
+            console.log(`[LocalAudio] Recorder data: sub-chunk #${subChunkCount}, size=${e.data.size} bytes, total buffered=${whisperChunksRef.current.length}`);
+          }
         }
+      };
+
+      recorder.onerror = (e: any) => {
+        console.error("[LocalAudio] MediaRecorder error:", e.error || e);
       };
 
       recorder.start(1000);
       whisperRecorderRef.current = recorder;
+      console.log(`[LocalAudio] MediaRecorder state: ${recorder.state}, mimeType: ${recorder.mimeType}`);
 
       whisperIntervalRef.current = setInterval(() => {
         if (whisperActiveRef.current) {
@@ -546,6 +582,16 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
               <div className="flex items-center gap-2 text-xs text-cyan-400">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 <span>Processing audio chunk with Whisper AI...</span>
+              </div>
+            )}
+
+            {(chunksSent > 0 || lastChunkStatus) && (
+              <div className="p-2 rounded-lg bg-white/[0.03] border border-white/5 space-y-1">
+                <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                  <span>Chunks sent: <strong className="text-slate-300">{chunksSent}</strong></span>
+                  {lastChunkSize > 0 && <span>Last size: <strong className="text-slate-300">{(lastChunkSize / 1024).toFixed(1)}KB</strong></span>}
+                  {lastChunkStatus && <span>Status: <strong className={lastChunkStatus.includes("transcribed") ? "text-emerald-400" : lastChunkStatus.includes("fail") || lastChunkStatus.includes("error") ? "text-red-400" : "text-amber-400"}>{lastChunkStatus}</strong></span>}
+                </div>
               </div>
             )}
 
