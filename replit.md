@@ -70,12 +70,26 @@ curalive-platform/
 - Server binds to `0.0.0.0` (required for Replit health checks)
 - Original GitHub project uses port 5000 (dev) / 23636 (prod)
 
-## UI Pages
+## UI Pages / Routes
 
-- **`/`** — Unified Operator Dashboard with tabs: Overview, Shadow Mode, OCC, Partners, Settings
+- **`/`** — Unified Operator Dashboard with tabs: Overview, Shadow Mode, Events, Partners, Billing, Settings
 - **`/intelligence-suite`** — Intelligence Suite with 11 AI algorithms
-- **`/live/:token`** — Client-facing live dashboard (read-only)
-- **`/qa/:accessCode`** — Attendee webphone page for Live Q&A
+- **`/event/:id`** — Event room
+- **`/m/:eventId`** — Attendee room
+- **`/operator/:id`** — Operator console
+- **`/operator-dashboard`** — Operator dashboard
+- **`/operator-links`** — Operator links directory
+- **`/qa/:accessCode`** — Public attendee Q&A (webphone link)
+- **`/post-event/:id`** — Post-event report
+- **`/transcript/:id/edit`** — Transcript editor
+- **`/ai-dashboard`** — AI analytics dashboard
+- **`/agentic-brain`** — 3-question wizard → AI action plan
+- **`/virtual-studio`** — Virtual production studio
+- **`/admin/panel`** — Admin panel
+- **`/billing`** — Billing page
+- **`/live-video/webcast/:slug`** — Webcast studio
+
+Shadow Mode sub-tabs: Live Intelligence, Archive Upload, Reports, AI Learning, AI Dashboard, Advisory, Diagnostics, Live Q&A
 
 ## Key Integrations
 
@@ -105,18 +119,50 @@ Optional (not yet configured, non-critical for app loading):
 - `RESEND_API_KEY` — Email
 - `AWS_*` / `S3_*` — Object storage
 
+## tRPC Routers (86 total)
+
+All registered in BOTH `server/routers.ts` AND `server/routers.eager.ts`:
+
+- **Core**: aiRouter, auth, billing, rbac, systemDiagnostics, admin, team, profile, events
+- **Shadow Mode**: shadowModeRouter, recallRouter, archiveUploadRouter
+- **AI Intelligence**: aiAm, aiDashboard, aiFeatures, aiApplications, aiEvolution, adaptiveIntelligence, agenticEventBrain
+- **Compliance**: complianceEngine, compliance, soc2, iso27001, disclosureCertificate, multiModalCompliance, regulatoryIntervention, eventIntegrity
+- **Sentiment & Analytics**: sentiment, externalSentiment, analytics, benchmarks, interconnectionAnalytics, communicationIndex, marketReaction, marketImpactPredictor
+- **Event Management**: scheduling, eventBrief, postEventReport, webcast, virtualStudio, broadcaster, liveQa, polls, liveRollingSummary, liveSubtitle, liveVideo
+- **OCC & Telephony**: occ, webphone, conferenceDialout
+- **Investment Intel**: investorEngagement, investorIntent, investorQuestions, ipoMandA, valuationImpact, crisisPrediction, crossEventConsistency, volatilitySimulator, roadshowAI, evasiveAnswer, callPrep, personalizedBriefing, materialityRisk
+- **Business**: clientPortal, customisation, branding, supportChat, advisoryBot, mailingList, mobileNotifications, socialMedia, sustainability, intelligenceReport, intelligenceTerminal
+- **Platform**: ably, bot, operatorLinks, trainingMode, mux, crmApi, platformEmbed, contentTriggers, taggedMetrics, monthlyReport, transcriptEditor, transcription, followups, healthGuardian, autonomousIntervention, evolutionAudit, bastionBooking, lumiBooking
+
 ## REST Endpoints (non-tRPC)
 
 - `GET /health` — Health check (returns `{ status: "ok" }`)
+- `GET /api/ably-token` — Ably token generation for real-time
 - `GET /api/archives/:id/transcript` — Download transcript as `.txt` file
 - `GET /api/archives/:id/recording` — Download recording as `.mp3` file
-- `POST /api/webphone/twiml` — Twilio TwiML voice endpoint
-- `POST /api/conference-dialout/twiml` — Conference dial-out TwiML
-- `POST /api/conference-dialout/status` — Conference call status callback
-- `POST /api/recall/webhook` — Recall.ai webhook handler
+- `POST /api/webphone/twiml` — Outbound WebRTC calls
+- `POST /api/webphone/inbound` — Smart routing to operators/voicemail
+- `POST /api/webphone/voicemail-status` — Voicemail recording capture
+- `POST /api/conference-dialout/twiml` — Conference participant TwiML
+- `POST /api/conference-dialout/status` — HMAC-verified status updates
+- `POST /api/voice/inbound` — IVR greeting + 5-digit PIN collection
+- `POST /api/voice/pin` — PIN validation for auto-admit
+- `POST /api/recall/webhook` — Recall.ai bot webhooks (HMAC-verified)
+- `POST /api/shadow/recording/:sessionId` — Upload local recordings
 - `POST /api/upload/slide-deck` — Slide deck upload
 - `POST /api/upload/recording` — Recording upload
 - `POST /api/transcribe/audio` — Audio transcription
+- `GET/POST /api/oauth/callback` — OpenID authentication callback
+
+## Background Services
+
+Started automatically when the server launches:
+- **HealthGuardian** — Monitors system health and uptime
+- **ComplianceEngine** — Monitors regulatory controls, seeds SOC 2 / ISO 27001 data
+- **ShadowModeGuardian** — Reconciles active bot sessions on startup and shutdown
+- **Reminder & Audit Schedulers** — Automated notifications and compliance digests
+
+Graceful shutdown: Listens for SIGTERM/SIGINT, reconciles active Shadow Mode sessions before exit.
 
 ## Deployment
 
