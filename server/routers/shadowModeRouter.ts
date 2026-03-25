@@ -589,7 +589,20 @@ export const shadowModeRouter = router({
         ? `/api/shadow/recording/${session.id}`
         : null;
 
-      return { ...session, transcriptSegments, agmSessionId, recordingUrl: recordingUrl || localRecordingUrl, botStatus };
+      let aiReport: AiReport | null = null;
+      try {
+        const eventId = `shadow-${session.id}`;
+        const conn = (db as any).session?.client ?? (db as any).$client;
+        const [rows] = await conn.execute(
+          `SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`,
+          [eventId]
+        );
+        if (rows?.[0]?.ai_report) {
+          aiReport = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
+        }
+      } catch {}
+
+      return { ...session, transcriptSegments, agmSessionId, recordingUrl: recordingUrl || localRecordingUrl, botStatus, aiReport };
     }),
 
   updateStatus: publicProcedure

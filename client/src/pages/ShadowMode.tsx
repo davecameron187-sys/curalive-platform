@@ -1160,6 +1160,120 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                         </div>
                       )}
 
+                      {liveSession.status === "completed" && (() => {
+                        const report = (liveSession as any).aiReport;
+                        if (!report) {
+                          return (
+                            <div className="bg-white/[0.03] border border-white/10 rounded-xl p-5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Brain className="w-4 h-4 text-slate-500" />
+                                  <span className="text-sm text-slate-400">No AI report generated yet</span>
+                                </div>
+                                <span className="text-xs text-slate-600">AI report is generated automatically when transcript data is available</span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        const reportSections = [
+                          { key: "executiveSummary", label: "Executive Summary", icon: FileText },
+                          { key: "complianceReview", label: "Compliance Review", icon: Shield },
+                          { key: "sentimentAnalysis", label: "Sentiment Analysis", icon: Activity },
+                          { key: "keyTopics", label: "Key Topics", icon: Tag },
+                          { key: "questionAnalysis", label: "Question Analysis", icon: MessageSquare },
+                          { key: "riskFactors", label: "Risk Factors", icon: AlertTriangle },
+                          { key: "actionItems", label: "Action Items", icon: CheckCircle2 },
+                          { key: "investorInsights", label: "Investor Insights", icon: BarChart3 },
+                        ].filter(s => report[s.key]);
+
+                        const downloadReport = () => {
+                          let text = `AI INTELLIGENCE REPORT\n${liveSession.clientName} — ${liveSession.eventName}\nGenerated: ${new Date().toLocaleString()}\n${"=".repeat(60)}\n\n`;
+                          for (const section of reportSections) {
+                            const content = report[section.key];
+                            text += `\n${"─".repeat(40)}\n${section.label.toUpperCase()}\n${"─".repeat(40)}\n`;
+                            if (typeof content === "string") {
+                              text += content + "\n";
+                            } else if (Array.isArray(content)) {
+                              content.forEach((item: any, i: number) => {
+                                text += typeof item === "string" ? `  ${i + 1}. ${item}\n` : `  ${i + 1}. ${JSON.stringify(item)}\n`;
+                              });
+                            } else if (typeof content === "object") {
+                              text += JSON.stringify(content, null, 2) + "\n";
+                            }
+                          }
+                          const blob = new Blob([text], { type: "text/plain" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `${liveSession.clientName}_${liveSession.eventName}_AI_Report.txt`.replace(/\s+/g, "_");
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          toast.success("AI Report downloaded");
+                        };
+
+                        const downloadJson = () => {
+                          const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `${liveSession.clientName}_${liveSession.eventName}_AI_Report.json`.replace(/\s+/g, "_");
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          toast.success("AI Report JSON downloaded");
+                        };
+
+                        return (
+                          <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden">
+                            <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Brain className="w-4 h-4 text-violet-400" />
+                                <span className="text-sm text-slate-300 font-medium">AI Intelligence Report</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/20">{reportSections.length} sections</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={downloadReport}
+                                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 border border-white/10 transition-colors">
+                                  <Download className="w-3 h-3" />
+                                  Download .txt
+                                </button>
+                                <button onClick={downloadJson}
+                                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 border border-white/10 transition-colors">
+                                  <Download className="w-3 h-3" />
+                                  Download .json
+                                </button>
+                              </div>
+                            </div>
+                            <div className="divide-y divide-white/5 max-h-[500px] overflow-y-auto">
+                              {reportSections.map(section => {
+                                const Icon = section.icon;
+                                const content = report[section.key];
+                                return (
+                                  <details key={section.key} className="group">
+                                    <summary className="px-5 py-3 flex items-center gap-2 cursor-pointer hover:bg-white/[0.02] transition-colors">
+                                      <Icon className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                                      <span className="text-sm text-slate-300">{section.label}</span>
+                                      <ChevronDown className="w-3.5 h-3.5 text-slate-600 ml-auto group-open:rotate-180 transition-transform" />
+                                    </summary>
+                                    <div className="px-5 pb-4 text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
+                                      {typeof content === "string" ? content
+                                        : Array.isArray(content) ? content.map((item: any, i: number) => (
+                                          <div key={i} className="flex gap-2 mb-1">
+                                            <span className="text-slate-600 shrink-0">{i + 1}.</span>
+                                            <span>{typeof item === "string" ? item : JSON.stringify(item)}</span>
+                                          </div>
+                                        ))
+                                        : <pre className="text-xs font-mono text-slate-500">{JSON.stringify(content, null, 2)}</pre>
+                                      }
+                                    </div>
+                                  </details>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {(() => {
                         const recUrl = (liveSession as any).recordingUrl;
                         const bStatus = (liveSession as any).botStatus;
