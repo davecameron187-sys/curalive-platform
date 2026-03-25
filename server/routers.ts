@@ -90,6 +90,15 @@ import { platformEmbedRouter } from "./routers/platformEmbedRouter";
 import { investorEngagementRouter } from "./routers/investorEngagementRouter";
 import { liveSubtitleRouter } from "./routers/liveSubtitleRouter";
 import { ipoMandARouter } from "./routers/ipoMandARouter";
+import { adaptiveIntelligenceRouter } from "./routers/adaptiveIntelligenceRouter";
+import { agmGovernanceRouter } from "./routers/agmGovernanceRouter";
+import { bastionBookingRouter } from "./routers/bastionBookingRouter";
+import { botRouter } from "./routers/bot";
+import { broadcasterRouter } from "./routers/broadcasterRouter";
+import { lumiBookingRouter } from "./routers/lumiBookingRouter";
+import { sustainabilityRouter } from "./routers/sustainabilityRouter";
+import { persistenceRouter } from "./routers/persistence";
+import { aiAmPhase2Router } from "./routers/aiAmPhase2";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -190,6 +199,15 @@ export const appRouter = router({
   investorEngagement: investorEngagementRouter,
   liveSubtitle: liveSubtitleRouter,
   ipoMandA: ipoMandARouter,
+  adaptiveIntelligence: adaptiveIntelligenceRouter,
+  agmGovernance: agmGovernanceRouter,
+  bastionBooking: bastionBookingRouter,
+  bot: botRouter,
+  broadcaster: broadcasterRouter,
+  lumiBooking: lumiBookingRouter,
+  sustainability: sustainabilityRouter,
+  persistence: persistenceRouter,
+  aiAmPhase2: aiAmPhase2Router,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
