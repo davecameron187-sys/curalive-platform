@@ -14,8 +14,8 @@ paths = ["/"]
 run = "pnpm --filter @workspace/api-server run dev"
 
 [services.production]
-build = "pnpm --filter @workspace/api-server run build"
-run = "pnpm --filter @workspace/api-server run start"
+build = "cd /home/runner/workspace && NODE_OPTIONS='--max-old-space-size=4096' vite build --logLevel warn && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist"
+run = "cd /home/runner/workspace && NODE_ENV=production node dist/index.js"
 
 [services.env]
 PORT = "3000"
