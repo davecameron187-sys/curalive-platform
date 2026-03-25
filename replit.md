@@ -105,6 +105,19 @@ Optional (not yet configured, non-critical for app loading):
 - `RESEND_API_KEY` — Email
 - `AWS_*` / `S3_*` — Object storage
 
+## REST Endpoints (non-tRPC)
+
+- `GET /health` — Health check (returns `{ status: "ok" }`)
+- `GET /api/archives/:id/transcript` — Download transcript as `.txt` file
+- `GET /api/archives/:id/recording` — Download recording as `.mp3` file
+- `POST /api/webphone/twiml` — Twilio TwiML voice endpoint
+- `POST /api/conference-dialout/twiml` — Conference dial-out TwiML
+- `POST /api/conference-dialout/status` — Conference call status callback
+- `POST /api/recall/webhook` — Recall.ai webhook handler
+- `POST /api/upload/slide-deck` — Slide deck upload
+- `POST /api/upload/recording` — Recording upload
+- `POST /api/transcribe/audio` — Audio transcription
+
 ## Deployment
 
 - **Artifact**: `artifacts/api-server` (kind: web, previewPath: `/`)
