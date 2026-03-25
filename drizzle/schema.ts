@@ -2939,6 +2939,7 @@ export const archiveEvents = pgTable("archive_events", {
   specialisedAlgorithmsRun: integer("specialised_algorithms_run").default(0),
   specialisedSessionId: integer("specialised_session_id"),
   specialisedSessionType: varchar("specialised_session_type", { length: 32 }),
+  recordingPath: varchar("recording_path", { length: 1000 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

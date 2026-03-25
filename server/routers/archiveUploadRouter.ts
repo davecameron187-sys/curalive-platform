@@ -963,7 +963,8 @@ export const archiveUploadRouter = router({
         `SELECT id, client_name, event_name, event_type, event_date, platform,
                 word_count, segment_count, sentiment_avg, compliance_flags,
                 tagged_metrics_generated, status, notes, created_at, ai_report,
-                specialised_analysis, specialised_algorithms_run, specialised_session_id, specialised_session_type
+                specialised_analysis, specialised_algorithms_run, specialised_session_id, specialised_session_type,
+                transcript_text, recording_path
          FROM archive_events WHERE id = ? LIMIT 1`,
         [input.archiveId]
       );
@@ -977,7 +978,15 @@ export const archiveUploadRouter = router({
       try {
         parsedSpecialised = typeof row.specialised_analysis === "string" ? JSON.parse(row.specialised_analysis) : row.specialised_analysis;
       } catch {}
-      return { ...row, ai_report: parsedReport, specialised_analysis: parsedSpecialised } as {
+      return {
+        ...row,
+        ai_report: parsedReport,
+        specialised_analysis: parsedSpecialised,
+        has_transcript: !!(row.transcript_text && row.transcript_text.trim().length > 0),
+        has_recording: !!(row.recording_path && row.recording_path.trim().length > 0),
+        transcript_text: undefined,
+        recording_path: undefined,
+      } as {
         id: number; client_name: string; event_name: string; event_type: string;
         event_date: string | null; platform: string | null; word_count: number;
         segment_count: number; sentiment_avg: number | null; compliance_flags: number;
@@ -987,6 +996,8 @@ export const archiveUploadRouter = router({
         specialised_algorithms_run: number;
         specialised_session_id: number | null;
         specialised_session_type: string | null;
+        has_transcript: boolean;
+        has_recording: boolean;
       };
     }),
 
