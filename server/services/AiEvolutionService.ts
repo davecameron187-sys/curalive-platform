@@ -807,9 +807,9 @@ Return ONLY valid JSON:
           status: obsIds.length >= 5 ? "proposed" : "emerging",
           estimatedImpact: impact.label,
           promptTemplate: np.promptTemplate ?? null,
-        });
+        }).returning();
 
-        const proposalId = (inserted as any).insertId;
+        const proposalId = inserted.id;
         for (const obsId of obsIds) {
           await db.update(aiEvolutionObservations)
             .set({ clusterId: proposalId })

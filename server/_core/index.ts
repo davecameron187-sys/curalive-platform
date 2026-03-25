@@ -625,6 +625,59 @@ async function startServer() {
     });
   });
 
+  app.get("/api/archives/:id/transcript", async (req, res) => {
+    try {
+      const archiveId = parseInt(req.params.id, 10);
+      if (isNaN(archiveId)) return res.status(400).send("Invalid archive ID");
+      const { rawSql } = await import("../db");
+      const [rows] = await rawSql(
+        `SELECT event_name, client_name, event_date, transcript_text FROM archive_events WHERE id = ? LIMIT 1`,
+        [archiveId]
+      );
+      const row = (rows as any[])[0];
+      if (!row || !row.transcript_text) return res.status(404).send("Transcript not found");
+      const safeName = (row.event_name || "transcript").replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
+      const header = `CuraLive Intelligence Transcript\n${"=".repeat(40)}\nEvent: ${row.event_name}\nClient: ${row.client_name}\nDate: ${row.event_date || "N/A"}\n${"=".repeat(40)}\n\n`;
+      const content = header + row.transcript_text;
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}_Transcript.txt"`);
+      res.send(content);
+    } catch (err: any) {
+      console.error("[Archive Transcript Download]", err.message);
+      res.status(500).send("Failed to download transcript");
+    }
+  });
+
+  app.get("/api/archives/:id/recording", async (req, res) => {
+    try {
+      const archiveId = parseInt(req.params.id, 10);
+      if (isNaN(archiveId)) return res.status(400).send("Invalid archive ID");
+      const { rawSql } = await import("../db");
+      const [rows] = await rawSql(
+        `SELECT event_name, recording_path FROM archive_events WHERE id = ? LIMIT 1`,
+        [archiveId]
+      );
+      const row = (rows as any[])[0];
+      if (!row || !row.recording_path) return res.status(404).send("Recording not available for this event");
+      const fs = await import("fs");
+      const path = await import("path");
+      const RECORDINGS_BASE = path.resolve(process.cwd(), "uploads", "recordings");
+      const filePath = path.resolve(RECORDINGS_BASE, path.basename(row.recording_path));
+      const normalised = path.normalize(filePath);
+      if (!normalised.startsWith(RECORDINGS_BASE)) return res.status(403).send("Access denied");
+      if (!fs.existsSync(filePath)) return res.status(404).send("Recording file not found on server");
+      const safeName = (row.event_name || "recording").replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}_Recording.mp3"`);
+      res.sendFile(filePath, (err) => {
+        if (err && !res.headersSent) res.status(500).send("Failed to send recording");
+      });
+    } catch (err: any) {
+      console.error("[Archive Recording Download]", err.message);
+      res.status(500).send("Failed to download recording");
+    }
+  });
+
   // Checklist download — serves the project owner collaboration checklist as HTML
   app.get("/download/checklist", (_req, res) => {
     const html = `<!DOCTYPE html>

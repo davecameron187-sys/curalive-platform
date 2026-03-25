@@ -682,8 +682,8 @@ export async function createBastionSession(userId: number, input: {
     eventDate: input.eventDate ?? null,
     sector: input.sector ?? null,
     ticker: input.ticker ?? null,
-  });
-  return { sessionId: (result as any).insertId };
+  }).returning();
+  return { sessionId: result.id };
 }
 
 export async function getSessionDashboard(userId: number, sessionId: number) {

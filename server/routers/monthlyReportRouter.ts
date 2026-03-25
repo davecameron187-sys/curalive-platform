@@ -18,8 +18,8 @@ export const monthlyReportRouter = router({
         reportMonth: input.month,
         clientName: input.clientName ?? null,
         status: "generating",
-      });
-      const reportId = (inserted as any).insertId;
+      }).returning();
+      const reportId = inserted.id;
 
       try {
         const startDate = `${input.month}-01`;

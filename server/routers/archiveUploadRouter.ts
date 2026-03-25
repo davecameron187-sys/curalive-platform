@@ -288,6 +288,7 @@ function buildArchiveReportEmail(opts: {
   complianceFlags: number;
   metricsGenerated: number;
   notes: string | null;
+  aiReport: AiReport | null;
 }): string {
   const sentimentColor = (opts.sentimentAvg ?? 50) >= 70 ? "#10b981" : (opts.sentimentAvg ?? 50) >= 50 ? "#f59e0b" : "#ef4444";
   const sentimentLabel = (opts.sentimentAvg ?? 50) >= 70 ? "Positive" : (opts.sentimentAvg ?? 50) >= 50 ? "Neutral" : "Negative";
@@ -297,62 +298,281 @@ function buildArchiveReportEmail(opts: {
     earnings_call: "Earnings Call", agm: "AGM", capital_markets_day: "Capital Markets Day",
     ceo_town_hall: "CEO Town Hall", board_meeting: "Board Meeting", webcast: "Webcast", other: "Other",
   };
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const sevColor = (s: string) => s === "Low" || s === "Positive" ? "#10b981" : s === "High" || s === "Critical" || s === "Negative" ? "#ef4444" : "#f59e0b";
+
+  const sectionHeader = (title: string, color: string) =>
+    `<tr><td style="padding:28px 40px 12px;">
+      <table width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td style="border-bottom:2px solid ${color};padding-bottom:8px;">
+          <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${color};">${title}</p>
+        </td>
+      </tr></table>
+    </td></tr>`;
+
+  const textBlock = (content: string) =>
+    `<tr><td style="padding:4px 40px 16px;"><p style="margin:0;font-size:14px;color:#cbd5e1;line-height:1.7;">${esc(content)}</p></td></tr>`;
+
+  const bulletList = (items: string[]) => items.length === 0 ? "" :
+    `<tr><td style="padding:4px 40px 16px;"><table cellpadding="0" cellspacing="0" width="100%">${
+      items.map(item => `<tr><td style="padding:3px 0;font-size:14px;color:#cbd5e1;line-height:1.6;vertical-align:top;">
+        <span style="color:#60a5fa;margin-right:8px;">&#8226;</span>${esc(item)}</td></tr>`).join("")
+    }</table></td></tr>`;
+
+  const r = opts.aiReport;
+
+  let reportSections = "";
+
+  if (r) {
+    if (r.executiveSummary) {
+      reportSections += sectionHeader("Executive Summary", "#a78bfa");
+      reportSections += textBlock(r.executiveSummary);
+    }
+
+    if (r.sentimentAnalysis) {
+      reportSections += sectionHeader("Sentiment Analysis", "#10b981");
+      reportSections += `<tr><td style="padding:4px 40px 8px;">
+        <table cellpadding="0" cellspacing="0"><tr>
+          <td style="background:#0f172a;border-radius:6px;padding:8px 16px;border:1px solid #1e293b;">
+            <span style="font-size:24px;font-weight:800;color:${sentimentColor};">${r.sentimentAnalysis.score}</span>
+            <span style="font-size:13px;color:#64748b;">/100 · ${sentimentLabel}</span>
+          </td>
+        </tr></table>
+      </td></tr>`;
+      reportSections += textBlock(r.sentimentAnalysis.narrative);
+      if (r.sentimentAnalysis.keyDrivers?.length > 0) {
+        reportSections += `<tr><td style="padding:0 40px 4px;"><p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Key Drivers</p></td></tr>`;
+        reportSections += bulletList(r.sentimentAnalysis.keyDrivers);
+      }
+    }
+
+    if (r.complianceReview) {
+      reportSections += sectionHeader("Compliance Review", "#f59e0b");
+      reportSections += `<tr><td style="padding:4px 40px 12px;">
+        <table cellpadding="0" cellspacing="0"><tr>
+          <td style="background:${sevColor(r.complianceReview.riskLevel)}15;border-radius:6px;padding:6px 14px;border:1px solid ${sevColor(r.complianceReview.riskLevel)}40;">
+            <span style="font-size:13px;font-weight:700;color:${sevColor(r.complianceReview.riskLevel)};">Risk Level: ${esc(r.complianceReview.riskLevel)}</span>
+          </td>
+        </tr></table>
+      </td></tr>`;
+      if (r.complianceReview.flaggedPhrases?.length > 0) {
+        reportSections += `<tr><td style="padding:0 40px 4px;"><p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Flagged Phrases (${r.complianceReview.flaggedPhrases.length})</p></td></tr>`;
+        reportSections += bulletList(r.complianceReview.flaggedPhrases);
+      }
+      if (r.complianceReview.recommendations?.length > 0) {
+        reportSections += `<tr><td style="padding:0 40px 4px;"><p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Recommendations</p></td></tr>`;
+        reportSections += bulletList(r.complianceReview.recommendations);
+      }
+    }
+
+    if (r.keyTopics?.length > 0) {
+      reportSections += sectionHeader("Key Topics", "#60a5fa");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Topic</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Sentiment</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Detail</td></tr>
+        ${r.keyTopics.map(t => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;font-weight:600;">${esc(t.topic)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(t.sentiment)};">${esc(t.sentiment)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;line-height:1.5;">${esc(t.detail)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+
+    if (r.speakerAnalysis?.length > 0) {
+      reportSections += sectionHeader("Speaker Analysis", "#8b5cf6");
+      for (const s of r.speakerAnalysis) {
+        reportSections += `<tr><td style="padding:4px 40px 4px;">
+          <p style="margin:0;font-size:14px;font-weight:700;color:#e2e8f0;">${esc(s.speaker)} <span style="font-weight:400;color:#64748b;font-size:12px;">· ${esc(s.role)}</span></p>
+        </td></tr>`;
+        reportSections += bulletList(s.keyPoints);
+      }
+    }
+
+    if (r.investorSignals?.length > 0) {
+      reportSections += sectionHeader("Investor Signals", "#f97316");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Signal</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Interpretation</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Severity</td></tr>
+        ${r.investorSignals.map(s => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;font-weight:600;">${esc(s.signal)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;line-height:1.5;">${esc(s.interpretation)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(s.severity)};font-weight:600;">${esc(s.severity)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+
+    if (r.questionsAsked?.length > 0) {
+      reportSections += sectionHeader("Q&A Breakdown", "#06b6d4");
+      for (const q of r.questionsAsked) {
+        reportSections += `<tr><td style="padding:4px 40px 8px;">
+          <table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:14px 16px;">
+            <p style="margin:0 0 4px;font-size:14px;color:#e2e8f0;font-weight:600;">${esc(q.question)}</p>
+            <p style="margin:0;font-size:12px;color:#64748b;">Asked by: ${esc(q.askedBy)} · Quality: <span style="color:${sevColor(q.quality)};font-weight:600;">${esc(q.quality)}</span></p>
+          </td></tr></table>
+        </td></tr>`;
+      }
+    }
+
+    if (r.actionItems?.length > 0) {
+      reportSections += sectionHeader("Action Items", "#ec4899");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Action Item</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Owner</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Deadline</td></tr>
+        ${r.actionItems.map(a => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;">${esc(a.item)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(a.owner)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(a.deadline)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+
+    if (r.communicationScore) {
+      reportSections += sectionHeader("Communication Score", "#14b8a6");
+      const cs = r.communicationScore;
+      const csColor = cs.score >= 70 ? "#10b981" : cs.score >= 50 ? "#f59e0b" : "#ef4444";
+      reportSections += `<tr><td style="padding:4px 40px 8px;">
+        <table cellpadding="0" cellspacing="0" width="100%"><tr>
+          <td width="33%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:12px;text-align:center;">
+            <p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;">Overall</p>
+            <p style="margin:4px 0 0;font-size:22px;font-weight:800;color:${csColor};">${cs.score}<span style="font-size:12px;color:#64748b;">/100</span></p>
+          </td></tr></table></td>
+          <td width="33%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:12px;text-align:center;">
+            <p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;">Clarity</p>
+            <p style="margin:4px 0 0;font-size:22px;font-weight:800;color:#60a5fa;">${cs.clarity}<span style="font-size:12px;color:#64748b;">/100</span></p>
+          </td></tr></table></td>
+          <td width="33%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:12px;text-align:center;">
+            <p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;">Transparency</p>
+            <p style="margin:4px 0 0;font-size:22px;font-weight:800;color:#60a5fa;">${cs.transparency}<span style="font-size:12px;color:#64748b;">/100</span></p>
+          </td></tr></table></td>
+        </tr></table>
+      </td></tr>`;
+      reportSections += textBlock(cs.narrative);
+    }
+
+    if (r.riskFactors?.length > 0) {
+      reportSections += sectionHeader("Risk Factors", "#ef4444");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Factor</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Impact</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Likelihood</td></tr>
+        ${r.riskFactors.map(f => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;">${esc(f.factor)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(f.impact)};font-weight:600;">${esc(f.impact)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(f.likelihood)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+
+    if (r.financialHighlights?.length > 0) {
+      reportSections += sectionHeader("Financial Highlights", "#eab308");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Metric</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Value</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">YoY Change</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Context</td></tr>
+        ${r.financialHighlights.map(f => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;font-weight:600;border-bottom:1px solid #1e293b15;">${esc(f.metric)}</td><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;">${esc(f.value)}</td><td style="padding:10px 14px;font-size:13px;color:#60a5fa;font-weight:600;">${esc(f.yoyChange)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(f.context)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+
+    if (r.sentimentArc) {
+      reportSections += sectionHeader("Sentiment Arc", "#22d3ee");
+      const arc = r.sentimentArc;
+      reportSections += `<tr><td style="padding:4px 40px 8px;">
+        <table cellpadding="0" cellspacing="0" width="100%"><tr>
+          <td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:12px;text-align:center;">
+            <p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;">Opening</p>
+            <p style="margin:4px 0 0;font-size:20px;font-weight:800;color:#22d3ee;">${arc.opening}</p>
+          </td></tr></table></td>
+          <td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:12px;text-align:center;">
+            <p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;">Midpoint</p>
+            <p style="margin:4px 0 0;font-size:20px;font-weight:800;color:#22d3ee;">${arc.midpoint}</p>
+          </td></tr></table></td>
+          <td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:12px;text-align:center;">
+            <p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;">Closing</p>
+            <p style="margin:4px 0 0;font-size:20px;font-weight:800;color:#22d3ee;">${arc.closing}</p>
+          </td></tr></table></td>
+          <td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:12px;text-align:center;">
+            <p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;">Trend</p>
+            <p style="margin:4px 0 0;font-size:14px;font-weight:700;color:#22d3ee;">${esc(arc.trend)}</p>
+          </td></tr></table></td>
+        </tr></table>
+      </td></tr>`;
+      reportSections += textBlock(arc.narrative);
+    }
+
+    if (r.esgMentions?.length > 0) {
+      reportSections += sectionHeader("ESG & Sustainability", "#22c55e");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Topic</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Commitment</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Sentiment</td></tr>
+        ${r.esgMentions.map(e => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;font-weight:600;border-bottom:1px solid #1e293b15;">${esc(e.topic)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(e.commitment)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(e.sentiment)};">${esc(e.sentiment)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+
+    if (r.competitiveIntelligence?.length > 0) {
+      reportSections += sectionHeader("Competitive Intelligence", "#a855f7");
+      for (const c of r.competitiveIntelligence) {
+        reportSections += `<tr><td style="padding:4px 40px 8px;">
+          <table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:14px 16px;">
+            <p style="margin:0 0 4px;font-size:14px;color:#e2e8f0;font-weight:600;">${esc(c.mention)}</p>
+            <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.5;">${esc(c.context)}</p>
+          </td></tr></table>
+        </td></tr>`;
+      }
+    }
+
+    if (r.boardReadySummary) {
+      reportSections += sectionHeader("Board-Ready Summary", "#a78bfa");
+      reportSections += `<tr><td style="padding:4px 40px 12px;">
+        <table width="100%" style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border-radius:8px;border:1px solid #3730a3;"><tr><td style="padding:20px;">
+          <p style="margin:0 0 4px;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Verdict</p>
+          <p style="margin:0 0 16px;font-size:16px;font-weight:700;color:#e2e8f0;line-height:1.5;">${esc(r.boardReadySummary.verdict)}</p>
+        </td></tr></table>
+      </td></tr>`;
+      if (r.boardReadySummary.keyRisks?.length > 0) {
+        reportSections += `<tr><td style="padding:0 40px 4px;"><p style="margin:0;font-size:11px;color:#ef4444;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Key Risks</p></td></tr>`;
+        reportSections += bulletList(r.boardReadySummary.keyRisks);
+      }
+      if (r.boardReadySummary.keyOpportunities?.length > 0) {
+        reportSections += `<tr><td style="padding:0 40px 4px;"><p style="margin:0;font-size:11px;color:#10b981;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Key Opportunities</p></td></tr>`;
+        reportSections += bulletList(r.boardReadySummary.keyOpportunities);
+      }
+      if (r.boardReadySummary.recommendedActions?.length > 0) {
+        reportSections += `<tr><td style="padding:0 40px 4px;"><p style="margin:0;font-size:11px;color:#60a5fa;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Recommended Actions</p></td></tr>`;
+        reportSections += bulletList(r.boardReadySummary.recommendedActions);
+      }
+    }
+
+    if (r.recommendations?.length > 0) {
+      reportSections += sectionHeader("Strategic Recommendations", "#06b6d4");
+      reportSections += bulletList(r.recommendations);
+    }
+  }
+
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#0a0d14;font-family:'Inter',Arial,sans-serif;color:#e2e8f0;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0d14;padding:40px 20px;"><tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;border:1px solid #1e293b;">
+<table width="640" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;border:1px solid #1e293b;">
 <tr><td style="background:linear-gradient(135deg,#1e3a5f,#0f172a);padding:32px 40px;">
 <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;">CuraLive Post-Event Intelligence Report</p>
-<h1 style="margin:0;font-size:22px;font-weight:700;color:#f1f5f9;line-height:1.3;">${opts.eventName}</h1>
-<p style="margin:8px 0 0;font-size:14px;color:#94a3b8;">${opts.clientName} · ${eventTypeLabels[opts.eventType] ?? opts.eventType}${opts.eventDate ? ` · ${opts.eventDate}` : ""}</p>
+<h1 style="margin:0;font-size:22px;font-weight:700;color:#f1f5f9;line-height:1.3;">${esc(opts.eventName)}</h1>
+<p style="margin:8px 0 0;font-size:14px;color:#94a3b8;">${esc(opts.clientName)} · ${eventTypeLabels[opts.eventType] ?? opts.eventType}${opts.eventDate ? ` · ${opts.eventDate}` : ""}</p>
 </td></tr>
-<tr><td style="padding:32px 40px;">
-<p style="margin:0 0 20px;font-size:15px;color:#94a3b8;">Dear ${opts.recipientName},</p>
-<p style="margin:0 0 24px;font-size:15px;color:#94a3b8;line-height:1.6;">Please find below the AI-generated intelligence summary from your event.</p>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+<tr><td style="padding:24px 40px 8px;">
+<p style="margin:0 0 16px;font-size:15px;color:#94a3b8;">Dear ${esc(opts.recipientName)},</p>
+<p style="margin:0 0 20px;font-size:15px;color:#94a3b8;line-height:1.6;">Please find below the full AI-generated intelligence report from your event, covering ${r?.modulesGenerated ?? 0} analysis modules.</p>
+</td></tr>
+<tr><td style="padding:0 40px 20px;">
+<table width="100%" cellpadding="0" cellspacing="0">
 <tr>
-<td width="50%" style="padding:8px;">
-<table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:16px;text-align:center;">
-<p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Sentiment Score</p>
-<p style="margin:6px 0 0;font-size:28px;font-weight:800;color:${sentimentColor};">${opts.sentimentAvg ?? "N/A"}<span style="font-size:14px;color:#64748b;">/100</span></p>
-<p style="margin:4px 0 0;font-size:12px;color:${sentimentColor};font-weight:600;">${sentimentLabel}</p>
-</td></tr></table>
-</td>
-<td width="50%" style="padding:8px;">
-<table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:16px;text-align:center;">
-<p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Compliance Risk</p>
-<p style="margin:6px 0 0;font-size:28px;font-weight:800;color:${complianceColor};">${opts.complianceFlags}</p>
-<p style="margin:4px 0 0;font-size:12px;color:${complianceColor};font-weight:600;">${complianceLabel}</p>
-</td></tr></table>
-</td>
-</tr>
-<tr>
-<td width="50%" style="padding:8px;">
-<table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:16px;text-align:center;">
-<p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Words Analysed</p>
-<p style="margin:6px 0 0;font-size:28px;font-weight:800;color:#60a5fa;">${opts.wordCount.toLocaleString()}</p>
-</td></tr></table>
-</td>
-<td width="50%" style="padding:8px;">
-<table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:16px;text-align:center;">
-<p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Segments Processed</p>
-<p style="margin:6px 0 0;font-size:28px;font-weight:800;color:#60a5fa;">${opts.segmentCount}</p>
-</td></tr></table>
-</td>
+<td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:14px;text-align:center;">
+<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Sentiment</p>
+<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:${sentimentColor};">${opts.sentimentAvg ?? "N/A"}<span style="font-size:11px;color:#64748b;">/100</span></p>
+<p style="margin:2px 0 0;font-size:11px;color:${sentimentColor};font-weight:600;">${sentimentLabel}</p>
+</td></tr></table></td>
+<td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:14px;text-align:center;">
+<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Compliance</p>
+<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:${complianceColor};">${opts.complianceFlags}</p>
+<p style="margin:2px 0 0;font-size:11px;color:${complianceColor};font-weight:600;">${complianceLabel}</p>
+</td></tr></table></td>
+<td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:14px;text-align:center;">
+<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Words</p>
+<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:#60a5fa;">${opts.wordCount.toLocaleString()}</p>
+</td></tr></table></td>
+<td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:14px;text-align:center;">
+<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Segments</p>
+<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:#60a5fa;">${opts.segmentCount}</p>
+</td></tr></table></td>
 </tr>
 </table>
-<table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;margin:0 0 24px;"><tr><td style="padding:16px;">
-<p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Intelligence Records Generated</p>
-<p style="margin:0;font-size:15px;color:#cbd5e1;line-height:1.6;">${opts.metricsGenerated} tagged intelligence records have been added to your CuraLive database, covering sentiment analysis, engagement metrics, compliance scanning, and session completion tracking.</p>
-</td></tr></table>
-${opts.notes ? `<table width="100%" style="background:#0f172a;border-left:3px solid #3b82f6;border-radius:4px;margin:0 0 24px;"><tr><td style="padding:16px 20px;">
-<p style="margin:0 0 4px;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Operator Notes</p>
-<p style="margin:0;font-size:14px;color:#cbd5e1;line-height:1.6;">${opts.notes}</p>
-</td></tr></table>` : ""}
-<p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">For the full transcript and detailed analytics, please contact your CuraLive account manager.</p>
 </td></tr>
-<tr><td style="background:#0f172a;padding:20px 40px;border-top:1px solid #1e293b;">
-<p style="margin:0;font-size:12px;color:#475569;text-align:center;">CuraLive Intelligence Platform · Automated Post-Event Report</p>
+${reportSections}
+${!r ? `<tr><td style="padding:16px 40px;"><table width="100%" style="background:#0f172a;border-left:3px solid #f59e0b;border-radius:4px;"><tr><td style="padding:16px 20px;">
+<p style="margin:0;font-size:14px;color:#f59e0b;font-weight:600;">AI Report Not Yet Generated</p>
+<p style="margin:6px 0 0;font-size:13px;color:#94a3b8;line-height:1.5;">The full AI intelligence report has not been generated for this event yet. Generate the report in CuraLive and resend this email to include the complete analysis.</p>
+</td></tr></table></td></tr>` : ""}
+${opts.notes ? `<tr><td style="padding:12px 40px 20px;"><table width="100%" style="background:#0f172a;border-left:3px solid #3b82f6;border-radius:4px;"><tr><td style="padding:16px 20px;">
+<p style="margin:0 0 4px;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Operator Notes</p>
+<p style="margin:0;font-size:14px;color:#cbd5e1;line-height:1.6;">${esc(opts.notes)}</p>
+</td></tr></table></td></tr>` : ""}
+<tr><td style="background:#0f172a;padding:24px 40px;border-top:1px solid #1e293b;">
+<p style="margin:0 0 4px;font-size:12px;color:#475569;text-align:center;">CuraLive Intelligence Platform · Automated Post-Event Report</p>
+<p style="margin:0;font-size:11px;color:#334155;text-align:center;">This report was generated by AI and should be reviewed alongside primary source materials.</p>
 </td></tr>
 </table></td></tr></table></body></html>`;
 }
@@ -777,7 +997,8 @@ export const archiveUploadRouter = router({
         `INSERT INTO archive_events
           (event_id, client_name, event_name, event_type, event_date, platform, transcript_text,
            word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?)
+         RETURNING id`,
         [
           null,
           input.clientName,
@@ -795,7 +1016,7 @@ export const archiveUploadRouter = router({
         ]
       );
 
-      const archiveId: number = (result as any).insertId;
+      const archiveId: number = Array.isArray(result) ? (result[0]?.id ?? 0) : ((result as any).insertId ?? 0);
       await rawSql(`UPDATE archive_events SET event_id = ? WHERE id = ?`, [`archive-${archiveId}`, archiveId]);
 
       const metricsPromise = generateMetricsFromArchive(
@@ -962,7 +1183,8 @@ export const archiveUploadRouter = router({
         `SELECT id, client_name, event_name, event_type, event_date, platform,
                 word_count, segment_count, sentiment_avg, compliance_flags,
                 tagged_metrics_generated, status, notes, created_at, ai_report,
-                specialised_analysis, specialised_algorithms_run, specialised_session_id, specialised_session_type
+                specialised_analysis, specialised_algorithms_run, specialised_session_id, specialised_session_type,
+                transcript_text, recording_path
          FROM archive_events WHERE id = ? LIMIT 1`,
         [input.archiveId]
       );
@@ -976,7 +1198,15 @@ export const archiveUploadRouter = router({
       try {
         parsedSpecialised = typeof row.specialised_analysis === "string" ? JSON.parse(row.specialised_analysis) : row.specialised_analysis;
       } catch {}
-      return { ...row, ai_report: parsedReport, specialised_analysis: parsedSpecialised } as {
+      return {
+        ...row,
+        ai_report: parsedReport,
+        specialised_analysis: parsedSpecialised,
+        has_transcript: !!(row.transcript_text && row.transcript_text.trim().length > 0),
+        has_recording: !!(row.recording_path && row.recording_path.trim().length > 0),
+        transcript_text: undefined,
+        recording_path: undefined,
+      } as {
         id: number; client_name: string; event_name: string; event_type: string;
         event_date: string | null; platform: string | null; word_count: number;
         segment_count: number; sentiment_avg: number | null; compliance_flags: number;
@@ -986,6 +1216,8 @@ export const archiveUploadRouter = router({
         specialised_algorithms_run: number;
         specialised_session_id: number | null;
         specialised_session_type: string | null;
+        has_transcript: boolean;
+        has_recording: boolean;
       };
     }),
 
@@ -1003,12 +1235,17 @@ export const archiveUploadRouter = router({
       const [rows] = await rawSql(
         `SELECT id, client_name, event_name, event_type, event_date,
                 word_count, segment_count, sentiment_avg, compliance_flags,
-                tagged_metrics_generated, notes
+                tagged_metrics_generated, notes, ai_report
          FROM archive_events WHERE id = ? LIMIT 1`,
         [input.archiveId]
       );
       const row = (rows as any[])[0];
       if (!row) throw new Error("Archive not found");
+
+      let parsedReport: AiReport | null = null;
+      try {
+        parsedReport = typeof row.ai_report === "string" ? JSON.parse(row.ai_report) : row.ai_report;
+      } catch {}
 
       const { sendEmail } = await import("../_core/email");
       const html = buildArchiveReportEmail({
@@ -1023,6 +1260,7 @@ export const archiveUploadRouter = router({
         complianceFlags: row.compliance_flags,
         metricsGenerated: row.tagged_metrics_generated,
         notes: row.notes,
+        aiReport: parsedReport,
       });
 
       const result = await sendEmail({

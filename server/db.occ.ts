@@ -194,7 +194,7 @@ export async function getOccChatMessages(conferenceId: number, limit = 100) {
 export async function insertOccChatMessage(data: InsertOccChatMessage) {
   const db = await getDb();
   if (!db) return;
-  const result = await db.insert(occChatMessages).values(data);
+  const [result] = await db.insert(occChatMessages).values(data).returning();
   return result;
 }
 

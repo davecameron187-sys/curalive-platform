@@ -105,7 +105,7 @@ export async function createViolationAlert(
   endTimeMs?: number
 ) {
   try {
-    const result = await db.insert(complianceViolations).values({
+    const [insertedRow] = await db.insert(complianceViolations).values({
       eventId,
       conferenceId: conferenceId || null,
       violationType: violation.violationType,
@@ -118,10 +118,9 @@ export async function createViolationAlert(
       endTimeMs: endTimeMs || null,
       acknowledged: 0,
       actionTaken: "none",
-    });
+    }).returning();
 
-    // drizzle mysql2 returns [OkPacket, null] — insertId is in result[0]
-    const insertedId = Number((result as any)[0]?.insertId ?? result.insertId ?? 0);
+    const insertedId = insertedRow?.id ?? 0;
     // Log creation in alert history
     if (insertedId) {
       await db.insert(alertHistory).values({

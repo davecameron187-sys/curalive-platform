@@ -55,11 +55,11 @@ async function analyzeRegistrationPatterns(): Promise<DetectedThreat[]> {
 
   const recentRegs: any[] = await safeRawQuery(`
     SELECT COUNT(*) as cnt, email,
-           MIN(createdAt) as first_reg, MAX(createdAt) as last_reg
+           MIN("createdAt") as first_reg, MAX("createdAt") as last_reg
     FROM attendee_registrations
-    WHERE createdAt > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+    WHERE "createdAt" > (NOW() - INTERVAL '24 hours')
     GROUP BY email
-    HAVING cnt > 3
+    HAVING COUNT(*) > 3
   `);
 
   for (const row of recentRegs) {
@@ -80,9 +80,9 @@ async function analyzeRegistrationPatterns(): Promise<DetectedThreat[]> {
   const duplicateEmails: any[] = await safeRawQuery(`
     SELECT COUNT(DISTINCT email) as unique_emails, COUNT(*) as total_regs
     FROM attendee_registrations
-    WHERE createdAt > DATE_SUB(NOW(), INTERVAL 1 HOUR)
-    GROUP BY eventId
-    HAVING unique_emails > 50
+    WHERE "createdAt" > (NOW() - INTERVAL '1 hour')
+    GROUP BY "eventId"
+    HAVING COUNT(DISTINCT email) > 50
   `);
 
   for (const row of duplicateEmails) {
@@ -107,9 +107,9 @@ async function analyzeAccessPatterns(): Promise<DetectedThreat[]> {
   const unusualActivity: any[] = await safeRawQuery(`
     SELECT action_by as email, action_by_role as role, COUNT(*) as access_count
     FROM ai_am_audit_log
-    WHERE timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+    WHERE timestamp > EXTRACT(EPOCH FROM (NOW() - INTERVAL '1 hour')) * 1000
     GROUP BY action_by, action_by_role
-    HAVING access_count > 50
+    HAVING COUNT(*) > 50
   `);
 
   for (const row of unusualActivity) {
@@ -135,7 +135,7 @@ async function analyzeDataExfiltration(): Promise<DetectedThreat[]> {
     SELECT COUNT(*) as export_count
     FROM ai_am_audit_log
     WHERE (action LIKE '%export%' OR action LIKE '%download%' OR action LIKE '%bulk%')
-    AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+    AND timestamp > EXTRACT(EPOCH FROM (NOW() - INTERVAL '1 hour')) * 1000
   `);
 
   if (bulkExports.length > 0 && Number(bulkExports[0]?.export_count) > 20) {
@@ -166,10 +166,10 @@ async function runPredictiveAnalysis(): Promise<PredictiveAlert[]> {
 
   const avgRegsPerEvent: any[] = await safeRawQuery(`
     SELECT AVG(reg_count) as avg_regs FROM (
-      SELECT eventId, COUNT(*) as reg_count
+      SELECT "eventId", COUNT(*) as reg_count
       FROM attendee_registrations
-      WHERE createdAt > DATE_SUB(NOW(), INTERVAL 30 DAY)
-      GROUP BY eventId
+      WHERE "createdAt" > (NOW() - INTERVAL '30 days')
+      GROUP BY "eventId"
     ) sub
   `);
   const avgRegs = Number(avgRegsPerEvent[0]?.avg_regs ?? 0);
