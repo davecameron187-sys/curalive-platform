@@ -386,7 +386,7 @@ export const occRouter = router({
 
       // Auto-translate if requested (fire-and-forget, don't block the response)
       if (input.autoTranslateTo && result) {
-        const insertId = (result as any).insertId ?? (result as any)[0]?.insertId;
+        const insertId = (result as any)?.id ?? (result as any)?.insertId;
         if (insertId) {
           setImmediate(async () => {
             try {

@@ -148,8 +148,8 @@ export const autonomousInterventionRouter = router({
           bundleTriggered: rule.bundle,
           actionTaken: rule.action,
           acknowledged: false,
-        });
-        return { success: true, id: (inserted as any)?.insertId ?? null };
+        }).returning();
+        return { success: true, id: inserted?.id ?? null };
       } catch {
         return { success: false };
       }
