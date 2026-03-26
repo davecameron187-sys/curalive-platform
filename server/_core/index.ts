@@ -80,6 +80,10 @@ async function startServer() {
 
   const isProd = process.env.NODE_ENV === "production";
 
+  app.get("/ping-test", (_req, res) => {
+    res.json({ alive: true, node_env: process.env.NODE_ENV, ts: Date.now() });
+  });
+
   app.get("/health", async (_req, res) => {
     const { validateEnv } = await import("./config/env");
     const { getServiceStatus } = await import("./config/serviceStatus");

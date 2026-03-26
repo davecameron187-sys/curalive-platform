@@ -41195,6 +41195,9 @@ async function startServer() {
   const server = http.createServer(app);
   app.set("trust proxy", 1);
   const isProd = process.env.NODE_ENV === "production";
+  app.get("/ping-test", (_req, res) => {
+    res.json({ alive: true, node_env: process.env.NODE_ENV, ts: Date.now() });
+  });
   app.get("/health", async (_req, res) => {
     const { validateEnv: validateEnv2 } = await Promise.resolve().then(() => (init_env2(), env_exports));
     const { getServiceStatus: getServiceStatus2 } = await Promise.resolve().then(() => (init_serviceStatus(), serviceStatus_exports));
