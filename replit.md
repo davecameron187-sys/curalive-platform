@@ -111,6 +111,17 @@ Optional (not yet configured, non-critical for app loading):
 - `RESEND_API_KEY` — Email
 - `AWS_*` / `S3_*` — Object storage
 
+## Authentication & Authorization
+
+- **Auth system**: JWT cookie sessions (`app_session_id`) + OAuth (when OAUTH_SERVER_URL configured) + DEV_BYPASS (dev only)
+- **tRPC procedures**: `publicProcedure` (unauthenticated OK), `protectedProcedure` (any logged-in user), `operatorProcedure` (operator+admin), `adminProcedure` (admin only)
+- **DEV_BYPASS**: Only active when `NODE_ENV !== 'production'` — completely locked out in production
+- **Frontend route guards**: `RequireAuth` component wraps admin/operator/billing routes in `App.tsx`
+- **Cookie security**: `httpOnly: true`, `SameSite: none` (HTTPS) / `lax` (HTTP), `Secure` flag auto-detected
+- **Auth status endpoint**: `GET /api/auth/status` — returns `{authenticated, mode, user, oauthConfigured}`
+- **OAuth**: Gracefully returns 503 when `OAUTH_SERVER_URL` not configured (no crash)
+- **Role hierarchy**: viewer < operator < admin (defined in `server/routers/rbac.ts`)
+
 ## REST Endpoints (non-tRPC)
 
 - `GET /health` — System health + service status (returns core/integration availability)

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { z } from "zod";
-import { router, publicProcedure } from "../_core/trpc";
+import { router, operatorProcedure } from "../_core/trpc";
 import {getDb, rawSql } from "../db";
 import { evolutionAuditLog, capabilityRoadmap, aiToolProposals } from "../../drizzle/schema";
 import { desc, eq, sql } from "drizzle-orm";
@@ -155,12 +155,12 @@ Return ONLY valid JSON array:
 }
 
 export const evolutionAuditRouter = router({
-  getAuditLog: publicProcedure.query(async () => {
+  getAuditLog: operatorProcedure.query(async () => {
     const db = await getDb();
     return db.select().from(evolutionAuditLog).orderBy(desc(evolutionAuditLog.createdAt)).limit(100);
   }),
 
-  verifyChain: publicProcedure.query(async () => {
+  verifyChain: operatorProcedure.query(async () => {
     const db = await getDb();
     const entries = await db.select().from(evolutionAuditLog).orderBy(evolutionAuditLog.createdAt).limit(1000);
 
@@ -177,18 +177,18 @@ export const evolutionAuditRouter = router({
     return { valid, totalEntries: entries.length, brokenAt };
   }),
 
-  shadowTest: publicProcedure
+  shadowTest: operatorProcedure
     .input(z.object({ proposalId: z.number() }))
     .mutation(async ({ input }) => {
       return shadowTestProposal(input.proposalId);
     }),
 
-  getRoadmap: publicProcedure.query(async () => {
+  getRoadmap: operatorProcedure.query(async () => {
     const db = await getDb();
     return db.select().from(capabilityRoadmap).orderBy(capabilityRoadmap.timeframe, desc(capabilityRoadmap.gapScore));
   }),
 
-  generateRoadmap: publicProcedure.mutation(async () => {
+  generateRoadmap: operatorProcedure.mutation(async () => {
     return generateCapabilityRoadmap();
   }),
 });

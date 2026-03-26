@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { router, publicProcedure } from "../_core/trpc";
+import { router, publicProcedure, operatorProcedure, protectedProcedure } from "../_core/trpc";
 import {getDb, rawSql } from "../db";
 import { invokeLLM } from "../_core/llm";
 import { z } from "zod";
@@ -193,11 +193,11 @@ function computePeerBenchmark(cici: any, sector: string) {
 
 export const communicationIndexRouter = router({
 
-  getCurrent: publicProcedure.query(async () => {
+  getCurrent: protectedProcedure.query(async () => {
     return computeCICI();
   }),
 
-  getHistory: publicProcedure.query(async () => {
+  getHistory: protectedProcedure.query(async () => {
     const snapshots = await rawQuery<any>(`
       SELECT * FROM communication_index_snapshots
       ORDER BY quarter ASC LIMIT 20
@@ -205,7 +205,7 @@ export const communicationIndexRouter = router({
     return snapshots;
   }),
 
-  getPeerBenchmark: publicProcedure
+  getPeerBenchmark: protectedProcedure
     .input(z.object({
       sector: z.string().default("general"),
     }))
@@ -214,19 +214,19 @@ export const communicationIndexRouter = router({
       return computePeerBenchmark(cici, input.sector);
     }),
 
-  getAllSectorBenchmarks: publicProcedure.query(async () => {
+  getAllSectorBenchmarks: protectedProcedure.query(async () => {
     const cici = await computeCICI();
     return Object.keys(SECTOR_BENCHMARKS).map(key => computePeerBenchmark(cici, key));
   }),
 
-  getSectorList: publicProcedure.query(() => {
+  getSectorList: protectedProcedure.query(() => {
     return Object.entries(SECTOR_BENCHMARKS).map(([key, v]) => ({
       key,
       label: v.label,
     }));
   }),
 
-  getExecutiveScorecard: publicProcedure
+  getExecutiveScorecard: protectedProcedure
     .input(z.object({ sector: z.string().default("general") }))
     .query(async ({ input }) => {
       const cici = await computeCICI();
@@ -252,7 +252,7 @@ export const communicationIndexRouter = router({
       };
     }),
 
-  publishSnapshot: publicProcedure.mutation(async () => {
+  publishSnapshot: operatorProcedure.mutation(async () => {
     const data = await computeCICI();
     const quarter = getCurrentQuarter();
     const benchmark = computePeerBenchmark(data, "general");

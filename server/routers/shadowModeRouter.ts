@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, operatorProcedure, protectedProcedure } from "../_core/trpc";
 import {getDb, rawSql } from "../db";
 import { shadowSessions, taggedMetrics, recallBots, agmIntelligenceSessions } from "../../drizzle/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
@@ -210,7 +210,7 @@ async function generateTaggedMetricsFromSession(
 
 export const shadowModeRouter = router({
 
-  startSession: publicProcedure
+  startSession: operatorProcedure
     .input(z.object({
       clientName: z.string().min(1),
       eventName: z.string().min(1),
@@ -382,7 +382,7 @@ export const shadowModeRouter = router({
       throw new Error(`Failed to deploy bot after ${MAX_RETRIES + 1} attempts: ${lastError?.message ?? "Unknown error"}`);
     }),
 
-  endSession: publicProcedure
+  endSession: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -541,14 +541,14 @@ export const shadowModeRouter = router({
       return { success: true, transcriptSegments: 0, taggedMetricsGenerated: 0, message: "Session closed." };
     }),
 
-  listSessions: publicProcedure.query(async () => {
+  listSessions: protectedProcedure.query(async () => {
     try {
       const db = await getDb();
       return db.select().from(shadowSessions).orderBy(desc(shadowSessions.createdAt)).limit(50);
     } catch { return []; }
   }),
 
-  getSession: publicProcedure
+  getSession: protectedProcedure
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -615,7 +615,7 @@ export const shadowModeRouter = router({
       return { ...session, transcriptSegments, agmSessionId, recordingUrl: recordingUrl || localRecordingUrl, botStatus, aiReport };
     }),
 
-  updateStatus: publicProcedure
+  updateStatus: operatorProcedure
     .input(z.object({
       sessionId: z.number(),
       status: z.enum(["pending", "bot_joining", "live", "processing", "completed", "failed"]),
@@ -631,7 +631,7 @@ export const shadowModeRouter = router({
       return { success: true };
     }),
 
-  retrySession: publicProcedure
+  retrySession: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -712,7 +712,7 @@ export const shadowModeRouter = router({
       }
     }),
 
-  pushTranscriptSegment: publicProcedure
+  pushTranscriptSegment: operatorProcedure
     .input(z.object({
       sessionId: z.number(),
       speaker: z.string().default("Speaker"),
@@ -777,7 +777,7 @@ export const shadowModeRouter = router({
       return { success: true, segmentCount: existingTranscript.length };
     }),
 
-  deleteSession: publicProcedure
+  deleteSession: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -821,7 +821,7 @@ export const shadowModeRouter = router({
       return { success: true, message: "Session deleted" };
     }),
 
-  deleteSessions: publicProcedure
+  deleteSessions: operatorProcedure
     .input(z.object({ sessionIds: z.array(z.number()).min(1).max(100) }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -876,7 +876,7 @@ export const shadowModeRouter = router({
       return { success: true, deleted: ids.length, message: `${ids.length} session${ids.length > 1 ? "s" : ""} deleted` };
     }),
 
-  createFromCalendar: publicProcedure
+  createFromCalendar: operatorProcedure
     .input(z.object({
       clientName: z.string().min(1),
       eventName: z.string().min(1),
@@ -934,7 +934,7 @@ export const shadowModeRouter = router({
       };
     }),
 
-  pipeAgmGovernance: publicProcedure
+  pipeAgmGovernance: operatorProcedure
     .input(z.object({
       sessionId: z.number(),
       transcriptSegments: z.array(z.object({

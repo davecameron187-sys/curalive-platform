@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure, operatorProcedure } from "../_core/trpc";
 import { virtualStudioService } from "../services/VirtualStudioService";
 import {getDb, rawSql } from "../db";
 import { esgStudioFlags, virtualStudios } from "../../drizzle/schema";
@@ -33,7 +33,7 @@ async function rawExecute(query: string, params: any[] = []): Promise<void> {
 }
 
 export const virtualStudioRouter = router({
-  createStudio: publicProcedure
+  createStudio: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       bundleId: z.string(),
@@ -51,7 +51,7 @@ export const virtualStudioRouter = router({
       return { studio, bundleConfig };
     }),
 
-  getStudio: publicProcedure
+  getStudio: protectedProcedure
     .input(z.object({ eventId: z.string() }))
     .query(async ({ input }) => {
       const studio = await virtualStudioService.getStudio(input.eventId);
@@ -61,7 +61,7 @@ export const virtualStudioRouter = router({
       return { studio, bundleConfig, overlays };
     }),
 
-  updateAvatarConfig: publicProcedure
+  updateAvatarConfig: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       avatarStyle: z.string(),
@@ -74,7 +74,7 @@ export const virtualStudioRouter = router({
       return { success: true };
     }),
 
-  updateLanguageConfig: publicProcedure
+  updateLanguageConfig: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       primaryLanguage: z.string(),
@@ -91,7 +91,7 @@ export const virtualStudioRouter = router({
       return { success: true, supported: SUPPORTED_LANGUAGES };
     }),
 
-  toggleESG: publicProcedure
+  toggleESG: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       enabled: z.boolean(),
@@ -104,19 +104,19 @@ export const virtualStudioRouter = router({
       return { success: true, esgEnabled: input.enabled };
     }),
 
-  getESGFlags: publicProcedure
+  getESGFlags: protectedProcedure
     .input(z.object({ studioId: z.number() }))
     .query(async ({ input }) => {
       return virtualStudioService.getESGReport(input.studioId);
     }),
 
-  resolveESGFlag: publicProcedure
+  resolveESGFlag: operatorProcedure
     .input(z.object({ flagId: z.number() }))
     .mutation(async ({ input }) => {
       return virtualStudioService.resolveFlag(input.flagId);
     }),
 
-  generateReplay: publicProcedure
+  generateReplay: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       quality: z.enum(["720p", "1080p", "4k"]).default("1080p"),
@@ -138,11 +138,11 @@ export const virtualStudioRouter = router({
       };
     }),
 
-  getSupportedLanguages: publicProcedure.query(() => SUPPORTED_LANGUAGES),
+  getSupportedLanguages: protectedProcedure.query(() => SUPPORTED_LANGUAGES),
 
-  getLayoutTemplates: publicProcedure.query(() => LAYOUT_TEMPLATES),
+  getLayoutTemplates: protectedProcedure.query(() => LAYOUT_TEMPLATES),
 
-  createSession: publicProcedure
+  createSession: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       layout: z.string().default("single-presenter"),
@@ -180,7 +180,7 @@ export const virtualStudioRouter = router({
       };
     }),
 
-  getSession: publicProcedure
+  getSession: protectedProcedure
     .input(z.object({ eventId: z.string() }))
     .query(async ({ input }) => {
       const [session] = await rawQuery(`SELECT * FROM studio_sessions WHERE event_id = ? LIMIT 1`, [input.eventId]);
@@ -199,7 +199,7 @@ export const virtualStudioRouter = router({
       };
     }),
 
-  switchLayout: publicProcedure
+  switchLayout: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       layout: z.string(),
@@ -212,7 +212,7 @@ export const virtualStudioRouter = router({
       return { success: true, layout: template };
     }),
 
-  updateFeedSources: publicProcedure
+  updateFeedSources: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       feedSources: z.array(z.object({
@@ -228,7 +228,7 @@ export const virtualStudioRouter = router({
       return { success: true, feedCount: input.feedSources.length };
     }),
 
-  updateLowerThirds: publicProcedure
+  updateLowerThirds: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       lowerThirds: z.array(z.object({
@@ -249,7 +249,7 @@ export const virtualStudioRouter = router({
       return { success: true };
     }),
 
-  toggleOverlay: publicProcedure
+  toggleOverlay: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       overlay: z.enum(["live_sentiment", "participant_count"]),
@@ -261,7 +261,7 @@ export const virtualStudioRouter = router({
       return { success: true, overlay: input.overlay, enabled: input.enabled };
     }),
 
-  getPreview: publicProcedure
+  getPreview: protectedProcedure
     .input(z.object({ eventId: z.string() }))
     .query(async ({ input }) => {
       const [session] = await rawQuery(`SELECT * FROM studio_sessions WHERE event_id = ? LIMIT 1`, [input.eventId]);
@@ -282,14 +282,14 @@ export const virtualStudioRouter = router({
       };
     }),
 
-  startRecording: publicProcedure
+  startRecording: operatorProcedure
     .input(z.object({ eventId: z.string() }))
     .mutation(async ({ input }) => {
       await rawExecute(`UPDATE studio_sessions SET recording_status = 'recording', updated_at = NOW() WHERE event_id = ?`, [input.eventId]);
       return { success: true, status: "recording", startedAt: new Date().toISOString() };
     }),
 
-  stopRecording: publicProcedure
+  stopRecording: operatorProcedure
     .input(z.object({ eventId: z.string() }))
     .mutation(async ({ input }) => {
       await rawExecute(`UPDATE studio_sessions SET recording_status = 'stopped', updated_at = NOW() WHERE event_id = ?`, [input.eventId]);

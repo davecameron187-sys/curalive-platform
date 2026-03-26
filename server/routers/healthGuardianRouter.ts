@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, operatorProcedure, router } from "../_core/trpc";
 import {
   getLastResults,
   getHealthHistory,
@@ -13,31 +13,31 @@ import {
 } from "../services/HealthGuardianService";
 
 export const healthGuardianRouter = router({
-  currentStatus: publicProcedure.query(async () => {
+  currentStatus: protectedProcedure.query(async () => {
     const results = getLastResults();
     const overall = await getOverallHealthScore();
     return { results, overall };
   }),
 
-  runCheck: publicProcedure.mutation(async () => {
+  runCheck: operatorProcedure.mutation(async () => {
     const results = await runAllChecks();
     const overall = await getOverallHealthScore();
     return { results, overall };
   }),
 
-  history: publicProcedure
+  history: protectedProcedure
     .input(z.object({ service: z.string().optional(), limit: z.number().default(100) }))
     .query(async ({ input }) => {
       return getHealthHistory(input.service, input.limit);
     }),
 
-  incidents: publicProcedure
+  incidents: protectedProcedure
     .input(z.object({ status: z.string().optional(), limit: z.number().default(50) }))
     .query(async ({ input }) => {
       return getIncidents(input.status, input.limit);
     }),
 
-  incidentDetail: publicProcedure
+  incidentDetail: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const incident = await getIncidentById(input.id);
@@ -46,7 +46,7 @@ export const healthGuardianRouter = router({
       return { incident, reports };
     }),
 
-  generateReport: publicProcedure
+  generateReport: operatorProcedure
     .input(z.object({ incidentId: z.number(), eventId: z.number().optional() }))
     .mutation(async ({ input }) => {
       return generateCustomerReport(input.incidentId, input.eventId);

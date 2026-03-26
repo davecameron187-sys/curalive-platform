@@ -5,6 +5,7 @@ import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import BackToLinks from "./components/BackToLinks";
+import RequireAuth from "./components/RequireAuth";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import EventRoom from "./pages/EventRoom";
@@ -133,8 +134,8 @@ function Router() {
       <Route path="/event/:id" component={EventRoom} />
       <Route path="/moderator/:id" component={Moderator} />
       <Route path="/presenter/:id" component={Presenter} />
-      <Route path="/operator/analytics" component={OperatorAnalytics} />
-      <Route path="/operator/:id" component={OperatorConsole} />
+      <Route path="/operator/analytics">{() => <RequireAuth requiredRole="operator"><OperatorAnalytics /></RequireAuth>}</Route>
+      <Route path="/operator/:id">{(params: any) => <RequireAuth requiredRole="operator"><OperatorConsole {...params} /></RequireAuth>}</Route>
       <Route path="/register/:id" component={Registration} />
       <Route path="/demo-registration" component={DemoRegistration} />
       <Route path="/event-pass/:id" component={EventPass} />
@@ -148,7 +149,7 @@ function Router() {
       <Route path="/tech-handover" component={TechHandover} />
       <Route path="/summit-console" component={SummitConsole} />
       <Route path="/occ"><Redirect to="/?tab=shadow-mode" /></Route>
-      <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/users">{() => <RequireAuth requiredRole="admin"><AdminUsers /></RequireAuth>}</Route>
       <Route path="/live-video" component={LiveVideoMeetings} />
       <Route path="/live-video/roadshow/:roadshowId" component={RoadshowDetail} />
       <Route path="/live-video/conference" component={HybridConference} />
@@ -167,23 +168,23 @@ function Router() {
       <Route path="/legal/privacy" component={PrivacyPolicy} />
       <Route path="/platform-links" component={PlatformLinks} />
       <Route path="/profile" component={Profile} />
-      <Route path="/billing" component={Billing} />
+      <Route path="/billing">{() => <RequireAuth><Billing /></RequireAuth>}</Route>
       <Route path="/training" component={Training} />
       <Route path="/operator-guide" component={OperatorGuide} />
       <Route path="/integrations/twilio-direct" component={TwilioDirectGuide} />
-      <Route path="/billing/preview" component={BillingPreview} />
+      <Route path="/billing/preview">{() => <RequireAuth><BillingPreview /></RequireAuth>}</Route>
       <Route path="/my-events" component={MyEvents} />
       <Route path="/admin/billing"><Redirect to="/?tab=billing" /></Route>
-      <Route path="/admin/billing/quote/:id" component={QuoteBuilder} />
-      <Route path="/admin/billing/invoice/:id" component={InvoiceViewer} />
-      <Route path="/billing/ageing" component={AgeingReport} />
-      <Route path="/billing/recurring" component={RecurringTemplates} />
+      <Route path="/admin/billing/quote/:id">{(params: any) => <RequireAuth requiredRole="admin"><QuoteBuilder {...params} /></RequireAuth>}</Route>
+      <Route path="/admin/billing/invoice/:id">{(params: any) => <RequireAuth requiredRole="admin"><InvoiceViewer {...params} /></RequireAuth>}</Route>
+      <Route path="/billing/ageing">{() => <RequireAuth requiredRole="operator"><AgeingReport /></RequireAuth>}</Route>
+      <Route path="/billing/recurring">{() => <RequireAuth requiredRole="operator"><RecurringTemplates /></RequireAuth>}</Route>
       <Route path="/quote/:token" component={QuoteView} />
       <Route path="/invoice/:token" component={InvoiceView} />
       <Route path="/live-video/on-demand" component={OnDemandLibrary} />
       <Route path="/live-video/analytics" component={WebcastAnalytics} />
       <Route path="/training-mode" component={TrainingModeConsole} />
-      <Route path="/dev-dashboard" component={DevelopmentDashboard} />
+      <Route path="/dev-dashboard">{() => <RequireAuth requiredRole="admin"><DevelopmentDashboard /></RequireAuth>}</Route>
       <Route path="/ai-features" component={AIFeaturesStatus} />
       <Route path="/post-event/:id" component={PostEventReport} />
       <Route path="/events/schedule" component={EventScheduler} />
@@ -191,24 +192,24 @@ function Router() {
       <Route path="/m/:eventId" component={AttendeeRoom} />
       <Route path="/portal/:clientSlug" component={ClientPortal} />
       <Route path="/portal/:clientSlug/event/:id" component={EventRoom} />
-      <Route path="/admin/clients" component={AdminClients} />
+      <Route path="/admin/clients">{() => <RequireAuth requiredRole="admin"><AdminClients /></RequireAuth>}</Route>
       <Route path="/post-event/:id/compliance" component={ComplianceReport} />
       <Route path="/post-event/:id/followups" component={InvestorFollowUps} />
       <Route path="/compliance/audit-log" component={ComplianceAuditLog} />
-      <Route path="/operator/:eventId/sentiment" component={SentimentDashboard} />
+      <Route path="/operator/:eventId/sentiment">{(params: any) => <RequireAuth requiredRole="operator"><SentimentDashboard {...params} /></RequireAuth>}</Route>
       <Route path="/ai-dashboard" component={AIDashboard} />
       <Route path="/analytics" component={AnalyticsDashboard} />
-      <Route path="/admin/panel" component={AdminPanel} />
+      <Route path="/admin/panel">{() => <RequireAuth requiredRole="admin"><AdminPanel /></RequireAuth>}</Route>
       <Route path="/compliance/dashboard" component={ComplianceDashboard} />
       <Route path="/event-brief/:id" component={EventBriefGenerator} />
       <Route path="/event-brief" component={EventBriefGenerator} />
-      <Route path="/admin/feature-flags" component={FeatureFlagsDashboard} />
-      <Route path="/operator/:eventId/qa" component={ModeratorQAConsole} />
+      <Route path="/admin/feature-flags">{() => <RequireAuth requiredRole="admin"><FeatureFlagsDashboard /></RequireAuth>}</Route>
+      <Route path="/operator/:eventId/qa">{(params: any) => <RequireAuth requiredRole="operator"><ModeratorQAConsole {...params} /></RequireAuth>}</Route>
       <Route path="/post-event/:id/redaction" component={RedactionWorkflow} />
-      <Route path="/admin/toxicity" component={ToxicityFilterDashboard} />
+      <Route path="/admin/toxicity">{() => <RequireAuth requiredRole="admin"><ToxicityFilterDashboard /></RequireAuth>}</Route>
       <Route path="/transcript/:id/edit" component={TranscriptEditor} />
       <Route path="/post-event/:id/transcript" component={TranscriptPage} />
-      <Route path="/operator-hub" component={OperatorHub} />
+      <Route path="/operator-hub">{() => <RequireAuth requiredRole="operator"><OperatorHub /></RequireAuth>}</Route>
       <Route path="/ai-shop" component={AIShop} />
       <Route path="/ai-onboarding" component={AIOnboarding} />
       <Route path="/intelligence-suite" component={IntelligenceSuite} />
@@ -242,10 +243,10 @@ function Router() {
       <Route path="/podcast-converter" component={PodcastConverter} />
       <Route path="/sustainability" component={SustainabilityDashboard} />
       <Route path="/feature-map" component={FeatureMap} />
-      <Route path="/admin/interconnection-analytics" component={InterconnectionAnalytics} />
+      <Route path="/admin/interconnection-analytics">{() => <RequireAuth requiredRole="admin"><InterconnectionAnalytics /></RequireAuth>}</Route>
       <Route path="/virtual-studio" component={VirtualStudio} />
-      <Route path="/operator-links" component={OperatorLinks} />
-      <Route path="/operator-dashboard" component={OperatorDashboard} />
+      <Route path="/operator-links">{() => <RequireAuth requiredRole="operator"><OperatorLinks /></RequireAuth>}</Route>
+      <Route path="/operator-dashboard">{() => <RequireAuth requiredRole="operator"><OperatorDashboard /></RequireAuth>}</Route>
       <Route path="/features/:id" component={FeatureDetail} />
       <Route path="/bundles/:id" component={BundleDetail} />
       <Route path="/workflows" component={WorkflowsPage} />

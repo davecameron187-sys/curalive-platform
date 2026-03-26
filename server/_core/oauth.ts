@@ -10,7 +10,33 @@ function getQueryParam(req: Request, key: string): string | undefined {
 }
 
 export function registerOAuthRoutes(app: Express) {
+  const oauthEnabled = Boolean(process.env.OAUTH_SERVER_URL);
+
+  app.get("/api/auth/status", async (req: Request, res: Response) => {
+    const mode = oauthEnabled ? "oauth" : "dev-bypass";
+    let user = null;
+
+    try {
+      const sessionUser = await sdk.authenticateRequest(req);
+      if (sessionUser) {
+        user = { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email, role: sessionUser.role };
+      }
+    } catch {}
+
+    res.json({
+      authenticated: Boolean(user),
+      mode,
+      user,
+      oauthConfigured: oauthEnabled,
+    });
+  });
+
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
+    if (!oauthEnabled) {
+      res.status(503).json({ error: "OAuth is not configured. Set OAUTH_SERVER_URL to enable authentication." });
+      return;
+    }
+
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
 

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { z } from "zod";
-import { router, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure, operatorProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { disclosureCertificates } from "../../drizzle/schema";
 import { desc, eq } from "drizzle-orm";
@@ -73,7 +73,7 @@ export async function generateDisclosureCertificate(opts: {
 }
 
 export const disclosureCertificateRouter = router({
-  generate: publicProcedure
+  generate: operatorProcedure
     .input(z.object({
       eventId: z.string(),
       sessionId: z.number().optional(),
@@ -89,7 +89,7 @@ export const disclosureCertificateRouter = router({
       return generateDisclosureCertificate(input);
     }),
 
-  verify: publicProcedure
+  verify: protectedProcedure
     .input(z.object({ certificateHash: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -108,12 +108,12 @@ export const disclosureCertificateRouter = router({
       };
     }),
 
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     const db = await getDb();
     return db.select().from(disclosureCertificates).orderBy(desc(disclosureCertificates.issuedAt)).limit(50);
   }),
 
-  getByEvent: publicProcedure
+  getByEvent: protectedProcedure
     .input(z.object({ eventId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();

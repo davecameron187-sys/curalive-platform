@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { router, publicProcedure } from "../_core/trpc";
+import { router, adminProcedure } from "../_core/trpc";
 import {getDb, rawSql } from "../db";
 
 interface DiagnosticResult {
@@ -20,7 +20,7 @@ async function runDiagnostic(name: string, fn: () => Promise<string>): Promise<D
 }
 
 export const systemDiagnosticsRouter = router({
-  runFullDiagnostic: publicProcedure.mutation(async () => {
+  runFullDiagnostic: adminProcedure.mutation(async () => {
     const results: DiagnosticResult[] = [];
 
     results.push(await runDiagnostic("Database Connection", async () => {

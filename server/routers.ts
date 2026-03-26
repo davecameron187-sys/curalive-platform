@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, adminProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, adminProcedure, protectedProcedure, operatorProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import { sendEmail, buildIRSummaryEmail, buildRegistrationConfirmationEmail } from "./_core/email";
@@ -260,7 +260,7 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(({ ctx }) => {
       if (ctx.user) return ctx.user;
-      const isDev = process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development';
+      const isDev = process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development');
       if (isDev) return { id: 0, name: 'Dev Operator', email: 'dev@curalive.local', role: 'operator' as const };
       return null;
     }),
@@ -404,7 +404,7 @@ export const appRouter = router({
       }),
 
     // Upsert event (called by operator to create/update event with optional access code)
-    upsertEvent: publicProcedure
+    upsertEvent: operatorProcedure
       .input(z.object({
         eventId: z.string(),
         title: z.string(),
@@ -430,7 +430,7 @@ export const appRouter = router({
       }),
 
     // Set or remove access code for an event
-    setAccessCode: publicProcedure
+    setAccessCode: operatorProcedure
       .input(z.object({
         eventId: z.string(),
         accessCode: z.string().nullable(),
@@ -648,7 +648,7 @@ Produce a JSON response with this exact structure:
       }),
 
     // Get all attendees for an event (for Operator Console)
-    listByEvent: publicProcedure
+    listByEvent: operatorProcedure
       .input(z.object({ eventId: z.string() }))
       .query(async ({ input }) => {
         const db = await getDb();
@@ -709,14 +709,13 @@ Produce a JSON response with this exact structure:
 
   // ─── IR Contacts ─────────────────────────────────────────────────────────────
   irContacts: router({
-    list: publicProcedure.query(async () => {
+    list: protectedProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
       return db.select().from(irContacts).where(eq(irContacts.active, true)).orderBy(irContacts.name);
     }),
 
-    // Returns active IR contacts that have a phone number — for the Multi-Dial queue
-    getForDial: publicProcedure.query(async () => {
+    getForDial: protectedProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
       const contacts = await db.select().from(irContacts)
@@ -725,7 +724,7 @@ Produce a JSON response with this exact structure:
       return contacts.filter(c => c.phoneNumber && c.phoneNumber.trim().length > 0);
     }),
 
-    add: publicProcedure
+    add: operatorProcedure
       .input(z.object({
         name: z.string().min(1),
         email: z.string().email(),
@@ -746,7 +745,7 @@ Produce a JSON response with this exact structure:
         return { success: true };
       }),
 
-    update: publicProcedure
+    update: operatorProcedure
       .input(z.object({
         id: z.number(),
         name: z.string().min(1),
@@ -768,7 +767,7 @@ Produce a JSON response with this exact structure:
         return { success: true };
       }),
 
-    remove: publicProcedure
+    remove: operatorProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -777,8 +776,7 @@ Produce a JSON response with this exact structure:
         return { success: true };
       }),
 
-    // Send AI summary to all active IR contacts
-    sendSummary: publicProcedure
+    sendSummary: operatorProcedure
       .input(z.object({
         eventTitle: z.string(),
         summary: z.object({
