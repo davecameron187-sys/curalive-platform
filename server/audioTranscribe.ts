@@ -133,6 +133,9 @@ async function callTranscribeApi(buffer: Buffer, filename: string): Promise<stri
 
   if (!response.ok) {
     const errText = await response.text().catch(() => response.statusText);
+    if (response.status === 429) {
+      throw new Error(`QUOTA_EXCEEDED: The AI transcription service has reached its usage limit. The recording has been saved and you can retry transcription later.`);
+    }
     throw new Error(`Whisper API failed (${response.status}): ${errText}`);
   }
 
@@ -160,6 +163,7 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
     },
     async (req: any, res: any) => {
       let tmpDir: string | null = null;
+      let savedRecordingPath: string | null = null;
       try {
         if (!req.file) {
           res.status(400).json({ error: "No audio file provided" });
@@ -171,6 +175,23 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
         const isVideo = VIDEO_EXTENSIONS.test(originalname);
         const isAudio = AUDIO_EXTENSIONS.test(originalname);
         console.log(`[AudioTranscribe] Received ${originalname} (${sizeMB.toFixed(1)}MB, video=${isVideo})`);
+
+        try {
+          const path = await import("path");
+          const fs = await import("fs");
+          const crypto = await import("crypto");
+          const RECORDINGS_DIR = path.resolve(process.cwd(), "uploads", "recordings");
+          if (!fs.existsSync(RECORDINGS_DIR)) fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
+          const rawExt = (path.extname(originalname) || ".mp3").toLowerCase();
+          const safeExt = /^\.(mp3|mp4|wav|m4a|webm|ogg|flac|aac)$/.test(rawExt) ? rawExt : ".mp3";
+          const uniqueName = `${Date.now()}_${crypto.randomBytes(6).toString("hex")}${safeExt}`;
+          const destPath = path.join(RECORDINGS_DIR, uniqueName);
+          await writeFile(destPath, buffer);
+          savedRecordingPath = uniqueName;
+          console.log(`[AudioTranscribe] Saved recording: ${uniqueName} (${sizeMB.toFixed(1)}MB)`);
+        } catch (saveErr: any) {
+          console.error("[AudioTranscribe] Failed to save recording copy:", saveErr.message);
+        }
 
         let transcript: string;
 
@@ -214,27 +235,15 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
         const wordCount = transcript.split(/\s+/).filter(Boolean).length;
         console.log(`[AudioTranscribe] Complete — ${wordCount} words`);
 
-        let savedRecordingPath: string | null = null;
-        try {
-          const path = await import("path");
-          const fs = await import("fs");
-          const crypto = await import("crypto");
-          const RECORDINGS_DIR = path.resolve(process.cwd(), "uploads", "recordings");
-          if (!fs.existsSync(RECORDINGS_DIR)) fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
-          const ext = (path.extname(originalname) || ".mp3").toLowerCase();
-          const uniqueName = `${Date.now()}_${crypto.randomBytes(6).toString("hex")}${ext}`;
-          const destPath = path.join(RECORDINGS_DIR, uniqueName);
-          await writeFile(destPath, buffer);
-          savedRecordingPath = uniqueName;
-          console.log(`[AudioTranscribe] Saved recording: ${uniqueName} (${sizeMB.toFixed(1)}MB)`);
-        } catch (saveErr: any) {
-          console.error("[AudioTranscribe] Failed to save recording copy:", saveErr.message);
-        }
-
         res.json({ success: true, transcript, savedRecordingPath });
       } catch (err: any) {
         console.error("[AudioTranscribe]", err);
-        res.status(500).json({ error: err.message ?? "Transcription failed" });
+        const isQuotaError = err.message?.includes("QUOTA_EXCEEDED") || err.message?.includes("429");
+        const statusCode = isQuotaError ? 429 : 500;
+        const errorMessage = isQuotaError
+          ? "AI transcription quota exceeded. Your recording has been saved — you can retry transcription later from the archive."
+          : (err.message ?? "Transcription failed");
+        res.status(statusCode).json({ error: errorMessage, code: isQuotaError ? "QUOTA_EXCEEDED" : "TRANSCRIPTION_FAILED", savedRecordingPath });
       } finally {
         if (tmpDir) {
           rm(tmpDir, { recursive: true, force: true }).catch(() => {});

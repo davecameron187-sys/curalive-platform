@@ -578,6 +578,18 @@ export default function AIDashboard({ sessions }: AIDashboardProps) {
             },
           });
           return;
+        } else {
+          const errData = await transRes.json().catch(() => ({}));
+          if (transRes.status === 429 || errData.code === "QUOTA_EXCEEDED") {
+            toast.error("Recording saved but transcription quota exceeded — you can retry transcription later from the archive");
+          } else {
+            toast.error("Recording saved but transcription failed — you can retry later");
+          }
+          sessionDetail.refetch();
+          setUploadStatus("done");
+          setRecFile(null);
+          setIsUploading(false);
+          return;
         }
       }
 

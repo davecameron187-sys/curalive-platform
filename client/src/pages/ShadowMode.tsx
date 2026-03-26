@@ -360,7 +360,11 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
         const res = await fetch("/api/transcribe-audio", { method: "POST", body: fd });
         if (!res.ok) {
           const data = await res.json().catch(() => ({ error: "Transcription failed" }));
-          throw new Error(data.error ?? "Transcription failed");
+          const isQuota = res.status === 429 || data.code === "QUOTA_EXCEEDED";
+          const msg = isQuota
+            ? "AI transcription quota exceeded. Please paste the transcript text manually, or retry later."
+            : (data.error ?? "Transcription failed");
+          throw new Error(msg);
         }
         const { transcript: t, savedRecordingPath: srp } = await res.json();
         transcript = t;
@@ -511,7 +515,11 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
       const res = await fetch("/api/transcribe-audio", { method: "POST", body: fd });
       if (!res.ok) {
         const data = await res.json().catch(() => ({ error: "Transcription failed" }));
-        throw new Error(data.error ?? "Transcription failed");
+        const isQuota = res.status === 429 || data.code === "QUOTA_EXCEEDED";
+        const msg = isQuota
+          ? "AI transcription quota exceeded. Please try again later or upload a text transcript instead."
+          : (data.error ?? "Transcription failed");
+        throw new Error(msg);
       }
       const { transcript, savedRecordingPath } = await res.json();
       setRecStatus("processing");
