@@ -152,7 +152,8 @@
     "onlyBuiltDependencies": [
       "@tailwindcss/oxide",
       "esbuild",
-      "puppeteer"
+      "puppeteer",
+      "sharp"
     ]
   }
 }
