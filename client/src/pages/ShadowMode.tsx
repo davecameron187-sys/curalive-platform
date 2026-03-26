@@ -711,7 +711,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                   </button>
 
                   <button
-                    onClick={() => setActiveTab("recording")}
+                    onClick={() => { setActiveTab("archive"); setArchiveInputMode("recording" as any); }}
                     className="group bg-white/[0.02] hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/30 rounded-xl p-5 text-left transition-all"
                   >
                     <div className="flex items-center gap-3 mb-3">
@@ -732,7 +732,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                   </button>
 
                   <button
-                    onClick={() => setActiveTab("archive")}
+                    onClick={() => { setActiveTab("archive"); setArchiveInputMode("paste" as any); }}
                     className="group bg-white/[0.02] hover:bg-violet-500/10 border border-white/10 hover:border-violet-500/30 rounded-xl p-5 text-left transition-all"
                   >
                     <div className="flex items-center gap-3 mb-3">
