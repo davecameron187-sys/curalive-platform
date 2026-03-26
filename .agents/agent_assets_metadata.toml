@@ -354,3 +354,9 @@ id = "bT8mgsT_me3rfjts7ZD-g"
 uri = "file://docs/CURALIVE_COMPLETE_TECHNICAL_SPEC.md"
 type = "text"
 title = "CuraLive — Complete Technical Specification"
+
+[[outputs]]
+id = "t2QWzPefmG1wOEJENVH8T"
+uri = "file://docs/CURALIVE_COMPLETE_TECHNICAL_SPEC.docx"
+type = "word_document"
+title = "CuraLive — Complete Technical Specification (.docx)"
