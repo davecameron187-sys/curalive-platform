@@ -26029,8 +26029,8 @@ async function autoGenerateAiReport(sessionId, clientName, eventName, eventType,
     const wordCount = fullText.split(/\s+/).filter(Boolean).length;
     await rawSql(
       `INSERT INTO archive_events (event_id, client_name, event_name, event_type, transcript_text, word_count, segment_count, sentiment_avg, compliance_flags, status, ai_report, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, 'Auto-generated from Shadow Mode session')
-       ON DUPLICATE KEY UPDATE ai_report = VALUES(ai_report), status = 'completed'`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'completed', $10, 'Auto-generated from Shadow Mode session')
+       ON CONFLICT (event_id) DO UPDATE SET ai_report = EXCLUDED.ai_report, status = 'completed'`,
       [eventId, clientName, eventName, eventType, fullText, wordCount, transcript.length, sentimentAvg ?? 50, complianceFlags2, JSON.stringify(aiReport)]
     );
     try {
@@ -26490,7 +26490,7 @@ var init_shadowModeRouter = __esm({
         try {
           const eventId = `shadow-${session.id}`;
           const [rows] = await rawSql(
-            `SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`,
+            `SELECT ai_report FROM archive_events WHERE event_id = $1 LIMIT 1`,
             [eventId]
           );
           if (rows?.[0]?.ai_report) {
