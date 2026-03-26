@@ -39660,7 +39660,11 @@ function serveStatic(app) {
     );
   }
   app.use(express.static(distPath, { maxAge: 0 }));
-  app.use("*", (_req, res) => {
+  app.use("*", (_req, res, next) => {
+    const url = _req.originalUrl || _req.url || "";
+    if (url.startsWith("/api/") || url.startsWith("/health")) {
+      return next();
+    }
     const indexPath = path3.resolve(distPath, "index.html");
     let html = fs2.readFileSync(indexPath, "utf-8");
     const assetsDir = path3.resolve(distPath, "assets");

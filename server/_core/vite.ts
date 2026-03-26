@@ -60,7 +60,11 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath, { maxAge: 0 }));
 
-  app.use("*", (_req, res) => {
+  app.use("*", (_req, res, next) => {
+    const url = _req.originalUrl || _req.url || "";
+    if (url.startsWith("/api/") || url.startsWith("/health")) {
+      return next();
+    }
     const indexPath = path.resolve(distPath, "index.html");
     let html = fs.readFileSync(indexPath, "utf-8");
 
