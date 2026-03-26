@@ -39480,9 +39480,32 @@ function serveStatic(app) {
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
-  app.use(express.static(distPath));
+  app.use(express.static(distPath, { maxAge: 0 }));
   app.use("*", (_req, res) => {
-    res.sendFile(path3.resolve(distPath, "index.html"));
+    const indexPath = path3.resolve(distPath, "index.html");
+    let html = fs2.readFileSync(indexPath, "utf-8");
+    const assetsDir = path3.resolve(distPath, "assets");
+    if (fs2.existsSync(assetsDir)) {
+      const jsFiles = fs2.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".js"));
+      if (jsFiles.length > 0) {
+        const newestBundle = jsFiles.sort((a, b) => {
+          const statA = fs2.statSync(path3.resolve(assetsDir, a));
+          const statB = fs2.statSync(path3.resolve(assetsDir, b));
+          return statB.mtimeMs - statA.mtimeMs;
+        })[0];
+        html = html.replace(/src="\/assets\/index[^"]*\.js"/, `src="/assets/${newestBundle}"`);
+        const cssFiles = fs2.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".css"));
+        if (cssFiles.length > 0) {
+          const newestCss = cssFiles.sort((a, b) => {
+            const statA = fs2.statSync(path3.resolve(assetsDir, a));
+            const statB = fs2.statSync(path3.resolve(assetsDir, b));
+            return statB.mtimeMs - statA.mtimeMs;
+          })[0];
+          html = html.replace(/href="\/assets\/index[^"]*\.css"/, `href="/assets/${newestCss}"`);
+        }
+      }
+    }
+    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache" }).end(html);
   });
 }
 
