@@ -204,6 +204,11 @@ All registered in BOTH `server/routers.ts` AND `server/routers.eager.ts`:
 8. **Press release generator synced** — Added to `routers.ts` (was only in `routers.eager.ts`).
 9. **Legacy localStorage write removed** — Removed `manus-runtime-user-info` write from useAuth hook (publish-safe fix from GitHub commit a2053f2).
 10. **Health endpoint updated** — Now returns `{ status: "ok", timestamp: "..." }` matching deployment requirements.
+11. **Database schema sync** — Ran `drizzle-kit push --force` to sync all Drizzle schema tables to database. 161 tables now in PostgreSQL.
+12. **Health monitoring tables recreated** — Rebuilt `health_checks`, `health_incidents`, `health_incident_reports`, `health_baselines` with correct column names (`service` not `component`, `avg_value`/`std_dev`/`sample_count` for baselines).
+13. **HealthGuardian numeric coercion fix** — Fixed bug where PostgreSQL NUMERIC values returned as strings caused arithmetic to produce `"59-24.5"` instead of proper numbers. All `row.avg_value`, `row.std_dev`, `row.sample_count` now wrapped in `Number()`.
+14. **HealthGuardian false incidents suppressed** — Services with "unknown" status (API key not configured) no longer trigger incident creation. Only "degraded" and "critical" statuses create incidents.
+15. **Production build verified** — `pnpm run build` succeeds: Vite frontend + esbuild server → `dist/`.
 
 ---
 
