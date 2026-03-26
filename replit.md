@@ -65,7 +65,9 @@ curalive-platform/
 - `pnpm run dev` — Start development server (tsx watch, port from `PORT` env or 3000)
 - `pnpm run build` — Production build (Vite + esbuild → `dist/`)
 - `pnpm run start` — Start production server (`node dist/index.js`)
+- `pnpm run check:routers` — Verify routers.eager.ts and routers.ts are in sync
 - `drizzle-kit push --force` — Sync database schema
+- `bash scripts/smoke-test.sh` — Deployment smoke test (health + key routes)
 
 ## Ports (Replit)
 
@@ -111,7 +113,7 @@ Optional (not yet configured, non-critical for app loading):
 
 ## REST Endpoints (non-tRPC)
 
-- `GET /health` — Health check (returns `{ status: "ok" }`)
+- `GET /health` — System health + service status (returns core/integration availability)
 - `GET /api/archives/:id/transcript` — Download transcript as `.txt` file
 - `GET /api/archives/:id/recording` — Download recording as `.mp3` file
 - `POST /api/webphone/twiml` — Twilio TwiML voice endpoint

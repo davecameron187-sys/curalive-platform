@@ -19,6 +19,8 @@ import { buildTwiMLVoiceResponse } from "../webphone/twilio";
 import { parseTelnyxWebhook } from "../webphone/telnyx";
 import twilio_twiml from "twilio";
 import { MetricsWebSocketServer } from "./metricsWebsocket";
+import { enforceEnvOrExit } from "./config/env";
+import { systemStatusRouter } from "../routes/systemStatus";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -65,9 +67,7 @@ async function startServer() {
 
   const isProd = process.env.NODE_ENV === "production";
 
-  app.get("/health", (_req, res) => {
-    res.status(200).json({ status: "ok" });
-  });
+  app.use(systemStatusRouter);
 
   validateShadowModeEnv();
 
@@ -852,4 +852,5 @@ async function startServer() {
   process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
+enforceEnvOrExit();
 startServer().catch(console.error);
