@@ -941,10 +941,29 @@ export const archiveUploadRouter = router({
         transcriptText: z.string().min(10).max(500000),
         notes: z.string().optional(),
         selectedModules: z.array(z.string()).optional(),
+        savedRecordingPath: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+
+      let validatedRecordingPath: string | null = null;
+      if (input.savedRecordingPath) {
+        const path = await import("path");
+        const fs = await import("fs");
+        const basename = path.basename(input.savedRecordingPath);
+        if (/^\d+_[a-f0-9]{12}\.\w+$/.test(basename)) {
+          const fullPath = path.resolve(process.cwd(), "uploads", "recordings", basename);
+          if (fs.existsSync(fullPath)) {
+            validatedRecordingPath = basename;
+          } else {
+            console.warn(`[processTranscript] Recording file not found: ${basename}`);
+          }
+        } else {
+          console.warn(`[processTranscript] Invalid recording filename pattern: ${basename}`);
+        }
+      }
+
     const fingerprint = computeTranscriptFingerprint(input.transcriptText);
 
       const [existingRows] = await rawSql(
@@ -996,8 +1015,8 @@ export const archiveUploadRouter = router({
       const [result] = await rawSql(
         `INSERT INTO archive_events
           (event_id, client_name, event_name, event_type, event_date, platform, transcript_text,
-           word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?)
+           word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint, recording_path)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?, ?)
          RETURNING id`,
         [
           null,
@@ -1013,6 +1032,7 @@ export const archiveUploadRouter = router({
           complianceFlags,
           input.notes ?? null,
           fingerprint,
+          validatedRecordingPath,
         ]
       );
 

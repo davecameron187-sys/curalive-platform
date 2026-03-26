@@ -213,7 +213,25 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
 
         const wordCount = transcript.split(/\s+/).filter(Boolean).length;
         console.log(`[AudioTranscribe] Complete — ${wordCount} words`);
-        res.json({ success: true, transcript });
+
+        let savedRecordingPath: string | null = null;
+        try {
+          const path = await import("path");
+          const fs = await import("fs");
+          const crypto = await import("crypto");
+          const RECORDINGS_DIR = path.resolve(process.cwd(), "uploads", "recordings");
+          if (!fs.existsSync(RECORDINGS_DIR)) fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
+          const ext = (path.extname(originalname) || ".mp3").toLowerCase();
+          const uniqueName = `${Date.now()}_${crypto.randomBytes(6).toString("hex")}${ext}`;
+          const destPath = path.join(RECORDINGS_DIR, uniqueName);
+          await writeFile(destPath, buffer);
+          savedRecordingPath = uniqueName;
+          console.log(`[AudioTranscribe] Saved recording: ${uniqueName} (${sizeMB.toFixed(1)}MB)`);
+        } catch (saveErr: any) {
+          console.error("[AudioTranscribe] Failed to save recording copy:", saveErr.message);
+        }
+
+        res.json({ success: true, transcript, savedRecordingPath });
       } catch (err: any) {
         console.error("[AudioTranscribe]", err);
         res.status(500).json({ error: err.message ?? "Transcription failed" });

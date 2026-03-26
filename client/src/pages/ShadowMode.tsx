@@ -345,6 +345,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
     }
 
     let transcript = archiveForm.transcriptText.trim();
+    let savedRecPath: string | null = null;
 
     if (archiveInputMode === "recording") {
       if (!archiveRecFile) {
@@ -361,8 +362,9 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
           const data = await res.json().catch(() => ({ error: "Transcription failed" }));
           throw new Error(data.error ?? "Transcription failed");
         }
-        const { transcript: t } = await res.json();
+        const { transcript: t, savedRecordingPath: srp } = await res.json();
         transcript = t;
+        savedRecPath = srp || null;
         setArchiveForm(f => ({ ...f, transcriptText: t }));
         toast.success(`Transcription complete — ${t.split(/\s+/).filter(Boolean).length.toLocaleString()} words`);
       } catch (err: any) {
@@ -386,6 +388,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
       platform: archiveForm.platform || undefined,
       transcriptText: transcript,
       notes: archiveForm.notes || undefined,
+      savedRecordingPath: savedRecPath || undefined,
     });
   }
 
@@ -507,7 +510,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
         const data = await res.json().catch(() => ({ error: "Transcription failed" }));
         throw new Error(data.error ?? "Transcription failed");
       }
-      const { transcript } = await res.json();
+      const { transcript, savedRecordingPath } = await res.json();
       setRecStatus("processing");
       processTranscript.mutate({
         clientName: recForm.clientName.trim(),
@@ -516,6 +519,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
         eventDate: recForm.eventDate || undefined,
         transcriptText: transcript,
         notes: recForm.notes || undefined,
+        savedRecordingPath: savedRecordingPath || undefined,
       }, {
         onSuccess: (data) => {
           setRecResult(data);
