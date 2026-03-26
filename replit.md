@@ -53,8 +53,13 @@ curalive-platform/
 4. **rawSql()** in `server/db.ts` auto-appends `RETURNING id` and translates MySQL `?` to `$1/$2`
 5. **attendee_registrations**: Uses camelCase columns (`"createdAt"`, `"eventId"`) — must double-quote in raw SQL
 6. **ai_am_audit_log.timestamp**: Is `bigint` (epoch ms), not a date column
-7. **Schema sync**: Use `drizzle-kit push --force` (NOT `pnpm run db:push` — migration files have MySQL syntax)
+7. **Schema sync**: Use `drizzle-kit push --force` (NOT `pnpm run db:push` — migration files have MySQL syntax). Never write manual SQL migrations.
 8. **Health monitoring tables** (`health_checks`, `health_incidents`, `health_incident_reports`, `health_baselines`): Created via raw SQL, not in Drizzle schema. Timestamp columns must be `TIMESTAMP` type (the rawSql layer converts to Date strings)
+9. **Server binding**: Must bind to `0.0.0.0` (not localhost) — Replit proxy can't reach localhost
+10. **Health endpoint**: `/health` must always exist — Replit deployment checks it
+11. **Never change primary key ID column types** (serial ↔ varchar) — breaks existing data
+12. **Do NOT edit `.replit` file from code** — use Replit UI only
+13. **Do NOT set `AUTH_BYPASS=true` in production** secrets
 
 ## Key Scripts
 
@@ -99,7 +104,7 @@ Shadow Mode sub-tabs: Live Intelligence, Archive Upload, Reports, AI Learning, A
 - **OpenAI** — AI analysis and transcription (via Replit AI integrations proxy)
 - **Stripe** — Billing
 - **Resend** — Email
-- **AWS S3** — Object storage
+- **Replit Object Storage** — File/recording storage (GCS-backed, replaced AWS S3)
 - **Recall.ai** — Meeting bot deployment
 
 ## Environment Variables
@@ -122,24 +127,25 @@ Optional (not yet configured — user manages these credentials directly, not vi
 
 Note: Stripe, Resend, and Twilio Replit integrations were dismissed by the user. Provide API keys as secrets directly when ready.
 
-## tRPC Routers (86 total)
+## tRPC Routers (99 total — 89 imported + 10 inline)
 
 All registered in BOTH `server/routers.ts` AND `server/routers.eager.ts`:
 
-- **Core**: aiRouter, auth, billing, rbac, systemDiagnostics, admin, team, profile, events
-- **Shadow Mode**: shadowModeRouter, recallRouter, archiveUploadRouter
-- **AI Intelligence**: aiAm, aiDashboard, aiFeatures, aiApplications, aiEvolution, adaptiveIntelligence, agenticEventBrain
-- **Compliance**: complianceEngine, compliance, soc2, iso27001, disclosureCertificate, multiModalCompliance, regulatoryIntervention, eventIntegrity
-- **Sentiment & Analytics**: sentiment, externalSentiment, analytics, benchmarks, interconnectionAnalytics, communicationIndex, marketReaction, marketImpactPredictor
-- **Event Management**: scheduling, eventBrief, postEventReport, webcast, virtualStudio, broadcaster, liveQa, polls, liveRollingSummary, liveSubtitle, liveVideo
-- **OCC & Telephony**: occ, webphone, conferenceDialout
-- **Investment Intel**: investorEngagement, investorIntent, investorQuestions, ipoMandA, valuationImpact, crisisPrediction, crossEventConsistency, volatilitySimulator, roadshowAI, evasiveAnswer, callPrep, personalizedBriefing, materialityRisk
-- **Business**: clientPortal, customisation, branding, supportChat, advisoryBot, mailingList, mobileNotifications, socialMedia, sustainability, intelligenceReport, intelligenceTerminal
-- **Platform**: ably, bot, operatorLinks, trainingMode, mux, crmApi, platformEmbed, contentTriggers, taggedMetrics, monthlyReport, transcriptEditor, transcription, followups, healthGuardian, autonomousIntervention, evolutionAudit, bastionBooking, lumiBooking
+- **Core (9)**: aiRouter, auth, billing, rbac, systemDiagnostics, admin, team, profile, events
+- **Shadow Mode (3)**: shadowModeRouter, recallRouter, archiveUploadRouter
+- **AI Intelligence (8)**: aiAm, aiAmPhase2, aiDashboard, aiFeatures, aiApplications, aiEvolution, adaptiveIntelligence, agenticEventBrain
+- **Compliance (8)**: complianceEngine, compliance, soc2, iso27001, disclosureCertificate, multiModalCompliance, regulatoryIntervention, eventIntegrity
+- **Sentiment & Analytics (8)**: sentiment, externalSentiment, analytics, benchmarks, interconnectionAnalytics, communicationIndex, marketReaction, marketImpactPredictor
+- **Event Management (11)**: scheduling, eventBrief, postEventReport, webcast, virtualStudio, broadcaster, liveQa, polls, liveRollingSummary, liveSubtitle, liveVideo
+- **OCC & Telephony (3)**: occ, webphone, conferenceDialout
+- **Investment Intel (13)**: investorEngagement, investorIntent, investorQuestions, ipoMandA, valuationImpact, crisisPrediction, crossEventConsistency, volatilitySimulator, roadshowAI, evasiveAnswer, callPrep, personalizedBriefing, materialityRisk
+- **Business (11)**: clientPortal, customisation, branding, supportChat, advisoryBot, mailingList, mobileNotifications, socialMedia, sustainability, intelligenceReport, intelligenceTerminal
+- **Platform (18)**: ably, bot, operatorLinks, trainingMode, mux, crmApi, platformEmbed, contentTriggers, taggedMetrics, monthlyReport, transcriptEditor, transcription, followups, healthGuardian, autonomousIntervention, evolutionAudit, bastionBooking, lumiBooking
+- **Inline (6)**: agmGovernance, persistence, pressRelease, registrations, events (inline), ably (inline)
 
 ## REST Endpoints (non-tRPC)
 
-- `GET /health` — Health check (returns `{ status: "ok" }`)
+- `GET /health` — Health check (returns `{ status: "ok", timestamp: "..." }`)
 - `GET /api/ably-token` — Ably token generation for real-time
 - `GET /api/archives/:id/transcript` — Download transcript as `.txt` file
 - `GET /api/archives/:id/recording` — Download recording as `.mp3` file

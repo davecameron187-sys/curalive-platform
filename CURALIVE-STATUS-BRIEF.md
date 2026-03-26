@@ -11,10 +11,10 @@
 
 ### Server & Infrastructure
 - Express + tRPC server running on `0.0.0.0:3000`
-- Health check endpoint: `GET /health` returns `{"status":"ok"}`
+- Health check endpoint: `GET /health` returns `{"status":"ok","timestamp":"..."}`
 - PostgreSQL database (Replit Helium) — fully operational
 - Replit Object Storage (GCS-backed) — provisioned and connected for file uploads
-- 93 tRPC routers fully registered and synchronized across both router files
+- 99 tRPC routers fully registered and synchronized across both router files (89 imported + 10 inline)
 - 4 background services running automatically:
   - **HealthGuardian** — autonomous health monitoring every 30 seconds
   - **ComplianceEngine** — regulatory scanning every 300 seconds
@@ -153,7 +153,7 @@
 
 ---
 
-## 5. tRPC ROUTERS (93 Total)
+## 5. tRPC ROUTERS (99 Total — 89 imported + 10 inline)
 
 All registered in BOTH `server/routers.ts` AND `server/routers.eager.ts`:
 
@@ -202,6 +202,8 @@ All registered in BOTH `server/routers.ts` AND `server/routers.eager.ts`:
 6. **Object storage migrated** — Replaced Forge proxy with Replit Object Storage (GCS-backed).
 7. **JWT_SECRET configured** — Auto-generated for session cookie signing.
 8. **Press release generator synced** — Added to `routers.ts` (was only in `routers.eager.ts`).
+9. **Legacy localStorage write removed** — Removed `manus-runtime-user-info` write from useAuth hook (publish-safe fix from GitHub commit a2053f2).
+10. **Health endpoint updated** — Now returns `{ status: "ok", timestamp: "..." }` matching deployment requirements.
 
 ---
 
