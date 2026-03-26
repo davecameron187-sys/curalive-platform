@@ -41934,6 +41934,11 @@ ${"=".repeat(40)}
       res.status(500).json({ error: "Token generation failed" });
     }
   });
+  app.use("/api/trpc/_rest", (req, res) => {
+    req.url = req.url === "/" ? "/" : req.url;
+    req.originalUrl = req.url;
+    app.handle(req, res);
+  });
   app.use(
     "/api/trpc",
     createExpressMiddleware({

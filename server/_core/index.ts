@@ -939,6 +939,12 @@ async function startServer() {
     }
   });
 
+  app.use("/api/trpc/_rest", (req, res) => {
+    req.url = req.url === "/" ? "/" : req.url;
+    req.originalUrl = req.url;
+    app.handle(req, res);
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
