@@ -3492,6 +3492,253 @@ var init_cookies = __esm({
   }
 });
 
+// shared/_core/errors.ts
+var HttpError, ForbiddenError;
+var init_errors = __esm({
+  "shared/_core/errors.ts"() {
+    "use strict";
+    HttpError = class extends Error {
+      constructor(statusCode, message) {
+        super(message);
+        this.statusCode = statusCode;
+        this.name = "HttpError";
+      }
+    };
+    ForbiddenError = (msg) => new HttpError(403, msg);
+  }
+});
+
+// server/_core/sdk.ts
+var sdk_exports = {};
+__export(sdk_exports, {
+  sdk: () => sdk
+});
+import axios from "axios";
+import { parse as parseCookieHeader } from "cookie";
+import { SignJWT, jwtVerify } from "jose";
+var isNonEmptyString, EXCHANGE_TOKEN_PATH, GET_USER_INFO_PATH, GET_USER_INFO_WITH_JWT_PATH, OAuthService, createOAuthHttpClient, SDKServer, sdk;
+var init_sdk = __esm({
+  "server/_core/sdk.ts"() {
+    "use strict";
+    init_const();
+    init_errors();
+    init_db();
+    init_env();
+    isNonEmptyString = (value) => typeof value === "string" && value.length > 0;
+    EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
+    GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
+    GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfoWithJwt`;
+    OAuthService = class {
+      constructor(client) {
+        this.client = client;
+        console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
+        if (!ENV.oAuthServerUrl) {
+          console.error(
+            "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
+          );
+        }
+      }
+      decodeState(state) {
+        const redirectUri = atob(state);
+        return redirectUri;
+      }
+      async getTokenByCode(code, state) {
+        const payload = {
+          clientId: ENV.appId,
+          grantType: "authorization_code",
+          code,
+          redirectUri: this.decodeState(state)
+        };
+        const { data } = await this.client.post(
+          EXCHANGE_TOKEN_PATH,
+          payload
+        );
+        return data;
+      }
+      async getUserInfoByToken(token) {
+        const { data } = await this.client.post(
+          GET_USER_INFO_PATH,
+          {
+            accessToken: token.accessToken
+          }
+        );
+        return data;
+      }
+    };
+    createOAuthHttpClient = () => axios.create({
+      baseURL: ENV.oAuthServerUrl,
+      timeout: AXIOS_TIMEOUT_MS
+    });
+    SDKServer = class {
+      client;
+      oauthService;
+      constructor(client = createOAuthHttpClient()) {
+        this.client = client;
+        this.oauthService = new OAuthService(this.client);
+      }
+      deriveLoginMethod(platforms, fallback) {
+        if (fallback && fallback.length > 0) return fallback;
+        if (!Array.isArray(platforms) || platforms.length === 0) return null;
+        const set = new Set(
+          platforms.filter((p) => typeof p === "string")
+        );
+        if (set.has("REGISTERED_PLATFORM_EMAIL")) return "email";
+        if (set.has("REGISTERED_PLATFORM_GOOGLE")) return "google";
+        if (set.has("REGISTERED_PLATFORM_APPLE")) return "apple";
+        if (set.has("REGISTERED_PLATFORM_MICROSOFT") || set.has("REGISTERED_PLATFORM_AZURE"))
+          return "microsoft";
+        if (set.has("REGISTERED_PLATFORM_GITHUB")) return "github";
+        const first = Array.from(set)[0];
+        return first ? first.toLowerCase() : null;
+      }
+      /**
+       * Exchange OAuth authorization code for access token
+       * @example
+       * const tokenResponse = await sdk.exchangeCodeForToken(code, state);
+       */
+      async exchangeCodeForToken(code, state) {
+        return this.oauthService.getTokenByCode(code, state);
+      }
+      /**
+       * Get user information using access token
+       * @example
+       * const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
+       */
+      async getUserInfo(accessToken) {
+        const data = await this.oauthService.getUserInfoByToken({
+          accessToken
+        });
+        const loginMethod = this.deriveLoginMethod(
+          data?.platforms,
+          data?.platform ?? data.platform ?? null
+        );
+        return {
+          ...data,
+          platform: loginMethod,
+          loginMethod
+        };
+      }
+      parseCookies(cookieHeader) {
+        if (!cookieHeader) {
+          return /* @__PURE__ */ new Map();
+        }
+        const parsed = parseCookieHeader(cookieHeader);
+        return new Map(Object.entries(parsed));
+      }
+      getSessionSecret() {
+        const secret = ENV.cookieSecret;
+        return new TextEncoder().encode(secret);
+      }
+      /**
+       * Create a session token for a Manus user openId
+       * @example
+       * const sessionToken = await sdk.createSessionToken(userInfo.openId);
+       */
+      async createSessionToken(openId, options = {}) {
+        return this.signSession(
+          {
+            openId,
+            appId: ENV.appId,
+            name: options.name || ""
+          },
+          options
+        );
+      }
+      async signSession(payload, options = {}) {
+        const issuedAt = Date.now();
+        const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
+        const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1e3);
+        const secretKey = this.getSessionSecret();
+        return new SignJWT({
+          openId: payload.openId,
+          appId: payload.appId,
+          name: payload.name
+        }).setProtectedHeader({ alg: "HS256", typ: "JWT" }).setExpirationTime(expirationSeconds).sign(secretKey);
+      }
+      async verifySession(cookieValue) {
+        if (!cookieValue) {
+          console.warn("[Auth] Missing session cookie");
+          return null;
+        }
+        try {
+          const secretKey = this.getSessionSecret();
+          const { payload } = await jwtVerify(cookieValue, secretKey, {
+            algorithms: ["HS256"]
+          });
+          const { openId, appId, name } = payload;
+          if (!isNonEmptyString(openId) || !isNonEmptyString(appId) || !isNonEmptyString(name)) {
+            console.warn("[Auth] Session payload missing required fields");
+            return null;
+          }
+          return {
+            openId,
+            appId,
+            name
+          };
+        } catch (error) {
+          console.warn("[Auth] Session verification failed", String(error));
+          return null;
+        }
+      }
+      async getUserInfoWithJwt(jwtToken) {
+        const payload = {
+          jwtToken,
+          projectId: ENV.appId
+        };
+        const { data } = await this.client.post(
+          GET_USER_INFO_WITH_JWT_PATH,
+          payload
+        );
+        const loginMethod = this.deriveLoginMethod(
+          data?.platforms,
+          data?.platform ?? data.platform ?? null
+        );
+        return {
+          ...data,
+          platform: loginMethod,
+          loginMethod
+        };
+      }
+      async authenticateRequest(req) {
+        const cookies = this.parseCookies(req.headers.cookie);
+        const sessionCookie = cookies.get(COOKIE_NAME);
+        const session = await this.verifySession(sessionCookie);
+        if (!session) {
+          throw ForbiddenError("Invalid session cookie");
+        }
+        const sessionUserId = session.openId;
+        const signedInAt = /* @__PURE__ */ new Date();
+        let user = await getUserByOpenId(sessionUserId);
+        if (!user) {
+          try {
+            const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+            await upsertUser({
+              openId: userInfo.openId,
+              name: userInfo.name || null,
+              email: userInfo.email ?? null,
+              loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+              lastSignedIn: signedInAt
+            });
+            user = await getUserByOpenId(userInfo.openId);
+          } catch (error) {
+            console.error("[Auth] Failed to sync user from OAuth:", error);
+            throw ForbiddenError("Failed to sync user info");
+          }
+        }
+        if (!user) {
+          throw ForbiddenError("User not found");
+        }
+        await upsertUser({
+          openId: user.openId,
+          lastSignedIn: signedInAt
+        });
+        return user;
+      }
+    };
+    sdk = new SDKServer();
+  }
+});
+
 // server/_core/notification.ts
 var notification_exports = {};
 __export(notification_exports, {
@@ -38230,1019 +38477,6 @@ var init_aiAmPhase2 = __esm({
   }
 });
 
-// server/routers.eager.ts
-var routers_eager_exports = {};
-__export(routers_eager_exports, {
-  appRouter: () => appRouter,
-  createCallerFactory: () => createCallerFactory
-});
-import { eq as eq73, and as and45 } from "drizzle-orm";
-import { z as z88 } from "zod";
-async function createAblyTokenRequest(clientId) {
-  const apiKey = process.env.ABLY_API_KEY;
-  if (!apiKey) return null;
-  const [keyName, keySecret] = apiKey.split(":");
-  const timestamp2 = Date.now();
-  const ttl = 3600 * 1e3;
-  const nonce = Math.random().toString(36).substring(2, 15);
-  const capability = JSON.stringify({ [`curalive-event-*`]: ["subscribe", "publish", "presence", "history"] });
-  const { createHmac } = await import("crypto");
-  const signString = [keyName, ttl, nonce, clientId, timestamp2, capability, ""].join("\n");
-  const mac = createHmac("sha256", keySecret).update(signString).digest("base64");
-  return { keyName, ttl, nonce, clientId, timestamp: timestamp2, capability, mac };
-}
-var appRouter;
-var init_routers_eager = __esm({
-  "server/routers.eager.ts"() {
-    "use strict";
-    init_const();
-    init_cookies();
-    init_systemRouter();
-    init_trpc();
-    init_llm();
-    init_notification();
-    init_email();
-    init_db();
-    init_storage();
-    init_schema();
-    init_directAccess();
-    init_occ();
-    init_liveVideo();
-    init_roadshowAI();
-    init_branding();
-    init_webcastRouter();
-    init_recallRouter();
-    init_muxRouter();
-    init_billingRouter();
-    init_aiRouter();
-    init_webphoneRouter();
-    init_customisationRouter();
-    init_trainingMode();
-    init_postEventReport();
-    init_transcription();
-    init_polls();
-    init_scheduling();
-    init_clientPortal();
-    init_compliance();
-    init_followups();
-    init_sentiment();
-    init_mobileNotifications();
-    init_aiDashboard();
-    init_aiFeatures();
-    init_analytics();
-    init_contentTriggers();
-    init_eventBriefRouter();
-    init_liveRollingSummary();
-    init_transcriptEditorRouter();
-    init_aiApplications2();
-    init_socialMedia();
-    init_interconnectionAnalytics();
-    init_virtualStudioRouter();
-    init_operatorLinksRouter();
-    init_agenticEventBrainRouter();
-    init_autonomousInterventionRouter();
-    init_taggedMetricsRouter();
-    init_shadowModeRouter();
-    init_archiveUploadRouter();
-    init_benchmarksRouter();
-    init_marketReactionRouter();
-    init_communicationIndexRouter();
-    init_investorQuestionsRouter();
-    init_intelligenceReportRouter();
-    init_callPrepRouter();
-    init_intelligenceTerminalRouter();
-    init_bot();
-    init_mailingListRouter();
-    init_healthGuardianRouter();
-    init_crmApiRouter();
-    init_supportChatRouter();
-    init_soc2Router();
-    init_iso27001Router();
-    init_adaptiveIntelligenceRouter();
-    init_sustainabilityRouter();
-    init_broadcasterRouter();
-    init_conferenceDialoutRouter();
-    init_agmGovernanceRouter();
-    init_lumiBookingRouter();
-    init_bastionBookingRouter();
-    init_evasiveAnswerRouter();
-    init_marketImpactPredictorRouter();
-    init_multiModalComplianceRouter();
-    init_externalSentimentRouter();
-    init_personalizedBriefingRouter();
-    init_materialityRiskRouter();
-    init_investorIntentRouter();
-    init_crossEventConsistencyRouter();
-    init_volatilitySimulatorRouter();
-    init_regulatoryInterventionRouter();
-    init_eventIntegrityRouter();
-    init_crisisPredictionRouter();
-    init_valuationImpactRouter();
-    init_disclosureCertificateRouter();
-    init_monthlyReportRouter();
-    init_advisoryBotRouter();
-    init_evolutionAuditRouter();
-    init_systemDiagnosticsRouter();
-    init_liveQaRouter();
-    init_platformEmbedRouter();
-    init_investorEngagementRouter();
-    init_liveSubtitleRouter();
-    init_ipoMandARouter();
-    init_complianceEngineRouter();
-    init_aiAm();
-    init_rbac();
-    init_aiEvolutionRouter();
-    init_persistence();
-    init_aiAmPhase2();
-    appRouter = router({
-      system: systemRouter,
-      occ: occRouter,
-      liveVideo: liveVideoRouter,
-      roadshowAI: roadshowAIRouter,
-      branding: brandingRouter,
-      webcast: webcastRouter,
-      recall: recallRouter,
-      mux: muxRouter,
-      billing: billingRouter,
-      ai: aiRouter,
-      webphone: webphoneRouter,
-      customisation: customisationRouter,
-      trainingMode: trainingModeRouter,
-      postEventReport: postEventReportRouter,
-      transcription: transcriptionRouter,
-      polls: pollsRouter,
-      scheduling: schedulingRouter,
-      clientPortal: clientPortalRouter,
-      compliance: complianceRouter,
-      followups: followupsRouter,
-      sentiment: sentimentRouter,
-      mobileNotifications: mobileNotificationsRouter,
-      aiDashboard: aiDashboardRouter,
-      aiFeatures: aiFeaturesRouter,
-      analytics: analyticsRouter,
-      contentTriggers: contentTriggersRouter,
-      eventBrief: eventBriefRouter,
-      liveRollingSummary: liveRollingSummaryRouter,
-      transcriptEditor: transcriptEditorRouter,
-      aiApplications: aiApplicationsRouter,
-      socialMedia: socialMediaRouter,
-      interconnectionAnalytics: interconnectionAnalyticsRouter,
-      virtualStudio: virtualStudioRouter,
-      operatorLinks: operatorLinksRouter,
-      agenticBrain: agenticEventBrainRouter,
-      autonomousIntervention: autonomousInterventionRouter,
-      taggedMetrics: taggedMetricsRouter,
-      shadowMode: shadowModeRouter,
-      archiveUpload: archiveUploadRouter,
-      benchmarks: benchmarksRouter,
-      marketReaction: marketReactionRouter,
-      communicationIndex: communicationIndexRouter,
-      investorQuestions: investorQuestionsRouter,
-      intelligenceReport: intelligenceReportRouter,
-      callPrep: callPrepRouter,
-      intelligenceTerminal: intelligenceTerminalRouter,
-      bot: botRouter,
-      mailingList: mailingListRouter,
-      healthGuardian: healthGuardianRouter,
-      crmApi: crmApiRouter,
-      supportChat: supportChatRouter,
-      soc2: soc2Router,
-      iso27001: iso27001Router,
-      adaptiveIntelligence: adaptiveIntelligenceRouter,
-      sustainability: sustainabilityRouter,
-      broadcaster: broadcasterRouter,
-      conferenceDialout: conferenceDialoutRouter,
-      agmGovernance: agmGovernanceRouter,
-      lumiBooking: lumiBookingRouter,
-      bastionBooking: bastionBookingRouter,
-      evasiveAnswer: evasiveAnswerRouter,
-      marketImpactPredictor: marketImpactPredictorRouter,
-      multiModalCompliance: multiModalComplianceRouter,
-      externalSentiment: externalSentimentRouter,
-      personalizedBriefing: personalizedBriefingRouter,
-      materialityRisk: materialityRiskRouter,
-      investorIntent: investorIntentRouter,
-      crossEventConsistency: crossEventConsistencyRouter,
-      volatilitySimulator: volatilitySimulatorRouter,
-      regulatoryIntervention: regulatoryInterventionRouter,
-      eventIntegrity: eventIntegrityRouter,
-      crisisPrediction: crisisPredictionRouter,
-      valuationImpact: valuationImpactRouter,
-      disclosureCertificate: disclosureCertificateRouter,
-      monthlyReport: monthlyReportRouter,
-      advisoryBot: advisoryBotRouter,
-      evolutionAudit: evolutionAuditRouter,
-      systemDiagnostics: systemDiagnosticsRouter,
-      liveQa: liveQaRouter,
-      platformEmbed: platformEmbedRouter,
-      investorEngagement: investorEngagementRouter,
-      liveSubtitle: liveSubtitleRouter,
-      ipoMandA: ipoMandARouter,
-      complianceEngine: complianceEngineRouter,
-      aiAm: aiAmRouter,
-      rbac: rbacRouter,
-      aiEvolution: aiEvolutionRouter,
-      persistence: persistenceRouter,
-      aiAmPhase2: aiAmPhase2Router,
-      admin: router({
-        listUsers: adminProcedure.query(async () => {
-          const allUsers = await listUsers();
-          return allUsers.map((u) => ({
-            id: u.id,
-            name: u.name,
-            email: u.email,
-            role: u.role,
-            lastSignedIn: u.lastSignedIn,
-            loginMethod: u.loginMethod
-          }));
-        }),
-        updateUserRole: adminProcedure.input(z88.object({
-          userId: z88.number().int().positive(),
-          role: z88.enum(["user", "admin", "operator"])
-        })).mutation(async ({ input, ctx }) => {
-          if (ctx.user.id === input.userId && input.role !== "admin") {
-            throw new Error("You cannot change your own role.");
-          }
-          await updateUserRole(input.userId, input.role);
-          return { success: true };
-        })
-      }),
-      // ─── Self-service operator access request ──────────────────────────────────
-      team: router({
-        requestOperatorAccess: publicProcedure.input(z88.object({ reason: z88.string().max(500).optional() })).mutation(async ({ input, ctx }) => {
-          if (!ctx.user) throw new Error("Login required");
-          if (ctx.user.role === "operator" || ctx.user.role === "admin") {
-            return { success: true, alreadyOperator: true };
-          }
-          await notifyOwner({
-            title: `Operator Access Request \u2014 ${ctx.user.name ?? ctx.user.email ?? "Unknown user"}`,
-            content: [
-              `User: ${ctx.user.name ?? "N/A"} (ID: ${ctx.user.id})`,
-              `Email: ${ctx.user.email ?? "N/A"}`,
-              `Current role: ${ctx.user.role}`,
-              input.reason ? `Reason: ${input.reason}` : "",
-              "",
-              "To promote this user, visit: /admin/users"
-            ].filter(Boolean).join("\n")
-          });
-          return { success: true, alreadyOperator: false };
-        })
-      }),
-      auth: router({
-        me: publicProcedure.query(({ ctx }) => {
-          if (ctx.user) return ctx.user;
-          const isDev = process.env.NODE_ENV !== "production" && (process.env.AUTH_BYPASS === "true" || process.env.NODE_ENV === "development");
-          if (isDev) return { id: 0, name: "Dev Operator", email: "dev@curalive.local", role: "operator" };
-          return null;
-        }),
-        logout: publicProcedure.mutation(({ ctx }) => {
-          const cookieOptions = getSessionCookieOptions(ctx.req);
-          ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-          return { success: true };
-        })
-      }),
-      // ─── Operator profile management ──────────────────────────────────────────────
-      profile: router({
-        get: publicProcedure.query(async ({ ctx }) => {
-          if (!ctx.user) return null;
-          const user = await getUserById(ctx.user.id);
-          if (!user) return null;
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            jobTitle: user.jobTitle,
-            organisation: user.organisation,
-            bio: user.bio,
-            avatarUrl: user.avatarUrl,
-            phone: user.phone,
-            linkedinUrl: user.linkedinUrl,
-            timezone: user.timezone
-          };
-        }),
-        update: publicProcedure.input(z88.object({
-          name: z88.string().min(1).max(255).optional(),
-          jobTitle: z88.string().max(255).nullable().optional(),
-          organisation: z88.string().max(255).nullable().optional(),
-          bio: z88.string().max(1e3).nullable().optional(),
-          phone: z88.string().max(64).nullable().optional(),
-          linkedinUrl: z88.string().url().max(512).nullable().optional().or(z88.literal("")).transform((v) => v === "" ? null : v),
-          timezone: z88.string().max(64).nullable().optional()
-        })).mutation(async ({ input, ctx }) => {
-          if (!ctx.user) throw new Error("Login required");
-          await updateUserProfile(ctx.user.id, input);
-          return { success: true };
-        }),
-        uploadAvatar: publicProcedure.input(z88.object({
-          base64: z88.string().max(5 * 1024 * 1024),
-          // 5 MB limit
-          mimeType: z88.enum(["image/jpeg", "image/png", "image/webp", "image/gif"])
-        })).mutation(async ({ input, ctx }) => {
-          if (!ctx.user) throw new Error("Login required");
-          const buffer = Buffer.from(input.base64, "base64");
-          const ext = input.mimeType.split("/")[1];
-          const key = `avatars/user-${ctx.user.id}-${Date.now()}.${ext}`;
-          const { url } = await storagePut(key, buffer, input.mimeType);
-          await updateUserProfile(ctx.user.id, { avatarUrl: url });
-          return { avatarUrl: url };
-        }),
-        /**
-         * Get the host profile for a webcast event (public — shown on registration page).
-         * Returns the profile of the operator who created the event, or falls back to
-         * the event's hostName / hostOrganization fields.
-         */
-        getEventHost: publicProcedure.input(z88.object({ slug: z88.string() })).query(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return null;
-          const [event] = await db2.select().from(webcastEvents).where(eq73(webcastEvents.slug, input.slug)).limit(1);
-          if (!event) return null;
-          return {
-            name: event.hostName ?? null,
-            organisation: event.hostOrganization ?? null,
-            jobTitle: null,
-            bio: null,
-            avatarUrl: null,
-            linkedinUrl: null
-          };
-        })
-      }),
-      // ─── Ably real-time token endpoint ───────────────────────────────────────────
-      ably: router({
-        tokenRequest: publicProcedure.input(z88.object({
-          clientId: z88.string().optional().default("anonymous"),
-          channelPrefix: z88.string().optional().default("curalive-event")
-        })).query(async ({ input }) => {
-          const tokenRequest = await createAblyTokenRequest(input.clientId);
-          return { tokenRequest, mode: tokenRequest ? "ably" : "demo" };
-        })
-      }),
-      // ─── Event management ────────────────────────────────────────────────────────
-      events: router({
-        // Verify access code for password-protected events
-        verifyAccess: publicProcedure.input(z88.object({
-          eventId: z88.string(),
-          accessCode: z88.string().optional()
-        })).query(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return { allowed: true, requiresCode: false };
-          const [event] = await db2.select().from(events).where(eq73(events.eventId, input.eventId)).limit(1);
-          if (!event) return { allowed: true, requiresCode: false };
-          if (!event.accessCode) return { allowed: true, requiresCode: false };
-          if (!input.accessCode) return { allowed: false, requiresCode: true };
-          const match = input.accessCode.trim() === event.accessCode.trim();
-          return { allowed: match, requiresCode: true };
-        }),
-        // Get event details (including whether it's password-protected)
-        getEvent: publicProcedure.input(z88.object({ eventId: z88.string() })).query(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return null;
-          const [event] = await db2.select().from(events).where(eq73(events.eventId, input.eventId)).limit(1);
-          if (!event) return null;
-          return {
-            ...event,
-            accessCode: void 0,
-            // never expose the code to the client
-            requiresCode: !!event.accessCode
-          };
-        }),
-        // Upsert event (called by operator to create/update event with optional access code)
-        upsertEvent: publicProcedure.input(z88.object({
-          eventId: z88.string(),
-          title: z88.string(),
-          company: z88.string(),
-          platform: z88.string(),
-          status: z88.enum(["upcoming", "live", "completed"]).optional().default("upcoming"),
-          accessCode: z88.string().optional()
-        })).mutation(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return { success: false, error: "Database unavailable" };
-          await db2.insert(events).values({
-            eventId: input.eventId,
-            title: input.title,
-            company: input.company,
-            platform: input.platform,
-            status: input.status,
-            accessCode: input.accessCode || null
-          }).onConflictDoNothing();
-          return { success: true };
-        }),
-        setAccessCode: publicProcedure.input(z88.object({
-          eventId: z88.string(),
-          accessCode: z88.string().nullable()
-        })).mutation(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return { success: false, error: "Database unavailable" };
-          await db2.insert(events).values({
-            eventId: input.eventId,
-            title: input.eventId,
-            company: "CuraLive Inc.",
-            platform: "Unknown",
-            status: "upcoming",
-            accessCode: input.accessCode
-          }).onConflictDoNothing();
-          return {
-            success: true,
-            message: input.accessCode ? `Access code set successfully` : "Access code removed \u2014 event is now open"
-          };
-        }),
-        // AI-powered event summary
-        generateSummary: publicProcedure.input(z88.object({
-          eventTitle: z88.string(),
-          transcript: z88.array(z88.object({
-            speaker: z88.string(),
-            text: z88.string(),
-            timeLabel: z88.string()
-          })),
-          qaItems: z88.array(z88.object({
-            question: z88.string(),
-            author: z88.string(),
-            status: z88.string()
-          })).optional().default([])
-        })).mutation(async ({ input }) => {
-          const transcriptText = input.transcript.map((s) => `[${s.timeLabel}] ${s.speaker}: ${s.text}`).join("\n");
-          const approvedQA = input.qaItems.filter((q) => q.status === "answered" || q.status === "approved").map((q) => `Q (${q.author}): ${q.question}`).join("\n");
-          const prompt = `You are an expert financial communications analyst specialising in JSE-listed company investor relations. Analyze the following earnings call transcript and produce a structured executive summary for investor relations purposes, including regulatory compliance sections required for JSE-listed entities.
-
-EVENT: ${input.eventTitle}
-
-TRANSCRIPT:
-${transcriptText}
-
-${approvedQA ? `KEY Q&A:
-${approvedQA}` : ""}
-
-Produce a JSON response with this exact structure:
-{
-  "headline": "One sentence capturing the most important announcement",
-  "keyPoints": ["Up to 5 bullet points of the most important facts, numbers, and announcements"],
-  "financialHighlights": ["Up to 4 specific financial metrics mentioned (revenue, margins, guidance, etc.)"],
-  "sentiment": "Overall tone of the call: Positive / Neutral / Cautious",
-  "actionItems": ["Up to 3 follow-up items or commitments made during the call"],
-  "executiveSummary": "2-3 paragraph narrative summary suitable for an investor relations report",
-  "forwardLookingStatements": ["Up to 4 forward-looking statements or guidance items mentioned"],
-  "regulatoryHighlights": ["Up to 3 items relevant to regulatory compliance, governance, or JSE Listings Requirements"],
-  "riskFactors": ["Up to 3 risk factors or cautionary statements mentioned by management"]
-}`;
-          try {
-            const response = await invokeLLM({
-              messages: [
-                { role: "system", content: "You are a financial communications expert specialising in JSE-listed company investor relations. Always respond with valid JSON only." },
-                { role: "user", content: prompt }
-              ],
-              response_format: {
-                type: "json_schema",
-                json_schema: {
-                  name: "event_summary",
-                  strict: true,
-                  schema: {
-                    type: "object",
-                    properties: {
-                      headline: { type: "string" },
-                      keyPoints: { type: "array", items: { type: "string" } },
-                      financialHighlights: { type: "array", items: { type: "string" } },
-                      sentiment: { type: "string" },
-                      actionItems: { type: "array", items: { type: "string" } },
-                      executiveSummary: { type: "string" },
-                      forwardLookingStatements: { type: "array", items: { type: "string" } },
-                      regulatoryHighlights: { type: "array", items: { type: "string" } },
-                      riskFactors: { type: "array", items: { type: "string" } }
-                    },
-                    required: ["headline", "keyPoints", "financialHighlights", "sentiment", "actionItems", "executiveSummary", "forwardLookingStatements", "regulatoryHighlights", "riskFactors"],
-                    additionalProperties: false
-                  }
-                }
-              }
-            });
-            const content = response.choices?.[0]?.message?.content;
-            if (!content) throw new Error("No content from LLM");
-            const parsed = JSON.parse(content);
-            return { success: true, summary: parsed };
-          } catch (err) {
-            console.error("[AI Summary] LLM error:", err);
-            return {
-              success: false,
-              summary: {
-                headline: `${input.eventTitle} \u2014 Executive Summary`,
-                keyPoints: ["Revenue growth exceeded analyst expectations", "AI platform adoption accelerating", "Guidance raised for full-year 2026"],
-                financialHighlights: ["Q4 Revenue: $47.2M (+28% YoY)", "Gross Margin: 72%", "FY2026 Guidance: $195\u2013$210M", "Cash: $124M"],
-                sentiment: "Positive",
-                actionItems: ["Follow up on Teams integration timeline", "Provide detail on Recall.ai margin impact", "Clarify CuraLive revenue contribution"],
-                executiveSummary: `${input.eventTitle} delivered strong results with revenue and margin performance ahead of expectations. Management highlighted the accelerating adoption of the CuraLive intelligence platform as a key driver of both revenue growth and margin expansion.
-
-The company raised full-year 2026 guidance and outlined a clear roadmap for native integrations with Microsoft Teams and Zoom.
-
-Overall tone was confident and forward-looking, with management expressing strong conviction in the strategic direction and financial trajectory of the business.`,
-                forwardLookingStatements: ["FY2026 revenue guidance of $195\u2013$210M", "Adjusted EBITDA margins of 18\u201322% expected for FY2026", "Native Teams and Zoom integrations to open new enterprise opportunities", "Recall.ai partnership enables rapid multi-platform deployment"],
-                regulatoryHighlights: ["Forward-looking guidance provided in line with JSE Listings Requirements para 3.4", "No material changes to share capital or borrowing powers disclosed", "All financial metrics presented on an IFRS-compliant basis"],
-                riskFactors: ["Integration timelines subject to third-party platform API availability", "Gross margin profile may be affected by Recall.ai partnership terms", "Revenue guidance assumes continued enterprise adoption of AI features"]
-              }
-            };
-          }
-        })
-      }),
-      // ─── Press Release Generator ─────────────────────────────────────────────────
-      pressRelease: router({
-        generate: publicProcedure.input(z88.object({
-          eventTitle: z88.string(),
-          companyName: z88.string().optional().default("the Company"),
-          transcript: z88.array(z88.object({
-            speaker: z88.string(),
-            text: z88.string(),
-            timeLabel: z88.string()
-          })),
-          aiSummary: z88.object({
-            headline: z88.string().optional(),
-            keyPoints: z88.array(z88.string()).optional(),
-            financialHighlights: z88.array(z88.string()).optional(),
-            executiveSummary: z88.string().optional(),
-            forwardLookingStatements: z88.array(z88.string()).optional()
-          }).optional()
-        })).mutation(async ({ input }) => {
-          const transcriptText = input.transcript.slice(0, 40).map((s) => `[${s.timeLabel}] ${s.speaker}: ${s.text}`).join("\n");
-          const summaryContext = input.aiSummary ? `
-AI SUMMARY CONTEXT:
-Headline: ${input.aiSummary.headline ?? ""}
-Key Points: ${(input.aiSummary.keyPoints ?? []).join("; ")}
-Financial Highlights: ${(input.aiSummary.financialHighlights ?? []).join("; ")}
-Forward-Looking: ${(input.aiSummary.forwardLookingStatements ?? []).join("; ")}` : "";
-          const prompt = `You are a senior investor relations communications specialist. Draft a professional SENS/RNS-style press release.
-
-COMPANY: ${input.companyName}
-EVENT: ${input.eventTitle}
-${summaryContext}
-
-TRANSCRIPT EXCERPT:
-${transcriptText}
-
-Write a complete press release in this format:
-1. HEADLINE (all caps, newswire style)
-2. SUBHEADLINE (one sentence)
-3. CITY, DATE \u2014 Opening paragraph with the most important announcement
-4. 2-3 body paragraphs covering financial results, strategic highlights, and outlook
-5. CEO/CFO direct quote (1-2 sentences each)
-6. Forward-looking statements disclaimer paragraph
-7. ENDS
-
-Use formal investor relations language. Include specific numbers from the transcript. Keep total length to 450-600 words.`;
-          try {
-            const response = await invokeLLM({
-              messages: [
-                { role: "system", content: "You are a professional investor relations writer. Write clear, factual, publication-ready press releases." },
-                { role: "user", content: prompt }
-              ]
-            });
-            const content = response?.choices?.[0]?.message?.content ?? "";
-            return { success: true, pressRelease: content };
-          } catch (err) {
-            console.error("[pressRelease.generate] LLM error:", err);
-            return {
-              success: false,
-              pressRelease: `PRESS RELEASE DRAFT
-
-[LLM temporarily unavailable \u2014 please retry]
-
-FOR IMMEDIATE RELEASE
-
-${input.companyName} Reports Results for ${input.eventTitle}
-
-${input.aiSummary?.executiveSummary ?? "[Executive summary not available]"}
-
-ENDS`
-            };
-          }
-        })
-      }),
-      // ─── Attendee Registrations ───────────────────────────────────────────────────
-      registrations: router({
-        // Register an attendee for an event
-        register: publicProcedure.input(z88.object({
-          eventId: z88.string(),
-          name: z88.string().min(1),
-          email: z88.string().email(),
-          company: z88.string().optional(),
-          jobTitle: z88.string().optional(),
-          language: z88.string().optional().default("English"),
-          dialIn: z88.boolean().optional().default(false),
-          accessCode: z88.string().optional()
-        })).mutation(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return { success: false, error: "Database unavailable" };
-          const [event] = await db2.select().from(events).where(eq73(events.eventId, input.eventId)).limit(1);
-          if (event?.accessCode) {
-            if (!input.accessCode || input.accessCode.trim() !== event.accessCode.trim()) {
-              return { success: false, error: "Invalid access code" };
-            }
-          }
-          const [existing] = await db2.select().from(attendeeRegistrations).where(and45(
-            eq73(attendeeRegistrations.eventId, input.eventId),
-            eq73(attendeeRegistrations.email, input.email)
-          )).limit(1);
-          if (existing) {
-            return { success: true, alreadyRegistered: true, registrationId: existing.id };
-          }
-          let accessPin;
-          try {
-            accessPin = await generateUniquePin(input.eventId);
-          } catch {
-            console.warn("[CuraLive Direct] PIN generation failed for", input.email);
-          }
-          const [result] = await db2.insert(attendeeRegistrations).values({
-            eventId: input.eventId,
-            name: input.name,
-            email: input.email,
-            company: input.company || null,
-            jobTitle: input.jobTitle || null,
-            language: input.language,
-            dialIn: input.dialIn,
-            accessGranted: true,
-            accessPin: accessPin ?? null
-          }).$returningId();
-          await notifyOwner({
-            title: `New Registration: ${input.name}`,
-            content: `${input.name} (${input.email}) registered for event: ${input.eventId}${accessPin ? ` | CuraLive Direct PIN: ${accessPin}` : ""}`
-          }).catch(() => {
-          });
-          const nameParts = input.name.trim().split(" ");
-          const firstName = nameParts[0] ?? input.name;
-          const lastName = nameParts.slice(1).join(" ") || "";
-          const eventTitle = event?.title ?? input.eventId;
-          const eventDate = "Please check your calendar invite for the date and time";
-          const confirmationHtml = buildRegistrationConfirmationEmail({
-            firstName,
-            lastName,
-            eventTitle,
-            company: event?.company ?? "CuraLive Inc.",
-            eventDate,
-            accessPin
-          });
-          await sendEmail({
-            to: input.email,
-            subject: `Registration Confirmed: ${eventTitle}`,
-            html: confirmationHtml
-          }).catch(() => {
-          });
-          return { success: true, alreadyRegistered: false, registrationId: result?.id };
-        }),
-        // Get all attendees for an event (for Operator Console)
-        listByEvent: publicProcedure.input(z88.object({ eventId: z88.string() })).query(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return [];
-          return db2.select().from(attendeeRegistrations).where(eq73(attendeeRegistrations.eventId, input.eventId)).orderBy(attendeeRegistrations.createdAt);
-        }),
-        // Get all registrations for the currently logged-in user (by email)
-        getMyRegistrations: protectedProcedure.query(async ({ ctx }) => {
-          const db2 = await getDb();
-          if (!db2) return [];
-          const userEmail = ctx.user.email;
-          if (!userEmail) return [];
-          const regs = await db2.select().from(attendeeRegistrations).where(eq73(attendeeRegistrations.email, userEmail)).orderBy(attendeeRegistrations.createdAt);
-          const enriched = await Promise.all(
-            regs.map(async (reg) => {
-              const [event] = await db2.select().from(events).where(eq73(events.eventId, reg.eventId)).limit(1);
-              return {
-                ...reg,
-                eventTitle: event?.title ?? reg.eventId,
-                eventCompany: event?.company ?? "",
-                eventStatus: event?.status ?? "upcoming",
-                eventPlatform: event?.platform ?? ""
-              };
-            })
-          );
-          return enriched;
-        }),
-        // Mark attendee as joined (called when they enter the Event Room)
-        markJoined: publicProcedure.input(z88.object({ eventId: z88.string(), email: z88.string() })).mutation(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return { success: false };
-          await db2.update(attendeeRegistrations).set({ joinedAt: /* @__PURE__ */ new Date() }).where(and45(
-            eq73(attendeeRegistrations.eventId, input.eventId),
-            eq73(attendeeRegistrations.email, input.email)
-          ));
-          return { success: true };
-        })
-      }),
-      // ─── IR Contacts ─────────────────────────────────────────────────────────────
-      irContacts: router({
-        list: publicProcedure.query(async () => {
-          const db2 = await getDb();
-          if (!db2) return [];
-          return db2.select().from(irContacts).where(eq73(irContacts.active, true)).orderBy(irContacts.name);
-        }),
-        // Returns active IR contacts that have a phone number — for the Multi-Dial queue
-        getForDial: publicProcedure.query(async () => {
-          const db2 = await getDb();
-          if (!db2) return [];
-          const contacts = await db2.select().from(irContacts).where(eq73(irContacts.active, true)).orderBy(irContacts.name);
-          return contacts.filter((c) => c.phoneNumber && c.phoneNumber.trim().length > 0);
-        }),
-        add: publicProcedure.input(z88.object({
-          name: z88.string().min(1),
-          email: z88.string().email(),
-          company: z88.string().optional(),
-          role: z88.string().optional(),
-          phoneNumber: z88.string().optional()
-        })).mutation(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return { success: false };
-          await db2.insert(irContacts).values({
-            name: input.name,
-            email: input.email,
-            company: input.company || null,
-            role: input.role || null,
-            phoneNumber: input.phoneNumber || null
-          }).onConflictDoNothing();
-          return { success: true };
-        }),
-        update: publicProcedure.input(z88.object({
-          id: z88.number(),
-          name: z88.string().min(1),
-          email: z88.string().email(),
-          company: z88.string().optional(),
-          role: z88.string().optional(),
-          phoneNumber: z88.string().optional()
-        })).mutation(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return { success: false };
-          await db2.update(irContacts).set({
-            name: input.name,
-            email: input.email,
-            company: input.company || null,
-            role: input.role || null,
-            phoneNumber: input.phoneNumber || null
-          }).where(eq73(irContacts.id, input.id));
-          return { success: true };
-        }),
-        remove: publicProcedure.input(z88.object({ id: z88.number() })).mutation(async ({ input }) => {
-          const db2 = await getDb();
-          if (!db2) return { success: false };
-          await db2.update(irContacts).set({ active: false }).where(eq73(irContacts.id, input.id));
-          return { success: true };
-        }),
-        // Send AI summary to all active IR contacts
-        sendSummary: publicProcedure.input(z88.object({
-          eventTitle: z88.string(),
-          summary: z88.object({
-            headline: z88.string(),
-            keyPoints: z88.array(z88.string()),
-            financialHighlights: z88.array(z88.string()),
-            sentiment: z88.string(),
-            actionItems: z88.array(z88.string()),
-            executiveSummary: z88.string(),
-            forwardLookingStatements: z88.array(z88.string()).optional().default([]),
-            regulatoryHighlights: z88.array(z88.string()).optional().default([]),
-            riskFactors: z88.array(z88.string()).optional().default([])
-          }),
-          additionalEmails: z88.array(z88.string().email()).optional().default([])
-        })).mutation(async ({ input }) => {
-          const db2 = await getDb();
-          const contacts = db2 ? await db2.select().from(irContacts).where(eq73(irContacts.active, true)) : [];
-          const allEmails = [
-            ...contacts.map((c) => c.email),
-            ...input.additionalEmails
-          ].filter((v, i, a) => a.indexOf(v) === i);
-          if (allEmails.length === 0) {
-            return { success: false, error: "No IR contacts found. Add contacts first.", sentCount: 0 };
-          }
-          const summaryContent = `
-EVENT: ${input.eventTitle}
-
-HEADLINE: ${input.summary.headline}
-
-EXECUTIVE SUMMARY:
-${input.summary.executiveSummary}
-
-KEY POINTS:
-${input.summary.keyPoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}
-
-FINANCIAL HIGHLIGHTS:
-${input.summary.financialHighlights.map((h) => `\u2022 ${h}`).join("\n")}
-
-SENTIMENT: ${input.summary.sentiment}
-
-ACTION ITEMS:
-${input.summary.actionItems.map((a, i) => `${i + 1}. ${a}`).join("\n")}
-
----
-Sent via CuraLive \u2014 The Intelligence Layer for Every Meeting
-Recipients: ${allEmails.join(", ")}
-        `.trim();
-          const now = /* @__PURE__ */ new Date();
-          const dateStr = now.toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" });
-          const emailResults = [];
-          for (const contact of contacts) {
-            const html = buildIRSummaryEmail({
-              contactName: contact.name,
-              eventTitle: input.eventTitle,
-              company: contact.company ?? "CuraLive Inc.",
-              summary: summaryContent,
-              date: dateStr
-            });
-            const result = await sendEmail({
-              to: contact.email,
-              subject: `Post-Event Summary: ${input.eventTitle}`,
-              html
-            });
-            emailResults.push({ email: contact.email, success: result.success, error: result.error });
-          }
-          for (const email of input.additionalEmails) {
-            const html = buildIRSummaryEmail({
-              contactName: "IR Contact",
-              eventTitle: input.eventTitle,
-              company: "CuraLive Inc.",
-              summary: summaryContent,
-              date: dateStr
-            });
-            const result = await sendEmail({
-              to: email,
-              subject: `Post-Event Summary: ${input.eventTitle}`,
-              html
-            });
-            emailResults.push({ email, success: result.success, error: result.error });
-          }
-          const sentCount = emailResults.filter((r) => r.success).length;
-          const failedCount = emailResults.filter((r) => !r.success).length;
-          await notifyOwner({
-            title: `IR Summary Sent: ${input.eventTitle}`,
-            content: `Sent to ${sentCount} recipients. ${failedCount > 0 ? `${failedCount} failed.` : ""} Recipients: ${allEmails.join(", ")}`
-          }).catch(() => {
-          });
-          return { success: sentCount > 0, sentCount, failedCount, recipients: allEmails };
-        })
-      }),
-      // ─── Book Demo ───────────────────────────────────────────────────────────────
-      bookDemo: router({
-        submit: publicProcedure.input(z88.object({
-          name: z88.string().min(2).max(100),
-          company: z88.string().min(2).max(150),
-          role: z88.string().min(2).max(100),
-          email: z88.string().email(),
-          phone: z88.string().optional(),
-          serviceInterest: z88.enum(["capital_raising", "earnings_call", "research", "hybrid_conference", "all"]).default("all"),
-          preferredDate: z88.string().optional(),
-          message: z88.string().max(1e3).optional()
-        })).mutation(async ({ input }) => {
-          const notified = await notifyOwner({
-            title: `New Demo Request: ${input.name} @ ${input.company}`,
-            content: [
-              `Name: ${input.name}`,
-              `Company: ${input.company}`,
-              `Role: ${input.role}`,
-              `Email: ${input.email}`,
-              input.phone ? `Phone: ${input.phone}` : null,
-              `Service Interest: ${input.serviceInterest.replace(/_/g, " ")}`,
-              input.preferredDate ? `Preferred Date: ${input.preferredDate}` : null,
-              input.message ? `Message: ${input.message}` : null
-            ].filter(Boolean).join("\n")
-          }).catch(() => false);
-          await sendEmail({
-            to: input.email,
-            subject: "Your CuraLive Demo Request \u2014 We'll be in touch shortly",
-            html: `
-            <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #f8fafc; padding: 40px; border-radius: 12px;">
-              <div style="margin-bottom: 32px;">
-                <span style="font-size: 24px; font-weight: 700;"CuraLive</span>
-              </div>
-              <h1 style="font-size: 22px; font-weight: 700; margin-bottom: 16px;">Thank you, ${input.name}.</h1>
-              <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
-                We've received your demo request and our team will be in touch within one business day to schedule a personalised walkthrough of the CuraLive platform.
-              </p>
-              <div style="background: #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                <p style="font-size: 13px; color: #64748b; margin: 0 0 8px;">YOUR REQUEST SUMMARY</p>
-                <p style="margin: 4px 0;"><strong>Company:</strong> ${input.company}</p>
-                <p style="margin: 4px 0;"><strong>Role:</strong> ${input.role}</p>
-                <p style="margin: 4px 0;"><strong>Service Interest:</strong> ${input.serviceInterest.replace(/_/g, " ")}</p>
-                ${input.preferredDate ? `<p style="margin: 4px 0;"><strong>Preferred Date:</strong> ${input.preferredDate}</p>` : ""}
-              </div>
-              <p style="color: #94a3b8; font-size: 13px;">In the meantime, explore the live platform at <a href="https://curalive-mdu4k2ib.manus.space" style="color: #ef4444;">curalive-mdu4k2ib.manus.space</a></p>
-            </div>
-          `
-          }).catch(() => {
-          });
-          return { success: true, notified };
-        })
-      })
-    });
-  }
-});
-
-// server/storageAdapter.ts
-var storageAdapter_exports = {};
-__export(storageAdapter_exports, {
-  RECORDINGS_DIR: () => RECORDINGS_DIR,
-  getStorageHealth: () => getStorageHealth,
-  isObjectStorageConfigured: () => isObjectStorageConfigured,
-  isWithinDir: () => isWithinDir,
-  persistToObjectStorage: () => persistToObjectStorage,
-  resolveRecordingFile: () => resolveRecordingFile,
-  sanitizeBasename: () => sanitizeBasename
-});
-import { existsSync, statSync, readdirSync, accessSync, constants, writeFileSync, mkdirSync, unlinkSync, createReadStream } from "fs";
-import { join as join2, basename, resolve, normalize } from "path";
-function isObjectStorageConfigured() {
-  return Boolean(ENV.forgeApiUrl && ENV.forgeApiKey);
-}
-function sanitizeBasename(rawPath) {
-  return basename(rawPath).replace(/[^a-zA-Z0-9._\-]/g, "_");
-}
-function isWithinDir(filePath, baseDir) {
-  const resolved = resolve(filePath);
-  const normalised = normalize(resolved);
-  return normalised.startsWith(normalize(baseDir) + "/") || normalised === normalize(baseDir);
-}
-async function resolveRecordingFile(recordingPath) {
-  if (!recordingPath || !recordingPath.trim()) {
-    return { found: false, source: "none" };
-  }
-  const safeName = sanitizeBasename(recordingPath);
-  if (isObjectStorageConfigured()) {
-    const storageKey = `recordings/${safeName}`;
-    try {
-      const result = await storageGet(storageKey);
-      if (result.url) {
-        return { found: true, source: "object-storage", url: result.url };
-      }
-    } catch {
-    }
-  }
-  const localPath = resolve(RECORDINGS_DIR, safeName);
-  if (!isWithinDir(localPath, RECORDINGS_DIR)) {
-    return { found: false, source: "none" };
-  }
-  if (existsSync(localPath)) {
-    try {
-      const stats = statSync(localPath);
-      return { found: true, source: "local-disk", localPath, sizeBytes: stats.size };
-    } catch {
-      return { found: false, source: "none" };
-    }
-  }
-  return { found: false, source: "none" };
-}
-async function persistToObjectStorage(localPath, storageKey, contentType = "application/octet-stream") {
-  if (!isObjectStorageConfigured()) {
-    return null;
-  }
-  if (!existsSync(localPath)) {
-    return null;
-  }
-  try {
-    const chunks = [];
-    const stream = createReadStream(localPath);
-    for await (const chunk of stream) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    }
-    const data = Buffer.concat(chunks);
-    const result = await storagePut(storageKey, data, contentType);
-    console.log(`[StorageAdapter] Persisted ${basename(localPath)} \u2192 ${storageKey}`);
-    return result;
-  } catch (err) {
-    console.warn(`[StorageAdapter] Failed to persist ${basename(localPath)} to object storage:`, err instanceof Error ? err.message : err);
-    return null;
-  }
-}
-function getStorageHealth() {
-  let localDiskWritable = false;
-  try {
-    mkdirSync(RECORDINGS_DIR, { recursive: true });
-    const testFile = join2(RECORDINGS_DIR, ".write-test");
-    writeFileSync(testFile, "ok");
-    accessSync(testFile, constants.W_OK);
-    unlinkSync(testFile);
-    localDiskWritable = true;
-  } catch {
-    localDiskWritable = false;
-  }
-  let localRecordingsCount = 0;
-  let localRecordingsTotalBytes = 0;
-  try {
-    const files = readdirSync(RECORDINGS_DIR).filter((f) => !f.startsWith("."));
-    localRecordingsCount = files.length;
-    for (const f of files) {
-      try {
-        localRecordingsTotalBytes += statSync(join2(RECORDINGS_DIR, f)).size;
-      } catch {
-      }
-    }
-  } catch {
-  }
-  return {
-    localDiskWritable,
-    objectStorageConfigured: isObjectStorageConfigured(),
-    localRecordingsCount,
-    localRecordingsTotalBytes
-  };
-}
-var RECORDINGS_DIR;
-var init_storageAdapter = __esm({
-  "server/storageAdapter.ts"() {
-    "use strict";
-    init_storage();
-    init_env();
-    RECORDINGS_DIR = resolve(process.cwd(), "uploads", "recordings");
-  }
-});
-
 // server/_core/config/env.ts
 var env_exports = {};
 __export(env_exports, {
@@ -39362,6 +38596,1144 @@ var init_serviceStatus = __esm({
   }
 });
 
+// server/storageAdapter.ts
+var storageAdapter_exports = {};
+__export(storageAdapter_exports, {
+  RECORDINGS_DIR: () => RECORDINGS_DIR,
+  getStorageHealth: () => getStorageHealth,
+  isObjectStorageConfigured: () => isObjectStorageConfigured,
+  isWithinDir: () => isWithinDir,
+  persistToObjectStorage: () => persistToObjectStorage,
+  resolveRecordingFile: () => resolveRecordingFile,
+  sanitizeBasename: () => sanitizeBasename
+});
+import { existsSync, statSync, readdirSync, accessSync, constants, writeFileSync, mkdirSync, unlinkSync, createReadStream } from "fs";
+import { join, basename, resolve, normalize } from "path";
+function isObjectStorageConfigured() {
+  return Boolean(ENV.forgeApiUrl && ENV.forgeApiKey);
+}
+function sanitizeBasename(rawPath) {
+  return basename(rawPath).replace(/[^a-zA-Z0-9._\-]/g, "_");
+}
+function isWithinDir(filePath, baseDir) {
+  const resolved = resolve(filePath);
+  const normalised = normalize(resolved);
+  return normalised.startsWith(normalize(baseDir) + "/") || normalised === normalize(baseDir);
+}
+async function resolveRecordingFile(recordingPath) {
+  if (!recordingPath || !recordingPath.trim()) {
+    return { found: false, source: "none" };
+  }
+  const safeName = sanitizeBasename(recordingPath);
+  if (isObjectStorageConfigured()) {
+    const storageKey = `recordings/${safeName}`;
+    try {
+      const result = await storageGet(storageKey);
+      if (result.url) {
+        return { found: true, source: "object-storage", url: result.url };
+      }
+    } catch {
+    }
+  }
+  const localPath = resolve(RECORDINGS_DIR, safeName);
+  if (!isWithinDir(localPath, RECORDINGS_DIR)) {
+    return { found: false, source: "none" };
+  }
+  if (existsSync(localPath)) {
+    try {
+      const stats = statSync(localPath);
+      return { found: true, source: "local-disk", localPath, sizeBytes: stats.size };
+    } catch {
+      return { found: false, source: "none" };
+    }
+  }
+  return { found: false, source: "none" };
+}
+async function persistToObjectStorage(localPath, storageKey, contentType = "application/octet-stream") {
+  if (!isObjectStorageConfigured()) {
+    return null;
+  }
+  if (!existsSync(localPath)) {
+    return null;
+  }
+  try {
+    const chunks = [];
+    const stream = createReadStream(localPath);
+    for await (const chunk of stream) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    const data = Buffer.concat(chunks);
+    const result = await storagePut(storageKey, data, contentType);
+    console.log(`[StorageAdapter] Persisted ${basename(localPath)} \u2192 ${storageKey}`);
+    return result;
+  } catch (err) {
+    console.warn(`[StorageAdapter] Failed to persist ${basename(localPath)} to object storage:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+function getStorageHealth() {
+  let localDiskWritable = false;
+  try {
+    mkdirSync(RECORDINGS_DIR, { recursive: true });
+    const testFile = join(RECORDINGS_DIR, ".write-test");
+    writeFileSync(testFile, "ok");
+    accessSync(testFile, constants.W_OK);
+    unlinkSync(testFile);
+    localDiskWritable = true;
+  } catch {
+    localDiskWritable = false;
+  }
+  let localRecordingsCount = 0;
+  let localRecordingsTotalBytes = 0;
+  try {
+    const files = readdirSync(RECORDINGS_DIR).filter((f) => !f.startsWith("."));
+    localRecordingsCount = files.length;
+    for (const f of files) {
+      try {
+        localRecordingsTotalBytes += statSync(join(RECORDINGS_DIR, f)).size;
+      } catch {
+      }
+    }
+  } catch {
+  }
+  return {
+    localDiskWritable,
+    objectStorageConfigured: isObjectStorageConfigured(),
+    localRecordingsCount,
+    localRecordingsTotalBytes
+  };
+}
+var RECORDINGS_DIR;
+var init_storageAdapter = __esm({
+  "server/storageAdapter.ts"() {
+    "use strict";
+    init_storage();
+    init_env();
+    RECORDINGS_DIR = resolve(process.cwd(), "uploads", "recordings");
+  }
+});
+
+// server/routers/restBridgeRouter.ts
+import { z as z88 } from "zod";
+var restBridgeRouter;
+var init_restBridgeRouter = __esm({
+  "server/routers/restBridgeRouter.ts"() {
+    "use strict";
+    init_trpc();
+    restBridgeRouter = router({
+      health: publicProcedure.query(async () => {
+        const { validateEnv: validateEnv2 } = await Promise.resolve().then(() => (init_env2(), env_exports));
+        const { getServiceStatus: getServiceStatus2 } = await Promise.resolve().then(() => (init_serviceStatus(), serviceStatus_exports));
+        const { getStorageHealth: getStorageHealth2 } = await Promise.resolve().then(() => (init_storageAdapter(), storageAdapter_exports));
+        const validation = validateEnv2();
+        const services = getServiceStatus2();
+        const storage2 = getStorageHealth2();
+        return {
+          ok: validation.isCoreValid,
+          environment: process.env.NODE_ENV ?? "development",
+          coreReady: validation.isCoreValid,
+          missingCore: validation.missing.map((m) => m.key),
+          missingOptional: validation.warnings.map((w) => ({
+            key: w.key,
+            requiredFor: w.requiredFor
+          })),
+          services,
+          storage: storage2,
+          timestamp: (/* @__PURE__ */ new Date()).toISOString()
+        };
+      }),
+      authStatus: publicProcedure.query(async ({ ctx }) => {
+        const oauthEnabled = Boolean(process.env.OAUTH_SERVER_URL);
+        const mode = oauthEnabled ? "oauth" : "dev-bypass";
+        let user = null;
+        try {
+          const { sdk: sdk2 } = await Promise.resolve().then(() => (init_sdk(), sdk_exports));
+          const sessionUser = await sdk2.authenticateRequest(ctx.req);
+          if (sessionUser) {
+            user = {
+              id: sessionUser.id,
+              name: sessionUser.name,
+              email: sessionUser.email,
+              role: sessionUser.role
+            };
+          }
+        } catch {
+        }
+        return {
+          authenticated: Boolean(user),
+          mode,
+          user,
+          oauthConfigured: oauthEnabled
+        };
+      }),
+      archiveTranscript: publicProcedure.input(z88.object({ id: z88.number().int().positive() })).query(async ({ input }) => {
+        const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+        const [rows] = await rawSql2(
+          `SELECT event_name, client_name, event_date, transcript_text FROM archive_events WHERE id = ? LIMIT 1`,
+          [input.id]
+        );
+        const row = rows[0];
+        if (!row) return { error: "Archive event not found", archiveId: input.id, found: false };
+        if (!row.transcript_text)
+          return { error: "No transcript available", archiveId: input.id, found: false };
+        const header = `CuraLive Intelligence Transcript
+${"=".repeat(40)}
+Event: ${row.event_name}
+Client: ${row.client_name}
+Date: ${row.event_date || "N/A"}
+${"=".repeat(40)}
+
+`;
+        return {
+          found: true,
+          eventName: row.event_name,
+          clientName: row.client_name,
+          eventDate: row.event_date,
+          content: header + row.transcript_text
+        };
+      }),
+      archiveRecording: publicProcedure.input(z88.object({ id: z88.number().int().positive() })).query(async ({ input }) => {
+        const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+        const [rows] = await rawSql2(
+          `SELECT event_name, recording_path FROM archive_events WHERE id = ? LIMIT 1`,
+          [input.id]
+        );
+        const row = rows[0];
+        if (!row) return { error: "Archive event not found", archiveId: input.id, found: false };
+        if (!row.recording_path)
+          return { error: "No recording associated with this event", archiveId: input.id, found: false };
+        const { resolveRecordingFile: resolveRecordingFile2 } = await Promise.resolve().then(() => (init_storageAdapter(), storageAdapter_exports));
+        const resolution = await resolveRecordingFile2(row.recording_path);
+        if (!resolution.found)
+          return { error: "Recording file not found", archiveId: input.id, found: false, source: resolution.source };
+        const safeName = (row.event_name || "recording").replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
+        if (resolution.source === "object-storage" && resolution.url) {
+          return { found: true, type: "redirect", url: resolution.url, fileName: `${safeName}_Recording.mp3` };
+        }
+        return { found: true, type: "local", localPath: resolution.localPath, fileName: `${safeName}_Recording.mp3` };
+      }),
+      archiveDownloads: publicProcedure.query(async () => {
+        const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+        const [rows] = await rawSql2(
+          `SELECT id, event_name, client_name, event_type, event_date, status,
+              length(transcript_text) as transcript_len, recording_path
+       FROM archive_events ORDER BY id DESC`,
+          []
+        );
+        const items = rows.map((r) => ({
+          id: r.id,
+          event_name: r.event_name,
+          client_name: r.client_name,
+          event_type: r.event_type,
+          event_date: r.event_date,
+          status: r.status,
+          has_transcript: (r.transcript_len ?? 0) > 0,
+          has_recording: !!(r.recording_path && r.recording_path.trim().length > 0)
+        }));
+        return { count: items.length, items };
+      })
+    });
+  }
+});
+
+// server/routers.eager.ts
+var routers_eager_exports = {};
+__export(routers_eager_exports, {
+  appRouter: () => appRouter,
+  createCallerFactory: () => createCallerFactory
+});
+import { eq as eq73, and as and45 } from "drizzle-orm";
+import { z as z89 } from "zod";
+async function createAblyTokenRequest(clientId) {
+  const apiKey = process.env.ABLY_API_KEY;
+  if (!apiKey) return null;
+  const [keyName, keySecret] = apiKey.split(":");
+  const timestamp2 = Date.now();
+  const ttl = 3600 * 1e3;
+  const nonce = Math.random().toString(36).substring(2, 15);
+  const capability = JSON.stringify({ [`curalive-event-*`]: ["subscribe", "publish", "presence", "history"] });
+  const { createHmac } = await import("crypto");
+  const signString = [keyName, ttl, nonce, clientId, timestamp2, capability, ""].join("\n");
+  const mac = createHmac("sha256", keySecret).update(signString).digest("base64");
+  return { keyName, ttl, nonce, clientId, timestamp: timestamp2, capability, mac };
+}
+var appRouter;
+var init_routers_eager = __esm({
+  "server/routers.eager.ts"() {
+    "use strict";
+    init_const();
+    init_cookies();
+    init_systemRouter();
+    init_trpc();
+    init_llm();
+    init_notification();
+    init_email();
+    init_db();
+    init_storage();
+    init_schema();
+    init_directAccess();
+    init_occ();
+    init_liveVideo();
+    init_roadshowAI();
+    init_branding();
+    init_webcastRouter();
+    init_recallRouter();
+    init_muxRouter();
+    init_billingRouter();
+    init_aiRouter();
+    init_webphoneRouter();
+    init_customisationRouter();
+    init_trainingMode();
+    init_postEventReport();
+    init_transcription();
+    init_polls();
+    init_scheduling();
+    init_clientPortal();
+    init_compliance();
+    init_followups();
+    init_sentiment();
+    init_mobileNotifications();
+    init_aiDashboard();
+    init_aiFeatures();
+    init_analytics();
+    init_contentTriggers();
+    init_eventBriefRouter();
+    init_liveRollingSummary();
+    init_transcriptEditorRouter();
+    init_aiApplications2();
+    init_socialMedia();
+    init_interconnectionAnalytics();
+    init_virtualStudioRouter();
+    init_operatorLinksRouter();
+    init_agenticEventBrainRouter();
+    init_autonomousInterventionRouter();
+    init_taggedMetricsRouter();
+    init_shadowModeRouter();
+    init_archiveUploadRouter();
+    init_benchmarksRouter();
+    init_marketReactionRouter();
+    init_communicationIndexRouter();
+    init_investorQuestionsRouter();
+    init_intelligenceReportRouter();
+    init_callPrepRouter();
+    init_intelligenceTerminalRouter();
+    init_bot();
+    init_mailingListRouter();
+    init_healthGuardianRouter();
+    init_crmApiRouter();
+    init_supportChatRouter();
+    init_soc2Router();
+    init_iso27001Router();
+    init_adaptiveIntelligenceRouter();
+    init_sustainabilityRouter();
+    init_broadcasterRouter();
+    init_conferenceDialoutRouter();
+    init_agmGovernanceRouter();
+    init_lumiBookingRouter();
+    init_bastionBookingRouter();
+    init_evasiveAnswerRouter();
+    init_marketImpactPredictorRouter();
+    init_multiModalComplianceRouter();
+    init_externalSentimentRouter();
+    init_personalizedBriefingRouter();
+    init_materialityRiskRouter();
+    init_investorIntentRouter();
+    init_crossEventConsistencyRouter();
+    init_volatilitySimulatorRouter();
+    init_regulatoryInterventionRouter();
+    init_eventIntegrityRouter();
+    init_crisisPredictionRouter();
+    init_valuationImpactRouter();
+    init_disclosureCertificateRouter();
+    init_monthlyReportRouter();
+    init_advisoryBotRouter();
+    init_evolutionAuditRouter();
+    init_systemDiagnosticsRouter();
+    init_liveQaRouter();
+    init_platformEmbedRouter();
+    init_investorEngagementRouter();
+    init_liveSubtitleRouter();
+    init_ipoMandARouter();
+    init_complianceEngineRouter();
+    init_aiAm();
+    init_rbac();
+    init_aiEvolutionRouter();
+    init_persistence();
+    init_aiAmPhase2();
+    init_restBridgeRouter();
+    appRouter = router({
+      system: systemRouter,
+      occ: occRouter,
+      liveVideo: liveVideoRouter,
+      roadshowAI: roadshowAIRouter,
+      branding: brandingRouter,
+      webcast: webcastRouter,
+      recall: recallRouter,
+      mux: muxRouter,
+      billing: billingRouter,
+      ai: aiRouter,
+      webphone: webphoneRouter,
+      customisation: customisationRouter,
+      trainingMode: trainingModeRouter,
+      postEventReport: postEventReportRouter,
+      transcription: transcriptionRouter,
+      polls: pollsRouter,
+      scheduling: schedulingRouter,
+      clientPortal: clientPortalRouter,
+      compliance: complianceRouter,
+      followups: followupsRouter,
+      sentiment: sentimentRouter,
+      mobileNotifications: mobileNotificationsRouter,
+      aiDashboard: aiDashboardRouter,
+      aiFeatures: aiFeaturesRouter,
+      analytics: analyticsRouter,
+      contentTriggers: contentTriggersRouter,
+      eventBrief: eventBriefRouter,
+      liveRollingSummary: liveRollingSummaryRouter,
+      transcriptEditor: transcriptEditorRouter,
+      aiApplications: aiApplicationsRouter,
+      socialMedia: socialMediaRouter,
+      interconnectionAnalytics: interconnectionAnalyticsRouter,
+      virtualStudio: virtualStudioRouter,
+      operatorLinks: operatorLinksRouter,
+      agenticBrain: agenticEventBrainRouter,
+      autonomousIntervention: autonomousInterventionRouter,
+      taggedMetrics: taggedMetricsRouter,
+      shadowMode: shadowModeRouter,
+      archiveUpload: archiveUploadRouter,
+      benchmarks: benchmarksRouter,
+      marketReaction: marketReactionRouter,
+      communicationIndex: communicationIndexRouter,
+      investorQuestions: investorQuestionsRouter,
+      intelligenceReport: intelligenceReportRouter,
+      callPrep: callPrepRouter,
+      intelligenceTerminal: intelligenceTerminalRouter,
+      bot: botRouter,
+      mailingList: mailingListRouter,
+      healthGuardian: healthGuardianRouter,
+      crmApi: crmApiRouter,
+      supportChat: supportChatRouter,
+      soc2: soc2Router,
+      iso27001: iso27001Router,
+      adaptiveIntelligence: adaptiveIntelligenceRouter,
+      sustainability: sustainabilityRouter,
+      broadcaster: broadcasterRouter,
+      conferenceDialout: conferenceDialoutRouter,
+      agmGovernance: agmGovernanceRouter,
+      lumiBooking: lumiBookingRouter,
+      bastionBooking: bastionBookingRouter,
+      evasiveAnswer: evasiveAnswerRouter,
+      marketImpactPredictor: marketImpactPredictorRouter,
+      multiModalCompliance: multiModalComplianceRouter,
+      externalSentiment: externalSentimentRouter,
+      personalizedBriefing: personalizedBriefingRouter,
+      materialityRisk: materialityRiskRouter,
+      investorIntent: investorIntentRouter,
+      crossEventConsistency: crossEventConsistencyRouter,
+      volatilitySimulator: volatilitySimulatorRouter,
+      regulatoryIntervention: regulatoryInterventionRouter,
+      eventIntegrity: eventIntegrityRouter,
+      crisisPrediction: crisisPredictionRouter,
+      valuationImpact: valuationImpactRouter,
+      disclosureCertificate: disclosureCertificateRouter,
+      monthlyReport: monthlyReportRouter,
+      advisoryBot: advisoryBotRouter,
+      evolutionAudit: evolutionAuditRouter,
+      systemDiagnostics: systemDiagnosticsRouter,
+      liveQa: liveQaRouter,
+      platformEmbed: platformEmbedRouter,
+      investorEngagement: investorEngagementRouter,
+      liveSubtitle: liveSubtitleRouter,
+      ipoMandA: ipoMandARouter,
+      complianceEngine: complianceEngineRouter,
+      aiAm: aiAmRouter,
+      rbac: rbacRouter,
+      aiEvolution: aiEvolutionRouter,
+      persistence: persistenceRouter,
+      aiAmPhase2: aiAmPhase2Router,
+      restBridge: restBridgeRouter,
+      admin: router({
+        listUsers: adminProcedure.query(async () => {
+          const allUsers = await listUsers();
+          return allUsers.map((u) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            role: u.role,
+            lastSignedIn: u.lastSignedIn,
+            loginMethod: u.loginMethod
+          }));
+        }),
+        updateUserRole: adminProcedure.input(z89.object({
+          userId: z89.number().int().positive(),
+          role: z89.enum(["user", "admin", "operator"])
+        })).mutation(async ({ input, ctx }) => {
+          if (ctx.user.id === input.userId && input.role !== "admin") {
+            throw new Error("You cannot change your own role.");
+          }
+          await updateUserRole(input.userId, input.role);
+          return { success: true };
+        })
+      }),
+      // ─── Self-service operator access request ──────────────────────────────────
+      team: router({
+        requestOperatorAccess: publicProcedure.input(z89.object({ reason: z89.string().max(500).optional() })).mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Login required");
+          if (ctx.user.role === "operator" || ctx.user.role === "admin") {
+            return { success: true, alreadyOperator: true };
+          }
+          await notifyOwner({
+            title: `Operator Access Request \u2014 ${ctx.user.name ?? ctx.user.email ?? "Unknown user"}`,
+            content: [
+              `User: ${ctx.user.name ?? "N/A"} (ID: ${ctx.user.id})`,
+              `Email: ${ctx.user.email ?? "N/A"}`,
+              `Current role: ${ctx.user.role}`,
+              input.reason ? `Reason: ${input.reason}` : "",
+              "",
+              "To promote this user, visit: /admin/users"
+            ].filter(Boolean).join("\n")
+          });
+          return { success: true, alreadyOperator: false };
+        })
+      }),
+      auth: router({
+        me: publicProcedure.query(({ ctx }) => {
+          if (ctx.user) return ctx.user;
+          const isDev = process.env.NODE_ENV !== "production" && (process.env.AUTH_BYPASS === "true" || process.env.NODE_ENV === "development");
+          if (isDev) return { id: 0, name: "Dev Operator", email: "dev@curalive.local", role: "operator" };
+          return null;
+        }),
+        logout: publicProcedure.mutation(({ ctx }) => {
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+          return { success: true };
+        })
+      }),
+      // ─── Operator profile management ──────────────────────────────────────────────
+      profile: router({
+        get: publicProcedure.query(async ({ ctx }) => {
+          if (!ctx.user) return null;
+          const user = await getUserById(ctx.user.id);
+          if (!user) return null;
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            jobTitle: user.jobTitle,
+            organisation: user.organisation,
+            bio: user.bio,
+            avatarUrl: user.avatarUrl,
+            phone: user.phone,
+            linkedinUrl: user.linkedinUrl,
+            timezone: user.timezone
+          };
+        }),
+        update: publicProcedure.input(z89.object({
+          name: z89.string().min(1).max(255).optional(),
+          jobTitle: z89.string().max(255).nullable().optional(),
+          organisation: z89.string().max(255).nullable().optional(),
+          bio: z89.string().max(1e3).nullable().optional(),
+          phone: z89.string().max(64).nullable().optional(),
+          linkedinUrl: z89.string().url().max(512).nullable().optional().or(z89.literal("")).transform((v) => v === "" ? null : v),
+          timezone: z89.string().max(64).nullable().optional()
+        })).mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Login required");
+          await updateUserProfile(ctx.user.id, input);
+          return { success: true };
+        }),
+        uploadAvatar: publicProcedure.input(z89.object({
+          base64: z89.string().max(5 * 1024 * 1024),
+          // 5 MB limit
+          mimeType: z89.enum(["image/jpeg", "image/png", "image/webp", "image/gif"])
+        })).mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Login required");
+          const buffer = Buffer.from(input.base64, "base64");
+          const ext = input.mimeType.split("/")[1];
+          const key = `avatars/user-${ctx.user.id}-${Date.now()}.${ext}`;
+          const { url } = await storagePut(key, buffer, input.mimeType);
+          await updateUserProfile(ctx.user.id, { avatarUrl: url });
+          return { avatarUrl: url };
+        }),
+        /**
+         * Get the host profile for a webcast event (public — shown on registration page).
+         * Returns the profile of the operator who created the event, or falls back to
+         * the event's hostName / hostOrganization fields.
+         */
+        getEventHost: publicProcedure.input(z89.object({ slug: z89.string() })).query(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return null;
+          const [event] = await db2.select().from(webcastEvents).where(eq73(webcastEvents.slug, input.slug)).limit(1);
+          if (!event) return null;
+          return {
+            name: event.hostName ?? null,
+            organisation: event.hostOrganization ?? null,
+            jobTitle: null,
+            bio: null,
+            avatarUrl: null,
+            linkedinUrl: null
+          };
+        })
+      }),
+      // ─── Ably real-time token endpoint ───────────────────────────────────────────
+      ably: router({
+        tokenRequest: publicProcedure.input(z89.object({
+          clientId: z89.string().optional().default("anonymous"),
+          channelPrefix: z89.string().optional().default("curalive-event")
+        })).query(async ({ input }) => {
+          const tokenRequest = await createAblyTokenRequest(input.clientId);
+          return { tokenRequest, mode: tokenRequest ? "ably" : "demo" };
+        })
+      }),
+      // ─── Event management ────────────────────────────────────────────────────────
+      events: router({
+        // Verify access code for password-protected events
+        verifyAccess: publicProcedure.input(z89.object({
+          eventId: z89.string(),
+          accessCode: z89.string().optional()
+        })).query(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return { allowed: true, requiresCode: false };
+          const [event] = await db2.select().from(events).where(eq73(events.eventId, input.eventId)).limit(1);
+          if (!event) return { allowed: true, requiresCode: false };
+          if (!event.accessCode) return { allowed: true, requiresCode: false };
+          if (!input.accessCode) return { allowed: false, requiresCode: true };
+          const match = input.accessCode.trim() === event.accessCode.trim();
+          return { allowed: match, requiresCode: true };
+        }),
+        // Get event details (including whether it's password-protected)
+        getEvent: publicProcedure.input(z89.object({ eventId: z89.string() })).query(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return null;
+          const [event] = await db2.select().from(events).where(eq73(events.eventId, input.eventId)).limit(1);
+          if (!event) return null;
+          return {
+            ...event,
+            accessCode: void 0,
+            // never expose the code to the client
+            requiresCode: !!event.accessCode
+          };
+        }),
+        // Upsert event (called by operator to create/update event with optional access code)
+        upsertEvent: publicProcedure.input(z89.object({
+          eventId: z89.string(),
+          title: z89.string(),
+          company: z89.string(),
+          platform: z89.string(),
+          status: z89.enum(["upcoming", "live", "completed"]).optional().default("upcoming"),
+          accessCode: z89.string().optional()
+        })).mutation(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return { success: false, error: "Database unavailable" };
+          await db2.insert(events).values({
+            eventId: input.eventId,
+            title: input.title,
+            company: input.company,
+            platform: input.platform,
+            status: input.status,
+            accessCode: input.accessCode || null
+          }).onConflictDoNothing();
+          return { success: true };
+        }),
+        setAccessCode: publicProcedure.input(z89.object({
+          eventId: z89.string(),
+          accessCode: z89.string().nullable()
+        })).mutation(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return { success: false, error: "Database unavailable" };
+          await db2.insert(events).values({
+            eventId: input.eventId,
+            title: input.eventId,
+            company: "CuraLive Inc.",
+            platform: "Unknown",
+            status: "upcoming",
+            accessCode: input.accessCode
+          }).onConflictDoNothing();
+          return {
+            success: true,
+            message: input.accessCode ? `Access code set successfully` : "Access code removed \u2014 event is now open"
+          };
+        }),
+        // AI-powered event summary
+        generateSummary: publicProcedure.input(z89.object({
+          eventTitle: z89.string(),
+          transcript: z89.array(z89.object({
+            speaker: z89.string(),
+            text: z89.string(),
+            timeLabel: z89.string()
+          })),
+          qaItems: z89.array(z89.object({
+            question: z89.string(),
+            author: z89.string(),
+            status: z89.string()
+          })).optional().default([])
+        })).mutation(async ({ input }) => {
+          const transcriptText = input.transcript.map((s) => `[${s.timeLabel}] ${s.speaker}: ${s.text}`).join("\n");
+          const approvedQA = input.qaItems.filter((q) => q.status === "answered" || q.status === "approved").map((q) => `Q (${q.author}): ${q.question}`).join("\n");
+          const prompt = `You are an expert financial communications analyst specialising in JSE-listed company investor relations. Analyze the following earnings call transcript and produce a structured executive summary for investor relations purposes, including regulatory compliance sections required for JSE-listed entities.
+
+EVENT: ${input.eventTitle}
+
+TRANSCRIPT:
+${transcriptText}
+
+${approvedQA ? `KEY Q&A:
+${approvedQA}` : ""}
+
+Produce a JSON response with this exact structure:
+{
+  "headline": "One sentence capturing the most important announcement",
+  "keyPoints": ["Up to 5 bullet points of the most important facts, numbers, and announcements"],
+  "financialHighlights": ["Up to 4 specific financial metrics mentioned (revenue, margins, guidance, etc.)"],
+  "sentiment": "Overall tone of the call: Positive / Neutral / Cautious",
+  "actionItems": ["Up to 3 follow-up items or commitments made during the call"],
+  "executiveSummary": "2-3 paragraph narrative summary suitable for an investor relations report",
+  "forwardLookingStatements": ["Up to 4 forward-looking statements or guidance items mentioned"],
+  "regulatoryHighlights": ["Up to 3 items relevant to regulatory compliance, governance, or JSE Listings Requirements"],
+  "riskFactors": ["Up to 3 risk factors or cautionary statements mentioned by management"]
+}`;
+          try {
+            const response = await invokeLLM({
+              messages: [
+                { role: "system", content: "You are a financial communications expert specialising in JSE-listed company investor relations. Always respond with valid JSON only." },
+                { role: "user", content: prompt }
+              ],
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "event_summary",
+                  strict: true,
+                  schema: {
+                    type: "object",
+                    properties: {
+                      headline: { type: "string" },
+                      keyPoints: { type: "array", items: { type: "string" } },
+                      financialHighlights: { type: "array", items: { type: "string" } },
+                      sentiment: { type: "string" },
+                      actionItems: { type: "array", items: { type: "string" } },
+                      executiveSummary: { type: "string" },
+                      forwardLookingStatements: { type: "array", items: { type: "string" } },
+                      regulatoryHighlights: { type: "array", items: { type: "string" } },
+                      riskFactors: { type: "array", items: { type: "string" } }
+                    },
+                    required: ["headline", "keyPoints", "financialHighlights", "sentiment", "actionItems", "executiveSummary", "forwardLookingStatements", "regulatoryHighlights", "riskFactors"],
+                    additionalProperties: false
+                  }
+                }
+              }
+            });
+            const content = response.choices?.[0]?.message?.content;
+            if (!content) throw new Error("No content from LLM");
+            const parsed = JSON.parse(content);
+            return { success: true, summary: parsed };
+          } catch (err) {
+            console.error("[AI Summary] LLM error:", err);
+            return {
+              success: false,
+              summary: {
+                headline: `${input.eventTitle} \u2014 Executive Summary`,
+                keyPoints: ["Revenue growth exceeded analyst expectations", "AI platform adoption accelerating", "Guidance raised for full-year 2026"],
+                financialHighlights: ["Q4 Revenue: $47.2M (+28% YoY)", "Gross Margin: 72%", "FY2026 Guidance: $195\u2013$210M", "Cash: $124M"],
+                sentiment: "Positive",
+                actionItems: ["Follow up on Teams integration timeline", "Provide detail on Recall.ai margin impact", "Clarify CuraLive revenue contribution"],
+                executiveSummary: `${input.eventTitle} delivered strong results with revenue and margin performance ahead of expectations. Management highlighted the accelerating adoption of the CuraLive intelligence platform as a key driver of both revenue growth and margin expansion.
+
+The company raised full-year 2026 guidance and outlined a clear roadmap for native integrations with Microsoft Teams and Zoom.
+
+Overall tone was confident and forward-looking, with management expressing strong conviction in the strategic direction and financial trajectory of the business.`,
+                forwardLookingStatements: ["FY2026 revenue guidance of $195\u2013$210M", "Adjusted EBITDA margins of 18\u201322% expected for FY2026", "Native Teams and Zoom integrations to open new enterprise opportunities", "Recall.ai partnership enables rapid multi-platform deployment"],
+                regulatoryHighlights: ["Forward-looking guidance provided in line with JSE Listings Requirements para 3.4", "No material changes to share capital or borrowing powers disclosed", "All financial metrics presented on an IFRS-compliant basis"],
+                riskFactors: ["Integration timelines subject to third-party platform API availability", "Gross margin profile may be affected by Recall.ai partnership terms", "Revenue guidance assumes continued enterprise adoption of AI features"]
+              }
+            };
+          }
+        })
+      }),
+      // ─── Press Release Generator ─────────────────────────────────────────────────
+      pressRelease: router({
+        generate: publicProcedure.input(z89.object({
+          eventTitle: z89.string(),
+          companyName: z89.string().optional().default("the Company"),
+          transcript: z89.array(z89.object({
+            speaker: z89.string(),
+            text: z89.string(),
+            timeLabel: z89.string()
+          })),
+          aiSummary: z89.object({
+            headline: z89.string().optional(),
+            keyPoints: z89.array(z89.string()).optional(),
+            financialHighlights: z89.array(z89.string()).optional(),
+            executiveSummary: z89.string().optional(),
+            forwardLookingStatements: z89.array(z89.string()).optional()
+          }).optional()
+        })).mutation(async ({ input }) => {
+          const transcriptText = input.transcript.slice(0, 40).map((s) => `[${s.timeLabel}] ${s.speaker}: ${s.text}`).join("\n");
+          const summaryContext = input.aiSummary ? `
+AI SUMMARY CONTEXT:
+Headline: ${input.aiSummary.headline ?? ""}
+Key Points: ${(input.aiSummary.keyPoints ?? []).join("; ")}
+Financial Highlights: ${(input.aiSummary.financialHighlights ?? []).join("; ")}
+Forward-Looking: ${(input.aiSummary.forwardLookingStatements ?? []).join("; ")}` : "";
+          const prompt = `You are a senior investor relations communications specialist. Draft a professional SENS/RNS-style press release.
+
+COMPANY: ${input.companyName}
+EVENT: ${input.eventTitle}
+${summaryContext}
+
+TRANSCRIPT EXCERPT:
+${transcriptText}
+
+Write a complete press release in this format:
+1. HEADLINE (all caps, newswire style)
+2. SUBHEADLINE (one sentence)
+3. CITY, DATE \u2014 Opening paragraph with the most important announcement
+4. 2-3 body paragraphs covering financial results, strategic highlights, and outlook
+5. CEO/CFO direct quote (1-2 sentences each)
+6. Forward-looking statements disclaimer paragraph
+7. ENDS
+
+Use formal investor relations language. Include specific numbers from the transcript. Keep total length to 450-600 words.`;
+          try {
+            const response = await invokeLLM({
+              messages: [
+                { role: "system", content: "You are a professional investor relations writer. Write clear, factual, publication-ready press releases." },
+                { role: "user", content: prompt }
+              ]
+            });
+            const content = response?.choices?.[0]?.message?.content ?? "";
+            return { success: true, pressRelease: content };
+          } catch (err) {
+            console.error("[pressRelease.generate] LLM error:", err);
+            return {
+              success: false,
+              pressRelease: `PRESS RELEASE DRAFT
+
+[LLM temporarily unavailable \u2014 please retry]
+
+FOR IMMEDIATE RELEASE
+
+${input.companyName} Reports Results for ${input.eventTitle}
+
+${input.aiSummary?.executiveSummary ?? "[Executive summary not available]"}
+
+ENDS`
+            };
+          }
+        })
+      }),
+      // ─── Attendee Registrations ───────────────────────────────────────────────────
+      registrations: router({
+        // Register an attendee for an event
+        register: publicProcedure.input(z89.object({
+          eventId: z89.string(),
+          name: z89.string().min(1),
+          email: z89.string().email(),
+          company: z89.string().optional(),
+          jobTitle: z89.string().optional(),
+          language: z89.string().optional().default("English"),
+          dialIn: z89.boolean().optional().default(false),
+          accessCode: z89.string().optional()
+        })).mutation(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return { success: false, error: "Database unavailable" };
+          const [event] = await db2.select().from(events).where(eq73(events.eventId, input.eventId)).limit(1);
+          if (event?.accessCode) {
+            if (!input.accessCode || input.accessCode.trim() !== event.accessCode.trim()) {
+              return { success: false, error: "Invalid access code" };
+            }
+          }
+          const [existing] = await db2.select().from(attendeeRegistrations).where(and45(
+            eq73(attendeeRegistrations.eventId, input.eventId),
+            eq73(attendeeRegistrations.email, input.email)
+          )).limit(1);
+          if (existing) {
+            return { success: true, alreadyRegistered: true, registrationId: existing.id };
+          }
+          let accessPin;
+          try {
+            accessPin = await generateUniquePin(input.eventId);
+          } catch {
+            console.warn("[CuraLive Direct] PIN generation failed for", input.email);
+          }
+          const [result] = await db2.insert(attendeeRegistrations).values({
+            eventId: input.eventId,
+            name: input.name,
+            email: input.email,
+            company: input.company || null,
+            jobTitle: input.jobTitle || null,
+            language: input.language,
+            dialIn: input.dialIn,
+            accessGranted: true,
+            accessPin: accessPin ?? null
+          }).$returningId();
+          await notifyOwner({
+            title: `New Registration: ${input.name}`,
+            content: `${input.name} (${input.email}) registered for event: ${input.eventId}${accessPin ? ` | CuraLive Direct PIN: ${accessPin}` : ""}`
+          }).catch(() => {
+          });
+          const nameParts = input.name.trim().split(" ");
+          const firstName = nameParts[0] ?? input.name;
+          const lastName = nameParts.slice(1).join(" ") || "";
+          const eventTitle = event?.title ?? input.eventId;
+          const eventDate = "Please check your calendar invite for the date and time";
+          const confirmationHtml = buildRegistrationConfirmationEmail({
+            firstName,
+            lastName,
+            eventTitle,
+            company: event?.company ?? "CuraLive Inc.",
+            eventDate,
+            accessPin
+          });
+          await sendEmail({
+            to: input.email,
+            subject: `Registration Confirmed: ${eventTitle}`,
+            html: confirmationHtml
+          }).catch(() => {
+          });
+          return { success: true, alreadyRegistered: false, registrationId: result?.id };
+        }),
+        // Get all attendees for an event (for Operator Console)
+        listByEvent: publicProcedure.input(z89.object({ eventId: z89.string() })).query(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return [];
+          return db2.select().from(attendeeRegistrations).where(eq73(attendeeRegistrations.eventId, input.eventId)).orderBy(attendeeRegistrations.createdAt);
+        }),
+        // Get all registrations for the currently logged-in user (by email)
+        getMyRegistrations: protectedProcedure.query(async ({ ctx }) => {
+          const db2 = await getDb();
+          if (!db2) return [];
+          const userEmail = ctx.user.email;
+          if (!userEmail) return [];
+          const regs = await db2.select().from(attendeeRegistrations).where(eq73(attendeeRegistrations.email, userEmail)).orderBy(attendeeRegistrations.createdAt);
+          const enriched = await Promise.all(
+            regs.map(async (reg) => {
+              const [event] = await db2.select().from(events).where(eq73(events.eventId, reg.eventId)).limit(1);
+              return {
+                ...reg,
+                eventTitle: event?.title ?? reg.eventId,
+                eventCompany: event?.company ?? "",
+                eventStatus: event?.status ?? "upcoming",
+                eventPlatform: event?.platform ?? ""
+              };
+            })
+          );
+          return enriched;
+        }),
+        // Mark attendee as joined (called when they enter the Event Room)
+        markJoined: publicProcedure.input(z89.object({ eventId: z89.string(), email: z89.string() })).mutation(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return { success: false };
+          await db2.update(attendeeRegistrations).set({ joinedAt: /* @__PURE__ */ new Date() }).where(and45(
+            eq73(attendeeRegistrations.eventId, input.eventId),
+            eq73(attendeeRegistrations.email, input.email)
+          ));
+          return { success: true };
+        })
+      }),
+      // ─── IR Contacts ─────────────────────────────────────────────────────────────
+      irContacts: router({
+        list: publicProcedure.query(async () => {
+          const db2 = await getDb();
+          if (!db2) return [];
+          return db2.select().from(irContacts).where(eq73(irContacts.active, true)).orderBy(irContacts.name);
+        }),
+        // Returns active IR contacts that have a phone number — for the Multi-Dial queue
+        getForDial: publicProcedure.query(async () => {
+          const db2 = await getDb();
+          if (!db2) return [];
+          const contacts = await db2.select().from(irContacts).where(eq73(irContacts.active, true)).orderBy(irContacts.name);
+          return contacts.filter((c) => c.phoneNumber && c.phoneNumber.trim().length > 0);
+        }),
+        add: publicProcedure.input(z89.object({
+          name: z89.string().min(1),
+          email: z89.string().email(),
+          company: z89.string().optional(),
+          role: z89.string().optional(),
+          phoneNumber: z89.string().optional()
+        })).mutation(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return { success: false };
+          await db2.insert(irContacts).values({
+            name: input.name,
+            email: input.email,
+            company: input.company || null,
+            role: input.role || null,
+            phoneNumber: input.phoneNumber || null
+          }).onConflictDoNothing();
+          return { success: true };
+        }),
+        update: publicProcedure.input(z89.object({
+          id: z89.number(),
+          name: z89.string().min(1),
+          email: z89.string().email(),
+          company: z89.string().optional(),
+          role: z89.string().optional(),
+          phoneNumber: z89.string().optional()
+        })).mutation(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return { success: false };
+          await db2.update(irContacts).set({
+            name: input.name,
+            email: input.email,
+            company: input.company || null,
+            role: input.role || null,
+            phoneNumber: input.phoneNumber || null
+          }).where(eq73(irContacts.id, input.id));
+          return { success: true };
+        }),
+        remove: publicProcedure.input(z89.object({ id: z89.number() })).mutation(async ({ input }) => {
+          const db2 = await getDb();
+          if (!db2) return { success: false };
+          await db2.update(irContacts).set({ active: false }).where(eq73(irContacts.id, input.id));
+          return { success: true };
+        }),
+        // Send AI summary to all active IR contacts
+        sendSummary: publicProcedure.input(z89.object({
+          eventTitle: z89.string(),
+          summary: z89.object({
+            headline: z89.string(),
+            keyPoints: z89.array(z89.string()),
+            financialHighlights: z89.array(z89.string()),
+            sentiment: z89.string(),
+            actionItems: z89.array(z89.string()),
+            executiveSummary: z89.string(),
+            forwardLookingStatements: z89.array(z89.string()).optional().default([]),
+            regulatoryHighlights: z89.array(z89.string()).optional().default([]),
+            riskFactors: z89.array(z89.string()).optional().default([])
+          }),
+          additionalEmails: z89.array(z89.string().email()).optional().default([])
+        })).mutation(async ({ input }) => {
+          const db2 = await getDb();
+          const contacts = db2 ? await db2.select().from(irContacts).where(eq73(irContacts.active, true)) : [];
+          const allEmails = [
+            ...contacts.map((c) => c.email),
+            ...input.additionalEmails
+          ].filter((v, i, a) => a.indexOf(v) === i);
+          if (allEmails.length === 0) {
+            return { success: false, error: "No IR contacts found. Add contacts first.", sentCount: 0 };
+          }
+          const summaryContent = `
+EVENT: ${input.eventTitle}
+
+HEADLINE: ${input.summary.headline}
+
+EXECUTIVE SUMMARY:
+${input.summary.executiveSummary}
+
+KEY POINTS:
+${input.summary.keyPoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}
+
+FINANCIAL HIGHLIGHTS:
+${input.summary.financialHighlights.map((h) => `\u2022 ${h}`).join("\n")}
+
+SENTIMENT: ${input.summary.sentiment}
+
+ACTION ITEMS:
+${input.summary.actionItems.map((a, i) => `${i + 1}. ${a}`).join("\n")}
+
+---
+Sent via CuraLive \u2014 The Intelligence Layer for Every Meeting
+Recipients: ${allEmails.join(", ")}
+        `.trim();
+          const now = /* @__PURE__ */ new Date();
+          const dateStr = now.toLocaleDateString("en-ZA", { year: "numeric", month: "long", day: "numeric" });
+          const emailResults = [];
+          for (const contact of contacts) {
+            const html = buildIRSummaryEmail({
+              contactName: contact.name,
+              eventTitle: input.eventTitle,
+              company: contact.company ?? "CuraLive Inc.",
+              summary: summaryContent,
+              date: dateStr
+            });
+            const result = await sendEmail({
+              to: contact.email,
+              subject: `Post-Event Summary: ${input.eventTitle}`,
+              html
+            });
+            emailResults.push({ email: contact.email, success: result.success, error: result.error });
+          }
+          for (const email of input.additionalEmails) {
+            const html = buildIRSummaryEmail({
+              contactName: "IR Contact",
+              eventTitle: input.eventTitle,
+              company: "CuraLive Inc.",
+              summary: summaryContent,
+              date: dateStr
+            });
+            const result = await sendEmail({
+              to: email,
+              subject: `Post-Event Summary: ${input.eventTitle}`,
+              html
+            });
+            emailResults.push({ email, success: result.success, error: result.error });
+          }
+          const sentCount = emailResults.filter((r) => r.success).length;
+          const failedCount = emailResults.filter((r) => !r.success).length;
+          await notifyOwner({
+            title: `IR Summary Sent: ${input.eventTitle}`,
+            content: `Sent to ${sentCount} recipients. ${failedCount > 0 ? `${failedCount} failed.` : ""} Recipients: ${allEmails.join(", ")}`
+          }).catch(() => {
+          });
+          return { success: sentCount > 0, sentCount, failedCount, recipients: allEmails };
+        })
+      }),
+      // ─── Book Demo ───────────────────────────────────────────────────────────────
+      bookDemo: router({
+        submit: publicProcedure.input(z89.object({
+          name: z89.string().min(2).max(100),
+          company: z89.string().min(2).max(150),
+          role: z89.string().min(2).max(100),
+          email: z89.string().email(),
+          phone: z89.string().optional(),
+          serviceInterest: z89.enum(["capital_raising", "earnings_call", "research", "hybrid_conference", "all"]).default("all"),
+          preferredDate: z89.string().optional(),
+          message: z89.string().max(1e3).optional()
+        })).mutation(async ({ input }) => {
+          const notified = await notifyOwner({
+            title: `New Demo Request: ${input.name} @ ${input.company}`,
+            content: [
+              `Name: ${input.name}`,
+              `Company: ${input.company}`,
+              `Role: ${input.role}`,
+              `Email: ${input.email}`,
+              input.phone ? `Phone: ${input.phone}` : null,
+              `Service Interest: ${input.serviceInterest.replace(/_/g, " ")}`,
+              input.preferredDate ? `Preferred Date: ${input.preferredDate}` : null,
+              input.message ? `Message: ${input.message}` : null
+            ].filter(Boolean).join("\n")
+          }).catch(() => false);
+          await sendEmail({
+            to: input.email,
+            subject: "Your CuraLive Demo Request \u2014 We'll be in touch shortly",
+            html: `
+            <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #f8fafc; padding: 40px; border-radius: 12px;">
+              <div style="margin-bottom: 32px;">
+                <span style="font-size: 24px; font-weight: 700;"CuraLive</span>
+              </div>
+              <h1 style="font-size: 22px; font-weight: 700; margin-bottom: 16px;">Thank you, ${input.name}.</h1>
+              <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
+                We've received your demo request and our team will be in touch within one business day to schedule a personalised walkthrough of the CuraLive platform.
+              </p>
+              <div style="background: #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                <p style="font-size: 13px; color: #64748b; margin: 0 0 8px;">YOUR REQUEST SUMMARY</p>
+                <p style="margin: 4px 0;"><strong>Company:</strong> ${input.company}</p>
+                <p style="margin: 4px 0;"><strong>Role:</strong> ${input.role}</p>
+                <p style="margin: 4px 0;"><strong>Service Interest:</strong> ${input.serviceInterest.replace(/_/g, " ")}</p>
+                ${input.preferredDate ? `<p style="margin: 4px 0;"><strong>Preferred Date:</strong> ${input.preferredDate}</p>` : ""}
+              </div>
+              <p style="color: #94a3b8; font-size: 13px;">In the meantime, explore the live platform at <a href="https://curalive-mdu4k2ib.manus.space" style="color: #ef4444;">curalive-mdu4k2ib.manus.space</a></p>
+            </div>
+          `
+          }).catch(() => {
+          });
+          return { success: true, notified };
+        })
+      })
+    });
+  }
+});
+
 // server/_core/index.ts
 import "dotenv/config";
 import express2 from "express";
@@ -39374,240 +39746,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 init_const();
 init_db();
 init_cookies();
-
-// server/_core/sdk.ts
-init_const();
-
-// shared/_core/errors.ts
-var HttpError = class extends Error {
-  constructor(statusCode, message) {
-    super(message);
-    this.statusCode = statusCode;
-    this.name = "HttpError";
-  }
-};
-var ForbiddenError = (msg) => new HttpError(403, msg);
-
-// server/_core/sdk.ts
-init_db();
-init_env();
-import axios from "axios";
-import { parse as parseCookieHeader } from "cookie";
-import { SignJWT, jwtVerify } from "jose";
-var isNonEmptyString = (value) => typeof value === "string" && value.length > 0;
-var EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
-var GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
-var GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfoWithJwt`;
-var OAuthService = class {
-  constructor(client) {
-    this.client = client;
-    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
-    if (!ENV.oAuthServerUrl) {
-      console.error(
-        "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
-      );
-    }
-  }
-  decodeState(state) {
-    const redirectUri = atob(state);
-    return redirectUri;
-  }
-  async getTokenByCode(code, state) {
-    const payload = {
-      clientId: ENV.appId,
-      grantType: "authorization_code",
-      code,
-      redirectUri: this.decodeState(state)
-    };
-    const { data } = await this.client.post(
-      EXCHANGE_TOKEN_PATH,
-      payload
-    );
-    return data;
-  }
-  async getUserInfoByToken(token) {
-    const { data } = await this.client.post(
-      GET_USER_INFO_PATH,
-      {
-        accessToken: token.accessToken
-      }
-    );
-    return data;
-  }
-};
-var createOAuthHttpClient = () => axios.create({
-  baseURL: ENV.oAuthServerUrl,
-  timeout: AXIOS_TIMEOUT_MS
-});
-var SDKServer = class {
-  client;
-  oauthService;
-  constructor(client = createOAuthHttpClient()) {
-    this.client = client;
-    this.oauthService = new OAuthService(this.client);
-  }
-  deriveLoginMethod(platforms, fallback) {
-    if (fallback && fallback.length > 0) return fallback;
-    if (!Array.isArray(platforms) || platforms.length === 0) return null;
-    const set = new Set(
-      platforms.filter((p) => typeof p === "string")
-    );
-    if (set.has("REGISTERED_PLATFORM_EMAIL")) return "email";
-    if (set.has("REGISTERED_PLATFORM_GOOGLE")) return "google";
-    if (set.has("REGISTERED_PLATFORM_APPLE")) return "apple";
-    if (set.has("REGISTERED_PLATFORM_MICROSOFT") || set.has("REGISTERED_PLATFORM_AZURE"))
-      return "microsoft";
-    if (set.has("REGISTERED_PLATFORM_GITHUB")) return "github";
-    const first = Array.from(set)[0];
-    return first ? first.toLowerCase() : null;
-  }
-  /**
-   * Exchange OAuth authorization code for access token
-   * @example
-   * const tokenResponse = await sdk.exchangeCodeForToken(code, state);
-   */
-  async exchangeCodeForToken(code, state) {
-    return this.oauthService.getTokenByCode(code, state);
-  }
-  /**
-   * Get user information using access token
-   * @example
-   * const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
-   */
-  async getUserInfo(accessToken) {
-    const data = await this.oauthService.getUserInfoByToken({
-      accessToken
-    });
-    const loginMethod = this.deriveLoginMethod(
-      data?.platforms,
-      data?.platform ?? data.platform ?? null
-    );
-    return {
-      ...data,
-      platform: loginMethod,
-      loginMethod
-    };
-  }
-  parseCookies(cookieHeader) {
-    if (!cookieHeader) {
-      return /* @__PURE__ */ new Map();
-    }
-    const parsed = parseCookieHeader(cookieHeader);
-    return new Map(Object.entries(parsed));
-  }
-  getSessionSecret() {
-    const secret = ENV.cookieSecret;
-    return new TextEncoder().encode(secret);
-  }
-  /**
-   * Create a session token for a Manus user openId
-   * @example
-   * const sessionToken = await sdk.createSessionToken(userInfo.openId);
-   */
-  async createSessionToken(openId, options = {}) {
-    return this.signSession(
-      {
-        openId,
-        appId: ENV.appId,
-        name: options.name || ""
-      },
-      options
-    );
-  }
-  async signSession(payload, options = {}) {
-    const issuedAt = Date.now();
-    const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
-    const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1e3);
-    const secretKey = this.getSessionSecret();
-    return new SignJWT({
-      openId: payload.openId,
-      appId: payload.appId,
-      name: payload.name
-    }).setProtectedHeader({ alg: "HS256", typ: "JWT" }).setExpirationTime(expirationSeconds).sign(secretKey);
-  }
-  async verifySession(cookieValue) {
-    if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
-      return null;
-    }
-    try {
-      const secretKey = this.getSessionSecret();
-      const { payload } = await jwtVerify(cookieValue, secretKey, {
-        algorithms: ["HS256"]
-      });
-      const { openId, appId, name } = payload;
-      if (!isNonEmptyString(openId) || !isNonEmptyString(appId) || !isNonEmptyString(name)) {
-        console.warn("[Auth] Session payload missing required fields");
-        return null;
-      }
-      return {
-        openId,
-        appId,
-        name
-      };
-    } catch (error) {
-      console.warn("[Auth] Session verification failed", String(error));
-      return null;
-    }
-  }
-  async getUserInfoWithJwt(jwtToken) {
-    const payload = {
-      jwtToken,
-      projectId: ENV.appId
-    };
-    const { data } = await this.client.post(
-      GET_USER_INFO_WITH_JWT_PATH,
-      payload
-    );
-    const loginMethod = this.deriveLoginMethod(
-      data?.platforms,
-      data?.platform ?? data.platform ?? null
-    );
-    return {
-      ...data,
-      platform: loginMethod,
-      loginMethod
-    };
-  }
-  async authenticateRequest(req) {
-    const cookies = this.parseCookies(req.headers.cookie);
-    const sessionCookie = cookies.get(COOKIE_NAME);
-    const session = await this.verifySession(sessionCookie);
-    if (!session) {
-      throw ForbiddenError("Invalid session cookie");
-    }
-    const sessionUserId = session.openId;
-    const signedInAt = /* @__PURE__ */ new Date();
-    let user = await getUserByOpenId(sessionUserId);
-    if (!user) {
-      try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-        await upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt
-        });
-        user = await getUserByOpenId(userInfo.openId);
-      } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
-      }
-    }
-    if (!user) {
-      throw ForbiddenError("User not found");
-    }
-    await upsertUser({
-      openId: user.openId,
-      lastSignedIn: signedInAt
-    });
-    return user;
-  }
-};
-var sdk = new SDKServer();
-
-// server/_core/oauth.ts
+init_sdk();
 function getQueryParam(req, key) {
   const value = req.query[key];
   return typeof value === "string" ? value : void 0;
@@ -39674,6 +39813,7 @@ function registerOAuthRoutes(app) {
 init_routers_eager();
 
 // server/_core/context.ts
+init_sdk();
 async function createContext(opts) {
   let user = null;
   try {
@@ -39813,6 +39953,7 @@ function serveStatic(app) {
 
 // server/slideDeckUpload.ts
 init_storage();
+init_sdk();
 import { Router } from "express";
 import multer from "multer";
 var upload = multer({
@@ -39884,7 +40025,7 @@ import multer2 from "multer";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { writeFile, readFile, mkdtemp, rm } from "fs/promises";
-import { join, extname } from "path";
+import { join as join2, extname as extname2 } from "path";
 import { tmpdir } from "os";
 var execFileAsync = promisify(execFile);
 var MAX_UPLOAD_MB = 500;
@@ -40078,9 +40219,9 @@ function registerAudioTranscribeRoute(app) {
           }
           transcript = await callTranscribeApi(buffer, originalname);
         } else {
-          tmpDir = await mkdtemp(join(tmpdir(), "curalive-audio-"));
-          const inputExt = extname(originalname) || (isVideo ? ".mp4" : ".mp3");
-          const inputPath = join(tmpDir, `input${inputExt}`);
+          tmpDir = await mkdtemp(join2(tmpdir(), "curalive-audio-"));
+          const inputExt = extname2(originalname) || (isVideo ? ".mp4" : ".mp3");
+          const inputPath = join2(tmpDir, `input${inputExt}`);
           await writeFile(inputPath, buffer);
           const totalSecs = await getDurationSeconds(inputPath);
           const chunkSecs = CHUNK_MINUTES * 60;
@@ -40089,7 +40230,7 @@ function registerAudioTranscribeRoute(app) {
           const parts = [];
           for (let i = 0; i < numChunks; i++) {
             const startSec = i * chunkSecs;
-            const chunkPath = join(tmpDir, `chunk_${i}.mp3`);
+            const chunkPath = join2(tmpDir, `chunk_${i}.mp3`);
             await extractChunkMp3(inputPath, chunkPath, startSec, chunkSecs);
             const chunkBuf = await readFile(chunkPath);
             const chunkMB = chunkBuf.length / 1024 / 1024;
@@ -41933,28 +42074,6 @@ ${"=".repeat(40)}
       console.error("[Ably token]", e);
       res.status(500).json({ error: "Token generation failed" });
     }
-  });
-  const restProxyPort = parseInt(process.env.PORT || "3000");
-  app.use("/api/trpc/_rest", (req, res) => {
-    const targetPath = req.url || "/";
-    const proxyReq = http.request(
-      {
-        hostname: "127.0.0.1",
-        port: restProxyPort,
-        path: targetPath,
-        method: req.method,
-        headers: { ...req.headers, host: `127.0.0.1:${restProxyPort}` }
-      },
-      (proxyRes) => {
-        res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers);
-        proxyRes.pipe(res, { end: true });
-      }
-    );
-    proxyReq.on("error", (err) => {
-      console.error("[CDN Bypass Proxy] Error:", err.message);
-      if (!res.headersSent) res.status(502).json({ error: "Internal proxy error" });
-    });
-    req.pipe(proxyReq, { end: true });
   });
   app.use(
     "/api/trpc",

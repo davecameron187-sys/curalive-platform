@@ -99,6 +99,7 @@ import { broadcasterRouter } from "./routers/broadcasterRouter";
 import { agmGovernanceRouter } from "./routers/agmGovernanceRouter";
 import { lumiBookingRouter } from "./routers/lumiBookingRouter";
 import { bastionBookingRouter } from "./routers/bastionBookingRouter";
+import { restBridgeRouter } from "./routers/restBridgeRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -208,6 +209,7 @@ export const appRouter = router({
   agmGovernance: agmGovernanceRouter,
   lumiBooking: lumiBookingRouter,
   bastionBooking: bastionBookingRouter,
+  restBridge: restBridgeRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

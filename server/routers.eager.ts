@@ -100,6 +100,7 @@ import { rbacRouter } from "./routers/rbac";
 import { aiEvolutionRouter } from "./routers/aiEvolutionRouter";
 import { persistenceRouter } from "./routers/persistence";
 import { aiAmPhase2Router } from "./routers/aiAmPhase2";
+import { restBridgeRouter } from "./routers/restBridgeRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -209,6 +210,7 @@ export const appRouter = router({
   aiEvolution: aiEvolutionRouter,
   persistence: persistenceRouter,
   aiAmPhase2: aiAmPhase2Router,
+  restBridge: restBridgeRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
