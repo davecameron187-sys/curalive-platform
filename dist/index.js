@@ -41934,10 +41934,27 @@ ${"=".repeat(40)}
       res.status(500).json({ error: "Token generation failed" });
     }
   });
+  const restProxyPort = parseInt(process.env.PORT || "3000");
   app.use("/api/trpc/_rest", (req, res) => {
-    req.url = req.url === "/" ? "/" : req.url;
-    req.originalUrl = req.url;
-    app.handle(req, res);
+    const targetPath = req.url || "/";
+    const proxyReq = http.request(
+      {
+        hostname: "127.0.0.1",
+        port: restProxyPort,
+        path: targetPath,
+        method: req.method,
+        headers: { ...req.headers, host: `127.0.0.1:${restProxyPort}` }
+      },
+      (proxyRes) => {
+        res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers);
+        proxyRes.pipe(res, { end: true });
+      }
+    );
+    proxyReq.on("error", (err) => {
+      console.error("[CDN Bypass Proxy] Error:", err.message);
+      if (!res.headersSent) res.status(502).json({ error: "Internal proxy error" });
+    });
+    req.pipe(proxyReq, { end: true });
   });
   app.use(
     "/api/trpc",
