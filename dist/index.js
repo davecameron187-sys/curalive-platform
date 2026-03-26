@@ -39243,6 +39243,125 @@ var init_storageAdapter = __esm({
   }
 });
 
+// server/_core/config/env.ts
+var env_exports = {};
+__export(env_exports, {
+  enforceEnvOrExit: () => enforceEnvOrExit,
+  getEnv: () => getEnv,
+  validateEnv: () => validateEnv
+});
+function validateEnv() {
+  const missing = [];
+  const warnings = [];
+  if (!process.env.DATABASE_URL) {
+    missing.push({ key: "DATABASE_URL", requiredFor: "Database connection", critical: true });
+  }
+  const hasAiKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || process.env.BUILT_IN_FORGE_API_KEY);
+  const optionalKeys = [
+    { key: "OPENAI_API_KEY", requiredFor: "AI analysis and transcription", skip: hasAiKey },
+    { key: "ABLY_API_KEY", requiredFor: "Real-time event streaming" },
+    { key: "RESEND_API_KEY", requiredFor: "Email delivery" },
+    { key: "RECALL_AI_WEBHOOK_SECRET", requiredFor: "Recall.ai bot webhooks" },
+    { key: "TWILIO_ACCOUNT_SID", requiredFor: "Telephony (Twilio)" },
+    { key: "TWILIO_AUTH_TOKEN", requiredFor: "Telephony (Twilio)" },
+    { key: "TELNYX_API_KEY", requiredFor: "Telephony (Telnyx)" },
+    { key: "MUX_TOKEN_ID", requiredFor: "Video streaming (Mux)" },
+    { key: "MUX_TOKEN_SECRET", requiredFor: "Video streaming (Mux)" },
+    { key: "STRIPE_SECRET_KEY", requiredFor: "Payment processing" },
+    { key: "OAUTH_SERVER_URL", requiredFor: "OAuth authentication" }
+  ];
+  for (const { key, requiredFor, skip } of optionalKeys) {
+    if (skip) continue;
+    if (!process.env[key]) {
+      warnings.push({ key, requiredFor, critical: false });
+    }
+  }
+  const isCoreValid = missing.length === 0;
+  return { isCoreValid, missing, warnings };
+}
+function getEnv() {
+  return {
+    NODE_ENV: process.env.NODE_ENV ?? "development",
+    DATABASE_URL: process.env.DATABASE_URL,
+    SESSION_SECRET: process.env.SESSION_SECRET ?? process.env.JWT_SECRET ?? "dev-fallback-secret",
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    ABLY_API_KEY: process.env.ABLY_API_KEY,
+    MUX_TOKEN_ID: process.env.MUX_TOKEN_ID,
+    MUX_TOKEN_SECRET: process.env.MUX_TOKEN_SECRET,
+    RECALL_AI_WEBHOOK_SECRET: process.env.RECALL_AI_WEBHOOK_SECRET,
+    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+    TELNYX_API_KEY: process.env.TELNYX_API_KEY,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    OAUTH_SERVER_URL: process.env.OAUTH_SERVER_URL
+  };
+}
+function enforceEnvOrExit() {
+  const { isCoreValid, missing, warnings } = validateEnv();
+  if (warnings.length > 0) {
+    console.log(`
+\u26A0  CuraLive \u2014 ${warnings.length} optional service(s) not configured:`);
+    for (const w of warnings) {
+      console.log(`   \xB7 ${w.key} \u2192 ${w.requiredFor} (disabled)`);
+    }
+    console.log("");
+  }
+  if (!isCoreValid) {
+    console.error("\n\u2716  CuraLive \u2014 cannot start, missing critical environment variables:");
+    for (const m of missing) {
+      console.error(`   \xB7 ${m.key} \u2192 ${m.requiredFor}`);
+    }
+    console.error("\nSet these variables and restart.\n");
+    process.exit(1);
+  }
+  console.log("\u2713  CuraLive environment validated \u2014 core services ready");
+}
+var init_env2 = __esm({
+  "server/_core/config/env.ts"() {
+    "use strict";
+  }
+});
+
+// server/_core/config/serviceStatus.ts
+var serviceStatus_exports = {};
+__export(serviceStatus_exports, {
+  getServiceStatus: () => getServiceStatus
+});
+function enabled(reason) {
+  return { configured: true, status: "enabled", reason };
+}
+function disabled(reason) {
+  return { configured: false, status: "disabled", reason };
+}
+function getServiceStatus() {
+  const env = getEnv();
+  return {
+    core: {
+      database: env.DATABASE_URL ? enabled("PostgreSQL connected") : disabled("DATABASE_URL not set"),
+      sessionAuth: env.SESSION_SECRET ? enabled("Session secret configured") : disabled("SESSION_SECRET / JWT_SECRET not set")
+    },
+    integrations: {
+      openai: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || env.OPENAI_API_KEY ? enabled(process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? "AI via Replit integration proxy" : "AI via direct OpenAI key") : disabled("No AI key configured \u2014 AI features disabled"),
+      ably: env.ABLY_API_KEY ? enabled("Real-time streaming available") : disabled("ABLY_API_KEY not set \u2014 real-time features disabled"),
+      resend: env.RESEND_API_KEY ? enabled("Email delivery available") : disabled("RESEND_API_KEY not set \u2014 email features disabled"),
+      recall: env.RECALL_AI_WEBHOOK_SECRET ? enabled("Recall.ai bot integration available") : disabled("RECALL_AI_WEBHOOK_SECRET not set \u2014 bot joining disabled"),
+      telephony: env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN || env.TELNYX_API_KEY ? enabled(
+        env.TWILIO_ACCOUNT_SID ? "Twilio telephony available" : "Telnyx telephony available"
+      ) : disabled("No telephony provider configured (TWILIO or TELNYX)"),
+      mux: env.MUX_TOKEN_ID && env.MUX_TOKEN_SECRET ? enabled("Mux video streaming available") : disabled("MUX_TOKEN_ID / MUX_TOKEN_SECRET not set \u2014 video streaming disabled"),
+      stripe: env.STRIPE_SECRET_KEY ? enabled("Payment processing available") : disabled("STRIPE_SECRET_KEY not set \u2014 payments disabled"),
+      oauth: env.OAUTH_SERVER_URL ? enabled("OAuth authentication available") : disabled("OAUTH_SERVER_URL not set \u2014 OAuth disabled")
+    }
+  };
+}
+var init_serviceStatus = __esm({
+  "server/_core/config/serviceStatus.ts"() {
+    "use strict";
+    init_env2();
+  }
+});
+
 // server/_core/index.ts
 import "dotenv/config";
 import express2 from "express";
@@ -40995,111 +41114,14 @@ function registerBillingPdfRoutes(app) {
 // server/_core/index.ts
 init_twilio();
 init_telnyx();
+init_env2();
 import twilio_twiml from "twilio";
 
-// server/_core/config/env.ts
-function validateEnv() {
-  const missing = [];
-  const warnings = [];
-  if (!process.env.DATABASE_URL) {
-    missing.push({ key: "DATABASE_URL", requiredFor: "Database connection", critical: true });
-  }
-  const hasAiKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || process.env.BUILT_IN_FORGE_API_KEY);
-  const optionalKeys = [
-    { key: "OPENAI_API_KEY", requiredFor: "AI analysis and transcription", skip: hasAiKey },
-    { key: "ABLY_API_KEY", requiredFor: "Real-time event streaming" },
-    { key: "RESEND_API_KEY", requiredFor: "Email delivery" },
-    { key: "RECALL_AI_WEBHOOK_SECRET", requiredFor: "Recall.ai bot webhooks" },
-    { key: "TWILIO_ACCOUNT_SID", requiredFor: "Telephony (Twilio)" },
-    { key: "TWILIO_AUTH_TOKEN", requiredFor: "Telephony (Twilio)" },
-    { key: "TELNYX_API_KEY", requiredFor: "Telephony (Telnyx)" },
-    { key: "MUX_TOKEN_ID", requiredFor: "Video streaming (Mux)" },
-    { key: "MUX_TOKEN_SECRET", requiredFor: "Video streaming (Mux)" },
-    { key: "STRIPE_SECRET_KEY", requiredFor: "Payment processing" },
-    { key: "OAUTH_SERVER_URL", requiredFor: "OAuth authentication" }
-  ];
-  for (const { key, requiredFor, skip } of optionalKeys) {
-    if (skip) continue;
-    if (!process.env[key]) {
-      warnings.push({ key, requiredFor, critical: false });
-    }
-  }
-  const isCoreValid = missing.length === 0;
-  return { isCoreValid, missing, warnings };
-}
-function getEnv() {
-  return {
-    NODE_ENV: process.env.NODE_ENV ?? "development",
-    DATABASE_URL: process.env.DATABASE_URL,
-    SESSION_SECRET: process.env.SESSION_SECRET ?? process.env.JWT_SECRET ?? "dev-fallback-secret",
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    ABLY_API_KEY: process.env.ABLY_API_KEY,
-    MUX_TOKEN_ID: process.env.MUX_TOKEN_ID,
-    MUX_TOKEN_SECRET: process.env.MUX_TOKEN_SECRET,
-    RECALL_AI_WEBHOOK_SECRET: process.env.RECALL_AI_WEBHOOK_SECRET,
-    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
-    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
-    TELNYX_API_KEY: process.env.TELNYX_API_KEY,
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
-    OAUTH_SERVER_URL: process.env.OAUTH_SERVER_URL
-  };
-}
-function enforceEnvOrExit() {
-  const { isCoreValid, missing, warnings } = validateEnv();
-  if (warnings.length > 0) {
-    console.log(`
-\u26A0  CuraLive \u2014 ${warnings.length} optional service(s) not configured:`);
-    for (const w of warnings) {
-      console.log(`   \xB7 ${w.key} \u2192 ${w.requiredFor} (disabled)`);
-    }
-    console.log("");
-  }
-  if (!isCoreValid) {
-    console.error("\n\u2716  CuraLive \u2014 cannot start, missing critical environment variables:");
-    for (const m of missing) {
-      console.error(`   \xB7 ${m.key} \u2192 ${m.requiredFor}`);
-    }
-    console.error("\nSet these variables and restart.\n");
-    process.exit(1);
-  }
-  console.log("\u2713  CuraLive environment validated \u2014 core services ready");
-}
-
 // server/routes/systemStatus.ts
-import { Router as Router3 } from "express";
-
-// server/_core/config/serviceStatus.ts
-function enabled(reason) {
-  return { configured: true, status: "enabled", reason };
-}
-function disabled(reason) {
-  return { configured: false, status: "disabled", reason };
-}
-function getServiceStatus() {
-  const env = getEnv();
-  return {
-    core: {
-      database: env.DATABASE_URL ? enabled("PostgreSQL connected") : disabled("DATABASE_URL not set"),
-      sessionAuth: env.SESSION_SECRET ? enabled("Session secret configured") : disabled("SESSION_SECRET / JWT_SECRET not set")
-    },
-    integrations: {
-      openai: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || env.OPENAI_API_KEY ? enabled(process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? "AI via Replit integration proxy" : "AI via direct OpenAI key") : disabled("No AI key configured \u2014 AI features disabled"),
-      ably: env.ABLY_API_KEY ? enabled("Real-time streaming available") : disabled("ABLY_API_KEY not set \u2014 real-time features disabled"),
-      resend: env.RESEND_API_KEY ? enabled("Email delivery available") : disabled("RESEND_API_KEY not set \u2014 email features disabled"),
-      recall: env.RECALL_AI_WEBHOOK_SECRET ? enabled("Recall.ai bot integration available") : disabled("RECALL_AI_WEBHOOK_SECRET not set \u2014 bot joining disabled"),
-      telephony: env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN || env.TELNYX_API_KEY ? enabled(
-        env.TWILIO_ACCOUNT_SID ? "Twilio telephony available" : "Telnyx telephony available"
-      ) : disabled("No telephony provider configured (TWILIO or TELNYX)"),
-      mux: env.MUX_TOKEN_ID && env.MUX_TOKEN_SECRET ? enabled("Mux video streaming available") : disabled("MUX_TOKEN_ID / MUX_TOKEN_SECRET not set \u2014 video streaming disabled"),
-      stripe: env.STRIPE_SECRET_KEY ? enabled("Payment processing available") : disabled("STRIPE_SECRET_KEY not set \u2014 payments disabled"),
-      oauth: env.OAUTH_SERVER_URL ? enabled("OAuth authentication available") : disabled("OAUTH_SERVER_URL not set \u2014 OAuth disabled")
-    }
-  };
-}
-
-// server/routes/systemStatus.ts
+init_serviceStatus();
+init_env2();
 init_storageAdapter();
+import { Router as Router3 } from "express";
 var systemStatusRouter = Router3();
 systemStatusRouter.get("/health", async (_req, res) => {
   const validation = validateEnv();
@@ -41173,6 +41195,24 @@ async function startServer() {
   const server = http.createServer(app);
   app.set("trust proxy", 1);
   const isProd = process.env.NODE_ENV === "production";
+  app.get("/health", async (_req, res) => {
+    const { validateEnv: validateEnv2 } = await Promise.resolve().then(() => (init_env2(), env_exports));
+    const { getServiceStatus: getServiceStatus2 } = await Promise.resolve().then(() => (init_serviceStatus(), serviceStatus_exports));
+    const { getStorageHealth: getStorageHealth2 } = await Promise.resolve().then(() => (init_storageAdapter(), storageAdapter_exports));
+    const validation = validateEnv2();
+    const services = getServiceStatus2();
+    const storage2 = getStorageHealth2();
+    return res.json({
+      ok: validation.isCoreValid,
+      environment: process.env.NODE_ENV ?? "development",
+      coreReady: validation.isCoreValid,
+      missingCore: validation.missing.map((m) => m.key),
+      missingOptional: validation.warnings.map((w) => ({ key: w.key, requiredFor: w.requiredFor })),
+      services,
+      storage: storage2,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  });
   app.use(systemStatusRouter);
   validateShadowModeEnv();
   ensureArchiveEventsColumns().catch(

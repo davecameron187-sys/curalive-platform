@@ -80,6 +80,25 @@ async function startServer() {
 
   const isProd = process.env.NODE_ENV === "production";
 
+  app.get("/health", async (_req, res) => {
+    const { validateEnv } = await import("./config/env");
+    const { getServiceStatus } = await import("./config/serviceStatus");
+    const { getStorageHealth } = await import("../storageAdapter");
+    const validation = validateEnv();
+    const services = getServiceStatus();
+    const storage = getStorageHealth();
+    return res.json({
+      ok: validation.isCoreValid,
+      environment: process.env.NODE_ENV ?? "development",
+      coreReady: validation.isCoreValid,
+      missingCore: validation.missing.map((m: any) => m.key),
+      missingOptional: validation.warnings.map((w: any) => ({ key: w.key, requiredFor: w.requiredFor })),
+      services,
+      storage,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   app.use(systemStatusRouter);
 
   validateShadowModeEnv();
