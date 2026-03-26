@@ -342,3 +342,9 @@ id = "1DO6PfnMXu8xw8QOgIFRC"
 uri = "file://CuraLive-GitHub-Custodian-Brief.docx"
 type = "word_document"
 title = "CuraLive GitHub Custodian Brief (Word)"
+
+[[outputs]]
+id = "uxJuwRxMGeiT0O2H9WU6U"
+uri = "file://docs/TECHNICAL-BRIEF-Download-Buttons-Deployment-Issue.md"
+type = "text"
+title = "Technical Brief: Download Buttons Deployment Issue"
