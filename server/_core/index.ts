@@ -66,7 +66,7 @@ async function startServer() {
   const isProd = process.env.NODE_ENV === "production";
 
   app.get("/health", (_req, res) => {
-    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+    res.status(200).json({ status: "ok" });
   });
 
   validateShadowModeEnv();

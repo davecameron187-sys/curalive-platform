@@ -53,13 +53,8 @@ curalive-platform/
 4. **rawSql()** in `server/db.ts` auto-appends `RETURNING id` and translates MySQL `?` to `$1/$2`
 5. **attendee_registrations**: Uses camelCase columns (`"createdAt"`, `"eventId"`) — must double-quote in raw SQL
 6. **ai_am_audit_log.timestamp**: Is `bigint` (epoch ms), not a date column
-7. **Schema sync**: Use `drizzle-kit push --force` (NOT `pnpm run db:push` — migration files have MySQL syntax). Never write manual SQL migrations.
+7. **Schema sync**: Use `drizzle-kit push --force` (NOT `pnpm run db:push` — migration files have MySQL syntax)
 8. **Health monitoring tables** (`health_checks`, `health_incidents`, `health_incident_reports`, `health_baselines`): Created via raw SQL, not in Drizzle schema. Timestamp columns must be `TIMESTAMP` type (the rawSql layer converts to Date strings)
-9. **Server binding**: Must bind to `0.0.0.0` (not localhost) — Replit proxy can't reach localhost
-10. **Health endpoint**: `/health` must always exist — Replit deployment checks it
-11. **Never change primary key ID column types** (serial ↔ varchar) — breaks existing data
-12. **Do NOT edit `.replit` file from code** — use Replit UI only
-13. **Do NOT set `AUTH_BYPASS=true` in production** secrets
 
 ## Key Scripts
 
@@ -75,26 +70,12 @@ curalive-platform/
 - Server binds to `0.0.0.0` (required for Replit health checks)
 - Original GitHub project uses port 5000 (dev) / 23636 (prod)
 
-## UI Pages / Routes
+## UI Pages
 
-- **`/`** — Unified Operator Dashboard with tabs: Overview, Shadow Mode, Events, Partners, Billing, Settings
+- **`/`** — Unified Operator Dashboard with tabs: Overview, Shadow Mode, OCC, Partners, Settings
 - **`/intelligence-suite`** — Intelligence Suite with 11 AI algorithms
-- **`/event/:id`** — Event room
-- **`/m/:eventId`** — Attendee room
-- **`/operator/:id`** — Operator console
-- **`/operator-dashboard`** — Operator dashboard
-- **`/operator-links`** — Operator links directory
-- **`/qa/:accessCode`** — Public attendee Q&A (webphone link)
-- **`/post-event/:id`** — Post-event report
-- **`/transcript/:id/edit`** — Transcript editor
-- **`/ai-dashboard`** — AI analytics dashboard
-- **`/agentic-brain`** — 3-question wizard → AI action plan
-- **`/virtual-studio`** — Virtual production studio
-- **`/admin/panel`** — Admin panel
-- **`/billing`** — Billing page
-- **`/live-video/webcast/:slug`** — Webcast studio
-
-Shadow Mode sub-tabs: Live Intelligence, Archive Upload, Reports, AI Learning, AI Dashboard, Advisory, Diagnostics, Live Q&A
+- **`/live/:token`** — Client-facing live dashboard (read-only)
+- **`/qa/:accessCode`** — Attendee webphone page for Live Q&A
 
 ## Key Integrations
 
@@ -104,7 +85,7 @@ Shadow Mode sub-tabs: Live Intelligence, Archive Upload, Reports, AI Learning, A
 - **OpenAI** — AI analysis and transcription (via Replit AI integrations proxy)
 - **Stripe** — Billing
 - **Resend** — Email
-- **Replit Object Storage** — File/recording storage (GCS-backed, replaced AWS S3)
+- **AWS S3** — Object storage
 - **Recall.ai** — Meeting bot deployment
 
 ## Environment Variables
@@ -115,75 +96,36 @@ Core (auto-provisioned by Replit):
 Configured secrets:
 - `RECALL_AI_API_KEY` — Recall.ai for bot deployment
 - `MUX_WEBHOOK_SECRET` — Mux webhook verification
-- `JWT_SECRET` — Session cookie signing
-- `DEFAULT_OBJECT_STORAGE_BUCKET_ID` — Replit Object Storage (replaces AWS S3)
 
-Optional (not yet configured — user manages these credentials directly, not via Replit integrations):
+Optional (not yet configured, non-critical for app loading):
 - `OAUTH_SERVER_URL` — OAuth server URL
 - `ABLY_API_KEY` — Real-time messaging
 - `TWILIO_*` / `TELNYX_*` — Telephony
-- `STRIPE_SECRET_KEY` — Billing (user dismissed Replit Stripe integration)
-- `RESEND_API_KEY` — Email (user dismissed Replit Resend integration)
-
-Note: Stripe, Resend, and Twilio Replit integrations were dismissed by the user. Provide API keys as secrets directly when ready.
-
-## tRPC Routers (99 total — 89 imported + 10 inline)
-
-All registered in BOTH `server/routers.ts` AND `server/routers.eager.ts`:
-
-- **Core (9)**: aiRouter, auth, billing, rbac, systemDiagnostics, admin, team, profile, events
-- **Shadow Mode (3)**: shadowModeRouter, recallRouter, archiveUploadRouter
-- **AI Intelligence (8)**: aiAm, aiAmPhase2, aiDashboard, aiFeatures, aiApplications, aiEvolution, adaptiveIntelligence, agenticEventBrain
-- **Compliance (8)**: complianceEngine, compliance, soc2, iso27001, disclosureCertificate, multiModalCompliance, regulatoryIntervention, eventIntegrity
-- **Sentiment & Analytics (8)**: sentiment, externalSentiment, analytics, benchmarks, interconnectionAnalytics, communicationIndex, marketReaction, marketImpactPredictor
-- **Event Management (11)**: scheduling, eventBrief, postEventReport, webcast, virtualStudio, broadcaster, liveQa, polls, liveRollingSummary, liveSubtitle, liveVideo
-- **OCC & Telephony (3)**: occ, webphone, conferenceDialout
-- **Investment Intel (13)**: investorEngagement, investorIntent, investorQuestions, ipoMandA, valuationImpact, crisisPrediction, crossEventConsistency, volatilitySimulator, roadshowAI, evasiveAnswer, callPrep, personalizedBriefing, materialityRisk
-- **Business (11)**: clientPortal, customisation, branding, supportChat, advisoryBot, mailingList, mobileNotifications, socialMedia, sustainability, intelligenceReport, intelligenceTerminal
-- **Platform (18)**: ably, bot, operatorLinks, trainingMode, mux, crmApi, platformEmbed, contentTriggers, taggedMetrics, monthlyReport, transcriptEditor, transcription, followups, healthGuardian, autonomousIntervention, evolutionAudit, bastionBooking, lumiBooking
-- **Inline (6)**: agmGovernance, persistence, pressRelease, registrations, events (inline), ably (inline)
+- `STRIPE_SECRET_KEY` — Billing
+- `RESEND_API_KEY` — Email
+- `AWS_*` / `S3_*` — Object storage
 
 ## REST Endpoints (non-tRPC)
 
-- `GET /health` — Health check (returns `{ status: "ok", timestamp: "..." }`)
-- `GET /api/ably-token` — Ably token generation for real-time
+- `GET /health` — Health check (returns `{ status: "ok" }`)
 - `GET /api/archives/:id/transcript` — Download transcript as `.txt` file
 - `GET /api/archives/:id/recording` — Download recording as `.mp3` file
-- `POST /api/webphone/twiml` — Outbound WebRTC calls
-- `POST /api/webphone/inbound` — Smart routing to operators/voicemail
-- `POST /api/webphone/voicemail-status` — Voicemail recording capture
-- `POST /api/conference-dialout/twiml` — Conference participant TwiML
-- `POST /api/conference-dialout/status` — HMAC-verified status updates
-- `POST /api/voice/inbound` — IVR greeting + 5-digit PIN collection
-- `POST /api/voice/pin` — PIN validation for auto-admit
-- `POST /api/recall/webhook` — Recall.ai bot webhooks (HMAC-verified)
-- `POST /api/shadow/recording/:sessionId` — Upload local recordings
+- `POST /api/webphone/twiml` — Twilio TwiML voice endpoint
+- `POST /api/conference-dialout/twiml` — Conference dial-out TwiML
+- `POST /api/conference-dialout/status` — Conference call status callback
+- `POST /api/recall/webhook` — Recall.ai webhook handler
 - `POST /api/upload/slide-deck` — Slide deck upload
 - `POST /api/upload/recording` — Recording upload
 - `POST /api/transcribe/audio` — Audio transcription
-- `GET/POST /api/oauth/callback` — OpenID authentication callback
-
-## Background Services
-
-Started automatically when the server launches:
-- **HealthGuardian** — Monitors system health and uptime
-- **ComplianceEngine** — Monitors regulatory controls, seeds SOC 2 / ISO 27001 data
-- **ShadowModeGuardian** — Reconciles active bot sessions on startup and shutdown
-- **Reminder & Audit Schedulers** — Automated notifications and compliance digests
-
-Graceful shutdown: Listens for SIGTERM/SIGINT, reconciles active Shadow Mode sessions before exit.
 
 ## Deployment
 
 - **Artifact**: `artifacts/api-server` (kind: web, previewPath: `/`)
 - **Build**: `vite build` + `esbuild` → `dist/`
 - **Run**: `NODE_ENV=production node dist/index.js`
-- **Target**: VM (NEVER use `autoscale` — breaks publishing)
+- **Target**: Autoscale
 - **Health check**: `GET /health` returns `{ status: "ok" }` (registered early, before heavy middleware)
 - Server listens on `0.0.0.0:PORT`
-- `.replit` must have `deploymentTarget = "vm"` — do NOT change to `"autoscale"`
-- Do NOT add `[deployment.postBuild]` with `pnpm store prune` — it hangs and stalls deploys
-- Do NOT modify `.replit` from GitHub/Codespaces/agents
 
 ## Database Backup
 

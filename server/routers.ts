@@ -90,15 +90,6 @@ import { platformEmbedRouter } from "./routers/platformEmbedRouter";
 import { investorEngagementRouter } from "./routers/investorEngagementRouter";
 import { liveSubtitleRouter } from "./routers/liveSubtitleRouter";
 import { ipoMandARouter } from "./routers/ipoMandARouter";
-import { adaptiveIntelligenceRouter } from "./routers/adaptiveIntelligenceRouter";
-import { agmGovernanceRouter } from "./routers/agmGovernanceRouter";
-import { bastionBookingRouter } from "./routers/bastionBookingRouter";
-import { botRouter } from "./routers/bot";
-import { broadcasterRouter } from "./routers/broadcasterRouter";
-import { lumiBookingRouter } from "./routers/lumiBookingRouter";
-import { sustainabilityRouter } from "./routers/sustainabilityRouter";
-import { persistenceRouter } from "./routers/persistence";
-import { aiAmPhase2Router } from "./routers/aiAmPhase2";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -199,15 +190,6 @@ export const appRouter = router({
   investorEngagement: investorEngagementRouter,
   liveSubtitle: liveSubtitleRouter,
   ipoMandA: ipoMandARouter,
-  adaptiveIntelligence: adaptiveIntelligenceRouter,
-  agmGovernance: agmGovernanceRouter,
-  bastionBooking: bastionBookingRouter,
-  bot: botRouter,
-  broadcaster: broadcasterRouter,
-  lumiBooking: lumiBookingRouter,
-  sustainability: sustainabilityRouter,
-  persistence: persistenceRouter,
-  aiAmPhase2: aiAmPhase2Router,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
@@ -552,53 +534,6 @@ Produce a JSON response with this exact structure:
               regulatoryHighlights: ["Forward-looking guidance provided in line with JSE Listings Requirements para 3.4", "No material changes to share capital or borrowing powers disclosed", "All financial metrics presented on an IFRS-compliant basis"],
               riskFactors: ["Integration timelines subject to third-party platform API availability", "Gross margin profile may be affected by Recall.ai partnership terms", "Revenue guidance assumes continued enterprise adoption of AI features"],
             },
-          };
-        }
-      }),
-  }),
-
-  // ─── Press Release Generator ─────────────────────────────────────────────────
-  pressRelease: router({
-    generate: publicProcedure
-      .input(z.object({
-        eventTitle: z.string(),
-        companyName: z.string().optional().default("the Company"),
-        transcript: z.array(z.object({
-          speaker: z.string(),
-          text: z.string(),
-          timeLabel: z.string(),
-        })),
-        aiSummary: z.object({
-          headline: z.string().optional(),
-          keyPoints: z.array(z.string()).optional(),
-          financialHighlights: z.array(z.string()).optional(),
-          executiveSummary: z.string().optional(),
-          forwardLookingStatements: z.array(z.string()).optional(),
-        }).optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const transcriptText = input.transcript
-          .slice(0, 40)
-          .map(s => `[${s.timeLabel}] ${s.speaker}: ${s.text}`)
-          .join("\n");
-        const summaryContext = input.aiSummary
-          ? `\nAI SUMMARY CONTEXT:\nHeadline: ${input.aiSummary.headline ?? ""}\nKey Points: ${(input.aiSummary.keyPoints ?? []).join("; ")}\nFinancial Highlights: ${(input.aiSummary.financialHighlights ?? []).join("; ")}\nForward-Looking: ${(input.aiSummary.forwardLookingStatements ?? []).join("; ")}`
-          : "";
-        const prompt = `You are a senior investor relations communications specialist. Draft a professional SENS/RNS-style press release.\n\nCOMPANY: ${input.companyName}\nEVENT: ${input.eventTitle}\n${summaryContext}\n\nTRANSCRIPT EXCERPT:\n${transcriptText}\n\nWrite a complete press release in this format:\n1. HEADLINE (all caps, newswire style)\n2. SUBHEADLINE (one sentence)\n3. CITY, DATE — Opening paragraph with the most important announcement\n4. 2-3 body paragraphs covering financial results, strategic highlights, and outlook\n5. CEO/CFO direct quote (1-2 sentences each)\n6. Forward-looking statements disclaimer paragraph\n7. ENDS\n\nUse formal investor relations language. Include specific numbers from the transcript. Keep total length to 450-600 words.`;
-        try {
-          const response = await invokeLLM({
-            messages: [
-              { role: "system", content: "You are a professional investor relations writer. Write clear, factual, publication-ready press releases." },
-              { role: "user", content: prompt },
-            ],
-          });
-          const content = response?.choices?.[0]?.message?.content ?? "";
-          return { success: true, pressRelease: content };
-        } catch (err) {
-          console.error("[pressRelease.generate] LLM error:", err);
-          return {
-            success: false,
-            pressRelease: `PRESS RELEASE DRAFT\n\n[LLM temporarily unavailable — please retry]\n\nFOR IMMEDIATE RELEASE\n\n${input.companyName} Reports Results for ${input.eventTitle}\n\n${input.aiSummary?.executiveSummary ?? "[Executive summary not available]"}\n\nENDS`,
           };
         }
       }),

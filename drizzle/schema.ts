@@ -2596,18 +2596,6 @@ export const alertHistory = pgTable("alert_history", {
 export type AlertHistory = typeof alertHistory.$inferSelect;
 export type InsertAlertHistory = typeof alertHistory.$inferInsert;
 
-export const complianceDetectionStats = pgTable("compliance_detection_stats", {
-  id: serial("id").primaryKey(),
-  eventId: varchar("event_id", { length: 255 }).notNull(),
-  totalViolationsDetected: integer("total_violations_detected").default(0),
-  violationsByType: text("violations_by_type"),
-  violationsBySeverity: text("violations_by_severity"),
-  avgConfidenceScore: real("avg_confidence_score"),
-  avgDetectionLatencyMs: integer("avg_detection_latency_ms"),
-  falsePositiveRate: real("false_positive_rate"),
-  recordedAt: timestamp("recorded_at").defaultNow().notNull(),
-});
-export type ComplianceDetectionStats = typeof complianceDetectionStats.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Post-Event Data — stores summaries, transcripts, analytics, and reports
