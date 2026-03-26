@@ -39714,7 +39714,7 @@ var vite_config_default = defineConfig({
   root: path2.resolve(import.meta.dirname, "client"),
   publicDir: path2.resolve(import.meta.dirname, "client", "public"),
   build: {
-    outDir: path2.resolve(import.meta.dirname, "dist/public"),
+    outDir: path2.resolve(import.meta.dirname, "dist/_app"),
     emptyOutDir: true,
     rollupOptions: {
       output: {
@@ -39772,7 +39772,7 @@ async function setupVite(app, server) {
   });
 }
 function serveStatic(app) {
-  const distPath = process.env.NODE_ENV === "development" ? path3.resolve(import.meta.dirname, "../..", "dist", "public") : path3.resolve(import.meta.dirname, "public");
+  const distPath = process.env.NODE_ENV === "development" ? path3.resolve(import.meta.dirname, "../..", "dist", "_app") : path3.resolve(import.meta.dirname, "_app");
   if (!fs2.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -41195,15 +41195,6 @@ async function startServer() {
   const server = http.createServer(app);
   app.set("trust proxy", 1);
   const isProd = process.env.NODE_ENV === "production";
-  app.use((req, res, next) => {
-    if (req.path === "/ping-test") {
-      return res.json({ alive: true, node_env: process.env.NODE_ENV, ts: Date.now() });
-    }
-    if (req.path === "/health" || req.path.startsWith("/api/")) {
-      console.log(`[RouteDebug] API request reaching Express: ${req.method} ${req.path}`);
-    }
-    next();
-  });
   app.get("/health", async (_req, res) => {
     const { validateEnv: validateEnv2 } = await Promise.resolve().then(() => (init_env2(), env_exports));
     const { getServiceStatus: getServiceStatus2 } = await Promise.resolve().then(() => (init_serviceStatus(), serviceStatus_exports));
