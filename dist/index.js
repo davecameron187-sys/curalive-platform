@@ -41453,6 +41453,100 @@ ${"=".repeat(40)}
       res.status(500).send("Failed to download recording");
     }
   });
+  app.get("/api/archives/downloads", async (_req, res) => {
+    try {
+      const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+      const [rows] = await rawSql2(
+        `SELECT id, event_name, client_name, event_type, event_date, status,
+                length(transcript_text) as transcript_len,
+                recording_path
+         FROM archive_events ORDER BY id DESC`,
+        []
+      );
+      const items = rows.map((r) => ({
+        id: r.id,
+        event_name: r.event_name,
+        client_name: r.client_name,
+        event_type: r.event_type,
+        event_date: r.event_date,
+        status: r.status,
+        has_transcript: (r.transcript_len ?? 0) > 0,
+        has_recording: !!(r.recording_path && r.recording_path.trim().length > 0),
+        transcript_url: (r.transcript_len ?? 0) > 0 ? `/api/archives/${r.id}/transcript` : null,
+        recording_url: r.recording_path ? `/api/archives/${r.id}/recording` : null
+      }));
+      res.json({ count: items.length, items });
+    } catch (err) {
+      console.error("[Archive Downloads List]", err.message);
+      res.status(500).json({ error: "Failed to list downloads" });
+    }
+  });
+  app.get("/api/archives/download-all", async (req, res) => {
+    try {
+      const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+      const archiver2 = (await import("archiver")).default;
+      const fs3 = await import("fs");
+      const path4 = await import("path");
+      const idsParam = req.query.ids;
+      let rows;
+      if (idsParam) {
+        const ids = idsParam.split(",").map(Number).filter((n) => !isNaN(n) && n > 0);
+        if (ids.length === 0) return res.status(400).send("No valid IDs provided");
+        const placeholders = ids.map(() => "?").join(",");
+        const [result] = await rawSql2(
+          `SELECT id, event_name, client_name, event_date, transcript_text, recording_path
+           FROM archive_events WHERE id IN (${placeholders}) AND length(transcript_text) > 0 ORDER BY id`,
+          ids
+        );
+        rows = result;
+      } else {
+        const [result] = await rawSql2(
+          `SELECT id, event_name, client_name, event_date, transcript_text, recording_path
+           FROM archive_events WHERE length(transcript_text) > 0 ORDER BY id`,
+          []
+        );
+        rows = result;
+      }
+      const events2 = rows;
+      if (events2.length === 0) return res.status(404).send("No archive events found");
+      const datestamp = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="CuraLive_Archives_${datestamp}.zip"`);
+      if (events2.length > 500) return res.status(413).send("Too many events to zip at once.");
+      const archive = archiver2("zip", { zlib: { level: 6 } });
+      archive.on("error", (err) => {
+        if (!res.headersSent) res.status(500).send("Zip failed");
+      });
+      req.on("close", () => {
+        archive.abort();
+      });
+      archive.pipe(res);
+      for (const ev of events2) {
+        const safeName = (ev.event_name || `event-${ev.id}`).replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
+        const folder = `${safeName}_${ev.id}`;
+        const header = `CuraLive Intelligence Transcript
+${"=".repeat(40)}
+Event: ${ev.event_name}
+Client: ${ev.client_name}
+Date: ${ev.event_date || "N/A"}
+${"=".repeat(40)}
+
+`;
+        archive.append(header + ev.transcript_text, { name: `${folder}/${safeName}_Transcript.txt` });
+        if (ev.recording_path && ev.recording_path.trim()) {
+          const RECORDINGS_BASE = path4.resolve(process.cwd(), "uploads", "recordings");
+          const filePath = path4.resolve(RECORDINGS_BASE, path4.basename(ev.recording_path));
+          if (fs3.existsSync(filePath)) {
+            archive.file(filePath, { name: `${folder}/${safeName}_Recording.mp3` });
+          }
+        }
+      }
+      await archive.finalize();
+    } catch (err) {
+      console.error("[Archive Download All]", err.message);
+      if (!res.headersSent) res.status(500).send("Failed to create archive zip");
+    }
+  });
   app.get("/download/checklist", (_req, res) => {
     const html = `<!DOCTYPE html>
 <html lang="en">

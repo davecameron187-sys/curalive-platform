@@ -406,6 +406,9 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   const [selectedArchiveId, setSelectedArchiveId] = useState<number | null>(null);
   const [emailModalArchiveId, setEmailModalArchiveId] = useState<number | null>(null);
   const [emailForm, setEmailForm] = useState({ recipientEmail: "", recipientName: "" });
+  const [checkedArchiveIds, setCheckedArchiveIds] = useState<Set<number>>(new Set());
+  const toggleArchiveCheck = (id: number) => setCheckedArchiveIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  const toggleAllArchives = (allIds: number[]) => setCheckedArchiveIds(prev => prev.size === allIds.length ? new Set() : new Set(allIds));
 
   const archiveDetail = trpc.archiveUpload.getArchiveDetail.useQuery(
     { archiveId: selectedArchiveId! },
@@ -1889,11 +1892,27 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
               {/* Left: Archive list */}
               <div className="lg:col-span-1 space-y-2">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-slate-300">Past Events</h3>
-                  <Button size="sm" variant="outline" onClick={() => archives.refetch()}
-                    className="border-white/10 text-slate-400 hover:text-white gap-1">
-                    <RefreshCw className="w-3 h-3" /> Refresh
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-slate-300">Past Events</h3>
+                    {archives.data && archives.data.length > 0 && (
+                      <button onClick={() => toggleAllArchives(archives.data.map((a: any) => a.id))}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
+                        {checkedArchiveIds.size === archives.data.length ? "Deselect all" : "Select all"}
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <a href={checkedArchiveIds.size > 0 ? `/api/archives/download-all?ids=${Array.from(checkedArchiveIds).join(",")}` : "/api/archives/download-all"} download>
+                      <Button size="sm" variant="outline"
+                        className="border-emerald-500/30 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1">
+                        <Download className="w-3 h-3" /> {checkedArchiveIds.size > 0 ? `Download (${checkedArchiveIds.size})` : "Download All"}
+                      </Button>
+                    </a>
+                    <Button size="sm" variant="outline" onClick={() => archives.refetch()}
+                      className="border-white/10 text-slate-400 hover:text-white gap-1">
+                      <RefreshCw className="w-3 h-3" /> Refresh
+                    </Button>
+                  </div>
                 </div>
                 {(!archives.data || archives.data.length === 0) ? (
                   <div className="bg-white/[0.02] border border-white/10 rounded-xl p-8 text-center">
@@ -1905,27 +1924,31 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                   <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
                     {archives.data.map((a: any) => {
                       const isSelected = selectedArchiveId === a.id;
+                      const isChecked = checkedArchiveIds.has(a.id);
                       const sentColor = (a.sentiment_avg ?? 50) >= 70 ? "text-emerald-400" : (a.sentiment_avg ?? 50) >= 50 ? "text-amber-400" : "text-red-400";
                       return (
-                        <button key={a.id} onClick={() => setSelectedArchiveId(a.id)}
-                          className={`w-full text-left p-4 rounded-xl border transition-all ${isSelected
+                        <div key={a.id} className={`flex items-start gap-2 p-4 rounded-xl border transition-all ${isSelected
                             ? "border-cyan-500/50 bg-cyan-500/10"
                             : "border-white/10 bg-white/[0.02] hover:bg-white/[0.04]"
                           }`}>
-                          <div className="flex items-start justify-between gap-2 mb-1.5">
-                            <div className="min-w-0">
-                              <div className="text-sm font-medium text-slate-200 truncate">{a.event_name}</div>
-                              <div className="text-xs text-slate-500 truncate">{a.client_name}</div>
+                          <input type="checkbox" checked={isChecked} onChange={() => toggleArchiveCheck(a.id)}
+                            className="mt-1 shrink-0 w-4 h-4 rounded border-white/20 bg-white/5 accent-emerald-500 cursor-pointer" />
+                          <button onClick={() => setSelectedArchiveId(a.id)} className="w-full text-left min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1.5">
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium text-slate-200 truncate">{a.event_name}</div>
+                                <div className="text-xs text-slate-500 truncate">{a.client_name}</div>
+                              </div>
+                              <span className={`text-xs font-bold ${sentColor}`}>{a.sentiment_avg ?? "—"}</span>
                             </div>
-                            <span className={`text-xs font-bold ${sentColor}`}>{a.sentiment_avg ?? "—"}</span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-slate-600">
-                            <span>{EVENT_TYPE_LABELS[a.event_type] ?? a.event_type}</span>
-                            {a.event_date && <><span>·</span><span>{a.event_date}</span></>}
-                            <span>·</span>
-                            <span>{a.word_count?.toLocaleString()} words</span>
-                          </div>
-                        </button>
+                            <div className="flex items-center gap-3 text-xs text-slate-600">
+                              <span>{EVENT_TYPE_LABELS[a.event_type] ?? a.event_type}</span>
+                              {a.event_date && <><span>·</span><span>{a.event_date}</span></>}
+                              <span>·</span>
+                              <span>{a.word_count?.toLocaleString()} words</span>
+                            </div>
+                          </button>
+                        </div>
                       );
                     })}
                   </div>
