@@ -25092,10 +25092,27 @@ var init_archiveUploadRouter = __esm({
           platform: z41.string().optional(),
           transcriptText: z41.string().min(10).max(5e5),
           notes: z41.string().optional(),
-          selectedModules: z41.array(z41.string()).optional()
+          selectedModules: z41.array(z41.string()).optional(),
+          savedRecordingPath: z41.string().optional()
         })
       ).mutation(async ({ input }) => {
         const db2 = await getDb();
+        let validatedRecordingPath = null;
+        if (input.savedRecordingPath) {
+          const path4 = await import("path");
+          const fs3 = await import("fs");
+          const basename = path4.basename(input.savedRecordingPath);
+          if (/^\d+_[a-f0-9]{12}\.\w+$/.test(basename)) {
+            const fullPath = path4.resolve(process.cwd(), "uploads", "recordings", basename);
+            if (fs3.existsSync(fullPath)) {
+              validatedRecordingPath = basename;
+            } else {
+              console.warn(`[processTranscript] Recording file not found: ${basename}`);
+            }
+          } else {
+            console.warn(`[processTranscript] Invalid recording filename pattern: ${basename}`);
+          }
+        }
         const fingerprint = computeTranscriptFingerprint(input.transcriptText);
         const [existingRows] = await rawSql(
           `SELECT id, event_id, client_name, event_name, event_type, created_at
@@ -25132,8 +25149,8 @@ var init_archiveUploadRouter = __esm({
         const [result] = await rawSql(
           `INSERT INTO archive_events
           (event_id, client_name, event_name, event_type, event_date, platform, transcript_text,
-           word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?)
+           word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint, recording_path)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?, ?)
          RETURNING id`,
           [
             null,
@@ -25148,7 +25165,8 @@ var init_archiveUploadRouter = __esm({
             sentimentAvg,
             complianceFlags2,
             input.notes ?? null,
-            fingerprint
+            fingerprint,
+            validatedRecordingPath
           ]
         );
         const archiveId = Array.isArray(result) ? result[0]?.id ?? 0 : result.insertId ?? 0;
@@ -39779,7 +39797,23 @@ function registerAudioTranscribeRoute(app) {
         }
         const wordCount = transcript.split(/\s+/).filter(Boolean).length;
         console.log(`[AudioTranscribe] Complete \u2014 ${wordCount} words`);
-        res.json({ success: true, transcript });
+        let savedRecordingPath = null;
+        try {
+          const path4 = await import("path");
+          const fs3 = await import("fs");
+          const crypto4 = await import("crypto");
+          const RECORDINGS_DIR2 = path4.resolve(process.cwd(), "uploads", "recordings");
+          if (!fs3.existsSync(RECORDINGS_DIR2)) fs3.mkdirSync(RECORDINGS_DIR2, { recursive: true });
+          const ext = (path4.extname(originalname) || ".mp3").toLowerCase();
+          const uniqueName = `${Date.now()}_${crypto4.randomBytes(6).toString("hex")}${ext}`;
+          const destPath = path4.join(RECORDINGS_DIR2, uniqueName);
+          await writeFile(destPath, buffer);
+          savedRecordingPath = uniqueName;
+          console.log(`[AudioTranscribe] Saved recording: ${uniqueName} (${sizeMB.toFixed(1)}MB)`);
+        } catch (saveErr) {
+          console.error("[AudioTranscribe] Failed to save recording copy:", saveErr.message);
+        }
+        res.json({ success: true, transcript, savedRecordingPath });
       } catch (err) {
         console.error("[AudioTranscribe]", err);
         res.status(500).json({ error: err.message ?? "Transcription failed" });
@@ -40757,6 +40791,126 @@ function registerBillingPdfRoutes(app) {
 init_twilio();
 init_telnyx();
 import twilio_twiml from "twilio";
+
+// server/_core/config/env.ts
+function validateEnv() {
+  const missing = [];
+  const warnings = [];
+  if (!process.env.DATABASE_URL) {
+    missing.push({ key: "DATABASE_URL", requiredFor: "Database connection", critical: true });
+  }
+  const optionalKeys = [
+    { key: "OPENAI_API_KEY", requiredFor: "AI analysis and transcription" },
+    { key: "ABLY_API_KEY", requiredFor: "Real-time event streaming" },
+    { key: "RESEND_API_KEY", requiredFor: "Email delivery" },
+    { key: "RECALL_AI_WEBHOOK_SECRET", requiredFor: "Recall.ai bot webhooks" },
+    { key: "TWILIO_ACCOUNT_SID", requiredFor: "Telephony (Twilio)" },
+    { key: "TWILIO_AUTH_TOKEN", requiredFor: "Telephony (Twilio)" },
+    { key: "TELNYX_API_KEY", requiredFor: "Telephony (Telnyx)" },
+    { key: "MUX_TOKEN_ID", requiredFor: "Video streaming (Mux)" },
+    { key: "MUX_TOKEN_SECRET", requiredFor: "Video streaming (Mux)" },
+    { key: "STRIPE_SECRET_KEY", requiredFor: "Payment processing" },
+    { key: "OAUTH_SERVER_URL", requiredFor: "OAuth authentication" }
+  ];
+  for (const { key, requiredFor } of optionalKeys) {
+    if (!process.env[key]) {
+      warnings.push({ key, requiredFor, critical: false });
+    }
+  }
+  const isCoreValid = missing.length === 0;
+  return { isCoreValid, missing, warnings };
+}
+function getEnv() {
+  return {
+    NODE_ENV: process.env.NODE_ENV ?? "development",
+    DATABASE_URL: process.env.DATABASE_URL,
+    SESSION_SECRET: process.env.SESSION_SECRET ?? process.env.JWT_SECRET ?? "dev-fallback-secret",
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    ABLY_API_KEY: process.env.ABLY_API_KEY,
+    MUX_TOKEN_ID: process.env.MUX_TOKEN_ID,
+    MUX_TOKEN_SECRET: process.env.MUX_TOKEN_SECRET,
+    RECALL_AI_WEBHOOK_SECRET: process.env.RECALL_AI_WEBHOOK_SECRET,
+    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+    TELNYX_API_KEY: process.env.TELNYX_API_KEY,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    OAUTH_SERVER_URL: process.env.OAUTH_SERVER_URL
+  };
+}
+function enforceEnvOrExit() {
+  const { isCoreValid, missing, warnings } = validateEnv();
+  if (warnings.length > 0) {
+    console.log(`
+\u26A0  CuraLive \u2014 ${warnings.length} optional service(s) not configured:`);
+    for (const w of warnings) {
+      console.log(`   \xB7 ${w.key} \u2192 ${w.requiredFor} (disabled)`);
+    }
+    console.log("");
+  }
+  if (!isCoreValid) {
+    console.error("\n\u2716  CuraLive \u2014 cannot start, missing critical environment variables:");
+    for (const m of missing) {
+      console.error(`   \xB7 ${m.key} \u2192 ${m.requiredFor}`);
+    }
+    console.error("\nSet these variables and restart.\n");
+    process.exit(1);
+  }
+  console.log("\u2713  CuraLive environment validated \u2014 core services ready");
+}
+
+// server/routes/systemStatus.ts
+import { Router as Router3 } from "express";
+
+// server/_core/config/serviceStatus.ts
+function enabled(reason) {
+  return { configured: true, status: "enabled", reason };
+}
+function disabled(reason) {
+  return { configured: false, status: "disabled", reason };
+}
+function getServiceStatus() {
+  const env = getEnv();
+  return {
+    core: {
+      database: env.DATABASE_URL ? enabled("PostgreSQL connected") : disabled("DATABASE_URL not set"),
+      sessionAuth: env.SESSION_SECRET ? enabled("Session secret configured") : disabled("SESSION_SECRET / JWT_SECRET not set")
+    },
+    integrations: {
+      openai: env.OPENAI_API_KEY ? enabled("AI analysis and transcription available") : disabled("OPENAI_API_KEY not set \u2014 AI features disabled"),
+      ably: env.ABLY_API_KEY ? enabled("Real-time streaming available") : disabled("ABLY_API_KEY not set \u2014 real-time features disabled"),
+      resend: env.RESEND_API_KEY ? enabled("Email delivery available") : disabled("RESEND_API_KEY not set \u2014 email features disabled"),
+      recall: env.RECALL_AI_WEBHOOK_SECRET ? enabled("Recall.ai bot integration available") : disabled("RECALL_AI_WEBHOOK_SECRET not set \u2014 bot joining disabled"),
+      telephony: env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN || env.TELNYX_API_KEY ? enabled(
+        env.TWILIO_ACCOUNT_SID ? "Twilio telephony available" : "Telnyx telephony available"
+      ) : disabled("No telephony provider configured (TWILIO or TELNYX)"),
+      mux: env.MUX_TOKEN_ID && env.MUX_TOKEN_SECRET ? enabled("Mux video streaming available") : disabled("MUX_TOKEN_ID / MUX_TOKEN_SECRET not set \u2014 video streaming disabled"),
+      stripe: env.STRIPE_SECRET_KEY ? enabled("Payment processing available") : disabled("STRIPE_SECRET_KEY not set \u2014 payments disabled"),
+      oauth: env.OAUTH_SERVER_URL ? enabled("OAuth authentication available") : disabled("OAUTH_SERVER_URL not set \u2014 OAuth disabled")
+    }
+  };
+}
+
+// server/routes/systemStatus.ts
+var systemStatusRouter = Router3();
+systemStatusRouter.get("/health", async (_req, res) => {
+  const validation = validateEnv();
+  const services = getServiceStatus();
+  return res.json({
+    ok: validation.isCoreValid,
+    environment: process.env.NODE_ENV ?? "development",
+    coreReady: validation.isCoreValid,
+    missingCore: validation.missing.map((m) => m.key),
+    missingOptional: validation.warnings.map((w) => ({
+      key: w.key,
+      requiredFor: w.requiredFor
+    })),
+    services,
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  });
+});
+
+// server/_core/index.ts
 function isPortAvailable(port) {
   return new Promise((resolve) => {
     const server = net.createServer();
@@ -40797,9 +40951,7 @@ async function startServer() {
   const server = http.createServer(app);
   app.set("trust proxy", 1);
   const isProd = process.env.NODE_ENV === "production";
-  app.get("/health", (_req, res) => {
-    res.status(200).json({ status: "ok" });
-  });
+  app.use(systemStatusRouter);
   validateShadowModeEnv();
   if (!isProd) {
     app.use("/__mockup", (req, res) => {
@@ -41461,4 +41613,5 @@ ${"=".repeat(40)}
   process.on("SIGTERM", () => shutdown("SIGTERM"));
   process.on("SIGINT", () => shutdown("SIGINT"));
 }
+enforceEnvOrExit();
 startServer().catch(console.error);
