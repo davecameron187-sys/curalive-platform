@@ -39417,7 +39417,14 @@ var vite_config_default = defineConfig({
   publicDir: path2.resolve(import.meta.dirname, "client", "public"),
   build: {
     outDir: path2.resolve(import.meta.dirname, "dist/public"),
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        entryFileNames: "assets/index.js",
+        chunkFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash][extname]"
+      }
+    }
   },
   server: {
     host: "0.0.0.0",
