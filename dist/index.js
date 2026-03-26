@@ -2639,6 +2639,7 @@ var init_schema = __esm({
       specialisedSessionId: integer("specialised_session_id"),
       specialisedSessionType: varchar("specialised_session_type", { length: 32 }),
       recordingPath: varchar("recording_path", { length: 1e3 }),
+      transcriptFingerprint: varchar("transcript_fingerprint", { length: 64 }),
       createdAt: timestamp("created_at").defaultNow().notNull()
     });
     aiEvolutionObservations = pgTable("ai_evolution_observations", {
@@ -3064,7 +3065,7 @@ var init_env = __esm({
       ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
       isProduction: process.env.NODE_ENV === "production",
       forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-      forgeApiKey: process.env.OPENAI_API_KEY ?? process.env.BUILT_IN_FORGE_API_KEY ?? process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? "",
+      forgeApiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.BUILT_IN_FORGE_API_KEY ?? process.env.OPENAI_API_KEY ?? "",
       resendApiKey: process.env.RESEND_API_KEY ?? ""
     };
   }
@@ -3477,11 +3478,12 @@ function isSecureRequest(req) {
   return protoList.some((proto) => proto.trim().toLowerCase() === "https");
 }
 function getSessionCookieOptions(req) {
+  const secure = isSecureRequest(req);
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req)
+    sameSite: secure ? "none" : "lax",
+    secure
   };
 }
 var init_cookies = __esm({
@@ -3597,7 +3599,7 @@ var init_trpc = __esm({
     router = t.router;
     publicProcedure = t.procedure;
     createCallerFactory = t.createCallerFactory;
-    DEV_BYPASS = process.env.AUTH_BYPASS === "true" || process.env.NODE_ENV === "development";
+    DEV_BYPASS = process.env.NODE_ENV !== "production" && (process.env.AUTH_BYPASS === "true" || process.env.NODE_ENV === "development");
     DEV_USER = { id: 0, name: "Dev Operator", email: "dev@curalive.local", role: "operator" };
     requireUser = t.middleware(async (opts) => {
       const { ctx, next } = opts;
@@ -3828,14 +3830,14 @@ var init_llm = __esm({
     hasDirectOpenAiKey = () => !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
     isForgeMode = () => !hasDirectOpenAiKey() && !!(process.env.BUILT_IN_FORGE_API_KEY || process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_URL.trim());
     resolveApiUrl = () => {
-      if (hasDirectOpenAiKey()) {
-        return "https://api.openai.com/v1/chat/completions";
+      if (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.trim()) {
+        return `${process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.replace(/\/$/, "")}/chat/completions`;
       }
       if (process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_URL.trim()) {
         return `${process.env.BUILT_IN_FORGE_API_URL.replace(/\/$/, "")}/v1/chat/completions`;
       }
-      if (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.trim()) {
-        return `${process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.replace(/\/$/, "")}/chat/completions`;
+      if (hasDirectOpenAiKey()) {
+        return "https://api.openai.com/v1/chat/completions";
       }
       return "https://api.openai.com/v1/chat/completions";
     };
@@ -4322,6 +4324,18 @@ function buildUploadUrl(baseUrl, relKey) {
   url.searchParams.set("path", normalizeKey(relKey));
   return url;
 }
+async function buildDownloadUrl(baseUrl, relKey, apiKey) {
+  const downloadApiUrl = new URL(
+    "v1/storage/downloadUrl",
+    ensureTrailingSlash(baseUrl)
+  );
+  downloadApiUrl.searchParams.set("path", normalizeKey(relKey));
+  const response = await fetch(downloadApiUrl, {
+    method: "GET",
+    headers: buildAuthHeaders(apiKey)
+  });
+  return (await response.json()).url;
+}
 function ensureTrailingSlash(value) {
   return value.endsWith("/") ? value : `${value}/`;
 }
@@ -4355,6 +4369,14 @@ async function storagePut(relKey, data, contentType = "application/octet-stream"
   }
   const url = (await response.json()).url;
   return { key, url };
+}
+async function storageGet(relKey) {
+  const { baseUrl, apiKey } = getStorageConfig();
+  const key = normalizeKey(relKey);
+  return {
+    key,
+    url: await buildDownloadUrl(baseUrl, key, apiKey)
+  };
 }
 var init_storage = __esm({
   "server/storage.ts"() {
@@ -12440,7 +12462,7 @@ var init_transcription = __esm({
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
-        const openAiKey = process.env.OPENAI_API_KEY;
+        const openAiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
         if (!openAiKey) {
           const [result2] = await db2.insert(transcriptionJobs).values({
             eventId: input.eventId,
@@ -13505,9 +13527,9 @@ async function generateComplianceCertificatePdf(data) {
   const docDef = buildDocDefinition(data);
   const pdfDoc = await printer.createPdfKitDocument(docDef);
   const chunks = [];
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve2, reject) => {
     pdfDoc.on("data", (chunk) => chunks.push(chunk));
-    pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on("end", () => resolve2(Buffer.concat(chunks)));
     pdfDoc.on("error", reject);
     pdfDoc.end();
   });
@@ -20136,7 +20158,7 @@ var init_virtualStudioRouter = __esm({
       { id: "three-up", label: "Three-Up", description: "Three equal panels side by side", slots: 3 }
     ];
     virtualStudioRouter = router({
-      createStudio: publicProcedure.input(z33.object({
+      createStudio: operatorProcedure.input(z33.object({
         eventId: z33.string(),
         bundleId: z33.string(),
         studioName: z33.string().optional(),
@@ -20151,14 +20173,14 @@ var init_virtualStudioRouter = __esm({
         const bundleConfig = virtualStudioService.getBundleCustomization(input.bundleId);
         return { studio, bundleConfig };
       }),
-      getStudio: publicProcedure.input(z33.object({ eventId: z33.string() })).query(async ({ input }) => {
+      getStudio: protectedProcedure.input(z33.object({ eventId: z33.string() })).query(async ({ input }) => {
         const studio = await virtualStudioService.getStudio(input.eventId);
         if (!studio) return { studio: null, bundleConfig: null, overlays: null };
         const bundleConfig = virtualStudioService.getBundleCustomization(studio.bundleId);
         const overlays = virtualStudioService.generateInterconnectionOverlays(studio.bundleId);
         return { studio, bundleConfig, overlays };
       }),
-      updateAvatarConfig: publicProcedure.input(z33.object({
+      updateAvatarConfig: operatorProcedure.input(z33.object({
         eventId: z33.string(),
         avatarStyle: z33.string()
       })).mutation(async ({ input }) => {
@@ -20166,7 +20188,7 @@ var init_virtualStudioRouter = __esm({
         await db2.update(virtualStudios).set({ avatarStyle: input.avatarStyle }).where(eq45(virtualStudios.eventId, input.eventId));
         return { success: true };
       }),
-      updateLanguageConfig: publicProcedure.input(z33.object({
+      updateLanguageConfig: operatorProcedure.input(z33.object({
         eventId: z33.string(),
         primaryLanguage: z33.string(),
         dubbingLanguages: z33.array(z33.string())
@@ -20178,7 +20200,7 @@ var init_virtualStudioRouter = __esm({
         }).where(eq45(virtualStudios.eventId, input.eventId));
         return { success: true, supported: SUPPORTED_LANGUAGES };
       }),
-      toggleESG: publicProcedure.input(z33.object({
+      toggleESG: operatorProcedure.input(z33.object({
         eventId: z33.string(),
         enabled: z33.boolean()
       })).mutation(async ({ input }) => {
@@ -20186,13 +20208,13 @@ var init_virtualStudioRouter = __esm({
         await db2.update(virtualStudios).set({ esgEnabled: input.enabled }).where(eq45(virtualStudios.eventId, input.eventId));
         return { success: true, esgEnabled: input.enabled };
       }),
-      getESGFlags: publicProcedure.input(z33.object({ studioId: z33.number() })).query(async ({ input }) => {
+      getESGFlags: protectedProcedure.input(z33.object({ studioId: z33.number() })).query(async ({ input }) => {
         return virtualStudioService.getESGReport(input.studioId);
       }),
-      resolveESGFlag: publicProcedure.input(z33.object({ flagId: z33.number() })).mutation(async ({ input }) => {
+      resolveESGFlag: operatorProcedure.input(z33.object({ flagId: z33.number() })).mutation(async ({ input }) => {
         return virtualStudioService.resolveFlag(input.flagId);
       }),
-      generateReplay: publicProcedure.input(z33.object({
+      generateReplay: operatorProcedure.input(z33.object({
         eventId: z33.string(),
         quality: z33.enum(["720p", "1080p", "4k"]).default("1080p"),
         includeOverlays: z33.boolean().default(true),
@@ -20211,9 +20233,9 @@ var init_virtualStudioRouter = __esm({
           }
         };
       }),
-      getSupportedLanguages: publicProcedure.query(() => SUPPORTED_LANGUAGES),
-      getLayoutTemplates: publicProcedure.query(() => LAYOUT_TEMPLATES),
-      createSession: publicProcedure.input(z33.object({
+      getSupportedLanguages: protectedProcedure.query(() => SUPPORTED_LANGUAGES),
+      getLayoutTemplates: protectedProcedure.query(() => LAYOUT_TEMPLATES),
+      createSession: operatorProcedure.input(z33.object({
         eventId: z33.string(),
         layout: z33.string().default("single-presenter")
       })).mutation(async ({ input }) => {
@@ -20250,7 +20272,7 @@ var init_virtualStudioRouter = __esm({
           lowerThirds: defaultLowerThirds
         };
       }),
-      getSession: publicProcedure.input(z33.object({ eventId: z33.string() })).query(async ({ input }) => {
+      getSession: protectedProcedure.input(z33.object({ eventId: z33.string() })).query(async ({ input }) => {
         const [session] = await rawQuery(`SELECT * FROM studio_sessions WHERE event_id = ? LIMIT 1`, [input.eventId]);
         if (!session) return null;
         return {
@@ -20266,7 +20288,7 @@ var init_virtualStudioRouter = __esm({
           streamKey: session.stream_key
         };
       }),
-      switchLayout: publicProcedure.input(z33.object({
+      switchLayout: operatorProcedure.input(z33.object({
         eventId: z33.string(),
         layout: z33.string()
       })).mutation(async ({ input }) => {
@@ -20275,7 +20297,7 @@ var init_virtualStudioRouter = __esm({
         await rawExecute(`UPDATE studio_sessions SET active_layout = ?, updated_at = NOW() WHERE event_id = ?`, [input.layout, input.eventId]);
         return { success: true, layout: template };
       }),
-      updateFeedSources: publicProcedure.input(z33.object({
+      updateFeedSources: operatorProcedure.input(z33.object({
         eventId: z33.string(),
         feedSources: z33.array(z33.object({
           id: z33.string(),
@@ -20288,7 +20310,7 @@ var init_virtualStudioRouter = __esm({
         await rawExecute(`UPDATE studio_sessions SET feed_sources = ?, updated_at = NOW() WHERE event_id = ?`, [JSON.stringify(input.feedSources), input.eventId]);
         return { success: true, feedCount: input.feedSources.length };
       }),
-      updateLowerThirds: publicProcedure.input(z33.object({
+      updateLowerThirds: operatorProcedure.input(z33.object({
         eventId: z33.string(),
         lowerThirds: z33.array(z33.object({
           id: z33.string(),
@@ -20306,7 +20328,7 @@ var init_virtualStudioRouter = __esm({
         await rawExecute(`UPDATE studio_sessions SET lower_thirds = ?, updated_at = NOW() WHERE event_id = ?`, [JSON.stringify(input.lowerThirds), input.eventId]);
         return { success: true };
       }),
-      toggleOverlay: publicProcedure.input(z33.object({
+      toggleOverlay: operatorProcedure.input(z33.object({
         eventId: z33.string(),
         overlay: z33.enum(["live_sentiment", "participant_count"]),
         enabled: z33.boolean()
@@ -20315,7 +20337,7 @@ var init_virtualStudioRouter = __esm({
         await rawExecute(`UPDATE studio_sessions SET ${col} = ?, updated_at = NOW() WHERE event_id = ?`, [input.enabled ? 1 : 0, input.eventId]);
         return { success: true, overlay: input.overlay, enabled: input.enabled };
       }),
-      getPreview: publicProcedure.input(z33.object({ eventId: z33.string() })).query(async ({ input }) => {
+      getPreview: protectedProcedure.input(z33.object({ eventId: z33.string() })).query(async ({ input }) => {
         const [session] = await rawQuery(`SELECT * FROM studio_sessions WHERE event_id = ? LIMIT 1`, [input.eventId]);
         if (!session) return null;
         const feeds = typeof session.feed_sources === "string" ? JSON.parse(session.feed_sources) : session.feed_sources ?? [];
@@ -20331,11 +20353,11 @@ var init_virtualStudioRouter = __esm({
           previewDescription: `Broadcasting in "${layout.label}" layout with ${feeds.filter((f) => f.active).length} active feed(s) and ${lowerThirds.filter((lt2) => lt2.visible).length} overlay(s).`
         };
       }),
-      startRecording: publicProcedure.input(z33.object({ eventId: z33.string() })).mutation(async ({ input }) => {
+      startRecording: operatorProcedure.input(z33.object({ eventId: z33.string() })).mutation(async ({ input }) => {
         await rawExecute(`UPDATE studio_sessions SET recording_status = 'recording', updated_at = NOW() WHERE event_id = ?`, [input.eventId]);
         return { success: true, status: "recording", startedAt: (/* @__PURE__ */ new Date()).toISOString() };
       }),
-      stopRecording: publicProcedure.input(z33.object({ eventId: z33.string() })).mutation(async ({ input }) => {
+      stopRecording: operatorProcedure.input(z33.object({ eventId: z33.string() })).mutation(async ({ input }) => {
         await rawExecute(`UPDATE studio_sessions SET recording_status = 'stopped', updated_at = NOW() WHERE event_id = ?`, [input.eventId]);
         return { success: true, status: "stopped", stoppedAt: (/* @__PURE__ */ new Date()).toISOString() };
       })
@@ -24060,7 +24082,7 @@ var init_disclosureCertificateRouter = __esm({
     init_db();
     init_schema();
     disclosureCertificateRouter = router({
-      generate: publicProcedure.input(z39.object({
+      generate: operatorProcedure.input(z39.object({
         eventId: z39.string(),
         sessionId: z39.number().optional(),
         clientName: z39.string(),
@@ -24073,7 +24095,7 @@ var init_disclosureCertificateRouter = __esm({
       })).mutation(async ({ input }) => {
         return generateDisclosureCertificate(input);
       }),
-      verify: publicProcedure.input(z39.object({ certificateHash: z39.string() })).query(async ({ input }) => {
+      verify: protectedProcedure.input(z39.object({ certificateHash: z39.string() })).query(async ({ input }) => {
         const db2 = await getDb();
         const [cert] = await db2.select().from(disclosureCertificates).where(eq53(disclosureCertificates.certificateHash, input.certificateHash)).limit(1);
         if (!cert) return { valid: false, message: "Certificate not found" };
@@ -24086,11 +24108,11 @@ var init_disclosureCertificateRouter = __esm({
           integrityCheck: valid ? "PASSED \u2014 hash chain intact" : "FAILED \u2014 certificate may have been tampered with"
         };
       }),
-      list: publicProcedure.query(async () => {
+      list: protectedProcedure.query(async () => {
         const db2 = await getDb();
         return db2.select().from(disclosureCertificates).orderBy(desc29(disclosureCertificates.issuedAt)).limit(50);
       }),
-      getByEvent: publicProcedure.input(z39.object({ eventId: z39.string() })).query(async ({ input }) => {
+      getByEvent: protectedProcedure.input(z39.object({ eventId: z39.string() })).query(async ({ input }) => {
         const db2 = await getDb();
         const [cert] = await db2.select().from(disclosureCertificates).where(eq53(disclosureCertificates.eventId, input.eventId)).limit(1);
         return cert ?? null;
@@ -25101,16 +25123,16 @@ var init_archiveUploadRouter = __esm({
         if (input.savedRecordingPath) {
           const path4 = await import("path");
           const fs3 = await import("fs");
-          const basename = path4.basename(input.savedRecordingPath);
-          if (/^\d+_[a-f0-9]{12}\.\w+$/.test(basename)) {
-            const fullPath = path4.resolve(process.cwd(), "uploads", "recordings", basename);
+          const basename2 = path4.basename(input.savedRecordingPath);
+          if (/^\d+_[a-f0-9]{12}\.\w+$/.test(basename2)) {
+            const fullPath = path4.resolve(process.cwd(), "uploads", "recordings", basename2);
             if (fs3.existsSync(fullPath)) {
-              validatedRecordingPath = basename;
+              validatedRecordingPath = basename2;
             } else {
-              console.warn(`[processTranscript] Recording file not found: ${basename}`);
+              console.warn(`[processTranscript] Recording file not found: ${basename2}`);
             }
           } else {
-            console.warn(`[processTranscript] Invalid recording filename pattern: ${basename}`);
+            console.warn(`[processTranscript] Invalid recording filename pattern: ${basename2}`);
           }
         }
         const fingerprint = computeTranscriptFingerprint(input.transcriptText);
@@ -25625,7 +25647,7 @@ var init_shadowModeRouter = __esm({
     RECALL_BASE_URL2 = process.env.RECALL_AI_BASE_URL ?? "https://eu-central-1.recall.ai/api/v1";
     RECALL_API_KEY2 = process.env.RECALL_AI_API_KEY ?? "";
     shadowModeRouter = router({
-      startSession: publicProcedure.input(z42.object({
+      startSession: operatorProcedure.input(z42.object({
         clientName: z42.string().min(1),
         eventName: z42.string().min(1),
         eventType: z42.enum([
@@ -25726,7 +25748,7 @@ var init_shadowModeRouter = __esm({
           try {
             if (attempt > 0) {
               console.log(`[Shadow] Auto-retry attempt ${attempt}/${MAX_RETRIES} for session ${sessionId}...`);
-              await new Promise((resolve) => setTimeout(resolve, 2e3 * attempt));
+              await new Promise((resolve2) => setTimeout(resolve2, 2e3 * attempt));
             }
             const bot = await recallFetch2("/bot/", {
               method: "POST",
@@ -25784,7 +25806,7 @@ var init_shadowModeRouter = __esm({
         await db2.update(shadowSessions).set({ status: "failed" }).where(eq55(shadowSessions.id, sessionId));
         throw new Error(`Failed to deploy bot after ${MAX_RETRIES + 1} attempts: ${lastError?.message ?? "Unknown error"}`);
       }),
-      endSession: publicProcedure.input(z42.object({ sessionId: z42.number() })).mutation(async ({ input }) => {
+      endSession: operatorProcedure.input(z42.object({ sessionId: z42.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const [session] = await db2.select().from(shadowSessions).where(eq55(shadowSessions.id, input.sessionId)).limit(1);
         if (!session) throw new Error("Session not found");
@@ -25892,7 +25914,7 @@ var init_shadowModeRouter = __esm({
         await db2.update(shadowSessions).set({ status: "completed", endedAt: Date.now() }).where(eq55(shadowSessions.id, input.sessionId));
         return { success: true, transcriptSegments: 0, taggedMetricsGenerated: 0, message: "Session closed." };
       }),
-      listSessions: publicProcedure.query(async () => {
+      listSessions: protectedProcedure.query(async () => {
         try {
           const db2 = await getDb();
           return db2.select().from(shadowSessions).orderBy(desc31(shadowSessions.createdAt)).limit(50);
@@ -25900,7 +25922,7 @@ var init_shadowModeRouter = __esm({
           return [];
         }
       }),
-      getSession: publicProcedure.input(z42.object({ sessionId: z42.number() })).query(async ({ input }) => {
+      getSession: protectedProcedure.input(z42.object({ sessionId: z42.number() })).query(async ({ input }) => {
         const db2 = await getDb();
         const [session] = await db2.select().from(shadowSessions).where(eq55(shadowSessions.id, input.sessionId)).limit(1);
         if (!session) throw new Error("Session not found");
@@ -25945,7 +25967,7 @@ var init_shadowModeRouter = __esm({
         }
         return { ...session, transcriptSegments, agmSessionId, recordingUrl: recordingUrl || localRecordingUrl, botStatus, aiReport };
       }),
-      updateStatus: publicProcedure.input(z42.object({
+      updateStatus: operatorProcedure.input(z42.object({
         sessionId: z42.number(),
         status: z42.enum(["pending", "bot_joining", "live", "processing", "completed", "failed"]),
         sentimentAvg: z42.number().optional(),
@@ -25958,7 +25980,7 @@ var init_shadowModeRouter = __esm({
         await db2.update(shadowSessions).set(updates).where(eq55(shadowSessions.id, input.sessionId));
         return { success: true };
       }),
-      retrySession: publicProcedure.input(z42.object({ sessionId: z42.number() })).mutation(async ({ input }) => {
+      retrySession: operatorProcedure.input(z42.object({ sessionId: z42.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const [session] = await db2.select().from(shadowSessions).where(eq55(shadowSessions.id, input.sessionId)).limit(1);
         if (!session) throw new Error("Session not found");
@@ -26021,7 +26043,7 @@ var init_shadowModeRouter = __esm({
           throw new Error(`Retry failed: ${err instanceof Error ? err.message : String(err)}`);
         }
       }),
-      pushTranscriptSegment: publicProcedure.input(z42.object({
+      pushTranscriptSegment: operatorProcedure.input(z42.object({
         sessionId: z42.number(),
         speaker: z42.string().default("Speaker"),
         text: z42.string().min(1),
@@ -26070,7 +26092,7 @@ var init_shadowModeRouter = __esm({
         }
         return { success: true, segmentCount: existingTranscript.length };
       }),
-      deleteSession: publicProcedure.input(z42.object({ sessionId: z42.number() })).mutation(async ({ input }) => {
+      deleteSession: operatorProcedure.input(z42.object({ sessionId: z42.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const [session] = await db2.select().from(shadowSessions).where(eq55(shadowSessions.id, input.sessionId)).limit(1);
         if (!session) throw new Error("Session not found");
@@ -26093,9 +26115,9 @@ var init_shadowModeRouter = __esm({
         }
         if (session.localRecordingPath) {
           try {
-            const { unlinkSync } = await import("fs");
-            const { join: join3 } = await import("path");
-            unlinkSync(join3(process.cwd(), session.localRecordingPath));
+            const { unlinkSync: unlinkSync2 } = await import("fs");
+            const { join: join4 } = await import("path");
+            unlinkSync2(join4(process.cwd(), session.localRecordingPath));
           } catch {
           }
         }
@@ -26103,7 +26125,7 @@ var init_shadowModeRouter = __esm({
         console.log(`[Shadow] Session ${input.sessionId} deleted`);
         return { success: true, message: "Session deleted" };
       }),
-      deleteSessions: publicProcedure.input(z42.object({ sessionIds: z42.array(z42.number()).min(1).max(100) })).mutation(async ({ input }) => {
+      deleteSessions: operatorProcedure.input(z42.object({ sessionIds: z42.array(z42.number()).min(1).max(100) })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const sessions = await db2.select().from(shadowSessions).where(inArray(shadowSessions.id, input.sessionIds));
         const deletable = sessions.filter(
@@ -26132,9 +26154,9 @@ var init_shadowModeRouter = __esm({
         for (const s of deletable) {
           if (s.localRecordingPath) {
             try {
-              const { unlinkSync } = await import("fs");
-              const { join: join3 } = await import("path");
-              unlinkSync(join3(process.cwd(), s.localRecordingPath));
+              const { unlinkSync: unlinkSync2 } = await import("fs");
+              const { join: join4 } = await import("path");
+              unlinkSync2(join4(process.cwd(), s.localRecordingPath));
             } catch {
             }
           }
@@ -26143,7 +26165,7 @@ var init_shadowModeRouter = __esm({
         console.log(`[Shadow] Bulk deleted ${ids.length} sessions: ${ids.join(", ")}`);
         return { success: true, deleted: ids.length, message: `${ids.length} session${ids.length > 1 ? "s" : ""} deleted` };
       }),
-      createFromCalendar: publicProcedure.input(z42.object({
+      createFromCalendar: operatorProcedure.input(z42.object({
         clientName: z42.string().min(1),
         eventName: z42.string().min(1),
         eventType: z42.enum([
@@ -26211,7 +26233,7 @@ var init_shadowModeRouter = __esm({
           message: `Shadow Mode session pre-created for ${input.eventName}. Will activate automatically when the meeting starts.`
         };
       }),
-      pipeAgmGovernance: publicProcedure.input(z42.object({
+      pipeAgmGovernance: operatorProcedure.input(z42.object({
         sessionId: z42.number(),
         transcriptSegments: z42.array(z42.object({
           speaker: z42.string(),
@@ -26807,33 +26829,33 @@ var init_communicationIndexRouter = __esm({
       general: { sentiment: 65, engagement: 65, compliance: 75, market: 60, label: "All-Sector Average" }
     };
     communicationIndexRouter = router({
-      getCurrent: publicProcedure.query(async () => {
+      getCurrent: protectedProcedure.query(async () => {
         return computeCICI();
       }),
-      getHistory: publicProcedure.query(async () => {
+      getHistory: protectedProcedure.query(async () => {
         const snapshots = await rawQuery4(`
       SELECT * FROM communication_index_snapshots
       ORDER BY quarter ASC LIMIT 20
     `);
         return snapshots;
       }),
-      getPeerBenchmark: publicProcedure.input(z44.object({
+      getPeerBenchmark: protectedProcedure.input(z44.object({
         sector: z44.string().default("general")
       })).query(async ({ input }) => {
         const cici = await computeCICI();
         return computePeerBenchmark(cici, input.sector);
       }),
-      getAllSectorBenchmarks: publicProcedure.query(async () => {
+      getAllSectorBenchmarks: protectedProcedure.query(async () => {
         const cici = await computeCICI();
         return Object.keys(SECTOR_BENCHMARKS).map((key) => computePeerBenchmark(cici, key));
       }),
-      getSectorList: publicProcedure.query(() => {
+      getSectorList: protectedProcedure.query(() => {
         return Object.entries(SECTOR_BENCHMARKS).map(([key, v]) => ({
           key,
           label: v.label
         }));
       }),
-      getExecutiveScorecard: publicProcedure.input(z44.object({ sector: z44.string().default("general") })).query(async ({ input }) => {
+      getExecutiveScorecard: protectedProcedure.input(z44.object({ sector: z44.string().default("general") })).query(async ({ input }) => {
         const cici = await computeCICI();
         const benchmark = computePeerBenchmark(cici, input.sector);
         const history = await rawQuery4(`
@@ -26851,7 +26873,7 @@ var init_communicationIndexRouter = __esm({
           generatedAt: (/* @__PURE__ */ new Date()).toISOString()
         };
       }),
-      publishSnapshot: publicProcedure.mutation(async () => {
+      publishSnapshot: operatorProcedure.mutation(async () => {
         const data = await computeCICI();
         const quarter = getCurrentQuarter();
         const benchmark = computePeerBenchmark(data, "general");
@@ -28861,29 +28883,29 @@ var init_healthGuardianRouter = __esm({
     init_trpc();
     init_HealthGuardianService();
     healthGuardianRouter = router({
-      currentStatus: publicProcedure.query(async () => {
+      currentStatus: protectedProcedure.query(async () => {
         const results = getLastResults();
         const overall = await getOverallHealthScore();
         return { results, overall };
       }),
-      runCheck: publicProcedure.mutation(async () => {
+      runCheck: operatorProcedure.mutation(async () => {
         const results = await runAllChecks();
         const overall = await getOverallHealthScore();
         return { results, overall };
       }),
-      history: publicProcedure.input(z51.object({ service: z51.string().optional(), limit: z51.number().default(100) })).query(async ({ input }) => {
+      history: protectedProcedure.input(z51.object({ service: z51.string().optional(), limit: z51.number().default(100) })).query(async ({ input }) => {
         return getHealthHistory(input.service, input.limit);
       }),
-      incidents: publicProcedure.input(z51.object({ status: z51.string().optional(), limit: z51.number().default(50) })).query(async ({ input }) => {
+      incidents: protectedProcedure.input(z51.object({ status: z51.string().optional(), limit: z51.number().default(50) })).query(async ({ input }) => {
         return getIncidents(input.status, input.limit);
       }),
-      incidentDetail: publicProcedure.input(z51.object({ id: z51.number() })).query(async ({ input }) => {
+      incidentDetail: protectedProcedure.input(z51.object({ id: z51.number() })).query(async ({ input }) => {
         const incident = await getIncidentById(input.id);
         if (!incident) throw new Error("Incident not found");
         const reports = await getReportsForIncident(input.id);
         return { incident, reports };
       }),
-      generateReport: publicProcedure.input(z51.object({ incidentId: z51.number(), eventId: z51.number().optional() })).mutation(async ({ input }) => {
+      generateReport: operatorProcedure.input(z51.object({ incidentId: z51.number(), eventId: z51.number().optional() })).mutation(async ({ input }) => {
         return generateCustomerReport(input.incidentId, input.eventId);
       })
     });
@@ -29675,10 +29697,10 @@ var init_soc2Router = __esm({
         }
         const manifestContent = manifestLines.join("\n");
         const chunks = [];
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve2, reject) => {
           const archive = archiver2("zip", { zlib: { level: 6 } });
           archive.on("data", (chunk) => chunks.push(chunk));
-          archive.on("end", resolve);
+          archive.on("end", resolve2);
           archive.on("error", reject);
           archive.append(csvContent, { name: "soc2_controls.csv" });
           archive.append(manifestContent, { name: "evidence_manifest.csv" });
@@ -29975,10 +29997,10 @@ var init_iso27001Router = __esm({
           manifestLines.push([e.id, e.controlId, e.fileName, e.fileUrl, new Date(e.uploadedAt).toISOString(), e.expiresAt ? new Date(e.expiresAt).toISOString() : ""].join(","));
         }
         const chunks = [];
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve2, reject) => {
           const archive = archiver2("zip", { zlib: { level: 6 } });
           archive.on("data", (chunk) => chunks.push(chunk));
-          archive.on("end", resolve);
+          archive.on("end", resolve2);
           archive.on("error", reject);
           archive.append(csvHeader + csvRows, { name: "iso27001_controls.csv" });
           archive.append(manifestLines.join("\n"), { name: "evidence_manifest.csv" });
@@ -34090,11 +34112,11 @@ var init_evolutionAuditRouter = __esm({
     init_schema();
     init_llm();
     evolutionAuditRouter = router({
-      getAuditLog: publicProcedure.query(async () => {
+      getAuditLog: operatorProcedure.query(async () => {
         const db2 = await getDb();
         return db2.select().from(evolutionAuditLog).orderBy(desc38(evolutionAuditLog.createdAt)).limit(100);
       }),
-      verifyChain: publicProcedure.query(async () => {
+      verifyChain: operatorProcedure.query(async () => {
         const db2 = await getDb();
         const entries = await db2.select().from(evolutionAuditLog).orderBy(evolutionAuditLog.createdAt).limit(1e3);
         let valid = true;
@@ -34108,14 +34130,14 @@ var init_evolutionAuditRouter = __esm({
         }
         return { valid, totalEntries: entries.length, brokenAt };
       }),
-      shadowTest: publicProcedure.input(z76.object({ proposalId: z76.number() })).mutation(async ({ input }) => {
+      shadowTest: operatorProcedure.input(z76.object({ proposalId: z76.number() })).mutation(async ({ input }) => {
         return shadowTestProposal(input.proposalId);
       }),
-      getRoadmap: publicProcedure.query(async () => {
+      getRoadmap: operatorProcedure.query(async () => {
         const db2 = await getDb();
         return db2.select().from(capabilityRoadmap).orderBy(capabilityRoadmap.timeframe, desc38(capabilityRoadmap.gapScore));
       }),
-      generateRoadmap: publicProcedure.mutation(async () => {
+      generateRoadmap: operatorProcedure.mutation(async () => {
         return generateCapabilityRoadmap();
       })
     });
@@ -34288,7 +34310,7 @@ var init_systemDiagnosticsRouter = __esm({
     init_trpc();
     init_db();
     systemDiagnosticsRouter = router({
-      runFullDiagnostic: publicProcedure.mutation(async () => {
+      runFullDiagnostic: adminProcedure.mutation(async () => {
         const results = [];
         results.push(await runDiagnostic("Database Connection", async () => {
           const db2 = await getDb();
@@ -38469,7 +38491,7 @@ var init_routers_eager = __esm({
       auth: router({
         me: publicProcedure.query(({ ctx }) => {
           if (ctx.user) return ctx.user;
-          const isDev = process.env.AUTH_BYPASS === "true" || process.env.NODE_ENV === "development";
+          const isDev = process.env.NODE_ENV !== "production" && (process.env.AUTH_BYPASS === "true" || process.env.NODE_ENV === "development");
           if (isDev) return { id: 0, name: "Dev Operator", email: "dev@curalive.local", role: "operator" };
           return null;
         }),
@@ -39104,6 +39126,123 @@ Recipients: ${allEmails.join(", ")}
   }
 });
 
+// server/storageAdapter.ts
+var storageAdapter_exports = {};
+__export(storageAdapter_exports, {
+  RECORDINGS_DIR: () => RECORDINGS_DIR,
+  getStorageHealth: () => getStorageHealth,
+  isObjectStorageConfigured: () => isObjectStorageConfigured,
+  isWithinDir: () => isWithinDir,
+  persistToObjectStorage: () => persistToObjectStorage,
+  resolveRecordingFile: () => resolveRecordingFile,
+  sanitizeBasename: () => sanitizeBasename
+});
+import { existsSync, statSync, readdirSync, accessSync, constants, writeFileSync, mkdirSync, unlinkSync, createReadStream } from "fs";
+import { join as join2, basename, resolve, normalize } from "path";
+function isObjectStorageConfigured() {
+  return Boolean(ENV.forgeApiUrl && ENV.forgeApiKey);
+}
+function sanitizeBasename(rawPath) {
+  return basename(rawPath).replace(/[^a-zA-Z0-9._\-]/g, "_");
+}
+function isWithinDir(filePath, baseDir) {
+  const resolved = resolve(filePath);
+  const normalised = normalize(resolved);
+  return normalised.startsWith(normalize(baseDir) + "/") || normalised === normalize(baseDir);
+}
+async function resolveRecordingFile(recordingPath) {
+  if (!recordingPath || !recordingPath.trim()) {
+    return { found: false, source: "none" };
+  }
+  const safeName = sanitizeBasename(recordingPath);
+  if (isObjectStorageConfigured()) {
+    const storageKey = `recordings/${safeName}`;
+    try {
+      const result = await storageGet(storageKey);
+      if (result.url) {
+        return { found: true, source: "object-storage", url: result.url };
+      }
+    } catch {
+    }
+  }
+  const localPath = resolve(RECORDINGS_DIR, safeName);
+  if (!isWithinDir(localPath, RECORDINGS_DIR)) {
+    return { found: false, source: "none" };
+  }
+  if (existsSync(localPath)) {
+    try {
+      const stats = statSync(localPath);
+      return { found: true, source: "local-disk", localPath, sizeBytes: stats.size };
+    } catch {
+      return { found: false, source: "none" };
+    }
+  }
+  return { found: false, source: "none" };
+}
+async function persistToObjectStorage(localPath, storageKey, contentType = "application/octet-stream") {
+  if (!isObjectStorageConfigured()) {
+    return null;
+  }
+  if (!existsSync(localPath)) {
+    return null;
+  }
+  try {
+    const chunks = [];
+    const stream = createReadStream(localPath);
+    for await (const chunk of stream) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    const data = Buffer.concat(chunks);
+    const result = await storagePut(storageKey, data, contentType);
+    console.log(`[StorageAdapter] Persisted ${basename(localPath)} \u2192 ${storageKey}`);
+    return result;
+  } catch (err) {
+    console.warn(`[StorageAdapter] Failed to persist ${basename(localPath)} to object storage:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+function getStorageHealth() {
+  let localDiskWritable = false;
+  try {
+    mkdirSync(RECORDINGS_DIR, { recursive: true });
+    const testFile = join2(RECORDINGS_DIR, ".write-test");
+    writeFileSync(testFile, "ok");
+    accessSync(testFile, constants.W_OK);
+    unlinkSync(testFile);
+    localDiskWritable = true;
+  } catch {
+    localDiskWritable = false;
+  }
+  let localRecordingsCount = 0;
+  let localRecordingsTotalBytes = 0;
+  try {
+    const files = readdirSync(RECORDINGS_DIR).filter((f) => !f.startsWith("."));
+    localRecordingsCount = files.length;
+    for (const f of files) {
+      try {
+        localRecordingsTotalBytes += statSync(join2(RECORDINGS_DIR, f)).size;
+      } catch {
+      }
+    }
+  } catch {
+  }
+  return {
+    localDiskWritable,
+    objectStorageConfigured: isObjectStorageConfigured(),
+    localRecordingsCount,
+    localRecordingsTotalBytes
+  };
+}
+var RECORDINGS_DIR;
+var init_storageAdapter = __esm({
+  "server/storageAdapter.ts"() {
+    "use strict";
+    init_storage();
+    init_env();
+    RECORDINGS_DIR = resolve(process.cwd(), "uploads", "recordings");
+  }
+});
+
 // server/_core/index.ts
 import "dotenv/config";
 import express2 from "express";
@@ -39355,7 +39494,29 @@ function getQueryParam(req, key) {
   return typeof value === "string" ? value : void 0;
 }
 function registerOAuthRoutes(app) {
+  const oauthEnabled = Boolean(process.env.OAUTH_SERVER_URL);
+  app.get("/api/auth/status", async (req, res) => {
+    const mode = oauthEnabled ? "oauth" : "dev-bypass";
+    let user = null;
+    try {
+      const sessionUser = await sdk.authenticateRequest(req);
+      if (sessionUser) {
+        user = { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email, role: sessionUser.role };
+      }
+    } catch {
+    }
+    res.json({
+      authenticated: Boolean(user),
+      mode,
+      user,
+      oauthConfigured: oauthEnabled
+    });
+  });
   app.get("/api/oauth/callback", async (req, res) => {
+    if (!oauthEnabled) {
+      res.status(503).json({ error: "OAuth is not configured. Set OAUTH_SERVER_URL to enable authentication." });
+      return;
+    }
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
     if (!code || !state) {
@@ -39691,15 +39852,15 @@ async function extractChunkMp3(inputPath, outputPath, startSec, durationSec) {
   ]);
 }
 async function callTranscribeApi(buffer, filename) {
-  const hasDirectKey = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
   const hasIntegrationKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim());
+  const hasDirectKey = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
   let apiKey;
   let baseUrl;
-  if (hasDirectKey) {
-    apiKey = process.env.OPENAI_API_KEY.trim();
-    baseUrl = "https://api.openai.com";
-  } else if (hasIntegrationKey) {
+  if (hasIntegrationKey) {
     apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim();
+    baseUrl = (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ?? "https://api.openai.com").replace(/\/+$/, "");
+  } else if (hasDirectKey) {
+    apiKey = process.env.OPENAI_API_KEY.trim();
     baseUrl = "https://api.openai.com";
   } else if (process.env.BUILT_IN_FORGE_API_KEY && process.env.BUILT_IN_FORGE_API_URL) {
     apiKey = process.env.BUILT_IN_FORGE_API_KEY;
@@ -39728,6 +39889,9 @@ async function callTranscribeApi(buffer, filename) {
   });
   if (!response.ok) {
     const errText = await response.text().catch(() => response.statusText);
+    if (response.status === 429) {
+      throw new Error(`QUOTA_EXCEEDED: The AI transcription service has reached its usage limit. The recording has been saved and you can retry transcription later.`);
+    }
     throw new Error(`Whisper API failed (${response.status}): ${errText}`);
   }
   const result = await response.json();
@@ -39752,6 +39916,7 @@ function registerAudioTranscribeRoute(app) {
     },
     async (req, res) => {
       let tmpDir = null;
+      let savedRecordingPath = null;
       try {
         if (!req.file) {
           res.status(400).json({ error: "No audio file provided" });
@@ -39762,6 +39927,22 @@ function registerAudioTranscribeRoute(app) {
         const isVideo = VIDEO_EXTENSIONS.test(originalname);
         const isAudio = AUDIO_EXTENSIONS.test(originalname);
         console.log(`[AudioTranscribe] Received ${originalname} (${sizeMB.toFixed(1)}MB, video=${isVideo})`);
+        try {
+          const path4 = await import("path");
+          const fs3 = await import("fs");
+          const crypto4 = await import("crypto");
+          const RECORDINGS_DIR2 = path4.resolve(process.cwd(), "uploads", "recordings");
+          if (!fs3.existsSync(RECORDINGS_DIR2)) fs3.mkdirSync(RECORDINGS_DIR2, { recursive: true });
+          const rawExt = (path4.extname(originalname) || ".mp3").toLowerCase();
+          const safeExt = /^\.(mp3|mp4|wav|m4a|webm|ogg|flac|aac)$/.test(rawExt) ? rawExt : ".mp3";
+          const uniqueName = `${Date.now()}_${crypto4.randomBytes(6).toString("hex")}${safeExt}`;
+          const destPath = path4.join(RECORDINGS_DIR2, uniqueName);
+          await writeFile(destPath, buffer);
+          savedRecordingPath = uniqueName;
+          console.log(`[AudioTranscribe] Saved recording: ${uniqueName} (${sizeMB.toFixed(1)}MB)`);
+        } catch (saveErr) {
+          console.error("[AudioTranscribe] Failed to save recording copy:", saveErr.message);
+        }
         let transcript;
         const ffmpegAvailable = await checkFfmpegAvailable();
         if (sizeMB <= DIRECT_MAX_MB) {
@@ -39797,26 +39978,13 @@ function registerAudioTranscribeRoute(app) {
         }
         const wordCount = transcript.split(/\s+/).filter(Boolean).length;
         console.log(`[AudioTranscribe] Complete \u2014 ${wordCount} words`);
-        let savedRecordingPath = null;
-        try {
-          const path4 = await import("path");
-          const fs3 = await import("fs");
-          const crypto4 = await import("crypto");
-          const RECORDINGS_DIR2 = path4.resolve(process.cwd(), "uploads", "recordings");
-          if (!fs3.existsSync(RECORDINGS_DIR2)) fs3.mkdirSync(RECORDINGS_DIR2, { recursive: true });
-          const ext = (path4.extname(originalname) || ".mp3").toLowerCase();
-          const uniqueName = `${Date.now()}_${crypto4.randomBytes(6).toString("hex")}${ext}`;
-          const destPath = path4.join(RECORDINGS_DIR2, uniqueName);
-          await writeFile(destPath, buffer);
-          savedRecordingPath = uniqueName;
-          console.log(`[AudioTranscribe] Saved recording: ${uniqueName} (${sizeMB.toFixed(1)}MB)`);
-        } catch (saveErr) {
-          console.error("[AudioTranscribe] Failed to save recording copy:", saveErr.message);
-        }
         res.json({ success: true, transcript, savedRecordingPath });
       } catch (err) {
         console.error("[AudioTranscribe]", err);
-        res.status(500).json({ error: err.message ?? "Transcription failed" });
+        const isQuotaError = err.message?.includes("QUOTA_EXCEEDED") || err.message?.includes("429");
+        const statusCode = isQuotaError ? 429 : 500;
+        const errorMessage = isQuotaError ? "AI transcription quota exceeded. Your recording has been saved \u2014 you can retry transcription later from the archive." : err.message ?? "Transcription failed";
+        res.status(statusCode).json({ error: errorMessage, code: isQuotaError ? "QUOTA_EXCEEDED" : "TRANSCRIPTION_FAILED", savedRecordingPath });
       } finally {
         if (tmpDir) {
           rm(tmpDir, { recursive: true, force: true }).catch(() => {
@@ -40032,17 +40200,24 @@ function registerRecallWebhookRoute(app) {
 // server/recordingUpload.ts
 init_db();
 init_schema();
+init_storageAdapter();
 import multer3 from "multer";
-import { join as join2 } from "path";
-import { mkdirSync } from "fs";
+import { join as join3 } from "path";
+import { mkdirSync as mkdirSync2, existsSync as existsSync2 } from "fs";
 import { eq as eq75 } from "drizzle-orm";
-var RECORDINGS_DIR = join2(process.cwd(), "uploads", "recordings");
-mkdirSync(RECORDINGS_DIR, { recursive: true });
+mkdirSync2(RECORDINGS_DIR, { recursive: true });
+var ALLOWED_EXTENSIONS = /* @__PURE__ */ new Set(["webm", "mp4", "ogg", "wav", "mp3", "m4a", "aac", "flac"]);
+function sanitizeExtension(originalname) {
+  if (!originalname || !originalname.includes(".")) return "webm";
+  const raw = originalname.split(".").pop() || "webm";
+  const cleaned = raw.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  return ALLOWED_EXTENSIONS.has(cleaned) ? cleaned : "webm";
+}
 var storage = multer3.diskStorage({
   destination: (_req, _file, cb) => cb(null, RECORDINGS_DIR),
   filename: (_req, file, cb) => {
-    const sessionId = _req.params.sessionId || "unknown";
-    const ext = file.originalname.includes(".") ? file.originalname.split(".").pop() : "webm";
+    const sessionId = (_req.params.sessionId || "unknown").replace(/[^a-zA-Z0-9_\-]/g, "");
+    const ext = sanitizeExtension(file.originalname);
     cb(null, `shadow-${sessionId}-${Date.now()}.${ext}`);
   }
 });
@@ -40067,9 +40242,23 @@ function registerRecordingUploadRoute(app) {
       }
       const db2 = await getDb();
       const relativePath = `uploads/recordings/${req.file.filename}`;
+      const fullPath = join3(RECORDINGS_DIR, req.file.filename);
       await db2.update(shadowSessions).set({ localRecordingPath: relativePath }).where(eq75(shadowSessions.id, sessionId));
-      console.log(`[Shadow] Recording saved for session ${sessionId}: ${relativePath} (${(req.file.size / 1024 / 1024).toFixed(1)} MB)`);
-      res.json({ success: true, path: relativePath, size: req.file.size });
+      const sizeMB = (req.file.size / 1024 / 1024).toFixed(1);
+      console.log(`[Shadow] Recording saved locally for session ${sessionId}: ${relativePath} (${sizeMB} MB)`);
+      persistToObjectStorage(fullPath, `recordings/${req.file.filename}`, req.file.mimetype).then((result) => {
+        if (result) {
+          console.log(`[Shadow] Recording also persisted to object storage: ${result.key}`);
+        }
+      }).catch(() => {
+      });
+      res.json({
+        success: true,
+        path: relativePath,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        filename: req.file.filename
+      });
     } catch (err) {
       console.error("[Shadow] Recording upload error:", err);
       res.status(500).json({ error: "Failed to save recording" });
@@ -40084,10 +40273,22 @@ function registerRecordingUploadRoute(app) {
       const db2 = await getDb();
       const [session] = await db2.select().from(shadowSessions).where(eq75(shadowSessions.id, sessionId)).limit(1);
       if (!session || !session.localRecordingPath) {
-        return res.status(404).json({ error: "No recording found" });
+        return res.status(404).json({ error: "No recording found for this session" });
       }
-      const filePath = join2(process.cwd(), session.localRecordingPath);
-      res.sendFile(filePath);
+      const resolution = await resolveRecordingFile(session.localRecordingPath);
+      if (!resolution.found) {
+        return res.status(404).json({
+          error: "Recording file not found. It may have been lost during a server restart.",
+          sessionId
+        });
+      }
+      if (resolution.source === "object-storage" && resolution.url) {
+        return res.redirect(302, resolution.url);
+      }
+      if (resolution.localPath && existsSync2(resolution.localPath)) {
+        return res.sendFile(resolution.localPath);
+      }
+      res.status(404).json({ error: "Recording path resolved but file unavailable" });
     } catch (err) {
       console.error("[Shadow] Recording fetch error:", err);
       res.status(500).json({ error: "Failed to fetch recording" });
@@ -40799,8 +41000,9 @@ function validateEnv() {
   if (!process.env.DATABASE_URL) {
     missing.push({ key: "DATABASE_URL", requiredFor: "Database connection", critical: true });
   }
+  const hasAiKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || process.env.BUILT_IN_FORGE_API_KEY);
   const optionalKeys = [
-    { key: "OPENAI_API_KEY", requiredFor: "AI analysis and transcription" },
+    { key: "OPENAI_API_KEY", requiredFor: "AI analysis and transcription", skip: hasAiKey },
     { key: "ABLY_API_KEY", requiredFor: "Real-time event streaming" },
     { key: "RESEND_API_KEY", requiredFor: "Email delivery" },
     { key: "RECALL_AI_WEBHOOK_SECRET", requiredFor: "Recall.ai bot webhooks" },
@@ -40812,7 +41014,8 @@ function validateEnv() {
     { key: "STRIPE_SECRET_KEY", requiredFor: "Payment processing" },
     { key: "OAUTH_SERVER_URL", requiredFor: "OAuth authentication" }
   ];
-  for (const { key, requiredFor } of optionalKeys) {
+  for (const { key, requiredFor, skip } of optionalKeys) {
+    if (skip) continue;
     if (!process.env[key]) {
       warnings.push({ key, requiredFor, critical: false });
     }
@@ -40877,7 +41080,7 @@ function getServiceStatus() {
       sessionAuth: env.SESSION_SECRET ? enabled("Session secret configured") : disabled("SESSION_SECRET / JWT_SECRET not set")
     },
     integrations: {
-      openai: env.OPENAI_API_KEY ? enabled("AI analysis and transcription available") : disabled("OPENAI_API_KEY not set \u2014 AI features disabled"),
+      openai: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || env.OPENAI_API_KEY ? enabled(process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? "AI via Replit integration proxy" : "AI via direct OpenAI key") : disabled("No AI key configured \u2014 AI features disabled"),
       ably: env.ABLY_API_KEY ? enabled("Real-time streaming available") : disabled("ABLY_API_KEY not set \u2014 real-time features disabled"),
       resend: env.RESEND_API_KEY ? enabled("Email delivery available") : disabled("RESEND_API_KEY not set \u2014 email features disabled"),
       recall: env.RECALL_AI_WEBHOOK_SECRET ? enabled("Recall.ai bot integration available") : disabled("RECALL_AI_WEBHOOK_SECRET not set \u2014 bot joining disabled"),
@@ -40892,10 +41095,12 @@ function getServiceStatus() {
 }
 
 // server/routes/systemStatus.ts
+init_storageAdapter();
 var systemStatusRouter = Router3();
 systemStatusRouter.get("/health", async (_req, res) => {
   const validation = validateEnv();
   const services = getServiceStatus();
+  const storage2 = getStorageHealth();
   return res.json({
     ok: validation.isCoreValid,
     environment: process.env.NODE_ENV ?? "development",
@@ -40906,18 +41111,19 @@ systemStatusRouter.get("/health", async (_req, res) => {
       requiredFor: w.requiredFor
     })),
     services,
+    storage: storage2,
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
 });
 
 // server/_core/index.ts
 function isPortAvailable(port) {
-  return new Promise((resolve) => {
+  return new Promise((resolve2) => {
     const server = net.createServer();
     server.listen(port, () => {
-      server.close(() => resolve(true));
+      server.close(() => resolve2(true));
     });
-    server.on("error", () => resolve(false));
+    server.on("error", () => resolve2(false));
   });
 }
 async function findAvailablePort(startPort = 3e3) {
@@ -40946,6 +41152,18 @@ function validateShadowModeEnv() {
     console.log("[Shadow Mode] \u2713 All critical environment variables configured");
   }
 }
+async function ensureArchiveEventsColumns() {
+  try {
+    const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+    await rawSql2(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcript_fingerprint VARCHAR(64)`);
+    console.log("[Migration] \u2713 archive_events.transcript_fingerprint column ensured");
+  } catch (err) {
+    if (err?.message?.includes("already exists") || err?.message?.includes("does not exist")) {
+      return;
+    }
+    console.warn("[Migration] archive_events column check skipped:", err?.message);
+  }
+}
 async function startServer() {
   const app = express2();
   const server = http.createServer(app);
@@ -40953,6 +41171,9 @@ async function startServer() {
   const isProd = process.env.NODE_ENV === "production";
   app.use(systemStatusRouter);
   validateShadowModeEnv();
+  ensureArchiveEventsColumns().catch(
+    (err) => console.warn("[Migration] Non-blocking column migration failed:", err?.message)
+  );
   if (!isProd) {
     app.use("/__mockup", (req, res) => {
       const proxyReq = http.request(
@@ -41398,14 +41619,15 @@ async function startServer() {
   app.get("/api/archives/:id/transcript", async (req, res) => {
     try {
       const archiveId = parseInt(req.params.id, 10);
-      if (isNaN(archiveId)) return res.status(400).send("Invalid archive ID");
+      if (isNaN(archiveId)) return res.status(400).json({ error: "Invalid archive ID" });
       const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
       const [rows] = await rawSql2(
         `SELECT event_name, client_name, event_date, transcript_text FROM archive_events WHERE id = ? LIMIT 1`,
         [archiveId]
       );
       const row = rows[0];
-      if (!row || !row.transcript_text) return res.status(404).send("Transcript not found");
+      if (!row) return res.status(404).json({ error: "Archive event not found", archiveId });
+      if (!row.transcript_text) return res.status(404).json({ error: "No transcript available for this event", archiveId });
       const safeName = (row.event_name || "transcript").replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
       const header = `CuraLive Intelligence Transcript
 ${"=".repeat(40)}
@@ -41421,36 +41643,46 @@ ${"=".repeat(40)}
       res.send(content);
     } catch (err) {
       console.error("[Archive Transcript Download]", err.message);
-      res.status(500).send("Failed to download transcript");
+      res.status(500).json({ error: "Failed to download transcript" });
     }
   });
   app.get("/api/archives/:id/recording", async (req, res) => {
     try {
       const archiveId = parseInt(req.params.id, 10);
-      if (isNaN(archiveId)) return res.status(400).send("Invalid archive ID");
+      if (isNaN(archiveId)) return res.status(400).json({ error: "Invalid archive ID" });
       const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
       const [rows] = await rawSql2(
         `SELECT event_name, recording_path FROM archive_events WHERE id = ? LIMIT 1`,
         [archiveId]
       );
       const row = rows[0];
-      if (!row || !row.recording_path) return res.status(404).send("Recording not available for this event");
-      const fs3 = await import("fs");
-      const path4 = await import("path");
-      const RECORDINGS_BASE = path4.resolve(process.cwd(), "uploads", "recordings");
-      const filePath = path4.resolve(RECORDINGS_BASE, path4.basename(row.recording_path));
-      const normalised = path4.normalize(filePath);
-      if (!normalised.startsWith(RECORDINGS_BASE)) return res.status(403).send("Access denied");
-      if (!fs3.existsSync(filePath)) return res.status(404).send("Recording file not found on server");
+      if (!row) return res.status(404).json({ error: "Archive event not found", archiveId });
+      if (!row.recording_path) return res.status(404).json({ error: "No recording associated with this event. The transcript can still be downloaded separately.", archiveId });
+      const { resolveRecordingFile: resolveRecordingFile2 } = await Promise.resolve().then(() => (init_storageAdapter(), storageAdapter_exports));
+      const resolution = await resolveRecordingFile2(row.recording_path);
+      if (!resolution.found) {
+        return res.status(404).json({
+          error: "Recording file not found. It may have been lost during a server restart. The transcript is still available.",
+          archiveId,
+          source: resolution.source
+        });
+      }
       const safeName = (row.event_name || "recording").replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
-      res.setHeader("Content-Type", "audio/mpeg");
-      res.setHeader("Content-Disposition", `attachment; filename="${safeName}_Recording.mp3"`);
-      res.sendFile(filePath, (err) => {
-        if (err && !res.headersSent) res.status(500).send("Failed to send recording");
-      });
+      if (resolution.source === "object-storage" && resolution.url) {
+        return res.redirect(302, resolution.url);
+      }
+      if (resolution.localPath) {
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Content-Disposition", `attachment; filename="${safeName}_Recording.mp3"`);
+        res.sendFile(resolution.localPath, (err) => {
+          if (err && !res.headersSent) res.status(500).json({ error: "Failed to send recording file" });
+        });
+      } else {
+        res.status(404).json({ error: "Recording resolved but no path available" });
+      }
     } catch (err) {
       console.error("[Archive Recording Download]", err.message);
-      res.status(500).send("Failed to download recording");
+      res.status(500).json({ error: "Failed to download recording" });
     }
   });
   app.get("/api/archives/downloads", async (_req, res) => {
@@ -41485,13 +41717,13 @@ ${"=".repeat(40)}
     try {
       const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
       const archiver2 = (await import("archiver")).default;
+      const { resolveRecordingFile: resolveRecordingFile2 } = await Promise.resolve().then(() => (init_storageAdapter(), storageAdapter_exports));
       const fs3 = await import("fs");
-      const path4 = await import("path");
       const idsParam = req.query.ids;
       let rows;
       if (idsParam) {
         const ids = idsParam.split(",").map(Number).filter((n) => !isNaN(n) && n > 0);
-        if (ids.length === 0) return res.status(400).send("No valid IDs provided");
+        if (ids.length === 0) return res.status(400).json({ error: "No valid IDs provided" });
         const placeholders = ids.map(() => "?").join(",");
         const [result] = await rawSql2(
           `SELECT id, event_name, client_name, event_date, transcript_text, recording_path
@@ -41508,14 +41740,14 @@ ${"=".repeat(40)}
         rows = result;
       }
       const events2 = rows;
-      if (events2.length === 0) return res.status(404).send("No archive events found");
+      if (events2.length === 0) return res.status(404).json({ error: "No archive events with transcripts found" });
+      if (events2.length > 500) return res.status(413).json({ error: "Too many events to zip at once (max 500)" });
       const datestamp = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       res.setHeader("Content-Type", "application/zip");
       res.setHeader("Content-Disposition", `attachment; filename="CuraLive_Archives_${datestamp}.zip"`);
-      if (events2.length > 500) return res.status(413).send("Too many events to zip at once.");
       const archive = archiver2("zip", { zlib: { level: 6 } });
       archive.on("error", (err) => {
-        if (!res.headersSent) res.status(500).send("Zip failed");
+        if (!res.headersSent) res.status(500).json({ error: "Zip creation failed" });
       });
       req.on("close", () => {
         archive.abort();
@@ -41534,17 +41766,16 @@ ${"=".repeat(40)}
 `;
         archive.append(header + ev.transcript_text, { name: `${folder}/${safeName}_Transcript.txt` });
         if (ev.recording_path && ev.recording_path.trim()) {
-          const RECORDINGS_BASE = path4.resolve(process.cwd(), "uploads", "recordings");
-          const filePath = path4.resolve(RECORDINGS_BASE, path4.basename(ev.recording_path));
-          if (fs3.existsSync(filePath)) {
-            archive.file(filePath, { name: `${folder}/${safeName}_Recording.mp3` });
+          const resolution = await resolveRecordingFile2(ev.recording_path);
+          if (resolution.found && resolution.localPath && fs3.existsSync(resolution.localPath)) {
+            archive.file(resolution.localPath, { name: `${folder}/${safeName}_Recording.mp3` });
           }
         }
       }
       await archive.finalize();
     } catch (err) {
       console.error("[Archive Download All]", err.message);
-      if (!res.headersSent) res.status(500).send("Failed to create archive zip");
+      if (!res.headersSent) res.status(500).json({ error: "Failed to create archive zip" });
     }
   });
   app.get("/download/checklist", (_req, res) => {
