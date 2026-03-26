@@ -47,7 +47,7 @@ curalive-platform/
 
 ## Critical Development Rules
 
-1. **Router registration**: New tRPC routers must be added in BOTH `server/routers.eager.ts` AND `server/routers.ts`
+1. **Router registration**: New tRPC routers must be added in BOTH `server/routers.eager.ts` AND `server/routers.ts` (currently 89+ named routers + inline routers)
 2. **tRPC imports**: Always use `"../_core/trpc"` for tRPC imports
 3. **Toast notifications**: Use `sonner` only — no other toast libraries
 4. **rawSql()** in `server/db.ts` auto-appends `RETURNING id` and translates MySQL `?` to `$1/$2`
@@ -55,6 +55,10 @@ curalive-platform/
 6. **ai_am_audit_log.timestamp**: Is `bigint` (epoch ms), not a date column
 7. **Schema sync**: Use `drizzle-kit push --force` (NOT `pnpm run db:push` — migration files have MySQL syntax)
 8. **Health monitoring tables** (`health_checks`, `health_incidents`, `health_incident_reports`, `health_baselines`): Created via raw SQL, not in Drizzle schema. Timestamp columns must be `TIMESTAMP` type (the rawSql layer converts to Date strings)
+9. **PostgreSQL NUMERIC values**: Returned as strings from `rawSql()` — always wrap in `Number()` before arithmetic
+10. **HealthGuardian**: Services with "unknown" status (unconfigured API keys) are skipped — no false incidents created
+11. **DO NOT edit `.replit`**: Modifying this file from code corrupts Replit's deployment state. Use Replit UI only
+12. **Server binding**: Must use `0.0.0.0` (not `localhost`) for Replit proxy compatibility
 
 ## Key Scripts
 

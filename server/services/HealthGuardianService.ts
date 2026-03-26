@@ -362,6 +362,10 @@ export async function runAllChecks(): Promise<CheckResult[]> {
       [result.service, result.status, result.latencyMs, JSON.stringify(result.details), now]
     );
 
+    if (result.status === "unknown") {
+      continue;
+    }
+
     if (result.status === "healthy") {
       await updateBaseline(result.service, result.latencyMs);
       const hadFailures = (consecutiveFailures.get(result.service) || 0) > 0;
@@ -370,19 +374,16 @@ export async function runAllChecks(): Promise<CheckResult[]> {
         await resolveIncident(result.service);
       }
       consecutiveFailures.set(result.service, 0);
+      const isAnomaly = await detectAnomaly(result.service, result.latencyMs);
+      if (isAnomaly) {
+        await createIncident(result, true);
+      }
     } else {
       const count = (consecutiveFailures.get(result.service) || 0) + 1;
       consecutiveFailures.set(result.service, count);
       if (count >= 2) {
         const isAnomaly = await detectAnomaly(result.service, result.latencyMs);
         await createIncident(result, isAnomaly);
-      }
-    }
-
-    if (result.status === "healthy") {
-      const isAnomaly = await detectAnomaly(result.service, result.latencyMs);
-      if (isAnomaly) {
-        await createIncident(result, true);
       }
     }
   }

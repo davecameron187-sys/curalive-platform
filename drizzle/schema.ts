@@ -3383,3 +3383,15 @@ export const liveQaPlatformShares = pgTable("live_qa_platform_shares", {
   clickCount: integer("click_count").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const complianceDetectionStats = pgTable("compliance_detection_stats", {
+  id: serial("id").primaryKey(),
+  eventId: varchar("event_id", { length: 255 }).notNull(),
+  totalViolationsDetected: integer("total_violations_detected").default(0).notNull(),
+  violationsByType: text("violations_by_type"),
+  violationsBySeverity: text("violations_by_severity"),
+  avgConfidenceScore: real("avg_confidence_score"),
+  avgDetectionLatencyMs: integer("avg_detection_latency_ms"),
+  falsePositiveRate: real("false_positive_rate"),
+  recordedAt: timestamp("recorded_at").defaultNow().notNull(),
+});
