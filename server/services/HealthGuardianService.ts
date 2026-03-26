@@ -213,11 +213,12 @@ async function updateBaseline(service: ServiceName, latencyMs: number) {
     const now = Date.now();
     if (Array.isArray(existing) && existing.length > 0) {
       const row = existing[0] as any;
-      const n = row.sample_count + 1;
-      const oldMean = row.avg_value;
+      const n = Number(row.sample_count) + 1;
+      const oldMean = Number(row.avg_value);
+      const oldStdDev = Number(row.std_dev);
       const newMean = oldMean + (latencyMs - oldMean) / n;
       const newStdDev = Math.sqrt(
-        ((n - 2) / Math.max(n - 1, 1)) * (row.std_dev * row.std_dev) +
+        ((n - 2) / Math.max(n - 1, 1)) * (oldStdDev * oldStdDev) +
         ((latencyMs - oldMean) * (latencyMs - newMean)) / Math.max(n - 1, 1)
       );
       await rawQuery(
@@ -241,8 +242,11 @@ async function detectAnomaly(service: ServiceName, latencyMs: number): Promise<b
     );
     if (!Array.isArray(rows) || rows.length === 0) return false;
     const row = rows[0] as any;
-    if (row.sample_count < 10 || row.std_dev === 0) return false;
-    const zScore = Math.abs(latencyMs - row.avg_value) / row.std_dev;
+    const sampleCount = Number(row.sample_count);
+    const stdDev = Number(row.std_dev);
+    const avgValue = Number(row.avg_value);
+    if (sampleCount < 10 || stdDev === 0) return false;
+    const zScore = Math.abs(latencyMs - avgValue) / stdDev;
     return zScore > ANOMALY_THRESHOLD_SIGMA;
   } catch {
     return false;
