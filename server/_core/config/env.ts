@@ -33,8 +33,10 @@ export function validateEnv(): {
     missing.push({ key: "DATABASE_URL", requiredFor: "Database connection", critical: true });
   }
 
-  const optionalKeys: { key: string; requiredFor: string }[] = [
-    { key: "OPENAI_API_KEY", requiredFor: "AI analysis and transcription" },
+  const hasAiKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || process.env.BUILT_IN_FORGE_API_KEY);
+
+  const optionalKeys: { key: string; requiredFor: string; skip?: boolean }[] = [
+    { key: "OPENAI_API_KEY", requiredFor: "AI analysis and transcription", skip: hasAiKey },
     { key: "ABLY_API_KEY", requiredFor: "Real-time event streaming" },
     { key: "RESEND_API_KEY", requiredFor: "Email delivery" },
     { key: "RECALL_AI_WEBHOOK_SECRET", requiredFor: "Recall.ai bot webhooks" },
@@ -47,7 +49,8 @@ export function validateEnv(): {
     { key: "OAUTH_SERVER_URL", requiredFor: "OAuth authentication" },
   ];
 
-  for (const { key, requiredFor } of optionalKeys) {
+  for (const { key, requiredFor, skip } of optionalKeys) {
+    if (skip) continue;
     if (!process.env[key]) {
       warnings.push({ key, requiredFor, critical: false });
     }

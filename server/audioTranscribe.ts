@@ -90,16 +90,16 @@ async function extractChunkMp3(
 }
 
 async function callTranscribeApi(buffer: Buffer, filename: string): Promise<string> {
-  const hasDirectKey = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
   const hasIntegrationKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim());
+  const hasDirectKey = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
   let apiKey: string;
   let baseUrl: string;
 
-  if (hasDirectKey) {
-    apiKey = process.env.OPENAI_API_KEY!.trim();
-    baseUrl = "https://api.openai.com";
-  } else if (hasIntegrationKey) {
+  if (hasIntegrationKey) {
     apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY!.trim();
+    baseUrl = (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ?? "https://api.openai.com").replace(/\/+$/, "");
+  } else if (hasDirectKey) {
+    apiKey = process.env.OPENAI_API_KEY!.trim();
     baseUrl = "https://api.openai.com";
   } else if (process.env.BUILT_IN_FORGE_API_KEY && process.env.BUILT_IN_FORGE_API_URL) {
     apiKey = process.env.BUILT_IN_FORGE_API_KEY;

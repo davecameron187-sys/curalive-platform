@@ -14,7 +14,7 @@ export const transcriptionRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      const openAiKey = process.env.OPENAI_API_KEY;
+      const openAiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
       if (!openAiKey) {
         const [result] = await db.insert(transcriptionJobs).values({
           eventId: input.eventId,

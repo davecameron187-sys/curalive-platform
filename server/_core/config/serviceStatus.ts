@@ -44,9 +44,9 @@ export function getServiceStatus(): AppServiceStatus {
         : disabled("SESSION_SECRET / JWT_SECRET not set"),
     },
     integrations: {
-      openai: env.OPENAI_API_KEY
-        ? enabled("AI analysis and transcription available")
-        : disabled("OPENAI_API_KEY not set — AI features disabled"),
+      openai: (process.env.AI_INTEGRATIONS_OPENAI_API_KEY || env.OPENAI_API_KEY)
+        ? enabled(process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? "AI via Replit integration proxy" : "AI via direct OpenAI key")
+        : disabled("No AI key configured — AI features disabled"),
       ably: env.ABLY_API_KEY
         ? enabled("Real-time streaming available")
         : disabled("ABLY_API_KEY not set — real-time features disabled"),

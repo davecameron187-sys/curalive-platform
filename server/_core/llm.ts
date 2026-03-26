@@ -219,15 +219,14 @@ const isForgeMode = () =>
   !!(process.env.BUILT_IN_FORGE_API_KEY || (process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_URL.trim()));
 
 const resolveApiUrl = () => {
-  // User's own key always routes directly to OpenAI
-  if (hasDirectOpenAiKey()) {
-    return "https://api.openai.com/v1/chat/completions";
+  if (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.trim()) {
+    return `${process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.replace(/\/$/, "")}/chat/completions`;
   }
   if (process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_URL.trim()) {
     return `${process.env.BUILT_IN_FORGE_API_URL.replace(/\/$/, "")}/v1/chat/completions`;
   }
-  if (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.trim()) {
-    return `${process.env.AI_INTEGRATIONS_OPENAI_BASE_URL.replace(/\/$/, "")}/chat/completions`;
+  if (hasDirectOpenAiKey()) {
+    return "https://api.openai.com/v1/chat/completions";
   }
   return "https://api.openai.com/v1/chat/completions";
 };
