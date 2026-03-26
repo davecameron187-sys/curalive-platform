@@ -178,9 +178,12 @@ Graceful shutdown: Listens for SIGTERM/SIGINT, reconciles active Shadow Mode ses
 - **Artifact**: `artifacts/api-server` (kind: web, previewPath: `/`)
 - **Build**: `vite build` + `esbuild` → `dist/`
 - **Run**: `NODE_ENV=production node dist/index.js`
-- **Target**: Autoscale
+- **Target**: VM (NEVER use `autoscale` — breaks publishing)
 - **Health check**: `GET /health` returns `{ status: "ok" }` (registered early, before heavy middleware)
 - Server listens on `0.0.0.0:PORT`
+- `.replit` must have `deploymentTarget = "vm"` — do NOT change to `"autoscale"`
+- Do NOT add `[deployment.postBuild]` with `pnpm store prune` — it hangs and stalls deploys
+- Do NOT modify `.replit` from GitHub/Codespaces/agents
 
 ## Database Backup
 
