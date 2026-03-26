@@ -23502,6 +23502,242 @@ ${input.transcript.slice(0, 8e3)}`
   }
 });
 
+// server/_core/config/env.ts
+var env_exports = {};
+__export(env_exports, {
+  enforceEnvOrExit: () => enforceEnvOrExit,
+  getEnv: () => getEnv,
+  validateEnv: () => validateEnv
+});
+function validateEnv() {
+  const missing = [];
+  const warnings = [];
+  if (!process.env.DATABASE_URL) {
+    missing.push({ key: "DATABASE_URL", requiredFor: "Database connection", critical: true });
+  }
+  const hasAiKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || process.env.BUILT_IN_FORGE_API_KEY);
+  const optionalKeys = [
+    { key: "OPENAI_API_KEY", requiredFor: "AI analysis and transcription", skip: hasAiKey },
+    { key: "ABLY_API_KEY", requiredFor: "Real-time event streaming" },
+    { key: "RESEND_API_KEY", requiredFor: "Email delivery" },
+    { key: "RECALL_AI_WEBHOOK_SECRET", requiredFor: "Recall.ai bot webhooks" },
+    { key: "TWILIO_ACCOUNT_SID", requiredFor: "Telephony (Twilio)" },
+    { key: "TWILIO_AUTH_TOKEN", requiredFor: "Telephony (Twilio)" },
+    { key: "TELNYX_API_KEY", requiredFor: "Telephony (Telnyx)" },
+    { key: "MUX_TOKEN_ID", requiredFor: "Video streaming (Mux)" },
+    { key: "MUX_TOKEN_SECRET", requiredFor: "Video streaming (Mux)" },
+    { key: "STRIPE_SECRET_KEY", requiredFor: "Payment processing" },
+    { key: "OAUTH_SERVER_URL", requiredFor: "OAuth authentication" }
+  ];
+  for (const { key, requiredFor, skip } of optionalKeys) {
+    if (skip) continue;
+    if (!process.env[key]) {
+      warnings.push({ key, requiredFor, critical: false });
+    }
+  }
+  const isCoreValid = missing.length === 0;
+  return { isCoreValid, missing, warnings };
+}
+function getEnv() {
+  return {
+    NODE_ENV: process.env.NODE_ENV ?? "development",
+    DATABASE_URL: process.env.DATABASE_URL,
+    SESSION_SECRET: process.env.SESSION_SECRET ?? process.env.JWT_SECRET ?? "dev-fallback-secret",
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    ABLY_API_KEY: process.env.ABLY_API_KEY,
+    MUX_TOKEN_ID: process.env.MUX_TOKEN_ID,
+    MUX_TOKEN_SECRET: process.env.MUX_TOKEN_SECRET,
+    RECALL_AI_WEBHOOK_SECRET: process.env.RECALL_AI_WEBHOOK_SECRET,
+    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+    TELNYX_API_KEY: process.env.TELNYX_API_KEY,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    OAUTH_SERVER_URL: process.env.OAUTH_SERVER_URL
+  };
+}
+function enforceEnvOrExit() {
+  const { isCoreValid, missing, warnings } = validateEnv();
+  if (warnings.length > 0) {
+    console.log(`
+\u26A0  CuraLive \u2014 ${warnings.length} optional service(s) not configured:`);
+    for (const w of warnings) {
+      console.log(`   \xB7 ${w.key} \u2192 ${w.requiredFor} (disabled)`);
+    }
+    console.log("");
+  }
+  if (!isCoreValid) {
+    console.error("\n\u2716  CuraLive \u2014 cannot start, missing critical environment variables:");
+    for (const m of missing) {
+      console.error(`   \xB7 ${m.key} \u2192 ${m.requiredFor}`);
+    }
+    console.error("\nSet these variables and restart.\n");
+    process.exit(1);
+  }
+  console.log("\u2713  CuraLive environment validated \u2014 core services ready");
+}
+var init_env2 = __esm({
+  "server/_core/config/env.ts"() {
+    "use strict";
+  }
+});
+
+// server/_core/config/serviceStatus.ts
+var serviceStatus_exports = {};
+__export(serviceStatus_exports, {
+  getServiceStatus: () => getServiceStatus
+});
+function enabled(reason) {
+  return { configured: true, status: "enabled", reason };
+}
+function disabled(reason) {
+  return { configured: false, status: "disabled", reason };
+}
+function getServiceStatus() {
+  const env = getEnv();
+  return {
+    core: {
+      database: env.DATABASE_URL ? enabled("PostgreSQL connected") : disabled("DATABASE_URL not set"),
+      sessionAuth: env.SESSION_SECRET ? enabled("Session secret configured") : disabled("SESSION_SECRET / JWT_SECRET not set")
+    },
+    integrations: {
+      openai: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || env.OPENAI_API_KEY ? enabled(process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? "AI via Replit integration proxy" : "AI via direct OpenAI key") : disabled("No AI key configured \u2014 AI features disabled"),
+      ably: env.ABLY_API_KEY ? enabled("Real-time streaming available") : disabled("ABLY_API_KEY not set \u2014 real-time features disabled"),
+      resend: env.RESEND_API_KEY ? enabled("Email delivery available") : disabled("RESEND_API_KEY not set \u2014 email features disabled"),
+      recall: env.RECALL_AI_WEBHOOK_SECRET ? enabled("Recall.ai bot integration available") : disabled("RECALL_AI_WEBHOOK_SECRET not set \u2014 bot joining disabled"),
+      telephony: env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN || env.TELNYX_API_KEY ? enabled(
+        env.TWILIO_ACCOUNT_SID ? "Twilio telephony available" : "Telnyx telephony available"
+      ) : disabled("No telephony provider configured (TWILIO or TELNYX)"),
+      mux: env.MUX_TOKEN_ID && env.MUX_TOKEN_SECRET ? enabled("Mux video streaming available") : disabled("MUX_TOKEN_ID / MUX_TOKEN_SECRET not set \u2014 video streaming disabled"),
+      stripe: env.STRIPE_SECRET_KEY ? enabled("Payment processing available") : disabled("STRIPE_SECRET_KEY not set \u2014 payments disabled"),
+      oauth: env.OAUTH_SERVER_URL ? enabled("OAuth authentication available") : disabled("OAUTH_SERVER_URL not set \u2014 OAuth disabled")
+    }
+  };
+}
+var init_serviceStatus = __esm({
+  "server/_core/config/serviceStatus.ts"() {
+    "use strict";
+    init_env2();
+  }
+});
+
+// server/storageAdapter.ts
+var storageAdapter_exports = {};
+__export(storageAdapter_exports, {
+  RECORDINGS_DIR: () => RECORDINGS_DIR,
+  getStorageHealth: () => getStorageHealth,
+  isObjectStorageConfigured: () => isObjectStorageConfigured,
+  isWithinDir: () => isWithinDir,
+  persistToObjectStorage: () => persistToObjectStorage,
+  resolveRecordingFile: () => resolveRecordingFile,
+  sanitizeBasename: () => sanitizeBasename
+});
+import { existsSync, statSync, readdirSync, accessSync, constants, writeFileSync, mkdirSync, unlinkSync, createReadStream } from "fs";
+import { join, basename, resolve, normalize } from "path";
+function isObjectStorageConfigured() {
+  return Boolean(ENV.forgeApiUrl && ENV.forgeApiKey);
+}
+function sanitizeBasename(rawPath) {
+  return basename(rawPath).replace(/[^a-zA-Z0-9._\-]/g, "_");
+}
+function isWithinDir(filePath, baseDir) {
+  const resolved = resolve(filePath);
+  const normalised = normalize(resolved);
+  return normalised.startsWith(normalize(baseDir) + "/") || normalised === normalize(baseDir);
+}
+async function resolveRecordingFile(recordingPath) {
+  if (!recordingPath || !recordingPath.trim()) {
+    return { found: false, source: "none" };
+  }
+  const safeName = sanitizeBasename(recordingPath);
+  if (isObjectStorageConfigured()) {
+    const storageKey = `recordings/${safeName}`;
+    try {
+      const result = await storageGet(storageKey);
+      if (result.url) {
+        return { found: true, source: "object-storage", url: result.url };
+      }
+    } catch {
+    }
+  }
+  const localPath = resolve(RECORDINGS_DIR, safeName);
+  if (!isWithinDir(localPath, RECORDINGS_DIR)) {
+    return { found: false, source: "none" };
+  }
+  if (existsSync(localPath)) {
+    try {
+      const stats = statSync(localPath);
+      return { found: true, source: "local-disk", localPath, sizeBytes: stats.size };
+    } catch {
+      return { found: false, source: "none" };
+    }
+  }
+  return { found: false, source: "none" };
+}
+async function persistToObjectStorage(localPath, storageKey, contentType = "application/octet-stream") {
+  if (!isObjectStorageConfigured()) {
+    return null;
+  }
+  if (!existsSync(localPath)) {
+    return null;
+  }
+  try {
+    const chunks = [];
+    const stream = createReadStream(localPath);
+    for await (const chunk of stream) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    const data = Buffer.concat(chunks);
+    const result = await storagePut(storageKey, data, contentType);
+    console.log(`[StorageAdapter] Persisted ${basename(localPath)} \u2192 ${storageKey}`);
+    return result;
+  } catch (err) {
+    console.warn(`[StorageAdapter] Failed to persist ${basename(localPath)} to object storage:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+function getStorageHealth() {
+  let localDiskWritable = false;
+  try {
+    mkdirSync(RECORDINGS_DIR, { recursive: true });
+    const testFile = join(RECORDINGS_DIR, ".write-test");
+    writeFileSync(testFile, "ok");
+    accessSync(testFile, constants.W_OK);
+    unlinkSync(testFile);
+    localDiskWritable = true;
+  } catch {
+    localDiskWritable = false;
+  }
+  let localRecordingsCount = 0;
+  let localRecordingsTotalBytes = 0;
+  try {
+    const files = readdirSync(RECORDINGS_DIR).filter((f) => !f.startsWith("."));
+    localRecordingsCount = files.length;
+    for (const f of files) {
+      try {
+        localRecordingsTotalBytes += statSync(join(RECORDINGS_DIR, f)).size;
+      } catch {
+      }
+    }
+  } catch {
+  }
+  return {
+    localDiskWritable,
+    objectStorageConfigured: isObjectStorageConfigured(),
+    localRecordingsCount,
+    localRecordingsTotalBytes
+  };
+}
+var RECORDINGS_DIR;
+var init_storageAdapter = __esm({
+  "server/storageAdapter.ts"() {
+    "use strict";
+    init_storage();
+    init_env();
+    RECORDINGS_DIR = resolve(process.cwd(), "uploads", "recordings");
+  }
+});
+
 // server/services/AiEvolutionService.ts
 var AiEvolutionService_exports = {};
 __export(AiEvolutionService_exports, {
@@ -25318,6 +25554,56 @@ var init_archiveUploadRouter = __esm({
     CREDIT_EVENT_TYPES = ["credit_rating_call", "bondholder_meeting", "debt_restructuring"];
     PROXY_EVENT_TYPES = ["proxy_contest", "activist_meeting", "extraordinary_general_meeting"];
     archiveUploadRouter = router({
+      platformHealth: publicProcedure.query(async () => {
+        const { validateEnv: validateEnv2 } = await Promise.resolve().then(() => (init_env2(), env_exports));
+        const { getServiceStatus: getServiceStatus2 } = await Promise.resolve().then(() => (init_serviceStatus(), serviceStatus_exports));
+        const { getStorageHealth: getStorageHealth2 } = await Promise.resolve().then(() => (init_storageAdapter(), storageAdapter_exports));
+        const validation = validateEnv2();
+        return {
+          ok: validation.isCoreValid,
+          environment: process.env.NODE_ENV ?? "development",
+          coreReady: validation.isCoreValid,
+          missingCore: validation.missing.map((m) => m.key),
+          missingOptional: validation.warnings.map((w) => ({ key: w.key, requiredFor: w.requiredFor })),
+          services: getServiceStatus2(),
+          storage: getStorageHealth2(),
+          timestamp: (/* @__PURE__ */ new Date()).toISOString()
+        };
+      }),
+      platformAuthStatus: publicProcedure.query(async ({ ctx }) => {
+        const oauthEnabled = Boolean(process.env.OAUTH_SERVER_URL);
+        let user = null;
+        try {
+          const { sdk: sdk2 } = await Promise.resolve().then(() => (init_sdk(), sdk_exports));
+          const sessionUser = await sdk2.authenticateRequest(ctx.req);
+          if (sessionUser) {
+            user = { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email, role: sessionUser.role };
+          }
+        } catch {
+        }
+        return { authenticated: Boolean(user), mode: oauthEnabled ? "oauth" : "dev-bypass", user, oauthConfigured: oauthEnabled };
+      }),
+      platformArchiveDownloads: publicProcedure.query(async () => {
+        const [rows] = await rawSql(
+          `SELECT id, event_name, client_name, event_type, event_date, status,
+              length(transcript_text) as transcript_len, recording_path
+       FROM archive_events ORDER BY id DESC`,
+          []
+        );
+        return {
+          count: rows.length,
+          items: rows.map((r) => ({
+            id: r.id,
+            event_name: r.event_name,
+            client_name: r.client_name,
+            event_type: r.event_type,
+            event_date: r.event_date,
+            status: r.status,
+            has_transcript: (r.transcript_len ?? 0) > 0,
+            has_recording: !!(r.recording_path && r.recording_path.trim().length > 0)
+          }))
+        };
+      }),
       processTranscript: publicProcedure.input(
         z41.object({
           clientName: z41.string().min(1).max(255),
@@ -38474,242 +38760,6 @@ var init_aiAmPhase2 = __esm({
         return stats;
       })
     });
-  }
-});
-
-// server/_core/config/env.ts
-var env_exports = {};
-__export(env_exports, {
-  enforceEnvOrExit: () => enforceEnvOrExit,
-  getEnv: () => getEnv,
-  validateEnv: () => validateEnv
-});
-function validateEnv() {
-  const missing = [];
-  const warnings = [];
-  if (!process.env.DATABASE_URL) {
-    missing.push({ key: "DATABASE_URL", requiredFor: "Database connection", critical: true });
-  }
-  const hasAiKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || process.env.BUILT_IN_FORGE_API_KEY);
-  const optionalKeys = [
-    { key: "OPENAI_API_KEY", requiredFor: "AI analysis and transcription", skip: hasAiKey },
-    { key: "ABLY_API_KEY", requiredFor: "Real-time event streaming" },
-    { key: "RESEND_API_KEY", requiredFor: "Email delivery" },
-    { key: "RECALL_AI_WEBHOOK_SECRET", requiredFor: "Recall.ai bot webhooks" },
-    { key: "TWILIO_ACCOUNT_SID", requiredFor: "Telephony (Twilio)" },
-    { key: "TWILIO_AUTH_TOKEN", requiredFor: "Telephony (Twilio)" },
-    { key: "TELNYX_API_KEY", requiredFor: "Telephony (Telnyx)" },
-    { key: "MUX_TOKEN_ID", requiredFor: "Video streaming (Mux)" },
-    { key: "MUX_TOKEN_SECRET", requiredFor: "Video streaming (Mux)" },
-    { key: "STRIPE_SECRET_KEY", requiredFor: "Payment processing" },
-    { key: "OAUTH_SERVER_URL", requiredFor: "OAuth authentication" }
-  ];
-  for (const { key, requiredFor, skip } of optionalKeys) {
-    if (skip) continue;
-    if (!process.env[key]) {
-      warnings.push({ key, requiredFor, critical: false });
-    }
-  }
-  const isCoreValid = missing.length === 0;
-  return { isCoreValid, missing, warnings };
-}
-function getEnv() {
-  return {
-    NODE_ENV: process.env.NODE_ENV ?? "development",
-    DATABASE_URL: process.env.DATABASE_URL,
-    SESSION_SECRET: process.env.SESSION_SECRET ?? process.env.JWT_SECRET ?? "dev-fallback-secret",
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    ABLY_API_KEY: process.env.ABLY_API_KEY,
-    MUX_TOKEN_ID: process.env.MUX_TOKEN_ID,
-    MUX_TOKEN_SECRET: process.env.MUX_TOKEN_SECRET,
-    RECALL_AI_WEBHOOK_SECRET: process.env.RECALL_AI_WEBHOOK_SECRET,
-    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
-    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
-    TELNYX_API_KEY: process.env.TELNYX_API_KEY,
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
-    OAUTH_SERVER_URL: process.env.OAUTH_SERVER_URL
-  };
-}
-function enforceEnvOrExit() {
-  const { isCoreValid, missing, warnings } = validateEnv();
-  if (warnings.length > 0) {
-    console.log(`
-\u26A0  CuraLive \u2014 ${warnings.length} optional service(s) not configured:`);
-    for (const w of warnings) {
-      console.log(`   \xB7 ${w.key} \u2192 ${w.requiredFor} (disabled)`);
-    }
-    console.log("");
-  }
-  if (!isCoreValid) {
-    console.error("\n\u2716  CuraLive \u2014 cannot start, missing critical environment variables:");
-    for (const m of missing) {
-      console.error(`   \xB7 ${m.key} \u2192 ${m.requiredFor}`);
-    }
-    console.error("\nSet these variables and restart.\n");
-    process.exit(1);
-  }
-  console.log("\u2713  CuraLive environment validated \u2014 core services ready");
-}
-var init_env2 = __esm({
-  "server/_core/config/env.ts"() {
-    "use strict";
-  }
-});
-
-// server/_core/config/serviceStatus.ts
-var serviceStatus_exports = {};
-__export(serviceStatus_exports, {
-  getServiceStatus: () => getServiceStatus
-});
-function enabled(reason) {
-  return { configured: true, status: "enabled", reason };
-}
-function disabled(reason) {
-  return { configured: false, status: "disabled", reason };
-}
-function getServiceStatus() {
-  const env = getEnv();
-  return {
-    core: {
-      database: env.DATABASE_URL ? enabled("PostgreSQL connected") : disabled("DATABASE_URL not set"),
-      sessionAuth: env.SESSION_SECRET ? enabled("Session secret configured") : disabled("SESSION_SECRET / JWT_SECRET not set")
-    },
-    integrations: {
-      openai: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || env.OPENAI_API_KEY ? enabled(process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? "AI via Replit integration proxy" : "AI via direct OpenAI key") : disabled("No AI key configured \u2014 AI features disabled"),
-      ably: env.ABLY_API_KEY ? enabled("Real-time streaming available") : disabled("ABLY_API_KEY not set \u2014 real-time features disabled"),
-      resend: env.RESEND_API_KEY ? enabled("Email delivery available") : disabled("RESEND_API_KEY not set \u2014 email features disabled"),
-      recall: env.RECALL_AI_WEBHOOK_SECRET ? enabled("Recall.ai bot integration available") : disabled("RECALL_AI_WEBHOOK_SECRET not set \u2014 bot joining disabled"),
-      telephony: env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN || env.TELNYX_API_KEY ? enabled(
-        env.TWILIO_ACCOUNT_SID ? "Twilio telephony available" : "Telnyx telephony available"
-      ) : disabled("No telephony provider configured (TWILIO or TELNYX)"),
-      mux: env.MUX_TOKEN_ID && env.MUX_TOKEN_SECRET ? enabled("Mux video streaming available") : disabled("MUX_TOKEN_ID / MUX_TOKEN_SECRET not set \u2014 video streaming disabled"),
-      stripe: env.STRIPE_SECRET_KEY ? enabled("Payment processing available") : disabled("STRIPE_SECRET_KEY not set \u2014 payments disabled"),
-      oauth: env.OAUTH_SERVER_URL ? enabled("OAuth authentication available") : disabled("OAUTH_SERVER_URL not set \u2014 OAuth disabled")
-    }
-  };
-}
-var init_serviceStatus = __esm({
-  "server/_core/config/serviceStatus.ts"() {
-    "use strict";
-    init_env2();
-  }
-});
-
-// server/storageAdapter.ts
-var storageAdapter_exports = {};
-__export(storageAdapter_exports, {
-  RECORDINGS_DIR: () => RECORDINGS_DIR,
-  getStorageHealth: () => getStorageHealth,
-  isObjectStorageConfigured: () => isObjectStorageConfigured,
-  isWithinDir: () => isWithinDir,
-  persistToObjectStorage: () => persistToObjectStorage,
-  resolveRecordingFile: () => resolveRecordingFile,
-  sanitizeBasename: () => sanitizeBasename
-});
-import { existsSync, statSync, readdirSync, accessSync, constants, writeFileSync, mkdirSync, unlinkSync, createReadStream } from "fs";
-import { join, basename, resolve, normalize } from "path";
-function isObjectStorageConfigured() {
-  return Boolean(ENV.forgeApiUrl && ENV.forgeApiKey);
-}
-function sanitizeBasename(rawPath) {
-  return basename(rawPath).replace(/[^a-zA-Z0-9._\-]/g, "_");
-}
-function isWithinDir(filePath, baseDir) {
-  const resolved = resolve(filePath);
-  const normalised = normalize(resolved);
-  return normalised.startsWith(normalize(baseDir) + "/") || normalised === normalize(baseDir);
-}
-async function resolveRecordingFile(recordingPath) {
-  if (!recordingPath || !recordingPath.trim()) {
-    return { found: false, source: "none" };
-  }
-  const safeName = sanitizeBasename(recordingPath);
-  if (isObjectStorageConfigured()) {
-    const storageKey = `recordings/${safeName}`;
-    try {
-      const result = await storageGet(storageKey);
-      if (result.url) {
-        return { found: true, source: "object-storage", url: result.url };
-      }
-    } catch {
-    }
-  }
-  const localPath = resolve(RECORDINGS_DIR, safeName);
-  if (!isWithinDir(localPath, RECORDINGS_DIR)) {
-    return { found: false, source: "none" };
-  }
-  if (existsSync(localPath)) {
-    try {
-      const stats = statSync(localPath);
-      return { found: true, source: "local-disk", localPath, sizeBytes: stats.size };
-    } catch {
-      return { found: false, source: "none" };
-    }
-  }
-  return { found: false, source: "none" };
-}
-async function persistToObjectStorage(localPath, storageKey, contentType = "application/octet-stream") {
-  if (!isObjectStorageConfigured()) {
-    return null;
-  }
-  if (!existsSync(localPath)) {
-    return null;
-  }
-  try {
-    const chunks = [];
-    const stream = createReadStream(localPath);
-    for await (const chunk of stream) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    }
-    const data = Buffer.concat(chunks);
-    const result = await storagePut(storageKey, data, contentType);
-    console.log(`[StorageAdapter] Persisted ${basename(localPath)} \u2192 ${storageKey}`);
-    return result;
-  } catch (err) {
-    console.warn(`[StorageAdapter] Failed to persist ${basename(localPath)} to object storage:`, err instanceof Error ? err.message : err);
-    return null;
-  }
-}
-function getStorageHealth() {
-  let localDiskWritable = false;
-  try {
-    mkdirSync(RECORDINGS_DIR, { recursive: true });
-    const testFile = join(RECORDINGS_DIR, ".write-test");
-    writeFileSync(testFile, "ok");
-    accessSync(testFile, constants.W_OK);
-    unlinkSync(testFile);
-    localDiskWritable = true;
-  } catch {
-    localDiskWritable = false;
-  }
-  let localRecordingsCount = 0;
-  let localRecordingsTotalBytes = 0;
-  try {
-    const files = readdirSync(RECORDINGS_DIR).filter((f) => !f.startsWith("."));
-    localRecordingsCount = files.length;
-    for (const f of files) {
-      try {
-        localRecordingsTotalBytes += statSync(join(RECORDINGS_DIR, f)).size;
-      } catch {
-      }
-    }
-  } catch {
-  }
-  return {
-    localDiskWritable,
-    objectStorageConfigured: isObjectStorageConfigured(),
-    localRecordingsCount,
-    localRecordingsTotalBytes
-  };
-}
-var RECORDINGS_DIR;
-var init_storageAdapter = __esm({
-  "server/storageAdapter.ts"() {
-    "use strict";
-    init_storage();
-    init_env();
-    RECORDINGS_DIR = resolve(process.cwd(), "uploads", "recordings");
   }
 });
 

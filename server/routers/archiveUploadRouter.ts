@@ -920,6 +920,54 @@ async function runSpecialisedAlgorithms(
 
 export const archiveUploadRouter = router({
 
+  platformHealth: publicProcedure.query(async () => {
+    const { validateEnv } = await import("../_core/config/env");
+    const { getServiceStatus } = await import("../_core/config/serviceStatus");
+    const { getStorageHealth } = await import("../storageAdapter");
+    const validation = validateEnv();
+    return {
+      ok: validation.isCoreValid,
+      environment: process.env.NODE_ENV ?? "development",
+      coreReady: validation.isCoreValid,
+      missingCore: validation.missing.map((m: any) => m.key),
+      missingOptional: validation.warnings.map((w: any) => ({ key: w.key, requiredFor: w.requiredFor })),
+      services: getServiceStatus(),
+      storage: getStorageHealth(),
+      timestamp: new Date().toISOString(),
+    };
+  }),
+
+  platformAuthStatus: publicProcedure.query(async ({ ctx }) => {
+    const oauthEnabled = Boolean(process.env.OAUTH_SERVER_URL);
+    let user = null;
+    try {
+      const { sdk } = await import("../_core/sdk");
+      const sessionUser = await sdk.authenticateRequest(ctx.req);
+      if (sessionUser) {
+        user = { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email, role: sessionUser.role };
+      }
+    } catch {}
+    return { authenticated: Boolean(user), mode: oauthEnabled ? "oauth" : "dev-bypass", user, oauthConfigured: oauthEnabled };
+  }),
+
+  platformArchiveDownloads: publicProcedure.query(async () => {
+    const [rows] = await rawSql(
+      `SELECT id, event_name, client_name, event_type, event_date, status,
+              length(transcript_text) as transcript_len, recording_path
+       FROM archive_events ORDER BY id DESC`,
+      [],
+    );
+    return {
+      count: (rows as any[]).length,
+      items: (rows as any[]).map((r: any) => ({
+        id: r.id, event_name: r.event_name, client_name: r.client_name,
+        event_type: r.event_type, event_date: r.event_date, status: r.status,
+        has_transcript: (r.transcript_len ?? 0) > 0,
+        has_recording: !!(r.recording_path && r.recording_path.trim().length > 0),
+      })),
+    };
+  }),
+
   processTranscript: publicProcedure
     .input(
       z.object({
