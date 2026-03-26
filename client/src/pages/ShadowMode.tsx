@@ -2701,8 +2701,34 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                       </Button>
                       <Button onClick={() => { setEmailModalArchiveId(selectedArchiveId); setEmailForm({ recipientEmail: "", recipientName: "" }); }}
                         className="bg-cyan-600 hover:bg-cyan-500 gap-2">
-                        <FileText className="w-4 h-4" /> Email Report to Customer
+                        <FileText className="w-4 h-4" /> Email Report
                       </Button>
+                      <a
+                        href={archiveDetail.data?.has_recording ? `/api/archives/${selectedArchiveId}/recording` : undefined}
+                        download
+                        onClick={(e) => { if (!archiveDetail.data?.has_recording) { e.preventDefault(); toast.info("No recording available for this event. Recordings are stored when events are captured via live session or uploaded with audio."); } }}
+                      >
+                        <Button type="button" className={`gap-2 ${
+                          archiveDetail.data?.has_recording
+                            ? "bg-emerald-600 hover:bg-emerald-500"
+                            : "bg-slate-700 hover:bg-slate-600 opacity-60"
+                        }`}>
+                          <Mic className="w-4 h-4" /> Download Recording
+                        </Button>
+                      </a>
+                      <a
+                        href={archiveDetail.data?.has_transcript ? `/api/archives/${selectedArchiveId}/transcript` : undefined}
+                        download
+                        onClick={(e) => { if (!archiveDetail.data?.has_transcript) { e.preventDefault(); toast.info("No transcript available for this event."); } }}
+                      >
+                        <Button type="button" className={`gap-2 ${
+                          archiveDetail.data?.has_transcript
+                            ? "bg-blue-600 hover:bg-blue-500"
+                            : "bg-slate-700 hover:bg-slate-600 opacity-60"
+                        }`}>
+                          <Download className="w-4 h-4" /> Download Transcript
+                        </Button>
+                      </a>
                     </div>
                   </div>
                 ) : (
