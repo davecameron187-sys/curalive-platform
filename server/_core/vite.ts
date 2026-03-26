@@ -65,7 +65,7 @@ export function serveStatic(app: Express) {
     if (url.startsWith("/api/") || url.startsWith("/health")) {
       return next();
     }
-    const indexPath = path.resolve(distPath, "index.html");
+    const indexPath = path.resolve(distPath, "_index.html");
     let html = fs.readFileSync(indexPath, "utf-8");
 
     const assetsDir = path.resolve(distPath, "assets");

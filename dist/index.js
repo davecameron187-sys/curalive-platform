@@ -39784,7 +39784,7 @@ function serveStatic(app) {
     if (url.startsWith("/api/") || url.startsWith("/health")) {
       return next();
     }
-    const indexPath = path3.resolve(distPath, "index.html");
+    const indexPath = path3.resolve(distPath, "_index.html");
     let html = fs2.readFileSync(indexPath, "utf-8");
     const assetsDir = path3.resolve(distPath, "assets");
     if (fs2.existsSync(assetsDir)) {
