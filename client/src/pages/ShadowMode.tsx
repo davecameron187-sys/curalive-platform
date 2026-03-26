@@ -1949,7 +1949,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                           <h3 className="text-lg font-semibold text-slate-200">{archiveDetail.data.event_name}</h3>
                           <p className="text-sm text-slate-500 mt-0.5">{archiveDetail.data.client_name} · {EVENT_TYPE_LABELS[archiveDetail.data.event_type] ?? archiveDetail.data.event_type}{archiveDetail.data.event_date ? ` · ${archiveDetail.data.event_date}` : ""}</p>
                         </div>
-                        <div className="flex gap-2 shrink-0">
+                        <div className="flex gap-2 shrink-0 flex-wrap justify-end">
                           {!archiveDetail.data.ai_report && (
                             <Button size="sm" onClick={() => generateReport.mutate({ archiveId: selectedArchiveId! })}
                               disabled={generateReport.isPending}
@@ -1958,42 +1958,35 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                               Generate AI Report
                             </Button>
                           )}
-                        </div>
-                      </div>
-
-                      <div className="mt-4 pt-4 border-t border-white/10">
-                        <div className="flex gap-1 border-b border-white/10 pb-0">
-                          <button
-                            onClick={() => { setEmailModalArchiveId(selectedArchiveId); setEmailForm({ recipientEmail: "", recipientName: "" }); }}
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg border border-b-0 border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors"
-                          >
+                          <Button size="sm" onClick={() => { setEmailModalArchiveId(selectedArchiveId); setEmailForm({ recipientEmail: "", recipientName: "" }); }}
+                            className="bg-cyan-600 hover:bg-cyan-500 gap-2">
                             <FileText className="w-3.5 h-3.5" /> Email Report
-                          </button>
+                          </Button>
                           <a
                             href={archiveDetail.data?.has_recording ? `/api/archives/${selectedArchiveId}/recording` : undefined}
                             download
                             onClick={(e) => { if (!archiveDetail.data?.has_recording) { e.preventDefault(); toast.info("No recording available for this event. Recordings are stored when events are captured via live session or uploaded with audio."); } }}
-                            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg border border-b-0 transition-colors ${
-                              archiveDetail.data?.has_recording
-                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer"
-                                : "border-white/10 bg-white/[0.02] text-slate-500 cursor-not-allowed"
-                            }`}
                           >
-                            <Mic className="w-3.5 h-3.5" /> Download Recording
-                            {!archiveDetail.data?.has_recording && <span className="text-[10px] text-slate-600 ml-1">(N/A)</span>}
+                            <Button size="sm" type="button" className={`gap-2 ${
+                              archiveDetail.data?.has_recording
+                                ? "bg-emerald-600 hover:bg-emerald-500"
+                                : "bg-slate-700 hover:bg-slate-600 opacity-60"
+                            }`}>
+                              <Mic className="w-3.5 h-3.5" /> Download Recording
+                            </Button>
                           </a>
                           <a
                             href={archiveDetail.data?.has_transcript ? `/api/archives/${selectedArchiveId}/transcript` : undefined}
                             download
                             onClick={(e) => { if (!archiveDetail.data?.has_transcript) { e.preventDefault(); toast.info("No transcript available for this event."); } }}
-                            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg border border-b-0 transition-colors ${
-                              archiveDetail.data?.has_transcript
-                                ? "border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 cursor-pointer"
-                                : "border-white/10 bg-white/[0.02] text-slate-500 cursor-not-allowed"
-                            }`}
                           >
-                            <Download className="w-3.5 h-3.5" /> Download Transcript
-                            {!archiveDetail.data?.has_transcript && <span className="text-[10px] text-slate-600 ml-1">(N/A)</span>}
+                            <Button size="sm" type="button" className={`gap-2 ${
+                              archiveDetail.data?.has_transcript
+                                ? "bg-blue-600 hover:bg-blue-500"
+                                : "bg-slate-700 hover:bg-slate-600 opacity-60"
+                            }`}>
+                              <Download className="w-3.5 h-3.5" /> Download Transcript
+                            </Button>
                           </a>
                         </div>
                       </div>
