@@ -80,8 +80,14 @@ async function startServer() {
 
   const isProd = process.env.NODE_ENV === "production";
 
-  app.get("/ping-test", (_req, res) => {
-    res.json({ alive: true, node_env: process.env.NODE_ENV, ts: Date.now() });
+  app.use((req, res, next) => {
+    if (req.path === "/ping-test") {
+      return res.json({ alive: true, node_env: process.env.NODE_ENV, ts: Date.now() });
+    }
+    if (req.path === "/health" || req.path.startsWith("/api/")) {
+      console.log(`[RouteDebug] API request reaching Express: ${req.method} ${req.path}`);
+    }
+    next();
   });
 
   app.get("/health", async (_req, res) => {
