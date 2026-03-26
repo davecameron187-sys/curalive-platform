@@ -2940,6 +2940,7 @@ export const archiveEvents = pgTable("archive_events", {
   specialisedSessionId: integer("specialised_session_id"),
   specialisedSessionType: varchar("specialised_session_type", { length: 32 }),
   recordingPath: varchar("recording_path", { length: 1000 }),
+  transcriptFingerprint: varchar("transcript_fingerprint", { length: 64 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

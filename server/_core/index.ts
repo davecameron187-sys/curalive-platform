@@ -60,6 +60,19 @@ function validateShadowModeEnv() {
   }
 }
 
+async function ensureArchiveEventsColumns() {
+  try {
+    const { rawSql } = await import("../db");
+    await rawSql(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcript_fingerprint VARCHAR(64)`);
+    console.log("[Migration] ✓ archive_events.transcript_fingerprint column ensured");
+  } catch (err: any) {
+    if (err?.message?.includes("already exists") || err?.message?.includes("does not exist")) {
+      return;
+    }
+    console.warn("[Migration] archive_events column check skipped:", err?.message);
+  }
+}
+
 async function startServer() {
   const app = express();
   const server = http.createServer(app);
@@ -70,6 +83,10 @@ async function startServer() {
   app.use(systemStatusRouter);
 
   validateShadowModeEnv();
+
+  ensureArchiveEventsColumns().catch(err =>
+    console.warn("[Migration] Non-blocking column migration failed:", err?.message)
+  );
 
   if (!isProd) {
     app.use("/__mockup", (req, res) => {

@@ -145,6 +145,12 @@ Optional (not yet configured, non-critical for app loading):
 - **Async persistence**: After local save, recordings are asynchronously streamed to object storage for durability
 - **Health diagnostics**: `/health` endpoint includes `storage` field with `localDiskWritable`, `objectStorageConfigured`, `localRecordingsCount`, `localRecordingsTotalBytes`
 
+## Database Migrations
+
+- **Startup migrations**: `ensureArchiveEventsColumns()` in `server/_core/index.ts` runs `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` at server start to ensure schema is up-to-date in both dev and production
+- **Drizzle migrations**: Old MySQL-style migrations in `drizzle/` are broken; schema changes use startup ALTER TABLE instead
+- **archive_events columns**: `transcript_fingerprint` (VARCHAR 64) added via startup migration — used for duplicate content detection
+
 ## Deployment
 
 - **Artifact**: `artifacts/api-server` (kind: web, previewPath: `/`)
