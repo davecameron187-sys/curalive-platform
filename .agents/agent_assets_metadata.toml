@@ -348,3 +348,9 @@ id = "uxJuwRxMGeiT0O2H9WU6U"
 uri = "file://docs/TECHNICAL-BRIEF-Download-Buttons-Deployment-Issue.md"
 type = "text"
 title = "Technical Brief: Download Buttons Deployment Issue"
+
+[[outputs]]
+id = "bT8mgsT_me3rfjts7ZD-g"
+uri = "file://docs/CURALIVE_COMPLETE_TECHNICAL_SPEC.md"
+type = "text"
+title = "CuraLive — Complete Technical Specification"
