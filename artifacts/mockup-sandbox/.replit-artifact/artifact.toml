@@ -17,11 +17,6 @@ paths = ["/__mockup/"]
 [services.development]
 run = "npm run dev"
 
-[services.production]
-serve = "static"
-publicDir = "dist"
-build = "cd /home/runner/workspace/artifacts/mockup-sandbox && PORT=23636 BASE_PATH=/__mockup/ npm run build"
-
 [services.env]
 PORT = "23636"
 BASE_PATH = "/__mockup/"
