@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CuraLive — System Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #2d3436;
+    background: linear-gradient(135deg, #2d3436 0%, #1a1d23 50%, #2d3436 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+  .diagram {
+    position: relative;
+    width: 1500px;
+    height: 1200px;
+  }
+  .logo {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+  }
+  .logo h1 {
+    font-size: 42px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 40px rgba(59,130,246,0.5);
+    letter-spacing: 2px;
+  }
+  .logo p {
+    font-size: 13px;
+    color: #71717a;
+    margin-top: 2px;
+  }
+  .node {
+    position: absolute;
+    text-align: center;
+    cursor: default;
+  }
+  .node img {
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6));
+    transition: transform 0.3s ease;
+  }
+  .node img:hover {
+    transform: scale(1.08);
+  }
+  .node .label {
+    font-size: 14px;
+    font-weight: 700;
+    margin-top: 6px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  }
+  .node .sublabel {
+    font-size: 10px;
+    color: #a1a1aa;
+    margin-top: 2px;
+    line-height: 1.4;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+  .detail-box {
+    position: absolute;
+    background: rgba(30,32,40,0.9);
+    border-radius: 12px;
+    padding: 14px 16px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .detail-box h3 {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .detail-box ul {
+    list-style: none;
+    font-size: 9.5px;
+    color: #a1a1aa;
+    line-height: 1.7;
+  }
+  .detail-box ul li::before {
+    content: ">";
+    margin-right: 5px;
+    opacity: 0.5;
+  }
+  .conn-label {
+    position: absolute;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(30,32,40,0.95);
+    backdrop-filter: blur(4px);
+    white-space: nowrap;
+  }
+  svg.connections {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .footer {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    font-size: 11px;
+    color: #52525b;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="diagram">
+
+  <svg class="connections" viewBox="0 0 1500 1200">
+    <defs>
+      <marker id="ah-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#f97316"/></marker>
+      <marker id="ah-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#3b82f6"/></marker>
+      <marker id="ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#22c55e"/></marker>
+      <marker id="ah-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#8b5cf6"/></marker>
+      <marker id="ah-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#ef4444"/></marker>
+      <marker id="ah-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#14b8a6"/></marker>
+      <marker id="ah-yellow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#eab308"/></marker>
+    </defs>
+
+    <!-- Browser -> Server -->
+    <path d="M200 290 C200 400, 550 380, 550 470" stroke="#f97316" stroke-width="2.5" fill="none" stroke-dasharray="8,4" marker-end="url(#ah-orange)" opacity="0.7"/>
+    <!-- Phone -> Server -->
+    <path d="M430 310 C430 380, 600 400, 620 470" stroke="#f97316" stroke-width="2.5" fill="none" stroke-dasharray="8,4" marker-end="url(#ah-orange)" opacity="0.7"/>
+    <!-- Shadow -> Server -->
+    <path d="M750 280 C750 370, 700 400, 680 470" stroke="#8b5cf6" stroke-width="2.5" fill="none" stroke-dasharray="8,4" marker-end="url(#ah-violet)" opacity="0.7"/>
+    <!-- Mobile -> Server -->
+    <path d="M1050 310 C1050 380, 780 400, 740 470" stroke="#f97316" stroke-width="2.5" fill="none" stroke-dasharray="8,4" marker-end="url(#ah-orange)" opacity="0.7"/>
+    <!-- API -> Server -->
+    <path d="M1300 280 C1300 370, 850 400, 780 470" stroke="#eab308" stroke-width="2.5" fill="none" stroke-dasharray="8,4" marker-end="url(#ah-yellow)" opacity="0.7"/>
+
+    <!-- Server -> AI Brain -->
+    <path d="M580 620 C500 660, 300 670, 240 700" stroke="#8b5cf6" stroke-width="3" fill="none" marker-end="url(#ah-violet)" opacity="0.8"/>
+    <!-- Server -> Database -->
+    <path d="M700 630 C700 700, 720 720, 740 770" stroke="#14b8a6" stroke-width="3" fill="none" marker-end="url(#ah-teal)" opacity="0.8"/>
+    <!-- Server -> Shield -->
+    <path d="M800 620 C900 660, 1100 680, 1180 710" stroke="#ef4444" stroke-width="3" fill="none" marker-end="url(#ah-red)" opacity="0.8"/>
+    <!-- AI Brain -> Database -->
+    <path d="M280 870 C350 920, 600 930, 700 900" stroke="#8b5cf6" stroke-width="2" fill="none" stroke-dasharray="6,4" marker-end="url(#ah-violet)" opacity="0.5"/>
+    <!-- Shield -> Database -->
+    <path d="M1180 870 C1050 920, 850 920, 780 900" stroke="#ef4444" stroke-width="2" fill="none" stroke-dasharray="6,4" marker-end="url(#ah-red)" opacity="0.5"/>
+
+    <!-- Server -> Integrations -->
+    <path d="M680 630 C680 1000, 750 1020, 750 1030" stroke="#22c55e" stroke-width="2.5" fill="none" stroke-dasharray="8,4" marker-end="url(#ah-green)" opacity="0.6"/>
+    <!-- AI Brain <-> Shield cross-feed -->
+    <path d="M340 810 C500 780, 1000 780, 1130 810" stroke="#71717a" stroke-width="1.5" fill="none" stroke-dasharray="4,4" opacity="0.3"/>
+
+    <!-- FRONTEND detail box connection -->
+    <path d="M200 360 L48 400" stroke="#22c55e" stroke-width="1.5" fill="none" stroke-dasharray="5,3" opacity="0.4"/>
+    <!-- BACKEND detail box connection -->
+    <path d="M700 640 L1350 640" stroke="#3b82f6" stroke-width="1.5" fill="none" stroke-dasharray="5,3" opacity="0.3"/>
+  </svg>
+
+  <!-- LOGO -->
+  <div class="logo">
+    <h1>CuraLive</h1>
+    <p>Real-Time Investor Events Platform  |  Complete System Architecture</p>
+  </div>
+
+  <!-- ===== ENTRY POINTS (top row) ===== -->
+
+  <!-- Browser -->
+  <div class="node" style="left:120px; top:120px; width:160px;">
+    <img src="/diagram-assets/icon-browser.png" width="130" height="130" alt="Web Browser">
+    <div class="label" style="color:#f97316;">Web Browser</div>
+    <div class="sublabel">Operator, Admin &amp; Attendee<br>Dashboard, OCC, Event Rooms</div>
+  </div>
+
+  <!-- Phone -->
+  <div class="node" style="left:350px; top:140px; width:160px;">
+    <img src="/diagram-assets/icon-phone.png" width="120" height="120" alt="Phone Dial-In">
+    <div class="label" style="color:#f97316;">Phone Dial-In</div>
+    <div class="sublabel">Conference bridge<br>with unique PIN</div>
+  </div>
+
+  <!-- Shadow Mode -->
+  <div class="node" style="left:660px; top:100px; width:180px;">
+    <img src="/diagram-assets/icon-shadow.png" width="140" height="140" alt="Shadow Mode">
+    <div class="label" style="color:#a78bfa;">Shadow Mode</div>
+    <div class="sublabel">Recall.ai bot joins<br>external calls silently</div>
+  </div>
+
+  <!-- Mobile -->
+  <div class="node" style="left:970px; top:140px; width:160px;">
+    <img src="/diagram-assets/icon-mobile.png" width="120" height="120" alt="Mobile Room">
+    <div class="label" style="color:#f97316;">Mobile Room</div>
+    <div class="sublabel">5-panel swipeable:<br>Video, Transcript, Q&amp;A, Polls, Info</div>
+  </div>
+
+  <!-- CRM API -->
+  <div class="node" style="left:1220px; top:100px; width:160px;">
+    <img src="/diagram-assets/icon-api.png" width="140" height="140" alt="CRM API">
+    <div class="label" style="color:#facc15;">CRM / Partner API</div>
+    <div class="sublabel">REST + Webhooks<br>API Key auth (clv_)</div>
+  </div>
+
+  <!-- ===== Connection Labels ===== -->
+  <div class="conn-label" style="left:280px; top:350px; color:#f97316; border:1px solid rgba(249,115,22,0.3);">HTTP / WebSocket</div>
+  <div class="conn-label" style="left:560px; top:380px; color:#f97316; border:1px solid rgba(249,115,22,0.3);">tRPC Calls</div>
+  <div class="conn-label" style="left:850px; top:350px; color:#8b5cf6; border:1px solid rgba(139,92,246,0.3);">Recall.ai Audio Stream</div>
+  <div class="conn-label" style="left:1150px; top:350px; color:#eab308; border:1px solid rgba(234,179,8,0.3);">REST API (clv_***)</div>
+
+  <!-- ===== CENTER: SERVER ===== -->
+  <div class="node" style="left:560px; top:430px; width:220px;">
+    <img src="/diagram-assets/icon-server.png" width="180" height="180" alt="Express + tRPC Server">
+    <div class="label" style="color:#3b82f6; font-size:16px;">Express + tRPC Server</div>
+    <div class="sublabel">45+ Routers  |  Port 5000<br>React 19 + Vite Frontend</div>
+  </div>
+
+  <!-- ===== BOTTOM LEFT: AI BRAIN ===== -->
+  <div class="node" style="left:120px; top:680px; width:220px;">
+    <img src="/diagram-assets/icon-ai-brain.png" width="180" height="180" alt="AI Agentic Brain">
+    <div class="label" style="color:#a78bfa; font-size:15px;">AI Agentic Brain</div>
+    <div class="sublabel">OpenAI GPT-4o<br>Sentiment | Transcription | Intelligence</div>
+  </div>
+
+  <!-- ===== BOTTOM CENTER: DATABASE ===== -->
+  <div class="node" style="left:580px; top:750px; width:200px;">
+    <img src="/diagram-assets/icon-database.png" width="160" height="160" alt="MySQL Database">
+    <div class="label" style="color:#2dd4bf; font-size:15px;">MySQL Database</div>
+    <div class="sublabel">Drizzle ORM  |  80+ Tables<br>2,700+ schema lines</div>
+  </div>
+
+  <!-- ===== BOTTOM RIGHT: COMPLIANCE SHIELD ===== -->
+  <div class="node" style="left:1060px; top:680px; width:220px;">
+    <img src="/diagram-assets/icon-shield.png" width="180" height="180" alt="Compliance Engine">
+    <div class="label" style="color:#f87171; font-size:15px;">Compliance &amp; Security</div>
+    <div class="sublabel">ISO 27001 + SOC 2 Type II<br>AI Threat Detection (5-min scans)<br>Health Guardian (30s checks)</div>
+  </div>
+
+  <!-- ===== VERY BOTTOM: EXTERNAL INTEGRATIONS ===== -->
+  <div class="node" style="left:580px; top:1010px; width:220px;">
+    <img src="/diagram-assets/icon-integrations.png" width="160" height="160" alt="External Integrations">
+    <div class="label" style="color:#22c55e; font-size:14px;">External Integrations</div>
+    <div class="sublabel">Twilio | Ably | Mux Video | Stripe | Recall.ai | GitHub</div>
+  </div>
+
+  <!-- ===== DETAIL BOXES ===== -->
+
+  <!-- Frontend Features (left) -->
+  <div class="detail-box" style="left:16px; top:400px; width:200px; border-color:rgba(34,197,94,0.25);">
+    <h3 style="color:#4ade80;">Frontend Pages</h3>
+    <ul>
+      <li>Dashboard &amp; OCC</li>
+      <li>Webcast Studio</li>
+      <li>Event Scheduler / Bookings</li>
+      <li>Intelligence Terminal</li>
+      <li>Tagged Metrics</li>
+      <li>Compliance Engine</li>
+      <li>Health Guardian</li>
+      <li>Billing / Admin</li>
+      <li>Client Portal</li>
+    </ul>
+  </div>
+
+  <!-- Backend Routers (right) -->
+  <div class="detail-box" style="left:1280px; top:440px; width:200px; border-color:rgba(59,130,246,0.25);">
+    <h3 style="color:#60a5fa;">Backend Routers (45+)</h3>
+    <ul>
+      <li>occ / events / webcast</li>
+      <li>registrations / scheduling</li>
+      <li>agenticBrain / sentiment</li>
+      <li>transcription / shadowMode</li>
+      <li>complianceEngine</li>
+      <li>soc2 / iso27001</li>
+      <li>healthGuardian</li>
+      <li>billing / crmApi</li>
+      <li>mailingList / branding</li>
+      <li>mux / ably / recall</li>
+    </ul>
+  </div>
+
+  <!-- AI Services (left bottom) -->
+  <div class="detail-box" style="left:16px; top:870px; width:200px; border-color:rgba(139,92,246,0.25);">
+    <h3 style="color:#a78bfa;">AI Services</h3>
+    <ul>
+      <li>Live Transcription</li>
+      <li>Per-speaker Sentiment</li>
+      <li>Speaking Pace Coach</li>
+      <li>Q&amp;A Auto-Triage</li>
+      <li>Content Generation</li>
+      <li>Event Brief / Recap</li>
+      <li>Predictive Analytics</li>
+      <li>Language Dubber (8 langs)</li>
+    </ul>
+  </div>
+
+  <!-- Data Tables (center bottom) -->
+  <div class="detail-box" style="left:420px; top:940px; width:160px; border-color:rgba(20,184,166,0.25);">
+    <h3 style="color:#2dd4bf;">Key Tables</h3>
+    <ul>
+      <li>users / events</li>
+      <li>attendee_registrations</li>
+      <li>occ_conferences</li>
+      <li>webcast_events</li>
+      <li>agentic_analyses</li>
+      <li>compliance_threats</li>
+      <li>soc2_controls (18)</li>
+      <li>iso27001_controls (16)</li>
+    </ul>
+  </div>
+
+  <!-- Compliance Detail (right bottom) -->
+  <div class="detail-box" style="left:1280px; top:750px; width:200px; border-color:rgba(239,68,68,0.25);">
+    <h3 style="color:#f87171;">Security Features</h3>
+    <ul>
+      <li>Compliance Engine (5-min)</li>
+      <li>Registration fraud detection</li>
+      <li>Access anomaly monitoring</li>
+      <li>Data exfiltration alerts</li>
+      <li>AI threat assessment</li>
+      <li>Health Guardian (30s)</li>
+      <li>Anomaly detection (2.5 sigma)</li>
+      <li>Auto-incident + root cause</li>
+    </ul>
+  </div>
+
+  <!-- Connection labels between bottom nodes -->
+  <div class="conn-label" style="left:380px; top:740px; color:#8b5cf6; border:1px solid rgba(139,92,246,0.3);">AI queries &amp; writes threats</div>
+  <div class="conn-label" style="left:420px; top:670px; color:#a78bfa; border:1px solid rgba(139,92,246,0.2);">GPT-4o Analysis</div>
+  <div class="conn-label" style="left:810px; top:670px; color:#14b8a6; border:1px solid rgba(20,184,166,0.2);">SQL via Drizzle ORM</div>
+  <div class="conn-label" style="left:920px; top:740px; color:#ef4444; border:1px solid rgba(239,68,68,0.3);">Scans + scores frameworks</div>
+  <div class="conn-label" style="left:600px; top:710px; color:#71717a; border:1px solid rgba(113,113,122,0.2);">Cross-feed</div>
+
+  <!-- Footer -->
+  <div class="footer">
+    CuraLive &copy; 2026  |  Provisional Patent Filed (CIPC - South Africa)  |  ISO 27001 + SOC 2 Type II Compliant  |  Built for Microsoft / Zoom Acquisition
+  </div>
+
+</div>
+</body>
+</html>
