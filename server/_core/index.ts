@@ -632,14 +632,15 @@ async function startServer() {
   app.get("/api/archives/:id/transcript", async (req, res) => {
     try {
       const archiveId = parseInt(req.params.id, 10);
-      if (isNaN(archiveId)) return res.status(400).send("Invalid archive ID");
+      if (isNaN(archiveId)) return res.status(400).json({ error: "Invalid archive ID" });
       const { rawSql } = await import("../db");
       const [rows] = await rawSql(
         `SELECT event_name, client_name, event_date, transcript_text FROM archive_events WHERE id = ? LIMIT 1`,
         [archiveId]
       );
       const row = (rows as any[])[0];
-      if (!row || !row.transcript_text) return res.status(404).send("Transcript not found");
+      if (!row) return res.status(404).json({ error: "Archive event not found", archiveId });
+      if (!row.transcript_text) return res.status(404).json({ error: "No transcript available for this event", archiveId });
       const safeName = (row.event_name || "transcript").replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
       const header = `CuraLive Intelligence Transcript\n${"=".repeat(40)}\nEvent: ${row.event_name}\nClient: ${row.client_name}\nDate: ${row.event_date || "N/A"}\n${"=".repeat(40)}\n\n`;
       const content = header + row.transcript_text;
@@ -648,37 +649,52 @@ async function startServer() {
       res.send(content);
     } catch (err: any) {
       console.error("[Archive Transcript Download]", err.message);
-      res.status(500).send("Failed to download transcript");
+      res.status(500).json({ error: "Failed to download transcript" });
     }
   });
 
   app.get("/api/archives/:id/recording", async (req, res) => {
     try {
       const archiveId = parseInt(req.params.id, 10);
-      if (isNaN(archiveId)) return res.status(400).send("Invalid archive ID");
+      if (isNaN(archiveId)) return res.status(400).json({ error: "Invalid archive ID" });
       const { rawSql } = await import("../db");
       const [rows] = await rawSql(
         `SELECT event_name, recording_path FROM archive_events WHERE id = ? LIMIT 1`,
         [archiveId]
       );
       const row = (rows as any[])[0];
-      if (!row || !row.recording_path) return res.status(404).send("Recording not available for this event");
-      const fs = await import("fs");
-      const path = await import("path");
-      const RECORDINGS_BASE = path.resolve(process.cwd(), "uploads", "recordings");
-      const filePath = path.resolve(RECORDINGS_BASE, path.basename(row.recording_path));
-      const normalised = path.normalize(filePath);
-      if (!normalised.startsWith(RECORDINGS_BASE)) return res.status(403).send("Access denied");
-      if (!fs.existsSync(filePath)) return res.status(404).send("Recording file not found on server");
+      if (!row) return res.status(404).json({ error: "Archive event not found", archiveId });
+      if (!row.recording_path) return res.status(404).json({ error: "No recording associated with this event. The transcript can still be downloaded separately.", archiveId });
+
+      const { resolveRecordingFile } = await import("../storageAdapter");
+      const resolution = await resolveRecordingFile(row.recording_path);
+
+      if (!resolution.found) {
+        return res.status(404).json({
+          error: "Recording file not found. It may have been lost during a server restart. The transcript is still available.",
+          archiveId,
+          source: resolution.source,
+        });
+      }
+
       const safeName = (row.event_name || "recording").replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
-      res.setHeader("Content-Type", "audio/mpeg");
-      res.setHeader("Content-Disposition", `attachment; filename="${safeName}_Recording.mp3"`);
-      res.sendFile(filePath, (err) => {
-        if (err && !res.headersSent) res.status(500).send("Failed to send recording");
-      });
+
+      if (resolution.source === "object-storage" && resolution.url) {
+        return res.redirect(302, resolution.url);
+      }
+
+      if (resolution.localPath) {
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Content-Disposition", `attachment; filename="${safeName}_Recording.mp3"`);
+        res.sendFile(resolution.localPath, (err) => {
+          if (err && !res.headersSent) res.status(500).json({ error: "Failed to send recording file" });
+        });
+      } else {
+        res.status(404).json({ error: "Recording resolved but no path available" });
+      }
     } catch (err: any) {
       console.error("[Archive Recording Download]", err.message);
-      res.status(500).send("Failed to download recording");
+      res.status(500).json({ error: "Failed to download recording" });
     }
   });
 
@@ -715,14 +731,14 @@ async function startServer() {
     try {
       const { rawSql } = await import("../db");
       const archiver = (await import("archiver")).default;
+      const { resolveRecordingFile } = await import("../storageAdapter");
       const fs = await import("fs");
-      const path = await import("path");
 
       const idsParam = req.query.ids as string | undefined;
       let rows: any[];
       if (idsParam) {
         const ids = idsParam.split(",").map(Number).filter(n => !isNaN(n) && n > 0);
-        if (ids.length === 0) return res.status(400).send("No valid IDs provided");
+        if (ids.length === 0) return res.status(400).json({ error: "No valid IDs provided" });
         const placeholders = ids.map(() => "?").join(",");
         const [result] = await rawSql(
           `SELECT id, event_name, client_name, event_date, transcript_text, recording_path
@@ -739,16 +755,16 @@ async function startServer() {
         rows = result as any[];
       }
       const events = rows as any[];
-      if (events.length === 0) return res.status(404).send("No archive events found");
+      if (events.length === 0) return res.status(404).json({ error: "No archive events with transcripts found" });
+
+      if (events.length > 500) return res.status(413).json({ error: "Too many events to zip at once (max 500)" });
 
       const datestamp = new Date().toISOString().slice(0, 10);
       res.setHeader("Content-Type", "application/zip");
       res.setHeader("Content-Disposition", `attachment; filename="CuraLive_Archives_${datestamp}.zip"`);
 
-      if (events.length > 500) return res.status(413).send("Too many events to zip at once.");
-
       const archive = archiver("zip", { zlib: { level: 6 } });
-      archive.on("error", (err: any) => { if (!res.headersSent) res.status(500).send("Zip failed"); });
+      archive.on("error", (err: any) => { if (!res.headersSent) res.status(500).json({ error: "Zip creation failed" }); });
       req.on("close", () => { archive.abort(); });
       archive.pipe(res);
 
@@ -760,10 +776,9 @@ async function startServer() {
         archive.append(header + ev.transcript_text, { name: `${folder}/${safeName}_Transcript.txt` });
 
         if (ev.recording_path && ev.recording_path.trim()) {
-          const RECORDINGS_BASE = path.resolve(process.cwd(), "uploads", "recordings");
-          const filePath = path.resolve(RECORDINGS_BASE, path.basename(ev.recording_path));
-          if (fs.existsSync(filePath)) {
-            archive.file(filePath, { name: `${folder}/${safeName}_Recording.mp3` });
+          const resolution = await resolveRecordingFile(ev.recording_path);
+          if (resolution.found && resolution.localPath && fs.existsSync(resolution.localPath)) {
+            archive.file(resolution.localPath, { name: `${folder}/${safeName}_Recording.mp3` });
           }
         }
       }
@@ -771,7 +786,7 @@ async function startServer() {
       await archive.finalize();
     } catch (err: any) {
       console.error("[Archive Download All]", err.message);
-      if (!res.headersSent) res.status(500).send("Failed to create archive zip");
+      if (!res.headersSent) res.status(500).json({ error: "Failed to create archive zip" });
     }
   });
 

@@ -124,9 +124,9 @@ Optional (not yet configured, non-critical for app loading):
 
 ## REST Endpoints (non-tRPC)
 
-- `GET /health` — System health + service status (returns core/integration availability)
-- `GET /api/archives/:id/transcript` — Download transcript as `.txt` file
-- `GET /api/archives/:id/recording` — Download recording as `.mp3` file
+- `GET /health` — System health + service status + storage diagnostics (local disk writable, object storage configured, recording file count/size)
+- `GET /api/archives/:id/transcript` — Download transcript as `.txt` file (independent of recording)
+- `GET /api/archives/:id/recording` — Download recording (resolves via object storage first, local disk fallback; path traversal protected)
 - `POST /api/webphone/twiml` — Twilio TwiML voice endpoint
 - `POST /api/conference-dialout/twiml` — Conference dial-out TwiML
 - `POST /api/conference-dialout/status` — Conference call status callback
@@ -134,6 +134,16 @@ Optional (not yet configured, non-critical for app loading):
 - `POST /api/upload/slide-deck` — Slide deck upload
 - `POST /api/upload/recording` — Recording upload
 - `POST /api/transcribe/audio` — Audio transcription
+
+## Storage Architecture
+
+- **Storage adapter**: `server/storageAdapter.ts` — unified file resolution with object storage + local disk fallback
+- **Object storage**: Uses Replit's built-in forge API (`ENV.forgeApiUrl` + `ENV.forgeApiKey` with fallback chain: `AI_INTEGRATIONS_OPENAI_API_KEY` → `BUILT_IN_FORGE_API_KEY` → `OPENAI_API_KEY`)
+- **Local recordings**: `uploads/recordings/` — ephemeral (lost on redeploy), used as write-through cache
+- **File resolution order**: Object storage first, local disk second (via `resolveRecordingFile()`)
+- **Upload hardening**: Extension allowlist (webm, mp4, ogg, wav, mp3, m4a, aac, flac), session ID sanitization, path traversal protection via `isWithinDir()`
+- **Async persistence**: After local save, recordings are asynchronously streamed to object storage for durability
+- **Health diagnostics**: `/health` endpoint includes `storage` field with `localDiskWritable`, `objectStorageConfigured`, `localRecordingsCount`, `localRecordingsTotalBytes`
 
 ## Deployment
 

@@ -1,12 +1,14 @@
 import { Router } from "express";
 import { getServiceStatus } from "../_core/config/serviceStatus";
 import { validateEnv } from "../_core/config/env";
+import { getStorageHealth } from "../storageAdapter";
 
 export const systemStatusRouter = Router();
 
 systemStatusRouter.get("/health", async (_req, res) => {
   const validation = validateEnv();
   const services = getServiceStatus();
+  const storage = getStorageHealth();
 
   return res.json({
     ok: validation.isCoreValid,
@@ -18,6 +20,7 @@ systemStatusRouter.get("/health", async (_req, res) => {
       requiredFor: w.requiredFor,
     })),
     services,
+    storage,
     timestamp: new Date().toISOString(),
   });
 });
