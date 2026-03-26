@@ -22,7 +22,7 @@ interface ServiceBaseline {
 }
 
 const CHECK_INTERVAL_MS = 30_000;
-const ANOMALY_THRESHOLD_SIGMA = 2.5;
+const ANOMALY_THRESHOLD_SIGMA = 4.0;
 const DEGRADED_LATENCY_MS: Record<ServiceName, number> = {
   database: 500,
   twilio: 2000,

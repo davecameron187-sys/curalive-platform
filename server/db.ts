@@ -21,7 +21,13 @@ function getPool(): pg.Pool | null {
   if (!_pool) {
     const connStr = getConnectionString();
     if (connStr) {
-      _pool = new pg.Pool({ connectionString: connStr });
+      _pool = new pg.Pool({
+        connectionString: connStr,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+        ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+      });
     }
   }
   return _pool;
@@ -29,10 +35,10 @@ function getPool(): pg.Pool | null {
 
 export async function getDb() {
   if (!_db) {
-    const connStr = getConnectionString();
-    if (connStr) {
+    const pool = getPool();
+    if (pool) {
       try {
-        _db = drizzle(connStr);
+        _db = drizzle(pool);
       } catch (error) {
         console.warn("[Database] Failed to connect:", error);
         _db = null;
@@ -242,10 +248,10 @@ export async function getEventPaceResults(eventId: string) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 function buildSyncDb() {
-  const connStr = getConnectionString();
-  if (connStr) {
+  const pool = getPool();
+  if (pool) {
     try {
-      return drizzle(connStr);
+      return drizzle(pool);
     } catch {
     }
   }
