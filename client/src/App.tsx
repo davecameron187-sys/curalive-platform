@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import LiveQaSession from "./pages/LiveQaSession";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import AgiToolGallery from "./pages/AgiToolGallery";
+import OperatorConsole from "./pages/OperatorConsole";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
             <Route path="/live-qa/:sessionId" component={LiveQaSession} />
             <Route path="/moderator/:sessionId" component={ModeratorDashboard} />
             <Route path="/agi-tools" component={AgiToolGallery} />
+            <Route path="/operator/:sessionId" component={OperatorConsole} />
             <Route component={NotFound} />
           </Switch>
         </TooltipProvider>
