@@ -1,20 +1,26 @@
 /**
- * Session State Machine Router — Database-Backed Implementation
- * Server-authoritative session lifecycle management with full persistence
+ * Session State Machine Router — Database-Backed Implementation with Ably Real-Time Sync
+ * Server-authoritative session lifecycle management with full persistence and real-time updates
  * 
  * This router implements a strict state machine:
  * idle → running → paused → ended
  * 
- * All state transitions are persisted to the database and logged for audit.
- * The UI is a thin client over this backend state.
+ * All state transitions are persisted to the database, logged for audit, and published to Ably
+ * for real-time UI updates. The UI is a thin client over this backend state.
+ * 
+ * Tasks Implemented:
+ * - Task 1.1: Session Persistence (database-backed state machine)
+ * - Task 1.2: Ably Real-Time Sync (publish state transitions to Ably channels)
+ * - Task 1.3: Action Logging (persist operator actions with Ably events)
  */
 
 import { z } from "zod";
 import { protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { operatorSessions, sessionStateTransitions } from "../../drizzle/schema";
+import { operatorSessions, sessionStateTransitions, operatorActions } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { publishToChannel } from "../_core/ably";
 
 // Type definitions
 export type SessionStatus = "idle" | "running" | "paused" | "ended";
@@ -107,6 +113,79 @@ async function logStateTransition(
     toState,
     metadata: metadata || null,
   });
+}
+
+/**
+ * Helper: Publish state transition to Ably for real-time updates
+ */
+async function publishStateTransitionEvent(
+  sessionId: string,
+  fromState: SessionStatus,
+  toState: SessionStatus,
+  metadata?: Record<string, any>
+): Promise<void> {
+  const channelName = `session:${sessionId}:state`;
+  const success = await publishToChannel(channelName, "state.changed", {
+    sessionId,
+    fromState,
+    toState,
+    timestamp: new Date().toISOString(),
+    metadata: metadata || null,
+  });
+
+  if (!success) {
+    console.warn(`[SessionStateMachine] Failed to publish state transition to Ably for session ${sessionId}`);
+  }
+}
+
+/**
+ * Helper: Log operator action to database
+ */
+async function logOperatorAction(
+  sessionId: string,
+  operatorId: number,
+  actionType: string,
+  targetId?: string,
+  targetType?: string,
+  metadata?: Record<string, any>
+): Promise<void> {
+  const database = await getDb();
+  if (!database) {
+    console.warn("[SessionStateMachine] Cannot log action: database not available");
+    return;
+  }
+
+  await database.insert(operatorActions).values({
+    sessionId,
+    operatorId,
+    actionType: actionType as any,
+    targetId: targetId || null,
+    targetType: targetType || null,
+    metadata: metadata || null,
+    syncedToViasocket: false,
+    createdAt: new Date(),
+  });
+}
+
+/**
+ * Helper: Publish operator action to Ably for real-time updates
+ */
+async function publishOperatorActionEvent(
+  sessionId: string,
+  actionType: string,
+  metadata?: Record<string, any>
+): Promise<void> {
+  const channelName = `session:${sessionId}:actions`;
+  const success = await publishToChannel(channelName, "action.created", {
+    sessionId,
+    actionType,
+    timestamp: new Date().toISOString(),
+    metadata: metadata || null,
+  });
+
+  if (!success) {
+    console.warn(`[SessionStateMachine] Failed to publish action event to Ably for session ${sessionId}`);
+  }
 }
 
 export const sessionStateMachineRouter = {
@@ -211,6 +290,15 @@ export const sessionStateMachineRouter = {
         startedBy: ctx.user.id,
       });
 
+      // Log action
+      await logOperatorAction(sessionId, operatorId, "session_started", sessionId, "session", {
+        startedBy: ctx.user.id,
+      });
+
+      // Publish to Ably for real-time updates
+      await publishStateTransitionEvent(sessionId, "idle", "running", { startedBy: ctx.user.id });
+      await publishOperatorActionEvent(sessionId, "session_started", { startedBy: ctx.user.id });
+
       return {
         success: true,
         previousState: "idle",
@@ -266,6 +354,15 @@ export const sessionStateMachineRouter = {
       await logStateTransition(input.sessionId, ctx.user.id, "running", "paused", {
         pausedBy: ctx.user.id,
       });
+
+      // Log action
+      await logOperatorAction(input.sessionId, ctx.user.id, "session_paused", input.sessionId, "session", {
+        pausedBy: ctx.user.id,
+      });
+
+      // Publish to Ably for real-time updates
+      await publishStateTransitionEvent(input.sessionId, "running", "paused", { pausedBy: ctx.user.id });
+      await publishOperatorActionEvent(input.sessionId, "session_paused", { pausedBy: ctx.user.id });
 
       return {
         success: true,
@@ -330,6 +427,22 @@ export const sessionStateMachineRouter = {
 
       // Log transition
       await logStateTransition(input.sessionId, ctx.user.id, "paused", "running", {
+        resumedBy: ctx.user.id,
+        pauseDurationSeconds: pauseDuration,
+      });
+
+      // Log action
+      await logOperatorAction(input.sessionId, ctx.user.id, "session_resumed", input.sessionId, "session", {
+        resumedBy: ctx.user.id,
+        pauseDurationSeconds: pauseDuration,
+      });
+
+      // Publish to Ably for real-time updates
+      await publishStateTransitionEvent(input.sessionId, "paused", "running", {
+        resumedBy: ctx.user.id,
+        pauseDurationSeconds: pauseDuration,
+      });
+      await publishOperatorActionEvent(input.sessionId, "session_resumed", {
         resumedBy: ctx.user.id,
         pauseDurationSeconds: pauseDuration,
       });
@@ -403,6 +516,28 @@ export const sessionStateMachineRouter = {
           : 0,
       });
 
+      // Log action
+      await logOperatorAction(input.sessionId, ctx.user.id, "session_ended", input.sessionId, "session", {
+        endedBy: ctx.user.id,
+        totalDurationSeconds: session.startedAt 
+          ? Math.floor((now.getTime() - session.startedAt) / 1000)
+          : 0,
+      });
+
+      // Publish to Ably for real-time updates
+      await publishStateTransitionEvent(input.sessionId, previousState as SessionStatus, "ended", {
+        endedBy: ctx.user.id,
+        totalDurationSeconds: session.startedAt 
+          ? Math.floor((now.getTime() - session.startedAt) / 1000)
+          : 0,
+      });
+      await publishOperatorActionEvent(input.sessionId, "session_ended", {
+        endedBy: ctx.user.id,
+        totalDurationSeconds: session.startedAt 
+          ? Math.floor((now.getTime() - session.startedAt) / 1000)
+          : 0,
+      });
+
       return {
         success: true,
         previousState: previousState as SessionStatus,
@@ -453,14 +588,32 @@ export const sessionStateMachineRouter = {
       }
 
       const now = new Date();
+      const actionId = `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // TODO: Persist action to operatorActions table
-      // TODO: Emit action event to Ably for real-time updates
+      // Persist action to operatorActions table
+      await logOperatorAction(
+        input.sessionId,
+        ctx.user.id,
+        input.actionType,
+        input.targetId,
+        input.targetType,
+        input.metadata
+      );
+
+      // Emit action event to Ably for real-time updates
+      await publishOperatorActionEvent(input.sessionId, input.actionType, {
+        actionId,
+        targetId: input.targetId,
+        targetType: input.targetType,
+        createdBy: ctx.user.id,
+        ...input.metadata,
+      });
+
       // TODO: Sync action to Viasocket
 
       return {
         success: true,
-        actionId: `action_${Date.now()}`,
+        actionId,
         timestamp: now.getTime(),
         message: `Action ${input.actionType} recorded`,
       };
@@ -478,11 +631,37 @@ export const sessionStateMachineRouter = {
       })
     )
     .query(async ({ input, ctx }) => {
-      // TODO: Query from operatorActions table
-      // For now, return empty array
+      const database = await getDb();
+      if (!database) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database connection unavailable",
+        });
+      }
+
+      const actions = await database
+        .select()
+        .from(operatorActions)
+        .where(eq(operatorActions.sessionId, input.sessionId))
+        .orderBy((t) => t.createdAt)
+        .limit(input.limit)
+        .offset(input.offset);
+
+      const countResult = await database
+        .select()
+        .from(operatorActions)
+        .where(eq(operatorActions.sessionId, input.sessionId));
+
       return {
-        actions: [],
-        total: 0,
+        actions: actions.map((a) => ({
+          id: a.id,
+          actionType: a.actionType,
+          targetId: a.targetId,
+          targetType: a.targetType,
+          metadata: a.metadata,
+          createdAt: a.createdAt.getTime(),
+        })),
+        total: countResult.length,
         limit: input.limit,
         offset: input.offset,
       };
