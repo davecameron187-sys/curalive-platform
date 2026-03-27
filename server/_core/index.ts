@@ -10,6 +10,7 @@ import net from "net";
 import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
+import { registerAblyAuthRoute } from "./ablyAuthRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -76,6 +77,9 @@ async function startServer() {
 
   // OAuth routes
   registerOAuthRoutes(app);
+
+  // Ably auth route
+  registerAblyAuthRoute(app);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // FRONTEND SERVING
