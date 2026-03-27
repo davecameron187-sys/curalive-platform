@@ -26,3 +26,8 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+RECALL_AI_WEBHOOK_SECRET = "df20db331b74bdef5211ee184a391566ecd2c9636ca9a63a8a3105c68efa609c"
