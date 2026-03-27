@@ -910,3 +910,46 @@ All core features implemented and production-ready.
 - [ ] Add Viasocket sync to session lifecycle events
 - [ ] Monitor webhook delivery and error rates
 - [ ] Create Viasocket flow templates for common use cases
+
+
+## Sprint 1 — Operator Console Phase 3 (Tasks 1.5-1.7)
+
+### Task 1.5 - Moderator Console UI: Ably Real-Time Updates
+- [x] Create ModeratorConsole.tsx component with Ably subscriptions
+- [x] Subscribe to session:${sessionId}:state channel for state updates
+- [x] Subscribe to session:${sessionId}:actions channel for action events
+- [x] Build real-time session state display (idle/running/paused/ended)
+- [x] Build real-time action history panel with pagination
+- [x] Implement state transition animations and visual feedback
+- [x] Add operator action buttons (approve/reject/flag/mark)
+- [x] Build session timer and elapsed time display
+- [x] Add pause/resume/end session controls
+- [x] Implement error handling and reconnection logic
+- [x] Add loading states and skeleton loaders
+- [x] Write component tests for Ably subscriptions
+
+### Task 1.6 - Viasocket Sync: Action Sync Service
+- [x] Create viasocket.ts helper in server/_core/
+- [x] Implement publishActionToViasocket() function
+- [x] Create tRPC procedure: syncOperatorActionToViasocket
+- [x] Implement retry logic for failed syncs (exponential backoff)
+- [x] Add action sync status tracking to operatorActions table
+- [x] Create webhook endpoint for Viasocket callbacks
+- [x] Build action sync queue management
+- [x] Implement batch sync for multiple actions
+- [x] Add error logging and monitoring
+- [x] Write vitest tests for sync logic
+
+### Task 1.7 - Session Handoff Package: Post-Session Deliverables
+- [x] Create sessionHandoffPackages.ts service
+- [x] Implement generateHandoffPackage() function
+- [x] Build transcript aggregation from sessionStateTransitions
+- [x] Implement AI summary generation using LLM
+- [x] Create action history export (JSON/CSV)
+- [x] Build compliance flag report
+- [x] Implement recording URL aggregation
+- [x] Create downloadable handoff package ZIP
+- [x] Add package storage to S3
+- [x] Create tRPC procedure: getSessionHandoffPackage
+- [x] Implement email delivery of handoff package
+- [x] Write vitest tests for package generation
