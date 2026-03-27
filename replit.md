@@ -14,8 +14,8 @@ A real-time investor events intelligence platform (CIPC Patent App ID 1773575338
 - **Backend**: Express + tRPC server (`server/_core/index.ts`)
 - **Database**: PostgreSQL 16 via Drizzle ORM + `pg` driver
 - **Build system**: pnpm + tsx (dev), esbuild (prod)
-- **AI**: OpenAI GPT-4 + Whisper (via `server/replit_integrations/`)
-- **Real-time**: Ably pub/sub, Recall.ai meeting bots, Mux video
+- **AI**: OpenAI GPT-4 (via Replit AI integrations proxy `AI_INTEGRATIONS_OPENAI_BASE_URL`)
+- **Real-time**: Ably pub/sub (live transcript streaming), Recall.ai meeting bots, Mux video
 
 ## Structure
 
@@ -59,6 +59,22 @@ curalive-platform/
 10. **HealthGuardian**: Services with "unknown" status (unconfigured API keys) are skipped — no false incidents created
 11. **DO NOT edit `.replit`**: Modifying this file from code corrupts Replit's deployment state. Use Replit UI only
 12. **Server binding**: Must use `0.0.0.0` (not `localhost`) for Replit proxy compatibility
+13. **Recall webhook middleware order**: `registerRecallWebhookRoute(app)` MUST be registered BEFORE `express.json()` — the webhook needs raw body stream for HMAC signature verification. Moving it after the JSON parser causes webhook requests to hang.
+14. **Production dist**: `dist/` is NOT in `.gitignore` — must rebuild locally (`esbuild`) before publishing since deployment caches the build step
+
+## Shadow Mode
+
+Shadow Mode enables real-time monitoring of investor events (earnings calls, AGMs, capital markets days) with AI-powered intelligence generation.
+
+**Two transcription paths (neither uses Whisper/OpenAI):**
+- **Recall.ai path** — Deploys bots to Zoom/Teams/Meet/Webex via Recall.ai API. Bots stream transcripts back via webhook → Ably pub/sub to operators.
+- **Local-audio path** — Browser captures audio from Chorus Call/other platforms. Text pushed via `pushTranscriptSegment` tRPC procedure.
+
+**Pipeline:** Start session → Push/receive transcript segments → Tag metrics (forward-looking, guidance, MNPI) → End session → Generate 20-module AI intelligence report
+
+**Key files:** `server/routers/shadowModeRouter.ts`, `server/recallWebhook.ts`, `server/_core/llm.ts`
+
+**Required secrets:** `RECALL_AI_API_KEY`, `RECALL_AI_WEBHOOK_SECRET`, `ABLY_API_KEY`
 
 ## Key Scripts
 
@@ -101,11 +117,12 @@ Core (auto-provisioned by Replit):
 
 Configured secrets:
 - `RECALL_AI_API_KEY` — Recall.ai for bot deployment
+- `RECALL_AI_WEBHOOK_SECRET` — Recall.ai webhook HMAC signature verification
+- `ABLY_API_KEY` — Ably real-time pub/sub for live transcript streaming to operators
 - `MUX_WEBHOOK_SECRET` — Mux webhook verification
 
 Optional (not yet configured, non-critical for app loading):
 - `OAUTH_SERVER_URL` — OAuth server URL
-- `ABLY_API_KEY` — Real-time messaging
 - `TWILIO_*` / `TELNYX_*` — Telephony
 - `STRIPE_SECRET_KEY` — Billing
 - `RESEND_API_KEY` — Email
