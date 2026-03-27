@@ -362,3 +362,108 @@ export const agiComplianceRules = mysqlTable("agi_compliance_rules", {
 
 export type AgiComplianceRule = typeof agiComplianceRules.$inferSelect;
 export type InsertAgiComplianceRule = typeof agiComplianceRules.$inferInsert;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OPERATOR CONSOLE — SERVER-AUTHORITATIVE SESSION STATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Operator Sessions table — server-authoritative session state machine
+ * Single source of truth for session lifecycle: start → pause → resume → end
+ */
+export const operatorSessions = mysqlTable("operator_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 128 }).notNull().unique(), // references live_qa_session_metadata.sessionId
+  eventId: varchar("eventId", { length: 128 }).notNull(), // references events.eventId
+  operatorId: int("operatorId").notNull(), // references users.id
+  status: mysqlEnum("status", ["idle", "running", "paused", "ended"]).default("idle").notNull(),
+  startedAt: timestamp("startedAt"), // when operator clicked "Start"
+  pausedAt: timestamp("pausedAt"), // when operator clicked "Pause" (null if never paused)
+  resumedAt: timestamp("resumedAt"), // when operator clicked "Resume" (null if never resumed)
+  endedAt: timestamp("endedAt"), // when operator clicked "End Session"
+  totalPausedDuration: int("totalPausedDuration").default(0).notNull(), // cumulative pause time in seconds
+  handoffStatus: mysqlEnum("handoffStatus", ["pending", "archived", "downloaded"]).default("pending").notNull(),
+  handoffCompletedAt: timestamp("handoffCompletedAt"), // when operator downloaded/archived
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OperatorSession = typeof operatorSessions.$inferSelect;
+export type InsertOperatorSession = typeof operatorSessions.$inferInsert;
+
+/**
+ * Operator Actions table — durable log of all operator actions
+ * Every action (approve, reject, note, etc.) is persisted with full context
+ */
+export const operatorActions = mysqlTable("operator_actions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 128 }).notNull(), // references operator_sessions.sessionId
+  operatorId: int("operatorId").notNull(), // references users.id
+  actionType: mysqlEnum("actionType", [
+    "note_created",
+    "question_approved",
+    "question_rejected",
+    "question_held",
+    "question_sent_to_speaker",
+    "compliance_flag_raised",
+    "compliance_flag_cleared",
+    "key_moment_marked",
+    "session_started",
+    "session_paused",
+    "session_resumed",
+    "session_ended",
+  ]).notNull(),
+  targetId: varchar("targetId", { length: 128 }), // question ID, note ID, etc.
+  targetType: varchar("targetType", { length: 64 }), // "question", "note", "session"
+  metadata: json("metadata"), // action-specific data (reason for rejection, note text, etc.)
+  syncedToViasocket: boolean("syncedToViasocket").default(false).notNull(),
+  syncedAt: timestamp("syncedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type OperatorAction = typeof operatorActions.$inferSelect;
+export type InsertOperatorAction = typeof operatorActions.$inferInsert;
+
+/**
+ * Session State Transitions table — audit trail of state changes
+ * Tracks every state machine transition with timestamp and operator
+ */
+export const sessionStateTransitions = mysqlTable("session_state_transitions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 128 }).notNull(), // references operator_sessions.sessionId
+  operatorId: int("operatorId").notNull(), // references users.id
+  fromState: mysqlEnum("fromState", ["idle", "running", "paused", "ended"]).notNull(),
+  toState: mysqlEnum("toState", ["idle", "running", "paused", "ended"]).notNull(),
+  reason: varchar("reason", { length: 255 }), // why transition happened
+  metadata: json("metadata"), // additional context
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SessionStateTransition = typeof sessionStateTransitions.$inferSelect;
+export type InsertSessionStateTransition = typeof sessionStateTransitions.$inferInsert;
+
+/**
+ * Session Handoff Package table — stores post-session deliverables
+ * Transcript, AI report, recording, action history all linked here
+ */
+export const sessionHandoffPackages = mysqlTable("session_handoff_packages", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 128 }).notNull().unique(), // references operator_sessions.sessionId
+  operatorId: int("operatorId").notNull(), // references users.id
+  transcriptUrl: text("transcriptUrl"), // link to full transcript
+  aiReportUrl: text("aiReportUrl"), // link to AI-generated report
+  recordingUrl: text("recordingUrl"), // link to recording
+  actionHistoryJson: json("actionHistoryJson"), // serialized action log
+  complianceFlagsJson: json("complianceFlagsJson"), // serialized compliance flags
+  questionsAnsweredCount: int("questionsAnsweredCount").default(0).notNull(),
+  questionsRejectedCount: int("questionsRejectedCount").default(0).notNull(),
+  totalSessionDuration: int("totalSessionDuration").default(0).notNull(), // in seconds
+  downloadedAt: timestamp("downloadedAt"),
+  archivedAt: timestamp("archivedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SessionHandoffPackage = typeof sessionHandoffPackages.$inferSelect;
+export type InsertSessionHandoffPackage = typeof sessionHandoffPackages.$inferInsert;

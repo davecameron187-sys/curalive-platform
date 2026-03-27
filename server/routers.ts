@@ -10,6 +10,7 @@ import { liveQaRouter } from "./routers/liveQa";
 import { agiToolGeneratorRouter } from "./routers/agiToolGenerator";
 import { operatorConsoleRouter } from "./routers/operatorConsole";
 import { viasocketSyncRouter } from "./routers/viasocketSync";
+import { sessionStateMachineRouter } from "./routers/sessionStateMachine";
 
 export const appRouter = router({
   system: systemRouter,
@@ -18,6 +19,7 @@ export const appRouter = router({
   agiToolGenerator: agiToolGeneratorRouter,
   operatorConsole: operatorConsoleRouter,
   viasocketSync: viasocketSyncRouter,
+  sessionStateMachine: sessionStateMachineRouter,
 });
 
 export type AppRouter = typeof appRouter;
