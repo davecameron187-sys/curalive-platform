@@ -126,8 +126,11 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
     return () => window.removeEventListener("popstate", handlePopState, true);
   }, [embedded]);
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "ailearning" | "aidashboard" | "advisory" | "diagnostics" | "liveqa">("live");
+  // Tab state — support ?tab= URL param for direct linking
+  const validTabs = ["live", "archive", "reports", "ailearning", "aidashboard", "advisory", "diagnostics", "liveqa"] as const;
+  type TabType = typeof validTabs[number];
+  const urlTab = new URLSearchParams(window.location.search).get("tab") as TabType | null;
+  const [activeTab, setActiveTab] = useState<TabType>(urlTab && validTabs.includes(urlTab) ? urlTab : "live");
 
 
   // ── Live Intelligence state ────────────────────────────────────────────────
