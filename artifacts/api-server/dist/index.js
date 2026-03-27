@@ -24757,82 +24757,107 @@ var transcribeArchiveAudio_exports = {};
 __export(transcribeArchiveAudio_exports, {
   transcribeArchiveAudio: () => transcribeArchiveAudio
 });
+async function tryGeminiTranscribe(buffer, filename) {
+  const geminiBaseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
+  const geminiApiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
+  if (!geminiBaseUrl || !geminiApiKey) {
+    return buildFailedResult(new Error("Gemini not configured"), "gemini");
+  }
+  const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
+  const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4"].includes(ext) ? ext : "mp3";
+  const mimeType = safeExt === "mp4" ? "video/mp4" : `audio/${safeExt}`;
+  const base64Audio = buffer.toString("base64");
+  console.log(`[TranscribeArchive] Using Gemini for retry transcription (${(buffer.length / 1024 / 1024).toFixed(1)}MB)`);
+  const url = `${geminiBaseUrl.replace(/\/+$/, "")}/models/gemini-2.5-flash:generateContent`;
+  const body = {
+    contents: [{
+      role: "user",
+      parts: [
+        { inlineData: { mimeType, data: base64Audio } },
+        { text: "Transcribe this audio recording accurately and completely. This is an investor event recording (earnings call, AGM, webcast, etc.). Include all speech verbatim \u2014 every word spoken. Preserve speaker names/labels if identifiable. Output only the transcript text, no commentary or analysis. Use proper punctuation and paragraph breaks between different speakers or topics." }
+      ]
+    }],
+    generationConfig: { maxOutputTokens: 8192, temperature: 0.1 }
+  };
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": geminiApiKey },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) {
+    const errText = await response.text().catch(() => response.statusText);
+    if (response.status === 429) {
+      return buildQuotaExceededResult(new Error(`Gemini quota exceeded: ${errText}`), "gemini");
+    }
+    return buildFailedResult(new Error(`Gemini API failed (${response.status}): ${errText}`), "gemini");
+  }
+  const result = await response.json();
+  const text2 = (result.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
+  if (!text2) {
+    return buildFailedResult(new Error("Gemini returned empty transcript"), "gemini");
+  }
+  console.log(`[TranscribeArchive] Gemini transcription complete \u2014 ${text2.split(/\s+/).filter(Boolean).length} words`);
+  return buildCompletedResult(text2, "gemini");
+}
+async function tryWhisperTranscribe(buffer, filename) {
+  const hasIntegrationKey = !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY?.trim();
+  const hasDirectKey = !!process.env.OPENAI_API_KEY?.trim();
+  let apiKey;
+  let baseUrl;
+  if (hasIntegrationKey) {
+    apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim();
+    baseUrl = (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ?? "https://api.openai.com").replace(/\/+$/, "");
+  } else if (hasDirectKey) {
+    apiKey = process.env.OPENAI_API_KEY.trim();
+    baseUrl = "https://api.openai.com";
+  } else if (process.env.BUILT_IN_FORGE_API_KEY && process.env.BUILT_IN_FORGE_API_URL) {
+    apiKey = process.env.BUILT_IN_FORGE_API_KEY;
+    baseUrl = process.env.BUILT_IN_FORGE_API_URL.replace(/\/+$/, "");
+  } else {
+    return buildFailedResult(new Error("No OpenAI API key configured for transcription"), "whisper");
+  }
+  const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
+  const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4"].includes(ext) ? ext : "mp3";
+  const mimeType = safeExt === "mp4" ? "video/mp4" : `audio/${safeExt}`;
+  const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
+  const formData = new FormData();
+  formData.append("file", blob, `audio.${safeExt}`);
+  formData.append("model", "whisper-1");
+  formData.append("response_format", "verbose_json");
+  formData.append("prompt", "Transcribe this investor event recording accurately, including speaker names and financial terminology.");
+  const url = `${baseUrl}/v1/audio/transcriptions`;
+  console.log(`[TranscribeArchive] Sending ${(buffer.length / 1024 / 1024).toFixed(1)}MB to Whisper API`);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Accept-Encoding": "identity" },
+    body: formData
+  });
+  if (!response.ok) {
+    const errText = await response.text().catch(() => response.statusText);
+    if (response.status === 429) {
+      return buildQuotaExceededResult(new Error(`Whisper API quota exceeded (429): ${errText}`), "whisper");
+    }
+    return buildFailedResult(new Error(`Whisper API failed (${response.status}): ${errText}`), "whisper");
+  }
+  const result = await response.json();
+  return buildCompletedResult((result.text ?? "").trim(), "whisper");
+}
 async function transcribeArchiveAudio(savedRecordingPath) {
   try {
     const path4 = await import("path");
     const { readFile: readFile2 } = await import("fs/promises");
-    const fullPath = path4.resolve(
-      process.cwd(),
-      "uploads",
-      "recordings",
-      path4.basename(savedRecordingPath)
-    );
+    const fullPath = path4.resolve(process.cwd(), "uploads", "recordings", path4.basename(savedRecordingPath));
     const buffer = await readFile2(fullPath);
     const filename = path4.basename(savedRecordingPath);
-    const hasIntegrationKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim());
-    const hasDirectKey = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
-    let apiKey;
-    let baseUrl;
-    if (hasIntegrationKey) {
-      apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim();
-      baseUrl = (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ?? "https://api.openai.com").replace(/\/+$/, "");
-    } else if (hasDirectKey) {
-      apiKey = process.env.OPENAI_API_KEY.trim();
-      baseUrl = "https://api.openai.com";
-    } else if (process.env.BUILT_IN_FORGE_API_KEY && process.env.BUILT_IN_FORGE_API_URL) {
-      apiKey = process.env.BUILT_IN_FORGE_API_KEY;
-      baseUrl = process.env.BUILT_IN_FORGE_API_URL.replace(/\/+$/, "");
-    } else {
-      return buildFailedResult(
-        new Error("No OpenAI API key configured for transcription"),
-        "whisper"
-      );
-    }
-    const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
-    const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4"].includes(ext) ? ext : "mp3";
-    const mimeType = safeExt === "mp4" ? "video/mp4" : `audio/${safeExt}`;
-    const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
-    const formData = new FormData();
-    formData.append("file", blob, `audio.${safeExt}`);
-    formData.append("model", "whisper-1");
-    formData.append("response_format", "verbose_json");
-    formData.append(
-      "prompt",
-      "Transcribe this investor event recording accurately, including speaker names and financial terminology."
-    );
-    const url = `${baseUrl}/v1/audio/transcriptions`;
-    console.log(
-      `[TranscribeArchive] Sending ${(buffer.length / 1024 / 1024).toFixed(1)}MB to Whisper API`
-    );
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Accept-Encoding": "identity"
-      },
-      body: formData
-    });
-    if (!response.ok) {
-      const errText = await response.text().catch(() => response.statusText);
-      if (response.status === 429) {
-        return buildQuotaExceededResult(
-          new Error(`Whisper API quota exceeded (429): ${errText}`),
-          "whisper"
-        );
-      }
-      return buildFailedResult(
-        new Error(`Whisper API failed (${response.status}): ${errText}`),
-        "whisper"
-      );
-    }
-    const result = await response.json();
-    const transcriptText = (result.text ?? "").trim();
-    return buildCompletedResult(transcriptText, "whisper");
+    const geminiResult = await tryGeminiTranscribe(buffer, filename);
+    if (geminiResult.ok) return geminiResult;
+    console.warn(`[TranscribeArchive] Gemini failed (${geminiResult.errorMessage?.substring(0, 80)}), trying Whisper...`);
+    return await tryWhisperTranscribe(buffer, filename);
   } catch (error) {
     if (isQuotaExceededError(error)) {
-      return buildQuotaExceededResult(error, "whisper");
+      return buildQuotaExceededResult(error, "unknown");
     }
-    return buildFailedResult(error, "whisper");
+    return buildFailedResult(error, "unknown");
   }
 }
 var init_transcribeArchiveAudio = __esm({
@@ -40366,7 +40391,64 @@ async function extractChunkMp3(inputPath, outputPath, startSec, durationSec) {
     outputPath
   ]);
 }
-async function callTranscribeApi(buffer, filename) {
+async function callGeminiTranscribe(buffer, filename) {
+  const geminiBaseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
+  const geminiApiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
+  if (!geminiBaseUrl || !geminiApiKey) {
+    throw new Error("GEMINI_NOT_CONFIGURED");
+  }
+  const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
+  const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4"].includes(ext) ? ext : "mp3";
+  const mimeType = safeExt === "mp4" ? "video/mp4" : `audio/${safeExt}`;
+  const base64Audio = buffer.toString("base64");
+  const sizeMB = buffer.length / 1024 / 1024;
+  console.log(`[AudioTranscribe] Using Gemini for transcription (${sizeMB.toFixed(1)}MB, ${mimeType})`);
+  const url = `${geminiBaseUrl.replace(/\/+$/, "")}/models/gemini-2.5-flash:generateContent`;
+  const body = {
+    contents: [{
+      role: "user",
+      parts: [
+        {
+          inlineData: {
+            mimeType,
+            data: base64Audio
+          }
+        },
+        {
+          text: "Transcribe this audio recording accurately and completely. This is an investor event recording (earnings call, AGM, webcast, etc.). Include all speech verbatim \u2014 every word spoken. Preserve speaker names/labels if identifiable. Output only the transcript text, no commentary or analysis. Use proper punctuation and paragraph breaks between different speakers or topics."
+        }
+      ]
+    }],
+    generationConfig: {
+      maxOutputTokens: 8192,
+      temperature: 0.1
+    }
+  };
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": geminiApiKey
+    },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) {
+    const errText = await response.text().catch(() => response.statusText);
+    if (response.status === 429) {
+      throw new Error(`QUOTA_EXCEEDED: Gemini transcription quota exceeded (429)`);
+    }
+    throw new Error(`Gemini API failed (${response.status}): ${errText}`);
+  }
+  const result = await response.json();
+  const text2 = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const trimmed = text2.trim();
+  if (!trimmed) {
+    throw new Error("Gemini returned empty transcript");
+  }
+  console.log(`[AudioTranscribe] Gemini transcription complete \u2014 ${trimmed.split(/\s+/).filter(Boolean).length} words`);
+  return trimmed;
+}
+async function callWhisperTranscribe(buffer, filename) {
   const hasIntegrationKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim());
   const hasDirectKey = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
   let apiKey;
@@ -40411,6 +40493,23 @@ async function callTranscribeApi(buffer, filename) {
   }
   const result = await response.json();
   return (result.text ?? "").trim();
+}
+async function callTranscribeApi(buffer, filename) {
+  const geminiConfigured = !!(process.env.AI_INTEGRATIONS_GEMINI_BASE_URL && process.env.AI_INTEGRATIONS_GEMINI_API_KEY);
+  if (geminiConfigured) {
+    try {
+      return await callGeminiTranscribe(buffer, filename);
+    } catch (geminiErr) {
+      const isQuota = geminiErr.message?.includes("QUOTA_EXCEEDED");
+      console.warn(`[AudioTranscribe] Gemini transcription failed${isQuota ? " (quota)" : ""}: ${geminiErr.message?.substring(0, 100)}`);
+      if (isQuota) {
+        console.log("[AudioTranscribe] Falling back to Whisper API...");
+      } else {
+        console.log("[AudioTranscribe] Falling back to Whisper API...");
+      }
+    }
+  }
+  return await callWhisperTranscribe(buffer, filename);
 }
 function registerAudioTranscribeRoute(app) {
   const router2 = Router2();

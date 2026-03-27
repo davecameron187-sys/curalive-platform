@@ -89,7 +89,72 @@ async function extractChunkMp3(
   ]);
 }
 
-async function callTranscribeApi(buffer: Buffer, filename: string): Promise<string> {
+async function callGeminiTranscribe(buffer: Buffer, filename: string): Promise<string> {
+  const geminiBaseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
+  const geminiApiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
+  if (!geminiBaseUrl || !geminiApiKey) {
+    throw new Error("GEMINI_NOT_CONFIGURED");
+  }
+
+  const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
+  const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4"].includes(ext) ? ext : "mp3";
+  const mimeType = safeExt === "mp4" ? "video/mp4" : `audio/${safeExt}`;
+
+  const base64Audio = buffer.toString("base64");
+  const sizeMB = buffer.length / 1024 / 1024;
+  console.log(`[AudioTranscribe] Using Gemini for transcription (${sizeMB.toFixed(1)}MB, ${mimeType})`);
+
+  const url = `${geminiBaseUrl.replace(/\/+$/, "")}/models/gemini-2.5-flash:generateContent`;
+
+  const body = {
+    contents: [{
+      role: "user",
+      parts: [
+        {
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Audio,
+          },
+        },
+        {
+          text: "Transcribe this audio recording accurately and completely. This is an investor event recording (earnings call, AGM, webcast, etc.). Include all speech verbatim — every word spoken. Preserve speaker names/labels if identifiable. Output only the transcript text, no commentary or analysis. Use proper punctuation and paragraph breaks between different speakers or topics.",
+        },
+      ],
+    }],
+    generationConfig: {
+      maxOutputTokens: 8192,
+      temperature: 0.1,
+    },
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": geminiApiKey,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => response.statusText);
+    if (response.status === 429) {
+      throw new Error(`QUOTA_EXCEEDED: Gemini transcription quota exceeded (429)`);
+    }
+    throw new Error(`Gemini API failed (${response.status}): ${errText}`);
+  }
+
+  const result = await response.json();
+  const text = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const trimmed = text.trim();
+  if (!trimmed) {
+    throw new Error("Gemini returned empty transcript");
+  }
+  console.log(`[AudioTranscribe] Gemini transcription complete — ${trimmed.split(/\s+/).filter(Boolean).length} words`);
+  return trimmed;
+}
+
+async function callWhisperTranscribe(buffer: Buffer, filename: string): Promise<string> {
   const hasIntegrationKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim());
   const hasDirectKey = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
   let apiKey: string;
@@ -141,6 +206,26 @@ async function callTranscribeApi(buffer: Buffer, filename: string): Promise<stri
 
   const result = await response.json();
   return (result.text ?? "").trim();
+}
+
+async function callTranscribeApi(buffer: Buffer, filename: string): Promise<string> {
+  const geminiConfigured = !!(process.env.AI_INTEGRATIONS_GEMINI_BASE_URL && process.env.AI_INTEGRATIONS_GEMINI_API_KEY);
+
+  if (geminiConfigured) {
+    try {
+      return await callGeminiTranscribe(buffer, filename);
+    } catch (geminiErr: any) {
+      const isQuota = geminiErr.message?.includes("QUOTA_EXCEEDED");
+      console.warn(`[AudioTranscribe] Gemini transcription failed${isQuota ? " (quota)" : ""}: ${geminiErr.message?.substring(0, 100)}`);
+      if (isQuota) {
+        console.log("[AudioTranscribe] Falling back to Whisper API...");
+      } else {
+        console.log("[AudioTranscribe] Falling back to Whisper API...");
+      }
+    }
+  }
+
+  return await callWhisperTranscribe(buffer, filename);
 }
 
 export function registerAudioTranscribeRoute(app: import("express").Express) {

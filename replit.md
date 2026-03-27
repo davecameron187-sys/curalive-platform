@@ -170,13 +170,16 @@ Optional (not yet configured, non-critical for app loading):
 
 ## Archive Upload Transcription Fallback
 
-When Whisper API quota is exceeded during recording upload:
-- Backend returns HTTP 200 with `transcriptionStatus: "quota_exceeded"` and empty transcript
-- Archive is saved with `status: "recording_saved"`, `transcription_status: "quota_exceeded"`
-- Transcript download returns 409 JSON with explanation
-- Retry available via `retryTranscription` tRPC procedure
-- UI shows "awaiting transcription" badge with Retry button in archive list
-- Key files: `server/_core/transcription/transcribeArchiveAudio.ts`, `server/_core/transcription/transcriptionResult.ts`, `server/audioTranscribe.ts`, `server/routers/archiveUploadRouter.ts`
+Transcription uses a dual-provider strategy: **Gemini AI (primary)** → **Whisper (fallback)**. This was implemented because the Whisper/OpenAI quota is exhausted (429 errors). Gemini is provisioned via Replit AI Integrations (no separate API key needed, charges billed to Replit credits).
+
+- Primary provider: Gemini 2.5 Flash via `AI_INTEGRATIONS_GEMINI_BASE_URL` + inline audio data
+- Fallback provider: Whisper via `AI_INTEGRATIONS_OPENAI_BASE_URL` (when Gemini fails)
+- Gemini inline data max: 8MB per request (audio is sent as base64)
+- When both providers hit quota, recording is saved with `status: "recording_saved"`, `transcription_status: "quota_exceeded"`
+- Transcript download returns 409 JSON with explanation for unavailable transcripts
+- Retry available via `retryTranscription` tRPC procedure (also tries Gemini first)
+- UI shows "awaiting transcription" yellow badge with Retry button in archive list
+- Key files: `server/audioTranscribe.ts`, `server/_core/transcription/transcribeArchiveAudio.ts`, `server/_core/transcription/transcriptionResult.ts`, `server/routers/archiveUploadRouter.ts`
 
 ## Deployment
 
