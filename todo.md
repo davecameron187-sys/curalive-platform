@@ -1005,3 +1005,37 @@ All core features implemented and production-ready.
 - [x] Register /analytics/:sessionId route in App.tsx
 - [x] Create analytics tRPC router with 10 procedures
 - [x] Write 35+ integration tests for routes/Ably/analytics
+
+
+## Sprint 1 — Production Integration (Tasks 1.14-1.16)
+
+### Task 1.14 - Frontend Analytics Integration
+- [ ] Update PostEventAnalytics component to use tRPC queries
+- [ ] Replace mock sentiment trend data with getSentimentTrend()
+- [ ] Replace mock key moments with getKeyMoments()
+- [ ] Replace mock speaker performance with getSpeakerPerformance()
+- [ ] Replace mock Q&A statistics with getQaStatistics()
+- [ ] Replace mock compliance summary with getComplianceSummary()
+- [ ] Replace mock engagement metrics with getEngagementMetrics()
+- [ ] Add loading states and error handling
+- [ ] Test with real database data
+
+### Task 1.15 - Ably Token Refresh
+- [ ] Create useAblyToken custom hook
+- [ ] Implement token refresh logic (refresh at 50 minutes)
+- [ ] Add token refresh to ModeratorConsole component
+- [ ] Add token refresh to PresenterTeleprompter component
+- [ ] Add token refresh to OperatorDashboard component
+- [ ] Implement reconnection logic on token expiry
+- [ ] Add visual indicator for token status
+- [ ] Write tests for token refresh mechanism
+
+### Task 1.16 - Session Recording Webhook
+- [ ] Create /api/webhooks/recall endpoint
+- [ ] Implement Recall.ai webhook signature verification
+- [ ] Add webhook handler for recording.completed event
+- [ ] Trigger analytics generation on recording completion
+- [ ] Store webhook events in database
+- [ ] Implement retry logic for failed webhook processing
+- [ ] Add webhook event logging and monitoring
+- [ ] Write tests for webhook handling

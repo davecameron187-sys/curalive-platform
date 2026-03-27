@@ -1,14 +1,13 @@
 /**
  * Post-Event Analytics — Sentiment Trends & Engagement Metrics
  * 
- * Task 1.10: Build analytics dashboard
+ * Task 1.10: Build analytics dashboard with real tRPC data
  * - Sentiment trend visualization
  * - Key moments identification
  * - Attendee engagement metrics
  * - Compliance summary
  */
 
-import { useEffect, useState } from "react";
 import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -40,100 +39,46 @@ import {
   FileText,
 } from "lucide-react";
 
-interface SentimentTrend {
-  timestamp: string;
-  score: number;
-  label: string;
-}
-
-interface KeyMoment {
-  timestamp: string;
-  type: "high_sentiment" | "spike_engagement" | "compliance_flag" | "question_surge";
-  description: string;
-  severity: "low" | "medium" | "high";
-}
-
-interface EngagementMetric {
-  metric: string;
-  value: number;
-  change: number;
-}
-
-interface EventAnalytics {
-  eventId: string;
-  sessionId: string;
-  startTime: string;
-  endTime: string;
-  duration: number;
-  totalAttendees: number;
-  totalQuestions: number;
-  approvedQuestions: number;
-  rejectedQuestions: number;
-  averageSentiment: number;
-  complianceFlags: number;
-  engagementRate: number;
-  speakerPerformance: {
-    name: string;
-    score: number;
-    engagement: number;
-  }[];
-  sentimentTrends: SentimentTrend[];
-  keyMoments: KeyMoment[];
-  engagementMetrics: EngagementMetric[];
-}
-
 export default function PostEventAnalytics() {
   const { sessionId } = useParams<{ sessionId: string }>();
 
-  // State management
-  const [analytics, setAnalytics] = useState<EventAnalytics | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState({ start: "", end: "" });
-  const [selectedMetric, setSelectedMetric] = useState<"sentiment" | "engagement" | "qa">("sentiment");
+  // Fetch analytics data from tRPC queries
+  const { data: eventAnalytics, isLoading: analyticsLoading } = trpc.analytics.getEventAnalytics.useQuery(
+    { sessionId: sessionId || "" },
+    { enabled: !!sessionId }
+  );
 
-  // Mock analytics data for demonstration
-  // In production, this would come from tRPC query
+  const { data: sentimentTrend = [], isLoading: sentimentLoading } = trpc.analytics.getSentimentTrend.useQuery(
+    { sessionId: sessionId || "", interval: "5m" },
+    { enabled: !!sessionId }
+  );
 
-  useEffect(() => {
-    // Mock analytics data
-    const mockAnalytics: EventAnalytics = {
-      eventId: "event_123",
-      sessionId: sessionId || "",
-      startTime: new Date().toISOString(),
-      endTime: new Date().toISOString(),
-      duration: 3600,
-      totalAttendees: 250,
-      totalQuestions: 45,
-      approvedQuestions: 38,
-      rejectedQuestions: 7,
-      averageSentiment: 7.8,
-      complianceFlags: 2,
-      engagementRate: 0.82,
-      speakerPerformance: [
-        { name: "CEO", score: 8.5, engagement: 0.9 },
-        { name: "CFO", score: 7.9, engagement: 0.85 },
-      ],
-      sentimentTrends: [
-        { timestamp: "00:00", score: 7.0, label: "Start" },
-        { timestamp: "15:00", score: 7.5, label: "15 min" },
-        { timestamp: "30:00", score: 8.2, label: "30 min" },
-      ],
-      keyMoments: [
-        {
-          timestamp: "12:34",
-          type: "high_sentiment",
-          description: "Positive response to earnings announcement",
-          severity: "high",
-        },
-      ],
-      engagementMetrics: [
-        { metric: "Questions Asked", value: 45, change: 12 },
-        { metric: "Attendee Retention", value: 98, change: 5 },
-      ],
-    };
-    setAnalytics(mockAnalytics);
-    setIsLoading(false);
-  }, [sessionId]);
+  const { data: keyMoments = [], isLoading: momentsLoading } = trpc.analytics.getKeyMoments.useQuery(
+    { sessionId: sessionId || "" },
+    { enabled: !!sessionId }
+  );
+
+  const { data: speakers = [], isLoading: speakersLoading } = trpc.analytics.getSpeakerPerformance.useQuery(
+    { sessionId: sessionId || "" },
+    { enabled: !!sessionId }
+  );
+
+  const { data: qaStats, isLoading: qaLoading } = trpc.analytics.getQaStatistics.useQuery(
+    { sessionId: sessionId || "" },
+    { enabled: !!sessionId }
+  );
+
+  const { data: compliance, isLoading: complianceLoading } = trpc.analytics.getComplianceSummary.useQuery(
+    { sessionId: sessionId || "" },
+    { enabled: !!sessionId }
+  );
+
+  const { data: engagement = [], isLoading: engagementLoading } = trpc.analytics.getEngagementMetrics.useQuery(
+    { sessionId: sessionId || "" },
+    { enabled: !!sessionId }
+  );
+
+  const isLoading = analyticsLoading || sentimentLoading || momentsLoading || speakersLoading || qaLoading || complianceLoading || engagementLoading;
 
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -157,7 +102,7 @@ export default function PostEventAnalytics() {
     // Implementation for CSV export
   };
 
-  if (isLoading || !analytics) {
+  if (isLoading || !eventAnalytics) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-12 h-12 animate-spin" />
@@ -166,8 +111,8 @@ export default function PostEventAnalytics() {
   }
 
   const qaData = [
-    { name: "Approved", value: analytics.approvedQuestions, fill: "#22c55e" },
-    { name: "Rejected", value: analytics.rejectedQuestions, fill: "#ef4444" },
+    { name: "Approved", value: eventAnalytics.approvedQuestions, fill: "#22c55e" },
+    { name: "Rejected", value: eventAnalytics.rejectedQuestions, fill: "#ef4444" },
   ];
 
   return (
@@ -179,7 +124,7 @@ export default function PostEventAnalytics() {
             <div>
               <h1 className="text-3xl font-bold">Event Analytics Report</h1>
               <p className="text-muted-foreground mt-1">
-                Session {analytics.sessionId} • {analytics.startTime}
+                Session {eventAnalytics.sessionId} • {eventAnalytics.startTime}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -198,25 +143,25 @@ export default function PostEventAnalytics() {
           <div className="grid grid-cols-5 gap-4">
             <Card className="p-4">
               <p className="text-sm text-muted-foreground mb-1">Duration</p>
-              <p className="text-2xl font-bold">{formatDuration(analytics.duration)}</p>
+              <p className="text-2xl font-bold">{formatDuration(eventAnalytics.duration)}</p>
             </Card>
             <Card className="p-4">
               <p className="text-sm text-muted-foreground mb-1">Attendees</p>
-              <p className="text-2xl font-bold">{analytics.totalAttendees}</p>
+              <p className="text-2xl font-bold">{eventAnalytics.totalAttendees || 0}</p>
             </Card>
             <Card className="p-4">
               <p className="text-sm text-muted-foreground mb-1">Total Q&A</p>
-              <p className="text-2xl font-bold">{analytics.totalQuestions}</p>
+              <p className="text-2xl font-bold">{eventAnalytics.totalQuestions}</p>
             </Card>
             <Card className="p-4">
               <p className="text-sm text-muted-foreground mb-1">Avg Sentiment</p>
-              <p className="text-2xl font-bold" style={{ color: getSentimentColor(analytics.averageSentiment) }}>
-                {analytics.averageSentiment.toFixed(1)}/10
+              <p className="text-2xl font-bold" style={{ color: getSentimentColor(eventAnalytics.averageSentiment) }}>
+                {eventAnalytics.averageSentiment.toFixed(1)}/10
               </p>
             </Card>
             <Card className="p-4">
               <p className="text-sm text-muted-foreground mb-1">Engagement</p>
-              <p className="text-2xl font-bold">{(analytics.engagementRate * 100).toFixed(0)}%</p>
+              <p className="text-2xl font-bold">{(eventAnalytics.engagementRate * 100).toFixed(0)}%</p>
             </Card>
           </div>
         </div>
@@ -230,23 +175,27 @@ export default function PostEventAnalytics() {
             <TrendingUp className="w-5 h-5" />
             Sentiment Trend Over Time
           </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={analytics.sentimentTrends}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="label" />
-              <YAxis domain={[0, 10]} />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="score"
-                stroke="#3b82f6"
-                dot={{ fill: "#3b82f6", r: 4 }}
-                activeDot={{ r: 6 }}
-                name="Sentiment Score"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {sentimentTrend.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={sentimentTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" />
+                <YAxis domain={[0, 10]} />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="score"
+                  stroke="#3b82f6"
+                  dot={{ fill: "#3b82f6", r: 4 }}
+                  activeDot={{ r: 6 }}
+                  name="Sentiment Score"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-muted-foreground">No sentiment data available</p>
+          )}
         </Card>
 
         {/* Q&A Distribution */}
@@ -256,49 +205,57 @@ export default function PostEventAnalytics() {
               <MessageSquare className="w-5 h-5" />
               Q&A Distribution
             </h2>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={qaData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {qaData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {qaData.some(d => d.value > 0) ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={qaData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {qaData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-muted-foreground">No Q&A data available</p>
+            )}
           </Card>
 
           {/* Speaker Performance */}
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Speaker Performance</h2>
-            <div className="space-y-4">
-              {analytics.speakerPerformance.map((speaker, idx) => (
-                <div key={idx} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold">{speaker.name}</p>
-                    <Badge variant="outline">{speaker.score.toFixed(1)}/10</Badge>
+            {speakers.length > 0 ? (
+              <div className="space-y-4">
+                {speakers.map((speaker: any, idx: number) => (
+                  <div key={idx} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold">{speaker.name}</p>
+                      <Badge variant="outline">{speaker.score.toFixed(1)}/10</Badge>
+                    </div>
+                    <div className="w-full bg-secondary rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full transition-all"
+                        style={{ width: `${(speaker.score / 10) * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Engagement: {(speaker.engagement * 100).toFixed(0)}%
+                    </p>
                   </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${(speaker.score / 10) * 100}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Engagement: {(speaker.engagement * 100).toFixed(0)}%
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No speaker data available</p>
+            )}
           </Card>
         </div>
 
@@ -308,107 +265,92 @@ export default function PostEventAnalytics() {
             <Clock className="w-5 h-5" />
             Key Moments
           </h2>
-          <div className="space-y-3">
-            {analytics.keyMoments.map((moment, idx) => (
-              <div
-                key={idx}
-                className={`p-4 rounded-lg border-l-4 ${
-                  moment.severity === "high"
-                    ? "border-red-500 bg-red-900/10"
-                    : moment.severity === "medium"
-                    ? "border-yellow-500 bg-yellow-900/10"
-                    : "border-blue-500 bg-blue-900/10"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-sm">
-                      {moment.type.replace(/_/g, " ").toUpperCase()}
-                    </p>
-                    <p className="text-sm mt-1">{moment.description}</p>
+          {keyMoments.length > 0 ? (
+            <div className="space-y-3">
+              {keyMoments.map((moment: any, idx: number) => (
+                <div
+                  key={idx}
+                  className={`p-4 rounded-lg border-l-4 ${
+                    moment.severity === "high"
+                      ? "border-red-500 bg-red-900/10"
+                      : moment.severity === "medium"
+                      ? "border-yellow-500 bg-yellow-900/10"
+                      : "border-blue-500 bg-blue-900/10"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold">{moment.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{moment.timestamp}</p>
+                    </div>
+                    <Badge
+                      variant={
+                        moment.severity === "high"
+                          ? "destructive"
+                          : moment.severity === "medium"
+                          ? "secondary"
+                          : "outline"
+                      }
+                    >
+                      {moment.severity}
+                    </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">{moment.timestamp}</p>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No key moments identified</p>
+          )}
         </Card>
 
         {/* Compliance Summary */}
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
-            Compliance Summary
-          </h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 bg-secondary rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Total Flags</p>
-              <p className="text-3xl font-bold text-red-500">{analytics.complianceFlags}</p>
+        {compliance && (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              Compliance Summary
+            </h2>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Total Flags</p>
+                <p className="text-2xl font-bold">{compliance.totalFlags}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Risk Score</p>
+                <p className="text-2xl font-bold" style={{ color: getSentimentColor(10 - compliance.riskScore) }}>
+                  {compliance.riskScore.toFixed(1)}/10
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Resolved</p>
+                <p className="text-2xl font-bold">{compliance.resolvedFlags}/{compliance.totalFlags}</p>
+              </div>
             </div>
-            <div className="p-4 bg-secondary rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Approval Rate</p>
-              <p className="text-3xl font-bold text-green-500">
-                {analytics.totalQuestions > 0
-                  ? ((analytics.approvedQuestions / analytics.totalQuestions) * 100).toFixed(0)
-                  : 0}
-                %
-              </p>
-            </div>
-            <div className="p-4 bg-secondary rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Avg Response Time</p>
-              <p className="text-3xl font-bold">2.3s</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
         {/* Engagement Metrics */}
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Engagement Metrics
-          </h2>
-          <div className="space-y-3">
-            {analytics.engagementMetrics.map((metric, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                <p className="font-semibold">{metric.metric}</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-lg font-bold">{metric.value}</p>
-                  <Badge
-                    variant={metric.change >= 0 ? "default" : "destructive"}
-                    className="flex items-center gap-1"
-                  >
-                    {metric.change >= 0 ? "↑" : "↓"} {Math.abs(metric.change)}%
-                  </Badge>
+        {engagement.length > 0 && (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Engagement Metrics
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {engagement.map((metric: any, idx: number) => (
+                <div key={idx} className="p-4 bg-secondary rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2">{metric.metric}</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold">{metric.value}</p>
+                    <Badge variant={metric.trend === "up" ? "default" : "secondary"}>
+                      {metric.trend === "up" ? "+" : ""}{metric.change}%
+                    </Badge>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Export Options */}
-        <Card className="p-6 bg-primary/5 border-primary/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Generate Full Report
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Download comprehensive analytics report with all metrics and visualizations
-              </p>
+              ))}
             </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={handleExportPDF} className="flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                PDF Report
-              </Button>
-              <Button onClick={handleExportCSV} variant="outline" className="flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                CSV Data
-              </Button>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        )}
       </div>
     </div>
   );
