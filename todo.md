@@ -884,3 +884,29 @@ All core features implemented and production-ready.
 - [ ] Update documentation
 - [ ] Create operator training guide
 - [ ] Deploy to production
+
+
+## VIASOCKET REAL-TIME INTEGRATION
+- [x] Create Viasocket sync router (server/routers/viasocketSync.ts)
+  - [x] 10 tRPC procedures for real-time data sync
+  - [x] Session event sync (started, paused, resumed, ended)
+  - [x] Q&A event sync (questions, answers, upvotes, actions)
+  - [x] Operator action sync (notes with tags)
+  - [x] Transcript segment sync
+  - [x] Intelligence signals sync (sentiment, compliance, engagement)
+  - [x] Session summary sync (post-event reports)
+  - [x] Test connection procedure
+- [x] Set up Viasocket webhook endpoint
+  - [x] Webhook URL: https://flow.sokt.io/func/scri5FOg88XM
+  - [x] Flow name: CuraLive Real-Time Data Sync
+  - [x] Project ID: 62476
+- [x] Implement real-time event sync for all data types
+- [x] Create comprehensive test suite (23 tests passing)
+- [x] Document all event types and payloads
+- [x] Create integration guide with examples (VIASOCKET_INTEGRATION_GUIDE.md)
+- [x] Test webhook connection
+- [ ] Integrate Viasocket sync calls into OperatorConsole workflows
+- [ ] Add Viasocket sync to Q&A submission handlers
+- [ ] Add Viasocket sync to session lifecycle events
+- [ ] Monitor webhook delivery and error rates
+- [ ] Create Viasocket flow templates for common use cases
