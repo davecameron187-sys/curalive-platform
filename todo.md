@@ -968,6 +968,9 @@ All core features implemented and production-ready.
 - [x] Create fullscreen mode for presenter display
 - [x] Add dark mode for low-light environments
 - [x] Write component tests for real-time updates
+- [x] Register /presenter/:sessionId route in App.tsx
+- [x] Create Ably auth endpoint for token issuance
+- [x] Integrate tRPC analytics queries for mock data
 
 ### Task 1.9 - Operator Console Dashboard: Session Management
 - [x] Create OperatorDashboard.tsx main component
@@ -982,6 +985,9 @@ All core features implemented and production-ready.
 - [x] Add quick action buttons for common tasks
 - [x] Create session notes/memo panel
 - [x] Write component tests for dashboard interactions
+- [x] Register /operator-dashboard/:sessionId route in App.tsx
+- [x] Integrate Ably auth for real-time subscriptions
+- [x] Connect to analytics tRPC queries
 
 ### Task 1.10 - Post-Event Analytics: Sentiment & Engagement
 - [x] Create PostEventAnalytics.tsx component
@@ -996,3 +1002,6 @@ All core features implemented and production-ready.
 - [x] Implement data filtering by date range
 - [x] Create custom report builder
 - [x] Write component tests for analytics
+- [x] Register /analytics/:sessionId route in App.tsx
+- [x] Create analytics tRPC router with 10 procedures
+- [x] Write 35+ integration tests for routes/Ably/analytics

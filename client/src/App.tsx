@@ -9,6 +9,9 @@ import LiveQaSession from "./pages/LiveQaSession";
 
 import AgiToolGallery from "./pages/AgiToolGallery";
 import OperatorConsole from "./pages/OperatorConsole";
+import PresenterTeleprompter from "./pages/PresenterTeleprompter";
+import OperatorDashboard from "./pages/OperatorDashboard";
+import PostEventAnalytics from "./pages/PostEventAnalytics";
 
 export default function App() {
   return (
@@ -22,6 +25,12 @@ export default function App() {
 
             <Route path="/agi-tools" component={AgiToolGallery} />
             <Route path="/operator/:sessionId" component={OperatorConsole} />
+            
+            {/* Sprint 1 Tasks 1.8-1.10 Routes */}
+            <Route path="/presenter/:sessionId" component={PresenterTeleprompter} />
+            <Route path="/operator-dashboard/:sessionId" component={OperatorDashboard} />
+            <Route path="/analytics/:sessionId" component={PostEventAnalytics} />
+            
             <Route component={NotFound} />
           </Switch>
         </TooltipProvider>
