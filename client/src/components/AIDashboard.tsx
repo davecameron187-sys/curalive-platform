@@ -551,15 +551,47 @@ export default function AIDashboard({ sessions }: AIDashboardProps) {
         fd2.append("file", recFile);
         const transRes = await fetch("/api/transcribe-audio", { method: "POST", body: fd2 });
         if (transRes.ok) {
-          const { transcript } = await transRes.json();
+          const transData = await transRes.json();
           const sessionData = sessions.find(s => s.id === selectedSessionId);
+
+          if (transData.transcriptionStatus === "quota_exceeded" || !transData.transcript?.trim()) {
+            processTranscript.mutate({
+              clientName: sessionData?.clientName ?? "Unknown",
+              eventName: sessionData?.eventName ?? "Unknown",
+              eventType: (sessionData?.eventType ?? "other") as any,
+              transcriptText: "",
+              notes: `Auto-processed from AI Dashboard — session #${selectedSessionId}`,
+              savedRecordingPath: transData.savedRecordingPath,
+              transcriptionStatus: "quota_exceeded" as const,
+              transcriptionError: transData.transcriptionError,
+            }, {
+              onSuccess: () => {
+                toast.success("Recording saved. Transcription quota exceeded — you can retry later.");
+                archives.refetch();
+                sessionDetail.refetch();
+                setUploadStatus("done");
+                setRecFile(null);
+                setIsUploading(false);
+              },
+              onError: () => {
+                toast.error("Recording saved but archive creation failed");
+                sessionDetail.refetch();
+                setUploadStatus("done");
+                setRecFile(null);
+                setIsUploading(false);
+              },
+            });
+            return;
+          }
+
           processTranscript.mutate({
             clientName: sessionData?.clientName ?? "Unknown",
             eventName: sessionData?.eventName ?? "Unknown",
             eventType: (sessionData?.eventType ?? "other") as any,
-            transcriptText: transcript,
+            transcriptText: transData.transcript,
             notes: `Auto-processed from AI Dashboard — session #${selectedSessionId}`,
             selectedModules: Array.from(selectedServices),
+            savedRecordingPath: transData.savedRecordingPath,
           }, {
             onSuccess: () => {
               toast.success("Recording uploaded and transcribed — AI report generated");
@@ -581,6 +613,18 @@ export default function AIDashboard({ sessions }: AIDashboardProps) {
         } else {
           const errData = await transRes.json().catch(() => ({}));
           if (transRes.status === 429 || errData.code === "QUOTA_EXCEEDED") {
+            if (errData.savedRecordingPath) {
+              const sessionData = sessions.find(s => s.id === selectedSessionId);
+              processTranscript.mutate({
+                clientName: sessionData?.clientName ?? "Unknown",
+                eventName: sessionData?.eventName ?? "Unknown",
+                eventType: (sessionData?.eventType ?? "other") as any,
+                transcriptText: "",
+                savedRecordingPath: errData.savedRecordingPath,
+                transcriptionStatus: "quota_exceeded" as const,
+                transcriptionError: errData.error,
+              });
+            }
             toast.error("Recording saved but transcription quota exceeded — you can retry transcription later from the archive");
           } else {
             toast.error("Recording saved but transcription failed — you can retry later");

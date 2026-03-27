@@ -986,10 +986,12 @@ export const archiveUploadRouter = router({
         ]),
         eventDate: z.string().optional(),
         platform: z.string().optional(),
-        transcriptText: z.string().min(10).max(500000),
+        transcriptText: z.string().max(500000),
         notes: z.string().optional(),
         selectedModules: z.array(z.string()).optional(),
         savedRecordingPath: z.string().optional(),
+        transcriptionStatus: z.enum(["completed", "pending", "quota_exceeded", "failed"]).optional(),
+        transcriptionError: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -1012,7 +1014,9 @@ export const archiveUploadRouter = router({
         }
       }
 
-    const fingerprint = computeTranscriptFingerprint(input.transcriptText);
+      const hasTranscript = (input.transcriptText ?? "").trim().length >= 10;
+      const transcriptionStatus = input.transcriptionStatus ?? (hasTranscript ? "completed" : "pending");
+      const fingerprint = hasTranscript ? computeTranscriptFingerprint(input.transcriptText) : null;
 
       const [existingRows] = await rawSql(
         `SELECT id, event_id, client_name, event_name, event_type, created_at
@@ -1032,39 +1036,45 @@ export const archiveUploadRouter = router({
         );
       }
 
-      const [fingerprintRows] = await rawSql(
-        `SELECT id, event_id, client_name, event_name FROM archive_events
-         WHERE transcript_fingerprint = ?
-         LIMIT 1`,
-        [fingerprint]
-      );
-      if ((fingerprintRows as any[])?.length > 0) {
-        const match = (fingerprintRows as any[])[0];
-        throw new Error(
-          `Duplicate content detected: This transcript has already been uploaded as "${match.event_name}" for ${match.client_name} (Archive ID: ${match.event_id || match.id}). The content matches an existing archive even though the event details differ.`
+      if (fingerprint) {
+        const [fingerprintRows] = await rawSql(
+          `SELECT id, event_id, client_name, event_name FROM archive_events
+           WHERE transcript_fingerprint = ?
+           LIMIT 1`,
+          [fingerprint]
         );
+        if ((fingerprintRows as any[])?.length > 0) {
+          const match = (fingerprintRows as any[])[0];
+          throw new Error(
+            `Duplicate content detected: This transcript has already been uploaded as "${match.event_name}" for ${match.client_name} (Archive ID: ${match.event_id || match.id}). The content matches an existing archive even though the event details differ.`
+          );
+        }
       }
 
-      const rawSegments = input.transcriptText
+      const transcriptText = input.transcriptText ?? "";
+      const rawSegments = transcriptText
         .split(/\n{2,}|\n/)
         .map((s) => s.trim())
         .filter((s) => s.length > 10);
 
-      const wordCount = input.transcriptText
+      const wordCount = transcriptText
         .split(/\s+/)
         .filter(Boolean).length;
 
-      const complianceFlags = COMPLIANCE_KEYWORDS.filter((k) =>
-        input.transcriptText.toLowerCase().includes(k)
-      ).length;
+      const complianceFlags = hasTranscript ? COMPLIANCE_KEYWORDS.filter((k) =>
+        transcriptText.toLowerCase().includes(k)
+      ).length : 0;
 
-      const sentimentAvg = await scoreSentimentFromText(input.transcriptText);
+      const sentimentAvg = hasTranscript ? await scoreSentimentFromText(transcriptText) : null;
+
+      const archiveStatus = hasTranscript ? "processing" : "recording_saved";
 
       const [result] = await rawSql(
         `INSERT INTO archive_events
           (event_id, client_name, event_name, event_type, event_date, platform, transcript_text,
-           word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint, recording_path)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?, ?)
+           word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint, recording_path,
+           transcription_status, transcription_provider, transcription_error_code, transcription_error_message)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          RETURNING id`,
         [
           null,
@@ -1073,19 +1083,38 @@ export const archiveUploadRouter = router({
           input.eventType,
           input.eventDate ?? null,
           input.platform ?? null,
-          input.transcriptText,
+          transcriptText,
           wordCount,
           rawSegments.length,
           sentimentAvg,
           complianceFlags,
+          archiveStatus,
           input.notes ?? null,
           fingerprint,
           validatedRecordingPath,
+          transcriptionStatus,
+          "whisper",
+          transcriptionStatus !== "completed" ? (input.transcriptionStatus ?? null) : null,
+          input.transcriptionError ?? null,
         ]
       );
 
       const archiveId: number = Array.isArray(result) ? (result[0]?.id ?? 0) : ((result as any).insertId ?? 0);
       await rawSql(`UPDATE archive_events SET event_id = ? WHERE id = ?`, [`archive-${archiveId}`, archiveId]);
+
+      if (!hasTranscript) {
+        return {
+          archiveId,
+          eventId: `archive-${archiveId}`,
+          status: archiveStatus,
+          transcriptionStatus,
+          message: transcriptionStatus === "quota_exceeded"
+            ? "Recording saved successfully. Transcription is temporarily unavailable due to quota limits. You can retry transcription later."
+            : "Recording saved. Transcription is pending.",
+          hasRecording: !!validatedRecordingPath,
+          hasTranscript: false,
+        };
+      }
 
       const metricsPromise = generateMetricsFromArchive(
         archiveId,
@@ -1093,18 +1122,18 @@ export const archiveUploadRouter = router({
         input.eventName,
         input.eventType,
         rawSegments,
-        sentimentAvg,
+        sentimentAvg ?? 50,
         complianceFlags
       );
 
       let aiReport: AiReport | null = null;
       try {
         aiReport = await generateFullAiReport(
-          input.transcriptText,
+          transcriptText,
           input.clientName,
           input.eventName,
           input.eventType,
-          sentimentAvg,
+          sentimentAvg ?? 50,
           complianceFlags,
           input.selectedModules
         );
@@ -1115,7 +1144,7 @@ export const archiveUploadRouter = router({
       const { eventId, eventTitle, metricsCount } = await metricsPromise;
 
       await rawSql(
-        `UPDATE archive_events SET status = 'completed', tagged_metrics_generated = ?, ai_report = ? WHERE id = ?`,
+        `UPDATE archive_events SET status = 'completed', tagged_metrics_generated = ?, ai_report = ?, transcription_status = 'completed' WHERE id = ?`,
         [metricsCount, aiReport ? JSON.stringify(aiReport) : null, archiveId]
       );
 
@@ -1428,4 +1457,55 @@ export const archiveUploadRouter = router({
       return [];
     }
   }),
+
+  retryTranscription: publicProcedure
+    .input(z.object({ archiveId: z.number() }))
+    .mutation(async ({ input }) => {
+      const [rows] = await rawSql(
+        `SELECT id, recording_path, transcription_status, transcript_text FROM archive_events WHERE id = ? LIMIT 1`,
+        [input.archiveId]
+      );
+      const archive = (rows as any[])?.[0];
+      if (!archive) throw new Error("Archive not found");
+      if (!archive.recording_path) throw new Error("No recording file associated with this archive. Transcription retry requires a saved recording.");
+
+      const existingTranscript = (archive.transcript_text ?? "").trim();
+      if (existingTranscript.length > 10 && archive.transcription_status === "completed") {
+        return { ok: true, message: "Transcript already exists", transcriptionStatus: "completed" };
+      }
+
+      try {
+        const { transcribeArchiveAudio } = await import("../_core/transcription/transcribeArchiveAudio");
+        const result = await transcribeArchiveAudio(archive.recording_path);
+
+        if (result.ok && result.transcriptText.trim().length > 10) {
+          await rawSql(
+            `UPDATE archive_events SET transcript_text = ?, transcription_status = 'completed', transcription_provider = ?, transcription_error_code = NULL, transcription_error_message = NULL, status = 'processing' WHERE id = ?`,
+            [result.transcriptText, result.provider ?? "whisper", input.archiveId]
+          );
+
+          return {
+            ok: true,
+            message: "Transcription completed successfully",
+            transcriptionStatus: "completed",
+            wordCount: result.transcriptText.split(/\s+/).filter(Boolean).length,
+          };
+        } else {
+          await rawSql(
+            `UPDATE archive_events SET transcription_status = ?, transcription_error_code = ?, transcription_error_message = ? WHERE id = ?`,
+            [result.status, result.errorCode ?? null, result.errorMessage ?? null, input.archiveId]
+          );
+          throw new Error(result.errorMessage ?? "Transcription failed");
+        }
+      } catch (err: any) {
+        const isQuota = err.message?.includes("QUOTA_EXCEEDED") || err.message?.includes("429") || err.message?.includes("insufficient_quota");
+        if (isQuota) {
+          await rawSql(
+            `UPDATE archive_events SET transcription_status = 'quota_exceeded', transcription_error_code = 'QUOTA_EXCEEDED', transcription_error_message = ? WHERE id = ?`,
+            [err.message, input.archiveId]
+          );
+        }
+        throw err;
+      }
+    }),
 });

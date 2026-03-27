@@ -166,7 +166,17 @@ Optional (not yet configured, non-critical for app loading):
 
 - **Startup migrations**: `ensureArchiveEventsColumns()` in `server/_core/index.ts` runs `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` at server start to ensure schema is up-to-date in both dev and production
 - **Drizzle migrations**: Old MySQL-style migrations in `drizzle/` are broken; schema changes use startup ALTER TABLE instead
-- **archive_events columns**: `transcript_fingerprint` (VARCHAR 64) added via startup migration — used for duplicate content detection
+- **archive_events columns**: `transcript_fingerprint` (VARCHAR 64), `transcription_status` (default 'pending'), `transcription_provider`, `transcription_error_code`, `transcription_error_message` — all added via startup migration
+
+## Archive Upload Transcription Fallback
+
+When Whisper API quota is exceeded during recording upload:
+- Backend returns HTTP 200 with `transcriptionStatus: "quota_exceeded"` and empty transcript
+- Archive is saved with `status: "recording_saved"`, `transcription_status: "quota_exceeded"`
+- Transcript download returns 409 JSON with explanation
+- Retry available via `retryTranscription` tRPC procedure
+- UI shows "awaiting transcription" badge with Retry button in archive list
+- Key files: `server/_core/transcription/transcribeArchiveAudio.ts`, `server/_core/transcription/transcriptionResult.ts`, `server/audioTranscribe.ts`, `server/routers/archiveUploadRouter.ts`
 
 ## Deployment
 

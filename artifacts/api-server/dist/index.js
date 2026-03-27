@@ -24711,6 +24711,137 @@ var init_valuationImpactRouter = __esm({
   }
 });
 
+// ../../server/_core/transcription/transcriptionResult.ts
+function isQuotaExceededError(error) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return message.includes("insufficient_quota") || message.includes("QUOTA_EXCEEDED") || message.includes("429");
+}
+function buildCompletedResult(transcriptText, provider = "whisper") {
+  return {
+    ok: true,
+    status: "completed",
+    transcriptText,
+    provider
+  };
+}
+function buildQuotaExceededResult(error, provider = "whisper") {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return {
+    ok: false,
+    status: "quota_exceeded",
+    transcriptText: "",
+    errorCode: "QUOTA_EXCEEDED",
+    errorMessage: message,
+    provider
+  };
+}
+function buildFailedResult(error, provider = "whisper") {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return {
+    ok: false,
+    status: "failed",
+    transcriptText: "",
+    errorCode: "TRANSCRIPTION_FAILED",
+    errorMessage: message,
+    provider
+  };
+}
+var init_transcriptionResult = __esm({
+  "../../server/_core/transcription/transcriptionResult.ts"() {
+    "use strict";
+  }
+});
+
+// ../../server/_core/transcription/transcribeArchiveAudio.ts
+var transcribeArchiveAudio_exports = {};
+__export(transcribeArchiveAudio_exports, {
+  transcribeArchiveAudio: () => transcribeArchiveAudio
+});
+async function transcribeArchiveAudio(savedRecordingPath) {
+  try {
+    const path4 = await import("path");
+    const { readFile: readFile2 } = await import("fs/promises");
+    const fullPath = path4.resolve(
+      process.cwd(),
+      "uploads",
+      "recordings",
+      path4.basename(savedRecordingPath)
+    );
+    const buffer = await readFile2(fullPath);
+    const filename = path4.basename(savedRecordingPath);
+    const hasIntegrationKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim());
+    const hasDirectKey = !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
+    let apiKey;
+    let baseUrl;
+    if (hasIntegrationKey) {
+      apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY.trim();
+      baseUrl = (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ?? "https://api.openai.com").replace(/\/+$/, "");
+    } else if (hasDirectKey) {
+      apiKey = process.env.OPENAI_API_KEY.trim();
+      baseUrl = "https://api.openai.com";
+    } else if (process.env.BUILT_IN_FORGE_API_KEY && process.env.BUILT_IN_FORGE_API_URL) {
+      apiKey = process.env.BUILT_IN_FORGE_API_KEY;
+      baseUrl = process.env.BUILT_IN_FORGE_API_URL.replace(/\/+$/, "");
+    } else {
+      return buildFailedResult(
+        new Error("No OpenAI API key configured for transcription"),
+        "whisper"
+      );
+    }
+    const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
+    const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4"].includes(ext) ? ext : "mp3";
+    const mimeType = safeExt === "mp4" ? "video/mp4" : `audio/${safeExt}`;
+    const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
+    const formData = new FormData();
+    formData.append("file", blob, `audio.${safeExt}`);
+    formData.append("model", "whisper-1");
+    formData.append("response_format", "verbose_json");
+    formData.append(
+      "prompt",
+      "Transcribe this investor event recording accurately, including speaker names and financial terminology."
+    );
+    const url = `${baseUrl}/v1/audio/transcriptions`;
+    console.log(
+      `[TranscribeArchive] Sending ${(buffer.length / 1024 / 1024).toFixed(1)}MB to Whisper API`
+    );
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Accept-Encoding": "identity"
+      },
+      body: formData
+    });
+    if (!response.ok) {
+      const errText = await response.text().catch(() => response.statusText);
+      if (response.status === 429) {
+        return buildQuotaExceededResult(
+          new Error(`Whisper API quota exceeded (429): ${errText}`),
+          "whisper"
+        );
+      }
+      return buildFailedResult(
+        new Error(`Whisper API failed (${response.status}): ${errText}`),
+        "whisper"
+      );
+    }
+    const result = await response.json();
+    const transcriptText = (result.text ?? "").trim();
+    return buildCompletedResult(transcriptText, "whisper");
+  } catch (error) {
+    if (isQuotaExceededError(error)) {
+      return buildQuotaExceededResult(error, "whisper");
+    }
+    return buildFailedResult(error, "whisper");
+  }
+}
+var init_transcribeArchiveAudio = __esm({
+  "../../server/_core/transcription/transcribeArchiveAudio.ts"() {
+    "use strict";
+    init_transcriptionResult();
+  }
+});
+
 // ../../server/routers/archiveUploadRouter.ts
 var archiveUploadRouter_exports = {};
 __export(archiveUploadRouter_exports, {
@@ -25646,10 +25777,12 @@ var init_archiveUploadRouter = __esm({
           ]),
           eventDate: z41.string().optional(),
           platform: z41.string().optional(),
-          transcriptText: z41.string().min(10).max(5e5),
+          transcriptText: z41.string().max(5e5),
           notes: z41.string().optional(),
           selectedModules: z41.array(z41.string()).optional(),
-          savedRecordingPath: z41.string().optional()
+          savedRecordingPath: z41.string().optional(),
+          transcriptionStatus: z41.enum(["completed", "pending", "quota_exceeded", "failed"]).optional(),
+          transcriptionError: z41.string().optional()
         })
       ).mutation(async ({ input }) => {
         const db2 = await getDb();
@@ -25669,7 +25802,9 @@ var init_archiveUploadRouter = __esm({
             console.warn(`[processTranscript] Invalid recording filename pattern: ${basename2}`);
           }
         }
-        const fingerprint = computeTranscriptFingerprint(input.transcriptText);
+        const hasTranscript = (input.transcriptText ?? "").trim().length >= 10;
+        const transcriptionStatus = input.transcriptionStatus ?? (hasTranscript ? "completed" : "pending");
+        const fingerprint = hasTranscript ? computeTranscriptFingerprint(input.transcriptText) : null;
         const [existingRows] = await rawSql(
           `SELECT id, event_id, client_name, event_name, event_type, created_at
          FROM archive_events
@@ -25684,29 +25819,34 @@ var init_archiveUploadRouter = __esm({
             `Duplicate upload detected: "${input.eventName}" for ${input.clientName} (${input.eventType.replace(/_/g, " ")}) was already uploaded on ${existingDate}. Archive ID: ${existing.event_id || existing.id}. If this is a different version of the same event, please rename the event to distinguish it.`
           );
         }
-        const [fingerprintRows] = await rawSql(
-          `SELECT id, event_id, client_name, event_name FROM archive_events
-         WHERE transcript_fingerprint = ?
-         LIMIT 1`,
-          [fingerprint]
-        );
-        if (fingerprintRows?.length > 0) {
-          const match = fingerprintRows[0];
-          throw new Error(
-            `Duplicate content detected: This transcript has already been uploaded as "${match.event_name}" for ${match.client_name} (Archive ID: ${match.event_id || match.id}). The content matches an existing archive even though the event details differ.`
+        if (fingerprint) {
+          const [fingerprintRows] = await rawSql(
+            `SELECT id, event_id, client_name, event_name FROM archive_events
+           WHERE transcript_fingerprint = ?
+           LIMIT 1`,
+            [fingerprint]
           );
+          if (fingerprintRows?.length > 0) {
+            const match = fingerprintRows[0];
+            throw new Error(
+              `Duplicate content detected: This transcript has already been uploaded as "${match.event_name}" for ${match.client_name} (Archive ID: ${match.event_id || match.id}). The content matches an existing archive even though the event details differ.`
+            );
+          }
         }
-        const rawSegments = input.transcriptText.split(/\n{2,}|\n/).map((s) => s.trim()).filter((s) => s.length > 10);
-        const wordCount = input.transcriptText.split(/\s+/).filter(Boolean).length;
-        const complianceFlags2 = COMPLIANCE_KEYWORDS.filter(
-          (k) => input.transcriptText.toLowerCase().includes(k)
-        ).length;
-        const sentimentAvg = await scoreSentimentFromText(input.transcriptText);
+        const transcriptText = input.transcriptText ?? "";
+        const rawSegments = transcriptText.split(/\n{2,}|\n/).map((s) => s.trim()).filter((s) => s.length > 10);
+        const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
+        const complianceFlags2 = hasTranscript ? COMPLIANCE_KEYWORDS.filter(
+          (k) => transcriptText.toLowerCase().includes(k)
+        ).length : 0;
+        const sentimentAvg = hasTranscript ? await scoreSentimentFromText(transcriptText) : null;
+        const archiveStatus = hasTranscript ? "processing" : "recording_saved";
         const [result] = await rawSql(
           `INSERT INTO archive_events
           (event_id, client_name, event_name, event_type, event_date, platform, transcript_text,
-           word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint, recording_path)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?, ?, ?)
+           word_count, segment_count, sentiment_avg, compliance_flags, status, notes, transcript_fingerprint, recording_path,
+           transcription_status, transcription_provider, transcription_error_code, transcription_error_message)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          RETURNING id`,
           [
             null,
@@ -25715,35 +25855,51 @@ var init_archiveUploadRouter = __esm({
             input.eventType,
             input.eventDate ?? null,
             input.platform ?? null,
-            input.transcriptText,
+            transcriptText,
             wordCount,
             rawSegments.length,
             sentimentAvg,
             complianceFlags2,
+            archiveStatus,
             input.notes ?? null,
             fingerprint,
-            validatedRecordingPath
+            validatedRecordingPath,
+            transcriptionStatus,
+            "whisper",
+            transcriptionStatus !== "completed" ? input.transcriptionStatus ?? null : null,
+            input.transcriptionError ?? null
           ]
         );
         const archiveId = Array.isArray(result) ? result[0]?.id ?? 0 : result.insertId ?? 0;
         await rawSql(`UPDATE archive_events SET event_id = ? WHERE id = ?`, [`archive-${archiveId}`, archiveId]);
+        if (!hasTranscript) {
+          return {
+            archiveId,
+            eventId: `archive-${archiveId}`,
+            status: archiveStatus,
+            transcriptionStatus,
+            message: transcriptionStatus === "quota_exceeded" ? "Recording saved successfully. Transcription is temporarily unavailable due to quota limits. You can retry transcription later." : "Recording saved. Transcription is pending.",
+            hasRecording: !!validatedRecordingPath,
+            hasTranscript: false
+          };
+        }
         const metricsPromise = generateMetricsFromArchive(
           archiveId,
           input.clientName,
           input.eventName,
           input.eventType,
           rawSegments,
-          sentimentAvg,
+          sentimentAvg ?? 50,
           complianceFlags2
         );
         let aiReport = null;
         try {
           aiReport = await generateFullAiReport(
-            input.transcriptText,
+            transcriptText,
             input.clientName,
             input.eventName,
             input.eventType,
-            sentimentAvg,
+            sentimentAvg ?? 50,
             complianceFlags2,
             input.selectedModules
           );
@@ -25752,7 +25908,7 @@ var init_archiveUploadRouter = __esm({
         }
         const { eventId, eventTitle, metricsCount } = await metricsPromise;
         await rawSql(
-          `UPDATE archive_events SET status = 'completed', tagged_metrics_generated = ?, ai_report = ? WHERE id = ?`,
+          `UPDATE archive_events SET status = 'completed', tagged_metrics_generated = ?, ai_report = ?, transcription_status = 'completed' WHERE id = ?`,
           [metricsCount, aiReport ? JSON.stringify(aiReport) : null, archiveId]
         );
         await writeAnonymizedRecord({
@@ -26000,6 +26156,50 @@ var init_archiveUploadRouter = __esm({
           return rows;
         } catch {
           return [];
+        }
+      }),
+      retryTranscription: publicProcedure.input(z41.object({ archiveId: z41.number() })).mutation(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT id, recording_path, transcription_status, transcript_text FROM archive_events WHERE id = ? LIMIT 1`,
+          [input.archiveId]
+        );
+        const archive = rows?.[0];
+        if (!archive) throw new Error("Archive not found");
+        if (!archive.recording_path) throw new Error("No recording file associated with this archive. Transcription retry requires a saved recording.");
+        const existingTranscript = (archive.transcript_text ?? "").trim();
+        if (existingTranscript.length > 10 && archive.transcription_status === "completed") {
+          return { ok: true, message: "Transcript already exists", transcriptionStatus: "completed" };
+        }
+        try {
+          const { transcribeArchiveAudio: transcribeArchiveAudio2 } = await Promise.resolve().then(() => (init_transcribeArchiveAudio(), transcribeArchiveAudio_exports));
+          const result = await transcribeArchiveAudio2(archive.recording_path);
+          if (result.ok && result.transcriptText.trim().length > 10) {
+            await rawSql(
+              `UPDATE archive_events SET transcript_text = ?, transcription_status = 'completed', transcription_provider = ?, transcription_error_code = NULL, transcription_error_message = NULL, status = 'processing' WHERE id = ?`,
+              [result.transcriptText, result.provider ?? "whisper", input.archiveId]
+            );
+            return {
+              ok: true,
+              message: "Transcription completed successfully",
+              transcriptionStatus: "completed",
+              wordCount: result.transcriptText.split(/\s+/).filter(Boolean).length
+            };
+          } else {
+            await rawSql(
+              `UPDATE archive_events SET transcription_status = ?, transcription_error_code = ?, transcription_error_message = ? WHERE id = ?`,
+              [result.status, result.errorCode ?? null, result.errorMessage ?? null, input.archiveId]
+            );
+            throw new Error(result.errorMessage ?? "Transcription failed");
+          }
+        } catch (err) {
+          const isQuota = err.message?.includes("QUOTA_EXCEEDED") || err.message?.includes("429") || err.message?.includes("insufficient_quota");
+          if (isQuota) {
+            await rawSql(
+              `UPDATE archive_events SET transcription_status = 'quota_exceeded', transcription_error_code = 'QUOTA_EXCEEDED', transcription_error_message = ? WHERE id = ?`,
+              [err.message, input.archiveId]
+            );
+          }
+          throw err;
         }
       })
     });
@@ -40296,10 +40496,20 @@ function registerAudioTranscribeRoute(app) {
         res.json({ success: true, transcript, savedRecordingPath });
       } catch (err) {
         console.error("[AudioTranscribe]", err);
-        const isQuotaError = err.message?.includes("QUOTA_EXCEEDED") || err.message?.includes("429");
-        const statusCode = isQuotaError ? 429 : 500;
-        const errorMessage = isQuotaError ? "AI transcription quota exceeded. Your recording has been saved \u2014 you can retry transcription later from the archive." : err.message ?? "Transcription failed";
-        res.status(statusCode).json({ error: errorMessage, code: isQuotaError ? "QUOTA_EXCEEDED" : "TRANSCRIPTION_FAILED", savedRecordingPath });
+        const isQuotaError = err.message?.includes("QUOTA_EXCEEDED") || err.message?.includes("429") || err.message?.includes("insufficient_quota");
+        if (isQuotaError && savedRecordingPath) {
+          res.status(200).json({
+            success: true,
+            transcript: "",
+            savedRecordingPath,
+            transcriptionStatus: "quota_exceeded",
+            transcriptionError: "AI transcription quota exceeded. Your recording has been saved \u2014 you can retry transcription later."
+          });
+        } else {
+          const statusCode = isQuotaError ? 429 : 500;
+          const errorMessage = isQuotaError ? "AI transcription quota exceeded. Your recording has been saved \u2014 you can retry transcription later from the archive." : err.message ?? "Transcription failed";
+          res.status(statusCode).json({ error: errorMessage, code: isQuotaError ? "QUOTA_EXCEEDED" : "TRANSCRIPTION_FAILED", savedRecordingPath });
+        }
       } finally {
         if (tmpDir) {
           rm(tmpDir, { recursive: true, force: true }).catch(() => {
@@ -41374,7 +41584,11 @@ async function ensureArchiveEventsColumns() {
   try {
     const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
     await rawSql2(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcript_fingerprint VARCHAR(64)`);
-    console.log("[Migration] \u2713 archive_events.transcript_fingerprint column ensured");
+    await rawSql2(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcription_status text DEFAULT 'pending'`);
+    await rawSql2(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcription_provider text`);
+    await rawSql2(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcription_error_code text`);
+    await rawSql2(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcription_error_message text`);
+    console.log("[Migration] \u2713 archive_events columns ensured (fingerprint + transcription status)");
   } catch (err) {
     if (err?.message?.includes("already exists") || err?.message?.includes("does not exist")) {
       return;
@@ -41855,15 +42069,43 @@ async function startServer() {
   app.get("/api/archives/:id/transcript", async (req, res) => {
     try {
       const archiveId = parseInt(req.params.id, 10);
-      if (isNaN(archiveId)) return res.status(400).json({ error: "Invalid archive ID" });
+      if (isNaN(archiveId)) return res.status(400).json({ ok: false, error: "Invalid archive ID" });
       const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
       const [rows] = await rawSql2(
-        `SELECT event_name, client_name, event_date, transcript_text FROM archive_events WHERE id = ? LIMIT 1`,
+        `SELECT event_name, client_name, event_date, transcript_text, transcription_status, transcription_error_code FROM archive_events WHERE id = ? LIMIT 1`,
         [archiveId]
       );
       const row = rows[0];
-      if (!row) return res.status(404).json({ error: "Archive event not found", archiveId });
-      if (!row.transcript_text) return res.status(404).json({ error: "No transcript available for this event", archiveId });
+      if (!row) return res.status(404).json({ ok: false, error: "Archive not found", archiveId });
+      const transcript = (row.transcript_text ?? "").trim();
+      const status = row.transcription_status ?? "unknown";
+      if (!transcript) {
+        if (status === "quota_exceeded") {
+          return res.status(409).json({
+            ok: false,
+            error: "Transcript unavailable \u2014 transcription quota was exceeded when this archive was uploaded. You can retry transcription later.",
+            transcription_status: "quota_exceeded",
+            archiveId
+          });
+        }
+        if (status === "failed") {
+          return res.status(409).json({
+            ok: false,
+            error: "Transcript unavailable \u2014 transcription failed during upload. You can retry transcription later.",
+            transcription_status: "failed",
+            archiveId
+          });
+        }
+        if (status === "pending") {
+          return res.status(409).json({
+            ok: false,
+            error: "Transcript is still being processed. Please try again shortly.",
+            transcription_status: "pending",
+            archiveId
+          });
+        }
+        return res.status(404).json({ ok: false, error: "No transcript available for this event", archiveId });
+      }
       const safeName = (row.event_name || "transcript").replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
       const header = `CuraLive Intelligence Transcript
 ${"=".repeat(40)}
@@ -41873,13 +42115,13 @@ Date: ${row.event_date || "N/A"}
 ${"=".repeat(40)}
 
 `;
-      const content = header + row.transcript_text;
+      const content = header + transcript;
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="${safeName}_Transcript.txt"`);
       res.send(content);
     } catch (err) {
       console.error("[Archive Transcript Download]", err.message);
-      res.status(500).json({ error: "Failed to download transcript" });
+      res.status(500).json({ ok: false, error: "Failed to download transcript" });
     }
   });
   app.get("/api/archives/:id/recording", async (req, res) => {
@@ -41927,7 +42169,7 @@ ${"=".repeat(40)}
       const [rows] = await rawSql2(
         `SELECT id, event_name, client_name, event_type, event_date, status,
                 length(transcript_text) as transcript_len,
-                recording_path
+                recording_path, transcription_status, transcription_error_code
          FROM archive_events ORDER BY id DESC`,
         []
       );
@@ -41940,6 +42182,8 @@ ${"=".repeat(40)}
         status: r.status,
         has_transcript: (r.transcript_len ?? 0) > 0,
         has_recording: !!(r.recording_path && r.recording_path.trim().length > 0),
+        transcription_status: r.transcription_status ?? "unknown",
+        transcription_error_code: r.transcription_error_code ?? null,
         transcript_url: (r.transcript_len ?? 0) > 0 ? `/api/archives/${r.id}/transcript` : null,
         recording_url: r.recording_path ? `/api/archives/${r.id}/recording` : null
       }));

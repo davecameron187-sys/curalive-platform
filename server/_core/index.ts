@@ -64,7 +64,11 @@ async function ensureArchiveEventsColumns() {
   try {
     const { rawSql } = await import("../db");
     await rawSql(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcript_fingerprint VARCHAR(64)`);
-    console.log("[Migration] ✓ archive_events.transcript_fingerprint column ensured");
+    await rawSql(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcription_status text DEFAULT 'pending'`);
+    await rawSql(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcription_provider text`);
+    await rawSql(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcription_error_code text`);
+    await rawSql(`ALTER TABLE archive_events ADD COLUMN IF NOT EXISTS transcription_error_message text`);
+    console.log("[Migration] ✓ archive_events columns ensured (fingerprint + transcription status)");
   } catch (err: any) {
     if (err?.message?.includes("already exists") || err?.message?.includes("does not exist")) {
       return;
@@ -670,24 +674,55 @@ async function startServer() {
   app.get("/api/archives/:id/transcript", async (req, res) => {
     try {
       const archiveId = parseInt(req.params.id, 10);
-      if (isNaN(archiveId)) return res.status(400).json({ error: "Invalid archive ID" });
+      if (isNaN(archiveId)) return res.status(400).json({ ok: false, error: "Invalid archive ID" });
       const { rawSql } = await import("../db");
       const [rows] = await rawSql(
-        `SELECT event_name, client_name, event_date, transcript_text FROM archive_events WHERE id = ? LIMIT 1`,
+        `SELECT event_name, client_name, event_date, transcript_text, transcription_status, transcription_error_code FROM archive_events WHERE id = ? LIMIT 1`,
         [archiveId]
       );
       const row = (rows as any[])[0];
-      if (!row) return res.status(404).json({ error: "Archive event not found", archiveId });
-      if (!row.transcript_text) return res.status(404).json({ error: "No transcript available for this event", archiveId });
+      if (!row) return res.status(404).json({ ok: false, error: "Archive not found", archiveId });
+
+      const transcript = (row.transcript_text ?? "").trim();
+      const status = row.transcription_status ?? "unknown";
+
+      if (!transcript) {
+        if (status === "quota_exceeded") {
+          return res.status(409).json({
+            ok: false,
+            error: "Transcript unavailable — transcription quota was exceeded when this archive was uploaded. You can retry transcription later.",
+            transcription_status: "quota_exceeded",
+            archiveId,
+          });
+        }
+        if (status === "failed") {
+          return res.status(409).json({
+            ok: false,
+            error: "Transcript unavailable — transcription failed during upload. You can retry transcription later.",
+            transcription_status: "failed",
+            archiveId,
+          });
+        }
+        if (status === "pending") {
+          return res.status(409).json({
+            ok: false,
+            error: "Transcript is still being processed. Please try again shortly.",
+            transcription_status: "pending",
+            archiveId,
+          });
+        }
+        return res.status(404).json({ ok: false, error: "No transcript available for this event", archiveId });
+      }
+
       const safeName = (row.event_name || "transcript").replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
       const header = `CuraLive Intelligence Transcript\n${"=".repeat(40)}\nEvent: ${row.event_name}\nClient: ${row.client_name}\nDate: ${row.event_date || "N/A"}\n${"=".repeat(40)}\n\n`;
-      const content = header + row.transcript_text;
+      const content = header + transcript;
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="${safeName}_Transcript.txt"`);
       res.send(content);
     } catch (err: any) {
       console.error("[Archive Transcript Download]", err.message);
-      res.status(500).json({ error: "Failed to download transcript" });
+      res.status(500).json({ ok: false, error: "Failed to download transcript" });
     }
   });
 
@@ -742,7 +777,7 @@ async function startServer() {
       const [rows] = await rawSql(
         `SELECT id, event_name, client_name, event_type, event_date, status,
                 length(transcript_text) as transcript_len,
-                recording_path
+                recording_path, transcription_status, transcription_error_code
          FROM archive_events ORDER BY id DESC`,
         []
       );
@@ -755,6 +790,8 @@ async function startServer() {
         status: r.status,
         has_transcript: (r.transcript_len ?? 0) > 0,
         has_recording: !!(r.recording_path && r.recording_path.trim().length > 0),
+        transcription_status: r.transcription_status ?? "unknown",
+        transcription_error_code: r.transcription_error_code ?? null,
         transcript_url: (r.transcript_len ?? 0) > 0 ? `/api/archives/${r.id}/transcript` : null,
         recording_url: r.recording_path ? `/api/archives/${r.id}/recording` : null,
       }));

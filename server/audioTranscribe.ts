@@ -238,12 +238,22 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
         res.json({ success: true, transcript, savedRecordingPath });
       } catch (err: any) {
         console.error("[AudioTranscribe]", err);
-        const isQuotaError = err.message?.includes("QUOTA_EXCEEDED") || err.message?.includes("429");
-        const statusCode = isQuotaError ? 429 : 500;
-        const errorMessage = isQuotaError
-          ? "AI transcription quota exceeded. Your recording has been saved — you can retry transcription later from the archive."
-          : (err.message ?? "Transcription failed");
-        res.status(statusCode).json({ error: errorMessage, code: isQuotaError ? "QUOTA_EXCEEDED" : "TRANSCRIPTION_FAILED", savedRecordingPath });
+        const isQuotaError = err.message?.includes("QUOTA_EXCEEDED") || err.message?.includes("429") || err.message?.includes("insufficient_quota");
+        if (isQuotaError && savedRecordingPath) {
+          res.status(200).json({
+            success: true,
+            transcript: "",
+            savedRecordingPath,
+            transcriptionStatus: "quota_exceeded",
+            transcriptionError: "AI transcription quota exceeded. Your recording has been saved — you can retry transcription later.",
+          });
+        } else {
+          const statusCode = isQuotaError ? 429 : 500;
+          const errorMessage = isQuotaError
+            ? "AI transcription quota exceeded. Your recording has been saved — you can retry transcription later from the archive."
+            : (err.message ?? "Transcription failed");
+          res.status(statusCode).json({ error: errorMessage, code: isQuotaError ? "QUOTA_EXCEEDED" : "TRANSCRIPTION_FAILED", savedRecordingPath });
+        }
       } finally {
         if (tmpDir) {
           rm(tmpDir, { recursive: true, force: true }).catch(() => {});

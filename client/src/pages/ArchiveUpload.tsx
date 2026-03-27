@@ -5,7 +5,7 @@ import { useSmartBack } from "@/lib/useSmartBack";
 import {
   ArrowLeft, Upload, FileText, CheckCircle, AlertTriangle,
   BarChart2, Shield, Users, Database, ChevronRight, Clock,
-  Download, Mic, ChevronDown,
+  Download, Mic, ChevronDown, RotateCw,
 } from "lucide-react";
 
 const EVENT_TYPES = [
@@ -73,6 +73,16 @@ export default function ArchiveUpload() {
   });
 
   const { data: archives, refetch } = trpc.archiveUpload.listArchives.useQuery();
+
+  const retryTranscription = trpc.archiveUpload.retryTranscription.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Retry failed. Please try again later.");
+    },
+  });
 
   const archiveDetail = trpc.archiveUpload.getArchiveDetail.useQuery(
     { archiveId: expandedArchiveId ?? 0 },
@@ -605,13 +615,28 @@ export default function ArchiveUpload() {
                           {a.tagged_metrics_generated} intelligence records
                         </div>
                       </div>
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        a.status === "completed"
-                          ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                          : "bg-muted text-muted-foreground border border-border"
-                      }`}>
-                        {a.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {a.status === "recording_saved" && (
+                          <button
+                            type="button"
+                            onClick={() => retryTranscription.mutate({ archiveId: a.id })}
+                            disabled={retryTranscription.isPending}
+                            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                          >
+                            <RotateCw className={`h-3 w-3 ${retryTranscription.isPending ? "animate-spin" : ""}`} />
+                            Retry
+                          </button>
+                        )}
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          a.status === "completed"
+                            ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                            : a.status === "recording_saved"
+                            ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
+                            : "bg-muted text-muted-foreground border border-border"
+                        }`}>
+                          {a.status === "recording_saved" ? "awaiting transcription" : a.status}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>

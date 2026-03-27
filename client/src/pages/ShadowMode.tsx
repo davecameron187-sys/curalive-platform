@@ -347,6 +347,9 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
     let transcript = archiveForm.transcriptText.trim();
     let savedRecPath: string | null = null;
 
+    let transcriptionStatus: "completed" | "quota_exceeded" | "failed" | undefined;
+    let transcriptionError: string | undefined;
+
     if (archiveInputMode === "recording") {
       if (!archiveRecFile) {
         toast.error("Please select an audio or video recording to upload.");
@@ -358,19 +361,35 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
         fd.append("file", archiveRecFile);
         toast.success("Uploading recording to Whisper AI for transcription...");
         const res = await fetch("/api/transcribe-audio", { method: "POST", body: fd });
-        if (!res.ok) {
+        if (res.ok) {
+          const data = await res.json();
+          savedRecPath = data.savedRecordingPath || null;
+          if (data.transcriptionStatus === "quota_exceeded" || !data.transcript?.trim()) {
+            transcriptionStatus = "quota_exceeded" as const;
+            transcriptionError = data.transcriptionError || "Transcription quota exceeded";
+            transcript = "";
+            toast.success("Recording saved. Transcription quota exceeded — you can retry later.");
+          } else {
+            transcript = data.transcript;
+            transcriptionStatus = "completed" as const;
+            setArchiveForm(f => ({ ...f, transcriptText: data.transcript }));
+            toast.success(`Transcription complete — ${data.transcript.split(/\s+/).filter(Boolean).length.toLocaleString()} words`);
+          }
+        } else {
           const data = await res.json().catch(() => ({ error: "Transcription failed" }));
           const isQuota = res.status === 429 || data.code === "QUOTA_EXCEEDED";
-          const msg = isQuota
-            ? "AI transcription quota exceeded. Please paste the transcript text manually, or retry later."
-            : (data.error ?? "Transcription failed");
-          throw new Error(msg);
+          savedRecPath = data.savedRecordingPath || null;
+          if (isQuota && savedRecPath) {
+            transcriptionStatus = "quota_exceeded" as const;
+            transcriptionError = data.error || "Transcription quota exceeded";
+            transcript = "";
+            toast.success("Recording saved. Transcription quota exceeded — you can retry later.");
+          } else {
+            throw new Error(isQuota
+              ? "AI transcription quota exceeded. Please paste the transcript text manually, or retry later."
+              : (data.error ?? "Transcription failed"));
+          }
         }
-        const { transcript: t, savedRecordingPath: srp } = await res.json();
-        transcript = t;
-        savedRecPath = srp || null;
-        setArchiveForm(f => ({ ...f, transcriptText: t }));
-        toast.success(`Transcription complete — ${t.split(/\s+/).filter(Boolean).length.toLocaleString()} words`);
       } catch (err: any) {
         toast.error(err.message ?? "Transcription failed");
         setArchiveTranscribing(false);
@@ -379,7 +398,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
       setArchiveTranscribing(false);
     }
 
-    if (!transcript) {
+    if (!transcript && !transcriptionStatus) {
       toast.error("No transcript available. Please paste text, upload a .txt file, or upload a recording.");
       return;
     }
@@ -393,6 +412,8 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
       transcriptText: transcript,
       notes: archiveForm.notes || undefined,
       savedRecordingPath: savedRecPath || undefined,
+      transcriptionStatus,
+      transcriptionError,
     });
   }
 
@@ -513,29 +534,59 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
       const fd = new FormData();
       fd.append("file", recFile);
       const res = await fetch("/api/transcribe-audio", { method: "POST", body: fd });
-      if (!res.ok) {
+      let transcriptText = "";
+      let savedRecordingPath: string | undefined;
+      let tStatus: string | undefined;
+      let tError: string | undefined;
+
+      if (res.ok) {
+        const data = await res.json();
+        savedRecordingPath = data.savedRecordingPath || undefined;
+        if (data.transcriptionStatus === "quota_exceeded" || !data.transcript?.trim()) {
+          tStatus = "quota_exceeded";
+          tError = data.transcriptionError || "Transcription quota exceeded";
+          transcriptText = "";
+          toast.success("Recording saved. Transcription quota exceeded — you can retry later.");
+        } else {
+          transcriptText = data.transcript;
+          tStatus = "completed";
+        }
+      } else {
         const data = await res.json().catch(() => ({ error: "Transcription failed" }));
         const isQuota = res.status === 429 || data.code === "QUOTA_EXCEEDED";
-        const msg = isQuota
-          ? "AI transcription quota exceeded. Please try again later or upload a text transcript instead."
-          : (data.error ?? "Transcription failed");
-        throw new Error(msg);
+        savedRecordingPath = data.savedRecordingPath || undefined;
+        if (isQuota && savedRecordingPath) {
+          tStatus = "quota_exceeded";
+          tError = data.error || "Transcription quota exceeded";
+          transcriptText = "";
+          toast.success("Recording saved. Transcription quota exceeded — you can retry later.");
+        } else {
+          throw new Error(isQuota
+            ? "AI transcription quota exceeded. Please try again later or upload a text transcript instead."
+            : (data.error ?? "Transcription failed"));
+        }
       }
-      const { transcript, savedRecordingPath } = await res.json();
+
       setRecStatus("processing");
       processTranscript.mutate({
         clientName: recForm.clientName.trim(),
         eventName: recForm.eventName.trim(),
         eventType: recForm.eventType as any,
         eventDate: recForm.eventDate || undefined,
-        transcriptText: transcript,
+        transcriptText,
         notes: recForm.notes || undefined,
-        savedRecordingPath: savedRecordingPath || undefined,
+        savedRecordingPath,
+        transcriptionStatus: tStatus as any,
+        transcriptionError: tError,
       }, {
         onSuccess: (data) => {
           setRecResult(data);
           setRecStatus("done");
-          toast.success("Recording transcribed and processed successfully");
+          if (tStatus === "quota_exceeded") {
+            toast.success("Recording saved — transcription can be retried later");
+          } else {
+            toast.success("Recording transcribed and processed successfully");
+          }
           archives.refetch();
         },
         onError: (err) => {
