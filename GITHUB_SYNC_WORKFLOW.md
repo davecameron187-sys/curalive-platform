@@ -18,11 +18,19 @@ webdev_save_checkpoint
 ```
 This automatically:
 - Commits changes to local `ManusChatgpt` branch
-- Syncs to GitHub remote `github`
+- Syncs to S3 storage backend
 - Updates checkpoint version
 
+### Step 1b: Push to GitHub (REQUIRED)
+**CRITICAL:** After checkpoint, ALWAYS push to GitHub:
+```bash
+cd /home/ubuntu/chorus-ai
+git push github ManusChatgpt --force
+```
+This makes commits visible to ChatGPT and other reviewers on the public repository.
+
 ### Step 2: Create Pull Request (Manus)
-After checkpoint is saved, create PR:
+After checkpoint AND GitHub push are complete, create PR:
 ```bash
 cd /home/ubuntu/chorus-ai
 gh pr create \
@@ -155,10 +163,13 @@ Before merging PR to `main`:
 # 2. Save checkpoint
 webdev_save_checkpoint
 
-# 3. Create PR
+# 3. PUSH TO GITHUB (CRITICAL STEP)
+git push github ManusChatgpt --force
+
+# 4. Create PR
 gh pr create --base main --head ManusChatgpt --title "[Sprint X Task Y] Feature"
 
-# 4. Done - ChatGPT can now access updates
+# 5. Done - ChatGPT can now access updates on public GitHub
 ```
 
 **ChatGPT Workflow:**

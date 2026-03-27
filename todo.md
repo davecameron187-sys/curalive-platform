@@ -1039,3 +1039,32 @@ All core features implemented and production-ready.
 - [ ] Implement retry logic for failed webhook processing
 - [ ] Add webhook event logging and monitoring
 - [ ] Write tests for webhook handling
+
+
+---
+
+## ⚠️ CRITICAL PROTOCOL - GitHub Push After Every Checkpoint
+
+**MANDATORY STEP:** After every `webdev_save_checkpoint`, ALWAYS execute:
+```bash
+git push github ManusChatgpt --force
+```
+
+**Why:** 
+- `webdev_save_checkpoint` only syncs to S3 backend (local storage)
+- GitHub remote requires explicit push to make commits visible
+- Without this step, ChatGPT cannot see new work
+- This prevents sync confusion and ensures public visibility
+
+**When to do it:**
+- ✅ After completing any Sprint task
+- ✅ After saving checkpoint
+- ✅ Before creating PR
+- ✅ Every single time without exception
+
+**Verification:**
+```bash
+git log github/ManusChatgpt -5 --oneline  # Should show latest commits
+```
+
+**This is now part of the standard workflow for all future work.**
