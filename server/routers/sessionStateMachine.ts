@@ -1,17 +1,20 @@
 /**
- * Session State Machine Router
- * Server-authoritative session lifecycle management
+ * Session State Machine Router — Database-Backed Implementation
+ * Server-authoritative session lifecycle management with full persistence
  * 
  * This router implements a strict state machine:
  * idle → running → paused → ended
  * 
- * All state transitions are persisted to the database.
+ * All state transitions are persisted to the database and logged for audit.
  * The UI is a thin client over this backend state.
  */
 
 import { z } from "zod";
-import { protectedProcedure, publicProcedure } from "../_core/trpc";
+import { protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
+import { getDb } from "../db";
+import { operatorSessions, sessionStateTransitions } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 // Type definitions
 export type SessionStatus = "idle" | "running" | "paused" | "ended";
@@ -37,8 +40,74 @@ interface StateTransitionResult {
   message: string;
 }
 
-// In-memory session store (will be replaced with database)
-const sessionStore = new Map<string, SessionState>();
+/**
+ * Helper: Get session from database
+ */
+async function getSessionFromDb(sessionId: string): Promise<SessionState | null> {
+  const database = await getDb();
+  if (!database) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database connection unavailable",
+    });
+  }
+
+  const result = await database
+    .select()
+    .from(operatorSessions)
+    .where(eq(operatorSessions.sessionId, sessionId))
+    .limit(1);
+
+  if (!result.length) return null;
+
+  const row = result[0];
+  
+  // Calculate elapsed time
+  let elapsedSeconds = 0;
+  if (row.status === "running" && row.startedAt) {
+    elapsedSeconds = Math.floor((Date.now() - row.startedAt.getTime()) / 1000) - (row.totalPausedDuration || 0);
+  } else if (row.endedAt && row.startedAt) {
+    elapsedSeconds = Math.floor((row.endedAt.getTime() - row.startedAt.getTime()) / 1000) - (row.totalPausedDuration || 0);
+  }
+
+  return {
+    sessionId: row.sessionId,
+    eventId: row.eventId,
+    operatorId: row.operatorId,
+    status: row.status as SessionStatus,
+    startedAt: row.startedAt?.getTime() || null,
+    pausedAt: row.pausedAt?.getTime() || null,
+    resumedAt: row.resumedAt?.getTime() || null,
+    endedAt: row.endedAt?.getTime() || null,
+    totalPausedDuration: row.totalPausedDuration || 0,
+    elapsedSeconds,
+  };
+}
+
+/**
+ * Helper: Log state transition to audit table
+ */
+async function logStateTransition(
+  sessionId: string,
+  operatorId: number,
+  fromState: SessionStatus,
+  toState: SessionStatus,
+  metadata?: Record<string, any>
+): Promise<void> {
+  const database = await getDb();
+  if (!database) {
+    console.warn("[SessionStateMachine] Cannot log transition: database not available");
+    return;
+  }
+
+  await database.insert(sessionStateTransitions).values({
+    sessionId,
+    operatorId,
+    fromState,
+    toState,
+    metadata: metadata || null,
+  });
+}
 
 export const sessionStateMachineRouter = {
   /**
@@ -46,8 +115,8 @@ export const sessionStateMachineRouter = {
    */
   getSessionState: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
-    .query(({ input, ctx }) => {
-      const session = sessionStore.get(input.sessionId);
+    .query(async ({ input, ctx }) => {
+      const session = await getSessionFromDb(input.sessionId);
       
       if (!session) {
         throw new TRPCError({
@@ -56,18 +125,7 @@ export const sessionStateMachineRouter = {
         });
       }
 
-      // Calculate elapsed time
-      let elapsedSeconds = 0;
-      if (session.status === "running" && session.startedAt) {
-        elapsedSeconds = Math.floor((Date.now() - session.startedAt) / 1000) - session.totalPausedDuration;
-      } else if (session.endedAt && session.startedAt) {
-        elapsedSeconds = Math.floor((session.endedAt - session.startedAt) / 1000) - session.totalPausedDuration;
-      }
-
-      return {
-        ...session,
-        elapsedSeconds,
-      };
+      return session;
     }),
 
   /**
@@ -84,12 +142,21 @@ export const sessionStateMachineRouter = {
       const { sessionId, eventId } = input;
       const operatorId = ctx.user.id;
 
-      // Check if session already exists
-      let session = sessionStore.get(sessionId);
+      // Get existing session or create new
+      let session = await getSessionFromDb(sessionId);
       
       if (!session) {
-        // Create new session
-        session = {
+        // Create new session in database
+        const database = await getDb();
+        if (!database) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database connection unavailable",
+          });
+        }
+
+        const now = new Date();
+        await database.insert(operatorSessions).values({
           sessionId,
           eventId,
           operatorId,
@@ -99,9 +166,17 @@ export const sessionStateMachineRouter = {
           resumedAt: null,
           endedAt: null,
           totalPausedDuration: 0,
-          elapsedSeconds: 0,
-        };
-        sessionStore.set(sessionId, session);
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        session = await getSessionFromDb(sessionId);
+        if (!session) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create session",
+          });
+        }
       }
 
       // Validate state transition: idle → running
@@ -113,20 +188,34 @@ export const sessionStateMachineRouter = {
       }
 
       // Execute state transition
-      const now = Date.now();
-      session.status = "running";
-      session.startedAt = now;
-      sessionStore.set(sessionId, session);
+      const database = await getDb();
+      if (!database) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database connection unavailable",
+        });
+      }
 
-      // TODO: Persist to database
-      // TODO: Emit state transition event to Ably
-      // TODO: Sync to Viasocket
+      const now = new Date();
+      await database
+        .update(operatorSessions)
+        .set({
+          status: "running",
+          startedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(operatorSessions.sessionId, sessionId));
+
+      // Log transition
+      await logStateTransition(sessionId, operatorId, "idle", "running", {
+        startedBy: ctx.user.id,
+      });
 
       return {
         success: true,
         previousState: "idle",
         newState: "running",
-        timestamp: now,
+        timestamp: now.getTime(),
         message: "Session started",
       } as StateTransitionResult;
     }),
@@ -137,7 +226,7 @@ export const sessionStateMachineRouter = {
   pauseSession: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const session = sessionStore.get(input.sessionId);
+      const session = await getSessionFromDb(input.sessionId);
 
       if (!session) {
         throw new TRPCError({
@@ -155,20 +244,34 @@ export const sessionStateMachineRouter = {
       }
 
       // Execute state transition
-      const now = Date.now();
-      session.status = "paused";
-      session.pausedAt = now;
-      sessionStore.set(input.sessionId, session);
+      const database = await getDb();
+      if (!database) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database connection unavailable",
+        });
+      }
 
-      // TODO: Persist to database
-      // TODO: Emit state transition event to Ably
-      // TODO: Sync to Viasocket
+      const now = new Date();
+      await database
+        .update(operatorSessions)
+        .set({
+          status: "paused",
+          pausedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(operatorSessions.sessionId, input.sessionId));
+
+      // Log transition
+      await logStateTransition(input.sessionId, ctx.user.id, "running", "paused", {
+        pausedBy: ctx.user.id,
+      });
 
       return {
         success: true,
         previousState: "running",
         newState: "paused",
-        timestamp: now,
+        timestamp: now.getTime(),
         message: "Session paused",
       } as StateTransitionResult;
     }),
@@ -179,7 +282,7 @@ export const sessionStateMachineRouter = {
   resumeSession: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const session = sessionStore.get(input.sessionId);
+      const session = await getSessionFromDb(input.sessionId);
 
       if (!session) {
         throw new TRPCError({
@@ -197,27 +300,45 @@ export const sessionStateMachineRouter = {
       }
 
       // Calculate pause duration
-      const now = Date.now();
+      const now = new Date();
+      let pauseDuration = 0;
       if (session.pausedAt) {
-        const pauseDuration = Math.floor((now - session.pausedAt) / 1000);
-        session.totalPausedDuration += pauseDuration;
+        pauseDuration = Math.floor((now.getTime() - session.pausedAt) / 1000);
       }
 
-      // Execute state transition
-      session.status = "running";
-      session.resumedAt = now;
-      session.pausedAt = null;
-      sessionStore.set(input.sessionId, session);
+      const newTotalPausedDuration = (session.totalPausedDuration || 0) + pauseDuration;
 
-      // TODO: Persist to database
-      // TODO: Emit state transition event to Ably
-      // TODO: Sync to Viasocket
+      // Execute state transition
+      const database = await getDb();
+      if (!database) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database connection unavailable",
+        });
+      }
+
+      await database
+        .update(operatorSessions)
+        .set({
+          status: "running",
+          resumedAt: now,
+          pausedAt: null,
+          totalPausedDuration: newTotalPausedDuration,
+          updatedAt: now,
+        })
+        .where(eq(operatorSessions.sessionId, input.sessionId));
+
+      // Log transition
+      await logStateTransition(input.sessionId, ctx.user.id, "paused", "running", {
+        resumedBy: ctx.user.id,
+        pauseDurationSeconds: pauseDuration,
+      });
 
       return {
         success: true,
         previousState: "paused",
         newState: "running",
-        timestamp: now,
+        timestamp: now.getTime(),
         message: "Session resumed",
       } as StateTransitionResult;
     }),
@@ -228,7 +349,7 @@ export const sessionStateMachineRouter = {
   endSession: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const session = sessionStore.get(input.sessionId);
+      const session = await getSessionFromDb(input.sessionId);
 
       if (!session) {
         throw new TRPCError({
@@ -246,29 +367,47 @@ export const sessionStateMachineRouter = {
       }
 
       // Execute state transition
-      const now = Date.now();
+      const database = await getDb();
+      if (!database) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database connection unavailable",
+        });
+      }
+
+      const now = new Date();
       const previousState = session.status;
       
       // If session was paused, add final pause duration
+      let finalTotalPausedDuration = session.totalPausedDuration || 0;
       if (session.status === "paused" && session.pausedAt) {
-        const pauseDuration = Math.floor((now - session.pausedAt) / 1000);
-        session.totalPausedDuration += pauseDuration;
+        const pauseDuration = Math.floor((now.getTime() - session.pausedAt) / 1000);
+        finalTotalPausedDuration += pauseDuration;
       }
 
-      session.status = "ended";
-      session.endedAt = now;
-      sessionStore.set(input.sessionId, session);
+      await database
+        .update(operatorSessions)
+        .set({
+          status: "ended",
+          endedAt: now,
+          totalPausedDuration: finalTotalPausedDuration,
+          updatedAt: now,
+        })
+        .where(eq(operatorSessions.sessionId, input.sessionId));
 
-      // TODO: Persist to database
-      // TODO: Generate handoff package (transcript, report, recording)
-      // TODO: Emit state transition event to Ably
-      // TODO: Sync to Viasocket
+      // Log transition
+      await logStateTransition(input.sessionId, ctx.user.id, previousState as SessionStatus, "ended", {
+        endedBy: ctx.user.id,
+        totalDurationSeconds: session.startedAt 
+          ? Math.floor((now.getTime() - session.startedAt) / 1000)
+          : 0,
+      });
 
       return {
         success: true,
         previousState: previousState as SessionStatus,
         newState: "ended",
-        timestamp: now,
+        timestamp: now.getTime(),
         message: "Session ended",
       } as StateTransitionResult;
     }),
@@ -296,7 +435,7 @@ export const sessionStateMachineRouter = {
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const session = sessionStore.get(input.sessionId);
+      const session = await getSessionFromDb(input.sessionId);
 
       if (!session) {
         throw new TRPCError({
@@ -313,16 +452,16 @@ export const sessionStateMachineRouter = {
         });
       }
 
-      const now = Date.now();
+      const now = new Date();
 
-      // TODO: Persist action to database
+      // TODO: Persist action to operatorActions table
       // TODO: Emit action event to Ably for real-time updates
       // TODO: Sync action to Viasocket
 
       return {
         success: true,
         actionId: `action_${Date.now()}`,
-        timestamp: now,
+        timestamp: now.getTime(),
         message: `Action ${input.actionType} recorded`,
       };
     }),
@@ -339,7 +478,7 @@ export const sessionStateMachineRouter = {
       })
     )
     .query(async ({ input, ctx }) => {
-      // TODO: Query from database
+      // TODO: Query from operatorActions table
       // For now, return empty array
       return {
         actions: [],
@@ -355,7 +494,7 @@ export const sessionStateMachineRouter = {
   getSessionHandoffPackage: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const session = sessionStore.get(input.sessionId);
+      const session = await getSessionFromDb(input.sessionId);
 
       if (!session) {
         throw new TRPCError({
