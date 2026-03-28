@@ -208,6 +208,39 @@ export function getCacheStats() {
   };
 }
 
+/**
+ * Redis Integration (Optional - for distributed caching)
+ * Uncomment and configure if using Redis for production
+ */
+
+/*
+import { createClient } from 'redis';
+
+const redis = createClient({
+  url: process.env.REDIS_URL || 'redis://localhost:6379',
+});
+
+await redis.connect();
+
+export async function cacheGetRedis<T>(key: string): Promise<T | null> {
+  try {
+    const data = await redis.get(key);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error(`Redis get error: ${key}`, error);
+    return null;
+  }
+}
+
+export async function cacheSetRedis<T>(key: string, value: T, ttl: number = 60): Promise<void> {
+  try {
+    await redis.setEx(key, ttl, JSON.stringify(value));
+  } catch (error) {
+    console.error(`Redis set error: ${key}`, error);
+  }
+}
+*/
+
 export default {
   speakerCache,
   analyticsCache,
