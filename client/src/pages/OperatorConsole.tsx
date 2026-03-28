@@ -71,15 +71,23 @@ export default function OperatorConsole() {
   // UI state
   const [activeTab, setActiveTab] = useState<"questions" | "notes" | "event-log" | "transcript">("questions");
   const [transcriptSegments, setTranscriptSegments] = useState<Array<{speaker: string; text: string; timestamp: number}>>([]);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
+  const [transcriptUnavailable, setTranscriptUnavailable] = useState(false);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const [noteInput, setNoteInput] = useState("");
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
-  const [aiInsights, setAiInsights] = useState({
+  const [aiInsights, setAiInsights] = useState<{
+    sentimentScore: number;
+    sentimentTrend: "positive" | "negative" | "neutral";
+    complianceRiskLevel: "low" | "medium" | "high";
+    complianceFlags: number;
+    keyTopics: string[];
+  }>({
     sentimentScore: 0.72,
-    sentimentTrend: "positive" as const,
-    complianceRiskLevel: ("low" as "low" | "medium" | "high"),
+    sentimentTrend: "positive",
+    complianceRiskLevel: "low",
     complianceFlags: 0,
-    keyTopics: [] as string[],
+    keyTopics: [],
   });
 
   // Fetch session state from backend
@@ -101,6 +109,20 @@ export default function OperatorConsole() {
     trpc.liveQa.getQuestions.useQuery(
       { sessionId: sessionId || "" },
       { enabled: !!sessionId, refetchInterval: 1000 }
+    );
+
+  // Fetch real transcript from backend (NOT SIMULATED)
+  const { data: transcriptData = [], isLoading: transcriptSegmentsLoading } =
+    trpc.liveQa.getTranscriptSegments.useQuery(
+      { sessionId: sessionId || "" },
+      { enabled: !!sessionId, refetchInterval: 2000 }
+    );
+
+  // Fetch real AI insights from backend (NOT SIMULATED)
+  const { data: aiInsightsData } =
+    trpc.liveQa.getSessionInsights.useQuery(
+      { sessionId: sessionId || "" },
+      { enabled: !!sessionId && sessionState?.status === "running", refetchInterval: 3000 }
     );
 
   // Session mutations
@@ -211,16 +233,18 @@ export default function OperatorConsole() {
     return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Update AI insights when session data changes
+  // Update AI insights from real backend data
   useEffect(() => {
-    if (sessionState?.status === "running") {
-      setAiInsights(prev => ({
-        ...prev,
-        sentimentScore: Math.random() * 0.3 + 0.6,
-        complianceFlags: Math.floor(Math.random() * 3),
-      }));
+    if (aiInsightsData) {
+      setAiInsights({
+        sentimentScore: aiInsightsData.sentimentScore || 0.72,
+        sentimentTrend: (aiInsightsData.sentimentTrend as "positive" | "negative" | "neutral") || "positive",
+        complianceRiskLevel: (aiInsightsData.complianceRiskLevel as "low" | "medium" | "high") || "low",
+        complianceFlags: aiInsightsData.complianceFlags || 0,
+        keyTopics: aiInsightsData.keyTopics || [],
+      });
     }
-  }, [sessionState?.status]);
+  }, [aiInsightsData]);
 
   // Filter questions by status
   const pendingQuestions = questionsData.filter((q) => q.status === "submitted");
@@ -232,33 +256,17 @@ export default function OperatorConsole() {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcriptSegments]);
 
-  // Simulate real-time transcript updates from Recall.ai webhook
+  // Fetch real transcript from backend and update state
   useEffect(() => {
-    if (sessionState?.status !== "running") return;
-
-    const interval = setInterval(() => {
-      // In production, this would come from Recall.ai webhook via Ably
-      const speakers = ["CEO", "CFO", "Analyst", "Moderator"];
-      const sampleUtterances = [
-        "We're seeing strong growth in the Q1 results.",
-        "Our guidance for next quarter remains solid.",
-        "Can you elaborate on the margin expansion?",
-        "Thank you for that question.",
-        "We're investing heavily in R&D.",
-        "The market response has been very positive.",
-      ];
-
-      const newSegment = {
-        speaker: speakers[Math.floor(Math.random() * speakers.length)],
-        text: sampleUtterances[Math.floor(Math.random() * sampleUtterances.length)],
-        timestamp: Date.now(),
-      };
-
-      setTranscriptSegments((prev) => [...prev, newSegment]);
-    }, 5000); // New segment every 5 seconds during session
-
-    return () => clearInterval(interval);
-  }, [sessionState?.status]);
+    if (transcriptData && transcriptData.length > 0) {
+      setTranscriptSegments(transcriptData as Array<{speaker: string; text: string; timestamp: number}>);
+      setTranscriptUnavailable(false);
+    }
+    setTranscriptLoading(transcriptSegmentsLoading);
+    if (!transcriptSegmentsLoading && transcriptData.length === 0 && sessionState?.status === "running") {
+      setTranscriptUnavailable(true);
+    }
+  }, [transcriptSegmentsLoading, transcriptData, sessionState?.status]);;
 
   // Loading state
   if (sessionLoading) {
@@ -556,9 +564,17 @@ export default function OperatorConsole() {
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground text-center">
-                  {sessionState?.status === "running"
-                    ? "🔴 Live — Streaming from Recall.ai"
-                    : "⚫ Not streaming — Session not running"}
+                  {transcriptLoading ? (
+                    "Loading transcript..."
+                  ) : transcriptUnavailable ? (
+                    "⚠️ Stale — Waiting for Recall.ai connection"
+                  ) : sessionState?.status === "running" && transcriptData.length > 0 ? (
+                    "🔴 Live — Streaming from Recall.ai"
+                  ) : sessionState?.status === "running" ? (
+                    "⚠️ Stale — Waiting for Recall.ai connection"
+                  ) : (
+                    "⚫ Not streaming — Session not running"
+                  )}
                 </div>
               </div>
             )}
