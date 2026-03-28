@@ -138,8 +138,11 @@ async function callGeminiTranscribe(buffer: Buffer, filename: string): Promise<s
 
   if (!response.ok) {
     const errText = await response.text().catch(() => response.statusText);
-    if (response.status === 429) {
-      throw new Error(`QUOTA_EXCEEDED: Gemini transcription quota exceeded (429)`);
+    const isQuota = response.status === 429 || response.status === 402
+      || errText.includes("QUOTA_EXCEEDED") || errText.includes("RESOURCE_EXHAUSTED")
+      || errText.includes("insufficient_quota") || errText.includes("exceeded");
+    if (isQuota) {
+      throw new Error(`QUOTA_EXCEEDED: Gemini transcription quota exceeded (${response.status})`);
     }
     throw new Error(`Gemini API failed (${response.status}): ${errText}`);
   }
@@ -198,7 +201,10 @@ async function callWhisperTranscribe(buffer: Buffer, filename: string): Promise<
 
   if (!response.ok) {
     const errText = await response.text().catch(() => response.statusText);
-    if (response.status === 429) {
+    const isQuota = response.status === 429 || response.status === 402
+      || errText.includes("insufficient_quota") || errText.includes("exceeded your current quota")
+      || errText.includes("QUOTA_EXCEEDED") || errText.includes("billing");
+    if (isQuota) {
       throw new Error(`QUOTA_EXCEEDED: The AI transcription service has reached its usage limit. The recording has been saved and you can retry transcription later.`);
     }
     throw new Error(`Whisper API failed (${response.status}): ${errText}`);
