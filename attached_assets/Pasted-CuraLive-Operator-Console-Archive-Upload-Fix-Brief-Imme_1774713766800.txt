@@ -1,0 +1,158 @@
+CuraLive / Operator Console + Archive Upload Fix Brief
+Immediate production issue
+
+Archive event uploads are failing during transcription with:
+
+Whisper API failed (429) ... code: insufficient_quota
+
+This means the current transcription path is still hitting the OpenAI Whisper API and the request is failing because the active API account/key does not have usable quota for that request. OpenAI’s guidance for 429 errors is to handle them with backoff and retries where appropriate, but in this case the payload is specifically insufficient_quota, so the app must treat it as a provider-capacity/billing problem and degrade gracefully instead of failing the entire upload.
+
+Up-to-date CuraLive / console status
+
+The current ManusChatgpt branch shows recent Phase 3 console work, including c9dd191 for transcript streaming and AI insights plus multiple March 28 checkpoint/docs commits. GitHub also shows 1 open pull request on the repo.
+
+The product direction remains the same:
+
+the Operator Console is the primary product surface
+it should be built on Shadow Mode
+Live Q&A belongs inside the same console
+the console must be usable in production for real events before expanding scope.
+
+The current OperatorConsole.tsx is already wired to backend queries for:
+
+session state
+action history
+Live Q&A questions
+transcript segments
+session insights
+and it polls those backend sources on intervals rather than relying on local fake session state.
+What needs to be fixed now
+Goal
+
+Make archive uploads succeed even when transcription fails, and make transcription provider failure visible and recoverable.
+
+Required implementation work
+1. Separate archive upload from transcription
+
+Do not let Whisper/transcription failure kill the archive upload.
+
+Required flow:
+
+store archive file / event upload
+create archive record in database
+enqueue or start transcription
+update transcription status independently
+
+Target result:
+
+upload succeeds
+transcription can fail without losing the archive
+UI shows transcription status separately
+2. Handle 429 insufficient_quota explicitly
+
+Add a provider-specific failure path for quota exhaustion.
+
+Required behavior:
+
+detect OpenAI 429 with code: insufficient_quota
+mark transcription status as something like:
+transcription_failed_quota
+return a clean application-level message, not raw OpenAI JSON
+do not retry indefinitely on quota exhaustion
+allow manual retry later after quota/billing is fixed
+
+OpenAI recommends backoff for rate-limit errors generally, but this case should not behave like a normal transient retry loop if the response is insufficient_quota.
+
+3. Confirm provider order and fallback logic
+
+We expected a free or local transcription path first, with OpenAI Whisper as backup. Verify what is actually in code.
+
+Tasks:
+
+identify the archive upload/transcription service file
+confirm current primary provider
+confirm whether fallback order is implemented
+if the free/local provider is missing or bypassed, wire it correctly
+if OpenAI is still primary, move it to fallback
+
+Required result:
+
+primary provider = free/local transcription path
+fallback = OpenAI Whisper API
+if both fail, archive still remains uploaded
+4. Add clean user-facing states
+
+In the archive UI, show:
+
+uploaded
+transcription_pending
+transcription_processing
+transcription_complete
+transcription_failed_quota
+transcription_failed_provider
+
+Suggested user copy:
+
+“Archive uploaded successfully.”
+“Transcription is temporarily unavailable due to provider quota.”
+“You can retry transcription after quota/billing is restored.”
+
+Do not show raw Whisper/OpenAI error JSON in the UI.
+
+5. Add retry-safe backend logic
+
+Implement:
+
+no infinite retry loop on insufficient_quota
+retry endpoint/button for failed transcriptions
+limited exponential backoff only for transient provider failures
+audit log / status updates for each attempt
+6. Add logging and observability
+
+Need one clear log line for:
+
+archive stored successfully
+transcription provider selected
+fallback used or not used
+OpenAI quota failure detected
+archive left in safe retriable state
+7. Add tests
+
+Required test coverage:
+
+upload succeeds when transcription succeeds
+upload still succeeds when OpenAI returns 429 insufficient_quota
+archive record persists with failed transcription status
+fallback provider is attempted in the expected order
+UI shows clean quota-specific error state
+retry works after status reset / provider recovery
+Current console architecture context for Replit
+
+Please work within the current console design, not against it:
+
+OperatorConsole.tsx is the main operator surface
+backend queries already exist for session state, action history, transcript segments, and insights
+the roadmap still requires one integrated console with transcript, intelligence, session controls, Q&A, notes, and handoff.
+Definition of done
+
+This task is complete only when:
+
+archive uploads no longer fail just because transcription fails
+insufficient_quota is handled explicitly
+the app stores the archive and marks transcription status separately
+fallback provider order is confirmed and working
+the UI shows clean status instead of raw provider JSON
+retry behavior is safe
+tests cover the quota-failure path
+Report back with
+
+Please return:
+
+files changed
+exact upload/transcription service path
+current provider order
+whether OpenAI is now primary or fallback
+how insufficient_quota is detected
+new status model
+tests added
+any deployment/env changes required
