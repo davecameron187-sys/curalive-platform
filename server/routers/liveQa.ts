@@ -16,6 +16,7 @@ import {
 } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import * as dbGrok2 from "../db.grok2";
+import { initializeWebphone } from "../webphone";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VALIDATORS
@@ -26,6 +27,7 @@ const CreateSessionInput = z.object({
   sessionName: z.string().min(1),
   moderatorId: z.number().int().positive(),
   operatorId: z.number().int().positive().optional(),
+  connectivityProvider: z.enum(["webphone", "zoom", "teams", "webex", "rtmp", "pstn"]).default("webphone"),
 });
 
 const CreateQuestionInput = z.object({
@@ -76,6 +78,36 @@ export const liveQaRouter = router({
       if (!database) throw new Error("Database not available");
 
       const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const provider = input.connectivityProvider || "webphone";
+
+      // Initialize WebPhone if selected as connectivity provider (default)
+      let webphoneConnectionId: string | undefined;
+      let webphoneStatus: "initialized" | "active" | "disconnected" | "failed" = "initialized";
+
+      if (provider === "webphone") {
+        try {
+          const webphoneConfig = {
+            sipUsername: process.env.TELNYX_SIP_USERNAME || "",
+            sipPassword: process.env.TELNYX_SIP_PASSWORD || "",
+            sipConnectionId: process.env.TELNYX_SIP_CONNECTION_ID || "",
+            eventId: input.eventId,
+            sessionId,
+          };
+
+          const webphoneResult = await initializeWebphone(webphoneConfig);
+          if (webphoneResult.success) {
+            webphoneConnectionId = webphoneResult.connectionId;
+            webphoneStatus = "initialized";
+            console.log(`[WebPhone-First] WebPhone initialized for session ${sessionId}`);
+          } else {
+            webphoneStatus = "failed";
+            console.error(`[WebPhone-First] Failed to initialize WebPhone for session ${sessionId}`);
+          }
+        } catch (error) {
+          webphoneStatus = "failed";
+          console.error("[WebPhone-First] WebPhone initialization error:", error);
+        }
+      }
 
       await database.insert(liveQaSessionMetadata).values({
         eventId: input.eventId,
@@ -83,13 +115,19 @@ export const liveQaRouter = router({
         sessionName: input.sessionName,
         moderatorId: input.moderatorId,
         operatorId: input.operatorId,
+        connectivityProvider: provider,
+        webphoneConnectionId,
+        webphoneStatus,
         isLive: true,
       });
 
       return {
         success: true,
-        message: "Session created successfully",
+        message: `Session created successfully with ${provider} connectivity`,
         sessionId,
+        connectivityProvider: provider,
+        webphoneConnectionId,
+        webphoneStatus,
       };
     }),
 

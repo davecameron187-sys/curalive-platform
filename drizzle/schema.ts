@@ -49,7 +49,7 @@ export const events = mysqlTable("events", {
   eventId: varchar("eventId", { length: 128 }).notNull().unique(), // e.g. "q4-earnings-2026"
   title: varchar("title", { length: 255 }).notNull(),
   company: varchar("company", { length: 255 }).notNull(),
-  platform: varchar("platform", { length: 64 }).notNull(), // "zoom", "teams", "webex", "rtmp", "pstn"
+  platform: varchar("platform", { length: 64 }).default("webphone").notNull(), // "webphone", "zoom", "teams", "webex", "rtmp", "pstn"
   status: mysqlEnum("status", ["upcoming", "live", "completed"]).default("upcoming").notNull(),
   accessCode: varchar("accessCode", { length: 64 }), // null = no password required
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -108,6 +108,9 @@ export const liveQaSessionMetadata = mysqlTable("live_qa_session_metadata", {
   blockchainCertificatesGenerated: int("blockchainCertificatesGenerated").default(0).notNull(),
   recordingUrl: text("recordingUrl"), // link to Recall.ai recording
   transcriptUrl: text("transcriptUrl"), // link to transcript
+  connectivityProvider: varchar("connectivity_provider", { length: 64 }).default("webphone").notNull(), // "webphone", "zoom", "teams", "webex", "rtmp", "pstn"
+  webphoneConnectionId: varchar("webphone_connection_id", { length: 128 }), // Telnyx SIP connection ID
+  webphoneStatus: mysqlEnum("webphone_status", ["initialized", "active", "disconnected", "failed"]).default("initialized"), // WebPhone connection status
   isLive: boolean("isLive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
