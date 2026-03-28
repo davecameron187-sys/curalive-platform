@@ -1,9 +1,283 @@
-# Chorus.AI Development Roadmap
+# Chorus.AI Platform — Execution Tracker (Revised)
+
+**Last Updated:** March 28, 2026  
+**Roadmap Version:** 2.0 (Revised Per Stakeholder Decision)  
+**Status:** Production-Ready Code Base with Focused Execution Path
+
+---
+
+## STRATEGIC SHIFT
+
+**Removed from Roadmap:** Teams and Zoom native integrations (use Recall.ai universal bot instead)  
+**New Focus:** Production deployment, console performance, security hardening, custom compliance rules
+
+---
+
+## CRITICAL PRIORITY 1: Production Deployment Readiness
+
+- [ ] Infrastructure provisioning (compute, networking, storage)
+- [ ] SSL/TLS certificate configuration
+- [ ] Load balancer setup with health checks and auto-scaling
+- [ ] Database replication and failover configuration
+- [ ] Redis cluster setup for caching layer
+- [ ] Application performance monitoring (APM) integration
+- [ ] Error tracking and alerting setup (Sentry/DataDog)
+- [ ] Real-time monitoring dashboard
+- [ ] Alert thresholds and escalation procedures
+- [ ] Log aggregation and retention policy
+- [ ] Automated daily database backups
+- [ ] Backup verification and restore testing
+- [ ] Disaster recovery runbook with RTO/RPO targets
+- [ ] Geographic redundancy strategy
+- [ ] Failover testing procedures
+- [ ] CI/CD pipeline configuration
+- [ ] Blue-green deployment strategy
+- [ ] Canary release procedures
+- [ ] Rollback automation
+- [ ] Deployment validation checklist
+- [ ] On-call rotation and escalation procedures
+- [ ] Runbooks for common incidents
+- [ ] Performance baseline establishment
+- [ ] Capacity planning documentation
+- [ ] Change management process
+- [ ] PRODUCTION_DEPLOYMENT_GUIDE.md (comprehensive)
+- [ ] OPERATIONAL_RUNBOOK.md
+- [ ] DEPLOYMENT_CHECKLIST.md
+- [ ] DISASTER_RECOVERY_PLAN.md
+- [ ] Infrastructure-as-Code (Terraform or CloudFormation)
+
+---
+
+## CRITICAL PRIORITY 2: Performance Optimization
+
+### Operator Console (Highest Priority)
+- [ ] Profile real-time session state updates
+- [ ] Optimize Q&A moderation responsiveness
+- [ ] Reduce sentiment analysis display latency
+- [ ] Optimize compliance scoring performance
+- [ ] Optimize operator notes persistence
+- [ ] Load test with 1000+ concurrent users
+- [ ] Achieve <200ms response time target
+
+### Moderator Dashboard (High Priority)
+- [ ] Optimize Q&A list filtering and sorting
+- [ ] Optimize bulk action performance
+- [ ] Optimize priority scoring calculations
+- [ ] Optimize auto-moderation rule evaluation
+- [ ] Achieve <300ms response time target
+
+### Presenter Teleprompter (High Priority)
+- [ ] Optimize live transcript scrolling smoothness
+- [ ] Optimize approved Q&A queue updates
+- [ ] Optimize keyboard navigation responsiveness
+- [ ] Achieve <100ms response time target
+
+### Attendee Dashboard (Medium Priority)
+- [ ] Optimize live transcript display
+- [ ] Optimize upvoting responsiveness
+- [ ] Optimize engagement metrics updates
+- [ ] Achieve <500ms response time target
+
+### Post-Event Analytics (Medium Priority)
+- [ ] Optimize report generation performance
+- [ ] Optimize historical data queries
+- [ ] Optimize export functionality
+- [ ] Achieve <2s report generation target
+
+### Database Query Optimization
+- [ ] Profile slow queries using EXPLAIN ANALYZE
+- [ ] Add strategic indexes on frequently filtered columns
+- [ ] Optimize JOIN operations
+- [ ] Implement query result caching where appropriate
+- [ ] Document all query optimizations
+
+### Redis Caching Strategy
+- [ ] Cache derived analytics (sentiment trends, speaker scores)
+- [ ] Cache frequently accessed lookups (user roles, event configs)
+- [ ] Implement cache invalidation on state changes
+- [ ] Use Redis for rate limiting and session storage
+- [ ] Document caching strategy
+
+### Real-Time Optimization
+- [ ] Reduce unnecessary Ably message frequency
+- [ ] Batch updates where possible
+- [ ] Implement debouncing on client-side updates
+- [ ] Optimize WebSocket connection pooling
+- [ ] Document real-time optimization strategy
+
+### Frontend Code Splitting
+- [ ] Lazy-load console surfaces
+- [ ] Implement route-based code splitting
+- [ ] Optimize bundle size
+- [ ] Reduce initial page load time
+- [ ] Document code splitting strategy
+
+### API Response Compression
+- [ ] Enable gzip compression on all endpoints
+- [ ] Implement pagination for large result sets
+- [ ] Return only necessary fields in responses
+- [ ] Document API optimization strategy
+
+### Performance Deliverables
+- [ ] Performance baseline report
+- [ ] Query optimization documentation
+- [ ] Caching strategy guide
+- [ ] Load testing results
+- [ ] Performance monitoring dashboard
+
+---
+
+## CRITICAL PRIORITY 3: Security Hardening
+
+### Authentication & Authorization
+- [ ] Verify OAuth token validation on every request
+- [ ] Implement role-based access control (RBAC) enforcement
+- [ ] Test authorization boundaries between operators, moderators, presenters, attendees
+- [ ] Verify tenant isolation (users cannot access other events)
+- [ ] Implement session timeout and re-authentication
+- [ ] Document authentication/authorization boundaries
+
+### Audit Logging
+- [ ] Log all operator actions (approve, reject, hold questions)
+- [ ] Log all moderation decisions
+- [ ] Log all data access and exports
+- [ ] Log all configuration changes
+- [ ] Implement immutable audit trail
+- [ ] Document audit logging strategy
+
+### Rate Limiting
+- [ ] API rate limiting (100-1000 req/min per endpoint)
+- [ ] WebSocket message rate limiting
+- [ ] Login attempt rate limiting
+- [ ] File upload rate limiting
+- [ ] Document rate limiting configuration
+
+### Export & Data Access Controls
+- [ ] Verify only authorized users can export transcripts
+- [ ] Implement data masking for sensitive fields
+- [ ] Log all data exports
+- [ ] Implement time-based access controls
+- [ ] Document data access controls
+
+### Secret Handling
+- [ ] Verify no secrets are logged
+- [ ] Implement secret rotation procedures
+- [ ] Use environment variables for all secrets
+- [ ] Implement secure secret storage
+- [ ] Document secret handling procedures
+
+### Webhook Verification
+- [ ] Verify Recall.ai webhook signatures
+- [ ] Implement webhook signature validation
+- [ ] Log all webhook events
+- [ ] Implement webhook retry logic
+- [ ] Document webhook security
+
+### Token Issuance
+- [ ] Implement scoped tokens (limited permissions)
+- [ ] Implement token expiration
+- [ ] Implement token refresh logic
+- [ ] Verify token claims on every request
+- [ ] Document token issuance strategy
+
+### Dependency & Security Scanning
+- [ ] Run npm audit on all dependencies
+- [ ] Implement automated security scanning (Snyk, Dependabot)
+- [ ] Review and update vulnerable dependencies
+- [ ] Implement security policy for dependency updates
+- [ ] Document security scanning procedures
+
+### Security Deliverables
+- [ ] Security audit report
+- [ ] Authentication & authorization test results
+- [ ] Audit logging implementation
+- [ ] Rate limiting configuration
+- [ ] Security scanning results
+- [ ] Penetration testing report
+
+---
+
+## PRIORITY 4: Advanced Features (Customer Value)
+
+### Custom Compliance Rules (TOP PRIORITY)
+- [ ] Design database schema for custom rules
+- [ ] Implement rule creation/editing/deletion API
+- [ ] Build admin UI for rule management
+- [ ] Update compliance scoring engine to use custom rules
+- [ ] Implement real-time rule evaluation
+- [ ] Implement rule versioning and audit trail
+- [ ] Implement bulk rule import/export
+- [ ] Write tests for custom rule evaluation
+- [ ] Document custom rules feature
+- [ ] Verify performance impact is minimal
+
+### Multi-Language Support (NEXT PRIORITY)
+- [ ] Set up internationalization (i18n) framework
+- [ ] Implement language selection UI
+- [ ] Implement real-time transcript translation
+- [ ] Implement Q&A translation
+- [ ] Implement language preference storage per user
+- [ ] Implement language-specific formatting
+- [ ] Write tests for translation accuracy
+- [ ] Document multi-language support
+- [ ] Support 5+ languages
+
+### Sentiment-Based Auto-Moderation (THEN)
+- [ ] Implement sentiment-based Q&A filtering
+- [ ] Implement auto-hold for negative sentiment
+- [ ] Implement auto-reject for highly negative sentiment
+- [ ] Implement operator override capability
+- [ ] Implement transparency display (show reasoning)
+- [ ] Implement operator audit trail
+- [ ] Write tests for accuracy
+- [ ] Document auto-moderation feature
+- [ ] Verify false positive rate is <5%
+
+---
 
 ## Completed Rounds (1-54)
 All core features implemented and production-ready.
 
-## Round 55 — Webhook Auto-Trigger, Email Reports, Comparison Analytics
+## Previous Development Rounds (55-69)
+
+All previous rounds (55-69) completed successfully with marketplace, analytics, and moderation features.
+
+---
+
+## REMOVED FROM ROADMAP
+
+- ~~Teams Native Integration~~ — Removed (use Recall.ai universal bot)
+- ~~Zoom Native Integration~~ — Removed (use Recall.ai universal bot)
+- ~~Provider-Specific Bot Architecture~~ — Removed (use Recall.ai universal bot)
+
+---
+
+## BACKLOG (Q2 2026 and Beyond)
+
+- [ ] White-Label Support
+- [ ] Speaker Performance Scoring
+- [ ] Advanced Analytics Enhancements
+- [ ] Additional Integrations (Slack, Salesforce, HubSpot, Marketo)
+- [ ] Advanced Q&A Features (clustering, scheduling, routing)
+
+---
+
+## Delivery Standard
+
+**Do not mark any item complete unless:**
+- Implementation is real (not scaffolding or planning)
+- Behavior is verified (tested in production-like environment)
+- Tests exist where needed (unit, integration, or e2e)
+- Docs reflect reality (not aspirational)
+- Production claims are supportable (with evidence)
+
+**No fluff. No "complete" language without proof.**
+
+---
+
+## Previous Round Details (55-69)
+
+### Round 55 — Webhook Auto-Trigger, Email Reports, Comparison Analytics
 - [x] Webhook Auto-Trigger — Call sentiment/summary services on recording completion
   - [x] recordingWebhooks.ts service with triggerRecordingAnalysis function
   - [x] generateComparisonAnalytics for cross-event analysis
