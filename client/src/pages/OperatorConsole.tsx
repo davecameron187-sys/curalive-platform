@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { WebPhoneCallManager } from "@/components/WebPhoneCallManager";
 import {
   Play,
   Pause,
@@ -69,7 +70,7 @@ export default function OperatorConsole() {
   const [, navigate] = useLocation();
 
   // UI state
-  const [activeTab, setActiveTab] = useState<"questions" | "notes" | "event-log" | "transcript">("questions");
+  const [activeTab, setActiveTab] = useState<"questions" | "notes" | "event-log" | "transcript" | "webphone">("questions");
   const [transcriptSegments, setTranscriptSegments] = useState<Array<{speaker: string; text: string; timestamp: number}>>([]);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptUnavailable, setTranscriptUnavailable] = useState(false);
@@ -460,6 +461,17 @@ export default function OperatorConsole() {
               <BookOpen className="inline w-4 h-4 mr-2" />
               Transcript
             </button>
+            <button
+              onClick={() => setActiveTab("webphone")}
+              className={`text-sm font-medium pb-2 border-b-2 transition ${
+                activeTab === "webphone"
+                  ? "border-red-500 text-red-500"
+                  : "border-transparent text-slate-400 hover:text-slate-300"
+              }`}
+            >
+              <Users className="inline w-4 h-4 mr-1" />
+              WebPhone
+            </button>
           </div>
 
           {/* Content Area */}
@@ -524,6 +536,25 @@ export default function OperatorConsole() {
                       </div>
                     ))
                 )}
+              </div>
+            )}
+
+            {/* WebPhone Tab */}
+            {activeTab === "webphone" && (
+              <div className="space-y-4">
+                <WebPhoneCallManager 
+                  sessionId={sessionId || ""}
+                  call={{
+                    id: sessionId || "",
+                    sessionId: sessionId || "",
+                    startedAt: sessionState?.startedAt ? new Date(sessionState.startedAt) : new Date(),
+                    duration: elapsedTime,
+                    participants: [],
+                    isActive: sessionState?.status === "running",
+                    callQuality: "good",
+                    averageLatency: 45,
+                  }}
+                />
               </div>
             )}
 

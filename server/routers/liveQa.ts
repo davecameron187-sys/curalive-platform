@@ -17,6 +17,7 @@ import {
 import { eq, desc } from "drizzle-orm";
 import * as dbGrok2 from "../db.grok2";
 import { initializeWebphone } from "../webphone";
+import { executeFallbackLogic } from "../services/connectivityFallback";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VALIDATORS
@@ -83,6 +84,8 @@ export const liveQaRouter = router({
       // Initialize WebPhone if selected as connectivity provider (default)
       let webphoneConnectionId: string | undefined;
       let webphoneStatus: "initialized" | "active" | "disconnected" | "failed" = "initialized";
+      let finalProvider = provider;
+      let fallbackReason: string | undefined;
 
       if (provider === "webphone") {
         try {
@@ -102,10 +105,48 @@ export const liveQaRouter = router({
           } else {
             webphoneStatus = "failed";
             console.error(`[WebPhone-First] Failed to initialize WebPhone for session ${sessionId}`);
+            
+            // Trigger fallback logic if WebPhone initialization fails
+            console.log(`[WebPhone-First] Executing fallback logic for session ${sessionId}`);
+            const fallbackResult = await executeFallbackLogic(
+              "webphone",
+              {
+                sessionId,
+                eventId: input.eventId,
+              }
+            );
+            
+            if (fallbackResult.success && fallbackResult.provider) {
+              finalProvider = fallbackResult.provider;
+              fallbackReason = `Fell back to ${fallbackResult.provider} due to WebPhone failure`;
+              console.log(`[WebPhone-First] Fallback successful: ${fallbackReason}`);
+            } else {
+              console.error(`[WebPhone-First] Fallback failed for session ${sessionId}`);
+              fallbackReason = "Fallback logic failed - session may have connectivity issues";
+            }
           }
         } catch (error) {
           webphoneStatus = "failed";
           console.error("[WebPhone-First] WebPhone initialization error:", error);
+          
+          // Trigger fallback on error
+          console.log(`[WebPhone-First] Executing fallback logic due to error for session ${sessionId}`);
+          const fallbackResult = await executeFallbackLogic(
+            "webphone",
+            {
+              sessionId,
+              eventId: input.eventId,
+            }
+          );
+          
+          if (fallbackResult.success && fallbackResult.provider) {
+            finalProvider = fallbackResult.provider;
+            fallbackReason = `Fell back to ${fallbackResult.provider} due to WebPhone error`;
+            console.log(`[WebPhone-First] Fallback successful: ${fallbackReason}`);
+          } else {
+            console.error(`[WebPhone-First] Fallback failed for session ${sessionId}`);
+            fallbackReason = "Fallback logic failed - session may have connectivity issues";
+          }
         }
       }
 
@@ -115,7 +156,7 @@ export const liveQaRouter = router({
         sessionName: input.sessionName,
         moderatorId: input.moderatorId,
         operatorId: input.operatorId,
-        connectivityProvider: provider,
+        connectivityProvider: finalProvider,
         webphoneConnectionId,
         webphoneStatus,
         isLive: true,
@@ -123,11 +164,14 @@ export const liveQaRouter = router({
 
       return {
         success: true,
-        message: `Session created successfully with ${provider} connectivity`,
+        message: fallbackReason 
+          ? `Session created with fallback: ${fallbackReason}`
+          : `Session created successfully with ${finalProvider} connectivity`,
         sessionId,
-        connectivityProvider: provider,
+        connectivityProvider: finalProvider,
         webphoneConnectionId,
         webphoneStatus,
+        fallbackReason,
       };
     }),
 
