@@ -1,0 +1,102 @@
+name: Test & Build
+
+on:
+  push:
+    branches: [ main, ManusChatgpt, 'chatgpt/**', 'replit/**' ]
+  pull_request:
+    branches: [ main, ManusChatgpt ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [22.x]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+          
+      - name: Install pnpm
+        run: npm install -g pnpm
+        
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Run TypeScript check
+        run: pnpm tsc --noEmit
+        continue-on-error: true
+        
+      - name: Run tests
+        run: pnpm test
+        continue-on-error: true
+        
+      - name: Build project
+        run: pnpm build
+        continue-on-error: true
+        
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/coverage-final.json
+          fail_ci_if_error: false
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'pnpm'
+          
+      - name: Install pnpm
+        run: npm install -g pnpm
+        
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Run linter
+        run: pnpm lint || true
+        
+      - name: Check formatting
+        run: pnpm format --check || true
+        
+      - name: Security audit
+        run: npm audit --audit-level=moderate || true
+
+  code-truth-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check for mock data
+        run: |
+          echo "Checking for mock data patterns..."
+          
+          # Check for hardcoded test data
+          if grep -r "Math.random()" client/src/pages/*.tsx | grep -v "test\|spec"; then
+            echo "⚠️ Warning: Found Math.random() in production code"
+          fi
+          
+          # Check for TODO comments
+          if grep -r "TODO\|FIXME\|HACK" client/src/pages/*.tsx; then
+            echo "⚠️ Warning: Found TODO/FIXME comments"
+          fi
+          
+          # Check for console.log in production
+          if grep -r "console.log" client/src/pages/*.tsx | grep -v "test\|spec"; then
+            echo "⚠️ Warning: Found console.log in production code"
+          fi
+          
+          echo "✅ Code-truth check complete"

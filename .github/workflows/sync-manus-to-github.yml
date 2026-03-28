@@ -1,0 +1,73 @@
+name: Sync Manus to GitHub
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Force sync even if no changes'
+        required: false
+        default: 'false'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Configure git
+        run: |
+          git config --global user.name "Manus Sync Bot"
+          git config --global user.email "sync@manus.im"
+          
+      - name: Add Manus remote
+        run: |
+          git remote add manus s3://vida-prod-gitrepo/webdev-git/310519663387446759/Mdu4k2iB9LVRNHXWAQDZg3 || true
+          
+      - name: Fetch from Manus
+        run: |
+          git fetch manus ManusChatgpt --depth=50
+          
+      - name: Check for new commits
+        id: check_commits
+        run: |
+          CURRENT_COMMIT=$(git rev-parse HEAD)
+          MANUS_COMMIT=$(git rev-parse manus/ManusChatgpt)
+          
+          if [ "$CURRENT_COMMIT" != "$MANUS_COMMIT" ] || [ "${{ github.event.inputs.force_sync }}" = "true" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Manus has new commits: $MANUS_COMMIT"
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No new commits from Manus"
+          fi
+          
+      - name: Merge Manus updates
+        if: steps.check_commits.outputs.has_changes == 'true'
+        run: |
+          git merge manus/ManusChatgpt --allow-unrelated-histories -m "chore: Sync from Manus checkpoint" || true
+          
+      - name: Push to GitHub
+        if: steps.check_commits.outputs.has_changes == 'true'
+        run: |
+          git push origin main
+          
+      - name: Create sync status comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const timestamp = new Date().toISOString();
+            const status = '${{ steps.check_commits.outputs.has_changes }}' === 'true' ? '✅ Synced' : '⏭️ No changes';
+            
+            console.log(`[${timestamp}] Manus → GitHub Sync: ${status}`);
