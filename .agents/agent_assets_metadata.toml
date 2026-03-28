@@ -396,3 +396,9 @@ id = "ah8_HRkxKnDHiXL-RdIkN"
 uri = "file://exports/MANUS_GAP_REPORT.md"
 type = "text"
 title = "Manus Code Gap Report — What's Missing from Replit"
+
+[[outputs]]
+id = "x8VepOdvRwqG8iUglGi9W"
+uri = "file://exports/REPLIT_VALIDATION_REPORT_TRACKS_1_9.md"
+type = "text"
+title = "Replit Validation Report — Tracks 1-9 (for Manus)"
