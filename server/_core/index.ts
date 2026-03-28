@@ -11,6 +11,7 @@ import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerAblyAuthRoute } from "./ablyAuthRoute";
+import { registerRecallWebhookRoute } from "./recallWebhookRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -80,6 +81,9 @@ async function startServer() {
 
   // Ably auth route
   registerAblyAuthRoute(app);
+
+  // Recall.ai webhook route
+  registerRecallWebhookRoute(app);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // FRONTEND SERVING
