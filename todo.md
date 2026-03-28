@@ -1068,3 +1068,46 @@ git log github/ManusChatgpt -5 --oneline  # Should show latest commits
 ```
 
 **This is now part of the standard workflow for all future work.**
+
+
+## Phase 3 — Console Features Sprint (Current)
+
+### Compliance Scoring Integration
+- [ ] Wire complianceScoring module into ModeratorConsole.tsx
+- [ ] Display compliance risk badges on questions
+- [ ] Auto-flag high-risk questions with visual indicators
+- [ ] Add compliance filter to question queue
+- [ ] Show flag types and reasoning in question detail panel
+
+### Sentiment Timeline & Analytics
+- [ ] Create sentiment trend visualization in Post-Event Analytics
+- [ ] Chart.js line graph showing sentiment progression
+- [ ] Speaker-level sentiment breakdown
+- [ ] Timestamp-aligned transcript with sentiment scores
+- [ ] Export sentiment data to CSV
+
+### Transcript Download & Export
+- [ ] Implement PDF export with full transcript
+- [ ] CSV export with timestamps, speaker, sentiment, compliance flags
+- [ ] Add download button to Post-Event Analytics
+- [ ] Include event metadata in exports
+- [ ] Support batch export of multiple events
+
+### Event Summary & AI Insights
+- [ ] Generate AI-powered event summary
+- [ ] Key moments extraction (high sentiment changes)
+- [ ] Q&A effectiveness metrics
+- [ ] Attendee engagement score
+- [ ] Compliance violations summary
+
+### Integration Tests
+- [ ] Test compliance scoring workflow
+- [ ] Test sentiment timeline generation
+- [ ] Test transcript export (PDF/CSV)
+- [ ] Test event summary generation
+- [ ] End-to-end console lifecycle tests
+
+### Production Deployment
+- [ ] Push all features to GitHub ManusChatgpt branch
+- [ ] Mark Phase 3 complete
+- [ ] Create final checkpoint
