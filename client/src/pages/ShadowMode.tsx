@@ -1,9 +1,10 @@
 /**
- * Shadow Mode — Archive & Reports
+ * Shadow Mode — Live Operator Console + Archive Manager
  * 
- * View, search, and manage past sessions
- * Select AI services to run on archived sessions
- * Download reports and transcripts
+ * Unified workspace for operators to:
+ * - Manage live webcast/audio sessions in real-time
+ * - View archived sessions
+ * - Moderate Q&A, manage participants, view transcripts
  */
 
 import { useState } from "react";
@@ -27,8 +28,10 @@ import {
   AlertCircle,
   CheckCircle,
   Signal,
+  Play,
 } from "lucide-react";
 import { WebPhoneCallManager } from "@/components/WebPhoneCallManager";
+import LiveSessionPanel from "@/components/LiveSessionPanel";
 
 interface SessionArchive {
   id: string;
@@ -45,12 +48,25 @@ interface SessionArchive {
   fallbackReason?: string;
 }
 
+// Mock live session for demo
+const MOCK_LIVE_SESSION = {
+  id: "live-q4-earnings-2026",
+  eventName: "Q4 2025 Earnings Call",
+  status: "live" as const,
+  startedAt: new Date(),
+  duration: 1847, // ~31 minutes
+  attendeeCount: 1247,
+  connectivityProvider: "webphone" as const,
+  providerStatus: "active" as const,
+  fallbackReason: undefined,
+};
+
 export default function ShadowMode() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSession, setSelectedSession] = useState<SessionArchive | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "completed" | "archived" | "processing">("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [showWebPhoneDetails, setShowWebPhoneDetails] = useState(false);
+  const [showLiveConsole, setShowLiveConsole] = useState(false);
   const itemsPerPage = 10;
 
   // Fetch archived sessions
@@ -98,7 +114,7 @@ export default function ShadowMode() {
 
   const getProviderBadge = (provider?: string, status?: string) => {
     if (!provider) return null;
-    
+
     const providerColors: Record<string, string> = {
       webphone: "bg-blue-600",
       teams: "bg-purple-600",
@@ -132,13 +148,53 @@ export default function ShadowMode() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Live Console Modal */}
+      {showLiveConsole && (
+        <LiveSessionPanel
+          session={MOCK_LIVE_SESSION}
+          onClose={() => setShowLiveConsole(false)}
+        />
+      )}
+
       {/* Header */}
       <div className="border-b bg-card p-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">Archive & Reports</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-bold">Shadow Mode</h1>
+            <Button
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
+              onClick={() => setShowLiveConsole(true)}
+            >
+              <Play className="w-4 h-4" />
+              Open Live Console
+            </Button>
+          </div>
           <p className="text-muted-foreground">
-            Review past sessions, run AI analysis, and download reports
+            Manage live webcast sessions and review archived sessions
           </p>
+        </div>
+      </div>
+
+      {/* Live Session Alert */}
+      <div className="border-b bg-red-50 border-red-200 p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 rounded-full bg-red-600 animate-pulse" />
+              <div>
+                <p className="font-semibold text-red-900">Live Session Active</p>
+                <p className="text-sm text-red-800">{MOCK_LIVE_SESSION.eventName} • {MOCK_LIVE_SESSION.attendeeCount} attendees</p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => setShowLiveConsole(true)}
+            >
+              <Phone className="w-4 h-4 mr-2" />
+              Open Console
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -149,7 +205,7 @@ export default function ShadowMode() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search sessions by name..."
+                placeholder="Search archived sessions by name..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -185,6 +241,8 @@ export default function ShadowMode() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
+        <h2 className="text-xl font-semibold mb-4">Archived Sessions</h2>
+
         {isLoading ? (
           <div className="flex items-center justify-center min-h-96">
             <Loader2 className="w-12 h-12 animate-spin" />
@@ -196,7 +254,7 @@ export default function ShadowMode() {
         ) : filteredSessions.length === 0 ? (
           <Card className="p-12 text-center">
             <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No sessions found</p>
+            <p className="text-muted-foreground">No archived sessions found</p>
           </Card>
         ) : (
           <div className="space-y-4">
@@ -329,37 +387,10 @@ export default function ShadowMode() {
               )}
             </div>
 
-            {/* WebPhone Controls - Show if webcast/audio session */}
-            {selectedSession.connectivityProvider === "webphone" && (
-              <div className="border-t pt-4 mb-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowWebPhoneDetails(!showWebPhoneDetails)}
-                  className="w-full flex items-center justify-between"
-                >
-                  <span className="flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    WebPhone Call Controls
-                  </span>
-                  <ChevronRight className={`w-4 h-4 transition-transform ${showWebPhoneDetails ? "rotate-90" : ""}`} />
-                </Button>
-                {showWebPhoneDetails && (
-                  <div className="mt-4 p-4 bg-muted rounded-lg">
-                    <WebPhoneCallManager
-                      sessionId={selectedSession.id}
-                      isLoading={false}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
             <div className="flex gap-3">
               <Button
                 className="flex-1 flex items-center gap-2"
                 onClick={() => {
-                  // Navigate to AI Dashboard for this session
                   window.location.href = `/ai-dashboard/${selectedSession.id}`;
                 }}
               >
@@ -370,7 +401,6 @@ export default function ShadowMode() {
                 variant="outline"
                 className="flex-1 flex items-center gap-2"
                 onClick={() => {
-                  // Navigate to reports for this session
                   window.location.href = `/analytics/${selectedSession.id}`;
                 }}
               >
