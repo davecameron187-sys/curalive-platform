@@ -384,3 +384,9 @@ id = "nTVvw93l8ePIrUMilkW5G"
 uri = "file://exports/STAGING_VALIDATION_REPORT.md"
 type = "text"
 title = "CuraLive Staging Validation Report — Tracks A-E"
+
+[[outputs]]
+id = "AHpcNdUHKz5uu3LCXL6Sh"
+uri = "file://exports/MANUS_BUG_BRIEF_D2.md"
+type = "text"
+title = "Manus Bug Brief — BUG-D2 (Webcast Dropdown)"
