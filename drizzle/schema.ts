@@ -2444,6 +2444,20 @@ export const shadowSessions = pgTable("shadow_sessions", {
 export type ShadowSession = typeof shadowSessions.$inferSelect;
 export type InsertShadowSession = typeof shadowSessions.$inferInsert;
 
+export const operatorActions = pgTable("operator_actions", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id"),
+  archiveId: integer("archive_id"),
+  actionType: varchar("action_type", { length: 64 }).notNull(),
+  detail: text("detail"),
+  operatorId: integer("operator_id"),
+  operatorName: varchar("operator_name", { length: 255 }),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type OperatorAction = typeof operatorActions.$inferSelect;
+
 // ─── Operator Corrections (Self-Improving AI Loop) ───────────────────────────
 export const operatorCorrections = pgTable("operator_corrections", {
   id: serial("id").primaryKey(),

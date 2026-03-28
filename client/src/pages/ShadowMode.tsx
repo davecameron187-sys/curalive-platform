@@ -112,6 +112,247 @@ type ArchiveResult = {
   message: string;
 };
 
+function OperatorNotesPanel({ sessionId }: { sessionId: number }) {
+  const [noteText, setNoteText] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+  const notesQuery = trpc.shadowMode.getNotes.useQuery({ sessionId });
+  const addNote = trpc.shadowMode.addNote.useMutation({
+    onSuccess: () => { notesQuery.refetch(); setNoteText(""); setIsAdding(false); toast.success("Note saved"); },
+    onError: (err: any) => toast.error("Failed to save note: " + err.message),
+  });
+  const deleteNote = trpc.shadowMode.deleteNote.useMutation({
+    onSuccess: () => { notesQuery.refetch(); toast.success("Note removed"); },
+  });
+
+  const notes: Array<{ id: string; text: string; createdAt: string }> = notesQuery.data ?? [];
+
+  return (
+    <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
+      <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-amber-400" />
+          <span className="text-sm font-semibold text-slate-200">Operator Notes</span>
+          {notes.length > 0 && <span className="text-xs text-slate-500">({notes.length})</span>}
+        </div>
+        <button onClick={() => setIsAdding(!isAdding)} className="text-xs px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 transition-colors">
+          {isAdding ? "Cancel" : "+ Add Note"}
+        </button>
+      </div>
+      {isAdding && (
+        <div className="px-5 py-3 border-b border-white/5 space-y-2">
+          <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add operator observation, flag, or instruction..." className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 resize-none focus:outline-none focus:border-amber-500/30" rows={3} />
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => addNote.mutate({ sessionId, text: noteText })} disabled={!noteText.trim() || addNote.isPending} className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30">
+              {addNote.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Send className="w-3 h-3 mr-1" />}
+              Save Note
+            </Button>
+          </div>
+        </div>
+      )}
+      {notes.length === 0 && !isAdding ? (
+        <div className="p-6 text-center text-slate-600 text-sm">No notes yet — add observations during the session</div>
+      ) : (
+        <div className="max-h-48 overflow-y-auto divide-y divide-white/5">
+          {notes.map(note => (
+            <div key={note.id} className="px-5 py-3 flex items-start gap-3 group">
+              <div className="flex-1">
+                <p className="text-sm text-slate-300">{note.text}</p>
+                <span className="text-xs text-slate-600">{new Date(note.createdAt).toLocaleTimeString()}</span>
+              </div>
+              <button onClick={() => deleteNote.mutate({ sessionId, noteId: note.id })} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-all">
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OperatorActionLogPanel({ sessionId }: { sessionId: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const actionLog = trpc.shadowMode.getActionLog.useQuery({ sessionId, limit: 50 }, { refetchInterval: 5000 });
+
+  const ACTION_ICONS: Record<string, { icon: React.ElementType; color: string }> = {
+    session_started: { icon: Play, color: "text-emerald-400" },
+    session_ended: { icon: Square, color: "text-red-400" },
+    note_created: { icon: FileText, color: "text-amber-400" },
+    note_deleted: { icon: Trash2, color: "text-slate-500" },
+    question_approve: { icon: CheckCircle2, color: "text-emerald-400" },
+    question_reject: { icon: AlertTriangle, color: "text-red-400" },
+    question_hold: { icon: Clock, color: "text-amber-400" },
+    question_legal_review: { icon: Shield, color: "text-orange-400" },
+    question_send_to_speaker: { icon: Send, color: "text-blue-400" },
+    question_answered: { icon: MessageCircle, color: "text-violet-400" },
+    export_generated: { icon: Download, color: "text-blue-400" },
+  };
+
+  const actions = actionLog.data ?? [];
+  const visibleActions = expanded ? actions : actions.slice(0, 5);
+
+  return (
+    <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
+      <div className="px-5 py-3 border-b border-white/5 flex items-center gap-2">
+        <ListChecks className="w-4 h-4 text-blue-400" />
+        <span className="text-sm font-semibold text-slate-200">Action Log</span>
+        {actions.length > 0 && <span className="text-xs text-slate-500">({actions.length})</span>}
+      </div>
+      {actions.length === 0 ? (
+        <div className="p-6 text-center text-slate-600 text-sm">
+          {actionLog.isLoading ? "Loading..." : "No actions recorded yet"}
+        </div>
+      ) : (
+        <>
+          <div className="max-h-64 overflow-y-auto divide-y divide-white/5">
+            {visibleActions.map((action: any) => {
+              const cfg = ACTION_ICONS[action.actionType] ?? { icon: Zap, color: "text-slate-400" };
+              const Icon = cfg.icon;
+              return (
+                <div key={action.id} className="px-5 py-2.5 flex items-start gap-3">
+                  <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${cfg.color}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-slate-300 truncate">{action.detail || action.actionType.replace(/_/g, " ")}</p>
+                    <span className="text-xs text-slate-600">{new Date(action.createdAt).toLocaleString()}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {actions.length > 5 && (
+            <button onClick={() => setExpanded(!expanded)} className="w-full px-5 py-2 text-xs text-slate-500 hover:text-slate-300 border-t border-white/5 flex items-center justify-center gap-1 transition-colors">
+              {expanded ? <><ChevronUp className="w-3 h-3" /> Show less</> : <><ChevronDown className="w-3 h-3" /> Show {actions.length - 5} more</>}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function SessionHandoffPanel({ sessionId, clientName, eventName }: { sessionId: number; clientName: string; eventName: string }) {
+  const handoff = trpc.shadowMode.getHandoffPackage.useQuery({ sessionId });
+  const exportCsv = trpc.shadowMode.exportSession.useQuery({ sessionId, format: "csv" }, { enabled: false });
+  const exportJson = trpc.shadowMode.exportSession.useQuery({ sessionId, format: "json" }, { enabled: false });
+
+  const handleExport = async (format: "csv" | "json") => {
+    try {
+      const result = format === "csv" ? await exportCsv.refetch() : await exportJson.refetch();
+      if (result.data) {
+        const blob = new Blob([result.data.content], { type: result.data.contentType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = result.data.filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success(`${format.toUpperCase()} exported`);
+      }
+    } catch {
+      toast.error(`Failed to export ${format.toUpperCase()}`);
+    }
+  };
+
+  const pkg = handoff.data;
+
+  if (handoff.isLoading) {
+    return (
+      <div className="bg-white/[0.02] border border-white/10 rounded-xl p-8 text-center">
+        <Loader2 className="w-6 h-6 animate-spin text-violet-400 mx-auto mb-2" />
+        <p className="text-sm text-slate-400">Building handoff package...</p>
+      </div>
+    );
+  }
+
+  if (!pkg) return null;
+
+  const readinessPercent = Math.round((pkg.readiness.score / pkg.readiness.maxScore) * 100);
+
+  return (
+    <div className="bg-white/[0.02] border border-violet-500/20 rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20">
+            <Briefcase className="w-4 h-4 text-violet-400" />
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-slate-200">Session Handoff Package</div>
+            <div className="text-xs text-slate-500">{clientName} — {eventName}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-mono px-2 py-1 rounded-lg border ${readinessPercent >= 75 ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" : readinessPercent >= 50 ? "text-amber-400 bg-amber-400/10 border-amber-400/20" : "text-red-400 bg-red-400/10 border-red-400/20"}`}>
+            {readinessPercent}% ready
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-5">
+        <ReadinessItem label="Transcript" ready={pkg.readiness.hasTranscript} detail={`${pkg.transcript.wordCount} words`} />
+        <ReadinessItem label="Recording" ready={pkg.readiness.hasRecording} />
+        <ReadinessItem label="AI Report" ready={pkg.readiness.hasAiReport} />
+        <ReadinessItem label="Notes" ready={pkg.readiness.hasNotes} detail={`${pkg.notes.length} notes`} />
+      </div>
+
+      {pkg.aiReport?.executiveSummary && (
+        <div className="px-5 pb-3">
+          <div className="bg-white/[0.03] border border-white/10 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Brain className="w-3.5 h-3.5 text-violet-400" />
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Executive Summary</span>
+            </div>
+            <p className="text-sm text-slate-300 leading-relaxed">{pkg.aiReport.executiveSummary}</p>
+          </div>
+        </div>
+      )}
+
+      {pkg.qaSummary.total > 0 && (
+        <div className="px-5 pb-3">
+          <div className="bg-white/[0.03] border border-white/10 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Q&A Summary</span>
+            </div>
+            <div className="flex gap-3 text-xs">
+              <span className="text-emerald-400">{pkg.qaSummary.approved} approved</span>
+              <span className="text-red-400">{pkg.qaSummary.rejected} rejected</span>
+              <span className="text-amber-400">{pkg.qaSummary.held} held</span>
+              {pkg.qaSummary.legalReview > 0 && <span className="text-orange-400">{pkg.qaSummary.legalReview} legal</span>}
+              {pkg.qaSummary.sentToSpeaker > 0 && <span className="text-blue-400">{pkg.qaSummary.sentToSpeaker} to speaker</span>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="px-5 py-4 border-t border-white/5 flex flex-wrap gap-2">
+        <button onClick={() => handleExport("csv")} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-colors">
+          <Download className="w-3 h-3" /> Export CSV
+        </button>
+        <button onClick={() => handleExport("json")} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 transition-colors">
+          <Download className="w-3 h-3" /> Export JSON
+        </button>
+        {pkg.recording.url && (
+          <a href={pkg.recording.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 transition-colors">
+            <Video className="w-3 h-3" /> Download Recording
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReadinessItem({ label, ready, detail }: { label: string; ready: boolean; detail?: string }) {
+  return (
+    <div className={`p-3 rounded-lg border ${ready ? "bg-emerald-500/5 border-emerald-500/20" : "bg-white/[0.02] border-white/10"}`}>
+      <div className="flex items-center gap-1.5 mb-1">
+        {ready ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-slate-500" />}
+        <span className={`text-xs font-medium ${ready ? "text-emerald-300" : "text-slate-500"}`}>{label}</span>
+      </div>
+      {detail && <span className="text-xs text-slate-600">{detail}</span>}
+    </div>
+  );
+}
+
 export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   const [, navigate] = useLocation();
 
@@ -1514,11 +1755,12 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                         </div>
                       </div>
 
-                      {liveSession.notes && (
-                        <div className="bg-white/[0.02] border border-white/10 rounded-xl px-5 py-3 text-sm text-slate-500">
-                          <span className="text-slate-600 text-xs uppercase tracking-wider mr-2">Notes:</span>
-                          {liveSession.notes}
-                        </div>
+                      <OperatorNotesPanel sessionId={liveSession.id} />
+
+                      <OperatorActionLogPanel sessionId={liveSession.id} />
+
+                      {(liveSession.status === "completed" || liveSession.status === "failed") && (
+                        <SessionHandoffPanel sessionId={liveSession.id} clientName={liveSession.clientName} eventName={liveSession.eventName} />
                       )}
                     </div>
                   );

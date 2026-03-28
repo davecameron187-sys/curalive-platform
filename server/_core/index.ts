@@ -77,6 +77,27 @@ async function ensureArchiveEventsColumns() {
   }
 }
 
+async function ensureOperatorActionsTable() {
+  try {
+    const { rawSql } = await import("../db");
+    await rawSql(`CREATE TABLE IF NOT EXISTS operator_actions (
+      id SERIAL PRIMARY KEY,
+      session_id INTEGER,
+      archive_id INTEGER,
+      action_type VARCHAR(64) NOT NULL,
+      detail TEXT,
+      operator_id INTEGER,
+      operator_name VARCHAR(255),
+      metadata TEXT,
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )`);
+    console.log("[Migration] ✓ operator_actions table ensured");
+  } catch (err: any) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] operator_actions check skipped:", err?.message);
+  }
+}
+
 async function startServer() {
   const app = express();
   const server = http.createServer(app);
@@ -109,6 +130,9 @@ async function startServer() {
 
   ensureArchiveEventsColumns().catch(err =>
     console.warn("[Migration] Non-blocking column migration failed:", err?.message)
+  );
+  ensureOperatorActionsTable().catch(err =>
+    console.warn("[Migration] operator_actions migration failed:", err?.message)
   );
 
   if (!isProd) {

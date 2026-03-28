@@ -162,11 +162,22 @@ Optional (not yet configured, non-critical for app loading):
 - **Async persistence**: After local save, recordings are asynchronously streamed to object storage for durability
 - **Health diagnostics**: `/health` endpoint includes `storage` field with `localDiskWritable`, `objectStorageConfigured`, `localRecordingsCount`, `localRecordingsTotalBytes`
 
+## Operator Action Logging
+
+- **Table**: `operator_actions` — persistent audit trail for all operator activity
+- **Logged actions**: `session_started`, `session_ended`, `note_created`, `note_deleted`, `question_approve`, `question_reject`, `question_hold`, `question_legal_review`, `question_send_to_speaker`, `question_answered`, `export_generated`
+- **tRPC procedures**: `shadow.addNote`, `shadow.deleteNote`, `shadow.getNotes`, `shadow.getActionLog`, `shadow.qaAction`
+- **Handoff package**: `shadow.getHandoffPackage` — aggregates transcript, recording, notes, action log, Q&A summary, AI report, readiness score
+- **Exports**: `shadow.exportSession` — CSV and JSON export with all session data
+- **Frontend components**: `OperatorNotesPanel`, `OperatorActionLogPanel`, `SessionHandoffPanel` in ShadowMode.tsx
+- **Q&A action logging**: All LiveQaDashboard actions (approve, reject, hold, legal review, send to speaker, answered) are logged to operator_actions
+
 ## Database Migrations
 
-- **Startup migrations**: `ensureArchiveEventsColumns()` in `server/_core/index.ts` runs `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` at server start to ensure schema is up-to-date in both dev and production
+- **Startup migrations**: `ensureArchiveEventsColumns()` and `ensureOperatorActionsTable()` in `server/_core/index.ts` run at server start to ensure schema is up-to-date
 - **Drizzle migrations**: Old MySQL-style migrations in `drizzle/` are broken; schema changes use startup ALTER TABLE instead
 - **archive_events columns**: `transcript_fingerprint` (VARCHAR 64), `transcription_status` (default 'pending'), `transcription_provider`, `transcription_error_code`, `transcription_error_message` — all added via startup migration
+- **operator_actions table**: Created via startup migration `ensureOperatorActionsTable()`
 
 ## Archive Upload Transcription Fallback
 

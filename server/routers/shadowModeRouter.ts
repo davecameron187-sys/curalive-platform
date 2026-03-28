@@ -2,12 +2,35 @@
 import { z } from "zod";
 import { router, operatorProcedure, protectedProcedure } from "../_core/trpc";
 import {getDb, rawSql } from "../db";
-import { shadowSessions, taggedMetrics, recallBots, agmIntelligenceSessions } from "../../drizzle/schema";
+import { shadowSessions, taggedMetrics, recallBots, agmIntelligenceSessions, operatorActions } from "../../drizzle/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
 import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
 import { generateFullAiReport } from "./archiveUploadRouter";
 import type { AiReport } from "./archiveUploadRouter";
+
+async function logOperatorAction(opts: {
+  sessionId?: number | null;
+  archiveId?: number | null;
+  actionType: string;
+  detail?: string | null;
+  operatorName?: string | null;
+  metadata?: Record<string, unknown> | null;
+}) {
+  try {
+    const db = await getDb();
+    await db.insert(operatorActions).values({
+      sessionId: opts.sessionId ?? null,
+      archiveId: opts.archiveId ?? null,
+      actionType: opts.actionType,
+      detail: opts.detail ?? null,
+      operatorName: opts.operatorName ?? "Operator",
+      metadata: opts.metadata ? JSON.stringify(opts.metadata) : null,
+    });
+  } catch (err) {
+    console.warn("[OperatorAction] Failed to log action:", opts.actionType, err);
+  }
+}
 
 async function autoGenerateAiReport(
   sessionId: number,
@@ -279,6 +302,8 @@ export const shadowModeRouter = router({
           })
           .where(eq(shadowSessions.id, sessionId));
 
+        await logOperatorAction({ sessionId, actionType: "session_started", detail: `${input.clientName} — ${input.eventName} (Local Audio Capture)`, metadata: { platform: input.platform, eventType: input.eventType } });
+
         return {
           sessionId,
           botId: null,
@@ -354,6 +379,8 @@ export const shadowModeRouter = router({
             ablyChannel,
             transcriptJson: JSON.stringify([]),
           });
+
+          await logOperatorAction({ sessionId, actionType: "session_started", detail: `${input.clientName} — ${input.eventName} (Recall.ai bot)`, metadata: { platform: input.platform, eventType: input.eventType, botId: bot.id } });
 
           return {
             sessionId,
@@ -461,6 +488,8 @@ export const shadowModeRouter = router({
           liveComplianceFlags
         ).catch(err => console.error("[Shadow] Background AI report failed:", err));
 
+        await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: `${transcript.length} transcript segments, ${metricsCount} metrics generated`, metadata: { transcriptSegments: transcript.length, metricsCount } });
+
         return {
           success: true,
           transcriptSegments: transcript.length,
@@ -526,6 +555,8 @@ export const shadowModeRouter = router({
           liveComplianceFlags
         ).catch(err => console.error("[Shadow] Background AI report failed:", err));
 
+        await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: `${localTranscript.length} local transcript segments, ${metricsCount} metrics generated`, metadata: { transcriptSegments: localTranscript.length, metricsCount } });
+
         return {
           success: true,
           transcriptSegments: localTranscript.length,
@@ -537,6 +568,8 @@ export const shadowModeRouter = router({
       await db.update(shadowSessions)
         .set({ status: "completed", endedAt: Date.now() })
         .where(eq(shadowSessions.id, input.sessionId));
+
+      await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: "Session closed (no transcript captured)" });
 
       return { success: true, transcriptSegments: 0, taggedMetricsGenerated: 0, message: "Session closed." };
     }),
@@ -983,6 +1016,243 @@ export const shadowModeRouter = router({
       }
 
       return { agmSessionId, results };
+    }),
+
+  addNote: operatorProcedure
+    .input(z.object({
+      sessionId: z.number(),
+      text: z.string().min(1).max(5000),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db.select().from(shadowSessions).where(eq(shadowSessions.id, input.sessionId)).limit(1);
+      if (!session) throw new Error("Session not found");
+
+      const existingNotes: Array<{ id: string; text: string; createdAt: string }> = session.notes ? (() => { try { return JSON.parse(session.notes as string); } catch { return []; } })() : [];
+      const noteId = `note-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      existingNotes.push({ id: noteId, text: input.text, createdAt: new Date().toISOString() });
+
+      await db.update(shadowSessions).set({ notes: JSON.stringify(existingNotes) }).where(eq(shadowSessions.id, input.sessionId));
+      await logOperatorAction({ sessionId: input.sessionId, actionType: "note_created", detail: input.text.slice(0, 200) });
+
+      return { success: true, noteId, noteCount: existingNotes.length };
+    }),
+
+  deleteNote: operatorProcedure
+    .input(z.object({ sessionId: z.number(), noteId: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db.select().from(shadowSessions).where(eq(shadowSessions.id, input.sessionId)).limit(1);
+      if (!session) throw new Error("Session not found");
+
+      let notes: Array<{ id: string; text: string; createdAt: string }> = [];
+      try { notes = session.notes ? JSON.parse(session.notes as string) : []; } catch {}
+      notes = notes.filter(n => n.id !== input.noteId);
+
+      await db.update(shadowSessions).set({ notes: JSON.stringify(notes) }).where(eq(shadowSessions.id, input.sessionId));
+      await logOperatorAction({ sessionId: input.sessionId, actionType: "note_deleted", detail: `Note ${input.noteId} removed` });
+
+      return { success: true };
+    }),
+
+  getNotes: operatorProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db.select({ notes: shadowSessions.notes }).from(shadowSessions).where(eq(shadowSessions.id, input.sessionId)).limit(1);
+      if (!session) return [];
+      try { return session.notes ? JSON.parse(session.notes as string) : []; } catch { return []; }
+    }),
+
+  getActionLog: operatorProcedure
+    .input(z.object({ sessionId: z.number().optional(), limit: z.number().default(100) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (input.sessionId) {
+        return db.select().from(operatorActions).where(eq(operatorActions.sessionId, input.sessionId)).orderBy(desc(operatorActions.createdAt)).limit(input.limit);
+      }
+      return db.select().from(operatorActions).orderBy(desc(operatorActions.createdAt)).limit(input.limit);
+    }),
+
+  qaAction: operatorProcedure
+    .input(z.object({
+      sessionId: z.number(),
+      questionId: z.string(),
+      action: z.enum(["approve", "reject", "hold", "legal_review", "send_to_speaker", "answered"]),
+      questionText: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const actionLabels: Record<string, string> = {
+        approve: "Question approved for live display",
+        reject: "Question rejected/dismissed",
+        hold: "Question placed on hold",
+        legal_review: "Question flagged for legal review",
+        send_to_speaker: "Question sent to speaker queue",
+        answered: "Question marked as answered",
+      };
+
+      await logOperatorAction({
+        sessionId: input.sessionId,
+        actionType: `question_${input.action}`,
+        detail: `${actionLabels[input.action]}${input.questionText ? `: "${input.questionText.slice(0, 100)}"` : ""}`,
+        metadata: { questionId: input.questionId, action: input.action },
+      });
+
+      return { success: true, action: input.action, message: actionLabels[input.action] };
+    }),
+
+  getHandoffPackage: operatorProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db.select().from(shadowSessions).where(eq(shadowSessions.id, input.sessionId)).limit(1);
+      if (!session) throw new Error("Session not found");
+
+      let transcript: Array<{ speaker: string; text: string; timestamp: number }> = [];
+      let recordingUrl: string | null = null;
+
+      if (session.recallBotId) {
+        const [bot] = await db.select().from(recallBots).where(eq(recallBots.recallBotId, session.recallBotId)).limit(1);
+        if (bot?.transcriptJson) transcript = JSON.parse(bot.transcriptJson);
+        if (bot?.recordingUrl) recordingUrl = bot.recordingUrl;
+      }
+      if (session.localTranscriptJson && transcript.length === 0) {
+        try { transcript = JSON.parse(session.localTranscriptJson as string); } catch {}
+      }
+      if (session.localRecordingPath) recordingUrl = `/api/shadow/recording/${session.id}`;
+
+      let notes: Array<{ id: string; text: string; createdAt: string }> = [];
+      try { notes = session.notes ? JSON.parse(session.notes as string) : []; } catch {}
+
+      const actions = await db.select().from(operatorActions).where(eq(operatorActions.sessionId, input.sessionId)).orderBy(desc(operatorActions.createdAt)).limit(200);
+
+      let aiReport: AiReport | null = null;
+      try {
+        const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`, [`shadow-${session.id}`]);
+        if (rows?.[0]?.ai_report) aiReport = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
+      } catch {}
+
+      const fullText = transcript.map(s => `[${s.speaker}]: ${s.text}`).join("\n");
+      const wordCount = fullText.split(/\s+/).filter(Boolean).length;
+      const qaActions = actions.filter(a => a.actionType.startsWith("question_"));
+      const duration = session.startedAt && session.endedAt ? Math.round((session.endedAt - session.startedAt) / 1000) : null;
+
+      const readiness = {
+        hasTranscript: transcript.length > 0,
+        hasRecording: !!recordingUrl,
+        hasAiReport: !!aiReport,
+        hasNotes: notes.length > 0,
+        hasActions: actions.length > 0,
+        score: [transcript.length > 0, !!recordingUrl, !!aiReport, notes.length > 0].filter(Boolean).length,
+        maxScore: 4,
+      };
+
+      return {
+        session: {
+          id: session.id,
+          clientName: session.clientName,
+          eventName: session.eventName,
+          eventType: session.eventType,
+          platform: session.platform,
+          status: session.status,
+          startedAt: session.startedAt,
+          endedAt: session.endedAt,
+          duration,
+        },
+        transcript: { segments: transcript, wordCount },
+        recording: { url: recordingUrl },
+        notes,
+        actionLog: actions,
+        qaSummary: {
+          total: qaActions.length,
+          approved: qaActions.filter(a => a.actionType === "question_approve").length,
+          rejected: qaActions.filter(a => a.actionType === "question_reject").length,
+          held: qaActions.filter(a => a.actionType === "question_hold").length,
+          legalReview: qaActions.filter(a => a.actionType === "question_legal_review").length,
+          sentToSpeaker: qaActions.filter(a => a.actionType === "question_send_to_speaker").length,
+        },
+        aiReport,
+        readiness,
+      };
+    }),
+
+  exportSession: operatorProcedure
+    .input(z.object({
+      sessionId: z.number(),
+      format: z.enum(["csv", "json"]),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const [session] = await db.select().from(shadowSessions).where(eq(shadowSessions.id, input.sessionId)).limit(1);
+      if (!session) throw new Error("Session not found");
+
+      let transcript: Array<{ speaker: string; text: string; timestamp: number }> = [];
+      if (session.recallBotId) {
+        const [bot] = await db.select().from(recallBots).where(eq(recallBots.recallBotId, session.recallBotId)).limit(1);
+        if (bot?.transcriptJson) transcript = JSON.parse(bot.transcriptJson);
+      }
+      if (session.localTranscriptJson && transcript.length === 0) {
+        try { transcript = JSON.parse(session.localTranscriptJson as string); } catch {}
+      }
+
+      let notes: Array<{ id: string; text: string; createdAt: string }> = [];
+      try { notes = session.notes ? JSON.parse(session.notes as string) : []; } catch {}
+
+      const actions = await db.select().from(operatorActions).where(eq(operatorActions.sessionId, input.sessionId)).orderBy(desc(operatorActions.createdAt)).limit(500);
+
+      let aiReport: AiReport | null = null;
+      try {
+        const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`, [`shadow-${session.id}`]);
+        if (rows?.[0]?.ai_report) aiReport = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
+      } catch {}
+
+      await logOperatorAction({ sessionId: input.sessionId, actionType: "export_generated", detail: `${input.format.toUpperCase()} export generated` });
+
+      if (input.format === "csv") {
+        const csvRows: string[] = [];
+        csvRows.push("Section,Timestamp,Speaker,Content,Metadata");
+
+        csvRows.push(`Event Info,,,"${session.clientName} — ${session.eventName}","Type: ${session.eventType}, Platform: ${session.platform}, Status: ${session.status}"`);
+        if (session.startedAt) csvRows.push(`Event Info,${new Date(session.startedAt).toISOString()},,Started,`);
+        if (session.endedAt) csvRows.push(`Event Info,${new Date(session.endedAt).toISOString()},,Ended,`);
+
+        for (const seg of transcript) {
+          const escapedText = `"${seg.text.replace(/"/g, '""')}"`;
+          csvRows.push(`Transcript,${seg.timestamp},${seg.speaker},${escapedText},`);
+        }
+
+        for (const note of notes) {
+          csvRows.push(`Note,${note.createdAt},,${`"${note.text.replace(/"/g, '""')}"`},`);
+        }
+
+        for (const act of actions) {
+          csvRows.push(`Action,${act.createdAt.toISOString()},${act.operatorName ?? ""},${`"${(act.detail ?? act.actionType).replace(/"/g, '""')}"`},${act.actionType}`);
+        }
+
+        if (aiReport?.executiveSummary) {
+          csvRows.push(`AI Report,,,${`"${aiReport.executiveSummary.replace(/"/g, '""')}"`},executive_summary`);
+        }
+        if (aiReport?.sentimentAnalysis) {
+          csvRows.push(`AI Report,,,"Sentiment: ${aiReport.sentimentAnalysis.score}/100 — ${aiReport.sentimentAnalysis.narrative?.slice(0, 200)}",sentiment`);
+        }
+        if (aiReport?.complianceReview) {
+          csvRows.push(`AI Report,,,"Risk: ${aiReport.complianceReview.riskLevel}${aiReport.complianceReview.flaggedPhrases?.length ? ` — Flags: ${aiReport.complianceReview.flaggedPhrases.join(", ")}` : ""}",compliance`);
+        }
+
+        return { content: csvRows.join("\n"), filename: `curalive-session-${session.id}.csv`, contentType: "text/csv" };
+      }
+
+      return {
+        content: JSON.stringify({
+          session: { id: session.id, clientName: session.clientName, eventName: session.eventName, eventType: session.eventType, platform: session.platform, status: session.status, startedAt: session.startedAt, endedAt: session.endedAt },
+          transcript,
+          notes,
+          actionLog: actions,
+          aiReport,
+        }, null, 2),
+        filename: `curalive-session-${session.id}.json`,
+        contentType: "application/json",
+      };
     }),
 
 });

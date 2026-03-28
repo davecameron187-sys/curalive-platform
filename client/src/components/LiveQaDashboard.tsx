@@ -308,6 +308,8 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
   const [certificate, setCertificate] = useState<any>(null);
   const [certGenerating, setCertGenerating] = useState(false);
 
+  const logQaAction = trpc.shadowMode.qaAction.useMutation();
+
   const sessionByShadow = trpc.liveQa.getSessionByShadow.useQuery(
     { shadowSessionId: shadowSessionId || 0 },
     { enabled: !!shadowSessionId }
@@ -374,8 +376,12 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
         flagged: "Question flagged for review",
       };
       toast.success(labels[status] || `Question ${status}`);
+      if (shadowSessionId) {
+        const actionMap: Record<string, string> = { approved: "approve", rejected: "reject", flagged: "hold" };
+        logQaAction.mutate({ sessionId: shadowSessionId, questionId: String(questionId), action: (actionMap[status] || status) as any });
+      }
     } catch { toast.error("Failed to update status"); }
-  }, [updateStatus, questionsQuery]);
+  }, [updateStatus, questionsQuery, shadowSessionId, logQaAction]);
 
   const handleRouteBot = useCallback(async (questionId: number) => {
     try {
@@ -385,16 +391,18 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
       questionsQuery.refetch();
       toast.success("AI Bot generated response — review in answer panel");
       setExpandedQ(questionId);
+      if (shadowSessionId) logQaAction.mutate({ sessionId: shadowSessionId, questionId: String(questionId), action: "approve", questionText: "Routed to AI Bot" });
     } catch { toast.error("Failed to generate bot response"); }
-  }, [updateStatus, questionsQuery, generateDraftMut]);
+  }, [updateStatus, questionsQuery, generateDraftMut, shadowSessionId, logQaAction]);
 
   const handleLegalReview = useCallback(async (questionId: number) => {
     try {
       await updateStatus.mutateAsync({ questionId, status: "flagged", operatorNotes: "Escalated for Legal Review" });
       questionsQuery.refetch();
       toast.success("Question escalated for legal review with full audit trail");
+      if (shadowSessionId) logQaAction.mutate({ sessionId: shadowSessionId, questionId: String(questionId), action: "legal_review" });
     } catch { toast.error("Failed to flag for review"); }
-  }, [updateStatus, questionsQuery]);
+  }, [updateStatus, questionsQuery, shadowSessionId, logQaAction]);
 
   const handleGenerateDraft = useCallback(async (questionId: number) => {
     try {
@@ -414,8 +422,9 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
       setExpandedQ(null);
       questionsQuery.refetch();
       toast.success("Answer submitted & question marked answered");
+      if (shadowSessionId) logQaAction.mutate({ sessionId: shadowSessionId, questionId: String(questionId), action: "answered" });
     } catch { toast.error("Failed to submit answer"); }
-  }, [draftAnswer, submitAnswer, questionsQuery]);
+  }, [draftAnswer, submitAnswer, questionsQuery, shadowSessionId, logQaAction]);
 
   const handleSessionStatusChange = useCallback(async (status: "active" | "paused" | "closed") => {
     if (!qaSessionId) return;
@@ -455,8 +464,9 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
       await sendToSpeakerMut.mutateAsync({ questionId, suggestedAnswer });
       questionsQuery.refetch();
       toast.success("Question sent to speaker with AI-suggested response");
+      if (shadowSessionId) logQaAction.mutate({ sessionId: shadowSessionId, questionId: String(questionId), action: "send_to_speaker" });
     } catch { toast.error("Failed to send to speaker"); }
-  }, [sendToSpeakerMut, questionsQuery, draftAnswer]);
+  }, [sendToSpeakerMut, questionsQuery, draftAnswer, shadowSessionId, logQaAction]);
 
   const handleBroadcast = useCallback(async () => {
     if (!qaSessionId || !broadcastMessage.trim()) return;
