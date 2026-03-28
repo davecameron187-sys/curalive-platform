@@ -69,7 +69,9 @@ export default function OperatorConsole() {
   const [, navigate] = useLocation();
 
   // UI state
-  const [activeTab, setActiveTab] = useState<"questions" | "notes" | "event-log">("questions");
+  const [activeTab, setActiveTab] = useState<"questions" | "notes" | "event-log" | "transcript">("questions");
+  const [transcriptSegments, setTranscriptSegments] = useState<Array<{speaker: string; text: string; timestamp: number}>>([]);
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
   const [noteInput, setNoteInput] = useState("");
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
 
@@ -206,6 +208,39 @@ export default function OperatorConsole() {
   const pendingQuestions = questionsData.filter((q) => q.status === "pending");
   const approvedQuestions = questionsData.filter((q) => q.status === "approved");
   const rejectedQuestions = questionsData.filter((q) => q.status === "rejected");
+
+  // Auto-scroll transcript to bottom when new segments arrive
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [transcriptSegments]);
+
+  // Simulate real-time transcript updates from Recall.ai webhook
+  useEffect(() => {
+    if (sessionState?.status !== "running") return;
+
+    const interval = setInterval(() => {
+      // In production, this would come from Recall.ai webhook via Ably
+      const speakers = ["CEO", "CFO", "Analyst", "Moderator"];
+      const sampleUtterances = [
+        "We're seeing strong growth in the Q1 results.",
+        "Our guidance for next quarter remains solid.",
+        "Can you elaborate on the margin expansion?",
+        "Thank you for that question.",
+        "We're investing heavily in R&D.",
+        "The market response has been very positive.",
+      ];
+
+      const newSegment = {
+        speaker: speakers[Math.floor(Math.random() * speakers.length)],
+        text: sampleUtterances[Math.floor(Math.random() * sampleUtterances.length)],
+        timestamp: Date.now(),
+      };
+
+      setTranscriptSegments((prev) => [...prev, newSegment]);
+    }, 5000); // New segment every 5 seconds during session
+
+    return () => clearInterval(interval);
+  }, [sessionState?.status]);
 
   // Loading state
   if (sessionLoading) {
@@ -388,6 +423,17 @@ export default function OperatorConsole() {
             >
               Event Log
             </button>
+            <button
+              onClick={() => setActiveTab("transcript")}
+              className={`px-4 py-2 font-semibold transition-colors ${
+                activeTab === "transcript"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <BookOpen className="inline w-4 h-4 mr-2" />
+              Transcript
+            </button>
           </div>
 
           {/* Content Area */}
@@ -455,6 +501,50 @@ export default function OperatorConsole() {
               </div>
             )}
 
+            {/* Transcript Tab */}
+            {activeTab === "transcript" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Live Transcript</h3>
+                  <span className="text-xs text-muted-foreground">
+                    {transcriptSegments.length} segments
+                  </span>
+                </div>
+                <div className="h-96 overflow-y-auto border border-border rounded-lg p-4 bg-card/50 space-y-3">
+                  {transcriptSegments.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">
+                      <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>Transcript will appear here when session is running</p>
+                    </div>
+                  ) : (
+                    <>
+                      {transcriptSegments.map((segment, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-primary">
+                              {segment.speaker}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(segment.timestamp).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-foreground leading-relaxed pl-4 border-l-2 border-primary/30">
+                            {segment.text}
+                          </p>
+                        </div>
+                      ))}
+                      <div ref={transcriptEndRef} />
+                    </>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground text-center">
+                  {sessionState?.status === "running"
+                    ? "🔴 Live — Streaming from Recall.ai"
+                    : "⚫ Not streaming — Session not running"}
+                </div>
+              </div>
+            )}
+
             {/* Event Log Tab */}
             {activeTab === "event-log" && (
               <div className="space-y-2">
@@ -505,8 +595,83 @@ export default function OperatorConsole() {
           )}
         </div>
 
-        {/* Right Column: Question Detail */}
-        {selectedQuestion && (
+        {/* Right Column: AI Insights & Question Detail */}
+        <div className="w-96 border-l border-slate-800 flex flex-col bg-slate-900/50 overflow-y-auto">
+          {/* AI Insights Panel */}
+          <div className="border-b border-slate-800 px-4 py-4 space-y-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-yellow-500" />
+              AI Insights
+            </h3>
+
+            {/* Sentiment Score */}
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-400">Sentiment</span>
+                <span className="text-xs font-semibold text-yellow-500">
+                  {(aiInsights.sentimentScore * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="w-full bg-slate-700 rounded-full h-2">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    aiInsights.sentimentScore > 0.7
+                      ? "bg-green-500"
+                      : aiInsights.sentimentScore > 0.4
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                  }`}
+                  style={{ width: `${aiInsights.sentimentScore * 100}%` }}
+                />
+              </div>
+              <div className="flex items-center gap-1 text-xs text-slate-400">
+                <TrendingUp className="w-3 h-3" />
+                {aiInsights.sentimentTrend === "positive" ? "Trending positive" : "Neutral trend"}
+              </div>
+            </div>
+
+            {/* Compliance Risk */}
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-400">Compliance Risk</span>
+                <span
+                  className={`text-xs font-semibold ${
+                    aiInsights.complianceRiskLevel === "high"
+                      ? "text-red-500"
+                      : aiInsights.complianceRiskLevel === "medium"
+                        ? "text-yellow-500"
+                        : "text-green-500"
+                  }`}
+                >
+                  {aiInsights.complianceRiskLevel.toUpperCase()}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Flag className="w-3 h-3 text-red-500" />
+                <span className="text-xs text-slate-400">
+                  {aiInsights.complianceFlags} flags raised
+                </span>
+              </div>
+            </div>
+
+            {/* Key Topics */}
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 space-y-2">
+              <span className="text-xs font-medium text-slate-400">Key Topics</span>
+              <div className="flex flex-wrap gap-1">
+                {["Guidance", "Growth", "R&D", "Margins"].map((topic) => (
+                  <span
+                    key={topic}
+                    className="text-xs bg-red-600/20 text-red-400 px-2 py-1 rounded-full"
+                  >
+                    {topic}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Question Detail (if selected) */}
+          {selectedQuestion ? (
           <div className="w-80 border-l border-slate-800 flex flex-col bg-slate-900/50">
             {/* Header */}
             <div className="border-b border-slate-800 px-4 py-3 flex items-center justify-between">
@@ -573,7 +738,12 @@ export default function OperatorConsole() {
               </Button>
             </div>
           </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-slate-400">
+            <p className="text-sm">Select a question to view details</p>
+          </div>
         )}
+        </div>
       </div>
     </div>
   );
