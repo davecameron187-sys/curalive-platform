@@ -294,6 +294,79 @@ export const archiveRouter = router({
     }),
 
   /**
+   * Export session as PDF
+   */
+  exportSessionAsPDF: protectedProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new Error("Database not available");
+
+      try {
+        const session = await database
+          .select()
+          .from(liveQaSessionMetadata)
+          .where(eq(liveQaSessionMetadata.sessionId, input.sessionId))
+          .limit(1);
+
+        if (!session || session.length === 0) {
+          throw new Error("Session not found");
+        }
+
+        const sessionData = session[0];
+
+        // Fetch all related data
+        const questions = await database
+          .select()
+          .from(liveQaQuestions)
+          .where(eq(liveQaQuestions.sessionId, input.sessionId));
+
+        const flags = await database
+          .select()
+          .from(complianceFlags)
+          .where(eq(complianceFlags.sessionId, input.sessionId));
+
+        // Build PDF content (simplified text format)
+        const pdfLines = [
+          "CuraLive Session Report",
+          "=".repeat(50),
+          "",
+          `Session ID: ${sessionData.sessionId}`,
+          `Event Name: ${sessionData.sessionName}`,
+          `Started: ${sessionData.startedAt?.toISOString() || "N/A"}`,
+          `Ended: ${sessionData.endedAt?.toISOString() || "N/A"}`,
+          `Total Attendees: ${sessionData.totalAttendees || 0}`,
+          "",
+          "Questions Summary",
+          "-".repeat(50),
+          `Total Questions: ${questions.length}`,
+          ...questions.slice(0, 10).map((q) => `• ${q.questionText} (${q.status})`),
+          questions.length > 10 ? `... and ${questions.length - 10} more questions` : "",
+          "",
+          "Compliance Flags",
+          "-".repeat(50),
+          `Total Flags: ${flags.length}`,
+          ...flags.map((f) => `• ${f.riskType} - Score: ${f.riskScore} - ${f.riskDescription}`),
+          "",
+          `Report Generated: ${new Date().toISOString()}`,
+        ];
+
+        const pdfContent = pdfLines.join("\n");
+
+        return {
+          sessionId: input.sessionId,
+          format: "pdf",
+          content: pdfContent,
+          filename: `session-${input.sessionId}-report.pdf`,
+          size: pdfContent.length,
+        };
+      } catch (error) {
+        console.error("Error exporting session as PDF:", error);
+        throw error;
+      }
+    }),
+
+  /**
    * Export session as JSON
    */
   exportSessionAsJSON: protectedProcedure
