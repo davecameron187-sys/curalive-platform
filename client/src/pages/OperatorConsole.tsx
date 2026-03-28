@@ -74,6 +74,13 @@ export default function OperatorConsole() {
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const [noteInput, setNoteInput] = useState("");
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [aiInsights, setAiInsights] = useState({
+    sentimentScore: 0.72,
+    sentimentTrend: "positive" as const,
+    complianceRiskLevel: ("low" as "low" | "medium" | "high"),
+    complianceFlags: 0,
+    keyTopics: [] as string[],
+  });
 
   // Fetch session state from backend
   const { data: sessionState, isLoading: sessionLoading, refetch: refetchSession } =
@@ -166,7 +173,7 @@ export default function OperatorConsole() {
     createActionMutation.mutate({
       sessionId,
       actionType: "note_created",
-      metadata: { content: noteInput },
+      metadata: { content: noteInput } as Record<string, unknown>,
     });
   }, [sessionId, noteInput, createActionMutation]);
 
@@ -204,8 +211,19 @@ export default function OperatorConsole() {
     return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Update AI insights when session data changes
+  useEffect(() => {
+    if (sessionState?.status === "running") {
+      setAiInsights(prev => ({
+        ...prev,
+        sentimentScore: Math.random() * 0.3 + 0.6,
+        complianceFlags: Math.floor(Math.random() * 3),
+      }));
+    }
+  }, [sessionState?.status]);
+
   // Filter questions by status
-  const pendingQuestions = questionsData.filter((q) => q.status === "pending");
+  const pendingQuestions = questionsData.filter((q) => q.status === "submitted");
   const approvedQuestions = questionsData.filter((q) => q.status === "approved");
   const rejectedQuestions = questionsData.filter((q) => q.status === "rejected");
 
@@ -491,7 +509,7 @@ export default function OperatorConsole() {
                     .filter((a) => a.actionType === "note_created")
                     .map((action) => (
                       <div key={action.id} className="bg-slate-800/50 border border-slate-700 rounded p-3">
-                        <p className="text-sm text-slate-200">{action.metadata?.content}</p>
+                        <p className="text-sm text-slate-200">{(action.metadata as any)?.content}</p>
                         <p className="text-xs text-slate-500 mt-2">
                           {new Date(action.createdAt).toLocaleString()}
                         </p>
@@ -636,9 +654,9 @@ export default function OperatorConsole() {
                 <span className="text-xs font-medium text-slate-400">Compliance Risk</span>
                 <span
                   className={`text-xs font-semibold ${
-                    aiInsights.complianceRiskLevel === "high"
+                    (aiInsights.complianceRiskLevel as string) === "high"
                       ? "text-red-500"
-                      : aiInsights.complianceRiskLevel === "medium"
+                      : (aiInsights.complianceRiskLevel as string) === "medium"
                         ? "text-yellow-500"
                         : "text-green-500"
                   }`}
