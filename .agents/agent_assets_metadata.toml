@@ -360,3 +360,9 @@ id = "t2QWzPefmG1wOEJENVH8T"
 uri = "file://docs/CURALIVE_COMPLETE_TECHNICAL_SPEC.docx"
 type = "word_document"
 title = "CuraLive — Complete Technical Specification (.docx)"
+
+[[outputs]]
+id = "rS7mJUNbB-QWtnSfzmgze"
+uri = "file://screenshots/CuraLive-Verification-Report.md"
+type = "text"
+title = "CuraLive Operator Console — Verification Report"
