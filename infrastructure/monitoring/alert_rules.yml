@@ -1,0 +1,230 @@
+# Prometheus Alert Rules for Chorus.AI
+# Defines alerting conditions and severity levels
+
+groups:
+  - name: chorus_ai_alerts
+    interval: 30s
+    rules:
+      # ========================================================================
+      # APPLICATION ALERTS
+      # ========================================================================
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.001
+        for: 5m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 0.1%)"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, http_request_duration_seconds_bucket) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "High API latency detected"
+          description: "P95 latency is {{ $value }}s (threshold: 200ms)"
+
+      - alert: LowThroughput
+        expr: rate(http_requests_total[5m]) < 10
+        for: 10m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "Low request throughput"
+          description: "Request rate is {{ $value }} req/s"
+
+      # ========================================================================
+      # DATABASE ALERTS
+      # ========================================================================
+
+      - alert: DatabaseDown
+        expr: up{job="mysql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database is down"
+          description: "MySQL database is not responding"
+
+      - alert: HighDatabaseConnections
+        expr: mysql_global_status_threads_connected / mysql_global_variables_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High database connection usage"
+          description: "Connection usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+
+      - alert: SlowQueries
+        expr: rate(mysql_global_status_slow_queries[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High slow query rate"
+          description: "Slow query rate is {{ $value }} queries/s"
+
+      - alert: DatabaseReplicationLag
+        expr: mysql_slave_status_seconds_behind_master > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database replication lag"
+          description: "Replication lag is {{ $value }}s (threshold: 5s)"
+
+      - alert: LowDiskSpace
+        expr: mysql_global_status_innodb_data_free / 1024 / 1024 / 1024 < 10
+        for: 5m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Low database disk space"
+          description: "Free disk space is {{ $value }}GB (threshold: 10GB)"
+
+      # ========================================================================
+      # REDIS ALERTS
+      # ========================================================================
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cluster is not responding"
+
+      - alert: HighRedisMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+
+      - alert: LowCacheHitRate
+        expr: redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) < 0.7
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 70%)"
+
+      - alert: HighRedisEvictions
+        expr: rate(redis_evicted_keys_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis key evictions detected"
+          description: "Eviction rate is {{ $value }} keys/s"
+
+      # ========================================================================
+      # INFRASTRUCTURE ALERTS
+      # ========================================================================
+
+      - alert: HighCPUUsage
+        expr: (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }} (threshold: 85%)"
+
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is {{ $value | humanizePercentage }} (threshold: 90%)"
+
+      - alert: HighNetworkErrors
+        expr: rate(node_network_receive_errs_total[5m]) + rate(node_network_transmit_errs_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High network errors"
+          description: "Network error rate is {{ $value }} errors/s"
+
+      # ========================================================================
+      # LOAD BALANCER ALERTS
+      # ========================================================================
+
+      - alert: UnhealthyTargets
+        expr: aws_applicationelb_unhealthy_host_count > 0
+        for: 2m
+        labels:
+          severity: warning
+          component: loadbalancer
+        annotations:
+          summary: "Unhealthy targets in load balancer"
+          description: "{{ $value }} unhealthy targets detected"
+
+      - alert: HighALBLatency
+        expr: aws_applicationelb_target_response_time > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: loadbalancer
+        annotations:
+          summary: "High ALB latency"
+          description: "ALB latency is {{ $value }}s (threshold: 500ms)"
+
+      # ========================================================================
+      # BUSINESS ALERTS
+      # ========================================================================
+
+      - alert: NoActiveEvents
+        expr: count(chorus_ai_active_events) == 0
+        for: 30m
+        labels:
+          severity: info
+          component: business
+        annotations:
+          summary: "No active events"
+          description: "No events have been active for 30 minutes"
+
+      - alert: LowQASubmissionRate
+        expr: rate(chorus_ai_questions_submitted_total[5m]) < 0.1
+        for: 15m
+        labels:
+          severity: info
+          component: business
+        annotations:
+          summary: "Low Q&A submission rate"
+          description: "Q&A submission rate is {{ $value }} questions/s"

@@ -1,0 +1,62 @@
+# Prometheus Configuration for Chorus.AI Monitoring
+# Scrapes metrics from application and infrastructure
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'chorus-ai-prod'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - localhost:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - 'alert_rules.yml'
+  - 'recording_rules.yml'
+
+scrape_configs:
+  # Application metrics
+  - job_name: 'chorus-ai-app'
+    static_configs:
+      - targets: ['localhost:9090']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # Database metrics (via exporter)
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['localhost:9104']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # Redis metrics (via exporter)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['localhost:9121']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # Node exporter (infrastructure metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # AWS CloudWatch metrics (via exporter)
+  - job_name: 'cloudwatch'
+    static_configs:
+      - targets: ['localhost:9106']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
