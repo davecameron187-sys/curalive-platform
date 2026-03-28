@@ -1,0 +1,42 @@
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview2": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview3": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "aab"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "chorus-ai-mobile",
+        "appleTeamId": "YOUR_APPLE_TEAM_ID",
+        "appleId": "YOUR_APPLE_ID",
+        "appleIdPassword": "@env APPLE_ID_PASSWORD"
+      },
+      "android": {
+        "serviceAccount": "@env GOOGLE_PLAY_SERVICE_ACCOUNT",
+        "track": "production",
+        "changesNotSentForReview": false
+      }
+    }
+  }
+}
