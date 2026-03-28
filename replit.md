@@ -2,209 +2,86 @@
 
 ## Overview
 
-A real-time investor events intelligence platform (CIPC Patent App ID 1773575338868 — 75 claims, 35 modules) providing live transcription, sentiment analysis, smart Q&A, AI summaries, compliance monitoring, and telephony for earnings calls, board briefings, and webcasts.
+CuraLive is a real-time investor events intelligence platform providing live transcription, sentiment analysis, smart Q&A, AI summaries, compliance monitoring, and telephony for critical corporate events like earnings calls, board briefings, and webcasts. The platform aims to deliver immediate, AI-powered insights to operators and clients, enhancing decision-making and compliance. It is a patented application (CIPC Patent App ID 1773575338868) with a vision to become a leading solution in financial intelligence.
 
-- **GitHub**: https://github.com/davecameron187-sys/curalive-platform (source of truth)
-- **Branches**: `main` (prod) → `shadow-mode` (shadow) → `develop` (staging)
-- **Replit deploys from GitHub branches; do NOT edit `.replit` from GitHub/Codespaces**
+## User Preferences
 
-## Architecture
+- **Communication**: Use clear, concise language. Avoid jargon where simpler terms suffice.
+- **Workflow**: Prioritize iterative development. Break down large tasks into smaller, manageable steps.
+- **Interaction**: Ask for confirmation before making significant architectural changes or implementing complex features.
+- **Codebase Changes**:
+    - Do not modify the `.replit` file directly; use the Replit UI for configuration.
+    - New tRPC routers must be registered in both `server/routers.eager.ts` and `server/routers.ts`.
+    - Always use `"../_core/trpc"` for tRPC imports.
+    - Only use `sonner` for toast notifications.
+    - Be aware that `rawSql()` in `server/db.ts` auto-appends `RETURNING id` and translates MySQL `?` to PostgreSQL `$1/$2`.
+    - Double-quote camelCase columns (e.g., `"createdAt"`) in raw SQL.
+    - `ai_am_audit_log.timestamp` is a `bigint` (epoch ms), not a date column.
+    - Use `drizzle-kit push --force` for schema sync, not `pnpm run db:push`.
+    - `health_checks` and related tables are created via raw SQL; timestamp columns must be `TIMESTAMP` type.
+    - Wrap PostgreSQL `NUMERIC` values from `rawSql()` in `Number()` before arithmetic.
+    - Ensure `Recall.ai` webhook middleware is registered before `express.json()` to prevent requests from hanging due to HMAC signature verification requirements.
+    - Ensure `dist/` is rebuilt locally (`esbuild`) before publishing for production deployments.
 
-- **Frontend**: React 19 + Vite + TailwindCSS 4 + tRPC client + shadcn/ui
-- **Backend**: Express + tRPC server (`server/_core/index.ts`)
-- **Database**: PostgreSQL 16 via Drizzle ORM + `pg` driver
-- **Build system**: pnpm + tsx (dev), esbuild (prod)
-- **AI**: OpenAI GPT-4 (via Replit AI integrations proxy `AI_INTEGRATIONS_OPENAI_BASE_URL`)
-- **Real-time**: Ably pub/sub (live transcript streaming), Recall.ai meeting bots, Mux video
+## System Architecture
 
-## Structure
+The CuraLive platform utilizes a modern full-stack architecture.
 
-```text
-curalive-platform/
-├── client/                  # React frontend (Vite)
-│   └── src/
-│       ├── pages/           # Page components
-│       ├── components/      # Shared UI components
-│       ├── hooks/           # Custom React hooks
-│       ├── contexts/        # React context providers
-│       └── lib/             # Utilities
-├── server/                  # Express + tRPC backend
-│   ├── _core/               # Server entry, Vite middleware, OAuth
-│   ├── routers/             # tRPC routers
-│   ├── services/            # Business logic services
-│   ├── webhooks/            # Webhook handlers
-│   ├── webphone/            # Twilio/Telnyx telephony
-│   └── replit_integrations/ # OpenAI integration wrappers
-├── shared/                  # Shared types and constants
-├── drizzle/                 # DB schema and migrations
-├── scripts/                 # Utility scripts
-├── public/                  # Static assets
-├── artifacts/               # Replit artifact wrappers
-│   ├── api-server/          # CuraLive deployment artifact (kind: web)
-│   └── mockup-sandbox/      # Design preview sandbox
-└── attached_assets/         # Uploaded assets
-```
+### Frontend
+- **Framework**: React 19 with Vite for fast development and builds.
+- **Styling**: TailwindCSS 4 for utility-first styling, complemented by shadcn/ui components.
+- **Communication**: tRPC client for type-safe end-to-end communication with the backend.
+- **UI Pages**:
+    - `/`: Unified Operator Dashboard (Overview, Shadow Mode, OCC, Partners, Settings).
+    - `/intelligence-suite`: AI-powered intelligence suite.
+    - `/live/:token`: Client-facing read-only live dashboard.
+    - `/qa/:accessCode`: Attendee webphone page for Live Q&A.
 
-## Critical Development Rules
+### Backend
+- **Framework**: Express.js with tRPC server (`server/_core/index.ts`).
+- **Build System**: pnpm for package management, tsx for development, esbuild for production.
+- **Deployment**: Replit deploys from GitHub branches (`main`, `shadow-mode`, `develop`).
+- **Server Binding**: Binds to `0.0.0.0` for Replit proxy compatibility.
+- **Authentication**: JWT cookie sessions (`app_session_id`) with optional OAuth and a `DEV_BYPASS` for development. tRPC procedures are secured with `publicProcedure`, `protectedProcedure`, `operatorProcedure`, and `adminProcedure` based on role hierarchy (viewer < operator < admin).
+- **Storage**: A unified `storageAdapter.ts` handles file resolution, prioritizing object storage (Replit's forge API) with a local disk fallback (`uploads/recordings/`). Uploads are hardened with extension allowlists, sanitization, and path traversal protection. Asynchronous persistence streams local recordings to object storage for durability.
+- **Operator Action Logging**: All operator activities are logged to the `operator_actions` table for auditing. Features include session handoff packages and robust CSV/JSON/PDF exports with formula injection protection and proper data serialization.
+- **Transcription Fallback**: Employs a dual-provider strategy using Gemini AI (primary, via Replit AI Integrations) and Whisper (fallback, via Replit AI Integrations) for archive audio transcription to ensure resilience against quota limits.
 
-1. **Router registration**: New tRPC routers must be added in BOTH `server/routers.eager.ts` AND `server/routers.ts` (currently 89+ named routers + inline routers)
-2. **tRPC imports**: Always use `"../_core/trpc"` for tRPC imports
-3. **Toast notifications**: Use `sonner` only — no other toast libraries
-4. **rawSql()** in `server/db.ts` auto-appends `RETURNING id` and translates MySQL `?` to `$1/$2`
-5. **attendee_registrations**: Uses camelCase columns (`"createdAt"`, `"eventId"`) — must double-quote in raw SQL
-6. **ai_am_audit_log.timestamp**: Is `bigint` (epoch ms), not a date column
-7. **Schema sync**: Use `drizzle-kit push --force` (NOT `pnpm run db:push` — migration files have MySQL syntax)
-8. **Health monitoring tables** (`health_checks`, `health_incidents`, `health_incident_reports`, `health_baselines`): Created via raw SQL, not in Drizzle schema. Timestamp columns must be `TIMESTAMP` type (the rawSql layer converts to Date strings)
-9. **PostgreSQL NUMERIC values**: Returned as strings from `rawSql()` — always wrap in `Number()` before arithmetic
-10. **HealthGuardian**: Services with "unknown" status (unconfigured API keys) are skipped — no false incidents created
-11. **DO NOT edit `.replit`**: Modifying this file from code corrupts Replit's deployment state. Use Replit UI only
-12. **Server binding**: Must use `0.0.0.0` (not `localhost`) for Replit proxy compatibility
-13. **Recall webhook middleware order**: `registerRecallWebhookRoute(app)` MUST be registered BEFORE `express.json()` — the webhook needs raw body stream for HMAC signature verification. Moving it after the JSON parser causes webhook requests to hang.
-14. **Production dist**: `dist/` is NOT in `.gitignore` — must rebuild locally (`esbuild`) before publishing since deployment caches the build step
+### Database
+- **Type**: PostgreSQL 16.
+- **ORM**: Drizzle ORM with the `pg` driver.
+- **Migrations**: Startup migrations are used to ensure schema updates and table creation, as Drizzle migrations are currently incompatible (MySQL syntax in migration files).
 
-## Shadow Mode
+### AI & Real-time
+- **AI Integration**: OpenAI GPT-4 (via Replit AI integrations proxy) for core AI functionalities. Gemini 2.5 Flash is also used for primary audio transcription.
+- **Real-time Communication**: Ably pub/sub for live transcript streaming and other real-time updates.
+- **Meeting Bots**: Recall.ai for deploying bots to virtual meeting platforms and streaming transcripts via webhooks.
+- **Video**: Mux for video streaming.
 
-Shadow Mode enables real-time monitoring of investor events (earnings calls, AGMs, capital markets days) with AI-powered intelligence generation.
+### Shadow Mode
+Shadow Mode enables real-time monitoring and AI-powered intelligence generation for investor events. It supports two transcription paths: Recall.ai for meeting platforms and a local-audio path for browser-captured audio. The pipeline generates a 20-module AI intelligence report after the session, tagging metrics like forward-looking statements, guidance, and MNPI.
 
-**Two transcription paths (neither uses Whisper/OpenAI):**
-- **Recall.ai path** — Deploys bots to Zoom/Teams/Meet/Webex via Recall.ai API. Bots stream transcripts back via webhook → Ably pub/sub to operators.
-- **Local-audio path** — Browser captures audio from Chorus Call/other platforms. Text pushed via `pushTranscriptSegment` tRPC procedure.
+## External Dependencies
 
-**Pipeline:** Start session → Push/receive transcript segments → Tag metrics (forward-looking, guidance, MNPI) → End session → Generate 20-module AI intelligence report
+- **PostgreSQL**: Primary database for all platform data.
+- **Ably**: Real-time pub/sub messaging for live data streams.
+- **Recall.ai**: API for deploying meeting bots and handling webhooks for live transcription.
+- **Mux**: Video streaming and asset management.
+- **OpenAI**: AI models (GPT-4, Whisper) for analysis and transcription. Utilizes Replit AI integrations proxy.
+- **Google Gemini**: AI models (Gemini 2.5 Flash) for transcription, accessed via Replit AI integrations proxy.
+- **Twilio/Telnyx**: Telephony and WebRTC capabilities for webphone and conference dial-out.
+- **Stripe**: Billing and payment processing.
+- **Resend**: Email delivery services.
+- **AWS S3**: Object storage for durable asset storage (integrated via Replit's forge API).
 
-**Key files:** `server/routers/shadowModeRouter.ts`, `server/recallWebhook.ts`, `server/_core/llm.ts`
-
-**Required secrets:** `RECALL_AI_API_KEY`, `RECALL_AI_WEBHOOK_SECRET`, `ABLY_API_KEY`
-
-## Key Scripts
-
-- `pnpm run dev` — Start development server (tsx watch, port from `PORT` env or 3000)
-- `pnpm run build` — Production build (Vite + esbuild → `dist/`)
-- `pnpm run start` — Start production server (`node dist/index.js`)
-- `pnpm run check:routers` — Verify routers.eager.ts and routers.ts are in sync
-- `drizzle-kit push --force` — Sync database schema
-- `bash scripts/smoke-test.sh` — Deployment smoke test (health + key routes)
-
-## Ports (Replit)
-
-- **Development**: `PORT` env var (default 3000, configured in artifact.toml)
-- **Production/Deployment**: `PORT` env var (default 3000, set by artifact.toml)
-- Server binds to `0.0.0.0` (required for Replit health checks)
-- Original GitHub project uses port 5000 (dev) / 23636 (prod)
-
-## UI Pages
-
-- **`/`** — Unified Operator Dashboard with tabs: Overview, Shadow Mode, OCC, Partners, Settings
-- **`/intelligence-suite`** — Intelligence Suite with 11 AI algorithms
-- **`/live/:token`** — Client-facing live dashboard (read-only)
-- **`/qa/:accessCode`** — Attendee webphone page for Live Q&A
-
-## Key Integrations
-
-- **Twilio/Telnyx** — Telephony and WebRTC
-- **Ably** — Real-time pub/sub messaging
-- **Mux** — Video streaming
-- **OpenAI** — AI analysis and transcription (via Replit AI integrations proxy)
-- **Stripe** — Billing
-- **Resend** — Email
-- **AWS S3** — Object storage
-- **Recall.ai** — Meeting bot deployment
-
-## Environment Variables
-
-Core (auto-provisioned by Replit):
-- `DATABASE_URL` / `PG*` — PostgreSQL connection
-
-Configured secrets:
-- `RECALL_AI_API_KEY` — Recall.ai for bot deployment
-- `RECALL_AI_WEBHOOK_SECRET` — Recall.ai webhook HMAC signature verification
-- `ABLY_API_KEY` — Ably real-time pub/sub for live transcript streaming to operators
-- `MUX_WEBHOOK_SECRET` — Mux webhook verification
-
-Optional (not yet configured, non-critical for app loading):
-- `OAUTH_SERVER_URL` — OAuth server URL
-- `TWILIO_*` / `TELNYX_*` — Telephony
-- `STRIPE_SECRET_KEY` — Billing
-- `RESEND_API_KEY` — Email
-- `AWS_*` / `S3_*` — Object storage
-
-## Authentication & Authorization
-
-- **Auth system**: JWT cookie sessions (`app_session_id`) + OAuth (when OAUTH_SERVER_URL configured) + DEV_BYPASS (dev only)
-- **tRPC procedures**: `publicProcedure` (unauthenticated OK), `protectedProcedure` (any logged-in user), `operatorProcedure` (operator+admin), `adminProcedure` (admin only)
-- **DEV_BYPASS**: Only active when `NODE_ENV !== 'production'` — completely locked out in production
-- **Frontend route guards**: `RequireAuth` component wraps admin/operator/billing routes in `App.tsx`
-- **Cookie security**: `httpOnly: true`, `SameSite: none` (HTTPS) / `lax` (HTTP), `Secure` flag auto-detected
-- **Auth status endpoint**: `GET /api/auth/status` — returns `{authenticated, mode, user, oauthConfigured}`
-- **OAuth**: Gracefully returns 503 when `OAUTH_SERVER_URL` not configured (no crash)
-- **Role hierarchy**: viewer < operator < admin (defined in `server/routers/rbac.ts`)
-
-## REST Endpoints (non-tRPC)
-
-- `GET /health` — System health + service status + storage diagnostics (local disk writable, object storage configured, recording file count/size)
-- `GET /api/archives/:id/transcript` — Download transcript as `.txt` file (independent of recording)
-- `GET /api/archives/:id/recording` — Download recording (resolves via object storage first, local disk fallback; path traversal protected)
-- `POST /api/webphone/twiml` — Twilio TwiML voice endpoint
-- `POST /api/conference-dialout/twiml` — Conference dial-out TwiML
-- `POST /api/conference-dialout/status` — Conference call status callback
-- `POST /api/recall/webhook` — Recall.ai webhook handler
-- `POST /api/upload/slide-deck` — Slide deck upload
-- `POST /api/upload/recording` — Recording upload
-- `POST /api/transcribe/audio` — Audio transcription
-
-## Storage Architecture
-
-- **Storage adapter**: `server/storageAdapter.ts` — unified file resolution with object storage + local disk fallback
-- **Object storage**: Uses Replit's built-in forge API (`ENV.forgeApiUrl` + `ENV.forgeApiKey` with fallback chain: `AI_INTEGRATIONS_OPENAI_API_KEY` → `BUILT_IN_FORGE_API_KEY` → `OPENAI_API_KEY`)
-- **Local recordings**: `uploads/recordings/` — ephemeral (lost on redeploy), used as write-through cache
-- **File resolution order**: Object storage first, local disk second (via `resolveRecordingFile()`)
-- **Upload hardening**: Extension allowlist (webm, mp4, ogg, wav, mp3, m4a, aac, flac), session ID sanitization, path traversal protection via `isWithinDir()`
-- **Async persistence**: After local save, recordings are asynchronously streamed to object storage for durability
-- **Health diagnostics**: `/health` endpoint includes `storage` field with `localDiskWritable`, `objectStorageConfigured`, `localRecordingsCount`, `localRecordingsTotalBytes`
-
-## Operator Action Logging
-
-- **Table**: `operator_actions` — persistent audit trail for all operator activity
-- **Logged actions**: `session_started`, `session_ended`, `note_created`, `note_deleted`, `question_approve`, `question_reject`, `question_hold`, `question_legal_review`, `question_send_to_speaker`, `question_answered`, `export_generated`
-- **tRPC procedures**: `shadowMode.addNote`, `shadowMode.deleteNote`, `shadowMode.getNotes`, `shadowMode.getActionLog`, `shadowMode.qaAction`
-- **Handoff package**: `shadowMode.getHandoffPackage` — aggregates transcript, recording, notes, action log, Q&A summary, AI report, readiness score
-- **Exports**: `shadowMode.exportSession` — CSV, JSON, and PDF export with all session data
-- **CSV hardening**: Formula injection protection (`csvSafe` neutralizes `=+\-@` prefixes), all fields properly quoted, object-type AI report fields (keyTopics, riskFactors, actionItems) properly stringified
-- **Export fields**: Session metadata (id, client, event, type, platform, status), timestamps (startedAt, endedAt, duration, exportedAt), meeting URL, recording URL, full transcript, notes, action log, AI report sections (executive summary, sentiment, compliance, key topics, risk factors, action items)
-- **PDF export**: Generates formatted HTML report (print-to-PDF workflow), includes all compliance sections, meeting/recording links, and a placeholder compliance section when AI report is unavailable
-- **Frontend components**: `OperatorNotesPanel`, `OperatorActionLogPanel`, `SessionHandoffPanel` in ShadowMode.tsx
-- **Transcript-synced playback**: Clicking transcript segments seeks the recording player to that timestamp; active segment is highlighted during playback with violet accent. Timestamps are auto-normalized from epoch milliseconds to relative seconds from session start
-- **Q&A action logging**: All LiveQaDashboard actions (approve, reject, hold, legal review, send to speaker, answered) are logged to operator_actions
-
-## Database Migrations
-
-- **Startup migrations**: `ensureArchiveEventsColumns()` and `ensureOperatorActionsTable()` in `server/_core/index.ts` run at server start to ensure schema is up-to-date
-- **Drizzle migrations**: Old MySQL-style migrations in `drizzle/` are broken; schema changes use startup ALTER TABLE instead
-- **archive_events columns**: `transcript_fingerprint` (VARCHAR 64), `transcription_status` (default 'pending'), `transcription_provider`, `transcription_error_code`, `transcription_error_message` — all added via startup migration
-- **operator_actions table**: Created via startup migration `ensureOperatorActionsTable()`
-
-## Archive Upload Transcription Fallback
-
-Transcription uses a dual-provider strategy: **Gemini AI (primary)** → **Whisper (fallback)**. This was implemented because the Whisper/OpenAI quota is exhausted (429 errors). Gemini is provisioned via Replit AI Integrations (no separate API key needed, charges billed to Replit credits).
-
-- Primary provider: Gemini 2.5 Flash via `AI_INTEGRATIONS_GEMINI_BASE_URL` + inline audio data
-- Fallback provider: Whisper via `AI_INTEGRATIONS_OPENAI_BASE_URL` (when Gemini fails)
-- Gemini inline data max: 8MB per request (audio is sent as base64)
-- When both providers hit quota, recording is saved with `status: "recording_saved"`, `transcription_status: "quota_exceeded"`
-- Transcript download returns 409 JSON with explanation for unavailable transcripts
-- Retry available via `retryTranscription` tRPC procedure (also tries Gemini first)
-- UI shows "awaiting transcription" yellow badge with Retry button in archive list
-- Key files: `server/audioTranscribe.ts`, `server/_core/transcription/transcribeArchiveAudio.ts`, `server/_core/transcription/transcriptionResult.ts`, `server/routers/archiveUploadRouter.ts`
-
-## Deployment
-
-- **Artifact**: `artifacts/api-server` (kind: web, previewPath: `/`)
-- **Build**: `vite build` + `esbuild` → `dist/`
-- **Run**: `NODE_ENV=production node dist/index.js`
-- **Target**: Autoscale
-- **Health check**: `GET /health` returns `{ status: "ok" }` (registered early, before heavy middleware)
-- Server listens on `0.0.0.0:PORT`
-
-## Database Backup
-
-`database-backup.json` in the repo contains data from the previous project. Can be restored when needed.
+### Live Q&A (P1 Enhancements)
+- **Duplicate Detection**: Jaccard word-overlap similarity (threshold 0.55) auto-detects duplicate questions on submission, storing `duplicate_of_id`. Duplicates get `triage_classification: "duplicate"` and priority reduced by 20.
+- **Legal Review**: Distinct from `flagged` status — stored in `legal_review_reason` column. Modal requires reason text. `setLegalReview` procedure sets status to `flagged` + populates reason.
+- **AI Draft Responses**: `generateContextDraft` includes transcript context. Drafts stored in `ai_draft_text`/`ai_draft_reasoning` DB columns. Frontend auto-loads into textarea when card expanded; never auto-sent.
+- **Enhanced Filters**: 10-tab filter bar (All, Unanswered, High Priority, Legal Review, Duplicates, Approved, Answered, Rejected, Flagged, Sent to Speaker) with sort controls (Priority/Time/Compliance) and order toggle.
+- **Keyboard Shortcuts**: 1-6 = filter tabs, P/T/C = sort mode, O = toggle sort order, ? = shortcut help panel.
+- **Bulk Actions**: Checkbox selection on question cards with bulk approve/reject for selected questions.
+- **Idempotent Counters**: Status transitions correctly increment/decrement `total_approved`/`total_rejected` without inflation.
+- **Export Integration**: Handoff package and CSV/JSON/PDF exports include Q&A questions with dedup groups and legal review items.
+- **DB Columns**: `duplicate_of_id`, `legal_review_reason`, `ai_draft_text`, `ai_draft_reasoning` added via startup migration `ensureLiveQaP1Columns`.
+- **rawSql Epoch Caveat**: `rawSql()` auto-converts numbers between 1e12–1e13 to `Date` objects. For bigint timestamp columns, pass epoch values as strings to avoid conversion.

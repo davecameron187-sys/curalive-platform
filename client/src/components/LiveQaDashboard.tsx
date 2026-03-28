@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
 import {
@@ -7,7 +7,9 @@ import {
   ThumbsUp, ThumbsDown, Zap, Send, ExternalLink, Bot,
   Scale, TrendingUp, Eye, Clock, Users, BarChart3,
   Share2, Code2, FileText, Download, Radio, Hash,
-  Megaphone, Lock, Wrench,
+  Megaphone, Lock, Wrench, ArrowUpDown, Filter,
+  Layers, Unlink, Link2, Sparkles, Gavel,
+  ChevronRight, X,
 } from "lucide-react";
 
 interface Props {
@@ -16,7 +18,9 @@ interface Props {
   clientName?: string;
 }
 
-type StatusFilter = "all" | "pending" | "triaged" | "approved" | "answered" | "rejected" | "flagged";
+type StatusFilter = "all" | "pending" | "triaged" | "approved" | "answered" | "rejected" | "flagged" | "legal_review" | "duplicates" | "unanswered" | "high_priority" | "sent_to_speaker";
+type SortBy = "priority" | "time" | "compliance";
+type SortOrder = "asc" | "desc";
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; icon: string }> = {
   pending: { color: "#94a3b8", bg: "#94a3b822", label: "Pending", icon: "⏳" },
@@ -55,24 +59,67 @@ function ComplianceIndicator({ score }: { score: number }) {
 
 function QuestionCard({
   q, onApprove, onReject, onFlag, onRouteBot, onLegalReview, onDraft, onAnswer, onSendToSpeaker,
-  expanded, onToggle, draftText, onDraftChange,
+  expanded, onToggle, draftText, onDraftChange, isGeneratingDraft, onUnlinkDuplicate,
+  isSelected, onSelect,
 }: {
   q: any; onApprove: () => void; onReject: () => void; onFlag: () => void;
   onRouteBot: () => void; onLegalReview: () => void;
   onDraft: () => void; onAnswer: () => void; onSendToSpeaker: () => void;
   expanded: boolean; onToggle: () => void;
   draftText: string; onDraftChange: (t: string) => void;
+  isGeneratingDraft?: boolean;
+  onUnlinkDuplicate?: () => void;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }) {
   const statusCfg = STATUS_CONFIG[q.question_status] || STATUS_CONFIG.pending;
   const triageCfg = TRIAGE_LABELS[q.triage_classification] || TRIAGE_LABELS.standard;
   const catColor = CATEGORY_COLORS[q.question_category] || "#6b7280";
   const complianceScore = q.compliance_risk_score || 0;
+  const isDuplicate = !!q.duplicate_of_id;
+  const isLegalReview = !!q.legal_review_reason;
+  const hasDuplicates = (q.duplicate_count || 0) > 0;
+  const hasAiDraft = !!q.ai_draft_text;
+  const borderColor = isLegalReview ? "border-red-500/40" : isDuplicate ? "border-slate-600/40" : "border-[#1e1e3a]";
 
   return (
-    <div className="bg-[#0d0d20] border border-[#1e1e3a] rounded-xl overflow-hidden transition-all hover:border-[#2a2a5a]">
+    <div className={`bg-[#0d0d20] border ${borderColor} rounded-xl overflow-hidden transition-all hover:border-[#2a2a5a] ${isSelected ? "ring-2 ring-indigo-500/50" : ""}`}>
+      {isLegalReview && (
+        <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 flex items-center gap-2">
+          <Gavel className="w-3.5 h-3.5 text-red-400" />
+          <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Legal Review Required</span>
+          <span className="text-xs text-red-300/70 ml-2 truncate flex-1">{q.legal_review_reason}</span>
+        </div>
+      )}
+      {isDuplicate && (
+        <div className="bg-slate-500/10 border-b border-slate-500/20 px-4 py-2 flex items-center gap-2">
+          <Layers className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Possible Duplicate</span>
+          <span className="text-xs text-slate-500">of Q#{q.duplicate_of_id}</span>
+          {onUnlinkDuplicate && (
+            <button onClick={onUnlinkDuplicate} className="ml-auto flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors">
+              <Unlink className="w-3 h-3" /> Not a duplicate
+            </button>
+          )}
+        </div>
+      )}
+      {hasDuplicates && (
+        <div className="bg-indigo-500/10 border-b border-indigo-500/20 px-4 py-2 flex items-center gap-2">
+          <Link2 className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="text-xs font-semibold text-indigo-400">{q.duplicate_count} duplicate{q.duplicate_count > 1 ? "s" : ""} grouped here</span>
+        </div>
+      )}
       <div className="p-4">
         <div className="flex gap-3">
           <div className="flex flex-col items-center gap-1 pt-0.5">
+            {onSelect && (
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={onSelect}
+                className="w-4 h-4 accent-indigo-500 mb-1 cursor-pointer"
+              />
+            )}
             <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: triageCfg.color + "22", color: triageCfg.color, border: `1px solid ${triageCfg.color}44` }}>
               {triageCfg.label}
             </span>
@@ -80,7 +127,7 @@ function QuestionCard({
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-[0.92rem] text-slate-200 leading-relaxed mb-2">{q.question_text}</p>
+            <p className={`text-[0.92rem] leading-relaxed mb-2 ${isDuplicate ? "text-slate-400" : "text-slate-200"}`}>{q.question_text}</p>
 
             <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[0.65rem] font-semibold" style={{ background: statusCfg.bg, color: statusCfg.color, border: `1px solid ${statusCfg.color}44` }}>
@@ -90,6 +137,11 @@ function QuestionCard({
                 {q.question_category}
               </span>
               <ComplianceIndicator score={complianceScore} />
+              {hasAiDraft && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[0.65rem] font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                  <Sparkles className="w-3 h-3" /> AI Draft Ready
+                </span>
+              )}
               {q.upvotes > 0 && (
                 <span className="inline-flex items-center gap-1 text-[0.65rem] text-slate-500">
                   <ThumbsUp className="w-3 h-3" /> {q.upvotes}
@@ -118,21 +170,21 @@ function QuestionCard({
 
           <div className="flex flex-col gap-1.5 flex-shrink-0">
             {q.question_status !== "approved" && q.question_status !== "answered" && (
-              <button onClick={onApprove} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors">
+              <button onClick={onApprove} title="Approve (A)" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors">
                 <Check className="w-3.5 h-3.5" /> Approve
               </button>
             )}
-            <button onClick={onSendToSpeaker} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25 transition-colors">
-              <Radio className="w-3.5 h-3.5" /> Send to Speaker
+            <button onClick={onSendToSpeaker} title="Send to Speaker (S)" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25 transition-colors">
+              <Radio className="w-3.5 h-3.5" /> Speaker
             </button>
-            <button onClick={onRouteBot} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/30 hover:bg-violet-500/25 transition-colors">
-              <Bot className="w-3.5 h-3.5" /> Route to Bot
+            <button onClick={onRouteBot} title="Route to Bot (B)" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/30 hover:bg-violet-500/25 transition-colors">
+              <Bot className="w-3.5 h-3.5" /> Bot
             </button>
-            <button onClick={onLegalReview} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors">
-              <Scale className="w-3.5 h-3.5" /> Legal Review
+            <button onClick={onLegalReview} title="Legal Review (L)" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors">
+              <Gavel className="w-3.5 h-3.5" /> Legal
             </button>
             {q.question_status !== "rejected" && (
-              <button onClick={onReject} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25 transition-colors">
+              <button onClick={onReject} title="Reject (R)" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25 transition-colors">
                 <ThumbsDown className="w-3.5 h-3.5" /> Reject
               </button>
             )}
@@ -141,8 +193,12 @@ function QuestionCard({
       </div>
 
       <div className="border-t border-[#1e1e3a] px-4 py-2 flex items-center justify-between bg-[#0a0a18]">
-        <button onClick={onDraft} className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium">
-          <Zap className="w-3.5 h-3.5" /> Generate AI Draft
+        <button onClick={onDraft} disabled={isGeneratingDraft} className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium disabled:opacity-50">
+          {isGeneratingDraft ? (
+            <><div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /> Generating...</>
+          ) : (
+            <><Sparkles className="w-3.5 h-3.5" /> {hasAiDraft ? "Regenerate AI Draft" : "Generate AI Draft"}</>
+          )}
         </button>
         <button onClick={onToggle} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors">
           {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -152,19 +208,40 @@ function QuestionCard({
 
       {expanded && (
         <div className="border-t border-[#1e1e3a] p-4 bg-[#080816]">
+          {hasAiDraft && draftText === q.ai_draft_text && (
+            <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-violet-500/10 border border-violet-500/20 rounded-lg">
+              <Sparkles className="w-4 h-4 text-violet-400 flex-shrink-0" />
+              <span className="text-xs font-semibold text-violet-400">AI-Generated Draft</span>
+              <span className="text-xs text-violet-300/60 ml-1">— Review and edit before sending. This draft is never auto-sent.</span>
+            </div>
+          )}
+          {q.ai_draft_reasoning && draftText === q.ai_draft_text && (
+            <div className="mb-3 px-3 py-2 bg-[#0d0d20] border border-[#1e1e3a] rounded-lg">
+              <p className="text-[0.7rem] text-slate-500 flex items-center gap-1"><Brain className="w-3 h-3" /> {q.ai_draft_reasoning}</p>
+            </div>
+          )}
           <textarea
             value={draftText}
             onChange={e => onDraftChange(e.target.value)}
             placeholder="Type or edit the response to forward to the speaker..."
             className="w-full min-h-[80px] bg-[#0d0d20] border border-[#1e1e3a] rounded-lg text-slate-200 text-sm p-3 outline-none resize-y placeholder:text-slate-600 focus:border-indigo-500/50"
           />
-          <div className="flex justify-end gap-2 mt-3">
-            <button onClick={onToggle} className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 border border-[#2a2a4a] hover:text-slate-200 transition-colors">
-              Cancel
-            </button>
-            <button onClick={onAnswer} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors">
-              <Send className="w-3.5 h-3.5" /> Submit & Mark Answered
-            </button>
+          <div className="flex justify-between items-center mt-3">
+            <div className="flex gap-2">
+              {draftText !== (q.ai_draft_text || "") && draftText.trim() && (
+                <span className="text-[0.65rem] text-amber-400/70 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Edited from AI draft
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={onToggle} className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 border border-[#2a2a4a] hover:text-slate-200 transition-colors">
+                Cancel
+              </button>
+              <button onClick={onAnswer} disabled={!draftText.trim()} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50">
+                <Send className="w-3.5 h-3.5" /> Submit & Mark Answered
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -288,6 +365,8 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
   const [sessionCode, setSessionCode] = useState<string>("");
   const [sessionStatus, setSessionStatus] = useState<"active" | "paused" | "closed">("active");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("priority");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [expandedQ, setExpandedQ] = useState<number | null>(null);
   const [draftAnswer, setDraftAnswer] = useState<Record<number, string>>({});
   const [copiedLink, setCopiedLink] = useState(false);
@@ -297,6 +376,12 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
   const [showEmbedPanel, setShowEmbedPanel] = useState(false);
   const [showReportPanel, setShowReportPanel] = useState(false);
   const [embedWhiteLabel, setEmbedWhiteLabel] = useState(false);
+  const [selectedQuestions, setSelectedQuestions] = useState<Set<number>>(new Set());
+  const [generatingDraftFor, setGeneratingDraftFor] = useState<number | null>(null);
+  const [legalReviewModalQ, setLegalReviewModalQ] = useState<number | null>(null);
+  const [legalReviewReason, setLegalReviewReason] = useState("");
+  const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [embedBrandName, setEmbedBrandName] = useState("");
   const [embedBrandColor, setEmbedBrandColor] = useState("#6366f1");
   const [copiedEmbed, setCopiedEmbed] = useState(false);
@@ -318,7 +403,7 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
   const sessionsList = trpc.liveQa.listSessions.useQuery();
 
   const questionsQuery = trpc.liveQa.listQuestions.useQuery(
-    { sessionId: qaSessionId || 0, statusFilter },
+    { sessionId: qaSessionId || 0, statusFilter, sortBy, sortOrder },
     { enabled: !!qaSessionId, refetchInterval: 3000 }
   );
 
@@ -332,6 +417,10 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
   const broadcastToTeamMut = trpc.liveQa.broadcastToTeam.useMutation();
   const postIrChatMut = trpc.liveQa.postIrChatMessage.useMutation();
   const generateCertMut = trpc.liveQa.generateQaCertificate.useMutation();
+  const setLegalReviewMut = trpc.liveQa.setLegalReview.useMutation();
+  const unlinkDuplicateMut = trpc.liveQa.unlinkDuplicate.useMutation();
+  const generateContextDraftMut = trpc.liveQa.generateContextDraft.useMutation();
+  const bulkActionMut = trpc.liveQa.bulkAction.useMutation();
   const eventSummaryQuery = trpc.platformEmbed.getEventSummary.useQuery(
     { sessionId: qaSessionId || 0 },
     { enabled: !!qaSessionId && showReportPanel }
@@ -395,23 +484,35 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
     } catch { toast.error("Failed to generate bot response"); }
   }, [updateStatus, questionsQuery, generateDraftMut, shadowSessionId, logQaAction]);
 
-  const handleLegalReview = useCallback(async (questionId: number) => {
+  const handleLegalReview = useCallback((questionId: number) => {
+    setLegalReviewModalQ(questionId);
+    setLegalReviewReason("");
+  }, []);
+
+  const handleSubmitLegalReview = useCallback(async () => {
+    if (!legalReviewModalQ || !legalReviewReason.trim()) { toast.error("Please provide a reason for legal review"); return; }
     try {
-      await updateStatus.mutateAsync({ questionId, status: "flagged", operatorNotes: "Escalated for Legal Review" });
+      await setLegalReviewMut.mutateAsync({ questionId: legalReviewModalQ, reason: legalReviewReason.trim() });
       questionsQuery.refetch();
-      toast.success("Question escalated for legal review with full audit trail");
-      if (shadowSessionId) logQaAction.mutate({ sessionId: shadowSessionId, questionId: String(questionId), action: "legal_review" });
+      toast.success("Question escalated for legal review with reason attached");
+      if (shadowSessionId) logQaAction.mutate({ sessionId: shadowSessionId, questionId: String(legalReviewModalQ), action: "legal_review", questionText: legalReviewReason.trim() });
+      setLegalReviewModalQ(null);
+      setLegalReviewReason("");
     } catch { toast.error("Failed to flag for review"); }
-  }, [updateStatus, questionsQuery, shadowSessionId, logQaAction]);
+  }, [legalReviewModalQ, legalReviewReason, setLegalReviewMut, questionsQuery, shadowSessionId, logQaAction]);
 
   const handleGenerateDraft = useCallback(async (questionId: number) => {
+    setGeneratingDraftFor(questionId);
     try {
-      const draft = await generateDraftMut.mutateAsync({ questionId });
+      const draft = await generateContextDraftMut.mutateAsync({ questionId, includeTranscript: true });
       setDraftAnswer(prev => ({ ...prev, [questionId]: draft.answerText }));
       setExpandedQ(questionId);
-      toast.success("AI-compliant draft generated");
-    } catch { toast.error("Failed to generate draft"); }
-  }, [generateDraftMut]);
+      questionsQuery.refetch();
+      toast.success("AI draft generated — review and edit before sending");
+      if (shadowSessionId) logQaAction.mutate({ sessionId: shadowSessionId, questionId: String(questionId), action: "generate_draft" });
+    } catch { toast.error("Draft generation failed — compose response manually"); }
+    finally { setGeneratingDraftFor(null); }
+  }, [generateContextDraftMut, questionsQuery, shadowSessionId, logQaAction]);
 
   const handleSubmitAnswer = useCallback(async (questionId: number) => {
     const text = draftAnswer[questionId];
@@ -498,6 +599,69 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
     finally { setCertGenerating(false); }
   }, [qaSessionId, generateCertMut]);
 
+  const handleUnlinkDuplicate = useCallback(async (questionId: number) => {
+    try {
+      await unlinkDuplicateMut.mutateAsync({ questionId });
+      questionsQuery.refetch();
+      toast.success("Question unlinked from duplicate group");
+      if (shadowSessionId) logQaAction.mutate({ sessionId: shadowSessionId, questionId: String(questionId), action: "unlink_duplicate" });
+    } catch { toast.error("Failed to unlink duplicate"); }
+  }, [unlinkDuplicateMut, questionsQuery, shadowSessionId, logQaAction]);
+
+  const handleBulkAction = useCallback(async (action: "approve" | "reject" | "flagged") => {
+    if (selectedQuestions.size === 0) { toast.error("Select questions first"); return; }
+    try {
+      const result = await bulkActionMut.mutateAsync({ questionIds: Array.from(selectedQuestions), action });
+      questionsQuery.refetch();
+      setSelectedQuestions(new Set());
+      toast.success(`Bulk ${action}: ${result.processed}/${result.total} processed`);
+      if (shadowSessionId) {
+        const bulkAction = action === "approve" ? "bulk_approve" : "bulk_reject";
+        logQaAction.mutate({ sessionId: shadowSessionId, questionId: Array.from(selectedQuestions).join(","), action: bulkAction as any });
+      }
+    } catch { toast.error("Bulk action failed"); }
+  }, [selectedQuestions, bulkActionMut, questionsQuery, shadowSessionId, logQaAction]);
+
+  const toggleQuestionSelection = useCallback((questionId: number) => {
+    setSelectedQuestions(prev => {
+      const next = new Set(prev);
+      if (next.has(questionId)) next.delete(questionId);
+      else next.add(questionId);
+      return next;
+    });
+  }, []);
+
+  const questionsData = questionsQuery.data || [];
+  const selectAllQuestions = useCallback(() => {
+    if (selectedQuestions.size === questionsData.length) {
+      setSelectedQuestions(new Set());
+    } else {
+      setSelectedQuestions(new Set(questionsData.map((q: any) => q.id)));
+    }
+  }, [questionsData, selectedQuestions]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (!qaSessionId) return;
+
+      if (e.key === "?") { setShowShortcutHelp(prev => !prev); e.preventDefault(); return; }
+
+      const filterKeys: Record<string, StatusFilter> = {
+        "1": "all", "2": "unanswered", "3": "high_priority",
+        "4": "legal_review", "5": "duplicates", "6": "approved",
+      };
+      if (filterKeys[e.key]) { setStatusFilter(filterKeys[e.key]); e.preventDefault(); return; }
+
+      if (e.key === "p") { setSortBy("priority"); e.preventDefault(); return; }
+      if (e.key === "t") { setSortBy("time"); e.preventDefault(); return; }
+      if (e.key === "c") { setSortBy("compliance"); e.preventDefault(); return; }
+      if (e.key === "o") { setSortOrder(prev => prev === "desc" ? "asc" : "desc"); e.preventDefault(); return; }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [qaSessionId]);
+
   const downloadCertificate = useCallback(() => {
     if (!certificate) return;
     const blob = new Blob([JSON.stringify(certificate, null, 2)], { type: "application/json" });
@@ -536,7 +700,7 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
     toast.success("Report downloaded");
   }, [eventSummaryQuery.data, sessionCode]);
 
-  const questions = questionsQuery.data || [];
+  const questions = questionsData;
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     questions.forEach((q: any) => { counts[q.question_status || "pending"] = (counts[q.question_status || "pending"] || 0) + 1; });
@@ -875,28 +1039,138 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
         </div>
       )}
 
-      <div className="flex gap-2 flex-wrap">
-        {(["all", "pending", "triaged", "approved", "answered", "rejected", "flagged"] as StatusFilter[]).map(f => {
-          const cfg = f === "all" ? { color: "#818cf8", bg: "#818cf822" } : STATUS_CONFIG[f];
-          const count = f === "all" ? questions.length : (statusCounts[f] || 0);
-          const isActive = statusFilter === f;
-          return (
+      <div className="bg-[#0d0d20] border border-[#1e1e3a] rounded-xl p-3">
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Queue Filters</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-[#0a0a18] rounded-lg px-2 py-1">
+              <ArrowUpDown className="w-3 h-3 text-slate-500" />
+              {(["priority", "time", "compliance"] as SortBy[]).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setSortBy(s)}
+                  className={`px-2 py-0.5 rounded text-[0.65rem] font-semibold transition-colors ${sortBy === s ? "bg-indigo-500/20 text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
+                >
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+              <button
+                onClick={() => setSortOrder(prev => prev === "desc" ? "asc" : "desc")}
+                className="px-1.5 py-0.5 rounded text-[0.65rem] font-semibold text-slate-500 hover:text-slate-300 transition-colors"
+                title={`Sort ${sortOrder === "desc" ? "ascending" : "descending"} (O)`}
+              >
+                {sortOrder === "desc" ? "↓" : "↑"}
+              </button>
+            </div>
             <button
-              key={f}
-              onClick={() => setStatusFilter(f)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                isActive
-                  ? "border-2 shadow-md"
-                  : "border border-[#1e1e3a] text-slate-500 hover:text-slate-300 hover:border-[#2a2a5a]"
-              }`}
-              style={isActive ? { background: cfg.bg, color: cfg.color, borderColor: cfg.color + "66" } : undefined}
+              onClick={() => setShowShortcutHelp(prev => !prev)}
+              className="px-2 py-1 rounded text-[0.65rem] font-semibold text-slate-500 hover:text-slate-300 bg-[#0a0a18] transition-colors"
+              title="Keyboard shortcuts (?)"
             >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-              {count > 0 && <span className="text-[0.6rem] opacity-70">({count})</span>}
+              ⌨ ?
             </button>
-          );
-        })}
+          </div>
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {([
+            { key: "all" as StatusFilter, label: "All", color: "#818cf8", shortcut: "1" },
+            { key: "unanswered" as StatusFilter, label: "Unanswered", color: "#f59e0b", shortcut: "2" },
+            { key: "high_priority" as StatusFilter, label: "High Priority", color: "#ef4444", shortcut: "3" },
+            { key: "legal_review" as StatusFilter, label: "Legal Review", color: "#dc2626", shortcut: "4" },
+            { key: "duplicates" as StatusFilter, label: "Duplicates", color: "#6b7280", shortcut: "5" },
+            { key: "approved" as StatusFilter, label: "Approved", color: "#22c55e", shortcut: "6" },
+            { key: "answered" as StatusFilter, label: "Answered", color: "#3b82f6" },
+            { key: "rejected" as StatusFilter, label: "Rejected", color: "#ef4444" },
+            { key: "flagged" as StatusFilter, label: "Flagged", color: "#f59e0b" },
+            { key: "sent_to_speaker" as StatusFilter, label: "Sent to Speaker", color: "#3b82f6" },
+          ]).map(({ key, label, color, shortcut }) => {
+            const isActive = statusFilter === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setStatusFilter(key)}
+                title={shortcut ? `Shortcut: ${shortcut}` : undefined}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[0.7rem] font-semibold transition-all ${
+                  isActive
+                    ? "border-2 shadow-md"
+                    : "border border-[#1e1e3a] text-slate-500 hover:text-slate-300 hover:border-[#2a2a5a]"
+                }`}
+                style={isActive ? { background: color + "22", color, borderColor: color + "66" } : undefined}
+              >
+                {label}
+                {shortcut && <span className="text-[0.55rem] opacity-40 ml-0.5">{shortcut}</span>}
+              </button>
+            );
+          })}
+        </div>
+        {selectedQuestions.size > 0 && (
+          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#1e1e3a]">
+            <span className="text-xs text-indigo-400 font-semibold">{selectedQuestions.size} selected</span>
+            <button onClick={() => handleBulkAction("approve")} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[0.7rem] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors">
+              <Check className="w-3 h-3" /> Approve All
+            </button>
+            <button onClick={() => handleBulkAction("reject")} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[0.7rem] font-semibold bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25 transition-colors">
+              <ThumbsDown className="w-3 h-3" /> Reject All
+            </button>
+            <button onClick={selectAllQuestions} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[0.7rem] font-semibold text-slate-400 border border-[#2a2a4a] hover:text-slate-200 transition-colors">
+              {selectedQuestions.size === questions.length ? "Deselect All" : "Select All"}
+            </button>
+            <button onClick={() => setSelectedQuestions(new Set())} className="ml-auto text-xs text-slate-500 hover:text-slate-300 transition-colors">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
+
+      {showShortcutHelp && (
+        <div className="bg-[#0d0d20] border border-indigo-500/20 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2">⌨ Keyboard Shortcuts</h4>
+            <button onClick={() => setShowShortcutHelp(false)} className="text-slate-500 text-xs hover:text-slate-300">&times;</button>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-xs">
+            <div><span className="text-indigo-400 font-mono bg-[#1e1e3a] px-1.5 py-0.5 rounded">1-6</span> <span className="text-slate-400 ml-1">Switch filter tabs</span></div>
+            <div><span className="text-indigo-400 font-mono bg-[#1e1e3a] px-1.5 py-0.5 rounded">P</span> <span className="text-slate-400 ml-1">Sort by priority</span></div>
+            <div><span className="text-indigo-400 font-mono bg-[#1e1e3a] px-1.5 py-0.5 rounded">T</span> <span className="text-slate-400 ml-1">Sort by time</span></div>
+            <div><span className="text-indigo-400 font-mono bg-[#1e1e3a] px-1.5 py-0.5 rounded">C</span> <span className="text-slate-400 ml-1">Sort by compliance</span></div>
+            <div><span className="text-indigo-400 font-mono bg-[#1e1e3a] px-1.5 py-0.5 rounded">O</span> <span className="text-slate-400 ml-1">Toggle sort order</span></div>
+            <div><span className="text-indigo-400 font-mono bg-[#1e1e3a] px-1.5 py-0.5 rounded">?</span> <span className="text-slate-400 ml-1">Toggle this help</span></div>
+          </div>
+        </div>
+      )}
+
+      {legalReviewModalQ && (
+        <div className="bg-[#0d0d20] border border-red-500/30 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Gavel className="w-4 h-4 text-red-400" />
+            <h4 className="text-sm font-bold text-white">Escalate to Legal Review</h4>
+            <button onClick={() => setLegalReviewModalQ(null)} className="ml-auto text-slate-500 text-xs hover:text-slate-300">&times;</button>
+          </div>
+          <p className="text-xs text-slate-400 mb-3">Provide a reason for legal review. This will be visible to the legal team and recorded in the audit trail.</p>
+          <textarea
+            value={legalReviewReason}
+            onChange={e => setLegalReviewReason(e.target.value)}
+            placeholder="Describe the legal risk or concern..."
+            className="w-full min-h-[80px] bg-[#0a0a18] border border-[#2a2a4a] rounded-lg text-slate-200 text-sm p-3 outline-none resize-y placeholder:text-slate-600 focus:border-red-500/50"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2 mt-3">
+            <button onClick={() => setLegalReviewModalQ(null)} className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 border border-[#2a2a4a] hover:text-slate-200 transition-colors">
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmitLegalReview}
+              disabled={!legalReviewReason.trim() || setLegalReviewMut.isPending}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+            >
+              <Gavel className="w-3.5 h-3.5" /> {setLegalReviewMut.isPending ? "Submitting..." : "Escalate for Legal Review"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className={`flex gap-4 ${showSidebar ? "" : ""}`}>
         <div className={`flex-1 space-y-3 ${showSidebar ? "min-w-0" : ""}`}>
@@ -923,9 +1197,18 @@ export default function LiveQaDashboard({ shadowSessionId, eventName, clientName
               onDraft={() => handleGenerateDraft(q.id)}
               onAnswer={() => handleSubmitAnswer(q.id)}
               expanded={expandedQ === q.id}
-              onToggle={() => setExpandedQ(expandedQ === q.id ? null : q.id)}
+              onToggle={() => {
+                setExpandedQ(expandedQ === q.id ? null : q.id);
+                if (expandedQ !== q.id && q.ai_draft_text && !draftAnswer[q.id]) {
+                  setDraftAnswer(prev => ({ ...prev, [q.id]: q.ai_draft_text }));
+                }
+              }}
               draftText={draftAnswer[q.id] || ""}
               onDraftChange={(t) => setDraftAnswer(prev => ({ ...prev, [q.id]: t }))}
+              isGeneratingDraft={generatingDraftFor === q.id}
+              onUnlinkDuplicate={q.duplicate_of_id ? () => handleUnlinkDuplicate(q.id) : undefined}
+              isSelected={selectedQuestions.has(q.id)}
+              onSelect={() => toggleQuestionSelection(q.id)}
             />
           ))}
         </div>

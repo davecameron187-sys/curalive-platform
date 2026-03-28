@@ -11,6 +11,40 @@ import { generateAutonomousTools } from "../services/AgiToolGeneratorService";
 import { predictiveRiskAnalysis } from "../services/AgiComplianceService";
 import { createHash } from "crypto";
 
+function tokenize(text: string): Set<string> {
+  return new Set(
+    text.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter(w => w.length > 2)
+  );
+}
+
+function jaccardSimilarity(a: string, b: string): number {
+  const setA = tokenize(a);
+  const setB = tokenize(b);
+  if (setA.size === 0 && setB.size === 0) return 0;
+  let intersection = 0;
+  for (const word of setA) {
+    if (setB.has(word)) intersection++;
+  }
+  const union = setA.size + setB.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+const DUPLICATE_THRESHOLD = 0.55;
+
+function findDuplicate(newQuestion: string, existingQuestions: Array<{ id: number; text: string }>): { id: number; similarity: number } | null {
+  let bestMatch: { id: number; similarity: number } | null = null;
+  for (const eq of existingQuestions) {
+    const sim = jaccardSimilarity(newQuestion, eq.text);
+    if (sim >= DUPLICATE_THRESHOLD && (!bestMatch || sim > bestMatch.similarity)) {
+      bestMatch = { id: eq.id, similarity: sim };
+    }
+  }
+  return bestMatch;
+}
+
 function generateSessionCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
@@ -169,10 +203,10 @@ export const liveQaRouter = router({
       if (session.status === "paused") throw new Error("Q&A session is paused");
 
       const existingQs = await db
-        .select({ text: liveQaQuestions.questionText })
+        .select({ id: liveQaQuestions.id, text: liveQaQuestions.questionText })
         .from(liveQaQuestions)
         .where(eq(liveQaQuestions.sessionId, session.id))
-        .limit(50);
+        .limit(200);
 
       const triage = await triageQuestion(
         input.questionText,
@@ -180,9 +214,16 @@ export const liveQaRouter = router({
         session.clientName || "",
         existingQs.map(q => q.text)
       );
+
+      const duplicateMatch = findDuplicate(input.questionText, existingQs.map(q => ({ id: q.id, text: q.text })));
+      const isDuplicate = !!duplicateMatch;
+      const effectiveClassification = isDuplicate ? "duplicate" : triage.triageClassification;
+      const effectiveStatus = triage.complianceRiskScore > 70 ? "flagged" : "triaged";
+
+      const nowEpoch = String(Date.now());
     const [insertResult] = await rawSql(
-        `INSERT INTO live_qa_questions (session_id, question_text, submitter_name, submitter_email, submitter_company, question_category, question_status, upvotes, triage_score, triage_classification, triage_reason, compliance_risk_score, priority_score, is_anonymous, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO live_qa_questions (session_id, question_text, submitter_name, submitter_email, submitter_company, question_category, question_status, upvotes, triage_score, triage_classification, triage_reason, compliance_risk_score, priority_score, is_anonymous, duplicate_of_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           session.id,
           input.questionText,
@@ -190,15 +231,16 @@ export const liveQaRouter = router({
           input.isAnonymous ? null : (input.submitterEmail || null),
           input.isAnonymous ? null : (input.submitterCompany || null),
           triage.category,
-          triage.complianceRiskScore > 70 ? "flagged" : "triaged",
+          effectiveStatus,
           triage.triageScore,
-          triage.triageClassification,
-          triage.triageReason,
+          effectiveClassification,
+          isDuplicate ? `Possible duplicate of Q#${duplicateMatch!.id} (${Math.round(duplicateMatch!.similarity * 100)}% match). ${triage.triageReason}` : triage.triageReason,
           triage.complianceRiskScore,
-          triage.priorityScore,
+          isDuplicate ? Math.max(0, triage.priorityScore - 20) : triage.priorityScore,
           input.isAnonymous ? 1 : 0,
-          Date.now(),
-          Date.now(),
+          duplicateMatch?.id || null,
+          nowEpoch,
+          nowEpoch,
         ]
       );
 
@@ -246,21 +288,43 @@ export const liveQaRouter = router({
     .input(z.object({
       sessionId: z.number(),
       statusFilter: z.string().optional(),
+      sortBy: z.enum(["priority", "time", "compliance"]).optional(),
+      sortOrder: z.enum(["asc", "desc"]).optional(),
     }))
     .query(async ({ input }) => {
       const db = await getDb();
     let query = `SELECT q.*, 
         (SELECT COUNT(*) FROM live_qa_answers a WHERE a.question_id = q.id) as answer_count,
-        (SELECT COUNT(*) FROM live_qa_compliance_flags f WHERE f.question_id = q.id AND f.resolved = 0) as unresolved_flags
+        (SELECT COUNT(*) FROM live_qa_compliance_flags f WHERE f.question_id = q.id AND f.resolved = false) as unresolved_flags,
+        (SELECT COUNT(*) FROM live_qa_questions d WHERE d.duplicate_of_id = q.id) as duplicate_count
         FROM live_qa_questions q WHERE q.session_id = ?`;
       const params: any[] = [input.sessionId];
 
-      if (input.statusFilter && input.statusFilter !== "all") {
+      const filter = input.statusFilter || "all";
+      if (filter === "legal_review") {
+        query += ` AND q.legal_review_reason IS NOT NULL`;
+      } else if (filter === "duplicates") {
+        query += ` AND q.duplicate_of_id IS NOT NULL`;
+      } else if (filter === "unanswered") {
+        query += ` AND q.question_status NOT IN ('answered', 'rejected')`;
+      } else if (filter === "high_priority") {
+        query += ` AND (q.triage_classification = 'high_priority' OR q.compliance_risk_score > 60)`;
+      } else if (filter === "sent_to_speaker") {
+        query += ` AND q.operator_notes LIKE '%Sent to speaker%'`;
+      } else if (filter !== "all") {
         query += ` AND q.question_status = ?`;
-        params.push(input.statusFilter);
+        params.push(filter);
       }
 
-      query += ` ORDER BY q.priority_score DESC, q.created_at DESC`;
+      const sortBy = input.sortBy || "priority";
+      const sortOrder = (input.sortOrder || "desc").toUpperCase();
+      if (sortBy === "compliance") {
+        query += ` ORDER BY q.compliance_risk_score ${sortOrder}, q.priority_score DESC`;
+      } else if (sortBy === "time") {
+        query += ` ORDER BY q.created_at ${sortOrder}`;
+      } else {
+        query += ` ORDER BY q.priority_score ${sortOrder}, q.created_at DESC`;
+      }
 
       const [rows] = await rawSql(query, params);
       return rows || [];
@@ -325,26 +389,34 @@ export const liveQaRouter = router({
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      const updates: any = { status: input.status, updatedAt: Date.now() };
+      const [existing] = await db.select().from(liveQaQuestions).where(eq(liveQaQuestions.id, input.questionId));
+      if (!existing) throw new Error("Question not found");
+
+      const oldStatus = existing.questionStatus;
+      if (oldStatus === input.status && !input.operatorNotes) return { success: true };
+
+      const nowEpoch = String(Date.now());
+      const updates: any = { status: input.status, updatedAt: nowEpoch };
       if (input.operatorNotes !== undefined) updates.operatorNotes = input.operatorNotes;
       await db.update(liveQaQuestions).set(updates).where(eq(liveQaQuestions.id, input.questionId));
 
-      const [q] = await db.select().from(liveQaQuestions).where(eq(liveQaQuestions.id, input.questionId));
-      if (q) {
-        const field = input.status === "approved" ? "totalApproved" :
-                      input.status === "rejected" ? "totalRejected" : null;
-        if (field) {
-          const col = field === "totalApproved" ? "total_approved" : "total_rejected";
-    await rawSql(`UPDATE live_qa_sessions SET ${col} = ${col} + 1 WHERE id = ?`, [q.sessionId]);
-        }
-
-        publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
-          questionId: input.questionId,
-          newStatus: input.status,
-          operatorNotes: input.operatorNotes || null,
-          timestamp: Date.now(),
-        }).catch(() => {});
+      if (oldStatus !== input.status) {
+        const wasApproved = oldStatus === "approved";
+        const wasRejected = oldStatus === "rejected";
+        const isApproved = input.status === "approved";
+        const isRejected = input.status === "rejected";
+        if (wasApproved && !isApproved) await rawSql(`UPDATE live_qa_sessions SET total_approved = GREATEST(0, total_approved - 1) WHERE id = ?`, [existing.sessionId]);
+        if (wasRejected && !isRejected) await rawSql(`UPDATE live_qa_sessions SET total_rejected = GREATEST(0, total_rejected - 1) WHERE id = ?`, [existing.sessionId]);
+        if (!wasApproved && isApproved) await rawSql(`UPDATE live_qa_sessions SET total_approved = total_approved + 1 WHERE id = ?`, [existing.sessionId]);
+        if (!wasRejected && isRejected) await rawSql(`UPDATE live_qa_sessions SET total_rejected = total_rejected + 1 WHERE id = ?`, [existing.sessionId]);
       }
+
+      publishToChannel(`curalive-qa-${existing.sessionId}`, "qa.statusChanged", {
+        questionId: input.questionId,
+        newStatus: input.status,
+        operatorNotes: input.operatorNotes || null,
+        timestamp: Date.now(),
+      }).catch(() => {});
 
       return { success: true };
     }),
@@ -494,6 +566,141 @@ export const liveQaRouter = router({
       }).catch(() => {});
 
       return { success: true, messageId };
+    }),
+
+  setLegalReview: operatorProcedure
+    .input(z.object({
+      questionId: z.number(),
+      reason: z.string().min(1).max(2000),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      await db.update(liveQaQuestions)
+        .set({
+          status: "flagged",
+          operatorNotes: `Legal Review: ${input.reason}`,
+          updatedAt: Date.now(),
+        })
+        .where(eq(liveQaQuestions.id, input.questionId));
+      await rawSql(`UPDATE live_qa_questions SET legal_review_reason = ? WHERE id = ?`, [input.reason, input.questionId]);
+      const [q] = await db.select().from(liveQaQuestions).where(eq(liveQaQuestions.id, input.questionId));
+      if (q) {
+        publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
+          questionId: input.questionId,
+          newStatus: "flagged",
+          legalReview: true,
+          reason: input.reason,
+          timestamp: Date.now(),
+        }).catch(() => {});
+      }
+      return { success: true };
+    }),
+
+  clearLegalReview: operatorProcedure
+    .input(z.object({ questionId: z.number() }))
+    .mutation(async ({ input }) => {
+      await rawSql(`UPDATE live_qa_questions SET legal_review_reason = NULL WHERE id = ?`, [input.questionId]);
+      return { success: true };
+    }),
+
+  getDuplicatesOf: operatorProcedure
+    .input(z.object({ questionId: z.number() }))
+    .query(async ({ input }) => {
+      const [rows] = await rawSql(
+        `SELECT id, question_text, submitter_name, submitter_company, question_status, created_at
+         FROM live_qa_questions WHERE duplicate_of_id = ?
+         ORDER BY created_at DESC`,
+        [input.questionId]
+      );
+      return rows || [];
+    }),
+
+  unlinkDuplicate: operatorProcedure
+    .input(z.object({ questionId: z.number() }))
+    .mutation(async ({ input }) => {
+      await rawSql(`UPDATE live_qa_questions SET duplicate_of_id = NULL, triage_classification = 'standard' WHERE id = ?`, [input.questionId]);
+      return { success: true };
+    }),
+
+  linkDuplicate: operatorProcedure
+    .input(z.object({
+      questionId: z.number(),
+      duplicateOfId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      await rawSql(`UPDATE live_qa_questions SET duplicate_of_id = ?, triage_classification = 'duplicate' WHERE id = ?`, [input.duplicateOfId, input.questionId]);
+      return { success: true };
+    }),
+
+  generateContextDraft: operatorProcedure
+    .input(z.object({
+      questionId: z.number(),
+      includeTranscript: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [q] = await db.select().from(liveQaQuestions).where(eq(liveQaQuestions.id, input.questionId));
+      if (!q) throw new Error("Question not found");
+
+      const [session] = await db.select().from(liveQaSessions).where(eq(liveQaSessions.id, q.sessionId));
+      if (!session) throw new Error("Session not found");
+
+      let transcriptContext = "";
+      if (input.includeTranscript && session.shadowSessionId) {
+        try {
+          const [transcriptRows] = await rawSql(
+            `SELECT transcript_json FROM recall_bots WHERE recall_bot_id = (SELECT recall_bot_id FROM shadow_sessions WHERE id = ?)`,
+            [session.shadowSessionId]
+          );
+          if (transcriptRows?.[0]?.transcript_json) {
+            const segments = JSON.parse(transcriptRows[0].transcript_json);
+            const recentSegments = segments.slice(-20);
+            transcriptContext = recentSegments.map((s: any) => `${s.speaker || "Speaker"}: ${s.text}`).join("\n");
+          }
+        } catch {}
+      }
+
+      const draft = await generateAutoDraft(
+        q.questionText + (transcriptContext ? `\n\nRecent transcript context:\n${transcriptContext}` : ""),
+        session.eventName,
+        session.clientName || "",
+        q.category
+      );
+
+      await rawSql(
+        `UPDATE live_qa_questions SET ai_draft_text = ?, ai_draft_reasoning = ? WHERE id = ?`,
+        [draft.answerText, draft.reasoning, input.questionId]
+      );
+
+      return draft;
+    }),
+
+  bulkAction: operatorProcedure
+    .input(z.object({
+      questionIds: z.array(z.number()).min(1).max(50),
+      action: z.enum(["approve", "reject", "flagged", "legal_review"]),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      let processed = 0;
+      for (const qId of input.questionIds) {
+        try {
+          if (input.action === "legal_review") {
+            await db.update(liveQaQuestions)
+              .set({ status: "flagged", operatorNotes: `Legal Review: ${input.reason || "Bulk escalation"}`, updatedAt: Date.now() })
+              .where(eq(liveQaQuestions.id, qId));
+            await rawSql(`UPDATE live_qa_questions SET legal_review_reason = ? WHERE id = ?`, [input.reason || "Bulk escalation", qId]);
+          } else {
+            const notes = input.action === "approve" ? "Bulk approved" : input.action === "reject" ? "Bulk rejected" : "Bulk flagged";
+            await db.update(liveQaQuestions)
+              .set({ status: input.action, operatorNotes: notes, updatedAt: Date.now() })
+              .where(eq(liveQaQuestions.id, qId));
+          }
+          processed++;
+        } catch {}
+      }
+      return { success: true, processed, total: input.questionIds.length };
     }),
 
   generateQaCertificate: operatorProcedure

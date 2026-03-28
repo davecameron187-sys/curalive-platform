@@ -98,6 +98,20 @@ async function ensureOperatorActionsTable() {
   }
 }
 
+async function ensureLiveQaP1Columns() {
+  try {
+    const { rawSql } = await import("../db");
+    await rawSql(`ALTER TABLE live_qa_questions ADD COLUMN IF NOT EXISTS duplicate_of_id INTEGER`);
+    await rawSql(`ALTER TABLE live_qa_questions ADD COLUMN IF NOT EXISTS legal_review_reason TEXT`);
+    await rawSql(`ALTER TABLE live_qa_questions ADD COLUMN IF NOT EXISTS ai_draft_text TEXT`);
+    await rawSql(`ALTER TABLE live_qa_questions ADD COLUMN IF NOT EXISTS ai_draft_reasoning TEXT`);
+    console.log("[Migration] ✓ P1 Q&A columns ensured (duplicate_of_id, legal_review_reason, ai_draft_text, ai_draft_reasoning)");
+  } catch (err: any) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] P1 Q&A columns check skipped:", err?.message);
+  }
+}
+
 async function startServer() {
   const app = express();
   const server = http.createServer(app);
@@ -133,6 +147,9 @@ async function startServer() {
   );
   ensureOperatorActionsTable().catch(err =>
     console.warn("[Migration] operator_actions migration failed:", err?.message)
+  );
+  ensureLiveQaP1Columns().catch(err =>
+    console.warn("[Migration] P1 Q&A columns migration failed:", err?.message)
   );
 
   if (!isProd) {

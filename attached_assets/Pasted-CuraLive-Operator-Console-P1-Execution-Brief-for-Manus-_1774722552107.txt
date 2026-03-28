@@ -1,0 +1,213 @@
+CuraLive Operator Console — P1 Execution Brief for Manus and Replit
+Status
+
+The core Operator Console is verified and production-testable.
+P0 post-console work is also complete:
+
+transcript-synced playback
+export hardening
+PDF export
+real-event validation for those P0 areas
+
+That means the next phase is no longer about proving the console exists.
+The next phase is about making live operator workflow smarter, faster, and safer.
+
+P1 scope
+
+This phase covers:
+
+Q&A deduplication
+AI draft responses
+Legal review workflow polish
+Operator workflow shortcuts and prioritization
+Shared objective
+
+Improve the quality and speed of live Q&A handling inside the existing Operator Console without creating new product sprawl.
+
+The operator should be able to:
+
+spot duplicate questions fast
+generate draft responses safely
+escalate legal-risk questions clearly
+move through a busy queue with less friction
+Roles
+Manus
+
+Owns:
+
+backend and frontend implementation
+data model changes
+workflow logic
+PRs and code changes
+documentation updates tied to behavior
+Replit
+
+Owns:
+
+runtime verification
+UX validation
+queue stress testing
+bug reproduction
+confirming that live workflows work as intended
+Workstream 1 — Q&A deduplication
+Goal
+
+Prevent operators from wasting time reviewing the same question multiple times.
+
+Required behavior
+detect likely duplicate questions
+group or label duplicates clearly
+let operator expand grouped duplicates if needed
+preserve original question records
+keep auditability for moderation decisions
+Minimum acceptable version
+similarity-based duplicate detection
+visible “possible duplicate” label or grouped stack
+operator can review the primary question and see linked duplicates
+Done means
+duplicate questions no longer clutter the queue
+operators can make one decision on a clustered question set where appropriate
+duplicates remain traceable in action history
+Workstream 2 — AI draft responses
+Goal
+
+Help operators/speakers respond faster without auto-sending unsafe or low-quality answers.
+
+Required behavior
+operator can generate a draft response for a question
+draft is clearly marked as AI-generated
+draft must be editable before use
+draft is never auto-sent without human action
+generated draft should consider session context if available
+Safety requirements
+no auto-approval
+no auto-send to speaker
+clear operator review step required
+draft generation failures should degrade cleanly
+Done means
+operator can request a useful draft
+operator can edit/reject it
+workflow is faster but still controlled by a human
+Workstream 3 — Legal review workflow polish
+Goal
+
+Make risky questions easier to identify, escalate, and track.
+
+Required behavior
+clear “legal review” action in the Q&A flow
+visible status for legally flagged questions
+clear reason or risk note if available
+legal-review items easy to filter/find
+action logged in operator audit trail
+UX expectations
+legal-review items should stand out visually
+operator should not confuse hold vs reject vs legal review
+legal-review state should appear in handoff/export where appropriate
+Done means
+legal-risk handling is obvious and consistent
+escalated questions are trackable through the workflow
+Workstream 4 — Workflow shortcuts and prioritization
+Goal
+
+Reduce operator effort during busy sessions.
+
+Required behavior
+quick actions for common Q&A decisions
+better prioritization of urgent/high-risk/high-value questions
+clear sort/filter support for queue triage
+reduce clicks for common moderation flow
+Examples
+shortcut actions for approve / reject / hold / legal review / send to speaker
+filters like:
+unanswered
+high priority
+legal review
+duplicates
+sent to speaker
+Done means
+queue management feels faster
+operator can handle more volume without confusion
+Technical expectations
+Keep using the existing console foundation
+
+Do not split this into a separate product surface.
+All changes should live inside the verified Operator Console / Shadow Mode workflow.
+
+Preserve audit trail
+
+All important Q&A actions must continue to be logged in operator_actions or the equivalent action log path.
+
+Preserve security
+
+Sensitive features must continue to respect operator/admin restrictions where applicable.
+
+Preserve export/handoff usefulness
+
+If deduplication, legal review, or AI draft state changes matter operationally, they should appear in handoff/export where useful.
+
+Manus deliverables
+PR 1
+
+Q&A deduplication
+
+duplicate detection logic
+queue UI for grouped/flagged duplicates
+audit-safe handling
+PR 2
+
+AI draft responses
+
+generation flow
+editable draft UI
+safe review step
+clean failure handling
+PR 3
+
+Legal review + workflow prioritization
+
+legal-review polish
+queue shortcuts
+priority/sort/filter improvements
+
+Each PR must include:
+
+what part of this brief it implements
+files changed
+what is still incomplete
+how it was tested
+Replit verification tracks
+Track 1 — Duplicate question testing
+submit similar questions
+confirm duplicates are grouped or flagged
+confirm operator can still inspect originals
+confirm moderation remains traceable
+Track 2 — AI draft testing
+generate draft for a question
+confirm draft appears clearly labeled
+edit draft
+confirm no auto-send occurs
+test failure behavior
+Track 3 — Legal review testing
+escalate question to legal review
+confirm state is visible
+confirm filtering works
+confirm action appears in log/handoff if intended
+Track 4 — Operator speed testing
+run busy queue workflow
+measure whether shortcuts/filters reduce effort
+identify friction points
+report where prioritization still feels weak
+Definition of done
+
+P1 is complete only when:
+
+duplicate questions are easier to manage
+AI drafts help but remain human-controlled
+legal review workflow is clear and trackable
+queue shortcuts/prioritization improve operator speed
+all of this works inside the existing console
+verification shows the workflow holds up in real use
+Final instruction
+
+Do not spend this phase rewriting the console foundation.
+Build on the verified base and improve live Q&A workflow depth.

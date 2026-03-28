@@ -1078,7 +1078,7 @@ export const shadowModeRouter = router({
     .input(z.object({
       sessionId: z.number(),
       questionId: z.string(),
-      action: z.enum(["approve", "reject", "hold", "legal_review", "send_to_speaker", "answered"]),
+      action: z.enum(["approve", "reject", "hold", "legal_review", "send_to_speaker", "answered", "bulk_approve", "bulk_reject", "generate_draft", "link_duplicate", "unlink_duplicate"]),
       questionText: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
@@ -1089,6 +1089,11 @@ export const shadowModeRouter = router({
         legal_review: "Question flagged for legal review",
         send_to_speaker: "Question sent to speaker queue",
         answered: "Question marked as answered",
+        bulk_approve: "Question bulk-approved",
+        bulk_reject: "Question bulk-rejected",
+        generate_draft: "AI draft generated",
+        link_duplicate: "Question linked as duplicate",
+        unlink_duplicate: "Question unlinked from duplicate",
       };
 
       await logOperatorAction({
@@ -1137,6 +1142,27 @@ export const shadowModeRouter = router({
       const qaActions = actions.filter(a => a.actionType.startsWith("question_"));
       const duration = session.startedAt && session.endedAt ? Math.round((session.endedAt - session.startedAt) / 1000) : null;
 
+      let qaData: any[] = [];
+      let dedupGroups: Record<number, number[]> = {};
+      let legalReviewItems: any[] = [];
+      try {
+        const [qaRows] = await rawSql(
+          `SELECT q.id, q.question_text, q.question_status, q.triage_classification, q.priority_score,
+                  q.duplicate_of_id, q.legal_review_reason, q.ai_draft_text, q.submitter_name, q.submitter_company
+           FROM live_qa_questions q
+           JOIN live_qa_sessions s ON s.id = q.session_id
+           WHERE s.shadow_session_id = ?
+           ORDER BY q.priority_score DESC`, [input.sessionId]);
+        qaData = qaRows || [];
+        for (const q of qaData) {
+          if (q.duplicate_of_id) {
+            if (!dedupGroups[q.duplicate_of_id]) dedupGroups[q.duplicate_of_id] = [];
+            dedupGroups[q.duplicate_of_id].push(q.id);
+          }
+          if (q.legal_review_reason) legalReviewItems.push({ id: q.id, text: q.question_text, reason: q.legal_review_reason, status: q.question_status });
+        }
+      } catch {}
+
       const readiness = {
         hasTranscript: transcript.length > 0,
         hasRecording: !!recordingUrl,
@@ -1170,7 +1196,13 @@ export const shadowModeRouter = router({
           held: qaActions.filter(a => a.actionType === "question_hold").length,
           legalReview: qaActions.filter(a => a.actionType === "question_legal_review").length,
           sentToSpeaker: qaActions.filter(a => a.actionType === "question_send_to_speaker").length,
+          questions: qaData.length,
+          duplicateGroups: Object.keys(dedupGroups).length,
+          legalReviewPending: legalReviewItems.length,
         },
+        qaQuestions: qaData,
+        dedupGroups,
+        legalReviewItems,
         aiReport,
         readiness,
       };
@@ -1219,6 +1251,18 @@ export const shadowModeRouter = router({
       const durationFormatted = durationMs ? `${Math.floor(durationMs / 60000)}m ${Math.floor((durationMs % 60000) / 1000)}s` : "N/A";
 
       const exportedAt = new Date().toISOString();
+
+      let qaData: any[] = [];
+      try {
+        const [qaRows] = await rawSql(
+          `SELECT q.id, q.question_text, q.question_status, q.triage_classification, q.priority_score,
+                  q.duplicate_of_id, q.legal_review_reason, q.ai_draft_text, q.submitter_name, q.submitter_company
+           FROM live_qa_questions q
+           JOIN live_qa_sessions s ON s.id = q.session_id
+           WHERE s.shadow_session_id = ?
+           ORDER BY q.priority_score DESC`, [input.sessionId]);
+        qaData = qaRows || [];
+      } catch {}
 
       await logOperatorAction({ sessionId: input.sessionId, actionType: "export_generated", detail: `${input.format.toUpperCase()} export generated` });
 
@@ -1285,6 +1329,13 @@ export const shadowModeRouter = router({
           csvRows.push(`Compliance,,,${csvSafe("No AI report generated — compliance review not available")},no_report`);
         }
 
+        for (const q of qaData) {
+          const dupLabel = q.duplicate_of_id ? `DUP of Q#${q.duplicate_of_id}` : "";
+          const legalLabel = q.legal_review_reason ? `LEGAL: ${q.legal_review_reason}` : "";
+          const meta = [q.question_status, q.triage_classification, dupLabel, legalLabel].filter(Boolean).join(" | ");
+          csvRows.push(`Q&A,Q#${q.id},${csvSafe(q.submitter_name || "Anonymous")},${csvSafe(q.question_text)},${csvSafe(meta)}`);
+        }
+
         return { content: csvRows.join("\n"), filename: `curalive-session-${session.id}.csv`, contentType: "text/csv" };
       }
 
@@ -1304,9 +1355,20 @@ export const shadowModeRouter = router({
         exportedAt,
       };
 
+      const dedupGroups: Record<number, number[]> = {};
+      const legalReviewItems: any[] = [];
+      for (const q of qaData) {
+        if (q.duplicate_of_id) {
+          if (!dedupGroups[q.duplicate_of_id]) dedupGroups[q.duplicate_of_id] = [];
+          dedupGroups[q.duplicate_of_id].push(q.id);
+        }
+        if (q.legal_review_reason) legalReviewItems.push({ id: q.id, text: q.question_text, reason: q.legal_review_reason });
+      }
+      const qaExport = { questions: qaData, dedupGroups, legalReviewItems };
+
       if (input.format === "pdf") {
         return {
-          content: JSON.stringify({ session: sessionMeta, transcript, notes, actionLog: actions, aiReport }),
+          content: JSON.stringify({ session: sessionMeta, transcript, notes, actionLog: actions, aiReport, qa: qaExport }),
           filename: `curalive-session-${session.id}.pdf`,
           contentType: "application/pdf",
           pdfData: true,
@@ -1314,7 +1376,7 @@ export const shadowModeRouter = router({
       }
 
       return {
-        content: JSON.stringify({ session: sessionMeta, transcript, notes, actionLog: actions, aiReport }, null, 2),
+        content: JSON.stringify({ session: sessionMeta, transcript, notes, actionLog: actions, aiReport, qa: qaExport }, null, 2),
         filename: `curalive-session-${session.id}.json`,
         contentType: "application/json",
       };
