@@ -166,10 +166,14 @@ Optional (not yet configured, non-critical for app loading):
 
 - **Table**: `operator_actions` — persistent audit trail for all operator activity
 - **Logged actions**: `session_started`, `session_ended`, `note_created`, `note_deleted`, `question_approve`, `question_reject`, `question_hold`, `question_legal_review`, `question_send_to_speaker`, `question_answered`, `export_generated`
-- **tRPC procedures**: `shadow.addNote`, `shadow.deleteNote`, `shadow.getNotes`, `shadow.getActionLog`, `shadow.qaAction`
-- **Handoff package**: `shadow.getHandoffPackage` — aggregates transcript, recording, notes, action log, Q&A summary, AI report, readiness score
-- **Exports**: `shadow.exportSession` — CSV and JSON export with all session data
+- **tRPC procedures**: `shadowMode.addNote`, `shadowMode.deleteNote`, `shadowMode.getNotes`, `shadowMode.getActionLog`, `shadowMode.qaAction`
+- **Handoff package**: `shadowMode.getHandoffPackage` — aggregates transcript, recording, notes, action log, Q&A summary, AI report, readiness score
+- **Exports**: `shadowMode.exportSession` — CSV, JSON, and PDF export with all session data
+- **CSV hardening**: Formula injection protection (`csvSafe` neutralizes `=+\-@` prefixes), all fields properly quoted, object-type AI report fields (keyTopics, riskFactors, actionItems) properly stringified
+- **Export fields**: Session metadata (id, client, event, type, platform, status), timestamps (startedAt, endedAt, duration, exportedAt), meeting URL, recording URL, full transcript, notes, action log, AI report sections (executive summary, sentiment, compliance, key topics, risk factors, action items)
+- **PDF export**: Generates formatted HTML report (print-to-PDF workflow), includes all compliance sections, meeting/recording links, and a placeholder compliance section when AI report is unavailable
 - **Frontend components**: `OperatorNotesPanel`, `OperatorActionLogPanel`, `SessionHandoffPanel` in ShadowMode.tsx
+- **Transcript-synced playback**: Clicking transcript segments seeks the recording player to that timestamp; active segment is highlighted during playback with violet accent. Timestamps are auto-normalized from epoch milliseconds to relative seconds from session start
 - **Q&A action logging**: All LiveQaDashboard actions (approve, reject, hold, legal review, send to speaker, answered) are logged to operator_actions
 
 ## Database Migrations

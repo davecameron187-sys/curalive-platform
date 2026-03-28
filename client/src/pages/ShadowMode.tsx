@@ -234,19 +234,133 @@ function SessionHandoffPanel({ sessionId, clientName, eventName }: { sessionId: 
   const handoff = trpc.shadowMode.getHandoffPackage.useQuery({ sessionId });
   const exportCsv = trpc.shadowMode.exportSession.useQuery({ sessionId, format: "csv" }, { enabled: false });
   const exportJson = trpc.shadowMode.exportSession.useQuery({ sessionId, format: "json" }, { enabled: false });
+  const exportPdf = trpc.shadowMode.exportSession.useQuery({ sessionId, format: "pdf" }, { enabled: false });
 
-  const handleExport = async (format: "csv" | "json") => {
+  const generatePdfHtml = (data: any): string => {
+    const d = JSON.parse(data.content);
+    const s = d.session;
+    const escHtml = (t: string) => t?.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") ?? "";
+    let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>CuraLive Session Report</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:40px;color:#1a1a2e;line-height:1.6}
+h1{color:#6d28d9;font-size:22px;margin-bottom:4px}h2{color:#4c1d95;font-size:16px;border-bottom:2px solid #e5e7eb;padding-bottom:6px;margin-top:28px}
+.meta{color:#6b7280;font-size:13px;margin-bottom:20px}.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.badge-green{background:#d1fae5;color:#065f46}.badge-amber{background:#fef3c7;color:#92400e}.badge-red{background:#fee2e2;color:#991b1b}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th{background:#f3f4f6;text-align:left;padding:8px 10px;border:1px solid #e5e7eb}
+td{padding:8px 10px;border:1px solid #e5e7eb;vertical-align:top}.section{margin-bottom:24px}
+.compliance-flag{background:#fef2f2;border-left:3px solid #ef4444;padding:8px 12px;margin:4px 0;font-size:13px}
+.summary-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:16px;margin:12px 0}
+@media print{body{margin:20px}}</style></head><body>`;
+    html += `<h1>CuraLive Session Report</h1>`;
+    html += `<div class="meta">${escHtml(s.clientName)} — ${escHtml(s.eventName)}<br>`;
+    html += `Type: ${escHtml(s.eventType)} | Platform: ${escHtml(s.platform)} | Status: <span class="badge ${s.status === "completed" ? "badge-green" : "badge-amber"}">${escHtml(s.status)}</span><br>`;
+    if (s.startedAt) html += `Started: ${new Date(s.startedAt).toLocaleString()} | `;
+    if (s.endedAt) html += `Ended: ${new Date(s.endedAt).toLocaleString()} | `;
+    html += `Duration: ${escHtml(s.duration)}<br>`;
+    if (s.meetingUrl) html += `Meeting: <a href="${escHtml(s.meetingUrl)}">${escHtml(s.meetingUrl)}</a><br>`;
+    if (s.recordingUrl) html += `Recording: <a href="${escHtml(s.recordingUrl)}">Download</a><br>`;
+    html += `Exported: ${new Date(s.exportedAt).toLocaleString()}</div>`;
+
+    if (d.aiReport?.executiveSummary) {
+      html += `<h2>Executive Summary</h2><div class="summary-box">${escHtml(d.aiReport.executiveSummary)}</div>`;
+    }
+    if (d.aiReport?.sentimentAnalysis) {
+      const sa = d.aiReport.sentimentAnalysis;
+      html += `<h2>Sentiment Analysis</h2><p><strong>Score:</strong> ${sa.score ?? "N/A"}/100</p>`;
+      if (sa.narrative) html += `<p>${escHtml(sa.narrative)}</p>`;
+    }
+    if (d.aiReport?.complianceReview) {
+      const cr = d.aiReport.complianceReview;
+      html += `<h2>Compliance Review</h2><p><strong>Risk Level:</strong> <span class="badge ${cr.riskLevel === "low" ? "badge-green" : cr.riskLevel === "high" ? "badge-red" : "badge-amber"}">${escHtml(cr.riskLevel)}</span></p>`;
+      if (cr.flaggedPhrases?.length) {
+        html += cr.flaggedPhrases.map((f: string) => `<div class="compliance-flag">${escHtml(f)}</div>`).join("");
+      }
+    }
+    if (d.aiReport?.keyTopics) {
+      html += `<h2>Key Topics</h2><ul>`;
+      const topics = Array.isArray(d.aiReport.keyTopics) ? d.aiReport.keyTopics : [d.aiReport.keyTopics];
+      topics.forEach((t: any) => { html += `<li>${escHtml(typeof t === "string" ? t : JSON.stringify(t))}</li>`; });
+      html += `</ul>`;
+    }
+    if (d.aiReport?.riskFactors) {
+      html += `<h2>Risk Factors</h2><ul>`;
+      const risks = Array.isArray(d.aiReport.riskFactors) ? d.aiReport.riskFactors : [d.aiReport.riskFactors];
+      risks.forEach((r: any) => { html += `<li>${escHtml(typeof r === "string" ? r : JSON.stringify(r))}</li>`; });
+      html += `</ul>`;
+    }
+    if (d.aiReport?.actionItems) {
+      html += `<h2>Action Items</h2><ul>`;
+      const items = Array.isArray(d.aiReport.actionItems) ? d.aiReport.actionItems : [d.aiReport.actionItems];
+      items.forEach((a: any) => { html += `<li>${escHtml(typeof a === "string" ? a : JSON.stringify(a))}</li>`; });
+      html += `</ul>`;
+    }
+
+    if (d.transcript?.length) {
+      html += `<h2>Transcript (${d.transcript.length} segments)</h2><table><tr><th style="width:60px">Time</th><th style="width:100px">Speaker</th><th>Content</th></tr>`;
+      d.transcript.forEach((seg: any) => {
+        const mins = Math.floor((seg.timestamp || 0) / 60);
+        const secs = Math.floor((seg.timestamp || 0) % 60);
+        html += `<tr><td>${mins}:${String(secs).padStart(2, "0")}</td><td>${escHtml(seg.speaker)}</td><td>${escHtml(seg.text)}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+
+    if (d.notes?.length) {
+      html += `<h2>Operator Notes (${d.notes.length})</h2><table><tr><th style="width:160px">Time</th><th>Note</th></tr>`;
+      d.notes.forEach((n: any) => {
+        html += `<tr><td>${new Date(n.createdAt).toLocaleString()}</td><td>${escHtml(n.text)}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+
+    if (d.actionLog?.length) {
+      html += `<h2>Action Log (${d.actionLog.length} entries)</h2><table><tr><th style="width:160px">Time</th><th style="width:100px">Operator</th><th style="width:120px">Action</th><th>Detail</th></tr>`;
+      d.actionLog.forEach((a: any) => {
+        html += `<tr><td>${new Date(a.createdAt).toLocaleString()}</td><td>${escHtml(a.operatorName || "")}</td><td>${escHtml(a.actionType)}</td><td>${escHtml(a.detail || "")}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+
+    if (!d.aiReport) {
+      html += `<h2>Compliance Review</h2><div class="summary-box" style="background:#fef2f2;border-color:#fca5a5">No AI report was generated for this session. Compliance review is not available. Re-run the intelligence pipeline when transcript data is available.</div>`;
+    }
+
+    html += `<div style="margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:11px;text-align:center">Generated by CuraLive Operator Console</div>`;
+    html += `</body></html>`;
+    return html;
+  };
+
+  const handleExport = async (format: "csv" | "json" | "pdf") => {
     try {
-      const result = format === "csv" ? await exportCsv.refetch() : await exportJson.refetch();
+      const result = format === "csv" ? await exportCsv.refetch() : format === "json" ? await exportJson.refetch() : await exportPdf.refetch();
       if (result.data) {
-        const blob = new Blob([result.data.content], { type: result.data.contentType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = result.data.filename;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success(`${format.toUpperCase()} exported`);
+        if (format === "pdf") {
+          const pdfHtml = generatePdfHtml(result.data);
+          const printWindow = window.open("", "_blank");
+          if (printWindow) {
+            printWindow.document.write(pdfHtml);
+            printWindow.document.close();
+            setTimeout(() => { printWindow.print(); }, 500);
+            toast.success("PDF report opened — use Print > Save as PDF");
+          } else {
+            const blob = new Blob([pdfHtml], { type: "text/html" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = result.data.filename.replace(".pdf", ".html");
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success("HTML report downloaded — open and print to PDF");
+          }
+        } else {
+          const blob = new Blob([result.data.content], { type: result.data.contentType });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = result.data.filename;
+          a.click();
+          URL.revokeObjectURL(url);
+          toast.success(`${format.toUpperCase()} exported`);
+        }
       }
     } catch {
       toast.error(`Failed to export ${format.toUpperCase()}`);
@@ -330,6 +444,9 @@ function SessionHandoffPanel({ sessionId, clientName, eventName }: { sessionId: 
         </button>
         <button onClick={() => handleExport("json")} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 transition-colors">
           <Download className="w-3 h-3" /> Export JSON
+        </button>
+        <button onClick={() => handleExport("pdf")} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 transition-colors">
+          <FileText className="w-3 h-3" /> Export PDF
         </button>
         {pkg.recording.url && (
           <a href={pkg.recording.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 transition-colors">
@@ -429,6 +546,11 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   });
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
+  const mediaRef = useRef<HTMLAudioElement | HTMLVideoElement | null>(null);
+  const [playbackTime, setPlaybackTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
 
   const deleteSessions = trpc.shadowMode.deleteSessions.useMutation({
     onSuccess: (data) => {
@@ -1631,18 +1753,28 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                                 <div className="space-y-3">
                                   {isLocalRecording ? (
                                     <audio
+                                      ref={(el) => { mediaRef.current = el; }}
                                       src={recUrl}
                                       controls
                                       preload="metadata"
                                       className="w-full"
+                                      onTimeUpdate={(e) => setPlaybackTime((e.target as HTMLAudioElement).currentTime)}
+                                      onPlay={() => setIsPlaying(true)}
+                                      onPause={() => setIsPlaying(false)}
+                                      onEnded={() => setIsPlaying(false)}
                                     />
                                   ) : (
                                     <video
+                                      ref={(el) => { mediaRef.current = el; }}
                                       src={recUrl}
                                       controls
                                       playsInline
                                       preload="metadata"
                                       className="w-full rounded-lg bg-black/50 max-h-[400px]"
+                                      onTimeUpdate={(e) => setPlaybackTime((e.target as HTMLVideoElement).currentTime)}
+                                      onPlay={() => setIsPlaying(true)}
+                                      onPause={() => setIsPlaying(false)}
+                                      onEnded={() => setIsPlaying(false)}
                                     >
                                       Your browser does not support video playback.
                                     </video>
@@ -1732,24 +1864,63 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                             )}
                           </div>
                         </div>
-                        <div className="max-h-72 overflow-y-auto">
+                        <div ref={transcriptContainerRef} className="max-h-72 overflow-y-auto">
                           {transcript.length === 0 ? (
                             <div className="p-8 text-center text-slate-600 text-sm">
                               {isActive ? "Waiting for speech..." : "No transcript captured"}
                             </div>
                           ) : (
                             <div className="divide-y divide-white/5">
-                              {[...transcript].reverse().slice(0, 30).map((seg, i) => (
-                                <div key={i} className="px-5 py-3 flex items-start gap-3">
-                                  <div className="text-xs text-slate-600 font-mono shrink-0 pt-0.5 w-10">
-                                    {(seg as { timeLabel?: string }).timeLabel ?? "—"}
-                                  </div>
-                                  <div>
-                                    <span className="text-xs font-semibold text-violet-300 mr-2">{seg.speaker}</span>
-                                    <span className="text-sm text-slate-300">{seg.text}</span>
-                                  </div>
-                                </div>
-                              ))}
+                              {(() => {
+                                const hasRecording = !!(liveSession as any).recordingUrl;
+                                const sessionStartMs = liveSession.startedAt ? new Date(liveSession.startedAt).getTime() : 0;
+                                const reversedSegs = [...transcript].reverse().slice(0, 30);
+
+                                return reversedSegs.map((seg, i) => {
+                                  const rawTs = seg.timestamp ?? 0;
+                                  const isEpochMs = rawTs > 1e12;
+                                  const offsetSec = isEpochMs && sessionStartMs
+                                    ? Math.max(0, (rawTs - sessionStartMs) / 1000)
+                                    : isEpochMs ? 0 : rawTs;
+                                  const canSeek = hasRecording && offsetSec > 0;
+                                  const isActiveSeg = hasRecording && isPlaying && offsetSec > 0 &&
+                                    Math.abs(playbackTime - offsetSec) < 5;
+                                  const timeLabel = offsetSec > 0
+                                    ? `${Math.floor(offsetSec / 60)}:${String(Math.floor(offsetSec % 60)).padStart(2, "0")}`
+                                    : ((seg as any).timeLabel ?? "—");
+
+                                  return (
+                                    <div
+                                      key={i}
+                                      data-seg-time={offsetSec}
+                                      className={`px-5 py-3 flex items-start gap-3 transition-colors ${
+                                        isActiveSeg
+                                          ? "bg-violet-500/10 border-l-2 border-violet-400"
+                                          : canSeek
+                                            ? "cursor-pointer hover:bg-white/[0.04]"
+                                            : ""
+                                      }`}
+                                      onClick={() => {
+                                        if (!canSeek || !mediaRef.current) return;
+                                        mediaRef.current.currentTime = offsetSec;
+                                        if (mediaRef.current.paused) mediaRef.current.play();
+                                      }}
+                                      title={canSeek ? `Click to jump to ${timeLabel}` : undefined}
+                                    >
+                                      <div className={`text-xs font-mono shrink-0 pt-0.5 w-10 ${isActiveSeg ? "text-violet-400" : canSeek ? "text-cyan-600" : "text-slate-600"}`}>
+                                        {timeLabel}
+                                      </div>
+                                      <div className="flex-1">
+                                        <span className="text-xs font-semibold text-violet-300 mr-2">{seg.speaker}</span>
+                                        <span className={`text-sm ${isActiveSeg ? "text-slate-200" : "text-slate-300"}`}>{seg.text}</span>
+                                      </div>
+                                      {canSeek && (
+                                        <Play className={`w-3 h-3 shrink-0 mt-1 ${isActiveSeg ? "text-violet-400" : "text-slate-700"}`} />
+                                      )}
+                                    </div>
+                                  );
+                                });
+                              })()}
                             </div>
                           )}
                         </div>

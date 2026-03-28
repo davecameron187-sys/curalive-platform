@@ -1179,7 +1179,7 @@ export const shadowModeRouter = router({
   exportSession: operatorProcedure
     .input(z.object({
       sessionId: z.number(),
-      format: z.enum(["csv", "json"]),
+      format: z.enum(["csv", "json", "pdf"]),
     }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1206,50 +1206,115 @@ export const shadowModeRouter = router({
         if (rows?.[0]?.ai_report) aiReport = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
       } catch {}
 
+      let recordingUrl: string | null = null;
+      if (session.recallBotId) {
+        const [bot] = await db.select().from(recallBots).where(eq(recallBots.recallBotId, session.recallBotId)).limit(1);
+        if (bot?.recordingUrl) recordingUrl = bot.recordingUrl;
+      }
+      if (!recordingUrl && session.localRecordingPath) recordingUrl = `/api/shadow/recording/${session.id}`;
+
+      const startTime = session.startedAt ? new Date(session.startedAt) : null;
+      const endTime = session.endedAt ? new Date(session.endedAt) : null;
+      const durationMs = startTime && endTime ? endTime.getTime() - startTime.getTime() : null;
+      const durationFormatted = durationMs ? `${Math.floor(durationMs / 60000)}m ${Math.floor((durationMs % 60000) / 1000)}s` : "N/A";
+
+      const exportedAt = new Date().toISOString();
+
       await logOperatorAction({ sessionId: input.sessionId, actionType: "export_generated", detail: `${input.format.toUpperCase()} export generated` });
 
       if (input.format === "csv") {
+        const csvSafe = (val: string): string => {
+          if (!val) return '""';
+          let s = val.replace(/\r?\n/g, " ");
+          if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+          return `"${s.replace(/"/g, '""')}"`;
+        };
+
         const csvRows: string[] = [];
         csvRows.push("Section,Timestamp,Speaker,Content,Metadata");
 
-        csvRows.push(`Event Info,,,"${session.clientName} — ${session.eventName}","Type: ${session.eventType}, Platform: ${session.platform}, Status: ${session.status}"`);
-        if (session.startedAt) csvRows.push(`Event Info,${new Date(session.startedAt).toISOString()},,Started,`);
-        if (session.endedAt) csvRows.push(`Event Info,${new Date(session.endedAt).toISOString()},,Ended,`);
+        csvRows.push(`Event Info,,,${csvSafe(`${session.clientName} — ${session.eventName}`)},${csvSafe(`Type: ${session.eventType}, Platform: ${session.platform}, Status: ${session.status}`)}`);
+        if (startTime) csvRows.push(`Event Info,${startTime.toISOString()},,${csvSafe("Session Started")},`);
+        if (endTime) csvRows.push(`Event Info,${endTime.toISOString()},,${csvSafe("Session Ended")},`);
+        csvRows.push(`Event Info,,,${csvSafe(`Duration: ${durationFormatted}`)},`);
+        if (session.meetingUrl) csvRows.push(`Event Info,,,${csvSafe(`Meeting URL: ${session.meetingUrl}`)},`);
+        if (recordingUrl) csvRows.push(`Event Info,,,${csvSafe(`Recording: ${recordingUrl}`)},has_recording`);
+        csvRows.push(`Event Info,${exportedAt},,${csvSafe("Export Generated")},export_timestamp`);
 
         for (const seg of transcript) {
-          const escapedText = `"${seg.text.replace(/"/g, '""')}"`;
-          csvRows.push(`Transcript,${seg.timestamp},${seg.speaker},${escapedText},`);
+          csvRows.push(`Transcript,${seg.timestamp},${csvSafe(seg.speaker)},${csvSafe(seg.text)},`);
         }
 
         for (const note of notes) {
-          csvRows.push(`Note,${note.createdAt},,${`"${note.text.replace(/"/g, '""')}"`},`);
+          csvRows.push(`Note,${note.createdAt},,${csvSafe(note.text)},`);
         }
 
         for (const act of actions) {
-          csvRows.push(`Action,${act.createdAt.toISOString()},${act.operatorName ?? ""},${`"${(act.detail ?? act.actionType).replace(/"/g, '""')}"`},${act.actionType}`);
+          csvRows.push(`Action,${act.createdAt.toISOString()},${csvSafe(act.operatorName ?? "")},${csvSafe(act.detail ?? act.actionType)},${csvSafe(act.actionType)}`);
         }
 
         if (aiReport?.executiveSummary) {
-          csvRows.push(`AI Report,,,${`"${aiReport.executiveSummary.replace(/"/g, '""')}"`},executive_summary`);
+          csvRows.push(`AI Report,,,${csvSafe(aiReport.executiveSummary)},executive_summary`);
         }
         if (aiReport?.sentimentAnalysis) {
-          csvRows.push(`AI Report,,,"Sentiment: ${aiReport.sentimentAnalysis.score}/100 — ${aiReport.sentimentAnalysis.narrative?.slice(0, 200)}",sentiment`);
+          csvRows.push(`AI Report,,,${csvSafe(`Sentiment: ${aiReport.sentimentAnalysis.score}/100 — ${aiReport.sentimentAnalysis.narrative?.slice(0, 200) ?? ""}`)},sentiment`);
         }
         if (aiReport?.complianceReview) {
-          csvRows.push(`AI Report,,,"Risk: ${aiReport.complianceReview.riskLevel}${aiReport.complianceReview.flaggedPhrases?.length ? ` — Flags: ${aiReport.complianceReview.flaggedPhrases.join(", ")}` : ""}",compliance`);
+          csvRows.push(`AI Report,,,${csvSafe(`Risk: ${aiReport.complianceReview.riskLevel}${aiReport.complianceReview.flaggedPhrases?.length ? ` — Flags: ${aiReport.complianceReview.flaggedPhrases.join(", ")}` : ""}`)},compliance`);
+        }
+        if (aiReport?.keyTopics) {
+          const topics = Array.isArray(aiReport.keyTopics)
+            ? aiReport.keyTopics.map((t: any) => typeof t === "string" ? t : (t?.topic || t?.name || JSON.stringify(t))).join("; ")
+            : String(aiReport.keyTopics);
+          csvRows.push(`AI Report,,,${csvSafe(topics)},key_topics`);
+        }
+        if (aiReport?.riskFactors) {
+          const risks = Array.isArray(aiReport.riskFactors)
+            ? aiReport.riskFactors.map((r: any) => typeof r === "string" ? r : (r?.factor || r?.description || r?.name || JSON.stringify(r))).join("; ")
+            : String(aiReport.riskFactors);
+          csvRows.push(`AI Report,,,${csvSafe(risks)},risk_factors`);
+        }
+        if (aiReport?.actionItems) {
+          const items = Array.isArray(aiReport.actionItems)
+            ? aiReport.actionItems.map((a: any) => typeof a === "string" ? a : (a?.action || a?.description || a?.item || JSON.stringify(a))).join("; ")
+            : String(aiReport.actionItems);
+          csvRows.push(`AI Report,,,${csvSafe(items)},action_items`);
+        }
+
+        if (!aiReport) {
+          csvRows.push(`Compliance,,,${csvSafe("No AI report generated — compliance review not available")},no_report`);
         }
 
         return { content: csvRows.join("\n"), filename: `curalive-session-${session.id}.csv`, contentType: "text/csv" };
       }
 
+      const sessionMeta = {
+        id: session.id,
+        clientName: session.clientName,
+        eventName: session.eventName,
+        eventType: session.eventType,
+        platform: session.platform,
+        status: session.status,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        duration: durationFormatted,
+        durationMs,
+        meetingUrl: session.meetingUrl ?? null,
+        recordingUrl,
+        exportedAt,
+      };
+
+      if (input.format === "pdf") {
+        return {
+          content: JSON.stringify({ session: sessionMeta, transcript, notes, actionLog: actions, aiReport }),
+          filename: `curalive-session-${session.id}.pdf`,
+          contentType: "application/pdf",
+          pdfData: true,
+        };
+      }
+
       return {
-        content: JSON.stringify({
-          session: { id: session.id, clientName: session.clientName, eventName: session.eventName, eventType: session.eventType, platform: session.platform, status: session.status, startedAt: session.startedAt, endedAt: session.endedAt },
-          transcript,
-          notes,
-          actionLog: actions,
-          aiReport,
-        }, null, 2),
+        content: JSON.stringify({ session: sessionMeta, transcript, notes, actionLog: actions, aiReport }, null, 2),
         filename: `curalive-session-${session.id}.json`,
         contentType: "application/json",
       };
