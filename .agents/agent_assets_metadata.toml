@@ -378,3 +378,9 @@ id = "bNtD_l5ukibgxmR3vYDeg"
 uri = "file://exports/CuraLive-P1-Implementation-Brief.md"
 type = "text"
 title = "CuraLive P1 Implementation Brief"
+
+[[outputs]]
+id = "nTVvw93l8ePIrUMilkW5G"
+uri = "file://exports/STAGING_VALIDATION_REPORT.md"
+type = "text"
+title = "CuraLive Staging Validation Report — Tracks A-E"
