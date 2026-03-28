@@ -390,3 +390,9 @@ id = "AHpcNdUHKz5uu3LCXL6Sh"
 uri = "file://exports/MANUS_BUG_BRIEF_D2.md"
 type = "text"
 title = "Manus Bug Brief — BUG-D2 (Webcast Dropdown)"
+
+[[outputs]]
+id = "ah8_HRkxKnDHiXL-RdIkN"
+uri = "file://exports/MANUS_GAP_REPORT.md"
+type = "text"
+title = "Manus Code Gap Report — What's Missing from Replit"
