@@ -1153,3 +1153,19 @@ git log github/ManusChatgpt -5 --oneline  # Should show latest commits
 - [ ] Push all features to GitHub
 - [ ] Create final checkpoint
 - [ ] Mark Phase 4 complete
+
+
+## Phase 6 — Final Production Sprint
+
+- [ ] Run database migrations to create all missing tables
+- [ ] Verify all integration tests pass after migrations
+- [ ] Integrate Post-Event Analytics backend with real queries
+- [ ] Wire Cross-Event Analytics to backend data
+- [ ] Build React Native mobile app scaffold
+- [ ] Implement mobile authentication
+- [ ] Build mobile attendee dashboard
+- [ ] Add offline transcript caching
+- [ ] Implement push notifications
+- [ ] Write mobile app integration tests
+- [ ] Push all changes to GitHub
+- [ ] Create final production checkpoint
