@@ -1111,3 +1111,45 @@ git log github/ManusChatgpt -5 --oneline  # Should show latest commits
 - [ ] Push all features to GitHub ManusChatgpt branch
 - [ ] Mark Phase 3 complete
 - [ ] Create final checkpoint
+
+
+## Phase 4 — Advanced Console Surfaces (Current)
+
+### Presenter Teleprompter
+- [ ] Build large-text live transcript display (48pt+ font)
+- [ ] Real-time transcript streaming with auto-scroll
+- [ ] Speaker notes panel with speaker guidance
+- [ ] Approved Q&A queue display for presenters
+- [ ] Timer and event status display
+- [ ] Keyboard shortcuts for navigation
+- [ ] Full-screen mode for presentation
+
+### Advanced Moderation Dashboard
+- [ ] Bulk question actions (approve/reject multiple)
+- [ ] Priority sorting by compliance risk
+- [ ] Auto-moderation rules engine
+- [ ] Queue management and filtering
+- [ ] Moderation analytics and metrics
+- [ ] Moderator performance tracking
+- [ ] Escalation workflow for edge cases
+
+### Cross-Event Analytics
+- [ ] Sentiment trend comparison across events
+- [ ] Speaker performance metrics
+- [ ] Attendee engagement patterns
+- [ ] Q&A effectiveness benchmarking
+- [ ] ROI metrics for investor relations
+- [ ] Compliance trend analysis
+- [ ] Export analytics reports
+
+### Integration Tests
+- [ ] Presenter teleprompter workflow tests
+- [ ] Moderation dashboard tests
+- [ ] Cross-event analytics tests
+- [ ] Real-time update tests
+- [ ] Performance benchmarks
+
+### Deployment
+- [ ] Push all features to GitHub
+- [ ] Create final checkpoint
+- [ ] Mark Phase 4 complete
