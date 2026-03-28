@@ -1492,3 +1492,56 @@ git log github/ManusChatgpt -5 --oneline  # Should show latest commits
 
 ---
 
+
+
+---
+
+## SHADOW MODE IMPLEMENTATION (CRITICAL - MUST COMPLETE)
+
+### Phase 1: Archive & Reports Section
+- [ ] Create ShadowMode.tsx page component
+- [ ] Implement session list with filters (date, event, status)
+- [ ] Add search functionality for session names
+- [ ] Display session metadata (duration, attendees, date, status)
+- [ ] Add pagination for large session lists
+- [ ] Create tRPC query for fetching archived sessions
+
+### Phase 2: AI Dashboard
+- [ ] Create AIServiceDashboard.tsx component
+- [ ] Implement service selection checkboxes (Whisper, Gemini, Recall)
+- [ ] Add "Run Services" button with loading state
+- [ ] Display service execution status and progress
+- [ ] Show results after services complete
+- [ ] Create tRPC mutation for running services
+
+### Phase 3: Real Data Syncing
+- [ ] Create tRPC procedures for fetching archived sessions
+- [ ] Implement transcript fetching from database
+- [ ] Implement AI analysis fetching from database
+- [ ] Implement compliance flags fetching from database
+- [ ] Wire real-time updates via Ably for service execution
+- [ ] Verify data accuracy and completeness
+
+### Phase 4: Export Workflow
+- [ ] Implement CSV export with full data (transcript, analysis, notes, Q&A)
+- [ ] Implement PDF export with professional formatting
+- [ ] Implement JSON export for integrations
+- [ ] Add download buttons to UI
+- [ ] Test all export formats work correctly
+- [ ] Verify exports contain complete AI analysis
+
+### Phase 5: End-to-End Testing & Verification
+- [ ] Test session archive listing works
+- [ ] Test AI service selection and execution
+- [ ] Test data syncing from database is accurate
+- [ ] Test all export formats produce correct data
+- [ ] Verify UI is user-friendly and clear
+- [ ] Test with multiple sessions and data volumes
+- [ ] Confirm no data loss or corruption
+
+### Phase 6: Final Delivery
+- [ ] Save checkpoint
+- [ ] Push to GitHub ManusChatgpt branch
+- [ ] Verify all features working in dev environment
+- [ ] Document Shadow Mode workflow
+- [ ] Create user guide for operators

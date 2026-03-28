@@ -12,6 +12,7 @@ import { operatorConsoleRouter } from "./routers/operatorConsole";
 import { viasocketSyncRouter } from "./routers/viasocketSync";
 import { sessionStateMachineRouter } from "./routers/sessionStateMachine";
 import { analyticsRouter } from "./routers/analytics";
+import { archiveRouter } from "./routers/archive";
 
 export const appRouter = router({
   system: systemRouter,
@@ -22,6 +23,7 @@ export const appRouter = router({
   viasocketSync: viasocketSyncRouter,
   sessionStateMachine: sessionStateMachineRouter,
   analytics: analyticsRouter,
+  archive: archiveRouter,
 });
 
 export type AppRouter = typeof appRouter;

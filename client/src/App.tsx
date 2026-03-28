@@ -1,4 +1,4 @@
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "./components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -12,6 +12,8 @@ import OperatorConsole from "./pages/OperatorConsole";
 import PresenterTeleprompter from "./pages/PresenterTeleprompter";
 import OperatorDashboard from "./pages/OperatorDashboard";
 import PostEventAnalytics from "./pages/PostEventAnalytics";
+import ShadowMode from "./pages/ShadowMode";
+import AIDashboard from "./pages/AIDashboard";
 
 export default function App() {
   return (
@@ -30,6 +32,10 @@ export default function App() {
             <Route path="/presenter/:sessionId" component={PresenterTeleprompter} />
             <Route path="/operator-dashboard/:sessionId" component={OperatorDashboard} />
             <Route path="/analytics/:sessionId" component={PostEventAnalytics} />
+            
+            {/* Shadow Mode Routes */}
+            <Route path="/shadow-mode" component={ShadowMode} />
+            <Route path="/ai-dashboard/:sessionId" component={AIDashboard} />
             
             <Route component={NotFound} />
           </Switch>
