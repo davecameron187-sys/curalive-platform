@@ -467,3 +467,46 @@ export const sessionHandoffPackages = mysqlTable("session_handoff_packages", {
 
 export type SessionHandoffPackage = typeof sessionHandoffPackages.$inferSelect;
 export type InsertSessionHandoffPackage = typeof sessionHandoffPackages.$inferInsert;
+
+/**
+ * Transcript Segments table — stores real-time transcript from Recall.ai
+ * Populated by Recall.ai webhook events during live sessions
+ * Used by console to display live transcript feed
+ */
+export const transcriptSegments = mysqlTable("transcript_segments", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 128 }).notNull(), // references operator_sessions.sessionId
+  segmentId: varchar("segmentId", { length: 128 }).notNull().unique(), // Recall.ai segment ID
+  speaker: varchar("speaker", { length: 255 }).notNull(), // speaker name or ID
+  text: text("text").notNull(), // transcript text
+  timestamp: int("timestamp").notNull(), // milliseconds since epoch (stored as int)
+  duration: int("duration"), // duration of segment in milliseconds
+  confidence: varchar("confidence", { length: 10 }), // 0.00-1.00 confidence score as string
+  language: varchar("language", { length: 64 }).default("en").notNull(),
+  metadata: json("metadata"), // additional Recall.ai metadata
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TranscriptSegment = typeof transcriptSegments.$inferSelect;
+export type InsertTranscriptSegment = typeof transcriptSegments.$inferInsert;
+
+/**
+ * Session Recordings table — stores recording metadata and URLs
+ * Populated when Recall.ai recording completes
+ */
+export const sessionRecordings = mysqlTable("session_recordings", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 128 }).notNull().unique(), // references operator_sessions.sessionId
+  recordingId: varchar("recordingId", { length: 128 }).notNull().unique(), // Recall.ai recording ID
+  recordingUrl: text("recordingUrl").notNull(), // S3 or Recall.ai URL
+  duration: int("duration").notNull(), // duration in seconds
+  fileSize: int("fileSize"), // file size in bytes
+  quality: varchar("quality", { length: 64 }).default("high").notNull(), // video quality
+  status: mysqlEnum("status", ["processing", "completed", "failed"]).default("processing").notNull(),
+  failureReason: text("failureReason"), // if status = failed
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type SessionRecording = typeof sessionRecordings.$inferSelect;
+export type InsertSessionRecording = typeof sessionRecordings.$inferInsert;

@@ -1443,3 +1443,52 @@ git log github/ManusChatgpt -5 --oneline  # Should show latest commits
 - [ ] Write mobile app integration tests
 - [ ] Push all changes to GitHub
 - [ ] Create final production checkpoint
+
+
+---
+
+## PHASE 1 COMPLETION BLOCKERS (ACTIVE)
+
+### Blocker 1: Recall.ai Webhook Integration (CRITICAL)
+- [ ] Implement Recall.ai webhook endpoint at `/api/recall/webhook`
+- [ ] Verify webhook signature validation
+- [ ] Parse Recall.ai transcript events (speaker, text, timestamp)
+- [ ] Store transcript segments in database
+- [ ] Broadcast transcript updates via Ably to console
+- [ ] Test bot join → webhook → Ably → console render path end-to-end
+- [ ] Verify transcript updates live in console during active session
+- [ ] Handle webhook retry logic and error cases
+- [ ] Document webhook integration
+
+### Blocker 2: Session Recording/Playback (HIGH)
+- [ ] Design recording storage schema (session_id, recording_url, duration, created_at)
+- [ ] Implement recording storage via S3 (storagePut)
+- [ ] Implement recording retrieval (storageGet with presigned URLs)
+- [ ] Create post-event recording page with playback controls
+- [ ] Link recording to transcript timeline (timestamp-based navigation)
+- [ ] Implement recording metadata storage (duration, file size, quality)
+- [ ] Test recording upload, storage, and retrieval
+- [ ] Verify playback works with timeline scrubbing
+- [ ] Document recording/playback workflow
+
+### Blocker 3: Export Workflow (HIGH)
+- [ ] Implement PDF export for operator notes + Q&A summary + compliance flags
+- [ ] Implement CSV export for raw transcript + metadata
+- [ ] Create export UI in console (download buttons)
+- [ ] Use storagePut to store exports in S3
+- [ ] Return presigned URLs for user download
+- [ ] Test PDF generation with real data
+- [ ] Test CSV export with large datasets
+- [ ] Verify exports contain correct data
+- [ ] Document export workflow
+
+### End-to-End Testing
+- [ ] Create test session with Recall.ai bot
+- [ ] Verify transcript updates live in console
+- [ ] Verify recording is captured and retrievable
+- [ ] Verify exports generate correctly
+- [ ] Test complete workflow from session start to post-event review
+- [ ] Verify all data persists correctly
+
+---
+
