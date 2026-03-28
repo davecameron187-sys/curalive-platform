@@ -159,7 +159,7 @@ function OperatorNotesPanel({ sessionId }: { sessionId: number }) {
                 <p className="text-sm text-slate-300">{note.text}</p>
                 <span className="text-xs text-slate-600">{new Date(note.createdAt).toLocaleTimeString()}</span>
               </div>
-              <button onClick={() => deleteNote.mutate({ sessionId, noteId: note.id })} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-all">
+              <button onClick={() => deleteNote.mutate({ sessionId, noteId: note.id })} aria-label={`Delete note ${note.id}`} className="opacity-40 hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-all">
                 <Trash2 className="w-3 h-3" />
               </button>
             </div>
