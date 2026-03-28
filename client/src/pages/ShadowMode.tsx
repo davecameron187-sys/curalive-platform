@@ -4,7 +4,6 @@
  * View, search, and manage past sessions
  * Select AI services to run on archived sessions
  * Download reports and transcripts
- * Manage notes, Q&A, action log, and handoff
  */
 
 import { useState } from "react";
@@ -13,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Search,
   Download,
@@ -25,12 +23,6 @@ import {
   FileText,
   ChevronRight,
   Filter,
-  MessageSquare,
-  CheckCircle,
-  Activity,
-  HandshakeIcon,
-  Plus,
-  Trash2,
 } from "lucide-react";
 
 interface SessionArchive {
@@ -45,53 +37,11 @@ interface SessionArchive {
   analysisReady: boolean;
 }
 
-interface SessionNote {
-  id: string;
-  text: string;
-  createdAt: Date;
-  createdBy: string;
-}
-
-interface QAItem {
-  id: string;
-  question: string;
-  submitter: string;
-  status: "pending" | "approved" | "rejected";
-  createdAt: Date;
-}
-
-interface ActionLogEntry {
-  id: string;
-  action: string;
-  actor: string;
-  timestamp: Date;
-  details?: string;
-}
-
-interface Handoff {
-  id: string;
-  recipient: string;
-  notes: string;
-  completedAt?: Date;
-  status: "pending" | "completed";
-}
-
-type DetailTab = "overview" | "notes" | "qa" | "actions" | "handoff";
-
 export default function ShadowMode() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSession, setSelectedSession] = useState<SessionArchive | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "completed" | "archived" | "processing">("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [detailTab, setDetailTab] = useState<DetailTab>("overview");
-  const [newNote, setNewNote] = useState("");
-  const [sessionNotes, setSessionNotes] = useState<SessionNote[]>([]);
-  const [sessionQA, setSessionQA] = useState<QAItem[]>([]);
-  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([]);
-  const [handoffs, setHandoffs] = useState<Handoff[]>([]);
-  const [handoffRecipient, setHandoffRecipient] = useState("");
-  const [handoffNotes, setHandoffNotes] = useState("");
-
   const itemsPerPage = 10;
 
   // Fetch archived sessions
@@ -135,57 +85,6 @@ export default function ShadowMode() {
       default:
         return <Badge>Unknown</Badge>;
     }
-  };
-
-  const handleAddNote = () => {
-    if (!newNote.trim() || !selectedSession) return;
-    
-    const note: SessionNote = {
-      id: Date.now().toString(),
-      text: newNote,
-      createdAt: new Date(),
-      createdBy: "Current User",
-    };
-    
-    setSessionNotes([...sessionNotes, note]);
-    setNewNote("");
-  };
-
-  const handleDeleteNote = (noteId: string) => {
-    setSessionNotes(sessionNotes.filter(n => n.id !== noteId));
-  };
-
-  const handleApproveQA = (qaId: string) => {
-    setSessionQA(sessionQA.map(q => 
-      q.id === qaId ? { ...q, status: "approved" } : q
-    ));
-  };
-
-  const handleRejectQA = (qaId: string) => {
-    setSessionQA(sessionQA.map(q => 
-      q.id === qaId ? { ...q, status: "rejected" } : q
-    ));
-  };
-
-  const handleCreateHandoff = () => {
-    if (!handoffRecipient.trim() || !selectedSession) return;
-    
-    const handoff: Handoff = {
-      id: Date.now().toString(),
-      recipient: handoffRecipient,
-      notes: handoffNotes,
-      status: "pending",
-    };
-    
-    setHandoffs([...handoffs, handoff]);
-    setHandoffRecipient("");
-    setHandoffNotes("");
-  };
-
-  const handleCompleteHandoff = (handoffId: string) => {
-    setHandoffs(handoffs.map(h => 
-      h.id === handoffId ? { ...h, status: "completed", completedAt: new Date() } : h
-    ));
   };
 
   return (
@@ -262,10 +161,7 @@ export default function ShadowMode() {
               <Card
                 key={session.id}
                 className="p-6 hover:bg-secondary/50 cursor-pointer transition-colors"
-                onClick={() => {
-                  setSelectedSession(session);
-                  setDetailTab("overview");
-                }}
+                onClick={() => setSelectedSession(session)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -305,7 +201,6 @@ export default function ShadowMode() {
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedSession(session);
-                      setDetailTab("overview");
                     }}
                     className="flex items-center gap-2"
                   >
@@ -345,8 +240,8 @@ export default function ShadowMode() {
 
       {/* Selected Session Detail Panel */}
       {selectedSession && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl mx-4 p-6">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold">{selectedSession.eventName}</h2>
@@ -360,285 +255,44 @@ export default function ShadowMode() {
               </Button>
             </div>
 
-            {/* Tab Navigation */}
-            <div className="flex gap-2 mb-6 border-b">
-              <Button
-                variant={detailTab === "overview" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setDetailTab("overview")}
-                className="flex items-center gap-2"
-              >
-                <FileText className="w-4 h-4" />
-                Overview
-              </Button>
-              <Button
-                variant={detailTab === "notes" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setDetailTab("notes")}
-                className="flex items-center gap-2"
-              >
-                <MessageSquare className="w-4 h-4" />
-                Notes ({sessionNotes.length})
-              </Button>
-              <Button
-                variant={detailTab === "qa" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setDetailTab("qa")}
-                className="flex items-center gap-2"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Q&A ({sessionQA.length})
-              </Button>
-              <Button
-                variant={detailTab === "actions" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setDetailTab("actions")}
-                className="flex items-center gap-2"
-              >
-                <Activity className="w-4 h-4" />
-                Action Log
-              </Button>
-              <Button
-                variant={detailTab === "handoff" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setDetailTab("handoff")}
-                className="flex items-center gap-2"
-              >
-                <HandshakeIcon className="w-4 h-4" />
-                Handoff
-              </Button>
+            <div className="space-y-4 mb-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Duration</p>
+                  <p className="text-lg font-semibold">{formatDuration(selectedSession.duration)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Attendees</p>
+                  <p className="text-lg font-semibold">{selectedSession.attendeeCount}</p>
+                </div>
+              </div>
             </div>
 
-            {/* Tab Content */}
-            <div className="space-y-6">
-              {/* Overview Tab */}
-              {detailTab === "overview" && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Duration</p>
-                      <p className="text-lg font-semibold">{formatDuration(selectedSession.duration)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Attendees</p>
-                      <p className="text-lg font-semibold">{selectedSession.attendeeCount}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button
-                      className="flex-1 flex items-center gap-2"
-                      onClick={() => {
-                        window.location.href = `/ai-dashboard/${selectedSession.id}`;
-                      }}
-                    >
-                      <Settings className="w-4 h-4" />
-                      Run AI Services
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1 flex items-center gap-2"
-                      onClick={() => {
-                        window.location.href = `/analytics/${selectedSession.id}`;
-                      }}
-                    >
-                      <Download className="w-4 h-4" />
-                      View Reports
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Notes Tab */}
-              {detailTab === "notes" && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold">Add Note</label>
-                    <Textarea
-                      placeholder="Add a note about this session..."
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      className="min-h-24"
-                    />
-                    <Button
-                      onClick={handleAddNote}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Note
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="font-semibold">Session Notes</h4>
-                    {sessionNotes.length === 0 ? (
-                      <p className="text-muted-foreground">No notes yet</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {sessionNotes.map((note) => (
-                          <Card key={note.id} className="p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <p className="font-semibold">{note.createdBy}</p>
-                                <p className="text-xs text-muted-foreground">{formatDate(note.createdAt)}</p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteNote(note.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            <p className="text-sm">{note.text}</p>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Q&A Tab */}
-              {detailTab === "qa" && (
-                <div className="space-y-4">
-                  <h4 className="font-semibold">Q&A Moderation</h4>
-                  {sessionQA.length === 0 ? (
-                    <p className="text-muted-foreground">No Q&A items</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {sessionQA.map((qa) => (
-                        <Card key={qa.id} className="p-4">
-                          <div className="mb-3">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <p className="font-semibold">{qa.submitter}</p>
-                                <p className="text-xs text-muted-foreground">{formatDate(qa.createdAt)}</p>
-                              </div>
-                              <Badge variant={qa.status === "approved" ? "default" : qa.status === "rejected" ? "destructive" : "secondary"}>
-                                {qa.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm mb-3">{qa.question}</p>
-                          </div>
-                          {qa.status === "pending" && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleApproveQA(qa.id)}
-                                className="flex-1"
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleRejectQA(qa.id)}
-                                className="flex-1"
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          )}
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Action Log Tab */}
-              {detailTab === "actions" && (
-                <div className="space-y-4">
-                  <h4 className="font-semibold">Action Log</h4>
-                  {actionLog.length === 0 ? (
-                    <p className="text-muted-foreground">No actions logged</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {actionLog.map((entry) => (
-                        <Card key={entry.id} className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-semibold">{entry.action}</p>
-                              <p className="text-sm text-muted-foreground">{entry.actor} • {formatDate(entry.timestamp)}</p>
-                              {entry.details && <p className="text-sm mt-2">{entry.details}</p>}
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Handoff Tab */}
-              {detailTab === "handoff" && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold">Create Handoff</label>
-                    <Input
-                      placeholder="Recipient name or email..."
-                      value={handoffRecipient}
-                      onChange={(e) => setHandoffRecipient(e.target.value)}
-                    />
-                    <Textarea
-                      placeholder="Handoff notes..."
-                      value={handoffNotes}
-                      onChange={(e) => setHandoffNotes(e.target.value)}
-                      className="min-h-20"
-                    />
-                    <Button
-                      onClick={handleCreateHandoff}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Create Handoff
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="font-semibold">Handoffs</h4>
-                    {handoffs.length === 0 ? (
-                      <p className="text-muted-foreground">No handoffs</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {handoffs.map((handoff) => (
-                          <Card key={handoff.id} className="p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <p className="font-semibold">{handoff.recipient}</p>
-                                <p className="text-sm text-muted-foreground">{handoff.notes}</p>
-                              </div>
-                              <Badge variant={handoff.status === "completed" ? "default" : "secondary"}>
-                                {handoff.status}
-                              </Badge>
-                            </div>
-                            {handoff.status === "pending" && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleCompleteHandoff(handoff.id)}
-                              >
-                                Mark Complete
-                              </Button>
-                            )}
-                            {handoff.completedAt && (
-                              <p className="text-xs text-muted-foreground">Completed {formatDate(handoff.completedAt)}</p>
-                            )}
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Close Button */}
-            <div className="mt-6 flex gap-3">
+            <div className="flex gap-3">
+              <Button
+                className="flex-1 flex items-center gap-2"
+                onClick={() => {
+                  // Navigate to AI Dashboard for this session
+                  window.location.href = `/ai-dashboard/${selectedSession.id}`;
+                }}
+              >
+                <Settings className="w-4 h-4" />
+                Run AI Services
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 flex items-center gap-2"
+                onClick={() => {
+                  // Navigate to reports for this session
+                  window.location.href = `/analytics/${selectedSession.id}`;
+                }}
+              >
+                <Download className="w-4 h-4" />
+                View Reports
+              </Button>
               <Button
                 variant="ghost"
                 onClick={() => setSelectedSession(null)}
-                className="flex-1"
               >
                 Close
               </Button>
