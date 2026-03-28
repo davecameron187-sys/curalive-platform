@@ -19,7 +19,7 @@ All production code has been committed to the **ManusChatgpt** branch in the Man
 3. **Select GitHub Integration** — Click "GitHub" in the settings submenu
 4. **Configure Export**:
    - **Owner:** Your GitHub username or organization
-   - **Repository Name:** `chorus-ai` (or preferred name)
+   - **Repository Name:** `curalive-platform`
    - **Branch:** `ManusChatgpt`
    - **Visibility:** Private (recommended for proprietary code)
 5. **Click Export** — The system will create a new GitHub repository and push all code
@@ -29,10 +29,10 @@ All production code has been committed to the **ManusChatgpt** branch in the Man
 
 ```bash
 # 1. Create new private repository on GitHub
-gh repo create chorus-ai --private --source=. --remote=github --push
+gh repo create curalive-platform --private --source=. --remote=github --push
 
 # 2. Add GitHub remote to local repository
-git remote add github https://github.com/YOUR_USERNAME/chorus-ai.git
+git remote add github https://github.com/YOUR_USERNAME/curalive-platform.git
 
 # 3. Push ManusChatgpt branch to GitHub
 git push github ManusChatgpt:main
@@ -56,8 +56,8 @@ ChatGPT will need:
 
 ```bash
 # 1. Clone the repository (first time only)
-git clone https://github.com/YOUR_USERNAME/chorus-ai.git
-cd chorus-ai
+git clone https://github.com/YOUR_USERNAME/curalive-platform.git
+cd curalive-platform
 
 # 2. Check out ManusChatgpt branch
 git checkout ManusChatgpt
@@ -181,7 +181,7 @@ git push origin ManusChatgpt
 **Solution:** Use GitHub Personal Access Token instead of password:
 ```bash
 git config --global credential.helper store
-git clone https://YOUR_USERNAME:YOUR_PAT@github.com/YOUR_USERNAME/chorus-ai.git
+git clone https://YOUR_USERNAME:YOUR_PAT@github.com/YOUR_USERNAME/curalive-platform.git
 ```
 
 ### "Your branch is behind 'origin/ManusChatgpt' by X commits"

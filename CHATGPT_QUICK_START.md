@@ -1,12 +1,12 @@
 # ChatGPT Quick Start Guide
 
-## How to Access and Pull Latest Chorus.AI Updates
+## How to Access and Pull Latest CuraLive Updates
 
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/chorus-ai.git
-cd chorus-ai
+git clone https://github.com/YOUR_USERNAME/curalive-platform.git
+cd curalive-platform
 git checkout ManusChatgpt
 ```
 
