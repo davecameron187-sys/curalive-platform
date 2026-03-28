@@ -366,3 +366,9 @@ id = "rS7mJUNbB-QWtnSfzmgze"
 uri = "file://screenshots/CuraLive-Verification-Report.md"
 type = "text"
 title = "CuraLive Operator Console — Verification Report"
+
+[[outputs]]
+id = "rbpwNHdEm9HGHN5l3lvDq"
+uri = "file://screenshots/CuraLive-Phase2-P0-Brief.md"
+type = "text"
+title = "CuraLive Phase 2 P0 Execution Brief"
