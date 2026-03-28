@@ -389,3 +389,5 @@ export const archiveRouter = router({
       }
     }),
 });
+
+export default archiveRouter;
