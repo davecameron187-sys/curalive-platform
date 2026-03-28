@@ -12,9 +12,11 @@ This document establishes a bidirectional sync system between ChatGPT and Manus 
 ## For ChatGPT: Pushing Updates to GitHub
 
 ### Prerequisites
-- GitHub Personal Access Token (PAT): `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`
+- GitHub Personal Access Token (PAT) with `repo` scope
 - Repository: `davecameron187-sys/curalive-platform`
 - Branch: `ManusChatgpt`
+
+**Note:** GitHub PAT is provided separately in secure channel. Never paste it in chat or commit history.
 
 ### Step 1: Clone the Repository
 ```bash
@@ -53,16 +55,24 @@ git commit -m "[Sprint X Task Y] Feature description - what changed and why"
 ```
 
 ### Step 4: Push to ManusChatgpt Branch
+
+**Using Git Credential Manager (Recommended):**
 ```bash
 git config user.email "chatgpt@curalive.dev"
 git config user.name "ChatGPT"
-git push https://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@github.com/davecameron187-sys/curalive-platform.git ManusChatgpt
+git push origin ManusChatgpt
+# Git will prompt for credentials - use GitHub PAT as password
 ```
 
-**Or use environment variable:**
+**Using environment variable:**
 ```bash
-export GH_TOKEN="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"
+export GH_TOKEN="<YOUR_GITHUB_PAT_HERE>"
 git push https://${GH_TOKEN}@github.com/davecameron187-sys/curalive-platform.git ManusChatgpt
+```
+
+**Using SSH (if configured):**
+```bash
+git push git@github.com:davecameron187-sys/curalive-platform.git ManusChatgpt
 ```
 
 ### Step 5: Create Pull Request (Optional)
@@ -171,10 +181,6 @@ git push github ManusChatgpt
 
 ### "Permission denied" when pushing
 **Solution:** Verify GitHub PAT is correct and has `repo` scope
-```bash
-# Test authentication
-git ls-remote https://${GH_TOKEN}@github.com/davecameron187-sys/curalive-platform.git
-```
 
 ### "Branch diverged" error
 **Solution:** Rebase before pushing
@@ -205,17 +211,16 @@ git push -v origin ManusChatgpt  # Verbose output
 
 ## GitHub PAT Scopes
 
-The provided PAT has these scopes:
+The PAT should have these scopes:
 - `repo` - Full control of private repositories
-- `workflow` - Update GitHub Actions workflows
-- `admin:repo_hook` - Manage repository webhooks
+- `workflow` - Update GitHub Actions workflows (optional)
+- `admin:repo_hook` - Manage repository webhooks (optional)
 
 **Permissions include:**
 - ✅ Push to repository
 - ✅ Create pull requests
 - ✅ Merge pull requests
 - ✅ Delete branches
-- ✅ Manage workflows
 
 ---
 
@@ -223,9 +228,10 @@ The provided PAT has these scopes:
 
 1. **Never commit the PAT** to the repository
 2. **Use environment variables** when possible
-3. **Rotate the PAT** if compromised
-4. **Limit PAT scope** to minimum required permissions
-5. **Use HTTPS** for all git operations
+3. **Use Git Credential Manager** for secure storage
+4. **Rotate the PAT** if compromised
+5. **Limit PAT scope** to minimum required permissions
+6. **Use HTTPS** for all git operations
 
 ---
 
@@ -233,8 +239,10 @@ The provided PAT has these scopes:
 
 ### ChatGPT Push Command
 ```bash
-export GH_TOKEN="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"
-git push https://${GH_TOKEN}@github.com/davecameron187-sys/curalive-platform.git ManusChatgpt
+git push origin ManusChatgpt
+# Or with environment variable:
+# export GH_TOKEN="<YOUR_PAT>"
+# git push https://${GH_TOKEN}@github.com/davecameron187-sys/curalive-platform.git ManusChatgpt
 ```
 
 ### Manus Pull Command
@@ -260,3 +268,4 @@ If you encounter issues with the sync workflow:
 3. Ensure you're on the correct branch: `git branch`
 4. Check remote configuration: `git remote -v`
 5. Review git logs for error messages: `git log --all --oneline`
+

@@ -62,7 +62,7 @@ git add .
 git commit -m "[Sprint 1 Task 1.2] Ably Real-Time Sync - Wire state machine"
 
 # Push to GitHub
-export GH_TOKEN="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"
+export GH_TOKEN="<YOUR_GITHUB_PAT_HERE>"
 git push https://${GH_TOKEN}@github.com/davecameron187-sys/curalive-platform.git ManusChatgpt
 ```
 
@@ -125,7 +125,7 @@ git add .
 git commit -m "[Sprint 1 Task 1.4] State Validation - Add validation tests"
 
 # Push back
-export GH_TOKEN="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"
+export GH_TOKEN="<YOUR_GITHUB_PAT_HERE>"
 git push https://${GH_TOKEN}@github.com/davecameron187-sys/curalive-platform.git ManusChatgpt
 ```
 
@@ -145,7 +145,7 @@ git pull origin ManusChatgpt
 
 git add .
 git commit -m "Resolve merge conflicts - keep both implementations"
-export GH_TOKEN="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"
+export GH_TOKEN="<YOUR_GITHUB_PAT_HERE>"
 git push https://${GH_TOKEN}@github.com/davecameron187-sys/curalive-platform.git ManusChatgpt
 ```
 
@@ -262,7 +262,7 @@ git push github ManusChatgpt
 ### "Permission denied" when ChatGPT pushes
 **Solution:** Verify GitHub PAT is correct
 ```bash
-export GH_TOKEN="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"
+export GH_TOKEN="<YOUR_GITHUB_PAT_HERE>"
 git push https://${GH_TOKEN}@github.com/davecameron187-sys/curalive-platform.git ManusChatgpt
 ```
 
@@ -308,7 +308,7 @@ git push -v origin ManusChatgpt  # Verbose output
 
 ### ChatGPT Push
 ```bash
-export GH_TOKEN="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"
+export GH_TOKEN="<YOUR_GITHUB_PAT_HERE>"
 git push https://${GH_TOKEN}@github.com/davecameron187-sys/curalive-platform.git ManusChatgpt
 ```
 
