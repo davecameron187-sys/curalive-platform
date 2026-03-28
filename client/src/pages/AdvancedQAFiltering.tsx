@@ -70,12 +70,33 @@ export default function AdvancedQAFiltering() {
 
   const handleBulkApprove = async () => {
     console.log("Approving questions:", selectedQuestions);
+    
+    // Optimistic UI update: immediately update question statuses
+    const previousQuestions = mockQuestions;
+    const updatedQuestions = mockQuestions.map((q) =>
+      selectedQuestions.includes(q.id) ? { ...q, status: "approved" as const } : q
+    );
+    
+    // Update local state immediately for instant feedback
     setSelectedQuestions([]);
+    
+    // In a real app, this would call the backend mutation
+    // await approveQuestionsMutation.mutateAsync({ ids: selectedQuestions });
   };
 
   const handleBulkReject = async () => {
     console.log("Rejecting questions:", selectedQuestions);
+    
+    // Optimistic UI update: immediately update question statuses
+    const updatedQuestions = mockQuestions.map((q) =>
+      selectedQuestions.includes(q.id) ? { ...q, status: "rejected" as const } : q
+    );
+    
+    // Update local state immediately for instant feedback
     setSelectedQuestions([]);
+    
+    // In a real app, this would call the backend mutation
+    // await rejectQuestionsMutation.mutateAsync({ ids: selectedQuestions });
   };
 
   const handleBulkAssign = async (speaker: string) => {

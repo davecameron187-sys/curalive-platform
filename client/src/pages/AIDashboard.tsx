@@ -131,14 +131,21 @@ export default function AIDashboard({ params }: { params: { sessionId: string } 
         {/* Service Selection Grid */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {services.map((service) => (
-            <Card
+            <div
               key={service.id}
-              className={`p-6 cursor-pointer transition-all ${
+              className={`p-6 cursor-pointer transition-all border rounded-lg ${
                 selectedServices.includes(service.id)
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-primary/50"
               }`}
               onClick={() => handleServiceToggle(service.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleServiceToggle(service.id);
+                }
+              }}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -164,7 +171,7 @@ export default function AIDashboard({ params }: { params: { sessionId: string } 
                 </div>
                 {getStatusBadge(service.status)}
               </div>
-            </Card>
+            </div>
           ))}
         </div>
 
