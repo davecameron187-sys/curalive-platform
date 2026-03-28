@@ -58,7 +58,14 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath, { maxAge: 0 }));
+  app.use(express.static(distPath, {
+    maxAge: 0,
+    setHeaders: (res) => {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    },
+  }));
 
   app.use("*", (_req, res, next) => {
     const url = _req.originalUrl || _req.url || "";
@@ -77,7 +84,8 @@ export function serveStatic(app: Express) {
           const statB = fs.statSync(path.resolve(assetsDir, b));
           return statB.mtimeMs - statA.mtimeMs;
         })[0];
-        html = html.replace(/src="\/assets\/index[^"]*\.js"/, `src="/assets/${newestBundle}"`);
+        const bundleHash = fs.statSync(path.resolve(assetsDir, newestBundle)).mtimeMs.toString(36);
+        html = html.replace(/src="\/assets\/index[^"]*"/, `src="/assets/${newestBundle}?v=${bundleHash}"`);
         const cssFiles = fs.readdirSync(assetsDir).filter(f => f.startsWith("index") && f.endsWith(".css"));
         if (cssFiles.length > 0) {
           const newestCss = cssFiles.sort((a, b) => {
@@ -90,6 +98,6 @@ export function serveStatic(app: Express) {
       }
     }
 
-    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache" }).end(html);
+    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache" }).end(html);
   });
 }
