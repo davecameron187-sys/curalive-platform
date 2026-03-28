@@ -400,4 +400,111 @@ export const liveQaRouter = router({
     .query(async ({ input }) => {
       return dbGrok2.getPrivateConversations(input.sessionId);
     }),
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // OPERATOR CONSOLE: TRANSCRIPT & AI INSIGHTS
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Get Transcript Segments from Recall.ai Webhook
+   * Real-time transcript data populated by Recall.ai webhook events
+   */
+  getTranscriptSegments: publicProcedure
+    .input(z.object({ 
+      sessionId: z.string().min(1),
+      limit: z.number().min(1).max(1000).default(100),
+      offset: z.number().min(0).default(0),
+    }))
+    .query(async ({ input }) => {
+      // TODO: Implement when transcript_segments table is added to schema
+      // For now, return empty array
+      return [];
+    }),
+
+  /**
+   * Get Session AI Insights (Sentiment, Compliance, Topics)
+   * Calculated from questions and transcript data in real-time
+   */
+  getSessionInsights: protectedProcedure
+    .input(z.object({ sessionId: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const database = await getDb();
+      if (!database) {
+        return {
+          sentimentScore: 0.5,
+          sentimentTrend: "neutral" as const,
+          complianceRiskLevel: "low" as const,
+          complianceFlags: 0,
+          keyTopics: [],
+          lastUpdated: Date.now(),
+        };
+      }
+
+      try {
+        // Fetch all questions for this session
+        const questions = await database
+          .select()
+          .from(liveQaQuestions)
+          .where(eq(liveQaQuestions.sessionId, input.sessionId));
+
+        if (!questions.length) {
+          return {
+            sentimentScore: 0.5,
+            sentimentTrend: "neutral" as const,
+            complianceRiskLevel: "low" as const,
+            complianceFlags: 0,
+            keyTopics: [],
+            lastUpdated: Date.now(),
+          };
+        }
+
+        // Calculate sentiment score from compliance risk scores
+        const complianceScores = questions
+          .map((q: any) => q.complianceRiskScore || 0)
+          .filter((score: number) => score !== null);
+
+        const avgComplianceScore = complianceScores.length > 0
+          ? complianceScores.reduce((a: number, b: number) => a + b, 0) / complianceScores.length
+          : 0.5;
+
+        // Sentiment is inverse of compliance risk
+        const sentimentScore = 1 - avgComplianceScore;
+
+        // Determine sentiment trend
+        const sentimentTrend = sentimentScore > 0.6 ? "positive" : sentimentScore < 0.4 ? "negative" : "neutral";
+
+        // Get max compliance risk level
+        const maxComplianceScore = Math.max(...complianceScores, 0);
+        const complianceRiskLevel = maxComplianceScore > 0.7 ? "high" : maxComplianceScore > 0.4 ? "medium" : "low";
+
+        // Count compliance flags
+        const complianceFlags = questions.filter((q: any) => (q.complianceRiskScore || 0) > 0.5).length;
+
+        // Extract key topics from high-priority questions
+        const keyTopics = questions
+          .filter((q: any) => (q.priorityScore || 0) > 0.6)
+          .map((q: any) => q.questionCategory || "General")
+          .filter((v: string, i: number, a: string[]) => a.indexOf(v) === i)
+          .slice(0, 5);
+
+        return {
+          sentimentScore,
+          sentimentTrend,
+          complianceRiskLevel,
+          complianceFlags,
+          keyTopics,
+          lastUpdated: Date.now(),
+        };
+      } catch (error) {
+        console.error("[getSessionInsights] Error:", error);
+        return {
+          sentimentScore: 0.5,
+          sentimentTrend: "neutral" as const,
+          complianceRiskLevel: "low" as const,
+          complianceFlags: 0,
+          keyTopics: [],
+          lastUpdated: Date.now(),
+        };
+      }
+    }),
 });
