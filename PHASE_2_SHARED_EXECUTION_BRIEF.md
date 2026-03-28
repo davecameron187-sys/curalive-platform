@@ -1,0 +1,316 @@
+# CuraLive Operator Console — Shared Execution Brief for Manus and Replit
+
+## Status
+
+The Operator Console core is now verified as complete and production-testable.
+
+The latest verification pass reports that all 8 critical areas passed:
+
+- Operator Actions Audit Trail
+- Operator Notes Panel
+- Action Log Panel
+- Session Handoff Package
+- CSV and JSON Export
+- Live Q&A Integration
+- Security Hardening
+- Archive Upload Resilience
+
+The report also confirms:
+
+- archive uploads survive transcription failures,
+- Gemini is primary and Whisper is fallback,
+- quota failures are handled cleanly,
+- operator/admin restrictions are enforced,
+- exports and handoff produce real usable data.
+
+## What this means
+
+We are no longer in "finish the core console" mode.
+
+We are now in:
+
+**Phase 2 — deepen and harden the live operator workflow**
+
+The console should now be treated as the working foundation. The next work is about improving real event operations, not re-arguing whether the console exists.
+
+## Shared objective
+
+Use the verified console foundation to complete the next layer of operator value:
+
+- improve real-event usability,
+- strengthen post-event review and reporting,
+- deepen Q&A workflow quality,
+- close remaining operational gaps.
+
+## Division of responsibility
+
+### Manus
+
+**Owns:**
+- implementation
+- backend workflow depth
+- UI workflow refinement
+- PRs and code changes
+- documentation updates tied to code changes
+
+### Replit
+
+**Owns:**
+- running app verification
+- workflow testing
+- defect reproduction
+- UX truth-checking
+- validating that implemented changes actually work in the live environment
+
+## Shared rule
+
+**GitHub remains the source of truth.**
+
+No feature is "done" unless:
+- code is in GitHub,
+- behavior works,
+- tests or verification exist,
+- docs match reality.
+
+## Current foundation that should now be treated as done
+
+These should be treated as established unless a bug is found:
+
+- persistent operator audit trail
+- note creation/deletion with persistence
+- action log feed
+- handoff package
+- CSV/JSON export
+- Q&A action logging
+- operator/admin security restrictions
+- archive upload resilience with provider fallback and retry logic
+
+**Do not spend another cycle rebuilding or re-explaining these unless there is a real defect.**
+
+## Next priority workstreams
+
+### 1. Session recording and playback
+
+**This is the biggest obvious post-console gap.**
+
+#### Goal
+
+Enable post-event review, audit, and replay tied to session context.
+
+#### Required outcomes
+
+- recording stored per session
+- recording accessible from archive/handoff flow
+- playback available in review flow
+- transcript and timestamps linked where practical
+
+#### Done means
+
+- completed sessions can be reviewed after the event
+- recording is part of the session artifact set
+
+### 2. Export and reporting workflow hardening
+
+**Exports exist. Now make them operationally complete.**
+
+#### Goal
+
+Ensure operators and compliance/reporting users can reliably use exported outputs.
+
+#### Required outcomes
+
+- validate CSV and JSON format stability
+- improve completeness of report content if needed
+- confirm compliance flags and timestamps are always included
+- confirm exports are usable across real completed sessions
+- identify whether PDF export is needed now or later
+
+#### Done means
+
+- exports are reliable enough for operational and compliance use
+- no manual cleanup is needed after export
+
+### 3. Deepen Live Q&A inside the console
+
+**Q&A integration exists. Now deepen it.**
+
+#### Goal
+
+Make Live Q&A smarter and more useful during real live events.
+
+#### Priority items
+
+- question deduplication refinement
+- AI draft responses for speakers
+- legal review workflow polish
+- public attendee Q&A share link if still in scope
+- better queue management for operators during high volume
+
+#### Done means
+
+- Q&A handling is faster, clearer, and safer in real sessions
+- operators can manage high-volume Q&A without workflow friction
+
+### 4. Operator workflow refinement
+
+**The foundation is there. Now improve speed and clarity.**
+
+#### Goal
+
+Reduce operator load during live events.
+
+#### Priority items
+
+- richer review history
+- answer-risk prompts
+- workflow shortcuts
+- alert prioritization
+- role-specific views if needed for real operations
+
+#### Done means
+
+- the console feels operationally efficient, not just feature-complete
+
+### 5. Real-event validation and hardening
+
+**This is now critical.**
+
+#### Goal
+
+Prove the console works in real or realistic live-event conditions.
+
+#### Required validation
+
+- live session start/pause/resume/end
+- Q&A moderation during active session
+- note creation during session
+- export after session
+- handoff package after session
+- archive/transcription resilience during degraded provider conditions
+- reconnect/reload behavior
+
+#### Done means
+
+- the team has confidence using the console in real operator scenarios
+
+## Immediate execution order
+
+### P0
+- session recording / playback
+- real-event validation pass
+- export/reporting hardening
+
+### P1
+- Q&A deduplication and AI draft responses
+- legal review workflow polish
+- operator workflow shortcuts / prioritization
+
+### P2
+- role-specific views
+- broader workflow enhancements driven by pilot feedback
+
+## What Manus should do next
+
+Manus should open implementation work for:
+
+### PR 1
+
+**Session recording and playback**
+
+- storage
+- retrieval
+- archive/handoff linking
+- UI playback surface
+
+### PR 2
+
+**Export/reporting hardening**
+
+- validate and improve export completeness
+- decide whether PDF export is needed now
+- ensure reporting outputs match real operational use
+
+### PR 3
+
+**Q&A depth improvements**
+
+- deduplication
+- AI draft responses
+- legal review polish
+- queue refinement
+
+**Each PR must include:**
+
+- what section of this brief it implements
+- files changed
+- what remains incomplete
+- how it was tested
+
+## What Replit should do next
+
+Replit should run verification on:
+
+### Test track 1
+
+**Recording/playback workflow**
+
+- record session
+- retrieve recording
+- confirm archive linkage
+- confirm playback usability
+
+### Test track 2
+
+**Export/reporting validation**
+
+- export multiple real sessions
+- verify completeness and usability
+- identify missing compliance/report fields
+
+### Test track 3
+
+**Live Q&A stress workflow**
+
+- high-volume questions
+- moderation speed
+- deduplication quality
+- legal review flow
+- operator clarity under load
+
+### Test track 4
+
+**Real-event simulation**
+
+- full operator workflow from session start to handoff
+- degraded provider conditions
+- reconnect/reload
+- archive retry behavior
+
+**Replit should return:**
+
+- pass/fail
+- screenshots or evidence
+- bugs with reproduction steps
+- severity
+- likely files involved
+
+## Definition of success for this next phase
+
+This next phase succeeds when:
+
+- recording/playback exists and is usable
+- exports are operationally reliable
+- Q&A workflow is deeper and more efficient
+- real-event testing confirms the console works under realistic conditions
+- remaining improvements are based on actual workflow friction, not guesswork
+
+## Final instruction
+
+**The core console is verified. Stop spending effort re-proving that foundation unless a defect is found.**
+
+From this point:
+
+- Manus builds the next layer
+- Replit verifies the next layer
+- GitHub tracks the truth
+- Work should now focus on operational depth, not checkpoint language
