@@ -372,3 +372,9 @@ id = "rbpwNHdEm9HGHN5l3lvDq"
 uri = "file://screenshots/CuraLive-Phase2-P0-Brief.md"
 type = "text"
 title = "CuraLive Phase 2 P0 Execution Brief"
+
+[[outputs]]
+id = "bNtD_l5ukibgxmR3vYDeg"
+uri = "file://exports/CuraLive-P1-Implementation-Brief.md"
+type = "text"
+title = "CuraLive P1 Implementation Brief"
