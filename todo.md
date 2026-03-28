@@ -1545,3 +1545,70 @@ git log github/ManusChatgpt -5 --oneline  # Should show latest commits
 - [ ] Verify all features working in dev environment
 - [ ] Document Shadow Mode workflow
 - [ ] Create user guide for operators
+
+
+---
+
+## STAGING FIXES (Track A-E Validation)
+
+### Track A: Core Shadow Mode Validation
+- [x] Archive router syntax validation (fixed line 492 export statement)
+- [x] Shadow Mode component operational verification
+- [x] WebPhone integration configured as default
+- [x] WebPhone Call Manager component ready
+- [x] WebPhone Join Instructions component ready
+- [x] Dev server restarted and responding
+
+### Track B: Moderation & Q&A Workflow
+- [x] BUG-B1: Bulk approve/reject count lag — FIXED
+  - [x] Added optimistic UI updates to AdvancedQAFiltering.tsx
+  - [x] Immediate count updates on user action
+  - [x] Rollback on error with user notification
+  - [x] Verified no regressions in related components
+
+### Track C: Compliance & Sentiment
+- [ ] Compliance rule evaluation performance
+- [ ] Sentiment analysis real-time updates
+- [ ] Compliance flag persistence
+
+### Track D: Webcast/Audio with Shadow Mode
+- [x] BUG-D2: Webcast event type visibility — RESOLVED AS FALSE POSITIVE
+  - [x] Confirmed Webcast is visible in live Replit instance
+  - [x] Archive Upload component is Replit-only (not in Manus codebase)
+  - [x] E2E test matched optgroup label instead of selectable option
+  - [x] All 6 webcast event types present and functional
+  - [x] Backend already accepts all webcast types
+
+### Track E: Post-Event Analytics & Export
+- [ ] Report generation performance
+- [ ] Export workflow validation
+- [ ] Analytics data accuracy
+
+### Bug Fixes Summary
+- [x] BUG-A1: Nested button warning in AIDashboard.tsx — FIXED
+  - [x] Replaced Card with div + accessibility attributes
+  - [x] Removed nested button structure
+  - [x] Verified no console warnings
+  - [x] Tested in dev server
+
+- [x] BUG-B1: Bulk approve/reject count lag — FIXED
+  - [x] Implemented optimistic UI updates
+  - [x] Immediate count changes on action
+  - [x] Proper error handling and rollback
+  - [x] No regressions introduced
+
+- [x] BUG-D2: Webcast dropdown visibility — RESOLVED
+  - [x] Confirmed as false positive from E2E testing
+  - [x] Webcast is visible and functional in live product
+  - [x] Archive Upload component not in Manus (Replit-only)
+  - [x] No code change required
+
+### Pre-existing Issues (Non-blocking)
+- [ ] ComplianceRulesAdmin.tsx TypeScript errors (unrelated to staging)
+- [ ] Does not affect staging validation or production readiness
+
+### Status
+- ✅ All 3 bugs investigated and resolved
+- ✅ No new regressions introduced
+- ✅ Dev server running and operational
+- ✅ Ready for Replit retesting with all fixes applied
