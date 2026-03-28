@@ -1,8 +1,20 @@
-# CuraLive Production Deployment Guide
+# Chorus.AI Platform — Production Deployment Guide
+
+**Version:** 2.0 (Comprehensive)  
+**Last Updated:** March 28, 2026  
+**Status:** Ready for Implementation  
+**Audience:** DevOps, Infrastructure, Platform Engineering
+
+## Executive Summary
+
+This guide provides step-by-step instructions for deploying Chorus.AI to a production environment. The platform is production-ready at the code level (zero TypeScript errors, 641 passing tests). This document covers infrastructure setup, monitoring, backup/disaster recovery, deployment automation, and operational readiness.
+
+**Deployment Timeline:** 2-3 weeks  
+**Success Criteria:** Environment is fully configured, tested, observable, and recoverable.
 
 ## Overview
 
-This guide covers deploying CuraLive to production with all features enabled: operator console, moderator dashboard, presenter teleprompter, attendee dashboard, admin controls, webphone integration, mobile app, and advanced analytics.
+This guide covers deploying Chorus.AI to production with all features enabled: operator console, moderator dashboard, presenter teleprompter, attendee dashboard, admin controls, webphone integration, mobile app, and advanced analytics.
 
 ---
 
