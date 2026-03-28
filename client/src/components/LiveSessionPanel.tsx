@@ -2,7 +2,7 @@
  * Live Session Panel — Embedded Operator Console
  * 
  * Full-featured live operator workspace for managing webcast/audio sessions
- * Includes: WebPhone controls, Q&A moderation, live transcript, provider state
+ * Wired to real tRPC backend for: Q&A, Transcript, Notes, Provider State
  */
 
 import React, { useState, useEffect } from "react";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Phone,
   MessageSquare,
@@ -20,13 +20,13 @@ import {
   CheckCircle,
   Signal,
   Users,
-  Mic,
-  MicOff,
-  X,
   Clock,
   Activity,
   Settings,
   Send,
+  Loader2,
+  Download,
+  Share2,
 } from "lucide-react";
 import { WebPhoneCallManager } from "@/components/WebPhoneCallManager";
 import ProviderStateIndicator, { ProviderState } from "@/components/ProviderStateIndicator";
@@ -35,7 +35,7 @@ export interface LiveSession {
   id: string;
   eventName: string;
   status: "live" | "scheduled" | "ended";
-  startedAt: Date;
+  startedAt: number;
   duration: number;
   attendeeCount: number;
   connectivityProvider: "webphone" | "teams" | "zoom" | "webex" | "rtmp" | "pstn";
@@ -56,11 +56,58 @@ export default function LiveSessionPanel({
 }: LiveSessionPanelProps) {
   const [activeTab, setActiveTab] = useState<"webphone" | "qa" | "transcript" | "notes">("webphone");
   const [notes, setNotes] = useState("");
-  const [qaPending, setQaPending] = useState(0);
-  const [qaApproved, setQaApproved] = useState(0);
-  const [liveTranscript, setLiveTranscript] = useState<Array<{ speaker: string; text: string; time: string }>>([]);
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
 
-  // Provider state
+  // Fetch real Q&A data from backend
+  const { data: qaData, isLoading: qaLoading, refetch: refetchQA } = trpc.session.getLiveQA.useQuery(
+    { sessionId: session.id },
+    { enabled: !!session.id, refetchInterval: 3000 } // Refetch every 3 seconds
+  );
+
+  // Fetch real transcript data from backend
+  const { data: transcriptData, isLoading: transcriptLoading } = trpc.session.getLiveTranscript.useQuery(
+    { sessionId: session.id },
+    { enabled: !!session.id, refetchInterval: 2000 } // Refetch every 2 seconds
+  );
+
+  // Fetch real session notes from backend
+  const { data: notesData } = trpc.session.getNotes.useQuery(
+    { sessionId: session.id },
+    { enabled: !!session.id }
+  );
+
+  // Mutations for Q&A actions
+  const approveQuestionMutation = trpc.session.approveQuestion.useMutation({
+    onSuccess: () => {
+      refetchQA();
+    },
+  });
+
+  const rejectQuestionMutation = trpc.session.rejectQuestion.useMutation({
+    onSuccess: () => {
+      refetchQA();
+    },
+  });
+
+  const saveNotesMutation = trpc.session.saveNotes.useMutation();
+
+  // Update notes from fetched data
+  useEffect(() => {
+    if (notesData?.notes) {
+      setNotes(notesData.notes);
+    }
+  }, [notesData]);
+
+  // Extract Q&A counts from real data
+  const qaPending = qaData?.pendingCount || 0;
+  const qaApproved = qaData?.approvedCount || 0;
+  const pendingQuestions = qaData?.pending || [];
+  const approvedQuestions = qaData?.approved || [];
+
+  // Extract transcript from real data
+  const liveTranscript = transcriptData || [];
+
+  // Provider state from real session data
   const providerState: ProviderState = {
     provider: session.connectivityProvider,
     status: session.providerStatus,
@@ -77,6 +124,12 @@ export default function LiveSessionPanel({
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Format timestamp
+  const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString();
+  };
+
   // Get provider color
   const getProviderColor = (provider: string) => {
     const colors: Record<string, string> = {
@@ -88,6 +141,35 @@ export default function LiveSessionPanel({
       pstn: "bg-gray-600",
     };
     return colors[provider] || "bg-gray-600";
+  };
+
+  // Handle approve question
+  const handleApproveQuestion = (questionId: string) => {
+    approveQuestionMutation.mutate({
+      questionId,
+      sessionId: session.id,
+    });
+  };
+
+  // Handle reject question
+  const handleRejectQuestion = (questionId: string) => {
+    rejectQuestionMutation.mutate({
+      questionId,
+      sessionId: session.id,
+    });
+  };
+
+  // Handle save notes
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    try {
+      await saveNotesMutation.mutateAsync({
+        sessionId: session.id,
+        notes,
+      });
+    } finally {
+      setIsSavingNotes(false);
+    }
   };
 
   if (isMinimized) {
@@ -193,7 +275,7 @@ export default function LiveSessionPanel({
                 </TabsTrigger>
                 <TabsTrigger value="qa" className="flex items-center gap-2">
                   <MessageSquare className="w-4 h-4" />
-                  Q&A
+                  Q&A ({qaPending})
                 </TabsTrigger>
                 <TabsTrigger value="transcript" className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
@@ -214,7 +296,7 @@ export default function LiveSessionPanel({
                 </div>
               </TabsContent>
 
-              {/* Q&A Tab */}
+              {/* Q&A Tab - Real Data */}
               <TabsContent value="qa" className="flex-1 overflow-auto">
                 <div className="p-4 space-y-3">
                   <div className="flex gap-2 mb-4">
@@ -226,45 +308,62 @@ export default function LiveSessionPanel({
                     </Badge>
                   </div>
 
-                  <div className="space-y-2">
-                    {[1, 2, 3].map((i) => (
-                      <Card key={i} className="p-3 hover:bg-secondary/50 transition-colors">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">Sample Question {i}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Asked by Attendee {i} • 2 upvotes
-                            </p>
+                  {qaLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    </div>
+                  ) : pendingQuestions.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>No pending questions</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {pendingQuestions.map((question) => (
+                        <Card key={question.id} className="p-3 hover:bg-secondary/50 transition-colors">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{question.text}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Asked by {question.asker} • {question.upvotes} upvotes
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 hover:bg-green-50"
+                                onClick={() => handleApproveQuestion(question.id)}
+                                disabled={approveQuestionMutation.isPending}
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:bg-red-50"
+                                onClick={() => handleRejectQuestion(question.id)}
+                                disabled={rejectQuestionMutation.isPending}
+                              >
+                                ✕
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-green-600 hover:bg-green-50"
-                              onClick={() => setQaApproved(qaApproved + 1)}
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 hover:bg-red-50"
-                              onClick={() => setQaPending(Math.max(0, qaPending - 1))}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
-              {/* Transcript Tab */}
+              {/* Transcript Tab - Real Data */}
               <TabsContent value="transcript" className="flex-1 overflow-auto">
                 <div className="p-4 space-y-3 bg-muted/20 rounded-lg">
-                  {liveTranscript.length === 0 ? (
+                  {transcriptLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    </div>
+                  ) : liveTranscript.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
                       <p>Live transcript will appear here as the session progresses</p>
@@ -277,7 +376,9 @@ export default function LiveSessionPanel({
                             <p className="text-sm font-semibold text-primary">{entry.speaker}</p>
                             <p className="text-sm mt-1">{entry.text}</p>
                           </div>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{entry.time}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatTimestamp(entry.timestamp)}
+                          </span>
                         </div>
                       </div>
                     ))
@@ -285,73 +386,84 @@ export default function LiveSessionPanel({
                 </div>
               </TabsContent>
 
-              {/* Notes Tab */}
-              <TabsContent value="notes" className="flex-1 overflow-auto">
-                <div className="p-4 space-y-3">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Operator Notes</label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Add notes about this session..."
-                      className="w-full h-48 p-3 border border-border rounded-lg bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <Button className="w-full">
-                      <Send className="w-4 h-4 mr-2" />
-                      Save Notes
-                    </Button>
-                  </div>
+              {/* Notes Tab - Real Persistence */}
+              <TabsContent value="notes" className="flex-1 overflow-auto flex flex-col">
+                <div className="p-4 space-y-3 flex-1 flex flex-col">
+                  <Textarea
+                    placeholder="Add notes about this session..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="flex-1 resize-none"
+                  />
+                  <Button
+                    onClick={handleSaveNotes}
+                    disabled={isSavingNotes}
+                    className="w-full"
+                  >
+                    {isSavingNotes ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Save Notes
+                      </>
+                    )}
+                  </Button>
                 </div>
               </TabsContent>
             </Tabs>
           </div>
 
           {/* Right: Quick Actions Sidebar */}
-          <div className="w-64 flex flex-col gap-3 border-l pl-4">
-            <h3 className="font-semibold text-sm">Quick Actions</h3>
+          <div className="w-64 border-l bg-muted/20 rounded-lg p-4 space-y-4 overflow-auto">
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Quick Actions</h3>
+              <div className="space-y-2">
+                <Button variant="outline" size="sm" className="w-full justify-start">
+                  🔇 Mute All
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start">
+                  💬 Send Message
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start">
+                  📊 View Analytics
+                </Button>
+              </div>
+            </div>
 
-            <Button variant="outline" size="sm" className="w-full justify-start">
-              <Mic className="w-4 h-4 mr-2" />
-              Mute All
-            </Button>
-
-            <Button variant="outline" size="sm" className="w-full justify-start">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Send Message
-            </Button>
-
-            <Button variant="outline" size="sm" className="w-full justify-start">
-              <Activity className="w-4 h-4 mr-2" />
-              View Analytics
-            </Button>
-
-            <div className="border-t pt-3 mt-3">
-              <h4 className="text-xs font-semibold text-muted-foreground mb-2">Session Stats</h4>
-              <div className="space-y-2 text-xs">
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Session Stats</h3>
+              <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Participants</span>
-                  <span className="font-semibold">{session.attendeeCount}</span>
+                  <span className="text-muted-foreground">Participants:</span>
+                  <span className="font-medium">{session.attendeeCount}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Duration</span>
-                  <span className="font-semibold">{formatDuration(session.duration)}</span>
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span className="font-medium">{formatDuration(session.duration)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Q&A Total</span>
-                  <span className="font-semibold">{qaPending + qaApproved}</span>
+                  <span className="text-muted-foreground">Q&A Total:</span>
+                  <span className="font-medium">{qaData?.totalCount || 0}</span>
                 </div>
               </div>
             </div>
 
-            <div className="border-t pt-3 mt-3">
-              <h4 className="text-xs font-semibold text-muted-foreground mb-2">Provider Info</h4>
-              <div className="text-xs space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${session.providerStatus === "active" ? "bg-green-600" : "bg-orange-600"}`} />
-                  <span>{session.connectivityProvider.toUpperCase()}</span>
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Provider Info</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Provider:</span>
+                  <span className="font-medium">{session.connectivityProvider}</span>
                 </div>
-                <div className="text-muted-foreground">
-                  {session.providerStatus === "active" ? "Connected" : "Fallback Active"}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Status:</span>
+                  <span className={`font-medium ${session.providerStatus === "active" ? "text-green-600" : "text-orange-600"}`}>
+                    {session.providerStatus}
+                  </span>
                 </div>
               </div>
             </div>
@@ -359,15 +471,17 @@ export default function LiveSessionPanel({
         </div>
 
         {/* Footer */}
-        <div className="border-t bg-muted/30 p-3 flex items-center justify-between">
+        <div className="border-t bg-card p-4 flex items-center justify-between">
           <div className="text-xs text-muted-foreground">
             Session ID: {session.id}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
               Export
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Share2 className="w-4 h-4" />
               Handoff
             </Button>
             <Button variant="outline" size="sm" onClick={onClose}>

@@ -48,18 +48,7 @@ interface SessionArchive {
   fallbackReason?: string;
 }
 
-// Mock live session for demo
-const MOCK_LIVE_SESSION = {
-  id: "live-q4-earnings-2026",
-  eventName: "Q4 2025 Earnings Call",
-  status: "live" as const,
-  startedAt: new Date(),
-  duration: 1847, // ~31 minutes
-  attendeeCount: 1247,
-  connectivityProvider: "webphone" as const,
-  providerStatus: "active" as const,
-  fallbackReason: undefined,
-};
+  // Note: No mock live session - use real data from tRPC query above
 
 export default function ShadowMode() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,6 +64,9 @@ export default function ShadowMode() {
     limit: itemsPerPage,
     search: searchQuery,
   });
+
+  // Fetch live session (if any)
+  const { data: liveSession } = trpc.session.getLiveSession.useQuery();
 
   // Filter sessions based on search and status
   const filteredSessions = sessions.filter((session: SessionArchive) => {
@@ -149,9 +141,9 @@ export default function ShadowMode() {
   return (
     <div className="min-h-screen bg-background">
       {/* Live Console Modal */}
-      {showLiveConsole && (
+      {showLiveConsole && liveSession && (
         <LiveSessionPanel
-          session={MOCK_LIVE_SESSION}
+          session={liveSession}
           onClose={() => setShowLiveConsole(false)}
         />
       )}
@@ -175,28 +167,30 @@ export default function ShadowMode() {
         </div>
       </div>
 
-      {/* Live Session Alert */}
-      <div className="border-b bg-red-50 border-red-200 p-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-red-600 animate-pulse" />
-              <div>
-                <p className="font-semibold text-red-900">Live Session Active</p>
-                <p className="text-sm text-red-800">{MOCK_LIVE_SESSION.eventName} • {MOCK_LIVE_SESSION.attendeeCount} attendees</p>
+      {/* Live Session Alert - Only shows when real live session exists */}
+      {liveSession && liveSession.status === "live" && (
+        <div className="border-b bg-red-50 border-red-200 p-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-red-600 animate-pulse" />
+                <div>
+                  <p className="font-semibold text-red-900">Live Session Active</p>
+                  <p className="text-sm text-red-800">{liveSession.eventName} • {liveSession.attendeeCount} attendees</p>
+                </div>
               </div>
+              <Button
+                size="sm"
+                className="bg-red-600 hover:bg-red-700"
+                onClick={() => setShowLiveConsole(true)}
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                Open Console
+              </Button>
             </div>
-            <Button
-              size="sm"
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() => setShowLiveConsole(true)}
-            >
-              <Phone className="w-4 h-4 mr-2" />
-              Open Console
-            </Button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Search and Filter */}
       <div className="border-b bg-background p-6">
