@@ -23,7 +23,12 @@ import {
   FileText,
   ChevronRight,
   Filter,
+  Phone,
+  AlertCircle,
+  CheckCircle,
+  Signal,
 } from "lucide-react";
+import { WebPhoneCallManager } from "@/components/WebPhoneCallManager";
 
 interface SessionArchive {
   id: string;
@@ -35,6 +40,9 @@ interface SessionArchive {
   status: "completed";
   transcriptReady: boolean;
   analysisReady: boolean;
+  connectivityProvider?: "webphone" | "teams" | "zoom" | "webex" | "rtmp" | "pstn";
+  providerStatus?: "active" | "degraded" | "fallback" | "failed";
+  fallbackReason?: string;
 }
 
 export default function ShadowMode() {
@@ -42,6 +50,7 @@ export default function ShadowMode() {
   const [selectedSession, setSelectedSession] = useState<SessionArchive | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "completed" | "archived" | "processing">("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showWebPhoneDetails, setShowWebPhoneDetails] = useState(false);
   const itemsPerPage = 10;
 
   // Fetch archived sessions
@@ -85,6 +94,40 @@ export default function ShadowMode() {
       default:
         return <Badge>Unknown</Badge>;
     }
+  };
+
+  const getProviderBadge = (provider?: string, status?: string) => {
+    if (!provider) return null;
+    
+    const providerColors: Record<string, string> = {
+      webphone: "bg-blue-600",
+      teams: "bg-purple-600",
+      zoom: "bg-cyan-600",
+      webex: "bg-green-600",
+      rtmp: "bg-orange-600",
+      pstn: "bg-gray-600",
+    };
+
+    const statusIndicators: Record<string, React.ReactNode> = {
+      active: <CheckCircle className="w-3 h-3" />,
+      degraded: <AlertCircle className="w-3 h-3" />,
+      fallback: <Signal className="w-3 h-3" />,
+      failed: <AlertCircle className="w-3 h-3" />,
+    };
+
+    return (
+      <div className="flex items-center gap-1">
+        <Badge className={`${providerColors[provider] || "bg-gray-600"} text-white`}>
+          {provider.toUpperCase()}
+        </Badge>
+        {status && status !== "active" && (
+          <Badge variant="outline" className="text-xs">
+            {statusIndicators[status]}
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </Badge>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -266,7 +309,51 @@ export default function ShadowMode() {
                   <p className="text-lg font-semibold">{selectedSession.attendeeCount}</p>
                 </div>
               </div>
+
+              {/* Connectivity Provider Status */}
+              {selectedSession.connectivityProvider && (
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold flex items-center gap-2">
+                      <Phone className="w-4 h-4" />
+                      Connectivity Status
+                    </p>
+                    {getProviderBadge(selectedSession.connectivityProvider, selectedSession.providerStatus)}
+                  </div>
+                  {selectedSession.fallbackReason && (
+                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded p-2">
+                      Fallback: {selectedSession.fallbackReason}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* WebPhone Controls - Show if webcast/audio session */}
+            {selectedSession.connectivityProvider === "webphone" && (
+              <div className="border-t pt-4 mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowWebPhoneDetails(!showWebPhoneDetails)}
+                  className="w-full flex items-center justify-between"
+                >
+                  <span className="flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    WebPhone Call Controls
+                  </span>
+                  <ChevronRight className={`w-4 h-4 transition-transform ${showWebPhoneDetails ? "rotate-90" : ""}`} />
+                </Button>
+                {showWebPhoneDetails && (
+                  <div className="mt-4 p-4 bg-muted rounded-lg">
+                    <WebPhoneCallManager
+                      sessionId={selectedSession.id}
+                      isLoading={false}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-3">
               <Button

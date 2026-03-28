@@ -1612,3 +1612,52 @@ git log github/ManusChatgpt -5 --oneline  # Should show latest commits
 - ✅ No new regressions introduced
 - ✅ Dev server running and operational
 - ✅ Ready for Replit retesting with all fixes applied
+
+
+---
+
+## WEBPHONE/WEBCAST INTEGRATION INTO SHADOW MODE (ACTIVE)
+
+### Phase 1: Embed WebPhone Controls
+- [x] Extend SessionArchive interface with connectivity metadata
+- [x] Import WebPhoneCallManager into ShadowMode.tsx
+- [x] Add provider status display in detail panel
+- [x] Create collapsible WebPhone controls section
+- [x] Add fallback reason display
+
+### Phase 2: Surface Provider/Fallback State
+- [x] Create ProviderStateIndicator component
+- [x] Display current provider with colored badges
+- [x] Show provider status (active/degraded/fallback/failed)
+- [x] Add fallback notifications with dismissible alerts
+- [x] Display connection quality metrics (latency, quality)
+- [x] Show provider switch history (previous → current)
+
+### Phase 3: Wire Real-Time Updates (PENDING)
+- [ ] Create provider state subscription via Ably
+- [ ] Subscribe to provider change events in Shadow Mode
+- [ ] Update UI when fallback occurs
+- [ ] Display fallback reason and previous provider
+- [ ] Auto-dismiss notifications after 10 seconds
+- [ ] Persist provider state in session metadata
+
+### Phase 4: Integration Testing (PENDING)
+- [ ] Test WebPhone controls render in Shadow Mode
+- [ ] Test provider state display updates
+- [ ] Test fallback notification appears
+- [ ] Test provider switch history display
+- [ ] Verify no regressions in archive listing
+- [ ] Test with mock provider state changes
+
+### Phase 5: Documentation (PENDING)
+- [ ] Document WebPhone integration in Shadow Mode
+- [ ] Document provider state types and flows
+- [ ] Document fallback behavior for operators
+- [ ] Create operator guide for webcast/audio sessions
+
+### Deliverables
+- [x] ShadowMode.tsx with WebPhone controls embedded
+- [x] ProviderStateIndicator.tsx component
+- [ ] Real-time provider state updates via Ably
+- [ ] Integration tests for provider state
+- [ ] Operator documentation
