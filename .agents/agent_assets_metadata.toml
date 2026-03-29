@@ -414,3 +414,9 @@ id = "H2X6j3sC0eNUWpEKzOzMM"
 uri = "file://exports/CuraLive_Staging_Validation_Brief.md"
 type = "text"
 title = "CuraLive Staging Validation Brief — March 29, 2026"
+
+[[outputs]]
+id = "OPXXI7jVt67pD94O1DCCT"
+uri = "file://.local/MANUS_SHADOW_MODE_BRIEF.md"
+type = "text"
+title = "Manus Shadow Mode Implementation Brief"
