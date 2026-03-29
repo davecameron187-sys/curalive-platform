@@ -408,3 +408,9 @@ id = "cS0hAhrvdy7UYFC5coUq3"
 uri = "file://exports/REPLIT_VALIDATION_V2_ALL_TRACKS.md"
 type = "text"
 title = "Validation Report V2 — 2 PASS, 7 BLOCKED (Checkpoint 4 not delivered)"
+
+[[outputs]]
+id = "H2X6j3sC0eNUWpEKzOzMM"
+uri = "file://exports/CuraLive_Staging_Validation_Brief.md"
+type = "text"
+title = "CuraLive Staging Validation Brief — March 29, 2026"
