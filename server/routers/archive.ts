@@ -383,11 +383,68 @@ export const archiveRouter = router({
           filename: `session-${input.sessionId}-export.json`,
           size: jsonContent.length,
         };
-      } catch (error) {
+       } catch (error) {
         console.error("Error exporting session as JSON:", error);
         throw error;
       }
     }),
-});
 
+  /**
+   * Delete an archived session and all related data
+   */
+  deleteSession: protectedProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new Error("Database not available");
+
+      try {
+        // Verify session exists and is archived (not live)
+        const session = await database
+          .select()
+          .from(liveQaSessionMetadata)
+          .where(eq(liveQaSessionMetadata.sessionId, input.sessionId))
+          .limit(1);
+
+        if (!session || session.length === 0) {
+          throw new Error("Session not found");
+        }
+
+        const sessionData = session[0];
+        if (sessionData.isLive) {
+          throw new Error("Cannot delete live sessions");
+        }
+
+        // Delete all related data in order
+        await database
+          .delete(liveQaQuestions)
+          .where(eq(liveQaQuestions.sessionId, input.sessionId));
+
+        await database
+          .delete(complianceFlags)
+          .where(eq(complianceFlags.sessionId, input.sessionId));
+
+        await database
+          .delete(operatorActions)
+          .where(eq(operatorActions.sessionId, input.sessionId));
+
+        // Delete the session itself
+        await database
+          .delete(liveQaSessionMetadata)
+          .where(eq(liveQaSessionMetadata.sessionId, input.sessionId));
+
+        console.log(`[Archive] Session ${input.sessionId} deleted by ${ctx.user.name}`);
+
+        return {
+          success: true,
+          message: `Session ${sessionData.sessionName} deleted successfully`,
+          sessionId: input.sessionId,
+          deletedAt: new Date().toISOString(),
+        };
+      } catch (error) {
+        console.error("Error deleting session:", error);
+        throw error;
+      }
+    }),
+});
 export default archiveRouter;

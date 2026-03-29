@@ -29,6 +29,7 @@ import {
   CheckCircle,
   Signal,
   Play,
+  Trash2,
 } from "lucide-react";
 import { WebPhoneCallManager } from "@/components/WebPhoneCallManager";
 import LiveSessionPanel from "@/components/LiveSessionPanel";
@@ -53,6 +54,24 @@ interface SessionArchive {
 export default function ShadowMode() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSession, setSelectedSession] = useState<SessionArchive | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Delete session mutation
+  const deleteSessionMutation = trpc.archive.deleteSession.useMutation({
+    onSuccess: () => {
+      setSelectedSession(null);
+      setDeleteConfirm(false);
+      setIsDeleting(false);
+      // Refetch archived sessions
+      window.location.reload();
+    },
+    onError: (error) => {
+      console.error("Delete failed:", error);
+      setIsDeleting(false);
+      alert(`Failed to delete session: ${error.message}`);
+    },
+  });
   const [filterStatus, setFilterStatus] = useState<"all" | "completed" | "archived" | "processing">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [showLiveConsole, setShowLiveConsole] = useState(false);
@@ -381,33 +400,77 @@ export default function ShadowMode() {
               )}
             </div>
 
-            <div className="flex gap-3">
-              <Button
-                className="flex-1 flex items-center gap-2"
-                onClick={() => {
-                  window.location.href = `/ai-dashboard/${selectedSession.id}`;
-                }}
-              >
-                <Settings className="w-4 h-4" />
-                Run AI Services
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1 flex items-center gap-2"
-                onClick={() => {
-                  window.location.href = `/analytics/${selectedSession.id}`;
-                }}
-              >
-                <Download className="w-4 h-4" />
-                View Reports
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setSelectedSession(null)}
-              >
-                Close
-              </Button>
-            </div>
+            {!deleteConfirm ? (
+              <div className="flex gap-3">
+                <Button
+                  className="flex-1 flex items-center gap-2"
+                  onClick={() => {
+                    window.location.href = `/ai-dashboard/${selectedSession.id}`;
+                  }}
+                >
+                  <Settings className="w-4 h-4" />
+                  Run AI Services
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 flex items-center gap-2"
+                  onClick={() => {
+                    window.location.href = `/analytics/${selectedSession.id}`;
+                  }}
+                >
+                  <Download className="w-4 h-4" />
+                  View Reports
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteConfirm(true)}
+                  title="Delete this archived session"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setSelectedSession(null)}
+                >
+                  Close
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3 border-t pt-4">
+                <p className="text-sm font-semibold text-red-600">
+                  Are you sure you want to delete "{selectedSession.eventName}"? This cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    disabled={isDeleting}
+                    onClick={async () => {
+                      setIsDeleting(true);
+                      await deleteSessionMutation.mutateAsync({ sessionId: selectedSession.id });
+                    }}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>Delete Permanently</>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    disabled={isDeleting}
+                    onClick={() => setDeleteConfirm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       )}
