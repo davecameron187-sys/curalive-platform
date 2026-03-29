@@ -444,3 +444,15 @@ id = "2U9ypm7ZwHe8igF8RxnTo"
 uri = "file://.local/REPLIT_TO_MANUS_EXPORT.docx"
 type = "word_document"
 title = "REPLIT → MANUS EXPORT (Word Document)"
+
+[[outputs]]
+id = "P2NhBqstsRZDNt1mdD87K"
+uri = "file://.local/MANUS_CONSOLE_BRIEF.docx"
+type = "word_document"
+title = "Console (System Diagnostics) Brief for Manus"
+
+[[outputs]]
+id = "TqXQFaV_NdiG_Uu_DCulV"
+uri = "file://.local/MANUS_CONSOLE_BRIEF.md"
+type = "text"
+title = "Console Brief (Markdown version)"
