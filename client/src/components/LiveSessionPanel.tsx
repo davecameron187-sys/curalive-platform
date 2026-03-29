@@ -97,7 +97,8 @@ export default function LiveSessionPanel({
   );
 
   // ===== PHASE 5: ANALYTICS & REPORTING =====
-  const { data: analyticsData } = trpc.analytics.getSessionAnalytics.useQuery(
+  // Use getEventAnalytics which returns comprehensive session analytics
+  const { data: analyticsData } = trpc.analytics.getEventAnalytics.useQuery(
     { sessionId: session.id },
     { enabled: !!session.id, refetchInterval: 5000 }
   );
