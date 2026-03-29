@@ -1,0 +1,102 @@
+Replit Handoff Brief — Validate Only
+Objective
+
+Validate the latest integrated live console build from Manus.
+
+This is a validation-only pass.
+
+Important instruction
+
+Do not rebuild, redesign, or re-implement anything.
+
+Replit’s role is to:
+
+run the latest build
+validate the integrated live console
+report real runtime issues or blockers
+apply only minimal targeted fixes if a blocking runtime issue requires it
+Current status
+
+Manus reports that the latest manus-live-console build is now:
+
+fully integrated
+analytics gap fixed
+ready for Replit validation
+no known Shadow Mode regressions in Manus validation
+Validate these 9 tracks
+Live Console Entry & Exit
+Open Live Console button works
+Console opens full-screen
+Close returns cleanly to Shadow Mode
+Ably Real-Time
+Green Live badge appears
+Q&A updates stream live
+Transcript updates stream live
+Provider changes reflect immediately
+Fallback to polling works if Ably disconnects
+Keyboard Shortcuts
+M = mute all
+A = approve next Q&A
+R = reject next Q&A
+S = save notes
+E = export
+H = handoff
+? = shortcuts help
+Shortcuts do not fire in text fields
+Session Auto-Save & Recovery
+Notes auto-save every 30 seconds
+Recovery prompt appears on reconnect
+Restore recovers notes and active tab
+Discard clears recovery data
+Analytics Display
+Engagement Score visible in header
+Q&A Approval Rate visible in header
+Metrics update every 5 seconds
+No analytics-related console errors
+Export & Handoff
+Export button generates JSON file
+Handoff button transfers session
+Loading states and error handling work
+Shortcuts + Ably
+Shortcuts work correctly while Ably live updates are active
+No conflicts between real-time updates and keyboard actions
+Recovery + Shortcuts
+Recovered state persists correctly
+Shortcuts still work after recovery
+Full Regression
+Shadow Mode archive listing intact
+Search/filter working
+Pagination working
+Detail panel accessible
+No regressions in existing functionality
+Bug reporting format
+
+For every issue found, report:
+
+Title:
+Area:
+Severity: P0 / P1 / P2
+Expected:
+Actual:
+Steps to Reproduce:
+Evidence:
+Likely File(s):
+
+What not to do
+do not rebuild the live console
+do not redesign Shadow Mode
+do not add new features
+do not broad-refactor the codebase
+Deliver back
+
+Return:
+
+pass/fail for all 9 tracks
+any real bugs found
+any minimal fixes applied
+anything that still needs Manus rather than Replit
+Final instruction
+
+Validate the build as delivered.
+Keep the work lean.
+Only prove what works and identify real blockers.

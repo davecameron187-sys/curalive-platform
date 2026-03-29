@@ -402,3 +402,9 @@ id = "x8VepOdvRwqG8iUglGi9W"
 uri = "file://exports/REPLIT_VALIDATION_REPORT_TRACKS_1_9.md"
 type = "text"
 title = "Final Validation Report — All 9 Tracks PASS"
+
+[[outputs]]
+id = "cS0hAhrvdy7UYFC5coUq3"
+uri = "file://exports/REPLIT_VALIDATION_V2_ALL_TRACKS.md"
+type = "text"
+title = "Validation Report V2 — 2 PASS, 7 BLOCKED (Checkpoint 4 not delivered)"
