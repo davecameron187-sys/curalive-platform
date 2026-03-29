@@ -438,3 +438,9 @@ id = "cnIHn8QjsIyNBC3W7CxJZ"
 uri = "file://.local/REPLIT_TO_MANUS_EXPORT.md"
 type = "text"
 title = "REPLIT → MANUS EXPORT: Complete Shadow Mode Source Code"
+
+[[outputs]]
+id = "2U9ypm7ZwHe8igF8RxnTo"
+uri = "file://.local/REPLIT_TO_MANUS_EXPORT.docx"
+type = "word_document"
+title = "REPLIT → MANUS EXPORT (Word Document)"
