@@ -1661,3 +1661,74 @@ git log github/ManusChatgpt -5 --oneline  # Should show latest commits
 - [ ] Real-time provider state updates via Ably
 - [ ] Integration tests for provider state
 - [ ] Operator documentation
+
+
+---
+
+## NEXT BUILD PASS - AFTER REPLIT VALIDATION (March 28, 2026)
+
+### Phase 1: Export & Handoff (High Priority - 2-3 hours)
+- [ ] Create exportSession procedure in session router
+- [ ] Create handoffSession procedure in session router
+- [ ] Wire Export button to exportSession mutation
+- [ ] Wire Handoff button to handoffSession mutation
+- [ ] Generate PDF/JSON session reports
+- [ ] Test export functionality
+- [ ] Test handoff workflow
+
+### Phase 2: Real-Time Ably Subscriptions (High Priority - 3-4 hours)
+- [ ] Create Ably subscription for Q&A updates
+- [ ] Create Ably subscription for Transcript updates
+- [ ] Create Ably subscription for Provider changes
+- [ ] Create Ably subscription for Participant changes
+- [ ] Replace polling with Ably pub/sub in LiveSessionPanel
+- [ ] Publish Q&A events from backend
+- [ ] Publish Transcript events from backend
+- [ ] Publish Provider events from backend
+- [ ] Test real-time updates
+
+### Phase 3: Operator Keyboard Shortcuts (Medium Priority - 1-2 hours)
+- [ ] Create useKeyboardShortcuts custom hook
+- [ ] Implement M key (Mute all)
+- [ ] Implement A key (Approve Q&A)
+- [ ] Implement R key (Reject Q&A)
+- [ ] Implement S key (Save notes)
+- [ ] Implement E key (Export)
+- [ ] Implement H key (Handoff)
+- [ ] Implement ? key (Show help)
+- [ ] Test all shortcuts
+
+### Phase 4: Session Persistence & Recovery (Medium Priority - 2-3 hours)
+- [ ] Extend operatorSessions table schema
+- [ ] Add auto-save for notes (every 30s)
+- [ ] Add auto-save for Q&A approvals
+- [ ] Create session recovery procedure
+- [ ] Implement disconnect detection
+- [ ] Show Session Recovered notification
+- [ ] Test persistence and recovery
+
+### Phase 5: Analytics & Reporting (Low Priority - 3-4 hours)
+- [ ] Add Analytics tab to LiveSessionPanel
+- [ ] Display real-time session analytics
+- [ ] Create post-session report
+- [ ] Add Q&A analytics
+- [ ] Add sentiment analysis
+- [ ] Add attendee engagement metrics
+- [ ] Test analytics display
+
+### Testing & Verification
+- [ ] All unit tests passing
+- [ ] All integration tests passing
+- [ ] All E2E tests passing in Replit (Tracks 1-9)
+- [ ] No console errors in dev tools
+- [ ] No performance degradation
+- [ ] Mobile responsiveness verified
+- [ ] Accessibility audit passed
+- [ ] Security review completed
+
+### Final Deliverables
+- [ ] Production-ready checkpoint created
+- [ ] All 9 Replit validation tracks continue to PASS
+- [ ] Replit notified of completion
+- [ ] Documentation updated
+- [ ] Ready for deployment

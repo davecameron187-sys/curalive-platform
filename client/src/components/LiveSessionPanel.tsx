@@ -57,6 +57,9 @@ export default function LiveSessionPanel({
   const [activeTab, setActiveTab] = useState<"webphone" | "qa" | "transcript" | "notes">("webphone");
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isHandingOff, setIsHandingOff] = useState(false);
+  const [handoffTargetId, setHandoffTargetId] = useState("");
 
   // Fetch real Q&A data from backend
   const { data: qaData, isLoading: qaLoading, refetch: refetchQA } = trpc.session.getLiveQA.useQuery(
@@ -91,12 +94,75 @@ export default function LiveSessionPanel({
 
   const saveNotesMutation = trpc.session.saveNotes.useMutation();
 
+  // Mutations for export and handoff
+  const exportSessionMutation = trpc.session.exportSession.useMutation({
+    onSuccess: (data) => {
+      if (data.format === "json") {
+        // Download JSON file
+        const blob = new Blob([data.data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = data.filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // For PDF, show dialog to select format or download
+        console.log("PDF export ready", data);
+      }
+    },
+  });
+
+  const handoffSessionMutation = trpc.session.handoffSession.useMutation({
+    onSuccess: () => {
+      alert("Session handed off successfully");
+      onClose?.();
+    },
+  });
+
   // Update notes from fetched data
   useEffect(() => {
     if (notesData?.notes) {
       setNotes(notesData.notes);
     }
   }, [notesData]);
+
+  // Handle export
+  const handleExport = async (format: "json" | "pdf") => {
+    setIsExporting(true);
+    try {
+      await exportSessionMutation.mutateAsync({
+        sessionId: session.id,
+        format,
+      });
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export session");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Handle handoff
+  const handleHandoff = async () => {
+    if (!handoffTargetId) {
+      alert("Please select a target operator");
+      return;
+    }
+    setIsHandingOff(true);
+    try {
+      await handoffSessionMutation.mutateAsync({
+        sessionId: session.id,
+        targetOperatorId: handoffTargetId,
+        handoffNotes: notes,
+      });
+    } catch (error) {
+      console.error("Handoff failed:", error);
+      alert("Failed to handoff session");
+    } finally {
+      setIsHandingOff(false);
+    }
+  };
 
   // Extract Q&A counts from real data
   const qaPending = qaData?.pendingCount || 0;
@@ -476,12 +542,38 @@ export default function LiveSessionPanel({
             Session ID: {session.id}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <Download className="w-4 h-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={() => handleExport("json")}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
               Export
             </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <Share2 className="w-4 h-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={() => {
+                const targetId = prompt("Enter target operator ID:");
+                if (targetId) {
+                  setHandoffTargetId(targetId);
+                  handleHandoff();
+                }
+              }}
+              disabled={isHandingOff}
+            >
+              {isHandingOff ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Share2 className="w-4 h-4" />
+              )}
               Handoff
             </Button>
             <Button variant="outline" size="sm" onClick={onClose}>
