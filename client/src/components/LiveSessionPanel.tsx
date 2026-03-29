@@ -39,6 +39,7 @@ import ProviderStateIndicator, { ProviderState } from "@/components/ProviderStat
 import { useAblySessions } from "@/hooks/useAblySessions";
 import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from "@/hooks/useKeyboardShortcuts";
 import { SessionAutoSave } from "@/services/sessionAutoSave";
+import HandoffDialog from "@/components/HandoffDialog";
 
 export interface LiveSession {
   id: string;
@@ -70,6 +71,7 @@ export default function LiveSessionPanel({
   const [isExporting, setIsExporting] = useState(false);
   const [isHandingOff, setIsHandingOff] = useState(false);
   const [handoffTargetId, setHandoffTargetId] = useState("");
+  const [showHandoffDialog, setShowHandoffDialog] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [recoveryPromptVisible, setRecoveryPromptVisible] = useState(false);
   const [sessionAutoSave, setSessionAutoSave] = useState<SessionAutoSave | null>(null);
@@ -442,7 +444,7 @@ export default function LiveSessionPanel({
 
             {/* WebPhone Tab */}
             <TabsContent value="webphone" className="flex-1 overflow-auto p-4">
-              <WebPhoneCallManager />
+              <WebPhoneCallManager sessionId={session.id} callData={callData} />
             </TabsContent>
 
             {/* Q&A Tab */}
@@ -563,14 +565,27 @@ export default function LiveSessionPanel({
             </Button>
             <Button
               size="sm"
-              onClick={handleHandoff}
-              disabled={isHandingOff}
+              onClick={() => setShowHandoffDialog(true)}
             >
-              {isHandingOff ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
+              <Share2 className="w-4 h-4 mr-2" />
               Handoff
             </Button>
           </div>
         </div>
+
+        {/* Handoff Dialog */}
+        {showHandoffDialog && (
+          <HandoffDialog
+            sessionId={session.id}
+            currentOperatorId={"1"}
+            currentOperatorName="Current Operator"
+            onHandoffSuccess={() => {
+              setShowHandoffDialog(false);
+              onClose?.();
+            }}
+            onCancel={() => setShowHandoffDialog(false)}
+          />
+        )}
 
         {/* Shortcuts Help Dialog */}
         {showShortcutsHelp && (

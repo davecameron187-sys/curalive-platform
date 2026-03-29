@@ -33,6 +33,7 @@ export interface WebPhoneCall {
 export interface WebPhoneCallManagerProps {
   sessionId: string;
   call?: WebPhoneCall;
+  callData?: any; // Real call data from backend
   isLoading?: boolean;
   onEndCall?: () => void;
   onMuteParticipant?: (participantId: string) => void;
@@ -126,12 +127,15 @@ const ParticipantCard: React.FC<{
 export const WebPhoneCallManager: React.FC<WebPhoneCallManagerProps> = ({
   sessionId,
   call,
+  callData,
   isLoading,
   onEndCall,
   onMuteParticipant,
   onAdmitParticipant,
   onRemoveParticipant,
 }) => {
+  // Use real call data if available, otherwise use call prop
+  const activeCall = callData || call;
   const [elapsedTime, setElapsedTime] = useState(0);
 
   // Update elapsed time every second
@@ -156,7 +160,7 @@ export const WebPhoneCallManager: React.FC<WebPhoneCallManagerProps> = ({
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
-  if (!call) {
+  if (!activeCall) {
     return (
       <Card className="p-6 text-center">
         <Phone className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />

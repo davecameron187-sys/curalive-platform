@@ -14,6 +14,7 @@ import { sessionStateMachineRouter } from "./routers/sessionStateMachine";
 import { analyticsRouter } from "./routers/analytics";
 import { archiveRouter } from "./routers/archive";
 import { sessionRouter } from "./routers/session";
+import { operatorRouter } from "./routers/operator";
 
 export const appRouter = router({
   system: systemRouter,
@@ -26,6 +27,7 @@ export const appRouter = router({
   analytics: analyticsRouter,
   archive: archiveRouter,
   session: sessionRouter,
+  operator: operatorRouter,
 });
 
 export type AppRouter = typeof appRouter;
