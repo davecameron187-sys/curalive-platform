@@ -426,3 +426,9 @@ id = "-4oKtczBXDf9eiMkXS7AE"
 uri = "file://.local/MANUS_SHADOW_MODE_SOURCE_CODE.md"
 type = "text"
 title = "Shadow Mode Complete Source Code (all 13 files, 10,362 lines)"
+
+[[outputs]]
+id = "w9FnMUq8dbSzMxXjvQs8A"
+uri = "file://.local/MANUS_SHADOW_MODE_COMPLETE.md"
+type = "text"
+title = "Shadow Mode Complete Brief + Source Code (single document)"
