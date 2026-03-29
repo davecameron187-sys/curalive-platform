@@ -432,3 +432,9 @@ id = "w9FnMUq8dbSzMxXjvQs8A"
 uri = "file://.local/MANUS_SHADOW_MODE_COMPLETE.md"
 type = "text"
 title = "Shadow Mode Complete Brief + Source Code (single document)"
+
+[[outputs]]
+id = "cnIHn8QjsIyNBC3W7CxJZ"
+uri = "file://.local/REPLIT_TO_MANUS_EXPORT.md"
+type = "text"
+title = "REPLIT → MANUS EXPORT: Complete Shadow Mode Source Code"
