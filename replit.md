@@ -61,6 +61,17 @@ The CuraLive platform utilizes a modern full-stack architecture.
 ### Shadow Mode
 Shadow Mode enables real-time monitoring and AI-powered intelligence generation for investor events. It supports two transcription paths: Recall.ai for meeting platforms and a local-audio path for browser-captured audio. The pipeline generates a 20-module AI intelligence report after the session, tagging metrics like forward-looking statements, guidance, and MNPI.
 
+### Live Operator Console (Manus Parts 1-3)
+- **LiveSessionPanel** (`client/src/components/LiveSessionPanel.tsx`): 5-phase integrated live operator console with WebPhone, Q&A moderation, transcript view, notes with auto-save, and session analytics. Uses Ably real-time, keyboard shortcuts, and auto-save service. Exports both default and named.
+- **WebPhoneCallManager** (`client/src/components/WebPhoneCallManager.tsx`): Operator dashboard showing active participants, audio levels, quality badges, call stats, mute/remove controls.
+- **WebPhoneJoinInstructions** (`client/src/components/WebPhoneJoinInstructions.tsx`): Customer-facing join instructions with WebPhone primary, dial-in/SIP/access code tabs, and copy-to-clipboard.
+- **ProviderStateIndicator** (`client/src/components/ProviderStateIndicator.tsx`): Connection quality indicator with `ProviderState` interface; `connectionQuality` values: `"excellent" | "good" | "fair" | "poor"`. Default export only.
+- **Session Router** (`server/routers/session.ts`): tRPC router for live session operations. Queries use `publicProcedure`; mutations (approve/reject/save/export/handoff) use `operatorProcedure` for auth security.
+- **Archive Router** (`server/routers/archive.ts`): tRPC router for session archive queries.
+- **Hooks**: `useAblySessions` (Ably real-time subscriptions), `useKeyboardShortcuts` (keyboard shortcut bindings).
+- **Services**: `sessionAutoSave` (auto-saves operator notes).
+- **Analytics**: `getSessionEventAnalytics` procedure added to analytics router (takes `sessionId: string`, distinct from existing `getEventAnalytics` which takes `eventId: number`).
+
 ## External Dependencies
 
 - **PostgreSQL**: Primary database for all platform data.

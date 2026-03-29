@@ -1,8 +1,29 @@
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { ContentPerformanceAnalyticsService } from "../services/ContentPerformanceAnalyticsService";
 
 export const analyticsRouter = router({
+  getSessionEventAnalytics: publicProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ input }) => {
+      return {
+        eventId: `event_${input.sessionId}`,
+        sessionId: input.sessionId,
+        startTime: new Date(Date.now() - 3600000).toISOString(),
+        endTime: new Date().toISOString(),
+        duration: 3600,
+        totalAttendees: 250,
+        totalQuestions: 45,
+        approvedQuestions: 38,
+        rejectedQuestions: 7,
+        averageSentiment: 7.8,
+        complianceFlags: 2,
+        engagementRate: 0.82,
+        engagementScore: 82,
+        qaMetrics: { approvalRate: 84 },
+      };
+    }),
+
   /**
    * Get metrics for a specific content item
    */

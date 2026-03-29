@@ -24,7 +24,7 @@ import LocalAudioCapture from "@/components/LocalAudioCapture";
 import AIDashboard from "@/components/AIDashboard";
 import SystemDiagnostics from "@/components/SystemDiagnostics";
 import LiveQaDashboard from "@/components/LiveQaDashboard";
-import { LiveSessionPanel } from "@/components/LiveSessionPanel";
+import LiveSessionPanel from "@/components/LiveSessionPanel";
 
 const PLATFORM_LABELS: Record<string, string> = {
   zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", choruscall: "Chorus Call", other: "Other",
@@ -981,13 +981,13 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   return (
     <div className={embedded ? "bg-[#0a0a0f] text-white" : "min-h-screen bg-[#0a0a0f] text-white"}>
 
-      {/* Live Session Alert Banner */}
-      {!showLiveConsole && (
+      {/* Live Session Alert Banner — only shows when real live session exists (BUG-LC1 fix) */}
+      {!showLiveConsole && liveSession && (liveSession.status === "live" || liveSession.status === "bot_joining") && (
         <div className="bg-amber-500/20 border-b border-amber-500/30 p-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
             <span className="text-sm font-semibold text-amber-400">
-              Live Session Active — Q4 2025 Earnings Call • 1,247 attendees
+              Live Session Active — {liveSession.eventName} • {liveSession.attendeeCount ?? 0} attendees
             </span>
           </div>
           <Button
@@ -1002,7 +1002,19 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
 
       {/* Live Console Modal */}
       {showLiveConsole && (
-        <LiveSessionPanel onClose={() => setShowLiveConsole(false)} />
+        <LiveSessionPanel
+          session={liveSession ? {
+            id: liveSession.id,
+            eventName: liveSession.eventName,
+            status: liveSession.status === "bot_joining" ? "live" : (liveSession.status === "completed" || liveSession.status === "failed" ? "ended" : liveSession.status as "live" | "scheduled" | "ended"),
+            startedAt: liveSession.startedAt ?? Date.now(),
+            duration: liveSession.startedAt ? Math.floor((Date.now() - liveSession.startedAt) / 1000) : 0,
+            attendeeCount: liveSession.attendeeCount ?? 0,
+            connectivityProvider: (liveSession.connectivityProvider as any) ?? "webphone",
+            providerStatus: "active",
+          } : undefined}
+          onClose={() => setShowLiveConsole(false)}
+        />
       )}
 
       {/* Header */}
