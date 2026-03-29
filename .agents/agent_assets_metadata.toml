@@ -419,4 +419,10 @@ title = "CuraLive Staging Validation Brief — March 29, 2026"
 id = "OPXXI7jVt67pD94O1DCCT"
 uri = "file://.local/MANUS_SHADOW_MODE_BRIEF.md"
 type = "text"
-title = "Manus Shadow Mode Implementation Brief"
+title = "Shadow Mode Implementation Brief (architecture & gotchas)"
+
+[[outputs]]
+id = "-4oKtczBXDf9eiMkXS7AE"
+uri = "file://.local/MANUS_SHADOW_MODE_SOURCE_CODE.md"
+type = "text"
+title = "Shadow Mode Complete Source Code (all 13 files, 10,362 lines)"
