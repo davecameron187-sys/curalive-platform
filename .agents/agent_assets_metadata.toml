@@ -462,3 +462,9 @@ id = "auRKLo9xR3Nw1Eqy_A2EG"
 uri = "file://exports/MANUS_CONSOLE_BRIEF.docx"
 type = "word_document"
 title = "Console (System Diagnostics) Brief for Manus"
+
+[[outputs]]
+id = "ajynUsXYod1kIb3G0BVrD"
+uri = "file://exports/SHADOW_MODE_PLATFORM_BRIEF.docx"
+type = "word_document"
+title = "Shadow Mode Complete Platform Brief (Word Document)"
