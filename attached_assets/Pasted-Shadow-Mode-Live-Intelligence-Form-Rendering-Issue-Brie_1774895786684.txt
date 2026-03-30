@@ -1,0 +1,95 @@
+Shadow Mode Live Intelligence Form - Rendering Issue Brief for Replit
+Problem Summary
+The Live Intelligence form in Shadow Mode is not rendering on the page, even though the code exists and is syntactically correct. The form should appear when clicking the "Live Intelligence" tab, but the content area remains blank.
+Current State
+File: /home/ubuntu/chorus-ai/client/src/pages/ShadowMode.tsx
+Form Code Location: Lines 262-345 in the TabContent function, case "live" block
+Form Status: Code is complete with all UI elements (inputs, dropdowns, buttons)
+Rendering Status: ❌ NOT VISIBLE on page
+Symptoms
+Click "Live Intelligence" tab → Content area stays blank
+No red test indicator appears (added at line 264 for debugging)
+Vite HMR error in browser console: "Failed to reload /src/App.tsx. This could be due to syntax errors or importing non-existent modules."
+The main content div has flex: 1, overflowY: "auto" but shows no height/content
+Root Cause Analysis
+The TabContent component is not rendering. Possible causes:
+Syntax/Import Error: Something in ShadowMode.tsx is breaking the build
+Component Not Being Called: The TabContent function exists but may not be invoked
+State Issue: The subNav state might not be updating correctly when tab is clicked
+Flex Layout Issue: The parent container might have zero height, hiding all content
+Code Structure
+Plain Text
+ShadowMode.tsx
+├── Main Component (export default function ShadowMode)
+│   ├── State: subNav = "live" (initialized correctly)
+│   ├── Main Container: flex column, minHeight 100vh
+│   ├── Header: CuraLive branding
+│   ├── GroupedNavigation: Tab buttons (Live Intelligence, Event Nerve Centre, etc.)
+│   └── Content Div: flex: 1, overflowY: "auto"
+│       └── <TabContent tabId={subNav} liveSession={liveSession} />
+│
+└── TabContent Function (line 247)
+    └── switch(tabId)
+        ├── case "live": (line 261)
+        │   └── Form JSX (lines 262-345) ← NOT RENDERING
+        ├── case "nervecenter": (line 347)
+        ├── case "warroom": (line 360)
+        └── ... other cases
+What Should Happen
+User clicks "Live Intelligence" tab
+setSubNav("live") is called
+Main component re-renders with subNav="live"
+<TabContent tabId="live" /> is called
+TabContent function executes case "live" block
+Form JSX is returned and rendered on page
+User sees form with all fields visible
+What's Actually Happening
+User clicks "Live Intelligence" tab ✓
+setSubNav("live") is called ✓
+Main component re-renders ✓
+<TabContent tabId="live" /> is called (presumably)
+Form is NOT appearing ❌
+Debugging Attempts Made
+✓ Added red border to content div (not visible)
+✓ Added absolute positioned red test indicator (not visible)
+✓ Changed background colors (no effect)
+✓ Verified TabContent function syntax is correct
+✓ Verified subNav state initializes to "live"
+✓ Checked for duplicate exports or syntax errors
+Form Code Details
+Form Fields:
+Client Name (text input, required)
+Event Name (text input, required)
+Event Type (select dropdown with 7 options)
+Platform (6 button options: Zoom, Microsoft Teams, Google Meet, Cisco Webex, Chorus Call, Other)
+Meeting URL (text input, required)
+Notes (textarea, optional)
+Submit button ("Start Shadow Intelligence")
+Cancel button
+Form Styling:
+Outer container: width: 100%, padding: 40px, background: #0f0f0f, minHeight: 700px
+Form container: maxWidth: 600px, background: #1a1a1a, border: 2px solid #10b981
+Form uses flexbox with gap spacing
+Form Functionality:
+State management with React hooks
+Form validation (required fields check)
+tRPC mutation: trpc.shadowMode.startSession.useMutation()
+Success/error handling with alerts
+Questions for Replit
+Is the TabContent component being called at all?
+Why isn't the red test indicator appearing?
+Is there a build/compilation error preventing the component from rendering?
+Could the flex layout be causing the content div to have zero height?
+Is there an issue with how the switch statement is being handled in React?
+Additional Context
+Project: CuraLive Shadow Mode (Manus web app)
+Tech Stack: React 19, TypeScript, tRPC, Tailwind CSS
+The form code is complete and ready - just needs to be visible
+Other tabs (Event Nerve Centre, Event War Room, etc.) also use the same TabContent pattern
+No console errors visible in browser (other than the Vite HMR reload error)
+What Needs to Be Fixed
+Identify why TabContent is not rendering
+Fix the rendering issue so the form appears on the page
+Verify the form is interactive (can fill inputs, click buttons)
+Test form submission with the tRPC mutation
+Please help debug this rendering issue so the Live Intelligence form can be displayed and tested.

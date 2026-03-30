@@ -486,3 +486,9 @@ id = "DCb1vE-tST2HnuAFJktQg"
 uri = "file://exports/MANUS_ENVIRONMENT_CONFIG_GUIDE.docx"
 type = "word_document"
 title = "Manus Environment Configuration Guide"
+
+[[outputs]]
+id = "_3Kf9qJpQ61jAOex3ejAz"
+uri = "file://exports/MANUS_LIVE_INTELLIGENCE_FIX_BRIEF.docx"
+type = "word_document"
+title = "Manus Live Intelligence Rendering Fix Brief"
