@@ -456,3 +456,9 @@ id = "TqXQFaV_NdiG_Uu_DCulV"
 uri = "file://.local/MANUS_CONSOLE_BRIEF.md"
 type = "text"
 title = "Console Brief (Markdown version)"
+
+[[outputs]]
+id = "auRKLo9xR3Nw1Eqy_A2EG"
+uri = "file://exports/MANUS_CONSOLE_BRIEF.docx"
+type = "word_document"
+title = "Console (System Diagnostics) Brief for Manus"
