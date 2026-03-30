@@ -522,3 +522,9 @@ id = "EEzKg-qYAwpVk5C6te1W2"
 uri = "file://exports/MANUS_APP_SHELL_FIX.docx"
 type = "word_document"
 title = "App Shell Fix — The Problem is in main.tsx/App.tsx, Not ShadowMode"
+
+[[outputs]]
+id = "JJ5F0bfVIkMEJZhxJuaQa"
+uri = "file://exports/MANUS_DEPLOYMENT_CACHE_FIX.docx"
+type = "word_document"
+title = "Deployment Cache Fix — The REAL Problem Was Never Code"
