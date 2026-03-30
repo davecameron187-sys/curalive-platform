@@ -504,3 +504,9 @@ id = "9JGUaImrQny_TvV2uH1zG"
 uri = "file://exports/MANUS_DEFINITIVE_RENDERING_DEBUG.docx"
 type = "word_document"
 title = "Shadow Mode — Definitive Root Cause Analysis & Debug Guide"
+
+[[outputs]]
+id = "oiYn2BFOvy4hmirSyJQaj"
+uri = "file://exports/MANUS_EXECUTE_THIS_NOW.docx"
+type = "word_document"
+title = "MANUS: Execute These Fixes Now — Stop Debugging, Start Fixing"
