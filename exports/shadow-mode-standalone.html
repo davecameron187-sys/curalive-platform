@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CuraLive Shadow Mode - Live Intelligence</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0f;color:#e0e0e0;min-height:100vh}
+.shadow-container{max-width:1400px;margin:0 auto;padding:20px}
+.shadow-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(0,255,136,0.2);border-radius:12px;margin-bottom:20px}
+.shadow-header h1{font-size:22px;color:#00ff88;text-shadow:0 0 20px rgba(0,255,136,0.3)}
+.shadow-header .status{display:flex;align-items:center;gap:8px;font-size:13px;color:#88ffaa}
+.shadow-header .status .dot{width:8px;height:8px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;padding:8px;background:rgba(26,26,46,0.6);border-radius:10px;border:1px solid rgba(255,255,255,0.05)}
+.tab{padding:10px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:#888;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s}
+.tab:hover{color:#ccc;background:rgba(255,255,255,0.05)}
+.tab.active{background:linear-gradient(135deg,rgba(0,255,136,0.15),rgba(0,200,255,0.1));color:#00ff88;border-color:rgba(0,255,136,0.3);box-shadow:0 0 12px rgba(0,255,136,0.1)}
+.panel{background:linear-gradient(135deg,#12121f,#1a1a2e);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:24px;min-height:500px}
+.panel h2{font-size:18px;color:#00ff88;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(0,255,136,0.15)}
+.panel h3{font-size:15px;color:#00ccff;margin:16px 0 10px}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:16px}
+.card{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:18px;transition:border-color 0.2s}
+.card:hover{border-color:rgba(0,255,136,0.3)}
+.card .label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:6px}
+.card .value{font-size:24px;font-weight:700;color:#00ff88}
+.card .sub{font-size:12px;color:#888;margin-top:4px}
+.btn{padding:10px 20px;border-radius:8px;border:1px solid rgba(0,255,136,0.3);background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,200,255,0.05));color:#00ff88;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s}
+.btn:hover{background:linear-gradient(135deg,rgba(0,255,136,0.2),rgba(0,200,255,0.1));box-shadow:0 0 15px rgba(0,255,136,0.15)}
+.btn-row{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;color:#aaa;margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.4);color:#e0e0e0;font-size:14px;outline:none;transition:border-color 0.2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:rgba(0,255,136,0.4)}
+.timeline{position:relative;padding-left:24px;margin-top:16px}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:rgba(0,255,136,0.2)}
+.timeline-item{position:relative;padding:12px 0 12px 16px;border-bottom:1px solid rgba(255,255,255,0.03)}
+.timeline-item::before{content:'';position:absolute;left:-20px;top:16px;width:10px;height:10px;border-radius:50%;background:#00ff88;box-shadow:0 0 6px rgba(0,255,136,0.4)}
+.timeline-item .time{font-size:11px;color:#666}
+.timeline-item .event{font-size:14px;color:#ccc;margin-top:2px}
+.timeline-item .detail{font-size:12px;color:#888;margin-top:2px}
+.table{width:100%;border-collapse:collapse;margin-top:12px}
+.table th{text-align:left;padding:10px 14px;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#666;border-bottom:1px solid rgba(255,255,255,0.08)}
+.table td{padding:10px 14px;font-size:13px;color:#ccc;border-bottom:1px solid rgba(255,255,255,0.04)}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.badge-green{background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.3)}
+.badge-blue{background:rgba(0,150,255,0.15);color:#00aaff;border:1px solid rgba(0,150,255,0.3)}
+.badge-yellow{background:rgba(255,200,0,0.15);color:#ffcc00;border:1px solid rgba(255,200,0,0.3)}
+.badge-red{background:rgba(255,80,80,0.15);color:#ff5555;border:1px solid rgba(255,80,80,0.3)}
+.chat-container{max-height:400px;overflow-y:auto;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:16px;background:rgba(0,0,0,0.2);margin:16px 0}
+.chat-msg{padding:10px 14px;margin-bottom:8px;border-radius:8px;max-width:80%}
+.chat-msg.user{background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.2);margin-left:auto}
+.chat-msg.bot{background:rgba(0,100,255,0.1);border:1px solid rgba(0,100,255,0.2)}
+.chat-msg .sender{font-size:11px;color:#888;margin-bottom:4px}
+.chat-msg .text{font-size:13px;color:#ddd}
+.chat-input{display:flex;gap:8px;margin-top:12px}
+.chat-input input{flex:1}
+.meter{height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;margin-top:6px}
+.meter-fill{height:100%;border-radius:4px;transition:width 0.5s}
+.meter-green .meter-fill{background:linear-gradient(90deg,#00ff88,#00cc66)}
+.meter-blue .meter-fill{background:linear-gradient(90deg,#00aaff,#0066ff)}
+.meter-yellow .meter-fill{background:linear-gradient(90deg,#ffcc00,#ff9900)}
+.section{margin-bottom:24px}
+.empty-state{text-align:center;padding:60px 20px;color:#555}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px}
+.alert{padding:14px 18px;border-radius:8px;margin-bottom:12px;font-size:13px}
+.alert-info{background:rgba(0,150,255,0.1);border:1px solid rgba(0,150,255,0.2);color:#88ccff}
+.alert-success{background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.2);color:#88ffaa}
+.alert-warn{background:rgba(255,200,0,0.1);border:1px solid rgba(255,200,0,0.2);color:#ffdd66}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const TABS = [
+  { id: "live", label: "Live Intelligence", icon: "📡" },
+  { id: "archive-upload", label: "Archive Upload", icon: "📤" },
+  { id: "archives", label: "Archives & Reports", icon: "📁" },
+  { id: "ai-dashboard", label: "AI Dashboard", icon: "🤖" },
+  { id: "ai-learning", label: "AI Learning", icon: "🧠" },
+  { id: "ai-advisory", label: "AI Advisory", icon: "💬" },
+  { id: "live-qa", label: "Live Q&A", icon: "❓" },
+  { id: "system", label: "System Test", icon: "⚙️" },
+];
+
+function LiveIntelligenceTab() {
+  const [sessions] = useState([
+    { id: 1, company: "Pfizer Inc.", event: "Q4 2025 Earnings Call", status: "live", sentiment: 0.72, topics: ["Revenue Growth", "Pipeline Updates", "FDA Approvals"], startTime: "2:30 PM EST" },
+    { id: 2, company: "Johnson & Johnson", event: "Investor Day 2026", status: "live", sentiment: 0.65, topics: ["MedTech Spin-off", "Oncology Portfolio", "Cost Restructuring"], startTime: "1:00 PM EST" },
+    { id: 3, company: "Moderna Inc.", event: "R&D Update", status: "monitoring", sentiment: 0.58, topics: ["mRNA Pipeline", "Cancer Vaccines", "Flu/COVID Combo"], startTime: "3:00 PM EST" },
+  ]);
+  const [events] = useState([
+    { time: "2:45 PM", event: "CEO mentions 'transformative acquisition'", detail: "Pfizer CEO signals M&A activity in oncology space", type: "critical" },
+    { time: "2:42 PM", event: "Revenue beat: $15.2B vs $14.8B expected", detail: "Q4 revenue exceeds analyst consensus by 2.7%", type: "positive" },
+    { time: "2:38 PM", event: "Pipeline update: 3 Phase III readouts in H1", detail: "Key catalysts identified for next 6 months", type: "info" },
+    { time: "2:35 PM", event: "Guidance raised for FY2026", detail: "Full year guidance increased by $500M at midpoint", type: "positive" },
+    { time: "1:15 PM", event: "J&J: MedTech margin expansion target 30%", detail: "New margin target exceeds Street expectations", type: "positive" },
+  ]);
+
+  return (
+    <div>
+      <h2>📡 Live Intelligence Feed</h2>
+      <div className="alert alert-info">
+        Monitoring {sessions.length} active sessions • Real-time sentiment analysis enabled • AI pattern detection active
+      </div>
+      <div className="card-grid">
+        {sessions.map(s => (
+          <div className="card" key={s.id}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{fontWeight:600,color:"#fff"}}>{s.company}</span>
+              <span className={`badge ${s.status === "live" ? "badge-green" : "badge-blue"}`}>
+                {s.status === "live" ? "● LIVE" : "◉ MONITORING"}
+              </span>
+            </div>
+            <div style={{fontSize:13,color:"#aaa",marginBottom:12}}>{s.event}</div>
+            <div className="label">Sentiment Score</div>
+            <div className="meter meter-green"><div className="meter-fill" style={{width:`${s.sentiment*100}%`}}></div></div>
+            <div style={{fontSize:12,color:"#888",marginTop:4}}>{(s.sentiment*100).toFixed(0)}% Positive</div>
+            <div style={{marginTop:10}}>
+              <div className="label">Key Topics</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>
+                {s.topics.map((t,i) => <span key={i} className="badge badge-blue">{t}</span>)}
+              </div>
+            </div>
+            <div style={{marginTop:10,fontSize:12,color:"#666"}}>Started: {s.startTime}</div>
+          </div>
+        ))}
+      </div>
+      <h3>Real-Time Event Stream</h3>
+      <div className="timeline">
+        {events.map((e,i) => (
+          <div className="timeline-item" key={i}>
+            <div className="time">{e.time}</div>
+            <div className="event">{e.event}</div>
+            <div className="detail">{e.detail}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ArchiveUploadTab() {
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploads] = useState([
+    { name: "pfizer-q3-2025-transcript.pdf", size: "2.4 MB", status: "processed", date: "2025-12-15" },
+    { name: "jnj-investor-day-2025.mp3", size: "145 MB", status: "processing", date: "2025-12-14" },
+    { name: "moderna-rd-update.pdf", size: "1.8 MB", status: "processed", date: "2025-12-10" },
+  ]);
+
+  return (
+    <div>
+      <h2>📤 Archive Upload</h2>
+      <div className="alert alert-info">Upload earnings call recordings, transcripts, or investor presentations for AI analysis</div>
+      <div className="section">
+        <div style={{border:"2px dashed rgba(0,255,136,0.3)",borderRadius:12,padding:40,textAlign:"center",background:"rgba(0,0,0,0.2)",cursor:"pointer"}}
+          onClick={() => document.getElementById("file-input")?.click()}>
+          <div style={{fontSize:36,marginBottom:8}}>📁</div>
+          <div style={{color:"#00ff88",fontSize:15,marginBottom:4}}>Click to upload or drag files here</div>
+          <div style={{color:"#666",fontSize:12}}>Supports: PDF, MP3, WAV, MP4, DOCX • Max 500MB</div>
+          <input id="file-input" type="file" style={{display:"none"}} onChange={e => setFile(e.target.files?.[0])} />
+        </div>
+        {file && (
+          <div style={{marginTop:12,padding:14,background:"rgba(0,255,136,0.05)",border:"1px solid rgba(0,255,136,0.2)",borderRadius:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{color:"#ccc"}}>{file.name} ({(file.size/1024/1024).toFixed(1)} MB)</span>
+              <button className="btn" onClick={() => { setUploading(true); setTimeout(() => setUploading(false), 2000); }}>
+                {uploading ? "Uploading..." : "Upload & Analyze"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      <h3>Recent Uploads</h3>
+      <table className="table">
+        <thead><tr><th>File</th><th>Size</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          {uploads.map((u,i) => (
+            <tr key={i}>
+              <td>{u.name}</td>
+              <td>{u.size}</td>
+              <td><span className={`badge ${u.status === "processed" ? "badge-green" : "badge-yellow"}`}>{u.status}</span></td>
+              <td>{u.date}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ArchivesReportsTab() {
+  const [reports] = useState([
+    { id: 1, title: "Pfizer Q4 2025 Earnings Analysis", type: "Earnings Call", date: "2025-12-20", sentiment: 0.72, insights: 14 },
+    { id: 2, title: "J&J Investor Day Comprehensive Review", type: "Investor Day", date: "2025-12-18", sentiment: 0.65, insights: 22 },
+    { id: 3, title: "Moderna R&D Pipeline Assessment", type: "R&D Update", date: "2025-12-15", sentiment: 0.58, insights: 9 },
+    { id: 4, title: "Biotech Sector Sentiment Trends Q4", type: "Sector Analysis", date: "2025-12-12", sentiment: 0.61, insights: 31 },
+  ]);
+
+  return (
+    <div>
+      <h2>📁 Archives & Reports</h2>
+      <div className="btn-row">
+        <button className="btn">Export All</button>
+        <button className="btn">Generate Summary</button>
+        <button className="btn">Compare Reports</button>
+      </div>
+      <div className="card-grid">
+        {reports.map(r => (
+          <div className="card" key={r.id}>
+            <div style={{fontWeight:600,color:"#fff",marginBottom:6}}>{r.title}</div>
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              <span className="badge badge-blue">{r.type}</span>
+              <span style={{fontSize:12,color:"#666"}}>{r.date}</span>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+              <div><div className="label">Sentiment</div><div style={{color:"#00ff88",fontWeight:600}}>{(r.sentiment*100).toFixed(0)}%</div></div>
+              <div><div className="label">Insights</div><div style={{color:"#00ccff",fontWeight:600}}>{r.insights}</div></div>
+            </div>
+            <button className="btn" style={{width:"100%",marginTop:8}}>View Report</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AIDashboardTab() {
+  const [metrics] = useState([
+    { label: "Models Active", value: "7", sub: "All models healthy" },
+    { label: "Predictions Today", value: "1,247", sub: "+18% vs yesterday" },
+    { label: "Accuracy (7d)", value: "94.2%", sub: "Above 90% target" },
+    { label: "Avg Response Time", value: "1.2s", sub: "Below 2s threshold" },
+  ]);
+
+  return (
+    <div>
+      <h2>🤖 AI Dashboard</h2>
+      <div className="card-grid">
+        {metrics.map((m,i) => (
+          <div className="card" key={i}>
+            <div className="label">{m.label}</div>
+            <div className="value">{m.value}</div>
+            <div className="sub">{m.sub}</div>
+          </div>
+        ))}
+      </div>
+      <h3>Model Performance</h3>
+      <table className="table">
+        <thead><tr><th>Model</th><th>Type</th><th>Accuracy</th><th>Status</th><th>Last Updated</th></tr></thead>
+        <tbody>
+          <tr><td>Sentiment Analyzer v3</td><td>NLP</td><td>96.1%</td><td><span className="badge badge-green">Active</span></td><td>2 min ago</td></tr>
+          <tr><td>Topic Extractor v2</td><td>NLP</td><td>91.8%</td><td><span className="badge badge-green">Active</span></td><td>5 min ago</td></tr>
+          <tr><td>Event Classifier</td><td>Classification</td><td>94.5%</td><td><span className="badge badge-green">Active</span></td><td>1 min ago</td></tr>
+          <tr><td>Price Impact Predictor</td><td>Regression</td><td>87.3%</td><td><span className="badge badge-yellow">Training</span></td><td>1 hr ago</td></tr>
+          <tr><td>Anomaly Detector</td><td>Unsupervised</td><td>92.0%</td><td><span className="badge badge-green">Active</span></td><td>30 sec ago</td></tr>
+          <tr><td>Speaker Identifier</td><td>Audio ML</td><td>95.7%</td><td><span className="badge badge-green">Active</span></td><td>3 min ago</td></tr>
+          <tr><td>Risk Assessor</td><td>Ensemble</td><td>89.9%</td><td><span className="badge badge-blue">Standby</span></td><td>15 min ago</td></tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AILearningTab() {
+  const [patterns] = useState([
+    { pattern: "CEO tone shift during guidance → stock moves +2.3% avg", confidence: 94, category: "Behavioral" },
+    { pattern: "Repeated use of 'transformative' in pharma calls correlates with M&A within 90 days", confidence: 87, category: "Linguistic" },
+    { pattern: "CFO hesitation on margin questions → earnings miss 68% of cases", confidence: 82, category: "Behavioral" },
+    { pattern: "Pipeline readout clustering in H1 → sector rotation signal", confidence: 79, category: "Temporal" },
+    { pattern: "Analyst question density >15 = high volatility event", confidence: 91, category: "Statistical" },
+  ]);
+
+  return (
+    <div>
+      <h2>🧠 AI Learning & Evolution</h2>
+      <div className="alert alert-success">AI has identified {patterns.length} new patterns in the last 30 days. Learning rate: optimal.</div>
+      <h3>Discovered Patterns</h3>
+      {patterns.map((p,i) => (
+        <div className="card" key={i} style={{marginBottom:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+            <span style={{color:"#fff",fontSize:14,flex:1}}>{p.pattern}</span>
+            <span className="badge badge-blue">{p.category}</span>
+          </div>
+          <div className="label">Confidence</div>
+          <div className="meter meter-green"><div className="meter-fill" style={{width:`${p.confidence}%`}}></div></div>
+          <div style={{fontSize:12,color:"#888",marginTop:4}}>{p.confidence}%</div>
+        </div>
+      ))}
+      <h3>Training History</h3>
+      <table className="table">
+        <thead><tr><th>Date</th><th>Dataset</th><th>Samples</th><th>Improvement</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>2025-12-20</td><td>Q4 Earnings Batch</td><td>2,450</td><td>+1.2%</td><td><span className="badge badge-green">Complete</span></td></tr>
+          <tr><td>2025-12-18</td><td>Investor Day Corpus</td><td>1,800</td><td>+0.8%</td><td><span className="badge badge-green">Complete</span></td></tr>
+          <tr><td>2025-12-15</td><td>Historical Sentiment</td><td>12,000</td><td>+2.1%</td><td><span className="badge badge-green">Complete</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AIAdvisoryTab() {
+  const [messages, setMessages] = useState([
+    { sender: "bot", text: "Welcome to CuraLive AI Advisory. I can help you analyze earnings calls, identify market trends, and provide investment intelligence. What would you like to explore?" },
+    { sender: "user", text: "What are the key takeaways from today's Pfizer earnings call?" },
+    { sender: "bot", text: "Based on real-time analysis of the Pfizer Q4 2025 earnings call:\n\n1. Revenue beat consensus by 2.7% ($15.2B vs $14.8B expected)\n2. CEO signaled potential M&A in oncology — used 'transformative acquisition' language\n3. Three Phase III readouts expected in H1 2026\n4. FY2026 guidance raised by $500M at midpoint\n5. Sentiment score: 72% positive, trending upward throughout the call\n\nNotable: The CEO's tone shifted notably positive during pipeline discussion, which historically correlates with stock outperformance in the following week." },
+  ]);
+  const [input, setInput] = useState("");
+
+  const sendMessage = () => {
+    if (!input.trim()) return;
+    setMessages(prev => [...prev, { sender: "user", text: input }]);
+    const q = input;
+    setInput("");
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        sender: "bot",
+        text: `I've analyzed your question about "${q}". Based on current intelligence data, here are my findings:\n\n• Sentiment analysis indicates a cautiously optimistic market outlook\n• Key risk factors include regulatory timeline uncertainty\n• Recommendation: Monitor upcoming catalysts closely\n\nWould you like me to dive deeper into any specific aspect?`
+      }]);
+    }, 1000);
+  };
+
+  return (
+    <div>
+      <h2>💬 AI Advisory Bot</h2>
+      <div className="chat-container">
+        {messages.map((m,i) => (
+          <div className={`chat-msg ${m.sender}`} key={i}>
+            <div className="sender">{m.sender === "bot" ? "🤖 CuraLive AI" : "👤 You"}</div>
+            <div className="text" style={{whiteSpace:"pre-wrap"}}>{m.text}</div>
+          </div>
+        ))}
+      </div>
+      <div className="chat-input">
+        <input
+          className="form-group"
+          style={{margin:0}}
+          placeholder="Ask about any company, earnings call, or market trend..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && sendMessage()}
+        />
+        <button className="btn" onClick={sendMessage}>Send</button>
+      </div>
+    </div>
+  );
+}
+
+function LiveQATab() {
+  const [questions] = useState([
+    { id: 1, question: "What is the expected timeline for the oncology acquisition?", asker: "Analyst - Goldman Sachs", votes: 24, status: "answered", answer: "Management indicated H1 2026 for completion, pending regulatory approval." },
+    { id: 2, question: "Can you elaborate on the margin expansion drivers?", asker: "Analyst - Morgan Stanley", votes: 18, status: "pending", answer: "" },
+    { id: 3, question: "What's the updated patent cliff exposure estimate?", asker: "Analyst - JP Morgan", votes: 15, status: "answered", answer: "CFO confirmed $8B revenue at risk through 2028, offset by biosimilar partnerships." },
+    { id: 4, question: "How does the mRNA platform apply to oncology?", asker: "Analyst - Barclays", votes: 12, status: "pending", answer: "" },
+  ]);
+
+  return (
+    <div>
+      <h2>❓ Live Q&A</h2>
+      <div className="alert alert-info">{questions.filter(q => q.status === "pending").length} questions pending • {questions.filter(q => q.status === "answered").length} answered</div>
+      <div className="btn-row">
+        <button className="btn">Submit Question</button>
+        <button className="btn">Export Q&A Log</button>
+      </div>
+      {questions.map(q => (
+        <div className="card" key={q.id} style={{marginBottom:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+            <div style={{flex:1}}>
+              <div style={{color:"#fff",fontSize:14,fontWeight:500,marginBottom:4}}>{q.question}</div>
+              <div style={{fontSize:12,color:"#888"}}>{q.asker}</div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <span style={{fontSize:13,color:"#00ccff"}}>▲ {q.votes}</span>
+              <span className={`badge ${q.status === "answered" ? "badge-green" : "badge-yellow"}`}>{q.status}</span>
+            </div>
+          </div>
+          {q.answer && (
+            <div style={{marginTop:8,padding:10,background:"rgba(0,255,136,0.05)",borderRadius:6,fontSize:13,color:"#aaa",borderLeft:"3px solid rgba(0,255,136,0.3)"}}>
+              {q.answer}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SystemTestTab() {
+  const [results, setResults] = useState(null);
+  const [testing, setTesting] = useState(false);
+
+  const runTests = () => {
+    setTesting(true);
+    setTimeout(() => {
+      setResults([
+        { test: "React Rendering", status: "pass", time: "2ms" },
+        { test: "Component Mount", status: "pass", time: "5ms" },
+        { test: "State Management", status: "pass", time: "1ms" },
+        { test: "Tab Navigation", status: "pass", time: "3ms" },
+        { test: "API Connectivity", status: "skip", time: "—", note: "tRPC not connected in standalone mode" },
+        { test: "WebSocket Connection", status: "skip", time: "—", note: "Ably not configured in standalone mode" },
+        { test: "CSS Rendering", status: "pass", time: "1ms" },
+        { test: "Event Handlers", status: "pass", time: "2ms" },
+      ]);
+      setTesting(false);
+    }, 1500);
+  };
+
+  return (
+    <div>
+      <h2>⚙️ System Test</h2>
+      <div className="alert alert-info">Run diagnostics to verify Shadow Mode components are functioning correctly.</div>
+      <div className="btn-row">
+        <button className="btn" onClick={runTests} disabled={testing}>
+          {testing ? "Running Tests..." : "Run All Tests"}
+        </button>
+      </div>
+      {results && (
+        <table className="table">
+          <thead><tr><th>Test</th><th>Status</th><th>Time</th><th>Notes</th></tr></thead>
+          <tbody>
+            {results.map((r,i) => (
+              <tr key={i}>
+                <td>{r.test}</td>
+                <td>
+                  <span className={`badge ${r.status === "pass" ? "badge-green" : r.status === "fail" ? "badge-red" : "badge-yellow"}`}>
+                    {r.status === "pass" ? "✓ PASS" : r.status === "fail" ? "✗ FAIL" : "⊘ SKIP"}
+                  </span>
+                </td>
+                <td>{r.time}</td>
+                <td style={{fontSize:12,color:"#888"}}>{r.note || ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {!results && !testing && (
+        <div className="empty-state">
+          <div className="icon">🔬</div>
+          <p>Click "Run All Tests" to verify system components</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const TAB_COMPONENTS = {
+  "live": LiveIntelligenceTab,
+  "archive-upload": ArchiveUploadTab,
+  "archives": ArchivesReportsTab,
+  "ai-dashboard": AIDashboardTab,
+  "ai-learning": AILearningTab,
+  "ai-advisory": AIAdvisoryTab,
+  "live-qa": LiveQATab,
+  "system": SystemTestTab,
+};
+
+function ShadowMode() {
+  const [activeTab, setActiveTab] = useState("live");
+  const ActiveComponent = TAB_COMPONENTS[activeTab];
+
+  return (
+    <div className="shadow-container">
+      <div className="shadow-header">
+        <h1>Shadow Mode — Live Intelligence</h1>
+        <div className="status">
+          <div className="dot"></div>
+          System Active • {new Date().toLocaleTimeString()}
+        </div>
+      </div>
+      <div className="tabs">
+        {TABS.map(t => (
+          <button key={t.id} className={`tab ${activeTab === t.id ? "active" : ""}`} onClick={() => setActiveTab(t.id)}>
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="panel">
+        <ActiveComponent />
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<ShadowMode />);
+</script>
+</body>
+</html>

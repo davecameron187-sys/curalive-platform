@@ -528,3 +528,9 @@ id = "JJ5F0bfVIkMEJZhxJuaQa"
 uri = "file://exports/MANUS_DEPLOYMENT_CACHE_FIX.docx"
 type = "word_document"
 title = "Deployment Cache Fix — The REAL Problem Was Never Code"
+
+[[outputs]]
+id = "hyOgDbXH8ZJSEmAcGH1ra"
+uri = "file://exports/MANUS_NUCLEAR_OPTION.docx"
+type = "word_document"
+title = "NUCLEAR OPTION: Standalone HTML File + Instructions for Manus"
