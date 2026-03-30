@@ -480,3 +480,9 @@ id = "oTIcJAvgzB8zsUWYEHXK0"
 uri = "file://exports/SHADOW_MODE_LIVE_INTELLIGENCE_BRIEF.docx"
 type = "word_document"
 title = "Shadow Mode Live Intelligence Technical Brief"
+
+[[outputs]]
+id = "DCb1vE-tST2HnuAFJktQg"
+uri = "file://exports/MANUS_ENVIRONMENT_CONFIG_GUIDE.docx"
+type = "word_document"
+title = "Manus Environment Configuration Guide"
