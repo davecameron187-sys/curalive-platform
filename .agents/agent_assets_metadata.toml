@@ -468,3 +468,9 @@ id = "ajynUsXYod1kIb3G0BVrD"
 uri = "file://exports/SHADOW_MODE_PLATFORM_BRIEF.docx"
 type = "word_document"
 title = "Shadow Mode Complete Platform Brief (Word Document)"
+
+[[outputs]]
+id = "eTb9wZJ4b1nHQDtmKVUIp"
+uri = "file://exports/CURALIVE_COMPLETE_PLATFORM_BRIEF.docx"
+type = "word_document"
+title = "CuraLive Complete Platform Brief (Word Document)"
