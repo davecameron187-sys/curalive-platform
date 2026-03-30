@@ -498,3 +498,9 @@ id = "IH6_Tbr--NT8mW284MJA4"
 uri = "file://exports/MANUS_SHADOW_MODE_RENDERING_FIX.docx"
 type = "word_document"
 title = "Shadow Mode Rendering Fix — Root Cause & Solution"
+
+[[outputs]]
+id = "9JGUaImrQny_TvV2uH1zG"
+uri = "file://exports/MANUS_DEFINITIVE_RENDERING_DEBUG.docx"
+type = "word_document"
+title = "Shadow Mode — Definitive Root Cause Analysis & Debug Guide"
