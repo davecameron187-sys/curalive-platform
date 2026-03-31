@@ -3344,3 +3344,84 @@ export const liveQaPlatformShares = mysqlTable("live_qa_platform_shares", {
   clickCount: int("click_count").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Broadcast Control — Audio/Video webcast management console
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * broadcasts — master record for each broadcast session.
+ * One broadcast = one live webcast (audio, video, or video-only).
+ */
+export const broadcasts = mysqlTable("broadcasts", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }),
+  title: varchar("title", { length: 255 }).notNull(),
+  mode: mysqlEnum("mode", ["audio", "video", "video_only"]).notNull(),
+  status: mysqlEnum("status", ["ready", "live", "stopped", "error"]).default("ready").notNull(),
+  quality: mysqlEnum("quality", ["480p", "720p", "1080p"]).default("720p"),
+  bitrate: int("bitrate"), // kbps
+  latency: int("latency"), // ms
+  viewerCount: int("viewer_count").default(0),
+  peakViewers: int("peak_viewers").default(0),
+  duration: int("duration").default(0), // seconds
+  shareUrl: varchar("share_url", { length: 1024 }),
+  muxStreamId: varchar("mux_stream_id", { length: 128 }),
+  muxPlaybackId: varchar("mux_playback_id", { length: 128 }),
+  autoRecord: boolean("auto_record").default(true).notNull(),
+  allowChat: boolean("allow_chat").default(true).notNull(),
+  operatorId: int("operator_id"),
+  startedAt: timestamp("started_at"),
+  stoppedAt: timestamp("stopped_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type Broadcast = typeof broadcasts.$inferSelect;
+export type InsertBroadcast = typeof broadcasts.$inferInsert;
+
+/**
+ * broadcastMetrics — time-series metrics snapshots taken every ~2 seconds while live.
+ */
+export const broadcastMetrics = mysqlTable("broadcast_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  broadcastId: int("broadcast_id").notNull(),
+  viewerCount: int("viewer_count").default(0),
+  bitrate: int("bitrate"), // kbps
+  latency: int("latency"), // ms
+  cpuUsage: float("cpu_usage"),
+  bufferHealth: float("buffer_health"),
+  droppedFrames: int("dropped_frames").default(0),
+  recordedAt: timestamp("recorded_at").defaultNow().notNull(),
+});
+export type BroadcastMetric = typeof broadcastMetrics.$inferSelect;
+export type InsertBroadcastMetric = typeof broadcastMetrics.$inferInsert;
+
+/**
+ * broadcastEvents — audit log of broadcast lifecycle events (start, stop, error, viewer join, etc.).
+ */
+export const broadcastEvents = mysqlTable("broadcast_events", {
+  id: int("id").autoincrement().primaryKey(),
+  broadcastId: int("broadcast_id").notNull(),
+  eventType: varchar("event_type", { length: 64 }).notNull(), // "started", "stopped", "error", "viewer_joined", "quality_changed"
+  detail: text("detail"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type BroadcastEvent = typeof broadcastEvents.$inferSelect;
+export type InsertBroadcastEvent = typeof broadcastEvents.$inferInsert;
+
+/**
+ * broadcastArchives — recordings and post-broadcast assets.
+ */
+export const broadcastArchives = mysqlTable("broadcast_archives", {
+  id: int("id").autoincrement().primaryKey(),
+  broadcastId: int("broadcast_id").notNull(),
+  recordingUrl: varchar("recording_url", { length: 1024 }),
+  duration: int("duration"), // seconds
+  fileSize: int("file_size"), // bytes
+  format: varchar("format", { length: 32 }).default("mp4"),
+  s3Key: varchar("s3_key", { length: 512 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type BroadcastArchive = typeof broadcastArchives.$inferSelect;
+export type InsertBroadcastArchive = typeof broadcastArchives.$inferInsert;

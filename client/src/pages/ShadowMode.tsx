@@ -24,6 +24,7 @@ import LocalAudioCapture from "@/components/LocalAudioCapture";
 import AIDashboard from "@/components/AIDashboard";
 import SystemDiagnostics from "@/components/SystemDiagnostics";
 import LiveQaDashboard from "@/components/LiveQaDashboard";
+import BroadcastControl from "@/components/BroadcastControl";
 
 const PLATFORM_LABELS: Record<string, string> = {
   zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", choruscall: "Chorus Call", other: "Other",
@@ -127,7 +128,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   }, [embedded]);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "ailearning" | "aidashboard" | "advisory" | "diagnostics" | "liveqa">("live");
+  const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "ailearning" | "aidashboard" | "advisory" | "diagnostics" | "liveqa" | "broadcast">("live");
 
 
   // ── Live Intelligence state ────────────────────────────────────────────────
@@ -660,6 +661,16 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
               }`}>
               <MessageCircle className="w-4 h-4" />
               Live Q&A
+            </button>
+            <button
+              onClick={() => setActiveTab("broadcast")}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "broadcast"
+                  ? "border-teal-400 text-teal-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              <Radio className="w-4 h-4" />
+              Broadcast Control
             </button>
             <button
               onClick={() => setActiveTab("diagnostics")}
@@ -2603,6 +2614,13 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
             eventName={sessions.data?.find((s: any) => s.id === activeSessionId)?.eventName || "Live Event"}
             clientName={sessions.data?.find((s: any) => s.id === activeSessionId)?.clientName || ""}
           />
+        )}
+
+        {/* ══════════════════════════════════════════════════
+            BROADCAST CONTROL TAB
+        ══════════════════════════════════════════════════ */}
+        {activeTab === "broadcast" && (
+          <BroadcastControl />
         )}
 
         {/* ══════════════════════════════════════════════════
