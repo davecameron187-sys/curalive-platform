@@ -546,3 +546,9 @@ id = "sBRegODgsW6GFBClX8ZyK"
 uri = "file://exports/CURALIVE_CONNECTIVITY_GUIDE.docx"
 type = "word_document"
 title = "CuraLive Complete Connectivity Guide — All API Keys, Webhooks, Endpoints & Setup"
+
+[[outputs]]
+id = "puIKBv5b5JpqmlNerIvj8"
+uri = "file://exports/CuraLive_Bridge_Manus_Brief.md"
+type = "text"
+title = "CuraLive Bridge Console — Manus Execution Brief"
