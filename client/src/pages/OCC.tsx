@@ -831,12 +831,12 @@ export default function OCC() {
     { conferenceId: activeCCPConferenceId ?? 0, limit: 20 },
     { enabled: !!activeCCPConferenceId && featureTab === "direct_access", refetchInterval: featureTab === "direct_access" ? 10000 : false }
   );
-  const dpMetricsQuery = trpc.occ.getDirectAccessStats.useQuery(
-    { conferenceId: activeCCPConferenceId ?? 0 },
-    { enabled: !!activeCCPConferenceId, refetchInterval: 15000 }
+  const dpListQuery = trpc.occ.listDiamondPass.useQuery(
+    { eventId: activeConf?.eventId ?? "" },
+    { enabled: !!activeConf?.eventId, refetchInterval: 15000 }
   );
   const dpJoinedCount = participants.filter((p) => p.isDiamondPass).length;
-  const dpRegisteredCount = Math.max(dpJoinedCount, dpMetricsQuery.data?.total ?? 0);
+  const dpRegisteredCount = Math.max(dpJoinedCount, dpListQuery.data?.length ?? 0);
 
   const resendPinMut = trpc.occ.resendPin.useMutation({
     onSuccess: (data) => toast.success(`PIN re-sent to ${data.email}`),

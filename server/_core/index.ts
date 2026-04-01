@@ -553,6 +553,27 @@ async function startServer() {
 
       // Diamond Pass first: bypass greeter queue and join directly as identified participant
       const diamondPass = await lookupDiamondPassForEvent(conference.eventId, digits);
+      // Prevent ambiguous PIN routing if both pools accidentally share the same PIN.
+      const attendeeRegistration = await lookupPinForEvent(conference.eventId, digits);
+      if (diamondPass && attendeeRegistration) {
+        await logDirectAccessAttempt({
+          conferenceId: conference.id,
+          registrationId: attendeeRegistration.id,
+          enteredPin: digits,
+          callerNumber: from,
+          outcome: "operator_queue",
+          callSid,
+          dialInNumber: to,
+        });
+        twiml.say(
+          { voice: "Polly.Joanna" },
+          "That PIN is linked to multiple registrations. Please hold while we connect you to an operator."
+        );
+        twiml.enqueue("operator-queue");
+        res.type("text/xml").send(twiml.toString());
+        return;
+      }
+
       if (diamondPass) {
         if (db) {
           const existing = await db
@@ -618,7 +639,7 @@ async function startServer() {
       }
 
       // Validate PIN against registrations for this event
-      const registration = await lookupPinForEvent(conference.eventId, digits);
+      const registration = attendeeRegistration;
 
       if (registration && conference.autoAdmitEnabled) {
         // Valid PIN + auto-admit enabled → connect directly to conference

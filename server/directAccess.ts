@@ -48,7 +48,22 @@ export async function generateUniquePin(eventId: string): Promise<string> {
       )
       .limit(1);
 
-    if (existing.length === 0) return pin;
+    if (existing.length > 0) {
+      continue;
+    }
+
+    const existingDiamond = await db
+      .select({ id: diamondPassRegistrations.id })
+      .from(diamondPassRegistrations)
+      .where(
+        and(
+          eq(diamondPassRegistrations.eventId, eventId),
+          eq(diamondPassRegistrations.pin, pin)
+        )
+      )
+      .limit(1);
+
+    if (existingDiamond.length === 0) return pin;
   }
 
   throw new Error("Could not generate a unique PIN after 20 attempts");
