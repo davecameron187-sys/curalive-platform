@@ -678,3 +678,9 @@ id = "tg57zHFvVAMJMZiGq5g8A"
 uri = "file://exports/screenshots/settings.jpg"
 type = "image"
 title = "Screenshot: Settings Tab"
+
+[[outputs]]
+id = "QaadsHqeOWrkkoLUW_wNb"
+uri = "file://exports/CuraLive_COMPLETE_For_Manus.docx"
+type = "word_document"
+title = "CuraLive COMPLETE Guide + Source Code for Manus (3.6MB Word Document)"
