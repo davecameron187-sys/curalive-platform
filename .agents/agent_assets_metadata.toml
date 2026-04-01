@@ -564,3 +564,9 @@ id = "rvhWsazekNRo2o7KRmXe1"
 uri = "file://exports/CURALIVE_COMPLETE_PLATFORM_BRIEF.md"
 type = "text"
 title = "CuraLive Complete Platform Brief"
+
+[[outputs]]
+id = "YbjLZ0rkbRXjHlgk3QpuZ"
+uri = "file://exports/CURALIVE_COMPLETE_PLATFORM_BRIEF.txt"
+type = "text"
+title = "CuraLive Complete Platform Brief (Plain Text - Copy & Paste)"
