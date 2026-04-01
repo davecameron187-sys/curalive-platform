@@ -86,6 +86,13 @@ Shadow Mode enables real-time monitoring and AI-powered intelligence generation 
 - **Resend**: Email delivery services.
 - **AWS S3**: Object storage for durable asset storage (integrated via Replit's forge API).
 
+### Bridge Console — Telephony & Post-Call
+- **Twilio Webhook Handlers** (`server/webhooks/bridgeWebhooks.ts`): Full IVR flow for inbound calls — access code entry, name/org voice capture, transcription callbacks, greeter queue placement. Twilio signature validation middleware on all callback routes. DTMF *2 hand-raise detection. Conference status events (start/end/join/leave/mute/hold/recording). Call status tracking for dial-outs.
+- **Twilio API Integration** (`bridgeConsoleRouter.ts`): `twilioDialOut` places real outbound calls via Twilio Calls API. `twilioAdmitCaller` redirects greeter queue callers into named Twilio Conferences. `twilioMuteParticipant`, `twilioHoldParticipant`, `twilioRemoveParticipant` control participants via Twilio Conferences API. `twilioAnnounce` plays announcements. All Twilio mutations throw on API failure (no false-success DB updates).
+- **Auto Recall.ai** (`deployRecallBot`): When a bridge event has `externalSources` URLs, auto-deploys Recall.ai bots and creates a linked Shadow Mode session for full AI intelligence pipeline.
+- **Post-Call Package** (`getPostCallPackage`): Returns event details, conference timing, full attendance roster, recordings with URLs, Q&A summary (answered/dismissed/pending counts + questions), operator action log, and linked Shadow Mode report. `exportAttendanceCsv` generates downloadable CSV.
+- **Webhook Routes**: All registered at `/api/bridge/*` — inbound IVR, access-code validation, name/org capture, transcription callbacks, DTMF handler, conference-status, call-status, admit-to-conference TwiML.
+
 ### Live Q&A (P1 Enhancements)
 - **Duplicate Detection**: Jaccard word-overlap similarity (threshold 0.55) auto-detects duplicate questions on submission, storing `duplicate_of_id`. Duplicates get `triage_classification: "duplicate"` and priority reduced by 20.
 - **Legal Review**: Distinct from `flagged` status — stored in `legal_review_reason` column. Modal requires reason text. `setLegalReview` procedure sets status to `flagged` + populates reason.

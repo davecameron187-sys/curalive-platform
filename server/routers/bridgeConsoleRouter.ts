@@ -2,6 +2,7 @@ import { z } from "zod";
 import { eq, and, asc, desc, sql } from "drizzle-orm";
 import { protectedProcedure, operatorProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import twilio from "twilio";
 import {
   bridgeEvents,
   bridgeConferences,
@@ -10,7 +11,24 @@ import {
   bridgeQaQuestions,
   bridgeOperatorActions,
   bridgeCallRecordings,
+  shadowSessions,
 } from "../../drizzle/schema";
+
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID ?? "";
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN ?? "";
+const TWILIO_CALLER_ID = process.env.TWILIO_CALLER_ID ?? "";
+const RECALL_API_KEY = process.env.RECALL_AI_API_KEY ?? "";
+
+function getTwilioClient() {
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) return null;
+  return twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+}
+
+function resolveBaseUrl(): string {
+  if (process.env.REPLIT_DEPLOYMENT_URL) return `https://${process.env.REPLIT_DEPLOYMENT_URL}`;
+  if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  return "http://localhost:3000";
+}
 
 async function publishBridgeEvent(conferenceId: number, eventType: string, data: any) {
   try {
@@ -696,5 +714,506 @@ export const bridgeConsoleRouter = router({
       }).returning();
 
       return participant;
+    }),
+
+  twilioDialOut: operatorProcedure
+    .input(z.object({
+      bridgeEventId: z.number(),
+      conferenceId: z.number(),
+      name: z.string(),
+      organisation: z.string(),
+      phoneNumber: z.string(),
+      role: z.enum(["presenter", "participant", "observer"]),
+    }))
+    .mutation(async ({ input }) => {
+      const client = getTwilioClient();
+      const db = await getDb();
+      const conf = await requireConference(db, input.conferenceId);
+
+      const [participant] = await db.insert(bridgeParticipants).values({
+        bridgeEventId: input.bridgeEventId,
+        conferenceId: input.conferenceId,
+        name: input.name,
+        organisation: input.organisation,
+        phoneNumber: input.phoneNumber,
+        role: input.role,
+        status: "dialing",
+        connectionMethod: "phone",
+        isMuted: input.role !== "presenter",
+      }).returning();
+
+      if (client && TWILIO_CALLER_ID) {
+        try {
+          const baseUrl = resolveBaseUrl();
+          const call = await client.calls.create({
+            to: input.phoneNumber,
+            from: TWILIO_CALLER_ID,
+            url: `${baseUrl}/api/bridge/admit-to-conference?conferenceName=${encodeURIComponent(conf.twilioConfName ?? "")}`,
+            method: "POST",
+            statusCallback: `${baseUrl}/api/bridge/call-status`,
+            statusCallbackEvent: ["initiated", "ringing", "answered", "completed"],
+            statusCallbackMethod: "POST",
+          } as any);
+
+          await db.update(bridgeParticipants)
+            .set({ twilioCallSid: call.sid })
+            .where(eq(bridgeParticipants.id, participant.id));
+
+          await logOperatorAction(input.conferenceId, "twilio_dial_out", "operator", participant.id, {
+            phoneNumber: input.phoneNumber, callSid: call.sid,
+          });
+        } catch (err) {
+          console.error("[Bridge] Twilio dial-out failed:", (err as Error).message);
+          await db.update(bridgeParticipants)
+            .set({ status: "failed" })
+            .where(eq(bridgeParticipants.id, participant.id));
+          throw new Error(`Dial-out failed: ${(err as Error).message}`);
+        }
+      } else {
+        await logOperatorAction(input.conferenceId, "dial_out_simulated", "operator", participant.id, {
+          phoneNumber: input.phoneNumber, note: "Twilio not configured",
+        });
+      }
+
+      await publishBridgeEvent(input.conferenceId, "participant:dialing", { participant });
+      return { participantId: participant.id, status: participant.status };
+    }),
+
+  twilioAdmitCaller: operatorProcedure
+    .input(z.object({
+      greeterId: z.number(),
+      conferenceId: z.number(),
+      name: z.string(),
+      organisation: z.string(),
+      role: z.enum(["presenter", "participant", "observer"]),
+    }))
+    .mutation(async ({ input }) => {
+      const client = getTwilioClient();
+      const db = await getDb();
+      const greeter = await requireGreeterInConference(db, input.greeterId, input.conferenceId);
+      const conf = await requireConference(db, input.conferenceId);
+
+      await db.update(bridgeGreeterQueue)
+        .set({ status: "admitted", admittedAt: new Date() })
+        .where(eq(bridgeGreeterQueue.id, input.greeterId));
+
+      const [participant] = await db.insert(bridgeParticipants).values({
+        bridgeEventId: greeter.bridgeEventId,
+        conferenceId: input.conferenceId,
+        name: input.name,
+        organisation: input.organisation,
+        phoneNumber: greeter.phoneNumber,
+        role: input.role,
+        status: "muted",
+        connectionMethod: "phone",
+        twilioCallSid: greeter.twilioCallSid,
+        isMuted: true,
+        greeted: true,
+        joinTime: new Date(),
+      }).returning();
+
+      if (client && greeter.twilioCallSid && conf.twilioConfName) {
+        try {
+          const baseUrl = resolveBaseUrl();
+          await client.calls(greeter.twilioCallSid).update({
+            url: `${baseUrl}/api/bridge/admit-to-conference?conferenceName=${encodeURIComponent(conf.twilioConfName)}`,
+            method: "POST",
+          } as any);
+        } catch (err) {
+          console.error("[Bridge] Twilio redirect failed:", (err as Error).message);
+        }
+      }
+
+      await logOperatorAction(input.conferenceId, "caller_admitted_twilio", "operator", participant.id, {
+        name: input.name, organisation: input.organisation,
+      });
+      await publishBridgeEvent(input.conferenceId, "greeter:admitted", {
+        greeterId: input.greeterId, participant,
+      });
+
+      return { participantId: participant.id, status: "muted" };
+    }),
+
+  twilioMuteParticipant: operatorProcedure
+    .input(z.object({ participantId: z.number(), conferenceId: z.number(), muted: z.boolean() }))
+    .mutation(async ({ input }) => {
+      const client = getTwilioClient();
+      const db = await getDb();
+      const p = await requireParticipantInConference(db, input.participantId, input.conferenceId);
+      const conf = await requireConference(db, input.conferenceId);
+
+      if (client && conf.twilioConfSid && p.twilioCallSid) {
+        try {
+          await client.conferences(conf.twilioConfSid)
+            .participants(p.twilioCallSid)
+            .update({ muted: input.muted });
+        } catch (err) {
+          console.error("[Bridge] Twilio mute failed:", (err as Error).message);
+          throw new Error(`Twilio mute failed: ${(err as Error).message}`);
+        }
+      }
+
+      const newStatus = input.muted ? "muted" : "live";
+      await db.update(bridgeParticipants)
+        .set({ isMuted: input.muted, status: newStatus })
+        .where(and(eq(bridgeParticipants.id, input.participantId), eq(bridgeParticipants.conferenceId, input.conferenceId)));
+
+      await logOperatorAction(input.conferenceId, input.muted ? "twilio_muted" : "twilio_unmuted", "operator", input.participantId);
+      await publishBridgeEvent(input.conferenceId, "participant:updated", {
+        participantId: input.participantId, isMuted: input.muted, status: newStatus,
+      });
+
+      return { status: newStatus };
+    }),
+
+  twilioHoldParticipant: operatorProcedure
+    .input(z.object({ participantId: z.number(), conferenceId: z.number(), hold: z.boolean() }))
+    .mutation(async ({ input }) => {
+      const client = getTwilioClient();
+      const db = await getDb();
+      const p = await requireParticipantInConference(db, input.participantId, input.conferenceId);
+      const conf = await requireConference(db, input.conferenceId);
+
+      if (client && conf.twilioConfSid && p.twilioCallSid) {
+        try {
+          await client.conferences(conf.twilioConfSid)
+            .participants(p.twilioCallSid)
+            .update({
+              hold: input.hold,
+              holdUrl: input.hold ? "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical" : undefined,
+            } as any);
+        } catch (err) {
+          console.error("[Bridge] Twilio hold failed:", (err as Error).message);
+          throw new Error(`Twilio hold failed: ${(err as Error).message}`);
+        }
+      }
+
+      const newStatus = input.hold ? "hold" : "muted";
+      await db.update(bridgeParticipants)
+        .set({ isOnHold: input.hold, status: newStatus })
+        .where(and(eq(bridgeParticipants.id, input.participantId), eq(bridgeParticipants.conferenceId, input.conferenceId)));
+
+      await logOperatorAction(input.conferenceId, input.hold ? "twilio_held" : "twilio_unheld", "operator", input.participantId);
+      await publishBridgeEvent(input.conferenceId, "participant:updated", {
+        participantId: input.participantId, isOnHold: input.hold, status: newStatus,
+      });
+
+      return { status: newStatus };
+    }),
+
+  twilioRemoveParticipant: operatorProcedure
+    .input(z.object({ participantId: z.number(), conferenceId: z.number() }))
+    .mutation(async ({ input }) => {
+      const client = getTwilioClient();
+      const db = await getDb();
+      const p = await requireParticipantInConference(db, input.participantId, input.conferenceId);
+      const conf = await requireConference(db, input.conferenceId);
+
+      if (client && conf.twilioConfSid && p.twilioCallSid) {
+        try {
+          await client.conferences(conf.twilioConfSid)
+            .participants(p.twilioCallSid)
+            .remove();
+        } catch (err) {
+          console.error("[Bridge] Twilio remove failed:", (err as Error).message);
+          throw new Error(`Twilio remove failed: ${(err as Error).message}`);
+        }
+      }
+
+      await db.update(bridgeParticipants)
+        .set({ status: "removed", leaveTime: new Date() })
+        .where(and(eq(bridgeParticipants.id, input.participantId), eq(bridgeParticipants.conferenceId, input.conferenceId)));
+
+      await logOperatorAction(input.conferenceId, "twilio_removed", "operator", input.participantId);
+      await publishBridgeEvent(input.conferenceId, "participant:removed", { participantId: input.participantId });
+
+      return { status: "removed" };
+    }),
+
+  twilioAnnounce: operatorProcedure
+    .input(z.object({ conferenceId: z.number(), message: z.string() }))
+    .mutation(async ({ input }) => {
+      const client = getTwilioClient();
+      const db = await getDb();
+      const conf = await requireConference(db, input.conferenceId);
+
+      if (client && conf.twilioConfSid) {
+        try {
+          await client.conferences(conf.twilioConfSid).update({
+            announceUrl: `http://twimlets.com/message?Message=${encodeURIComponent(input.message)}`,
+            announceMethod: "GET",
+          } as any);
+        } catch (err) {
+          console.error("[Bridge] Twilio announce failed:", (err as Error).message);
+        }
+      }
+
+      await logOperatorAction(input.conferenceId, "announcement", "operator", undefined, { message: input.message });
+      await publishBridgeEvent(input.conferenceId, "conference:announce", { message: input.message });
+
+      return { announced: true };
+    }),
+
+  deployRecallBot: operatorProcedure
+    .input(z.object({ bridgeEventId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      const [event] = await db.select().from(bridgeEvents)
+        .where(eq(bridgeEvents.id, input.bridgeEventId));
+      if (!event) throw new Error("Bridge event not found");
+
+      if (!RECALL_API_KEY) {
+        return { deployed: false, reason: "RECALL_AI_API_KEY not configured" };
+      }
+
+      const sources: string[] = [];
+      if (event.externalSources) {
+        try { sources.push(...JSON.parse(event.externalSources)); } catch {}
+      }
+
+      if (sources.length === 0) {
+        return { deployed: false, reason: "No external meeting URLs configured" };
+      }
+
+      const deployedBots: { url: string; botId: string }[] = [];
+      const baseUrl = resolveBaseUrl();
+
+      for (const meetingUrl of sources) {
+        try {
+          const response = await fetch("https://api.recall.ai/api/v1/bot/", {
+            method: "POST",
+            headers: {
+              "Authorization": `Token ${RECALL_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              meeting_url: meetingUrl,
+              bot_name: `CuraLive Bridge - ${event.name}`,
+              transcription_options: { provider: "default" },
+              real_time_transcription: {
+                destination_url: `${baseUrl}/api/recall/webhook`,
+                partial_results: false,
+              },
+              metadata: {
+                bridgeEventId: event.id,
+                eventName: event.name,
+                ablyChannel: `bridge-recall-${event.id}`,
+              },
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json() as any;
+            deployedBots.push({ url: meetingUrl, botId: data.id });
+            console.log(`[Bridge Recall] Bot deployed: ${data.id} for ${meetingUrl}`);
+          } else {
+            console.error(`[Bridge Recall] Deploy failed for ${meetingUrl}: ${response.status}`);
+          }
+        } catch (err) {
+          console.error(`[Bridge Recall] Deploy error for ${meetingUrl}:`, (err as Error).message);
+        }
+      }
+
+      if (deployedBots.length === 0) {
+        return { deployed: false, reason: "All bot deployments failed", botCount: 0, bots: [] };
+      }
+
+      await db.update(bridgeEvents)
+        .set({ recallBotIds: JSON.stringify(deployedBots.map(b => b.botId)) })
+        .where(eq(bridgeEvents.id, input.bridgeEventId));
+
+      let shadowSessionId: number | null = null;
+      try {
+        const [session] = await db.insert(shadowSessions).values({
+          clientName: event.organiserName ?? "Bridge Event",
+          eventName: event.name,
+          platform: "bridge",
+          status: "live",
+          recallBotId: deployedBots[0]?.botId ?? null,
+          startedAt: new Date(),
+        } as any).returning();
+        shadowSessionId = session.id;
+
+        await db.update(bridgeEvents)
+          .set({ shadowSessionId: session.id })
+          .where(eq(bridgeEvents.id, input.bridgeEventId));
+      } catch (err) {
+        console.error("[Bridge Recall] Shadow session creation failed:", (err as Error).message);
+      }
+
+      return {
+        deployed: true,
+        botCount: deployedBots.length,
+        bots: deployedBots,
+        shadowSessionId,
+      };
+    }),
+
+  getPostCallPackage: operatorProcedure
+    .input(z.object({ bridgeEventId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const [event] = await db.select().from(bridgeEvents)
+        .where(eq(bridgeEvents.id, input.bridgeEventId));
+      if (!event) throw new Error("Bridge event not found");
+
+      const conferences = await db.select().from(bridgeConferences)
+        .where(eq(bridgeConferences.bridgeEventId, input.bridgeEventId));
+      const mainConf = conferences.find(c => c.type === "main");
+
+      const participants = await db.select().from(bridgeParticipants)
+        .where(eq(bridgeParticipants.bridgeEventId, input.bridgeEventId))
+        .orderBy(asc(bridgeParticipants.joinTime));
+
+      let recordings: any[] = [];
+      if (mainConf) {
+        recordings = await db.select().from(bridgeCallRecordings)
+          .where(eq(bridgeCallRecordings.conferenceId, mainConf.id));
+      }
+
+      let qaQuestions: any[] = [];
+      if (mainConf) {
+        qaQuestions = await db.select().from(bridgeQaQuestions)
+          .where(eq(bridgeQaQuestions.conferenceId, mainConf.id))
+          .orderBy(asc(bridgeQaQuestions.queuePosition));
+      }
+
+      let operatorLog: any[] = [];
+      if (mainConf) {
+        operatorLog = await db.select().from(bridgeOperatorActions)
+          .where(eq(bridgeOperatorActions.conferenceId, mainConf.id))
+          .orderBy(asc(bridgeOperatorActions.performedAt))
+          .limit(500);
+      }
+
+      let shadowReport: any = null;
+      if (event.shadowSessionId) {
+        try {
+          const [session] = await db.select().from(shadowSessions)
+            .where(eq(shadowSessions.id, event.shadowSessionId));
+          if (session) {
+            shadowReport = {
+              sessionId: session.id,
+              status: session.status,
+              clientName: session.clientName,
+              eventName: session.eventName,
+              averageSentiment: (session as any).averageSentiment ?? null,
+              complianceFlags: (session as any).complianceFlags ?? 0,
+            };
+          }
+        } catch {}
+      }
+
+      const activePresenters = participants.filter(p => p.role === "presenter");
+      const activeAttendees = participants.filter(p => p.role === "participant");
+      const activeObservers = participants.filter(p => p.role === "observer");
+
+      const confStartedAt = mainConf?.startedAt;
+      const confEndedAt = mainConf?.endedAt;
+      const durationMinutes = confStartedAt && confEndedAt
+        ? Math.round((confEndedAt.getTime() - confStartedAt.getTime()) / 60000)
+        : null;
+
+      return {
+        event: {
+          id: event.id,
+          name: event.name,
+          organiserName: event.organiserName,
+          organiserEmail: event.organiserEmail,
+          accessCode: event.accessCode,
+          scheduledAt: event.scheduledAt,
+          status: event.status,
+        },
+        conference: mainConf ? {
+          id: mainConf.id,
+          phase: mainConf.phase,
+          startedAt: mainConf.startedAt,
+          endedAt: mainConf.endedAt,
+          durationMinutes,
+        } : null,
+        attendance: {
+          total: participants.length,
+          presenters: activePresenters.length,
+          attendees: activeAttendees.length,
+          observers: activeObservers.length,
+          participants: participants.map(p => ({
+            name: p.name,
+            organisation: p.organisation,
+            role: p.role,
+            connectionMethod: p.connectionMethod,
+            joinTime: p.joinTime,
+            leaveTime: p.leaveTime,
+            durationSeconds: p.durationSeconds,
+            status: p.status,
+          })),
+        },
+        recordings: recordings.map(r => ({
+          id: r.id,
+          status: r.status,
+          durationSec: r.durationSec,
+          storageUrl: r.storageUrl,
+          transcriptUrl: r.transcriptUrl,
+        })),
+        qa: {
+          total: qaQuestions.length,
+          answered: qaQuestions.filter(q => q.status === "answered").length,
+          dismissed: qaQuestions.filter(q => q.status === "dismissed").length,
+          pending: qaQuestions.filter(q => q.status === "pending").length,
+          questions: qaQuestions.map(q => ({
+            id: q.id,
+            questionText: q.questionText,
+            method: q.method,
+            status: q.status,
+            raisedAt: q.raisedAt,
+            answeredAt: q.answeredAt,
+          })),
+        },
+        operatorLog: operatorLog.map(l => ({
+          action: l.action,
+          category: l.category,
+          performedAt: l.performedAt,
+        })),
+        shadowReport,
+      };
+    }),
+
+  exportAttendanceCsv: operatorProcedure
+    .input(z.object({ bridgeEventId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const [event] = await db.select().from(bridgeEvents)
+        .where(eq(bridgeEvents.id, input.bridgeEventId));
+      if (!event) throw new Error("Bridge event not found");
+
+      const participants = await db.select().from(bridgeParticipants)
+        .where(eq(bridgeParticipants.bridgeEventId, input.bridgeEventId))
+        .orderBy(asc(bridgeParticipants.joinTime));
+
+      const header = "Name,Organisation,Role,Connection,Join Time,Leave Time,Duration (s),Status";
+      const rows = participants.map(p => [
+        `"${(p.name ?? "").replace(/"/g, '""')}"`,
+        `"${(p.organisation ?? "").replace(/"/g, '""')}"`,
+        p.role,
+        p.connectionMethod,
+        p.joinTime?.toISOString() ?? "",
+        p.leaveTime?.toISOString() ?? "",
+        p.durationSeconds ?? "",
+        p.status,
+      ].join(","));
+
+      return {
+        filename: `${event.name.replace(/[^a-zA-Z0-9]/g, "_")}_attendance.csv`,
+        csv: [header, ...rows].join("\n"),
+      };
+    }),
+
+  updateEventStatus: operatorProcedure
+    .input(z.object({ bridgeEventId: z.number(), status: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      await db.update(bridgeEvents)
+        .set({ status: input.status, updatedAt: new Date() })
+        .where(eq(bridgeEvents.id, input.bridgeEventId));
+      return { status: input.status };
     }),
 });

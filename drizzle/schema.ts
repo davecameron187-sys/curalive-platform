@@ -3510,6 +3510,7 @@ export type InsertBridgeParticipant = typeof bridgeParticipants.$inferInsert;
 export const bridgeGreeterQueue = pgTable("bridge_greeter_queue", {
   id: serial("id").primaryKey(),
   bridgeEventId: integer("bridge_event_id").notNull(),
+  conferenceId: integer("conference_id"),
   twilioCallSid: varchar("twilio_call_sid", { length: 100 }),
   phoneNumber: varchar("phone_number", { length: 50 }),
   voiceNameUrl: varchar("voice_name_url", { length: 500 }),

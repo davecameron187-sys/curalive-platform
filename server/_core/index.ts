@@ -15,6 +15,7 @@ import { registerRecordingUploadRoute } from "../recordingUpload";
 import { startReminderScheduler } from "../reminderScheduler";
 import { startComplianceDigestScheduler } from "../complianceDigestScheduler";
 import { registerBillingPdfRoutes } from "../billingPdf";
+import { registerBridgeWebhooks } from "../webhooks/bridgeWebhooks";
 import { buildTwiMLVoiceResponse } from "../webphone/twilio";
 import { parseTelnyxWebhook } from "../webphone/telnyx";
 import twilio_twiml from "twilio";
@@ -632,6 +633,7 @@ async function startServer() {
   registerAudioTranscribeRoute(app);
   registerRecordingUploadRoute(app);
   registerBillingPdfRoutes(app);
+  registerBridgeWebhooks(app);
 
   // Architecture doc download — serves the generated Word document
   app.get("/download/architecture", (_req, res) => {
