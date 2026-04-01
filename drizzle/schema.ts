@@ -3575,6 +3575,238 @@ export const bridgeCallRecordings = pgTable("bridge_call_recordings", {
 export type BridgeCallRecording = typeof bridgeCallRecordings.$inferSelect;
 export type InsertBridgeCallRecording = typeof bridgeCallRecordings.$inferInsert;
 
+// ─── Board Intelligence Compass ─────────────────────────────────────────────
+export const boardIntelligenceCompass = pgTable("board_intelligence_compass", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id").notNull(),
+  eventId: integer("event_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const priorCommitmentAudits = pgTable("prior_commitment_audits", {
+  id: serial("id").primaryKey(),
+  compassId: integer("compass_id").notNull(),
+  commitmentType: varchar("commitment_type", { length: 100 }).notNull(),
+  statement: text("statement").notNull(),
+  source: varchar("source", { length: 255 }),
+  eventDate: timestamp("event_date"),
+  speaker: varchar("speaker", { length: 255 }),
+  confidence: real("confidence"),
+  riskLevel: varchar("risk_level", { length: 20 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const directorLiabilityMaps = pgTable("director_liability_maps", {
+  id: serial("id").primaryKey(),
+  compassId: integer("compass_id").notNull(),
+  directorName: varchar("director_name", { length: 255 }).notNull(),
+  liabilityArea: varchar("liability_area", { length: 100 }),
+  exposureLevel: varchar("exposure_level", { length: 20 }),
+  description: text("description"),
+  mitigationSteps: text("mitigation_steps"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const analystExpectationAudits = pgTable("analyst_expectation_audits", {
+  id: serial("id").primaryKey(),
+  compassId: integer("compass_id").notNull(),
+  analystName: varchar("analyst_name", { length: 255 }),
+  consensusEps: real("consensus_eps"),
+  consensusRevenue: real("consensus_revenue"),
+  consensusGrowth: real("consensus_growth"),
+  priorGuidance: text("prior_guidance"),
+  surpriseRisk: varchar("surprise_risk", { length: 20 }),
+  keyExpectations: text("key_expectations"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const governanceCommunicationScores = pgTable("governance_communication_scores", {
+  id: serial("id").primaryKey(),
+  compassId: integer("compass_id").notNull(),
+  clarity: real("clarity"),
+  consistency: real("consistency"),
+  completeness: real("completeness"),
+  timeliness: real("timeliness"),
+  overallScore: real("overall_score"),
+  recommendations: text("recommendations"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const boardResolutions = pgTable("board_resolutions", {
+  id: serial("id").primaryKey(),
+  compassId: integer("compass_id").notNull(),
+  actionType: varchar("action_type", { length: 100 }),
+  description: text("description").notNull(),
+  priority: varchar("priority", { length: 20 }),
+  owner: varchar("owner", { length: 255 }),
+  dueDate: timestamp("due_date"),
+  status: varchar("status", { length: 20 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const compassProvenance = pgTable("compass_provenance", {
+  id: serial("id").primaryKey(),
+  compassId: integer("compass_id").notNull(),
+  outputType: varchar("output_type", { length: 100 }),
+  source: varchar("source", { length: 255 }),
+  timestamp: timestamp("timestamp"),
+  confidence: real("confidence"),
+  version: integer("version").default(1),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const compassActionHistory = pgTable("compass_action_history", {
+  id: serial("id").primaryKey(),
+  compassId: integer("compass_id").notNull(),
+  action: varchar("action", { length: 255 }),
+  actor: varchar("actor", { length: 255 }),
+  details: text("details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Pre-Event Intelligence Briefing ────────────────────────────────────────
+export const preEventIntelligenceBriefings = pgTable("pre_event_intelligence_briefings", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id").notNull(),
+  eventId: integer("event_id").notNull(),
+  briefingDate: timestamp("briefing_date").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const analystConsensusData = pgTable("analyst_consensus_data", {
+  id: serial("id").primaryKey(),
+  briefingId: integer("briefing_id").notNull(),
+  metric: varchar("metric", { length: 100 }),
+  consensusValue: real("consensus_value"),
+  lowEstimate: real("low_estimate"),
+  highEstimate: real("high_estimate"),
+  numAnalysts: integer("num_analysts"),
+  revisionTrend: varchar("revision_trend", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const predictedQaItems = pgTable("predicted_qa_items", {
+  id: serial("id").primaryKey(),
+  briefingId: integer("briefing_id").notNull(),
+  topic: varchar("topic", { length: 255 }),
+  predictedQuestion: text("predicted_question"),
+  suggestedAnswer: text("suggested_answer"),
+  probability: real("probability"),
+  riskLevel: varchar("risk_level", { length: 20 }),
+  source: varchar("source", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const complianceHotspots = pgTable("compliance_hotspots", {
+  id: serial("id").primaryKey(),
+  briefingId: integer("briefing_id").notNull(),
+  area: varchar("area", { length: 100 }),
+  description: text("description"),
+  riskLevel: varchar("risk_level", { length: 20 }),
+  regulatoryBasis: varchar("regulatory_basis", { length: 255 }),
+  recommendedAction: text("recommended_action"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const readinessScores = pgTable("readiness_scores", {
+  id: serial("id").primaryKey(),
+  briefingId: integer("briefing_id").notNull(),
+  category: varchar("category", { length: 100 }),
+  score: real("score"),
+  maxScore: real("max_score"),
+  gaps: text("gaps"),
+  recommendations: text("recommendations"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const briefingProvenance = pgTable("briefing_provenance", {
+  id: serial("id").primaryKey(),
+  briefingId: integer("briefing_id").notNull(),
+  dataPoint: varchar("data_point", { length: 255 }),
+  source: varchar("source", { length: 255 }),
+  timestamp: timestamp("timestamp"),
+  confidence: real("confidence"),
+  version: integer("version").default(1),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const briefingActionHistory = pgTable("briefing_action_history", {
+  id: serial("id").primaryKey(),
+  briefingId: integer("briefing_id").notNull(),
+  action: varchar("action", { length: 255 }),
+  actor: varchar("actor", { length: 255 }),
+  details: text("details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Regulatory Compliance Monitor ──────────────────────────────────────────
+export const regulatoryComplianceMonitors = pgTable("regulatory_compliance_monitors", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id").notNull(),
+  eventId: integer("event_id").notNull(),
+  monitoringStarted: timestamp("monitoring_started").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const regulatoryFlags = pgTable("regulatory_flags", {
+  id: serial("id").primaryKey(),
+  monitorId: integer("monitor_id").notNull(),
+  flagType: varchar("flag_type", { length: 100 }),
+  jurisdiction: varchar("jurisdiction", { length: 50 }),
+  ruleSet: varchar("rule_set", { length: 100 }),
+  severity: varchar("severity", { length: 20 }),
+  statement: text("statement"),
+  speaker: varchar("speaker", { length: 255 }),
+  segmentTimestamp: varchar("segment_timestamp", { length: 20 }),
+  ruleBasis: text("rule_basis"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const disclosureTriggers = pgTable("disclosure_triggers", {
+  id: serial("id").primaryKey(),
+  monitorId: integer("monitor_id").notNull(),
+  filingType: varchar("filing_type", { length: 50 }),
+  triggerReason: text("trigger_reason"),
+  status: varchar("status", { length: 20 }).default("draft"),
+  draftContent: text("draft_content"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const jurisdictionProfiles = pgTable("jurisdiction_profiles", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 20 }).unique(),
+  name: varchar("name", { length: 255 }),
+  ruleSetVersion: varchar("rule_set_version", { length: 50 }),
+  applicableRules: text("applicable_rules"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const complianceActionItems = pgTable("compliance_action_items", {
+  id: serial("id").primaryKey(),
+  monitorId: integer("monitor_id").notNull(),
+  actionType: varchar("action_type", { length: 100 }),
+  description: text("description"),
+  priority: varchar("priority", { length: 20 }),
+  owner: varchar("owner", { length: 255 }),
+  dueDate: timestamp("due_date"),
+  status: varchar("status", { length: 20 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const complianceProvenance = pgTable("compliance_provenance", {
+  id: serial("id").primaryKey(),
+  monitorId: integer("monitor_id").notNull(),
+  flagId: integer("flag_id"),
+  source: varchar("source", { length: 255 }),
+  timestamp: timestamp("timestamp"),
+  confidence: real("confidence"),
+  version: integer("version").default(1),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const complianceDetectionStats = pgTable("compliance_detection_stats", {
   id: serial("id").primaryKey(),
   eventId: varchar("event_id", { length: 255 }).notNull(),

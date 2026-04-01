@@ -2,6 +2,9 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { BoardIntelligenceCompass } from "@/components/BoardIntelligenceCompass";
+import { PreEventIntelligenceBriefing } from "@/components/PreEventIntelligenceBriefing";
+import { RegulatoryComplianceMonitor } from "@/components/RegulatoryComplianceMonitor";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { RotateCw } from "lucide-react";
@@ -486,7 +489,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   }, [embedded]);
 
   // Tab state — support ?tab= URL param for direct linking
-  const validTabs = ["live", "archive", "reports", "ailearning", "aidashboard", "advisory", "diagnostics", "liveqa"] as const;
+  const validTabs = ["live", "archive", "reports", "ailearning", "aidashboard", "advisory", "diagnostics", "liveqa", "board-compass", "pre-event", "compliance"] as const;
   type TabType = typeof validTabs[number];
   const urlTab = new URLSearchParams(window.location.search).get("tab") as TabType | null;
   const [activeTab, setActiveTab] = useState<TabType>(urlTab && validTabs.includes(urlTab) ? urlTab : "live");
@@ -1140,6 +1143,33 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
               }`}>
               <Shield className="w-4 h-4" />
               System Test
+            </button>
+            <button
+              onClick={() => setActiveTab("board-compass")}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "board-compass"
+                  ? "border-amber-400 text-amber-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              Board Intelligence
+            </button>
+            <button
+              onClick={() => setActiveTab("pre-event")}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "pre-event"
+                  ? "border-cyan-400 text-cyan-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              Pre-Event Briefing
+            </button>
+            <button
+              onClick={() => setActiveTab("compliance")}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "compliance"
+                  ? "border-rose-400 text-rose-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              Compliance Monitor
             </button>
           </div>
         </div>
@@ -3317,6 +3347,27 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
         ══════════════════════════════════════════════════ */}
         {activeTab === "diagnostics" && (
           <SystemDiagnostics />
+        )}
+
+        {activeTab === "board-compass" && activeSessionId && (
+          <BoardIntelligenceCompass sessionId={activeSessionId} />
+        )}
+        {activeTab === "board-compass" && !activeSessionId && (
+          <div className="text-center py-16 text-slate-400">Select or start a session to view the Board Intelligence Compass</div>
+        )}
+
+        {activeTab === "pre-event" && activeSessionId && (
+          <PreEventIntelligenceBriefing sessionId={activeSessionId} />
+        )}
+        {activeTab === "pre-event" && !activeSessionId && (
+          <div className="text-center py-16 text-slate-400">Select or start a session to view the Pre-Event Intelligence Briefing</div>
+        )}
+
+        {activeTab === "compliance" && activeSessionId && (
+          <RegulatoryComplianceMonitor sessionId={activeSessionId} />
+        )}
+        {activeTab === "compliance" && !activeSessionId && (
+          <div className="text-center py-16 text-slate-400">Select or start a session to view the Regulatory Compliance Monitor</div>
         )}
 
       </div>

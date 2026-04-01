@@ -104,6 +104,9 @@ import { restBridgeRouter } from "./routers/restBridgeRouter";
 import { sessionRouter } from "./routers/session";
 import { archiveRouter } from "./routers/archive";
 import { bridgeConsoleRouter } from "./routers/bridgeConsoleRouter";
+import { boardIntelligenceRouter } from "./routers/boardIntelligenceRouter";
+import { preEventIntelligenceRouter } from "./routers/preEventIntelligenceRouter";
+import { regulatoryComplianceRouter } from "./routers/regulatoryComplianceRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -217,6 +220,9 @@ export const appRouter = router({
   session: sessionRouter,
   archive: archiveRouter,
   bridgeConsole: bridgeConsoleRouter,
+  boardIntelligence: boardIntelligenceRouter,
+  preEventIntelligence: preEventIntelligenceRouter,
+  regulatoryCompliance: regulatoryComplianceRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();
