@@ -124,6 +124,7 @@ import ConferenceDialout from "./pages/ConferenceDialout";
 import AgmGovernanceAi from "./pages/AgmGovernanceAi";
 import AttendeeQA from "./pages/AttendeeQA";
 import EmbeddableQaWidget from "./pages/EmbeddableQaWidget";
+import BridgeConsole from "./pages/BridgeConsole";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -223,6 +224,8 @@ function Router() {
       <Route path="/call-preparation" component={CallPreparation} />
       <Route path="/intelligence-terminal" component={IntelligenceTerminal} />
       <Route path="/conference-dialout" component={ConferenceDialout} />
+      <Route path="/bridge">{() => <RequireAuth requiredRole="operator"><BridgeConsole /></RequireAuth>}</Route>
+      <Route path="/bridge/:id">{(params: any) => <RequireAuth requiredRole="operator"><BridgeConsole initialEventId={Number(params.id)} /></RequireAuth>}</Route>
       <Route path="/agm-governance" component={AgmGovernanceAi} />
       <Route path="/qa/:accessCode" component={AttendeeQA} />
       <Route path="/embed/qa/:accessCode" component={EmbeddableQaWidget} />

@@ -102,6 +102,7 @@ import { bastionBookingRouter } from "./routers/bastionBookingRouter";
 import { restBridgeRouter } from "./routers/restBridgeRouter";
 import { sessionRouter } from "./routers/session";
 import { archiveRouter } from "./routers/archive";
+import { bridgeConsoleRouter } from "./routers/bridgeConsoleRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -214,6 +215,7 @@ export const appRouter = router({
   restBridge: restBridgeRouter,
   session: sessionRouter,
   archive: archiveRouter,
+  bridgeConsole: bridgeConsoleRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

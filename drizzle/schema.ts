@@ -3399,6 +3399,181 @@ export const liveQaPlatformShares = pgTable("live_qa_platform_shares", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// BRIDGE CONSOLE — White-glove operator-assisted conference bridge
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const bridgeEventPhaseEnum = pgEnum("bridge_event_phase", [
+  "scheduled", "pre_call", "live", "ended"
+]);
+
+export const bridgeConfTypeEnum = pgEnum("bridge_conf_type", [
+  "green_room", "main"
+]);
+
+export const bridgeConfPhaseEnum = pgEnum("bridge_conf_phase", [
+  "waiting", "lobby", "live", "ended"
+]);
+
+export const bridgeParticipantStatusEnum = pgEnum("bridge_participant_status", [
+  "invited", "dialing", "greeter_queue", "green_room",
+  "lobby", "live", "muted", "hold", "left", "removed", "failed", "no_answer"
+]);
+
+export const bridgeParticipantRoleEnum = pgEnum("bridge_participant_role", [
+  "presenter", "participant", "operator", "observer"
+]);
+
+export const bridgeGreeterStatusEnum = pgEnum("bridge_greeter_status", [
+  "waiting", "admitted", "rejected", "timed_out"
+]);
+
+export const bridgeQaStatusEnum = pgEnum("bridge_qa_status", [
+  "pending", "approved", "live", "answered", "dismissed", "skipped"
+]);
+
+export const bridgeQaMethodEnum = pgEnum("bridge_qa_method", [
+  "phone_keypress", "web_button", "operator_added"
+]);
+
+export const bridgeEvents = pgTable("bridge_events", {
+  id: serial("id").primaryKey(),
+  eventId: varchar("event_id", { length: 128 }),
+  name: varchar("name", { length: 255 }).notNull(),
+  organiserName: varchar("organiser_name", { length: 255 }),
+  organiserEmail: varchar("organiser_email", { length: 255 }),
+  scheduledAt: timestamp("scheduled_at"),
+  status: varchar("status", { length: 50 }).default("scheduled").notNull(),
+  bridgeEnabled: boolean("bridge_enabled").default(true).notNull(),
+  accessCode: varchar("access_code", { length: 20 }),
+  dialInNumber: varchar("dial_in_number", { length: 50 }),
+  externalSources: text("external_sources"),
+  recallBotIds: text("recall_bot_ids"),
+  shadowSessionId: integer("shadow_session_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type BridgeEvent = typeof bridgeEvents.$inferSelect;
+export type InsertBridgeEvent = typeof bridgeEvents.$inferInsert;
+
+export const bridgeConferences = pgTable("bridge_conferences", {
+  id: serial("id").primaryKey(),
+  bridgeEventId: integer("bridge_event_id").notNull(),
+  twilioConfSid: varchar("twilio_conf_sid", { length: 100 }),
+  twilioConfName: varchar("twilio_conf_name", { length: 255 }),
+  type: varchar("type", { length: 50 }).default("main").notNull(),
+  phase: varchar("phase", { length: 50 }).default("waiting").notNull(),
+  isRecording: boolean("is_recording").default(false).notNull(),
+  isLocked: boolean("is_locked").default(false).notNull(),
+  qaActive: boolean("qa_active").default(false).notNull(),
+  recordingSid: varchar("recording_sid", { length: 100 }),
+  recordingUrl: varchar("recording_url", { length: 500 }),
+  startedAt: timestamp("started_at"),
+  endedAt: timestamp("ended_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type BridgeConference = typeof bridgeConferences.$inferSelect;
+export type InsertBridgeConference = typeof bridgeConferences.$inferInsert;
+
+export const bridgeParticipants = pgTable("bridge_participants", {
+  id: serial("id").primaryKey(),
+  bridgeEventId: integer("bridge_event_id").notNull(),
+  conferenceId: integer("conference_id"),
+  name: varchar("name", { length: 255 }),
+  organisation: varchar("organisation", { length: 255 }),
+  phoneNumber: varchar("phone_number", { length: 50 }),
+  role: varchar("role", { length: 50 }).default("participant").notNull(),
+  status: varchar("status", { length: 50 }).default("invited").notNull(),
+  connectionMethod: varchar("connection_method", { length: 20 }).default("phone"),
+  twilioCallSid: varchar("twilio_call_sid", { length: 100 }),
+  twilioParticipantSid: varchar("twilio_participant_sid", { length: 100 }),
+  voiceCaptureUrl: varchar("voice_capture_url", { length: 500 }),
+  isMuted: boolean("is_muted").default(true).notNull(),
+  isOnHold: boolean("is_on_hold").default(false).notNull(),
+  handRaised: boolean("hand_raised").default(false).notNull(),
+  handRaisedAt: timestamp("hand_raised_at"),
+  qaPosition: integer("qa_position"),
+  notes: text("notes"),
+  joinTime: timestamp("join_time"),
+  leaveTime: timestamp("leave_time"),
+  durationSeconds: integer("duration_seconds"),
+  greeted: boolean("greeted").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type BridgeParticipant = typeof bridgeParticipants.$inferSelect;
+export type InsertBridgeParticipant = typeof bridgeParticipants.$inferInsert;
+
+export const bridgeGreeterQueue = pgTable("bridge_greeter_queue", {
+  id: serial("id").primaryKey(),
+  bridgeEventId: integer("bridge_event_id").notNull(),
+  twilioCallSid: varchar("twilio_call_sid", { length: 100 }),
+  phoneNumber: varchar("phone_number", { length: 50 }),
+  voiceNameUrl: varchar("voice_name_url", { length: 500 }),
+  voiceOrgUrl: varchar("voice_org_url", { length: 500 }),
+  transcribedName: varchar("transcribed_name", { length: 255 }),
+  transcribedOrg: varchar("transcribed_org", { length: 255 }),
+  status: varchar("status", { length: 50 }).default("waiting").notNull(),
+  queuedAt: timestamp("queued_at").defaultNow().notNull(),
+  admittedAt: timestamp("admitted_at"),
+});
+
+export type BridgeGreeterQueue = typeof bridgeGreeterQueue.$inferSelect;
+export type InsertBridgeGreeterQueue = typeof bridgeGreeterQueue.$inferInsert;
+
+export const bridgeQaQuestions = pgTable("bridge_qa_questions", {
+  id: serial("id").primaryKey(),
+  conferenceId: integer("conference_id").notNull(),
+  participantId: integer("participant_id"),
+  questionText: text("question_text"),
+  method: varchar("method", { length: 20 }).default("phone_keypress"),
+  queuePosition: integer("queue_position"),
+  status: varchar("status", { length: 50 }).default("pending").notNull(),
+  raisedAt: timestamp("raised_at").defaultNow().notNull(),
+  approvedAt: timestamp("approved_at"),
+  wentLiveAt: timestamp("went_live_at"),
+  answeredAt: timestamp("answered_at"),
+  dismissedAt: timestamp("dismissed_at"),
+  operatorNotes: text("operator_notes"),
+});
+
+export type BridgeQaQuestion = typeof bridgeQaQuestions.$inferSelect;
+export type InsertBridgeQaQuestion = typeof bridgeQaQuestions.$inferInsert;
+
+export const bridgeOperatorActions = pgTable("bridge_operator_actions", {
+  id: serial("id").primaryKey(),
+  conferenceId: integer("conference_id"),
+  operatorId: varchar("operator_id", { length: 255 }),
+  action: varchar("action", { length: 100 }).notNull(),
+  targetId: integer("target_id"),
+  category: varchar("category", { length: 50 }).default("operator"),
+  metadata: text("metadata"),
+  performedAt: timestamp("performed_at").defaultNow().notNull(),
+});
+
+export type BridgeOperatorAction = typeof bridgeOperatorActions.$inferSelect;
+export type InsertBridgeOperatorAction = typeof bridgeOperatorActions.$inferInsert;
+
+export const bridgeCallRecordings = pgTable("bridge_call_recordings", {
+  id: serial("id").primaryKey(),
+  conferenceId: integer("conference_id").notNull(),
+  twilioRecSid: varchar("twilio_rec_sid", { length: 100 }),
+  channels: integer("channels").default(2),
+  durationSec: integer("duration_sec"),
+  fileSizeBytes: bigint("file_size_bytes", { mode: "number" }),
+  storageUrl: varchar("storage_url", { length: 500 }),
+  transcriptUrl: varchar("transcript_url", { length: 500 }),
+  transcriptText: text("transcript_text"),
+  status: varchar("status", { length: 50 }).default("processing").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type BridgeCallRecording = typeof bridgeCallRecordings.$inferSelect;
+export type InsertBridgeCallRecording = typeof bridgeCallRecordings.$inferInsert;
+
 export const complianceDetectionStats = pgTable("compliance_detection_stats", {
   id: serial("id").primaryKey(),
   eventId: varchar("event_id", { length: 255 }).notNull(),

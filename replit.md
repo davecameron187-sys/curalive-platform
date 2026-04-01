@@ -33,6 +33,7 @@ The CuraLive platform utilizes a modern full-stack architecture.
 - **Communication**: tRPC client for type-safe end-to-end communication with the backend.
 - **UI Pages**:
     - `/`: Unified Operator Dashboard (Overview, Shadow Mode, OCC, Partners, Settings).
+    - `/bridge` / `/bridge/:id`: Bridge Console — professional telephony operator console (greeter queue, green room, lecture mode, managed Q&A, post-call package). Requires operator role.
     - `/intelligence-suite`: AI-powered intelligence suite.
     - `/live/:token`: Client-facing read-only live dashboard.
     - `/qa/:accessCode`: Attendee webphone page for Live Q&A.
