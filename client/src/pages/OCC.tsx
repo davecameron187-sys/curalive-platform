@@ -96,6 +96,15 @@ function formatTime(dt: Date | string | null): string {
   return new Date(dt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
+function maskPhoneNumber(phone: string | null | undefined): string {
+  if (!phone) return "—";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 7) return phone;
+  const countryCode = digits.slice(0, 2);
+  const lastThree = digits.slice(-3);
+  return `+${countryCode} XXX XXXX ${lastThree}`;
+}
+
 // ─── Demo data fallback ───────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -822,6 +831,12 @@ export default function OCC() {
     { conferenceId: activeCCPConferenceId ?? 0, limit: 20 },
     { enabled: !!activeCCPConferenceId && featureTab === "direct_access", refetchInterval: featureTab === "direct_access" ? 10000 : false }
   );
+  const dpMetricsQuery = trpc.occ.getDirectAccessStats.useQuery(
+    { conferenceId: activeCCPConferenceId ?? 0 },
+    { enabled: !!activeCCPConferenceId, refetchInterval: 15000 }
+  );
+  const dpJoinedCount = participants.filter((p) => p.isDiamondPass).length;
+  const dpRegisteredCount = Math.max(dpJoinedCount, dpMetricsQuery.data?.total ?? 0);
 
   const resendPinMut = trpc.occ.resendPin.useMutation({
     onSuccess: (data) => toast.success(`PIN re-sent to ${data.email}`),
@@ -1954,7 +1969,7 @@ export default function OCC() {
                     <tr key={req.id} className="border-b border-slate-800 hover:bg-slate-800/40">
                       <td className="px-3 py-2 font-mono text-blue-400">{req.callId}</td>
                       <td className="px-3 py-2">{req.subject}</td>
-                      <td className="px-3 py-2 font-mono">{req.phoneNumber}</td>
+                      <td className="px-3 py-2 font-mono">{maskPhoneNumber(req.phoneNumber)}</td>
                       <td className="px-3 py-2 font-mono text-slate-400">{req.dialInNumber}</td>
                       <td className="px-3 py-2 text-slate-400">{formatTime(req.requestedAt)}</td>
                       <td className="px-3 py-2">
@@ -2011,6 +2026,7 @@ export default function OCC() {
                   <tr className="border-b border-slate-700 text-slate-400">
                     <th className="text-left px-3 py-2">Call-ID</th>
                     <th className="text-left px-3 py-2">Name</th>
+                    <th className="text-left px-3 py-2">Type</th>
                     <th className="text-left px-3 py-2">Company</th>
                     <th className="text-left px-3 py-2">Phone</th>
                     <th className="text-left px-3 py-2">Waiting</th>
@@ -2023,8 +2039,15 @@ export default function OCC() {
                     <tr key={entry.id} className="border-b border-slate-800 hover:bg-slate-800/40">
                       <td className="px-3 py-2 font-mono text-blue-400">{entry.callId}</td>
                       <td className="px-3 py-2 font-medium">{entry.name ?? <span className="text-slate-500 italic">Unknown</span>}</td>
+                      <td className="px-3 py-2">
+                        {entry.isDiamondPass ? (
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-semibold">DP</span>
+                        ) : (
+                          <span className="text-slate-600">—</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-slate-400">{entry.company ?? "—"}</td>
-                      <td className="px-3 py-2 font-mono">{entry.phoneNumber}</td>
+                      <td className="px-3 py-2 font-mono">{maskPhoneNumber(entry.phoneNumber)}</td>
                       <td className="px-3 py-2 text-amber-400">{formatDuration(entry.arrivedAt)}</td>
                       <td className="px-3 py-2 uppercase text-slate-400">{entry.language ?? "en"}</td>
                       <td className="px-3 py-2">
@@ -2755,11 +2778,16 @@ export default function OCC() {
                                <span className="text-slate-500">·</span>}
                             </td>
                             <td className="px-2 py-1.5 font-medium text-slate-200">
+                              {p.isDiamondPass && (
+                                <span className="mr-1 inline-flex items-center rounded bg-amber-500/20 px-1 py-0.5 text-[9px] font-semibold text-amber-300">
+                                  [DP]
+                                </span>
+                              )}
                               {p.name ?? <span className="text-slate-500 italic">Unknown</span>}
                               {p.requestToSpeak && <span className="ml-1 text-amber-400 text-[10px]">▲{p.requestToSpeakPosition}</span>}
                             </td>
                             <td className="px-2 py-1.5 text-slate-400">{p.company ?? "—"}</td>
-                            <td className="px-2 py-1.5 font-mono text-slate-300">{p.phoneNumber ?? "—"}</td>
+                            <td className="px-2 py-1.5 font-mono text-slate-300">{maskPhoneNumber(p.phoneNumber)}</td>
                             <td className="px-2 py-1.5 text-slate-400">{p.location ?? "—"}</td>
                             <td className="px-2 py-1.5 text-slate-500 font-mono text-[10px]">{p.voiceServer ?? "—"}</td>
                             <td className="px-2 py-1.5 text-slate-400 font-mono text-[10px]">{formatTime(p.connectedAt)}</td>
@@ -4919,6 +4947,7 @@ export default function OCC() {
           <span className="pr-3 mr-3 border-r border-slate-800 text-slate-700 font-semibold">CuraLive.OCC</span>
           <span className="px-3 border-r border-slate-800">BRIDGE <span className={bridgeStatus === "OK" ? "text-emerald-500" : bridgeStatus === "DEGRADED" ? "text-amber-500" : "text-red-500"}>{bridgeStatus}</span></span>
           <span className="px-3 border-r border-slate-800">RUNNING <span className="text-emerald-500">{runningConfs.length}</span></span>
+          <span className="px-3 border-r border-slate-800">DP <span className="text-amber-400">{dpJoinedCount}/{dpRegisteredCount}</span></span>
           <span className="px-3 border-r border-slate-800">LOUNGE <span className={loungeEntries.length > 0 ? "text-amber-500" : "text-slate-600"}>{loungeEntries.length}</span></span>
           <span className="px-3">REQUESTS <span className={opRequests.length > 0 ? "text-red-500" : "text-slate-600"}>{opRequests.length}</span></span>
         </div>

@@ -9,6 +9,7 @@
 import { getDb } from "./db";
 import {
   attendeeRegistrations,
+  diamondPassRegistrations,
   occConferences,
   directAccessLog,
   type InsertDirectAccessLog,
@@ -53,6 +54,46 @@ export async function generateUniquePin(eventId: string): Promise<string> {
   throw new Error("Could not generate a unique PIN after 20 attempts");
 }
 
+/**
+ * Generate a Diamond Pass PIN unique across DP registrations.
+ * Also avoids collisions with attendee access pins for the same event.
+ */
+export async function generateUniqueDiamondPassPin(eventId: string): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const pin = generatePin();
+
+    const existingDiamond = await db
+      .select({ id: diamondPassRegistrations.id })
+      .from(diamondPassRegistrations)
+      .where(eq(diamondPassRegistrations.pin, pin))
+      .limit(1);
+
+    if (existingDiamond.length > 0) {
+      continue;
+    }
+
+    const existingAttendee = await db
+      .select({ id: attendeeRegistrations.id })
+      .from(attendeeRegistrations)
+      .where(
+        and(
+          eq(attendeeRegistrations.eventId, eventId),
+          eq(attendeeRegistrations.accessPin, pin)
+        )
+      )
+      .limit(1);
+
+    if (existingAttendee.length === 0) {
+      return pin;
+    }
+  }
+
+  throw new Error("Could not generate unique Diamond Pass PIN");
+}
+
 // ─── PIN Lookup ───────────────────────────────────────────────────────────────
 
 /**
@@ -81,6 +122,30 @@ export async function lookupPinForEvent(
 }
 
 /**
+ * Look up a Diamond Pass registration by PIN for a specific event.
+ */
+export async function lookupDiamondPassForEvent(
+  eventId: string,
+  pin: string
+): Promise<(typeof diamondPassRegistrations.$inferSelect) | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const rows = await db
+    .select()
+    .from(diamondPassRegistrations)
+    .where(
+      and(
+        eq(diamondPassRegistrations.eventId, eventId),
+        eq(diamondPassRegistrations.pin, pin)
+      )
+    )
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+/**
  * Mark a PIN as used (record the timestamp of first use).
  * The PIN is NOT invalidated after first use — callers who get disconnected
  * can re-enter without operator help.
@@ -92,6 +157,18 @@ export async function markPinUsed(registrationId: number): Promise<void> {
     .update(attendeeRegistrations)
     .set({ pinUsedAt: new Date() })
     .where(eq(attendeeRegistrations.id, registrationId));
+}
+
+export async function markDiamondPassJoined(registrationId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(diamondPassRegistrations)
+    .set({
+      status: "joined",
+      joinedAt: new Date(),
+    })
+    .where(eq(diamondPassRegistrations.id, registrationId));
 }
 
 // ─── Conference lookup by dial-in number ─────────────────────────────────────

@@ -39,6 +39,27 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+async function publishAblyMessage(channel: string, event: string, data: unknown) {
+  const apiKey = process.env.ABLY_API_KEY;
+  if (!apiKey) return;
+  try {
+    const auth = Buffer.from(apiKey).toString("base64");
+    await fetch(`https://rest.ably.io/channels/${encodeURIComponent(channel)}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: event,
+        data: JSON.stringify(data),
+      }),
+    });
+  } catch (error) {
+    console.warn(`[Ably] Failed to publish ${event} on ${channel}:`, error);
+  }
+}
+
 function validateShadowModeEnv() {
   const checks = [
     { key: "RECALL_AI_API_KEY", label: "Recall.ai bot deployment", critical: true },
@@ -64,6 +85,31 @@ async function startServer() {
   app.set("trust proxy", 1);
 
   const isProd = process.env.NODE_ENV === "production";
+
+  const validateTwilioWebhook = async (req: express.Request, res: express.Response): Promise<boolean> => {
+    const signature = req.headers["x-twilio-signature"] as string | undefined;
+    if (!signature) {
+      if (isProd) {
+        res.sendStatus(403);
+        return false;
+      }
+      return true;
+    }
+    try {
+      const { validateTwilioSignature } = await import("../services/ConferenceDialoutService");
+      const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+      const valid = validateTwilioSignature(fullUrl, (req.body ?? {}) as Record<string, string>, signature);
+      if (!valid) {
+        res.sendStatus(403);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.warn("[Twilio] Signature validation failed:", error);
+      res.sendStatus(403);
+      return false;
+    }
+  };
 
   validateShadowModeEnv();
 
@@ -438,7 +484,10 @@ async function startServer() {
   // /api/voice/pin      — Twilio calls this with the gathered digits.
   //   Validates the PIN, auto-admits the caller, or falls through to operator queue.
 
-  app.post("/api/voice/inbound", express.urlencoded({ extended: false }), (req, res) => {
+  const handleInboundCall = async (req: express.Request, res: express.Response) => {
+    if (!(await validateTwilioWebhook(req, res))) {
+      return;
+    }
     const callSid = req.body?.CallSid ?? "";
     const to = req.body?.To ?? "";
     console.log(`[CuraLive Direct IVR] Inbound call: callSid=${callSid} to=${to}`);
@@ -446,7 +495,7 @@ async function startServer() {
     const twiml = new twilio_twiml.twiml.VoiceResponse();
     const gather = twiml.gather({
       numDigits: 5,
-      action: "/api/voice/pin",
+      action: "/webhooks/twilio/pin-entry",
       method: "POST",
       timeout: 15,
       finishOnKey: "#",
@@ -459,9 +508,15 @@ async function startServer() {
     twiml.say({ voice: "Polly.Joanna" }, "No PIN entered. Please hold while we connect you to an operator.");
     twiml.enqueue("operator-queue");
     res.type("text/xml").send(twiml.toString());
-  });
+  };
 
-  app.post("/api/voice/pin", express.urlencoded({ extended: false }), async (req, res) => {
+  app.post("/api/voice/inbound", express.urlencoded({ extended: false }), handleInboundCall);
+  app.post("/webhooks/twilio/inbound-call", express.urlencoded({ extended: false }), handleInboundCall);
+
+  const handlePinEntry = async (req: express.Request, res: express.Response) => {
+    if (!(await validateTwilioWebhook(req, res))) {
+      return;
+    }
     const digits = (req.body?.Digits ?? "").trim();
     const callSid = req.body?.CallSid ?? "";
     const from = req.body?.From ?? "";
@@ -471,7 +526,18 @@ async function startServer() {
     const twiml = new twilio_twiml.twiml.VoiceResponse();
 
     try {
-      const { findRunningConferenceByDialIn, lookupPinForEvent, markPinUsed, logDirectAccessAttempt } = await import("../directAccess");
+      const {
+        findRunningConferenceByDialIn,
+        lookupPinForEvent,
+        lookupDiamondPassForEvent,
+        markPinUsed,
+        markDiamondPassJoined,
+        logDirectAccessAttempt,
+      } = await import("../directAccess");
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      const { occParticipants } = await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
 
       // Find the conference this number belongs to
       const conference = await findRunningConferenceByDialIn(to);
@@ -481,6 +547,72 @@ async function startServer() {
         await logDirectAccessAttempt({ conferenceId: null, registrationId: null, enteredPin: digits, callerNumber: from, outcome: "no_conference", callSid, dialInNumber: to });
         twiml.say({ voice: "Polly.Joanna" }, "We could not find an active conference for this number. Please check your dial-in details and try again. Goodbye.");
         twiml.hangup();
+        res.type("text/xml").send(twiml.toString());
+        return;
+      }
+
+      // Diamond Pass first: bypass greeter queue and join directly as identified participant
+      const diamondPass = await lookupDiamondPassForEvent(conference.eventId, digits);
+      if (diamondPass) {
+        if (db) {
+          const existing = await db
+            .select()
+            .from(occParticipants)
+            .where(eq(occParticipants.twilioCallSid, callSid))
+            .limit(1);
+          if (existing.length === 0) {
+            const confParticipants = await db
+              .select({ lineNumber: occParticipants.lineNumber })
+              .from(occParticipants)
+              .where(eq(occParticipants.conferenceId, conference.id));
+            const nextLine =
+              confParticipants.length > 0
+                ? Math.max(...confParticipants.map((p) => p.lineNumber)) + 1
+                : 1;
+            await db.insert(occParticipants).values({
+              conferenceId: conference.id,
+              lineNumber: nextLine,
+              role: "participant",
+              name: diamondPass.name,
+              company: diamondPass.organisation,
+              phoneNumber: from || null,
+              twilioCallSid: callSid || null,
+              state: "muted",
+              isDiamondPass: true,
+              connectedAt: new Date(),
+            });
+          }
+        }
+
+        await markDiamondPassJoined(diamondPass.id);
+        await logDirectAccessAttempt({
+          conferenceId: conference.id,
+          registrationId: null,
+          enteredPin: digits,
+          callerNumber: from,
+          outcome: "admitted",
+          callSid,
+          dialInNumber: to,
+        });
+        await publishAblyMessage(`occ:conference:${conference.id}`, "participant:added", {
+          conferenceId: conference.id,
+          name: diamondPass.name,
+          company: diamondPass.organisation,
+          phoneNumber: from,
+          isDiamondPass: true,
+        });
+
+        twiml.say(
+          { voice: "Polly.Joanna" },
+          `Welcome ${diamondPass.name.split(" ")[0]}. Your Diamond Pass has been verified. Connecting you now.`
+        );
+        const dial = twiml.dial();
+        (dial as any).conference(conference.callId, {
+          startConferenceOnEnter: true,
+          endConferenceOnExit: false,
+          muted: true,
+          waitUrl: "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical",
+        });
         res.type("text/xml").send(twiml.toString());
         return;
       }
@@ -497,7 +629,7 @@ async function startServer() {
         twiml.say({ voice: "Polly.Joanna" }, `Welcome, ${registration.name.split(" ")[0]}. Connecting you to the conference now.`);
         const dial = twiml.dial();
         (dial as any).conference(conference.callId, {
-          startConferenceOnEnter: false,
+          startConferenceOnEnter: true,
           endConferenceOnExit: false,
           muted: true, // Participants join muted; operator can unmute
           waitUrl: "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical",
@@ -514,7 +646,7 @@ async function startServer() {
         await logDirectAccessAttempt({ conferenceId: conference.id, registrationId: null, enteredPin: digits, callerNumber: from, outcome: "failed", callSid, dialInNumber: to });
         const gather = twiml.gather({
           numDigits: 5,
-          action: "/api/voice/pin",
+          action: "/webhooks/twilio/pin-entry",
           method: "POST",
           timeout: 10,
           finishOnKey: "#",
@@ -530,6 +662,296 @@ async function startServer() {
     }
 
     res.type("text/xml").send(twiml.toString());
+  };
+
+  app.post("/api/voice/pin", express.urlencoded({ extended: false }), handlePinEntry);
+  app.post("/webhooks/twilio/pin-entry", express.urlencoded({ extended: false }), handlePinEntry);
+
+  app.post("/webhooks/twilio/participant-dtmf", express.urlencoded({ extended: false }), async (req, res) => {
+    if (!(await validateTwilioWebhook(req, res))) {
+      return;
+    }
+    const callSid = req.body?.CallSid ?? "";
+    const digitsRaw = String(req.body?.Digits ?? "").trim();
+    const digits = digitsRaw.replace("*", "");
+    const twiml = new twilio_twiml.twiml.VoiceResponse();
+
+    if (!callSid || !digits) {
+      res.type("text/xml").send(twiml.toString());
+      return;
+    }
+
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) {
+        res.type("text/xml").send(twiml.toString());
+        return;
+      }
+      const { occParticipants, occOperatorRequests, occConferences, occParticipantHistory } = await import("../../drizzle/schema");
+      const { and, eq } = await import("drizzle-orm");
+
+      const participantRows = await db
+        .select()
+        .from(occParticipants)
+        .where(eq(occParticipants.twilioCallSid, callSid))
+        .limit(1);
+      const participant = participantRows[0];
+      if (!participant) {
+        res.type("text/xml").send(twiml.toString());
+        return;
+      }
+
+      if (digits === "2") {
+        const queue = await db
+          .select({ requestToSpeakPosition: occParticipants.requestToSpeakPosition })
+          .from(occParticipants)
+          .where(and(eq(occParticipants.conferenceId, participant.conferenceId), eq(occParticipants.requestToSpeak, true)));
+        const nextPosition =
+          queue.length > 0
+            ? Math.max(...queue.map((q) => q.requestToSpeakPosition ?? 0)) + 1
+            : 1;
+        await db
+          .update(occParticipants)
+          .set({ requestToSpeak: true, requestToSpeakPosition: nextPosition })
+          .where(eq(occParticipants.id, participant.id));
+        await db.insert(occParticipantHistory).values({
+          conferenceId: participant.conferenceId,
+          participantId: participant.id,
+          event: "request_to_speak",
+          triggeredBy: "participant",
+          occurredAt: new Date(),
+        });
+        await publishAblyMessage(`occ:conference:${participant.conferenceId}`, "participant:updated", {
+          participantId: participant.id,
+          requestToSpeak: true,
+          requestToSpeakPosition: nextPosition,
+        });
+      }
+
+      if (digits === "0") {
+        const operatorRequestCallId = `OR-${Date.now()}`;
+        await db
+          .update(occParticipants)
+          .set({ state: "waiting_operator" })
+          .where(eq(occParticipants.id, participant.id));
+        const confRows = await db
+          .select()
+          .from(occConferences)
+          .where(eq(occConferences.id, participant.conferenceId))
+          .limit(1);
+        const conf = confRows[0];
+        const [result] = await db.insert(occOperatorRequests).values({
+          conferenceId: participant.conferenceId,
+          participantId: participant.id,
+          callId: operatorRequestCallId,
+          subject: conf?.subject ?? "Operator Assistance",
+          phoneNumber: participant.phoneNumber,
+          dialInNumber: participant.dialInNumber,
+          requestedAt: new Date(),
+          status: "pending",
+        });
+        await publishAblyMessage(`occ:conference:${participant.conferenceId}`, "participant:updated", {
+          participantId: participant.id,
+          state: "waiting_operator",
+        });
+        await publishAblyMessage(`occ:requests:${participant.conferenceId}`, "request.new", {
+          id: (result as any)?.insertId ?? undefined,
+          conferenceId: participant.conferenceId,
+          participantId: participant.id,
+          callId: operatorRequestCallId,
+          subject: conf?.subject ?? "Operator Assistance",
+          phoneNumber: participant.phoneNumber,
+          dialInNumber: participant.dialInNumber,
+          requestedAt: new Date().toISOString(),
+          status: "pending",
+        });
+        await publishAblyMessage(`occ:conference:${participant.conferenceId}`, "alert", {
+          level: "danger",
+          message: `${participant.name ?? "Participant"} (${participant.company ?? "Unknown"}) requested operator assistance`,
+          participantId: participant.id,
+        });
+      }
+    } catch (error) {
+      console.error("[Twilio DTMF] Failed to process participant-dtmf webhook:", error);
+    }
+
+    res.type("text/xml").send(twiml.toString());
+  });
+
+  app.post("/api/diamond-pass/register", express.json(), async (req, res) => {
+    try {
+      const { event_id, participants } = req.body ?? {};
+      if (!event_id || !Array.isArray(participants) || participants.length === 0) {
+        res.status(400).json({ error: "event_id and participants are required" });
+        return;
+      }
+      const { getDb } = await import("../db");
+      const { diamondPassRegistrations } = await import("../../drizzle/schema");
+      const { generateUniqueDiamondPassPin } = await import("../directAccess");
+      const { nanoid } = await import("nanoid");
+      const db = await getDb();
+      if (!db) {
+        res.status(503).json({ error: "Database unavailable" });
+        return;
+      }
+
+      const registrations: Array<{ name: string; organisation: string; pin: string; secure_token: string }> = [];
+      for (const p of participants) {
+        if (!p?.name || !p?.organisation) continue;
+        const pin = await generateUniqueDiamondPassPin(event_id);
+        const secureToken = nanoid(36);
+        await db.insert(diamondPassRegistrations).values({
+          eventId: event_id,
+          name: p.name,
+          organisation: p.organisation,
+          email: p.email ?? null,
+          pin,
+          secureToken,
+          status: "registered",
+        });
+        registrations.push({
+          name: p.name,
+          organisation: p.organisation,
+          pin,
+          secure_token: secureToken,
+        });
+      }
+      res.json({ registrations });
+    } catch (error) {
+      console.error("[DiamondPass] register error:", error);
+      res.status(500).json({ error: "Could not register Diamond Pass participants" });
+    }
+  });
+
+  app.get("/api/diamond-pass/:eventId", async (req, res) => {
+    try {
+      const { getDb } = await import("../db");
+      const { diamondPassRegistrations } = await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) {
+        res.status(503).json({ error: "Database unavailable" });
+        return;
+      }
+      const rows = await db
+        .select()
+        .from(diamondPassRegistrations)
+        .where(eq(diamondPassRegistrations.eventId, req.params.eventId));
+      res.json(rows);
+    } catch (error) {
+      console.error("[DiamondPass] list error:", error);
+      res.status(500).json({ error: "Could not fetch Diamond Pass registrations" });
+    }
+  });
+
+  app.delete("/api/diamond-pass/:id", async (req, res) => {
+    try {
+      const id = Number.parseInt(req.params.id, 10);
+      if (!Number.isFinite(id)) {
+        res.status(400).json({ error: "Invalid registration id" });
+        return;
+      }
+      const { getDb } = await import("../db");
+      const { diamondPassRegistrations } = await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) {
+        res.status(503).json({ error: "Database unavailable" });
+        return;
+      }
+      await db.delete(diamondPassRegistrations).where(eq(diamondPassRegistrations.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[DiamondPass] delete error:", error);
+      res.status(500).json({ error: "Could not delete Diamond Pass registration" });
+    }
+  });
+
+  app.get("/api/conference/:id/report", async (req, res) => {
+    try {
+      const conferenceId = Number.parseInt(req.params.id, 10);
+      if (!Number.isFinite(conferenceId)) {
+        res.status(400).json({ error: "Invalid conference id" });
+        return;
+      }
+      const { buildAttendanceReport } = await import("../services/bridgeConferenceService");
+      const participants = await buildAttendanceReport(conferenceId);
+      res.json({
+        conference_id: conferenceId,
+        generated_at: new Date().toISOString(),
+        participants,
+      });
+    } catch (error) {
+      console.error("[Conference Report] fetch error:", error);
+      res.status(500).json({ error: "Could not generate conference report" });
+    }
+  });
+
+  app.post("/api/conference/:id/quality-sync", async (req, res) => {
+    try {
+      const conferenceId = Number.parseInt(req.params.id, 10);
+      if (!Number.isFinite(conferenceId)) {
+        res.status(400).json({ error: "Invalid conference id" });
+        return;
+      }
+      const { syncConferenceQuality } = await import("../services/bridgeConferenceService");
+      const result = await syncConferenceQuality(conferenceId);
+      res.json(result);
+    } catch (error) {
+      console.error("[Conference Quality] sync error:", error);
+      res.status(500).json({ error: "Could not sync conference quality" });
+    }
+  });
+
+  app.post("/api/conference/:id/report/export", async (req, res) => {
+    const conferenceId = Number.parseInt(req.params.id, 10);
+    if (!Number.isFinite(conferenceId)) {
+      res.status(400).json({ error: "Invalid conference id" });
+      return;
+    }
+    res.json({ download_url: `/api/conference/${conferenceId}/report/export` });
+  });
+
+  app.get("/api/conference/:id/report/export", async (req, res) => {
+    try {
+      const conferenceId = Number.parseInt(req.params.id, 10);
+      if (!Number.isFinite(conferenceId)) {
+        res.status(400).json({ error: "Invalid conference id" });
+        return;
+      }
+      const { buildAttendanceReport } = await import("../services/bridgeConferenceService");
+      const rows = await buildAttendanceReport(conferenceId);
+      const csvRows = [
+        "name,organisation,role,phone_number,join_method,diamond_pass,status,join_time,leave_time,duration_sec,hand_raised,avg_jitter_ms,packet_loss_pct,mos_score",
+        ...rows.map((r) =>
+          [
+            r.name,
+            r.organisation ?? "",
+            r.role,
+            r.phone_number,
+            r.join_method,
+            r.diamond_pass ? "true" : "false",
+            r.status,
+            r.join_time ?? "",
+            r.leave_time ?? "",
+            String(r.duration_sec),
+            r.hand_raised ? "true" : "false",
+            r.connection_quality.avg_jitter_ms ?? "",
+            r.connection_quality.packet_loss_pct ?? "",
+            r.connection_quality.mos_score ?? "",
+          ]
+            .map((v) => `"${String(v).replaceAll('"', '""')}"`)
+            .join(",")
+        ),
+      ];
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="conference-${conferenceId}-attendance.csv"`);
+      res.send(csvRows.join("\n"));
+    } catch (error) {
+      console.error("[Conference Report] export error:", error);
+      res.status(500).json({ error: "Could not export conference report" });
+    }
   });
 
   // Configure body parser with larger size limit for file uploads

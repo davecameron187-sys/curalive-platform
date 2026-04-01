@@ -68,6 +68,26 @@ export type AttendeeRegistration = typeof attendeeRegistrations.$inferSelect;
 export type InsertAttendeeRegistration = typeof attendeeRegistrations.$inferInsert;
 
 /**
+ * Diamond Pass pre-registrations used by the bridge PIN IVR.
+ * A successful PIN entry can bypass the greeter queue and auto-identify caller metadata.
+ */
+export const diamondPassRegistrations = mysqlTable("diamond_pass_registrations", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  organisation: varchar("organisation", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }),
+  pin: varchar("pin", { length: 10 }).notNull().unique(),
+  secureToken: varchar("secure_token", { length: 255 }).unique(),
+  status: mysqlEnum("status", ["registered", "joined", "no_show"]).default("registered").notNull(),
+  joinedAt: timestamp("joined_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type DiamondPassRegistration = typeof diamondPassRegistrations.$inferSelect;
+export type InsertDiamondPassRegistration = typeof diamondPassRegistrations.$inferInsert;
+
+/**
  * IR contacts table — stores investor relations email contacts for post-event summaries.
  */
 export const irContacts = mysqlTable("ir_contacts", {
@@ -136,8 +156,10 @@ export const occParticipants = mysqlTable("occ_participants", {
   company: varchar("company", { length: 255 }),
   location: varchar("location", { length: 128 }),
   phoneNumber: varchar("phoneNumber", { length: 32 }),
+  twilioCallSid: varchar("twilioCallSid", { length: 128 }),
   dialInNumber: varchar("dialInNumber", { length: 32 }),
   voiceServer: varchar("voiceServer", { length: 32 }),
+  isDiamondPass: boolean("isDiamondPass").default(false).notNull(),
   // State
   state: mysqlEnum("state", [
     "free",
@@ -161,6 +183,10 @@ export const occParticipants = mysqlTable("occ_participants", {
   // Monitoring
   isMonitored: boolean("isMonitored").default(false).notNull(),
   monitoringOperatorId: int("monitoringOperatorId"),
+  // Post-call connection quality (Twilio Voice Insights)
+  avgJitterMs: float("avgJitterMs"),
+  packetLossPct: float("packetLossPct"),
+  mosScore: float("mosScore"),
   // Timestamps
   connectedAt: timestamp("connectedAt"),
   disconnectedAt: timestamp("disconnectedAt"),
@@ -182,6 +208,8 @@ export const occLounge = mysqlTable("occ_lounge", {
   phoneNumber: varchar("phoneNumber", { length: 32 }),
   name: varchar("name", { length: 255 }),
   company: varchar("company", { length: 255 }),
+  isDiamondPass: boolean("isDiamondPass").default(false).notNull(),
+  registrationId: int("registrationId"),
   dialInNumber: varchar("dialInNumber", { length: 32 }),
   description: varchar("description", { length: 255 }),
   language: varchar("language", { length: 32 }).default("en"),

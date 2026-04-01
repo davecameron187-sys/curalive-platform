@@ -40,12 +40,14 @@ import {
   occDialOutHistory,
   occGreenRooms,
   attendeeRegistrations,
+  diamondPassRegistrations,
   irContacts,
 } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { getDirectAccessStats, getRecentDirectAccessAttempts, generateUniquePin } from "../directAccess";
 import { buildRegistrationConfirmationEmail, sendEmail } from "../_core/email";
 import { invokeLLM } from "../_core/llm";
+import { buildAttendanceReport, syncConferenceQuality } from "../services/bridgeConferenceService";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -92,6 +94,24 @@ export const occRouter = router({
     .input(z.object({ eventId: z.string() }))
     .query(async ({ input }) => {
       return getOccConferenceByEventId(input.eventId);
+    }),
+
+  getConferenceStatus: protectedProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .query(async ({ input }) => {
+      const conf = await getOccConferenceById(input.conferenceId);
+      if (!conf) throw new Error("Conference not found");
+      const participants = await getOccParticipants(input.conferenceId);
+      const connectedCount = participants.filter((p) => p.state !== "dropped").length;
+      const durationSec = conf.actualStart
+        ? Math.max(0, Math.floor((Date.now() - new Date(conf.actualStart).getTime()) / 1000))
+        : 0;
+      return {
+        phase: conf.status,
+        count: connectedCount,
+        duration_sec: durationSec,
+        recording_active: conf.isRecording,
+      };
     }),
 
   // ── Conference actions ────────────────────────────────────────────────────
@@ -142,6 +162,21 @@ export const occRouter = router({
       return { success: true };
     }),
 
+  openConference: operatorProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .mutation(async ({ input }) => {
+      const conf = await updateOccConference(input.conferenceId, {
+        status: "running",
+        actualStart: new Date(),
+        isRecording: true,
+      });
+      await publishAblyEvent(`occ:conference:${input.conferenceId}`, "conference:updated", {
+        status: "running",
+        isRecording: true,
+      });
+      return { phase: "live", started_at: conf?.actualStart ?? new Date() };
+    }),
+
   // ── CuraLive Direct — PIN auto-admit ───────────────────────────────────────────────
 
   /** Toggle the CuraLive Direct auto-admit feature for a conference. */
@@ -177,6 +212,18 @@ export const occRouter = router({
     .input(z.object({ conferenceId: z.number() }))
     .query(async ({ input }) => {
       return getOccParticipants(input.conferenceId);
+    }),
+
+  getParticipantRoster: protectedProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .query(async ({ input }) => {
+      const rows = await getOccParticipants(input.conferenceId);
+      return rows.sort((a, b) => {
+        const rank = (role: string) => (role === "moderator" || role === "host" ? 0 : 1);
+        const rankDiff = rank(a.role) - rank(b.role);
+        if (rankDiff !== 0) return rankDiff;
+        return (a.lineNumber ?? 0) - (b.lineNumber ?? 0);
+      });
     }),
 
   // ── Participant actions ───────────────────────────────────────────────────
@@ -295,6 +342,24 @@ export const occRouter = router({
       return getOccLoungeEntries(input.conferenceId);
     }),
 
+  updateLoungeEntry: operatorProcedure
+    .input(
+      z.object({
+        loungeId: z.number(),
+        name: z.string().optional(),
+        company: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+      const updatePayload: { name?: string | null; company?: string | null } = {};
+      if (input.name !== undefined) updatePayload.name = input.name || null;
+      if (input.company !== undefined) updatePayload.company = input.company || null;
+      await db.update(occLounge).set(updatePayload).where(eq(occLounge.id, input.loungeId));
+      return { success: true };
+    }),
+
   pickFromLounge: operatorProcedure
     .input(z.object({
       loungeId: z.number(),
@@ -308,6 +373,19 @@ export const occRouter = router({
         "lounge:picked",
         { loungeId: input.loungeId }
       );
+      return { success: true };
+    }),
+
+  rejectFromLounge: operatorProcedure
+    .input(z.object({ loungeId: z.number(), conferenceId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (db) {
+        await db.update(occLounge).set({ status: "dropped" }).where(eq(occLounge.id, input.loungeId));
+      }
+      await publishAblyEvent(`occ:conference:${input.conferenceId}`, "lounge:rejected", {
+        loungeId: input.loungeId,
+      });
       return { success: true };
     }),
 
@@ -902,6 +980,85 @@ export const occRouter = router({
       return db.select().from(occDialOutHistory)
         .where(eq(occDialOutHistory.conferenceId, input.conferenceId))
         .orderBy(occDialOutHistory.initiatedAt);
+    }),
+
+  // ── Diamond Pass bulk registration ──────────────────────────────────────────
+  registerDiamondPass: operatorProcedure
+    .input(
+      z.object({
+        eventId: z.string(),
+        participants: z.array(
+          z.object({
+            name: z.string().min(1),
+            organisation: z.string().min(1),
+            email: z.string().email().optional(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const { generateUniqueDiamondPassPin } = await import("../directAccess");
+      const { nanoid } = await import("nanoid");
+
+      const registrations: Array<{ id: number; name: string; organisation: string; pin: string; secureToken: string }> = [];
+      for (const participant of input.participants) {
+        const pin = await generateUniqueDiamondPassPin(input.eventId);
+        const secureToken = nanoid(36);
+        const [result] = await db.insert(diamondPassRegistrations).values({
+          eventId: input.eventId,
+          name: participant.name,
+          organisation: participant.organisation,
+          email: participant.email ?? null,
+          pin,
+          secureToken,
+          status: "registered",
+        });
+        registrations.push({
+          id: (result as any).insertId,
+          name: participant.name,
+          organisation: participant.organisation,
+          pin,
+          secureToken,
+        });
+      }
+      return { registrations };
+    }),
+
+  listDiamondPass: protectedProcedure
+    .input(z.object({ eventId: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(diamondPassRegistrations).where(eq(diamondPassRegistrations.eventId, input.eventId));
+    }),
+
+  deleteDiamondPass: operatorProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+      await db.delete(diamondPassRegistrations).where(eq(diamondPassRegistrations.id, input.id));
+      return { success: true };
+    }),
+
+  // ── Reporting & quality sync ────────────────────────────────────────────────
+  getAttendanceReport: protectedProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .query(async ({ input }) => {
+      const participants = await buildAttendanceReport(input.conferenceId);
+      return {
+        conference_id: input.conferenceId,
+        generated_at: new Date().toISOString(),
+        participants,
+      };
+    }),
+
+  syncQualityMetrics: operatorProcedure
+    .input(z.object({ conferenceId: z.number() }))
+    .mutation(async ({ input }) => {
+      return syncConferenceQuality(input.conferenceId);
     }),
 
   // ── Green Room (Speaker Sub-Conference) ───────────────────────────────────

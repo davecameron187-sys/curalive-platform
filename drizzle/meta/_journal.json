@@ -232,6 +232,13 @@
       "when": 1773035530967,
       "tag": "0032_bumpy_gladiator",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1775040000000,
+      "tag": "0049_bridge_diamond_pass_quality",
+      "breakpoints": true
     }
   ]
 }

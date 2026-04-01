@@ -123,6 +123,7 @@ import ConferenceDialout from "./pages/ConferenceDialout";
 import AgmGovernanceAi from "./pages/AgmGovernanceAi";
 import AttendeeQA from "./pages/AttendeeQA";
 import EmbeddableQaWidget from "./pages/EmbeddableQaWidget";
+import OCC from "./pages/OCC";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -147,7 +148,7 @@ function Router() {
       <Route path="/test-guide" component={TestGuide} />
       <Route path="/tech-handover" component={TechHandover} />
       <Route path="/summit-console" component={SummitConsole} />
-      <Route path="/occ"><Redirect to="/?tab=shadow-mode" /></Route>
+      <Route path="/occ" component={OCC} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/live-video" component={LiveVideoMeetings} />
       <Route path="/live-video/roadshow/:roadshowId" component={RoadshowDetail} />
