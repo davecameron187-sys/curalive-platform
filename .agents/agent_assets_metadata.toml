@@ -630,3 +630,9 @@ id = "_CjlnPOeOfCfDRZF9rARM"
 uri = "file://exports/screenshots/shadow-mode.jpg"
 type = "image"
 title = "9. Screenshot - Shadow Mode"
+
+[[outputs]]
+id = "9nHbwrhOak7MzXJ6wnEB1"
+uri = "file://exports/CuraLive_Complete_Source_Code.docx"
+type = "word_document"
+title = "CuraLive Complete Source Code (Word Document - 3.2MB)"
