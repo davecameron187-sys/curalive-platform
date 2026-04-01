@@ -552,3 +552,9 @@ id = "puIKBv5b5JpqmlNerIvj8"
 uri = "file://exports/CuraLive_Bridge_Manus_Brief.md"
 type = "text"
 title = "CuraLive Bridge Console — Manus Execution Brief"
+
+[[outputs]]
+id = "HH0dWw1B4VBlJyJtpMIKw"
+uri = "file://exports/CuraLive_Manus_Backend_Integration_Corrected_Brief.md"
+type = "text"
+title = "CuraLive — Corrective Backend Integration Brief for Manus"
