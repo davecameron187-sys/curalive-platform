@@ -540,3 +540,9 @@ id = "aBmIAOsacvpTLU7y8vzXV"
 uri = "file://exports/CURALIVE_TECHNICAL_ARCHITECTURE_BRIEF.docx"
 type = "word_document"
 title = "CuraLive Technical Architecture Brief — Operator Console & Full Connectivity"
+
+[[outputs]]
+id = "sBRegODgsW6GFBClX8ZyK"
+uri = "file://exports/CURALIVE_CONNECTIVITY_GUIDE.docx"
+type = "word_document"
+title = "CuraLive Complete Connectivity Guide — All API Keys, Webhooks, Endpoints & Setup"
