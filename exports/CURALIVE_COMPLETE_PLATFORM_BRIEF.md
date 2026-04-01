@@ -1,1219 +1,1532 @@
-# CURALIVE — COMPLETE PLATFORM BRIEF
+# CuraLive Platform - Complete Technical Clone Brief
 
-**Date:** 2026-03-29
-**Stack:** React 19 + Vite + Express + tRPC + PostgreSQL + Drizzle ORM + Ably + Recall.ai + Mux + Twilio/Telnyx
-**Codebase:** ~184,000 lines across pages/components/routers/services
-**Database:** 120+ PostgreSQL tables via Drizzle ORM
-**Registered tRPC Routers:** 93
-**Backend Services:** 58
-**Frontend Pages:** 170+
+**Date:** April 1, 2026
+**Version:** 1.0.0
+**Purpose:** Full technical specification for platform replication onto a new environment
 
 ---
 
 ## TABLE OF CONTENTS
 
-**Part I — Platform Architecture**
-1. Platform Overview & Mission
-2. Tech Stack
-3. Server Architecture
-4. Database Schema Overview (120+ tables)
-5. tRPC Router Registry (93 routers)
-6. Authentication & Authorization
-7. Real-Time Infrastructure (Ably + WebSocket)
-
-**Part II — Core Product Modules**
-8. Operator Conference Console (OCC)
-9. Shadow Mode (Live Event Intelligence)
-10. Archive & AI Reports
-11. Webcasting Platform
-12. Webphone System
-13. Live Video Meetings
-14. Roadshow AI
-15. Live Q&A System
-16. Billing & Invoicing
-17. Training Mode
-
-**Part III — Intelligence & AI Systems**
-18. CIP4 Intelligence Suite
-19. AI-AM (Automated Monitoring)
-20. AI Evolution & Self-Improvement
-21. Compliance Engine
-22. Crisis Prediction
-23. Valuation Impact Analysis
-24. Disclosure Certificates
-25. Market Reaction Analysis
-26. Communication Index
-27. Investor Question Intelligence
-28. Intelligence Terminal
-29. Intelligence Reports
-30. External Sentiment Analysis
-31. Market Impact Predictor
-32. Materiality Risk Oracle
-33. Investor Intent Decoder
-34. Investor Engagement Scoring
-35. Cross-Event Consistency
-36. Volatility Simulator
-37. Regulatory Intervention
-38. Event Integrity Twin
-39. Evasive Answer Detection
-40. Adaptive Intelligence
-41. IPO & M&A Intelligence
-42. Sustainability Analytics
-
-**Part IV — Operational Systems**
-43. AGM Governance AI
-44. Bastion Partner Intelligence
-45. Lumi Partner Booking
-46. Conference Dial-Out
-47. Call Preparation
-48. Event Brief Generator
-49. Live Rolling Summary
-50. Live Subtitles & Translation
-51. Transcript Editor
-52. Content Generation Triggers
-53. Social Media Integration
-54. Mailing List Manager
-55. CRM API
-56. Personalized Briefing
-
-**Part V — Platform Infrastructure**
-57. Virtual Studio
-58. Intelligent Broadcaster
-59. Agentic Event Brain
-60. Autonomous Intervention
-61. Platform Embed
-62. Operator Links
-63. Benchmarks
-64. Tagged Metrics
-65. Support Chat
-66. Advisory Bot
-67. Monthly Reports
-68. Health Guardian
-69. System Diagnostics
-70. SOC 2 Compliance
-71. ISO 27001 Compliance
-72. RBAC (Role-Based Access)
-73. Branding & Customisation
-74. Scheduling
-75. Polls
-76. Mobile Notifications
-77. Client Portal
-78. Mux Video Streaming
-79. Recall.ai Integration
-80. Post-Event Reports
-
-**Part VI — Design System**
-81. Design Tokens & Theme
-82. Component Library
-83. Icon System
-
-**Part VII — Environment & Configuration**
-84. Environment Variables
-85. Deployment Architecture
-86. Key Gotchas
+1. [Platform Overview](#1-platform-overview)
+2. [Technology Stack](#2-technology-stack)
+3. [Project Structure & Monorepo Layout](#3-project-structure--monorepo-layout)
+4. [Environment Variables & Secrets](#4-environment-variables--secrets)
+5. [Database Schema (Complete)](#5-database-schema-complete)
+6. [Server Architecture](#6-server-architecture)
+7. [Authentication & Authorization](#7-authentication--authorization)
+8. [tRPC API Layer (Complete Router Map)](#8-trpc-api-layer-complete-router-map)
+9. [Webhook Handlers & External Integrations](#9-webhook-handlers--external-integrations)
+10. [Backend Services (Complete)](#10-backend-services-complete)
+11. [AI Intelligence Pipeline](#11-ai-intelligence-pipeline)
+12. [Shadow Mode System](#12-shadow-mode-system)
+13. [Webcast & Live Video System](#13-webcast--live-video-system)
+14. [Bridge Console (Telephony)](#14-bridge-console-telephony)
+15. [Storage System](#15-storage-system)
+16. [Real-Time Messaging (Ably)](#16-real-time-messaging-ably)
+17. [Email System](#17-email-system)
+18. [Frontend Architecture](#18-frontend-architecture)
+19. [Frontend Pages (Complete List)](#19-frontend-pages-complete-list)
+20. [Frontend Components (Complete List)](#20-frontend-components-complete-list)
+21. [Frontend Hooks & Utilities](#21-frontend-hooks--utilities)
+22. [Build, Dev & Deployment](#22-build-dev--deployment)
+23. [Scripts & Migrations](#23-scripts--migrations)
+24. [File Manifest](#24-file-manifest)
 
 ---
 
-# PART I — PLATFORM ARCHITECTURE
+## 1. PLATFORM OVERVIEW
+
+CuraLive is a real-time investor events intelligence platform designed as a professional-grade competitor to Chorus Call/BroadData. It combines live webcasting, telephony bridge conferencing, AI-powered transcription, real-time sentiment analysis, regulatory compliance monitoring, and autonomous AI intelligence services into a single platform.
+
+**Core Capabilities:**
+- Live webcasting with Mux RTMP/HLS video streaming
+- Telephony bridge console (Twilio PSTN conferencing with IVR, DTMF, hold/mute/park)
+- AI-powered real-time transcription (OpenAI Whisper via Recall.ai bots)
+- Shadow Mode: Silent AI observation of external meetings (Zoom/Teams/Meet)
+- 20-module AI intelligence report generation from transcripts
+- Crisis prediction, valuation impact oracle, disclosure certificates
+- Board Intelligence Compass, Pre-Event Briefings, Regulatory Compliance Monitor
+- Self-evolving AI system with governance audit trails (Meta-Observer + Evolution Engine)
+- Enterprise billing, attendee registration, operator console
+- Real-time pub/sub via Ably for live dashboards
+- Webphone (Twilio + Telnyx SIP)
+- Full compliance engine (ISO 27001, SOC 2, SEC/FCA/ASIC/SGX/HKEX/JSE jurisdictions)
 
 ---
 
-## 1. PLATFORM OVERVIEW & MISSION
-
-CuraLive is a real-time investor events intelligence platform purpose-built for the investor relations (IR) industry, specifically JSE-listed (Johannesburg Stock Exchange) companies and their service providers.
-
-**Core mission:** Enable IR teams, conference operators, and compliance officers to run, monitor, analyze, and report on corporate events (earnings calls, AGMs, investor days, roadshows, capital markets events) with AI-powered real-time intelligence, automated compliance monitoring, and post-event analytics.
-
-**Key user roles:**
-- **Operators** — conference call operators managing live events
-- **IR Teams** — investor relations professionals preparing and reviewing events
-- **Compliance Officers** — monitoring regulatory compliance during events
-- **Admins** — platform administrators managing users, billing, and configuration
-- **Attendees** — external participants joining webcasts, Q&A, and events
-- **Investors** — institutional investors in roadshows and capital markets events
-
-**Product lines:**
-- **OCC (Operator Conference Console)** — live conference management
-- **Shadow Mode** — silent live event monitoring with AI
-- **Webcasting** — branded webcast hosting and on-demand replay
-- **Roadshow AI** — capital raising and investor meeting management
-- **Intelligence Suite** — CIP4 analytics, compliance, sentiment, crisis prediction
-- **Billing** — full quote-to-cash cycle
-- **Training Mode** — operator training environment
-
----
-
-## 2. TECH STACK
+## 2. TECHNOLOGY STACK
 
 ### Frontend
-| Technology | Purpose |
-|-----------|---------|
-| React 19 | UI framework |
-| Vite | Build tool and dev server |
-| TypeScript | Type safety |
-| Tailwind CSS | Styling |
-| shadcn/ui (Radix) | Component library |
-| Wouter | Client-side routing |
-| tRPC React Query | Server communication |
-| Lucide React | Icon library |
-| Recharts | Charts and data visualization |
-| Framer Motion | Animations |
-| Sonner | Toast notifications |
+| Technology | Version | Purpose |
+|---|---|---|
+| React | 19.2.1 | UI framework |
+| Vite | 7.3.1 | Build tool & dev server |
+| TypeScript | 5.9.3 | Type safety |
+| Tailwind CSS | 4.1.14 | Utility-first styling |
+| Radix UI | Various | Accessible component primitives (accordion, dialog, tabs, tooltip, etc.) |
+| Framer Motion | 12.23.22 | Animations |
+| Wouter | 3.3.5 | Client-side routing |
+| TanStack React Query | 5.90.2 | Server state management |
+| tRPC React Query | 11.6.0 | Type-safe API client |
+| Recharts | 2.15.2 | Charting/data visualization |
+| Chart.js + react-chartjs-2 | 4.5.1 / 5.3.1 | Additional charting |
+| Lucide React | 0.453.0 | Icon library |
+| Sonner | 2.0.7 | Toast notifications |
+| cmdk | 1.1.1 | Command palette |
+| Embla Carousel | 8.6.0 | Carousel/slider |
+| React Day Picker | 9.11.1 | Date picker |
+| React Hook Form | 7.64.0 | Form management |
+| React Resizable Panels | 3.0.6 | Resizable panel layouts |
+| Vaul | 1.1.2 | Drawer component |
+| input-otp | 1.4.2 | OTP input component |
+| Superjson | 1.13.3 | JSON serialization (Date, BigInt support) |
 
 ### Backend
-| Technology | Purpose |
-|-----------|---------|
-| Express.js | HTTP server |
-| tRPC | Type-safe API layer |
-| Drizzle ORM | Database queries and schema |
-| PostgreSQL | Primary database |
-| Ably | Real-time pub/sub messaging |
-| Recall.ai | Meeting bot deployment and transcription |
-| Mux | Video streaming and recording |
-| Twilio | Phone dial-out (primary carrier) |
-| Telnyx | Phone dial-out (secondary carrier) |
-| OpenAI (GPT-4o / GPT-4o-mini) | AI analysis and generation |
-| AWS S3 | Object storage |
-| JSON Web Tokens | Session authentication |
-| Express Rate Limiting | API protection |
+| Technology | Version | Purpose |
+|---|---|---|
+| Node.js | 20+ | Runtime |
+| Express | 4.21.2 | HTTP server |
+| tRPC Server | 11.6.0 | Type-safe API layer |
+| Drizzle ORM | 0.44.5 | Database ORM |
+| PostgreSQL (pg) | 8.20.0 | Primary database |
+| OpenAI SDK | 6.27.0 | LLM integration (GPT-4o + Whisper) |
+| Ably | 2.18.0 | Real-time pub/sub messaging |
+| Twilio | 5.12.2 | Voice/telephony (server SDK) |
+| @twilio/voice-sdk | 2.18.0 | WebRTC voice client |
+| Telnyx | 5.51.0 | Alternative voice carrier |
+| @mux/mux-node | 12.8.1 | Live video streaming |
+| @mux/mux-player-react | 3.11.5 | Video player component |
+| Stripe | 20.4.0 | Payment processing |
+| Resend | 6.9.3 | Transactional email |
+| Jose | 6.1.0 | JWT token verification |
+| Multer | 2.1.0 | File upload middleware |
+| Sharp | 0.34.5 | Image processing |
+| Puppeteer | 24.38.0 | PDF generation |
+| PDFKit / pdfmake / pdf-lib | Various | PDF creation |
+| Mammoth | 1.12.0 | DOCX parsing |
+| Archiver / adm-zip | 7.0.1 / 0.5.16 | ZIP file handling |
+| Axios | 1.12.0 | HTTP client |
+| Zod | 4.1.12 | Schema validation |
+| express-rate-limit | 8.3.0 | API rate limiting |
+| cookie | 1.0.2 | Cookie parsing |
+| nanoid | 5.1.5 | Unique ID generation |
+| date-fns | 4.1.0 | Date utilities |
+| dotenv | 17.2.2 | Environment variable loading |
+| @aws-sdk/client-s3 | 3.1016.0 | S3 storage client |
+| @aws-sdk/s3-request-presigner | 3.1016.0 | S3 presigned URLs |
 
-### Dev & Build
-| Technology | Purpose |
-|-----------|---------|
-| pnpm | Package manager (monorepo) |
-| tsx | TypeScript execution (dev) |
-| esbuild | Server bundling (prod) |
-| Vitest | Unit testing |
-| Drizzle Kit | Database migrations |
-| Prettier / ESLint | Code formatting |
+### Dev Dependencies
+| Technology | Version | Purpose |
+|---|---|---|
+| tsx | 4.19.1 | TypeScript execution (dev server) |
+| esbuild | 0.25.0 | Server bundle builder |
+| Drizzle Kit | 0.31.4 | Database migration tool |
+| Vitest | 2.1.4 | Unit testing |
+| c8 | 11.0.0 | Code coverage |
+| ESLint | 10.1.0 | Linting |
+| Prettier | 3.6.2 | Code formatting |
+| PostCSS | 8.4.47 | CSS processing |
+| Autoprefixer | 10.4.20 | CSS vendor prefixes |
+| docx | 9.6.1 | DOCX generation |
+| ExcelJS | 4.4.0 | Excel file generation |
+| @vitejs/plugin-react | 5.0.4 | Vite React plugin |
+| @tailwindcss/typography | 0.5.15 | Prose styling |
+| tw-animate-css | 1.4.0 | Animation utilities |
 
 ---
 
-## 3. SERVER ARCHITECTURE
+## 3. PROJECT STRUCTURE & MONOREPO LAYOUT
+
+```
+curalive/
+├── package.json                    # Root package (name: "curalive")
+├── pnpm-workspace.yaml             # pnpm workspace config
+├── tsconfig.json                   # TypeScript config (aliases: @/* -> client/src/*, @shared/* -> shared/*)
+├── vite.config.ts                  # Vite config (root: ./client, build output: dist/_app)
+├── drizzle.config.ts               # Drizzle ORM config (dialect: postgresql)
+├── replit.nix                      # Nix environment (Node.js 20+)
+├── .replit                         # Replit configuration
+├── replit.md                       # Project documentation
+│
+├── client/                         # FRONTEND (React 19 + Vite)
+│   ├── index.html                  # HTML entry point
+│   ├── src/
+│   │   ├── main.tsx                # React entry point
+│   │   ├── App.tsx                 # Main app shell with routing (wouter)
+│   │   ├── AppEnhanced.tsx         # Alternative/experimental app shell
+│   │   ├── const.ts                # Global constants
+│   │   ├── index.css               # Global styles
+│   │   ├── _core/
+│   │   │   └── hooks/              # Core hooks (useAuth.ts)
+│   │   ├── pages/                  # 208 page components
+│   │   ├── components/             # 75+ business components
+│   │   │   ├── ui/                 # 53 shadcn/ui components
+│   │   │   └── mobile/             # Mobile-specific components
+│   │   ├── hooks/                  # 7 custom hooks
+│   │   ├── contexts/               # ThemeContext, AblyContext
+│   │   ├── lib/                    # trpc.ts, utils.ts, useSmartBack.ts
+│   │   └── services/               # sessionAutoSave.ts
+│   └── replit_integrations/
+│       └── audio/                  # Audio utilities (playback, recording, streaming)
+│
+├── server/                         # BACKEND (Express + tRPC)
+│   ├── _core/                      # Server engine
+│   │   ├── index.ts                # Express server entry point + startup
+│   │   ├── trpc.ts                 # tRPC setup, procedure definitions, dev bypass
+│   │   ├── context.ts              # tRPC context creation
+│   │   ├── sdk.ts                  # OAuth SDK (JWT verification, session management)
+│   │   ├── env.ts                  # Environment variable config
+│   │   ├── llm.ts                  # LLM integration (OpenAI GPT-4o + Gemini 2.5 Flash)
+│   │   ├── email.ts                # Resend email integration
+│   │   ├── ably.ts                 # Ably real-time pub/sub
+│   │   ├── notification.ts         # Owner notification service
+│   │   ├── voiceTranscription.ts   # Voice-to-text
+│   │   ├── systemRouter.ts         # System health + restart
+│   │   └── transcription/          # Transcription pipeline
+│   │
+│   ├── routers/                    # 100+ tRPC router files
+│   │   ├── routers.eager.ts        # Router registry (eager loading)
+│   │   └── routers.ts              # Router registry (standard loading)
+│   │
+│   ├── services/                   # 59 backend service files
+│   │
+│   ├── webhooks/                   # Webhook handlers
+│   │   ├── bridgeWebhooks.ts       # Twilio bridge webhooks
+│   │   ├── recall.ts               # Recall.ai webhook handler
+│   │   └── aiAmRecall.ts           # AI moderation recall handler
+│   │
+│   ├── webphone/                   # Telephony integration
+│   │   ├── twilio.ts               # Twilio WebRTC/SIP
+│   │   ├── telnyx.ts               # Telnyx SIP
+│   │   ├── carrierManager.ts       # Multi-carrier management
+│   │   └── ablyPublish.ts          # Real-time call events
+│   │
+│   ├── replit_integrations/        # Platform integrations
+│   │   ├── audio/                  # Audio processing
+│   │   ├── chat/                   # Chat services
+│   │   └── image/                  # Image processing
+│   │
+│   ├── storage.ts                  # Object storage (Forge proxy to S3)
+│   ├── storageAdapter.ts           # Local/cloud storage hybrid adapter
+│   ├── recordingUpload.ts          # Recording file upload handler
+│   ├── audioUpload.ts              # Audio library upload handler
+│   ├── slideDeckUpload.ts          # Slide deck upload handler
+│   ├── audioIngest.ts              # FFmpeg HLS audio ingest for transcription
+│   ├── aiAnalysis.ts               # Real-time AI analysis pipeline
+│   ├── recallWebhook.ts            # Recall.ai webhook (primary handler)
+│   ├── reminderScheduler.ts        # Event reminder email scheduler
+│   └── db.ts                       # Database connection (getDb, rawSql)
+│
+├── shared/                         # SHARED CODE (client + server)
+│   ├── const.ts                    # Shared constants (cookie name, etc.)
+│   ├── types.ts                    # Shared TypeScript types
+│   ├── _core/
+│   │   └── errors.ts               # Error handling utilities
+│   └── models/
+│       └── chat.ts                 # Chat Zod schemas
+│
+├── drizzle/                        # DATABASE
+│   ├── schema.ts                   # Complete Drizzle schema (100+ tables)
+│   ├── relations.ts                # Table relationships
+│   └── migrations/                 # SQL migration files
+│
+├── scripts/                        # UTILITY SCRIPTS
+│   ├── create-*.ts                 # Table creation scripts (raw SQL)
+│   ├── add-*.ts                    # Column addition scripts
+│   ├── check-router-sync.mjs       # Router sync verification
+│   └── ...                         # Various migration/seeding scripts
+│
+├── docs/                           # DOCUMENTATION
+│   ├── CURALIVE_COMPLETE_TECHNICAL_SPEC.md
+│   ├── CURALIVE_PLATFORM_SPECIFICATION.md
+│   ├── CIP-Module-M-AI-Self-Evolution-Engine.md
+│   ├── CURALIVE_AI_APPLICATIONS_INVENTORY.md
+│   ├── BETA_DEPLOYMENT_GUIDE.md
+│   └── ...                         # 30+ documentation files
+│
+├── artifacts/                      # SUB-PACKAGES
+│   ├── api-server/                 # Production API server artifact
+│   └── mockup-sandbox/             # UI prototyping environment
+│
+├── exports/                        # Generated export files
+└── uploads/                        # Local file uploads
+    └── recordings/                 # Recording files (local fallback)
+```
+
+---
+
+## 4. ENVIRONMENT VARIABLES & SECRETS
+
+### Required Secrets
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET` | JWT token signing secret (cookie encryption) |
+| `ABLY_API_KEY` | Ably real-time messaging API key |
+| `RECALL_AI_API_KEY` | Recall.ai bot API key (transcription bots) |
+| `RECALL_AI_WEBHOOK_SECRET` | HMAC-SHA256 webhook signature verification |
+| `MUX_WEBHOOK_SECRET` | Mux video webhook verification |
+
+### Optional / Service-Specific
+| Variable | Purpose |
+|---|---|
+| `VITE_APP_ID` | Application identifier |
+| `OAUTH_SERVER_URL` | OAuth authentication server URL |
+| `OWNER_OPEN_ID` | Platform owner's OpenID identifier |
+| `RESEND_API_KEY` | Resend email API key |
+| `TWILIO_ACCOUNT_SID` | Twilio account SID |
+| `TWILIO_AUTH_TOKEN` | Twilio auth token |
+| `TWILIO_API_KEY` | Twilio API key |
+| `TWILIO_API_SECRET` | Twilio API secret |
+| `TWILIO_TRUNKING_SID` | Twilio SIP trunking SID |
+| `TELNYX_API_KEY` | Telnyx voice API key |
+| `TELNYX_SIP_USER` | Telnyx SIP credentials |
+| `TELNYX_SIP_PASS` | Telnyx SIP password |
+| `TELNYX_CONNECTION_ID` | Telnyx connection identifier |
+| `MUX_TOKEN_ID` | Mux video API token ID |
+| `MUX_TOKEN_SECRET` | Mux video API token secret |
+| `STRIPE_SECRET_KEY` | Stripe payment processing |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe client-side key |
+| `OPENAI_API_KEY` | OpenAI API key (GPT-4o, Whisper) |
+| `AI_INTEGRATIONS_OPENAI_API_KEY` | Alternative OpenAI key (Replit proxy) |
+| `BUILT_IN_FORGE_API_URL` | Forge API URL (storage + AI proxy) |
+| `BUILT_IN_FORGE_API_KEY` | Forge API bearer token |
+| `DEFAULT_OBJECT_STORAGE_BUCKET_ID` | Object storage bucket |
+| `PRIVATE_OBJECT_DIR` | Private object storage directory |
+| `PUBLIC_OBJECT_SEARCH_PATHS` | Public object storage paths |
+| `NODE_ENV` | Environment (development/production) |
+| `PORT` | Server port (auto-assigned by Replit) |
+| `AUTH_BYPASS` | Dev mode auth bypass flag |
+
+### ENV Resolution (`server/_core/env.ts`)
+```typescript
+export const ENV = {
+  appId: process.env.VITE_APP_ID ?? "",
+  cookieSecret: process.env.JWT_SECRET ?? "",
+  databaseUrl: process.env.DATABASE_URL ?? "",
+  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
+  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
+  isProduction: process.env.NODE_ENV === "production",
+  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
+  forgeApiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY
+    ?? process.env.BUILT_IN_FORGE_API_KEY
+    ?? process.env.OPENAI_API_KEY ?? "",
+  resendApiKey: process.env.RESEND_API_KEY ?? "",
+};
+```
+
+---
+
+## 5. DATABASE SCHEMA (COMPLETE)
+
+**Database:** PostgreSQL
+**ORM:** Drizzle ORM 0.44.5
+**Schema File:** `drizzle/schema.ts`
+**Relations File:** `drizzle/relations.ts`
+
+### Core Tables
+
+#### Users & Auth
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `users` | id (serial PK), openId (varchar unique), name, email, role, organisation, jobTitle, avatarUrl, phone, timezone, createdAt, updatedAt | Central user table |
+
+#### Events
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `events` | id (serial PK), eventId (unique string), title, company, platform, status, accessCode, createdAt, updatedAt | Event metadata |
+| `attendee_registrations` | id, eventId, name, email, company, language, dialIn, accessPin | Participant sign-ups |
+
+### OCC (Operator Call Centre) Tables
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `occ_conferences` | id, eventId, callId, status, moderatorCode, participantCode, isLocked, autoAdmitEnabled, scheduledStart | Master conference record |
+| `occ_participants` | id, conferenceId, lineNumber, role, name, state (enum), phoneNumber, isSpeaking | Real-time participant state |
+| `occ_lounge` | id, conferenceId, participantId | Waiting room queue |
+| `occ_operator_requests` | id, conferenceId, type (DTMF/assistance) | Operator request log |
+| `occ_operator_sessions` | id, operatorId, conferenceId | Operator presence tracking |
+| `occ_chat_messages` | id, conferenceId, sender, message, translatedMessage | Real-time chat with translation |
+| `occ_participant_history` | id, participantId, action, timestamp | State transition audit log |
+| `occ_transcription_segments` | id, conferenceId, speaker, text, timestamp | Live transcript segments |
+| `occ_live_rolling_summaries` | id, conferenceId, summary, timestamp | Rolling AI summaries |
+
+### Bridge Console Tables
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `bridge_conferences` | id, eventId, twilioConferenceSid, status, moderatorPin, participantPin, isLocked, isRecording | Twilio bridge conference state |
+| `bridge_participants` | id, conferenceId, callSid, name, role, state, isMuted, isOnHold | Bridge participant management |
+| `bridge_greeter_queue` | id, conferenceId, callSid, name, status | IVR greeter waiting queue |
+
+### Enterprise Billing Tables
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `billing_clients` | id, name, company, email, status | Enterprise customer companies |
+| `billing_client_contacts` | id, clientId, name, email, role | Client contact people |
+| `billing_quotes` | id, clientId, quoteNumber, status, total, validUntil | Financial quotes |
+| `billing_invoices` | id, clientId, invoiceNumber, status, total, dueDate | Invoices |
+| `billing_line_items` | id, invoiceId/quoteId, description, quantity, unitPrice | Individual charges |
+| `billing_payments` | id, invoiceId, amount, method, reference | Payment records |
+| `billing_recurring_templates` | id, clientId, frequency, nextRun | Recurring billing automation |
+
+### AI & Intelligence Tables
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `shadow_sessions` | id, meetingUrl, platform, status, botId, transcriptJson, aiReport | Shadow Mode session tracking |
+| `recall_bots` | id, sessionId, recallBotId, status, joinUrl | Recall.ai bot state |
+| `bastion_intelligence_sessions` | id, eventId, investorProfile, analysis | Investor-focused AI analysis |
+| `agm_intelligence_sessions` | id, eventId, governanceAnalysis, dissentAnalysis | AGM governance analysis |
+| `agentic_analyses` | id, eventId, roiAnalysis, bundleRecommendations | AI-driven ROI analysis |
+| `agentic_brain_decisions` | id, eventId, decision, reasoning, timestamp | Agentic brain audit log |
+| `operator_corrections` | id, sessionId, correction, feedback | RLHF feedback loop |
+| `ai_generated_content` | id, eventId, contentType, content | AI-generated content store |
+| `sentiment_snapshots` | id, eventId, score, magnitude, timestamp | Sentiment data points |
+| `qa_auto_triage_results` | id, questionId, classification, confidence | Q&A auto-triage results |
+| `speaking_pace_analysis` | id, segmentId, wpm, fillerCount | Speaker coaching data |
+| `toxicity_filter_results` | id, messageId, score, flagged | Content moderation results |
+| `transcript_edits` | id, segmentId, originalText, editedText, editor | Transcript edit history |
+| `event_brief_results` | id, eventId, brief, generatedAt | Event briefing outputs |
+
+### Board Intelligence Tables (21 tables for 3 new AI services)
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `board_intelligence_compass` | id, sessionId, eventId, createdAt | Board Intelligence session |
+| `prior_commitment_audits` | id, compassId, commitment, source, status, assessment | Prior commitment tracking |
+| `director_liability_maps` | id, compassId, directorName, area, riskLevel, exposure | Director liability mapping |
+| `analyst_expectation_audits` | id, compassId, metric, consensusValue, range, revisionTrend | Analyst consensus data |
+| `governance_communication_scores` | id, compassId, clarity, consistency, completeness, timeliness | Governance scoring |
+| `board_resolutions` | id, compassId, actionType, description, priority, owner, dueDate, status | Board action items |
+| `pre_event_intelligence_briefings` | id, sessionId, eventId, briefingDate | Pre-event briefing session |
+| `analyst_consensus_data` | id, briefingId, metric, consensusValue, lowEstimate, highEstimate | Analyst consensus |
+| `predicted_qa_items` | id, briefingId, question, probability, riskLevel, suggestedResponse | Predicted Q&A items |
+| `compliance_hotspots` | id, briefingId, topic, riskLevel, regulatoryBasis, mitigation | Compliance risk areas |
+| `readiness_scores` | id, briefingId, category, score, maxScore, notes | Event readiness metrics |
+| `regulatory_compliance_monitors` | id, sessionId, eventId, monitoringStarted | Compliance monitor session |
+| `regulatory_flags` | id, monitorId, flagType, severity, description, timestamp | Regulatory flag detection |
+| `disclosure_triggers` | id, monitorId, triggerType, description, status, deadline | Disclosure trigger tracking |
+| `jurisdiction_profiles` | id, code, name, regulator, keyRules, reportingDeadline | Jurisdiction profiles (6 seeded) |
+| `compliance_action_items` | id, monitorId, action, priority, assignee, dueDate, status | Compliance action items |
+
+### Webcast & Video Tables
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `webcast_events` | id, slug, title, status, muxStreamId, muxPlaybackId, scheduledStart | Webcast event management |
+| `webcast_registrations` | id, eventId, name, email, attendeeToken | Attendee registration |
+| `webcast_enhancements` | id, eventId, noiseCancellation, xrEnabled, aiDubbing | Webcast feature config |
+| `webcast_qa` | id, eventId, question, status, approved | Q&A moderation |
+| `virtual_studios` | id, name, layout, overlays, aiBundle | Virtual studio config |
+
+### Live Q&A Tables
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `live_qa_sessions` | id, eventId, status | Q&A session management |
+| `live_qa_questions` | id, sessionId, text, askerName, status, aiTriage | Questions with AI triage |
+| `live_qa_answers` | id, questionId, text, answeredBy | Moderated answers |
+
+### Compliance & Security Tables
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `compliance_threats` | id, type, severity, description, detected, status | Security threat log |
+| `compliance_framework_checks` | id, framework, control, status, evidence | ISO/SOC compliance checks |
+| `compliance_audit_log` | id, action, userId, timestamp, details | Audit trail |
+
+### Social Media Tables
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `social_media_accounts` | id, platform, accountId, accessToken | Connected social accounts |
+| `social_media_posts` | id, accountId, content, scheduledAt, postedAt | Post management |
+| `social_media_analytics` | id, postId, impressions, engagement | Post analytics |
+
+### Interconnection & Analytics Tables
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `interconnection_activations` | id, sourceModule, targetModule, eventId | Cross-module feature usage |
+| `aggregate_intelligence` | id, sector, metric, value, period | Anonymized aggregate data |
+
+### Additional Tables (created via raw SQL scripts)
+- `ai_evolution_proposals`, `ai_evolution_governance_log`, `ai_evolution_tools`
+- `disclosure_certificates`, `disclosure_certificate_chains`
+- `crisis_predictions`, `valuation_impacts`
+- `tagged_metrics`, `tagged_metric_benchmarks`
+- `cross_event_consistency_reports`
+- `investor_engagement_scores`, `investor_intent_signals`
+- `communication_index_scores`
+- `autonomous_interventions`
+- `market_impact_predictions`
+- `materiality_risk_assessments`
+- `multi_modal_compliance_results`
+- `regulatory_intervention_logs`
+- `sustainability_metrics`
+- `volatility_simulations`
+- `call_preparations`
+- `monthly_report_data`
+- `platform_embed_configs`
+- `personalized_briefings`
+- `external_sentiment_data`
+
+### Seeded Data
+- **Jurisdiction Profiles (6):** SEC (USA), FCA (UK), ASIC (Australia), SGX (Singapore), HKEX (Hong Kong), JSE (South Africa)
+
+---
+
+## 6. SERVER ARCHITECTURE
 
 ### Entry Point
-`server/_core/index.ts` (1,081 lines)
+**File:** `server/_core/index.ts`
+**Function:** `startServer()`
 
 ### Startup Sequence
-1. Express app created with `trust proxy`
-2. Health check endpoint registered (`/health`)
-3. **Recall webhook registered BEFORE body parsing** (critical — raw body required for signature verification)
-4. Recording upload, audio transcribe, slide deck upload routes registered (multipart, before JSON parser)
-5. `express.json()` middleware applied with 500MB limit
-6. Rate limiters applied (`/api/trpc`, `/api/oauth`, `/api/auth`)
-7. OAuth routes registered
-8. Billing PDF routes registered
-9. Webphone TwiML and Telnyx webhook endpoints registered
-10. tRPC middleware mounted at `/api/trpc`
-11. Database migrations run (ensure tables/columns exist)
-12. Shadow Mode environment validated
-13. Shadow Guardian watchdog started
-14. Reminder scheduler started
-15. Compliance digest scheduler started
-16. Health Guardian started
-17. Vite dev server (dev) or static files (prod) served
-18. MetricsWebSocketServer attached
-19. Server listens on PORT
+1. `enforceEnvOrExit()` - Validates required environment variables
+2. Create Express app + HTTP server
+3. Register middleware:
+   - `express.json()` + `express.urlencoded()` (Twilio/Telnyx webhook body parsing)
+   - `express-rate-limit` (API: 120/min prod, 500/min dev; Auth: 20/15min prod, 200/15min dev)
+   - `systemStatusRouter` (health check at root)
+   - Mockup proxy (`/__mockup` -> localhost:23636 in dev)
+   - tRPC middleware at `/api/trpc`
+   - Vite dev server (dev) or static file serving (prod)
+4. Register webhook routes:
+   - `registerRecallWebhookRoute(app)` at `/api/recall/webhook`
+   - `registerBridgeWebhooks(app)` at `/api/bridge/*`
+   - Telnyx webhook at `/api/webphone/telnyx`
+   - Twilio TwiML at `/api/webphone/twiml`, `/api/voice/inbound`
+5. Start background services:
+   - `startReminderScheduler(origin)` - Email reminders (60s interval)
+   - `startHealthGuardian()` - Health monitoring (30s interval)
+   - `startComplianceEngine()` + `seedFrameworkControls()` - Compliance scanning (5min interval)
+   - `reconcileShadowSessions()` + `startShadowWatchdog()` - Shadow Mode recovery (60s interval)
+6. Run non-blocking migrations (transcription columns, Q&A columns)
+7. Graceful shutdown handler (SIGTERM/SIGINT)
 
-### Request Flow
-```
-Client → HTTPS Proxy → Express
-  → Rate Limiter
-  → /api/trpc → tRPC Middleware → Context (auth) → Router → Procedure → DB
-  → /api/recall/webhook → Raw body handler → Recall webhook processing
-  → /api/webphone/twiml → TwiML voice response
-  → Static files / Vite HMR
-```
+### Server Build Pipeline
+- **Dev:** `tsx watch server/_core/index.ts` (hot-reload)
+- **Build:** `vite build` (frontend to `dist/_app`) + `esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist` (backend to `dist/index.js`)
+- **Production:** `node dist/index.js`
 
 ---
 
-## 4. DATABASE SCHEMA OVERVIEW
+## 7. AUTHENTICATION & AUTHORIZATION
 
-**Total tables: 120+** defined in `drizzle/schema.ts` (3,413 lines)
+### Authentication Flow
+1. **OAuth/OpenID Connect:** External OAuth server (`OAUTH_SERVER_URL`) handles login
+2. **JWT Sessions:** JWTs stored in cookies (cookie name from `@shared/const`)
+3. **JWT Verification:** `jose` library verifies tokens in `server/_core/sdk.ts`
+4. **User Sync:** If JWT is valid but user missing from local DB, auto-syncs from OAuth server via `getUserInfoWithJwt`
+5. **Dev Bypass:** When `NODE_ENV !== 'production'` and `AUTH_BYPASS === true`, injects `DEV_USER` (id: 0, name: "Dev Operator") into context
 
-### Table Categories
+### tRPC Context
+**File:** `server/_core/context.ts`
+- Calls `sdk.authenticateRequest(req)` to populate `user` object
+- Returns `{ user, req, res }` to all procedures
 
-#### Core Platform (8 tables)
-| Table | Purpose |
-|-------|---------|
-| `users` | User accounts (name, email, role, profile fields) |
-| `events` | Event definitions (ID, title, company, platform, access code) |
-| `attendee_registrations` | Event attendee registrations |
-| `ir_contacts` | IR contact database |
-| `direct_access_log` | Access code usage audit |
-| `user_feedback` | User feedback submissions |
-| `event_customisation` | Per-event UI customisation |
-| `event_branding` | Per-event branding (colors, logos) |
+### Procedure Security Levels
+| Level | Required | Access |
+|---|---|---|
+| `publicProcedure` | None | Anyone |
+| `protectedProcedure` | Valid session | Authenticated users |
+| `operatorProcedure` | role = 'operator' or 'admin' | Operators |
+| `adminProcedure` | role = 'admin' | Administrators only |
 
-#### OCC — Operator Conference Console (11 tables)
-| Table | Purpose |
-|-------|---------|
-| `occ_conferences` | Conference instances |
-| `occ_participants` | Conference participants (state machine) |
-| `occ_lounge` | Pre-conference waiting lounge |
-| `occ_operator_requests` | Operator action requests |
-| `occ_operator_sessions` | Operator session tracking |
-| `occ_chat_messages` | Conference chat |
-| `occ_audio_files` | Audio file references |
-| `occ_participant_history` | Participant state change audit |
-| `occ_access_code_log` | Access code usage |
-| `occ_dial_out_history` | Outbound dial history |
-| `occ_green_rooms` | Pre-conference green rooms |
-
-#### Roadshow & Investor (5 tables)
-| Table | Purpose |
-|-------|---------|
-| `live_roadshows` | Roadshow definitions |
-| `live_roadshow_meetings` | Individual roadshow meetings |
-| `live_roadshow_investors` | Investor profiles for roadshows |
-| `live_meeting_summaries` | AI meeting summaries |
-| `commitment_signals` | Investor commitment tracking |
-
-#### Webcasting (4 tables)
-| Table | Purpose |
-|-------|---------|
-| `webcast_events` | Webcast event definitions |
-| `webcast_registrations` | Attendee registrations |
-| `webcast_qa` | Webcast Q&A items |
-| `webcast_polls` | Live polls |
-
-#### Media & Recording (4 tables)
-| Table | Purpose |
-|-------|---------|
-| `recall_bots` | Recall.ai bot instances and transcript storage |
-| `mux_streams` | Mux video stream definitions |
-| `slide_thumbnails` | Slide deck thumbnails |
-| `speaker_pace_results` | Speaking pace analysis |
-
-#### Webphone (2 tables)
-| Table | Purpose |
-|-------|---------|
-| `webphone_sessions` | Phone call sessions |
-| `webphone_carrier_status` | Twilio/Telnyx carrier health |
-
-#### Billing (12 tables)
-| Table | Purpose |
-|-------|---------|
-| `billing_clients` | Client accounts |
-| `billing_quotes` | Quote documents |
-| `billing_line_items` | Quote/invoice line items |
-| `billing_invoices` | Invoice documents |
-| `billing_payments` | Payment records |
-| `billing_client_contacts` | Client contact persons |
-| `billing_quote_versions` | Quote version history |
-| `billing_credit_notes` | Credit notes |
-| `billing_fx_rates` | Foreign exchange rates |
-| `billing_activity_log` | Billing audit trail |
-| `billing_line_item_templates` | Reusable line item templates |
-| `billing_recurring_templates` | Recurring billing templates |
-| `billing_email_events` | Email delivery tracking |
-
-#### Training Mode (6 tables)
-| Table | Purpose |
-|-------|---------|
-| `training_mode_sessions` | Training session instances |
-| `training_conferences` | Training conference setups |
-| `training_participants` | Simulated participants |
-| `training_lounge` | Training lounge state |
-| `training_call_logs` | Training call history |
-| `training_performance_metrics` | Operator performance scores |
-
-#### Shadow Mode (4 tables)
-| Table | Purpose |
-|-------|---------|
-| `shadow_sessions` | Shadow monitoring sessions |
-| `operator_actions` | Operator action audit trail |
-| `operator_corrections` | AI correction feedback loop |
-| `adaptive_thresholds` | Self-adjusting AI thresholds |
-
-#### Intelligence & Analytics (15+ tables)
-| Table | Purpose |
-|-------|---------|
-| `tagged_metrics` | Intelligence-tagged metric records |
-| `archive_events` | Archived events with AI reports |
-| `crisis_predictions` | CIP4 crisis risk predictions |
-| `valuation_impacts` | Valuation impact analyses |
-| `disclosure_certificates` | Regulatory disclosure certificates |
-| `monthly_reports` | Generated monthly reports |
-| `advisory_chat_messages` | Advisory bot conversation history |
-| `evolution_audit_log` | AI evolution audit trail |
-| `capability_roadmap` | AI capability development tracking |
-| `ai_evolution_observations` | AI self-improvement observations |
-| `ai_tool_proposals` | AI-proposed tool/feature suggestions |
-| `agentic_analyses` | Agentic brain analysis records |
-| `autonomous_interventions` | Autonomous system interventions |
-| `investor_briefing_packs` | Generated investor briefing packs |
-| `post_event_data` | Post-event analysis data |
-| `post_event_reports` | Generated post-event reports |
-
-#### Compliance & Security (10 tables)
-| Table | Purpose |
-|-------|---------|
-| `compliance_vocabulary` | Compliance keyword dictionary |
-| `compliance_violations` | Detected compliance violations |
-| `compliance_detection_stats` | Detection accuracy statistics |
-| `ai_am_audit_log` | AI-AM monitoring audit trail |
-| `alert_preferences` | Alert delivery preferences |
-| `alert_history` | Alert delivery history |
-| `soc2_controls` | SOC 2 control mappings |
-| `iso27001_controls` | ISO 27001 control mappings |
-| `compliance_evidence_files` | Compliance evidence documents |
-| `compliance_threats` | Threat intelligence records |
-| `compliance_framework_checks` | Framework compliance checks |
-
-#### Partner Integrations (6 tables)
-| Table | Purpose |
-|-------|---------|
-| `lumi_bookings` | Lumi partner bookings |
-| `bastion_intelligence_sessions` | Bastion partner intelligence sessions |
-| `bastion_investor_observations` | Bastion investor behavior observations |
-| `bastion_guidance_tracker` | Forward guidance tracking |
-| `bastion_bookings` | Bastion partner bookings |
-| `conference_dialouts` | Conference dial-out records |
-| `conference_dialout_participants` | Dial-out participant tracking |
-
-#### AGM Governance (4 tables)
-| Table | Purpose |
-|-------|---------|
-| `agm_resolutions` | AGM resolution tracking |
-| `agm_intelligence_sessions` | AGM intelligence session records |
-| `agm_dissent_patterns` | Shareholder dissent analysis |
-| `agm_governance_observations` | Governance behavior observations |
-
-#### Live Q&A (5 tables)
-| Table | Purpose |
-|-------|---------|
-| `live_qa_sessions` | Q&A session instances |
-| `live_qa_questions` | Submitted questions with triage data |
-| `live_qa_answers` | Question answers (manual + AI draft) |
-| `live_qa_compliance_flags` | Question compliance flags |
-| `live_qa_platform_shares` | Q&A platform sharing records |
-
-#### Other (10+ tables)
-| Table | Purpose |
-|-------|---------|
-| `polls` | Live poll definitions |
-| `poll_options` | Poll answer options |
-| `poll_votes` | Vote records |
-| `event_schedules` | Event scheduling |
-| `operator_availability` | Operator availability calendar |
-| `transcription_jobs` | Async transcription job tracking |
-| `sustainability_reports` | ESG/sustainability analysis |
-| `broadcast_sessions` | Intelligent broadcaster sessions |
-| `studio_sessions` | Virtual studio sessions |
-| `esg_studio_flags` | ESG topic flagging |
-| `studio_interconnections` | Cross-event connections |
-| `operator_link_analytics` | Operator link click tracking |
-| `operator_links_metadata` | Operator link metadata |
-| `stripe_customers` | Stripe customer records |
-| `stripe_subscriptions` | Stripe subscriptions |
-| `premium_features` | Feature gating |
-| `stripe_payment_events` | Payment webhook events |
-| `mailing_lists` | Mailing list definitions |
-| `mailing_list_entries` | Mailing list subscribers |
-| `crm_api_keys` | CRM integration API keys |
-
----
-
-## 5. tRPC ROUTER REGISTRY
-
-**93 registered routers** in `server/routers.eager.ts`
-
-
-```
-Router Key              → Source File                           → Category
-─────────────────────── ─ ─────────────────────────────────── ─ ──────────────
-system                  → systemRouter                         → Core
-occ                     → occRouter                            → Conference
-liveVideo               → liveVideoRouter                      → Video
-roadshowAI              → roadshowAIRouter                     → Roadshow
-branding                → brandingRouter                       → Customisation
-webcast                 → webcastRouter                        → Webcasting
-recall                  → recallRouter                         → Integration
-mux                     → muxRouter                            → Video
-billing                 → billingRouter                        → Billing
-ai                      → aiRouter                             → AI
-webphone                → webphoneRouter                       → Phone
-customisation           → customisationRouter                  → Customisation
-trainingMode            → trainingModeRouter                   → Training
-postEventReport         → postEventReportRouter                → Reports
-transcription           → transcriptionRouter                  → Transcription
-polls                   → pollsRouter                          → Engagement
-scheduling              → schedulingRouter                     → Operations
-clientPortal            → clientPortalRouter                   → Client
-compliance              → complianceRouter                     → Compliance
-followups               → followupsRouter                      → Engagement
-sentiment               → sentimentRouter                      → AI
-mobileNotifications     → mobileNotificationsRouter            → Notifications
-aiDashboard             → aiDashboardRouter                    → AI
-aiFeatures              → aiFeaturesRouter                     → AI
-analytics               → analyticsRouter                      → Analytics
-contentTriggers         → contentTriggersRouter                → Content
-eventBrief              → eventBriefRouter                     → Intelligence
-liveRollingSummary      → liveRollingSummaryRouter             → Live
-transcriptEditor        → transcriptEditorRouter               → Transcription
-aiApplications          → aiApplicationsRouter                 → AI
-socialMedia             → socialMediaRouter                    → Social
-interconnectionAnalytics → interconnectionAnalyticsRouter      → Analytics
-virtualStudio           → virtualStudioRouter                  → Studio
-operatorLinks           → operatorLinksRouter                  → Operations
-agenticBrain            → agenticEventBrainRouter              → AI
-autonomousIntervention  → autonomousInterventionRouter         → AI
-taggedMetrics           → taggedMetricsRouter                  → Intelligence
-shadowMode              → shadowModeRouter                     → Shadow Mode
-archiveUpload           → archiveUploadRouter                  → Archive
-benchmarks              → benchmarksRouter                     → Analytics
-marketReaction          → marketReactionRouter                 → Intelligence
-communicationIndex      → communicationIndexRouter             → Intelligence
-investorQuestions       → investorQuestionsRouter              → Intelligence
-intelligenceReport      → intelligenceReportRouter             → Intelligence
-callPrep                → callPrepRouter                       → Operations
-intelligenceTerminal    → intelligenceTerminalRouter           → Intelligence
-bot                     → botRouter                            → Integration
-mailingList             → mailingListRouter                    → CRM
-healthGuardian          → healthGuardianRouter                 → Operations
-crmApi                  → crmApiRouter                         → CRM
-supportChat             → supportChatRouter                    → Support
-soc2                    → soc2Router                           → Compliance
-iso27001                → iso27001Router                       → Compliance
-adaptiveIntelligence    → adaptiveIntelligenceRouter           → AI
-sustainability          → sustainabilityRouter                 → ESG
-broadcaster             → broadcasterRouter                    → Studio
-conferenceDialout       → conferenceDialoutRouter              → Phone
-agmGovernance           → agmGovernanceRouter                  → Governance
-lumiBooking             → lumiBookingRouter                    → Partner
-bastionBooking          → bastionBookingRouter                 → Partner
-evasiveAnswer           → evasiveAnswerRouter                  → AI
-marketImpactPredictor   → marketImpactPredictorRouter          → Intelligence
-multiModalCompliance    → multiModalComplianceRouter           → Compliance
-externalSentiment       → externalSentimentRouter              → Intelligence
-personalizedBriefing    → personalizedBriefingRouter           → Intelligence
-materialityRisk         → materialityRiskRouter                → Intelligence
-investorIntent          → investorIntentRouter                 → Intelligence
-crossEventConsistency   → crossEventConsistencyRouter          → Intelligence
-volatilitySimulator     → volatilitySimulatorRouter            → Intelligence
-regulatoryIntervention  → regulatoryInterventionRouter         → Compliance
-eventIntegrity          → eventIntegrityRouter                 → Intelligence
-crisisPrediction        → crisisPredictionRouter               → CIP4
-valuationImpact         → valuationImpactRouter                → CIP4
-disclosureCertificate   → disclosureCertificateRouter          → CIP4
-monthlyReport           → monthlyReportRouter                  → CIP4
-advisoryBot             → advisoryBotRouter                    → AI
-evolutionAudit          → evolutionAuditRouter                 → AI
-systemDiagnostics       → systemDiagnosticsRouter              → Operations
-liveQa                  → liveQaRouter                         → Q&A
-platformEmbed           → platformEmbedRouter                  → Integration
-investorEngagement      → investorEngagementRouter             → Intelligence
-liveSubtitle            → liveSubtitleRouter                   → Accessibility
-ipoMandA                → ipoMandARouter                       → Intelligence
-complianceEngine        → complianceEngineRouter               → Compliance
-aiAm                    → aiAmRouter                           → AI-AM
-rbac                    → rbacRouter                           → Auth
-aiEvolution             → aiEvolutionRouter                    → AI
-persistence             → persistenceRouter                    → Core
-aiAmPhase2              → aiAmPhase2Router                     → AI-AM
-restBridge              → restBridgeRouter                     → Integration
-session                 → sessionRouter                        → Auth
-archive                 → archiveRouter                        → Archive
-admin                   → (inline)                             → Admin
-team                    → (inline)                             → Admin
-auth                    → (inline)                             → Auth
-profile                 → (inline)                             → Auth
-ably                    → (inline)                             → Real-time
-events                  → (inline)                             → Core
-```
-
----
-
-## 6. AUTHENTICATION & AUTHORIZATION
-
-### Auth Flow
-- OAuth-based authentication (OpenID Connect)
-- JWT session tokens stored in HTTP-only cookies
-- Cookie name: defined in `@shared/const` as `COOKIE_NAME`
-
-### Procedure Types
-| Procedure | Access Level | Dev Mode Behavior |
-|-----------|-------------|-------------------|
-| `publicProcedure` | Anyone | Same |
-| `protectedProcedure` | Authenticated users | Auto-auth |
-| `operatorProcedure` | Operators + admins | Auto-auth as "Dev Operator" |
-| `adminProcedure` | Admins only | Auto-auth |
-
-### User Roles
+### Database Access Pattern
 ```typescript
-type Role = "user" | "admin" | "operator";
-```
-
-### DEV_BYPASS
-In development (`NODE_ENV !== 'production'`), `auth.me` returns:
-```typescript
-{ id: 0, name: "Dev Operator", email: "dev@curalive.local", role: "operator" }
-```
-
----
-
-## 7. REAL-TIME INFRASTRUCTURE
-
-### Ably Pub/Sub
-- **Channel naming:** `curalive-event-*` (general), `shadow-{id}-{ts}` (shadow mode), `curalive-qa-{id}` (live Q&A)
-- **Token generation:** Server-side HMAC-SHA256 signed token requests
-- **Capabilities:** subscribe, publish, presence, history
-- **Client hook:** `useAblyChannel.ts`, `useAblySessions.ts`
-
-### WebSocket
-- **MetricsWebSocketServer** — real-time metrics streaming
-- **metricsWebsocket.ts** — WebSocket server attached to HTTP server
-
-### Polling Fallback
-All real-time features fall back to tRPC query polling with `refetchInterval` when WebSocket/Ably connections fail.
-
----
-
-# PART II — CORE PRODUCT MODULES
-
----
-
-## 8. OPERATOR CONFERENCE CONSOLE (OCC)
-
-**Router:** `occ` (1,224 lines) | **Page:** `OCC.tsx` (5,101 lines)
-
-The OCC is CuraLive's flagship product — a real-time conference management console for operators running corporate events. Think of it as air traffic control for investor conference calls.
-
-### Core Features
-- **Participant Management** — real-time state machine (free → incoming → connected → speaking → muted → parked → dropped)
-- **Conference Control** — mute/unmute, park/unpark, dial-out, transfer
-- **Green Rooms** — pre-conference holding areas for speakers
-- **Chat System** — operator ↔ participant messaging
-- **Live Transcription** — real-time transcript via Recall.ai or browser
-- **Sentiment Analysis** — live sentiment scoring of call participants
-- **Compliance Monitoring** — real-time keyword flagging
-- **Audio Recording** — conference recording with playback
-- **Operator Session Tracking** — who handled what, audit trail
-- **Access Code Management** — PIN-based event access
-
-### Participant State Machine
-```
-free → incoming → connected ↔ muted
-                           ↔ parked
-                           → speaking → speaking_ended
-                           → dropped
-                           → moved_to_subconference → returned_from_subconference
-```
-
-### Sub-Components
-- `OccRealtimeUpdates` — Ably-powered real-time state sync
-- `ParticipantStatusDashboard` — participant state overview
-- `MutingControlPanel` — bulk muting controls
-- `ComplianceMonitor` — live compliance alert feed
-
----
-
-## 9. SHADOW MODE (LIVE EVENT INTELLIGENCE)
-
-**Router:** `shadowMode` (1,386 lines) | **Page:** `ShadowMode.tsx` (4,221 lines)
-
-Shadow Mode is CuraLive's silent monitoring dashboard. An operator creates a session, and CuraLive either deploys a Recall.ai bot or captures audio locally. During the event, AI transcribes, analyzes sentiment, flags compliance, and streams intelligence in real-time. Post-session, a full AI report is generated.
-
-### 8 Tabs
-- **Live** — session creation, live transcript, local audio capture
-- **Archive** — completed sessions with bulk operations
-- **Reports** — AI report viewer (executive summary, sentiment, compliance, topics, risks)
-- **AI Learning** — operator corrections feeding self-improving AI
-- **AI Dashboard** — CIP4 analytics (crisis, valuation, disclosure, evolution)
-- **Advisory** — AI advisory chat
-- **Console** — system diagnostics (15 health checks)
-- **Live Q&A** — audience question management with AI triage
-
-### Session Lifecycle
-```
-pending → bot_joining → live → processing → completed/failed
-pending → live (local audio, no bot step)
-```
-
-### Key Features
-- Recall.ai bot deploy with retry logic (3 attempts)
-- Local Audio Capture for unsupported platforms (choruscall, other)
-- Real-time Ably streaming of transcript segments
-- Auto-generated AI reports on session end
-- Tagged metrics generation (sentiment, engagement, compliance, intervention)
-- AGM governance auto-detection
-- Operator notes, action logging, handoff packages
-- Export (CSV, JSON, PDF)
-- Shadow Guardian watchdog service
-
-*(Full Shadow Mode brief available in separate document)*
-
----
-
-## 10. ARCHIVE & AI REPORTS
-
-**Router:** `archiveUpload` (1,511 lines) | **Page:** `ArchiveUpload.tsx` (650 lines)
-
-### Archive Upload
-Operators upload pre-recorded event transcripts for AI analysis. Supports:
-- Text transcript paste
-- Audio file upload with transcription
-- Slide deck upload for visual analysis
-
-### AI Report Generation (`generateFullAiReport`)
-Every event (live or archived) gets a comprehensive AI report:
-
-| Module | Content |
-|--------|---------|
-| Executive Summary | 2-3 paragraph narrative |
-| Sentiment Analysis | Score/100 + trajectory + narrative |
-| Compliance Review | Risk level + flagged phrases + recommendations |
-| Key Topics | Topic extraction with relevance scores |
-| Risk Factors | Risk identification and assessment |
-| Action Items | Follow-up commitments extracted |
-| Speaker Analysis | Per-speaker sentiment and contribution |
-| Forward-Looking Statements | Guidance and forecast extraction |
-| Regulatory Highlights | JSE/regulatory compliance items |
-
-### CIP4 Pipeline (triggered after every report)
-1. Meta-Observer (AI Evolution)
-2. Crisis Prediction
-3. Disclosure Certificate
-4. Valuation Impact Analysis
-5. Accumulation Engine (cross-event learning)
-
----
-
-## 11. WEBCASTING PLATFORM
-
-**Router:** `webcast` (1,140 lines) | **Pages:** `WebcastStudio.tsx`, `WebcastingHub.tsx`, `WebcastRegister.tsx`
-
-Full-featured corporate webcasting platform:
-
-### Features
-- **Event Creation** — title, description, schedule, branding, registration form
-- **Registration** — public registration with confirmation emails
-- **Studio** — presenter view with slide management, Q&A, polls
-- **Attendee Room** — branded viewing experience with engagement tools
-- **Q&A Management** — moderated Q&A with approval workflow
-- **Live Polls** — real-time polling with results display
-- **On-Demand** — automatic replay generation after live event
-- **Analytics** — attendance, engagement, drop-off metrics
-
-### Webcast Statuses
-```
-draft → scheduled → live → ended → on_demand / cancelled
+async function requireDb() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db;
+}
 ```
 
 ---
 
-## 12. WEBPHONE SYSTEM
+## 8. tRPC API LAYER (COMPLETE ROUTER MAP)
 
-**Router:** `webphone` (988 lines) | **Component:** `Webphone.tsx` (1,215 lines)
+**Mount Point:** `/api/trpc`
+**Registry Files:** `server/routers.eager.ts` (SSR optimized) AND `server/routers.ts` (standard)
 
-Browser-based phone system for conference operators:
+**CRITICAL:** New routers MUST be registered in BOTH files.
 
-### Features
-- **Dual Carrier** — Twilio (primary) + Telnyx (secondary) with automatic failover
-- **Inbound/Outbound** — receive and make calls from the browser
-- **Conference Bridge** — connect calls to conference rooms
-- **Call Controls** — mute, hold, transfer, park
-- **TwiML/TeXML** — voice response generation for both carriers
-- **Carrier Health** — real-time carrier status monitoring
-- **Call History** — full call log with duration and status
+### Complete Router Registry (90+ routers)
 
-### WebRTC Components
-- `WebPhoneCallManager.tsx` — call management UI
-- `WebPhoneJoinInstructions.tsx` — dial-in instructions
-- `Webphone.tsx` — full phone interface
+#### Core Infrastructure Routers
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `system` | `server/_core/systemRouter.ts` | health (Q), restart (M) |
+| `auth` | Inline in routers.ts | me (Q), logout (M) |
+| `admin` | Inline in routers.ts | listUsers (Q), updateUserRole (M) |
+| `team` | Inline in routers.ts | requestOperatorAccess (M) |
+| `profile` | Inline in routers.ts | get (Q), update (M), uploadAvatar (M), getEventHost (Q) |
+| `ably` | `server/routers/ably.ts` | tokenRequest (Q) |
+| `events` | Inline in routers.ts | verifyAccess (Q), getEvent (Q), upsertEvent (M), setAccessCode (M), generateSummary (M) |
+| `rbac` | `server/routers/rbac.ts` | getRoles (Q), updatePermissions (M) |
+| `persistence` | `server/routers/persistence.ts` | saveState (M), loadState (Q) |
+
+#### Operator Call Centre (OCC)
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `occ` | `server/routers/occ.ts` | getConferences (Q), getConference (Q), getConferenceByEventId (Q), toggleRecording (M), toggleLock (M), muteAll (M), terminateConference (M), toggleAutoAdmit (M), getDirectAccessStats (Q), getDirectAccessLog (Q), getParticipants (Q), updateParticipant (M), toggleMuteParticipant (M), dropParticipant (M), parkParticipant (M), reconnectParticipant (M), getOperatorActivities (Q), logOperatorActivity (M) |
+
+#### Bridge Console (Telephony)
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `bridgeConsole` | `server/routers/bridgeConsoleRouter.ts` | getConferences, getConference, createConference, updateConference, getParticipants, holdParticipant, removeParticipant, muteParticipant, admitFromGreeterQueue, getGreeterQueue, deployRecallBot |
+| `conferenceDialout` | `server/routers/conferenceDialoutRouter.ts` | dialOut, getDialoutHistory |
+| `restBridge` | `server/routers/restBridgeRouter.ts` | REST API bridge endpoints |
+
+#### Webcast & Live Video
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `webcast` | `server/routers/webcastRouter.ts` | getEvent (Q), createEvent (M), updateEvent (M), deleteEvent (M), register (M), getAttendees (Q), toggleLive (M), getStats (Q) |
+| `liveVideo` | `server/routers/liveVideo.ts` | createStream (M), getStream (Q), listStreams (Q), stopStream (M), getRecording (Q), listRecordings (Q) |
+| `mux` | `server/routers/muxRouter.ts` | createLiveStream (M), getLiveStream (Q), listLiveStreams (Q), deleteLiveStream (M), createAsset (M), getAsset (Q) |
+| `virtualStudio` | `server/routers/virtualStudioRouter.ts` | getScene (Q), updateScene (M) |
+| `broadcaster` | `server/routers/broadcasterRouter.ts` | analyzePace, detectFillers, identifyKeyMoments |
+| `liveSubtitle` | `server/routers/liveSubtitleRouter.ts` | getSubtitles, startSubtitles, stopSubtitles |
+
+#### AI Core
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `ai` | `server/routers/aiRouter.ts` | chat (M), summarize (M), analyzeSentiment (M), extractInsights (M) |
+| `aiDashboard` | `server/routers/aiDashboard.ts` | getMetrics (Q), getUsageStats (Q) |
+| `aiFeatures` | `server/routers/aiFeatures.ts` | getEnabledFeatures (Q), toggleFeature (M) |
+| `aiApplications` | `server/routers/aiApplications.ts` | getAll (Q), updateAppConfig (M) |
+| `aiAm` | `server/routers/aiAm.ts` | moderateChat (M), getModerationStats (Q) |
+| `aiEvolution` | `server/routers/aiEvolutionRouter.ts` | getEvolutionState (Q), triggerLearning (M) |
+| `agenticBrain` | `server/routers/agenticEventBrainRouter.ts` | processEvent (M), getHistory (Q) |
+| `advisoryBot` | `server/routers/advisoryBotRouter.ts` | Advisory bot interactions |
+| `supportChat` | `server/routers/supportChatRouter.ts` | Support chat endpoints |
+
+#### Shadow Mode & Recall.ai
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `shadowMode` | `server/routers/shadowModeRouter.ts` | getStatus (Q), toggle (M), getSessions, deployBot, getTranscript, generateReport |
+| `recall` | `server/routers/recallRouter.ts` | botStatus (Q), inviteBot (M), removeBot (M), getTranscript (Q), getVideoUrl (Q) |
+| `archiveUpload` | `server/routers/archiveUploadRouter.ts` | uploadArchive (M), getUploadStatus (Q), generateReport (M) |
+
+#### Intelligence Services
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `boardIntelligence` | `server/routers/boardIntelligenceRouter.ts` | getOrCreateCompass, getPriorCommitmentAudit, getDirectorLiabilityMap, getAnalystExpectationAudit, getGovernanceCommunicationScore, getBoardResolutions, createBoardResolution, updateResolutionStatus, generateBoardBriefing |
+| `preEventIntelligence` | `server/routers/preEventIntelligenceRouter.ts` | getOrCreateBriefing, getAnalystConsensus, getPredictedQa, getComplianceHotspots, getReadinessScores |
+| `regulatoryCompliance` | `server/routers/regulatoryComplianceRouter.ts` | getOrCreateMonitor, getRegulatoryFlags, getDisclosureTriggers, getJurisdictionProfiles, getComplianceActionItems, createActionItem, updateActionItemStatus |
+| `intelligenceReport` | `server/routers/intelligenceReportRouter.ts` | generateReport, getReport |
+| `intelligenceTerminal` | `server/routers/intelligenceTerminalRouter.ts` | query, getHistory |
+| `adaptiveIntelligence` | `server/routers/adaptiveIntelligenceRouter.ts` | Adaptive intelligence endpoints |
+
+#### Analytics & Sentiment
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `analytics` | `server/routers/analytics.ts` | getEngagementStats (Q), getAttendeeMetrics (Q) |
+| `sentiment` | `server/routers/sentiment.ts` | getRealtimeSentiment (Q), getHistoricalSentiment (Q) |
+| `externalSentiment` | `server/routers/externalSentimentRouter.ts` | External sentiment feed |
+| `benchmarks` | `server/routers/benchmarksRouter.ts` | Benchmarking data |
+| `taggedMetrics` | `server/routers/taggedMetricsRouter.ts` | Tagged numerical metrics |
+| `interconnection` | `server/routers/interconnectionAnalytics.ts` | getGraph (Q), analyzeNodes (M) |
+
+#### Compliance & Risk
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `compliance` | `server/routers/compliance.ts` | checkCompliance (M), getAuditLog (Q), generateReport (M) |
+| `complianceEngine` | `server/routers/complianceEngineRouter.ts` | runRuleEngine (M), getRules (Q) |
+| `iso27001` | `server/routers/iso27001Router.ts` | ISO 27001 compliance endpoints |
+| `soc2` | `server/routers/soc2Router.ts` | SOC 2 compliance endpoints |
+| `multiModalCompliance` | `server/routers/multiModalComplianceRouter.ts` | Multi-modal compliance analysis |
+| `regulatoryIntervention` | `server/routers/regulatoryInterventionRouter.ts` | Regulatory intervention tracking |
+| `autonomousIntervention` | `server/routers/autonomousInterventionRouter.ts` | AI autonomous interventions |
+
+#### Investor Intelligence
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `crisisPrediction` | `server/routers/crisisPredictionRouter.ts` | Crisis prediction analysis |
+| `valuationImpact` | `server/routers/valuationImpactRouter.ts` | Share price impact prediction |
+| `disclosureCertificate` | `server/routers/disclosureCertificateRouter.ts` | SHA-256 hash-chained disclosure certificates |
+| `investorEngagement` | `server/routers/investorEngagementRouter.ts` | Investor engagement scoring |
+| `investorIntent` | `server/routers/investorIntentRouter.ts` | Investor intention decoding |
+| `investorQuestions` | `server/routers/investorQuestionsRouter.ts` | Investor question intelligence |
+| `marketImpactPredictor` | `server/routers/marketImpactPredictorRouter.ts` | Market impact predictions |
+| `marketReaction` | `server/routers/marketReactionRouter.ts` | Market reaction tracking |
+| `materialityRisk` | `server/routers/materialityRiskRouter.ts` | Materiality risk assessment |
+| `evasiveAnswer` | `server/routers/evasiveAnswerRouter.ts` | Evasive answer detection |
+| `volatilitySimulator` | `server/routers/volatilitySimulatorRouter.ts` | Volatility simulation |
+| `ipoMandA` | `server/routers/ipoMandARouter.ts` | IPO & M&A intelligence |
+| `crossEventConsistency` | `server/routers/crossEventConsistencyRouter.ts` | Cross-event consistency analysis |
+| `communicationIndex` | `server/routers/communicationIndexRouter.ts` | Communication quality index |
+
+#### Content & Communication
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `transcription` | `server/routers/transcription.ts` | getTranscript (Q), updateTranscript (M), exportTranscript (M) |
+| `transcriptEditor` | `server/routers/transcriptEditorRouter.ts` | saveEdits (M), getEditHistory (Q) |
+| `liveRollingSummary` | `server/routers/liveRollingSummary.ts` | getSummary (Q), startSummary (M), stopSummary (M) |
+| `contentTriggers` | `server/routers/contentTriggers.ts` | getTriggers (Q), createTrigger (M), executeTrigger (M) |
+| `socialMedia` | `server/routers/socialMedia.ts` | postUpdate (M), getFeed (Q) |
+| `sustainability` | `server/routers/sustainabilityRouter.ts` | Sustainability metrics |
+
+#### Business Operations
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `billing` | `server/routers/billingRouter.ts` | getInvoices, createInvoice, getQuotes, createQuote, getAgeingReport, getDashboardKpis, markOverdueInvoices, deleteRecurringTemplate |
+| `scheduling` | `server/routers/scheduling.ts` | getEvents (Q), createEvent (M), updateEvent (M), deleteEvent (M) |
+| `followups` | `server/routers/followups.ts` | getFollowups (Q), createFollowup (M), markCompleted (M) |
+| `polls` | `server/routers/polls.ts` | getPolls, createPoll, updatePoll, deletePoll, vote, getResults |
+| `postEventReport` | `server/routers/postEventReport.ts` | generateReport (M), getReport (Q), listReports (Q) |
+| `monthlyReport` | `server/routers/monthlyReportRouter.ts` | Monthly report generation |
+| `mailingList` | `server/routers/mailingListRouter.ts` | Mailing list management |
+
+#### Telephony & Communication
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `webphone` | `server/routers/webphoneRouter.ts` | getAccountStatus, getCarrierStatus, getCallerIds, getTelnyxNumbers, makeCall, sendSms, getActivityStats, getInboundRoutingStatus |
+| `liveQa` | `server/routers/liveQaRouter.ts` | Live Q&A management |
+
+#### Configuration & Customization
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `branding` | `server/routers/branding.ts` | getSettings, updateSettings, uploadLogo, resetToDefault |
+| `customisation` | `server/routers/customisationRouter.ts` | getPortalConfig, updatePortalConfig |
+| `clientPortal` | `server/routers/clientPortal.ts` | getPortalData, updateBranding, getAnalytics |
+| `trainingMode` | `server/routers/trainingMode.ts` | enableTraining, disableTraining, getTrainingStats, resetTraining |
+| `operatorLinks` | `server/routers/operatorLinksRouter.ts` | getLinks, createLink |
+| `platformEmbed` | `server/routers/platformEmbedRouter.ts` | Platform embedding configuration |
+| `crmApi` | `server/routers/crmApiRouter.ts` | CRM API integration |
+
+#### Specialized Intelligence
+| Router Key | Source File | Procedures |
+|---|---|---|
+| `roadshowAI` | `server/routers/roadshowAI.ts` | generateSchedule, getItinerary, analyzeSentiment, optimizeTravel |
+| `eventBrief` | `server/routers/eventBriefRouter.ts` | generateBrief, getBrief |
+| `callPrep` | `server/routers/callPrepRouter.ts` | Call preparation intelligence |
+| `personalizedBriefing` | `server/routers/personalizedBriefingRouter.ts` | Personalized briefing generation |
+| `bastionBooking` | `server/routers/bastionBookingRouter.ts` | Bastion partner booking |
+| `lumiBooking` | `server/routers/lumiBookingRouter.ts` | Lumi partner booking |
+| `agmGovernance` | `server/routers/agmGovernanceRouter.ts` | AGM governance intelligence |
+| `evolutionAudit` | `server/routers/evolutionAuditRouter.ts` | AI evolution audit trail |
+| `archive` | `server/routers/archive.ts` | Archive management |
+| `session` | `server/routers/session.ts` | Session management |
+| `healthGuardian` | `server/routers/healthGuardianRouter.ts` | Health monitoring dashboard |
+| `systemDiagnostics` | `server/routers/systemDiagnosticsRouter.ts` | System diagnostics |
 
 ---
 
-## 13. LIVE VIDEO MEETINGS
+## 9. WEBHOOK HANDLERS & EXTERNAL INTEGRATIONS
 
-**Router:** `liveVideo` (673 lines) | **Page:** `LiveVideoMeetings.tsx`
+### Recall.ai Webhooks
+- **URL:** `POST /api/recall/webhook`
+- **Handler:** `server/recallWebhook.ts` (primary), `server/webhooks/recall.ts` (structured)
+- **Security:** HMAC-SHA256 via `x-recall-signature` header + `RECALL_AI_WEBHOOK_SECRET`
+- **Events:**
+  - `bot.status_change` -> Updates `recall_bots` table, publishes to Ably
+  - `transcript.data` -> Joins word-level chunks into segments, stores in DB, broadcasts via Ably
+  - `recording.done` -> Captures final recording URL, updates DB
+- **Registration:** `registerRecallWebhookRoute(app)` in `server/_core/index.ts` with custom raw body parser for HMAC
 
-Mux-powered live video meeting infrastructure:
-- Stream creation and management
-- Recording and playback
-- Participant tracking
-- Meeting summaries
+### Bridge (Twilio) Webhooks
+- **URLs:**
+  - `POST /api/bridge/inbound` - Conference call entry point
+  - `POST /api/bridge/access-code` - Event access code validation
+  - `POST /api/bridge/name-captured` - IVR name recording
+  - `POST /api/bridge/org-captured` - IVR organization recording
+  - `POST /api/bridge/conference-status` - Conference events (join, leave, mute, recording)
+  - `POST /api/bridge/participant-dtmf` - DTMF keypresses (*2 for hand-raising)
+- **Handler:** `server/webhooks/bridgeWebhooks.ts`
+- **Logic:** Generates TwiML responses, validates Twilio signatures, updates `bridge_participants`/`bridge_conferences`/`bridge_greeter_queue`, publishes to Ably channel `bridge-{conferenceId}`
+- **Registration:** `registerBridgeWebhooks(app)` in `server/_core/index.ts`
 
----
+### Mux Integration
+- **Type:** API-driven with audio ingest worker
+- **Handler:** `server/routers/muxRouter.ts` (tRPC)
+- **Audio Ingest:** `server/audioIngest.ts` - FFmpeg pulls HLS audio, chunks to Whisper, broadcasts via Ably
+- **Operations:** RTMP ingest, HLS playback, live stream CRUD, asset management
 
-## 14. ROADSHOW AI
+### Telnyx Integration
+- **URL:** `POST /api/webphone/telnyx`
+- **Handler:** `server/webphone/telnyx.ts`
+- **Logic:** Parses call-control events, logs activity
 
-**Router:** `roadshowAI` (798 lines) | **Pages:** `RoadshowDetail.tsx`, `RoadshowOrderBook.tsx`
+### Twilio Voice (non-Bridge)
+- **URLs:** `/api/webphone/twiml`, `/api/voice/inbound`
+- **Handler:** `server/webphone/twilio.ts`
+- **Logic:** WebRTC voice, SIP trunking, caller ID management
 
-Capital raising and investor roadshow management:
-- **Meeting Scheduling** — 1x1, group, large group meetings
-- **Investor Profiles** — track investor interest, commitment signals
-- **Order Book** — capital raising order management
-- **AI Summaries** — automated meeting summaries
-- **Commitment Signals** — detect soft commits, interest, objections
-- **Briefing Packs** — auto-generated investor briefing documents
-- **Waiting Room** — investor waiting room management
+### Ably Real-time
+- **Server:** `server/_core/ably.ts` (SDK-based), `server/recallWebhook.ts` (REST-based for performance)
+- **Token Auth:** tRPC `ably.tokenRequest` procedure provides temporary client capabilities
+- **Channels:** Transcripts, bot statuses, participant events, sentiment, bridge updates
 
----
+### Resend Email
+- **Handler:** `server/_core/email.ts`
+- **Templates:** IR Summaries, Registration Confirmations (with ICS attachments), Event Reminders
+- **Fallback:** Logs warning if `RESEND_API_KEY` missing (graceful degradation for development)
 
-## 15. LIVE Q&A SYSTEM
-
-**Router:** `liveQa` (892 lines) | **Component:** `LiveQaDashboard.tsx` (1,224 lines)
-
-AI-powered audience Q&A management:
-- Public access via 8-character session code
-- AI triage on every question (category, priority, compliance risk)
-- Duplicate detection (Jaccard similarity ≥ 0.55)
-- Operator approval workflow (approve/reject/hold/flag/send-to-speaker)
-- AI draft answer generation
-- Legal review flagging
-- Compliance flag management
-- Real-time updates via Ably
-- Attendee upvoting with rate limiting
-- Team broadcast and IR chat
-- QR code for attendee access
-
----
-
-## 16. BILLING & INVOICING
-
-**Router:** `billing` (889 lines) + `billingRouter` (1,058 lines) | **Pages:** `Billing.tsx`, `AdminBilling.tsx`, `QuoteBuilder.tsx`, `InvoiceViewer.tsx`
-
-Full quote-to-cash lifecycle:
-- **Client Management** — client accounts, contacts, credit terms
-- **Quote Builder** — line items, templates, versioning, multi-currency
-- **Invoice Generation** — from quotes, with tax calculation
-- **Payment Tracking** — record payments, partial payments, allocations
-- **Credit Notes** — issue credits against invoices
-- **Recurring Templates** — automated recurring billing
-- **FX Rates** — multi-currency support (ZAR, USD, EUR, GBP)
-- **PDF Generation** — invoice and quote PDFs
-- **Email Delivery** — automated invoice/quote delivery with tracking
-- **Ageing Report** — outstanding balance analysis
-- **Activity Log** — full audit trail
+### Stripe
+- **Status:** Referenced but not actively routed. Custom enterprise billing system used instead.
+- **Package:** `stripe@20.4.0` installed
 
 ---
 
-## 17. TRAINING MODE
+## 10. BACKEND SERVICES (COMPLETE)
 
-**Router:** `trainingMode` (229 lines) | **Page:** `Training.tsx` (1,318 lines)
+### 59 Service Files in `server/services/`
 
-Operator training environment:
-- **Simulated Conferences** — practice managing calls with AI participants
-- **Performance Metrics** — scored on response time, accuracy, professionalism
-- **Call Scenarios** — various event types and difficulty levels
-- **Training Sessions** — tracked progress and completion
-- **Lounge Simulation** — practice managing waiting participants
+#### Autonomous Background Services (started at server boot)
+| Service | File | Interval | Purpose |
+|---|---|---|---|
+| Shadow Mode Guardian | `ShadowModeGuardianService.ts` | 60s | Monitors zombie sessions, handles timeouts, state recovery |
+| Health Guardian | `HealthGuardianService.ts` | 30s | Health/latency checks on DB, Twilio, OpenAI, Ably, Recall.ai + LLM root cause analysis |
+| Compliance Engine | `ComplianceEngineService.ts` | 5min | Security threat scanning (fraud, access anomalies, data exfiltration) + ISO 27001/SOC 2 controls |
+| Reminder Scheduler | `reminderScheduler.ts` | 60s | Automated email reminders (24h + 1h before events) |
+
+#### AI & Intelligence Services
+| Service | File | Purpose |
+|---|---|---|
+| AI Evolution | `AiEvolutionService.ts` | Self-improving AI with Meta-Observer, gap detection, autonomous tool proposals, SHA-256 governance audit chain |
+| Event Integrity Twin | `EventIntegrityTwinService.ts` | Cryptographic hash chain of transcript+sentiment+compliance for immutable audit trail, "Clean Disclosure Certificate" |
+| Bastion Investor AI | `BastionInvestorAiService.ts` | Institutional investor profiling and engagement analysis |
+| AGM Governance AI | `AgmGovernanceAiService.ts` | AGM-specific governance and dissent analysis |
+| AGI Compliance | `AgiComplianceService.ts` | Advanced AI compliance checking |
+| AGI Tool Generator | `AgiToolGeneratorService.ts` | Autonomous AI tool generation |
+| Market Impact Predictor | `MarketImpactPredictorService.ts` | Market impact prediction engine |
+| Materiality Risk Oracle | `MaterialityRiskOracleService.ts` | Material disclosure risk assessment |
+| Investor Engagement Scoring | `InvestorEngagementScoringService.ts` | Investor engagement metrics |
+| Investor Intention Decoder | `InvestorIntentionDecoderService.ts` | Investor intent signal analysis |
+| IPO M&A Intelligence | `IpoMandAIntelligenceService.ts` | IPO and M&A event intelligence |
+| Cross-Event Consistency | `CrossEventConsistencyService.ts` | Cross-event narrative consistency checking |
+| External Sentiment | `ExternalSentimentService.ts` | External market sentiment aggregation |
+| Predictive Event Intelligence | `PredictiveEventIntelligenceService.ts` | Predictive analytics for events |
+| Volatility Simulator | `VolatilitySimulatorService.ts` | Market volatility simulation |
+
+#### Real-time Processing Services
+| Service | File | Purpose |
+|---|---|---|
+| Transcription | `TranscriptionService.ts` | Core audio-to-text (Whisper/OpenAI) |
+| Sentiment Analysis | `SentimentAnalysisService.ts` | Rolling sentiment scoring for live transcripts |
+| Live Rolling Summary | `LiveRollingSummaryService.ts` | "What you missed" summaries every 20 segments |
+| Q&A Auto-Triage | `QaAutoTriageService.ts` | AI classification of questions (approved/duplicate/off-topic/compliance-risk) |
+| Speaking Pace Coach | `SpeakingPaceCoachService.ts` | WPM analysis, filler word detection, delivery quality |
+| Toxicity Filter | `ToxicityFilterService.ts` | Content moderation |
+| Evasive Answer Detection | `EvasiveAnswerDetectionService.ts` | Detects evasive/non-answer responses |
+| Live Subtitle Translation | `LiveSubtitleTranslationService.ts` | Real-time subtitle translation |
+| Language Dubber | `LanguageDubber.ts` | AI language dubbing |
+| Audio Enhancer | `AudioEnhancer.ts` | Audio quality enhancement |
+
+#### Content & Communication Services
+| Service | File | Purpose |
+|---|---|---|
+| Content Generation Trigger | `ContentGenerationTriggerService.ts` | AI-triggered content generation |
+| Content Performance Analytics | `ContentPerformanceAnalyticsService.ts` | Content analytics |
+| Social Media | `SocialMediaService.ts` | Social media posting and analytics |
+| Personalization Engine | `PersonalizationEngine.ts` | Real-time operator suggestions based on engagement |
+| Personalized Briefing | `PersonalizedBriefingService.ts` | Custom briefing generation |
+| Event Brief Generator | `EventBriefGeneratorService.ts` | Event preparation briefs |
+| Webcast Archive AI | `WebcastArchiveAiService.ts` | Post-event archive AI analysis |
+| Webcast Recap | `WebcastRecapService.ts` | Event recap generation |
+| Podcast Converter | `PodcastConverterService.ts` | Event-to-podcast conversion |
+| Transcript Editor | `TranscriptEditorService.ts` | Transcript editing and versioning |
+| Transcript Sync | `TranscriptSyncService.ts` | Transcript synchronization |
+
+#### Infrastructure Services
+| Service | File | Purpose |
+|---|---|---|
+| Ably Realtime | `AblyRealtimeService.ts` | Real-time pub/sub messaging |
+| Conference Dialout | `ConferenceDialoutService.ts` | Twilio outbound dial-out for hybrid conferences |
+| Virtual Studio | `VirtualStudioService.ts` | Branded broadcasting environment management |
+| Platform Embed | `PlatformEmbedService.ts` | Embeddable widget configuration |
+| Realtime Collaboration | `RealtimeCollaborationService.ts` | Multi-user collaboration |
+| Knowledge Retrieval | `KnowledgeRetrievalService.ts` | Organizational knowledge search |
+| Organizational Knowledge Graph | `OrganizationalKnowledgeGraphService.ts` | Knowledge graph construction |
+| Redaction Workflow | `RedactionWorkflowService.ts` | Sensitive data redaction |
+| Regulatory Intervention | `RegulatoryInterventionService.ts` | Regulatory intervention tracking |
+| Multi-Modal Compliance | `MultiModalComplianceService.ts` | Multi-modal compliance analysis |
+| Sustainability Optimizer | `SustainabilityOptimizer.ts` | ESG/sustainability metrics |
+| Compliance Moderator | `ComplianceModerator.ts` | Real-time compliance moderation |
+| Event Echo Pipeline | `EventEchoPipeline.ts` | Event data pipeline |
+
+#### Business Services
+| Service | File | Purpose |
+|---|---|---|
+| Aeos Quote-to-Cash | `AeosQuoteToCashService.ts` | Enterprise quote-to-cash workflow |
+| Aeos Semantic API | `AeosSemanticApiService.ts` | Semantic search for organizational knowledge |
+| Aeos Sovereign Data | `AeosSovereignDataService.ts` | Data sovereignty management |
+| Bastion Booking | `BastionBookingService.ts` | Bastion partner booking |
+| Lumi Booking | `LumiBookingService.ts` | Lumi partner booking |
 
 ---
 
-# PART III — INTELLIGENCE & AI SYSTEMS
+## 11. AI INTELLIGENCE PIPELINE
 
----
+### Layer 1: Transcript Capture
+- **Shadow Mode** (`shadowModeRouter.ts`): Recall.ai bots join Zoom/Teams/Meet silently
+- **Live Webcast** (`muxRouter.ts` + `audioIngest.ts`): FFmpeg pulls HLS audio, chunks to Whisper
+- **Archive Upload** (`archiveUploadRouter.ts`): Upload pre-recorded audio/video for analysis
 
-## 18. CIP4 INTELLIGENCE SUITE
+### Layer 2: Real-time Processing (`server/aiAnalysis.ts`)
+As transcript segments arrive:
+1. **Sentiment Scoring** - Financial-tuned LLM analysis every few segments
+2. **Rolling Summaries** - "What you missed" (2-3 sentences) every 20 segments
+3. **Q&A Auto-Triage** - Classifies: approved, duplicate, off-topic, compliance-risk
+4. **Speaker Coaching** - WPM pace analysis, filler word detection, delivery quality
 
-CIP4 (CuraLive Intelligence Pipeline v4) is the umbrella for all AI analytics:
+### Layer 3: Intelligence Synthesis (20-Module Report)
+Upon session completion, `archiveUploadRouter.ts` orchestrates a massive prompt generating:
 
-### Routers
-| Router | Lines | Purpose |
-|--------|-------|---------|
-| `crisisPrediction` | ~200 | Crisis risk prediction engine |
-| `valuationImpact` | ~200 | Financial valuation impact analysis |
-| `disclosureCertificate` | ~200 | Regulatory disclosure certification |
-| `monthlyReport` | ~200 | Monthly intelligence reports |
-| `advisoryBot` | ~200 | AI advisory chatbot |
-| `evolutionAudit` | ~200 | AI evolution audit trail |
+| Module # | Module Name | Output |
+|---|---|---|
+| 1 | Executive Summary | Board-ready verdict |
+| 2 | Financial Metrics Extraction | Revenue, EPS, margins, guidance |
+| 3 | ESG & Sustainability | Environmental/social/governance commitments |
+| 4 | Risk Assessment | Material risks and mitigations |
+| 5 | Compliance Flags | Regulatory disclosure requirements |
+| 6 | Competitive Intelligence | Competitive positioning signals |
+| 7 | Management Tone Analysis | Confidence, hedging, deflection patterns |
+| 8 | Guidance Analysis | Forward-looking statement extraction |
+| 9 | Q&A Quality Assessment | Response quality scoring |
+| 10 | Investor Sentiment Signals | Buy/sell/hold signal inference |
+| 11 | Key Personnel Changes | Leadership transition signals |
+| 12 | M&A Signals | Merger/acquisition indicators |
+| 13 | Capital Allocation | Buyback, dividend, capex signals |
+| 14 | Sector Impact | Industry-wide implications |
+| 15 | Regulatory Impact | Regulatory change implications |
+| 16 | Social Media Content Pack | Draft posts for LinkedIn/Twitter/X |
+| 17 | SENS/RNS Press Release | Exchange announcement draft |
+| 18 | Analyst Action Items | Follow-up research topics |
+| 19 | Board Action Items | Governance action requirements |
+| 20 | Cross-Event Consistency | Narrative consistency vs. prior events |
 
-### Intelligence Dashboard
-`AIDashboard.tsx` (1,189 lines) — tabbed analytics view:
-- Crisis predictions with risk scores
-- Valuation impact analyses
-- Disclosure certificates
-- Evolution audit entries
-- Monthly report summaries
-- Cross-event intelligence
+**Chunking Logic:** For long events, creates "dense factual summaries" of 12,000-character chunks before synthesizing the final report.
 
----
-
-## 19. AI-AM (AUTOMATED MONITORING)
-
-**Routers:** `aiAm` (350 lines) + `aiAmPhase2` | **Webhook:** `aiAmRecall.ts` (286 lines)
-
-Real-time compliance monitoring during live events:
-- Transcript segment analysis for violations
-- Violation type detection (forward-looking, insider, material)
-- Severity scoring (high/medium/low)
-- Deduplication (prevent duplicate alerts)
-- Auto-muting thresholds
-- Notification dispatch (email, Ably, in-app)
-- Audit trail
-- Report generation
-
-### AI-AM Core Services
+### Layer 4: Specialized Intelligence Services
 | Service | Purpose |
-|---------|---------|
-| `aiAmAblyChannels.ts` | Real-time alert publishing |
-| `aiAmAuditTrail.ts` | Compliance audit logging |
-| `aiAmAutoMuting.ts` | Automatic speaker muting on violations |
-| `aiAmDeduplication.ts` | Alert deduplication logic |
-| `aiAmFiltering.ts` | Alert filtering and prioritization |
-| `aiAmNotificationDispatch.ts` | Multi-channel alert delivery |
-| `aiAmReportGenerator.ts` | Post-event compliance report |
+|---|---|
+| Crisis Prediction | Evaluates sentiment trajectories + hedging language for financial/regulatory/reputational crises |
+| Valuation Impact Oracle | Estimates Fair Value Gaps + share price impact from material disclosures |
+| Disclosure Certificates | SHA-256 hash-chained immutable log linking transcript + AI report + compliance flags |
+| Tagged Metrics | Structured numerical data (Sentiment, Engagement, Compliance Risk) for cross-event benchmarking |
+| Evasive Answer Detection | Identifies non-answers and deflection in management Q&A |
+| Communication Index | Communication quality scoring across dimensions |
+| Market Impact Predictor | Predicts market reaction to disclosed information |
+| Materiality Risk Oracle | Assesses materiality risk of disclosures |
+
+### Layer 5: Meta-Intelligence & Self-Evolution
+1. **Meta-Observer** (`AiEvolutionService.ts`): AI "observes" its own module outputs, scoring depth/breadth/specificity
+2. **Gap Detection Matrix**: Identifies systematic blind spots across event types/clients
+3. **AI Evolution Engine**: Autonomously proposes new AI tool capabilities when patterns detected
+4. **Governance Gateway**: Proposals promoted through Stability/Consistency checks with immutable SHA-256 audit chain
+5. **Aggregate Intelligence** (`aggregateIntelligence.ts`): Anonymized macro-sentiment and sector benchmarking
+
+### LLM Configuration (`server/_core/llm.ts`)
+- **Primary Model:** OpenAI GPT-4o
+- **Forge Mode:** Gemini 2.5 Flash (via `BUILT_IN_FORGE_API_KEY`)
+- **Features:** Tool/function calling, structured JSON output via `json_schema`, message normalization
+- **Transcription:** OpenAI Whisper (via `server/_core/voiceTranscription.ts`)
 
 ---
 
-## 20. AI EVOLUTION & SELF-IMPROVEMENT
+## 12. SHADOW MODE SYSTEM
 
-**Router:** `aiEvolution` | **Service:** `AiEvolutionService.ts` (913 lines)
+### Architecture
+Shadow Mode enables CuraLive to silently observe external meetings (Zoom, Microsoft Teams, Google Meet) using AI bots, capturing real-time transcription and generating intelligence reports.
 
-AI self-improvement pipeline:
-- **Meta-Observer** — watches AI report quality and identifies patterns
-- **Accumulation Engine** — aggregates insights across events for learning
-- **Operator Corrections** — feedback loop where operators correct AI outputs
-- **Adaptive Thresholds** — thresholds that automatically adjust based on corrections
-- **Capability Roadmap** — tracks proposed AI capability improvements
-- **Tool Proposals** — AI suggests new tools and features
+### Components
+1. **Shadow Mode Router** (`server/routers/shadowModeRouter.ts`)
+   - Session CRUD (create, list, get, delete)
+   - Bot deployment via Recall.ai API
+   - Transcript retrieval and AI report generation
+   - Session status tracking: `pending` -> `joining` -> `live` -> `processing` -> `completed` -> `failed`
 
----
+2. **Shadow Mode Guardian** (`server/services/ShadowModeGuardianService.ts`)
+   - Background watchdog (60s interval)
+   - Zombie session detection (bots stuck in joining/live states)
+   - State recovery after server restarts
+   - Graceful shutdown (marks active sessions for recovery)
+   - Session reconciliation on startup
 
-## 21-42. ADDITIONAL INTELLIGENCE MODULES
+3. **Recall.ai Integration** (`server/recallRouter.ts`, `server/recallWebhook.ts`)
+   - Bot deployment: POST to Recall.ai API with meeting URL
+   - Webhook events: bot.status_change, transcript.data, recording.done
+   - HMAC-SHA256 signature verification
 
-Each of these is a dedicated router + service:
+### Shadow Mode UI Tabs (in `client/src/pages/ShadowMode.tsx`)
+- **Sessions** - Active/completed shadow sessions list
+- **Live Transcript** - Real-time transcript feed via Ably
+- **AI Report** - 20-module intelligence report
+- **Board Intelligence** - Board Intelligence Compass (sub-tabs: Overview, Commitments, Liabilities, Expectations, Actions)
+- **Pre-Event Briefing** - Pre-Event Intelligence Briefing (sub-tabs: Consensus, Q&A, Hotspots, Readiness)
+- **Compliance Monitor** - Regulatory Compliance Monitor (sub-tabs: Flags, Triggers, Jurisdictions, Actions)
 
-| # | Module | Router | Service | Purpose |
-|---|--------|--------|---------|---------|
-| 21 | Compliance Engine | `complianceEngine` | `ComplianceEngineService.ts` (525L) | Multi-framework compliance monitoring |
-| 22 | Crisis Prediction | `crisisPrediction` | — | Predict crisis risk from event data |
-| 23 | Valuation Impact | `valuationImpact` | — | Analyze financial impact of statements |
-| 24 | Disclosure Certificates | `disclosureCertificate` | — | Generate regulatory disclosure certs |
-| 25 | Market Reaction | `marketReaction` (344L) | — | Predict market reaction to events |
-| 26 | Communication Index | `communicationIndex` (329L) | — | Score communication effectiveness |
-| 27 | Investor Questions | `investorQuestions` | — | Intelligence on investor question patterns |
-| 28 | Intelligence Terminal | `intelligenceTerminal` | — | Command-line style intelligence query |
-| 29 | Intelligence Reports | `intelligenceReport` | — | Generate comprehensive intelligence reports |
-| 30 | External Sentiment | `externalSentiment` | `ExternalSentimentService.ts` | Social/news sentiment analysis |
-| 31 | Market Impact Predictor | `marketImpactPredictor` | `MarketImpactPredictorService.ts` | Pre-event market impact forecasting |
-| 32 | Materiality Risk Oracle | `materialityRisk` | `MaterialityRiskOracleService.ts` | Material risk identification |
-| 33 | Investor Intent Decoder | `investorIntent` | `InvestorIntentionDecoderService.ts` | Decode investor behavior signals |
-| 34 | Investor Engagement | `investorEngagement` | `InvestorEngagementScoringService.ts` (504L) | Score investor engagement levels |
-| 35 | Cross-Event Consistency | `crossEventConsistency` | `CrossEventConsistencyService.ts` | Verify message consistency across events |
-| 36 | Volatility Simulator | `volatilitySimulator` | `VolatilitySimulatorService.ts` | Simulate stock price volatility scenarios |
-| 37 | Regulatory Intervention | `regulatoryIntervention` | `RegulatoryInterventionService.ts` | Flag potential regulatory issues |
-| 38 | Event Integrity Twin | `eventIntegrity` | `EventIntegrityTwinService.ts` | Digital twin for event integrity verification |
-| 39 | Evasive Answer Detection | `evasiveAnswer` | `EvasiveAnswerDetectionService.ts` | Detect evasive management responses |
-| 40 | Adaptive Intelligence | `adaptiveIntelligence` (285L) | — | Self-adjusting AI models |
-| 41 | IPO & M&A Intelligence | `ipoMandA` | `IpoMandAIntelligenceService.ts` (834L) | IPO/M&A deal intelligence |
-| 42 | Sustainability | `sustainability` | `SustainabilityOptimizer.ts` | ESG and sustainability analytics |
+### Database Tables
+- `shadow_sessions` - Session tracking (meetingUrl, platform, status, transcriptJson, aiReport)
+- `recall_bots` - Bot state (recallBotId, status, joinUrl)
 
 ---
 
-# PART IV — OPERATIONAL SYSTEMS
+## 13. WEBCAST & LIVE VIDEO SYSTEM
+
+### Video Streaming Architecture
+1. **Ingest:** RTMP push from OBS/vMix to `rtmps://global-live.mux.com:443/app` with unique `streamKey`
+2. **Processing:** Mux handles transcoding, adaptive bitrate, recording
+3. **Playback:** HLS via `https://stream.mux.com/{playbackId}.m3u8`
+4. **AI Audio:** FFmpeg extracts HLS audio -> OpenAI Whisper -> Ably broadcast
+5. **Low Latency:** `reduced_latency: true`, `reconnect_window: 60`
+
+### Event Lifecycle
+`draft` -> `scheduled` -> `live` -> `ended` -> `on_demand`
+
+### Attendee Registration Flow
+1. Attendee submits `WebcastRegistrationForm` (name, email, company)
+2. Server generates 24-byte `attendeeToken`, stores in `webcast_registrations`
+3. Confirmation email via Resend with:
+   - Personalized `attendUrl` containing token (e.g., `/live-video/webcast/{slug}/attend?token={token}`)
+   - ICS calendar invite attachment
+4. Token verification on access, routes to `AttendeeEventRoom` (live) or on-demand recording
+
+### Virtual Studio
+- Centralized configuration for "Intelligent Broadcaster"
+- AI Bundles: Investor Relations, Compliance & Risk, etc.
+- Layouts: presenter-slides, panel-discussion
+- Dynamic overlays: sentiment-gauge, compliance-indicator
+
+### Broadcaster Intelligence
+- Speaking pace analysis (WPM)
+- Filler word detection
+- Key moment identification (financial disclosures, guidance)
+- Real-time operator suggestions via PersonalizationEngine
+
+### Interactive Features
+- Live Q&A with AI auto-triage moderation (approved/duplicate/off-topic/compliance-risk)
+- Live polling with real-time results
+- Real-time transcript display
+- Slide synchronization via Ably
+- Live subtitle translation
 
 ---
 
-## 43. AGM GOVERNANCE AI
+## 14. BRIDGE CONSOLE (TELEPHONY)
 
-**Router:** `agmGovernance` | **Service:** `AgmGovernanceAiService.ts` (935 lines) | **Page:** `AgmGovernanceAi.tsx` (849 lines)
+### Architecture
+Professional telephony bridge for PSTN conference calling (Chorus Call/BroadData competitor).
 
-Specialized AGM intelligence:
-- **Resolution Tracking** — monitor voting on resolutions
-- **Governance Question Triage** — AI classification of shareholder questions
-- **Regulatory Compliance Scan** — JSE Listings Requirements, Companies Act
-- **Dissent Pattern Detection** — identify shareholder dissent trends
-- **Governance Observations** — behavioral analysis of meeting dynamics
+### IVR Flow
+1. Inbound call -> `POST /api/bridge/inbound`
+2. Welcome TwiML prompt
+3. Access code entry -> `POST /api/bridge/access-code` (validates against event)
+4. Name/organization capture via recording -> `/api/bridge/name-captured`, `/api/bridge/org-captured`
+5. Join conference or enter greeter queue (if auto-admit disabled)
 
----
+### Operator Controls
+- Mute/unmute individual participants
+- Hold/unhold participants
+- Remove participants from conference
+- Lock/unlock conference
+- Start/stop recording
+- Auto-admit toggle
+- Greeter queue management (admit from waiting room)
+- DTMF hand-raising (*2)
+- Recall.ai bot deployment for AI transcription
 
-## 44. BASTION PARTNER INTELLIGENCE
+### Real-time Updates
+- Ably channel: `bridge-{conferenceId}`
+- Events: participant join/leave, mute state, speaking detection, recording status
 
-**Router:** `bastionBooking` | **Service:** `BastionInvestorAiService.ts` (729L), `BastionBookingService.ts` (476L)
+### Error Handling (Hardened)
+- `twilioHoldParticipant`: Throws on Twilio API failure (no false-success DB state)
+- `twilioRemoveParticipant`: Throws on failure
+- `deployRecallBot`: Throws on failure
 
-Bastion Investor Communications partner integration:
-- Partner booking management
-- Investor observation tracking
-- Forward guidance monitoring
-- Intelligence session management
+### Database Tables
+- `bridge_conferences` - Conference state (twilioConferenceSid, status, moderatorPin, participantPin, isLocked, isRecording)
+- `bridge_participants` - Participant management (callSid, name, role, state, isMuted, isOnHold)
+- `bridge_greeter_queue` - IVR waiting queue (callSid, name, status)
 
----
-
-## 45. LUMI PARTNER BOOKING
-
-**Router:** `lumiBooking` | **Service:** `LumiBookingService.ts` (486L)
-
-Lumi Global partner integration for AGM management:
-- Booking creation and management
-- Event coordination
-- Billing integration
-
----
-
-## 46-56. ADDITIONAL OPERATIONAL MODULES
-
-| # | Module | Router | Lines | Purpose |
-|---|--------|--------|-------|---------|
-| 46 | Conference Dial-Out | `conferenceDialout` | — | Twilio-powered participant dial-out |
-| 47 | Call Preparation | `callPrep` (240L) | — | Pre-event call preparation packs |
-| 48 | Event Brief Generator | `eventBrief` | `EventBriefGeneratorService.ts` (427L) | Auto-generated event briefings |
-| 49 | Live Rolling Summary | `liveRollingSummary` | `LiveRollingSummaryService.ts` (307L) | Real-time event summary updates |
-| 50 | Live Subtitles | `liveSubtitle` | `LiveSubtitleTranslationService.ts` (428L) | Real-time subtitle translation |
-| 51 | Transcript Editor | `transcriptEditor` (238L) | `TranscriptEditorService.ts` (491L) | Post-event transcript editing |
-| 52 | Content Triggers | `contentTriggers` | `ContentGenerationTriggerService.ts` (306L) | Auto-trigger content generation |
-| 53 | Social Media | `socialMedia` (256L) | `SocialMediaService.ts` | Social media post creation & scheduling |
-| 54 | Mailing Lists | `mailingList` (669L) | — | Event mailing list management |
-| 55 | CRM API | `crmApi` (478L) | — | External CRM integration endpoints |
-| 56 | Personalized Briefing | `personalizedBriefing` | `PersonalizedBriefingService.ts` | Per-investor personalized briefings |
+### Status: On Ice
+Audio bridge telephony features are built but put on hold. UI and backend are functional.
 
 ---
 
-# PART V — PLATFORM INFRASTRUCTURE
+## 15. STORAGE SYSTEM
+
+### Architecture
+Hybrid local/cloud storage with graceful fallback.
+
+### Object Storage (Cloud)
+- **Provider:** Forge API proxy (abstracts S3/cloud provider)
+- **Upload:** POST to `{BUILT_IN_FORGE_API_URL}/v1/storage/upload?path={key}` with multipart/form-data
+- **Download:** POST to `{BUILT_IN_FORGE_API_URL}/v1/storage/downloadUrl` returns pre-signed URL
+- **Auth:** Bearer token via `BUILT_IN_FORGE_API_KEY`
+
+### Upload Handlers
+| Handler | File | Storage | Purpose |
+|---|---|---|---|
+| Recording Upload | `server/recordingUpload.ts` | Disk first, then cloud | Session recordings |
+| Audio Upload | `server/audioUpload.ts` | Memory -> cloud | Audio library files |
+| Slide Deck Upload | `server/slideDeckUpload.ts` | Memory -> cloud | Presentation slides |
+| Avatar Upload | Inline in routers.ts | Cloud | User profile images |
+
+### Recording Resolution Logic (`server/storageAdapter.ts`)
+1. Check if Object Storage configured (`isObjectStorageConfigured()`)
+2. If configured, try cloud URL (redirect to pre-signed URL)
+3. If cloud fails or unconfigured, fallback to local disk (`./uploads/recordings/`)
+4. Serve via `res.sendFile` for local files
+
+### Local Storage Directories
+- `./uploads/recordings/` - Session recordings
+- `./exports/` - Generated export files (reports, documents)
 
 ---
 
-## 57-80. INFRASTRUCTURE MODULES
+## 16. REAL-TIME MESSAGING (ABLY)
 
-| # | Module | Router/Service | Purpose |
-|---|--------|---------------|---------|
-| 57 | Virtual Studio | `virtualStudio` (300L) / `VirtualStudioService.ts` | Virtual production studio |
-| 58 | Intelligent Broadcaster | `broadcaster` (239L) | AI-powered broadcasting |
-| 59 | Agentic Event Brain | `agenticBrain` (221L) | Autonomous event management AI |
-| 60 | Autonomous Intervention | `autonomousIntervention` (232L) | Auto-triggered interventions |
-| 61 | Platform Embed | `platformEmbed` / `PlatformEmbedService.ts` | Embeddable widget generation |
-| 62 | Operator Links | `operatorLinks` | Shareable operator links |
-| 63 | Benchmarks | `benchmarks` | Industry benchmarking |
-| 64 | Tagged Metrics | `taggedMetrics` | Intelligence metric management |
-| 65 | Support Chat | `supportChat` | In-platform support |
-| 66 | Advisory Bot | `advisoryBot` | AI advisory chatbot |
-| 67 | Monthly Reports | `monthlyReport` | Automated monthly reports |
-| 68 | Health Guardian | `healthGuardian` / `HealthGuardianService.ts` (543L) | Platform health monitoring |
-| 69 | System Diagnostics | `systemDiagnostics` (155L) | 15-test health check |
-| 70 | SOC 2 Compliance | `soc2` (271L) | SOC 2 control tracking |
-| 71 | ISO 27001 | `iso27001` (311L) | ISO 27001 control tracking |
-| 72 | RBAC | `rbac` | Role-based access control |
-| 73 | Branding | `branding` | Event branding (colors, logos) |
-| 74 | Scheduling | `scheduling` (233L) | Event scheduling |
-| 75 | Polls | `polls` | Live polling system |
-| 76 | Mobile Notifications | `mobileNotifications` | Push notification management |
-| 77 | Client Portal | `clientPortal` | Client-facing portal |
-| 78 | Mux Streaming | `mux` (395L) | Mux video management |
-| 79 | Recall.ai | `recall` (282L) | Recall bot management |
-| 80 | Post-Event Reports | `postEventReport` | Automated post-event reports |
+### Server-Side
+- **SDK Client:** `server/_core/ably.ts` (full Ably SDK)
+- **REST Client:** Used in webhooks for performance (avoids SDK overhead)
+- **Token Auth:** `ably.tokenRequest` tRPC procedure provides temporary client capabilities
+
+### Client-Side
+- **Context:** `client/src/contexts/AblyContext.tsx`
+- **Hooks:** `useAblyChannel.ts`, `useAblySessions.ts`
+
+### Channel Patterns
+| Channel | Events | Purpose |
+|---|---|---|
+| `bridge-{conferenceId}` | participant-joined, participant-left, mute-changed, recording-status | Bridge console real-time |
+| `transcript-{sessionId}` | segment | Live transcript segments |
+| `sentiment-{sessionId}` | update | Real-time sentiment scores |
+| `bot-status-{sessionId}` | status-change | Recall.ai bot state |
+| `conference-{eventId}` | Various | OCC conference events |
+| `voicemail:received` | new | Voicemail notifications |
 
 ---
 
-# PART VI — DESIGN SYSTEM
+## 17. EMAIL SYSTEM
+
+### Provider: Resend
+**File:** `server/_core/email.ts`
+
+### Templates
+1. **IR Summary Email** (`buildIRSummaryEmail`) - AI-generated investor relations summary
+2. **Registration Confirmation** (`buildRegistrationConfirmationEmail`) - Event registration with ICS calendar attachment
+3. **Event Reminder** - Automated reminders (24h + 1h before event)
+
+### Scheduling
+- `reminderScheduler.ts` runs every 60s
+- Scans `attendee_registrations` for upcoming events
+- Sends 24-hour and 1-hour reminders
+
+### Fallback
+If `RESEND_API_KEY` is missing, logs warning instead of crashing (graceful degradation for development).
 
 ---
 
-## 81. DESIGN TOKENS & THEME
+## 18. FRONTEND ARCHITECTURE
 
-### Dark Theme
-CuraLive uses a dark theme with slate/violet/emerald palette across all pages.
+### Core Stack
+- **Framework:** React 19 with JSX transform
+- **Build:** Vite 7.3.1 (root: `./client`, output: `dist/_app`)
+- **Routing:** Wouter (lightweight, hook-based)
+- **Styling:** Tailwind CSS 4 + Radix UI primitives + shadcn/ui
+- **State:** TanStack React Query + tRPC React Query
+- **Animations:** Framer Motion
 
-### Color Tokens
-| Token | Tailwind | Usage |
-|-------|----------|-------|
-| Background | `bg-[#0a0a0f]` or `bg-slate-950` | Page background |
-| Card | `bg-white/[0.02]` | Card backgrounds |
-| Card hover | `bg-white/[0.04]` | Hover state |
-| Card selected | `bg-violet-500/10` | Selected state |
-| Border | `border-white/10` | Default borders |
-| Border selected | `border-violet-500/50` | Selected borders |
-| Primary text | `text-slate-200` | Main content |
-| Secondary text | `text-slate-500` | Labels, metadata |
-| Muted text | `text-slate-600` | Timestamps, hints |
+### Application Shell (`client/src/App.tsx`)
+- Global providers: Theme, Ably, React Query, tRPC
+- Route definitions for 100+ pages
+- Auth wrapping via `RequireAuth` component
+- Error boundary wrapper
 
-### Accent Colors
-| Color | Token | Usage |
-|-------|-------|-------|
-| Violet | `violet-400/500` | Primary accent, completed status |
-| Emerald | `emerald-400/500` | Success, live status, positive |
-| Amber | `amber-400/500` | Warning, bot_joining, caution |
-| Red | `red-400/500` | Error, failed, critical |
-| Blue | `blue-400/500` | Processing, info |
-| Indigo | `indigo-400/500` | Diagnostics, secondary accent |
-| Slate | `slate-400` | Pending, neutral |
-
-### Button Patterns
+### Path Aliases (tsconfig.json)
 ```
-Primary:  bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 border border-violet-500/20
-Danger:   bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20
-Success:  bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20
-Neutral:  bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10
+@/* -> ./client/src/*
+@shared/* -> ./shared/*
+@assets -> ./attached_assets
 ```
 
-### Component Library
-- shadcn/ui (Radix) for base components (Button, Dialog, Accordion, etc.)
-- Custom dark-themed cards with `rounded-2xl` corners
-- Lucide React for all iconography
+### UI Component Library (`client/src/components/ui/`)
+53 shadcn/ui components including:
+accordion, alert-dialog, aspect-ratio, avatar, badge, button, calendar, card, carousel, chart, checkbox, collapsible, command, context-menu, dialog, drawer, dropdown-menu, form, hover-card, input, input-otp, label, menubar, navigation-menu, pagination, popover, progress, radio-group, resizable, scroll-area, select, separator, sheet, sidebar, skeleton, slider, sonner, switch, table, tabs, textarea, toast, toaster, toggle, toggle-group, tooltip
+
+### Contexts
+| Context | File | Purpose |
+|---|---|---|
+| ThemeContext | `contexts/ThemeContext.tsx` | Light/dark mode management |
+| AblyContext | `contexts/AblyContext.tsx` | Real-time messaging provider |
 
 ---
 
-# PART VII — ENVIRONMENT & CONFIGURATION
+## 19. FRONTEND PAGES (COMPLETE - 208 FILES)
+
+### Core Navigation
+| Page | File | Route |
+|---|---|---|
+| Home/Landing | `Home.tsx` | `/` |
+| Dashboard | `Dashboard.tsx` | `/` (authenticated) |
+| Settings | `Settings.tsx` | `/settings` |
+| Onboarding | `AIOnboarding.tsx` | `/onboarding` |
+
+### Operator & Admin
+| Page | File |
+|---|---|
+| Operator Console | `OperatorConsole.tsx` |
+| Operator Hub | `OperatorHub.tsx` |
+| Bridge Console | `BridgeConsole.tsx` |
+| Summit Console | `SummitConsole.tsx` |
+| Admin Dashboard | `AdminDashboard.tsx` |
+| Admin Users | `AdminUsers.tsx` |
+| Admin Clients | `AdminClients.tsx` |
+| Admin Billing | `AdminBilling.tsx` |
+| Admin Panel | `AdminPanel.tsx` |
+| Training Mode Console | `TrainingModeConsole.tsx` |
+
+### Events & Webcasting
+| Page | File |
+|---|---|
+| Event Room | `EventRoom.tsx` |
+| Event Calendar | `EventCalendar.tsx` |
+| Event Scheduler | `EventScheduler.tsx` |
+| Create Event Wizard | `CreateEventWizard.tsx` |
+| Event Pass | `EventPass.tsx` |
+| Event Brief Generator | `EventBriefGenerator.tsx` |
+| Webcast Studio | `WebcastStudio.tsx` |
+| Webcast Register | `WebcastRegister.tsx` |
+| Webcast Analytics | `WebcastAnalytics.tsx` |
+| Webcast Report | `WebcastReport.tsx` |
+| Webcast Recap | `WebcastRecapPage.tsx` |
+| Webcasting Hub | `WebcastingHub.tsx` |
+| Attendee Event Room | `AttendeeEventRoom.tsx` |
+| Attendee Room | `AttendeeRoom.tsx` |
+| Attendee Q&A | `AttendeeQA.tsx` |
+| Virtual Studio | `VirtualStudio.tsx` |
+| Intelligent Broadcaster | `IntelligentBroadcasterPage.tsx` |
+| Hybrid Conference | `HybridConference.tsx` |
+| Live Video Meetings | `LiveVideoMeetings.tsx` |
+| Slide Presenter | `SlidePresenter.tsx` |
+| Conference Dialout | `ConferenceDialout.tsx` |
+
+### AI & Intelligence
+| Page | File |
+|---|---|
+| AI Dashboard | `AIDashboard.tsx` |
+| Intelligence Suite | `IntelligenceSuite.tsx` |
+| Intelligence Terminal | `IntelligenceTerminal.tsx` |
+| Intelligence Report | `IntelligenceReport.tsx` |
+| Agentic Brain | `AgenticBrain.tsx` |
+| AI Shop | `AIShop.tsx` |
+| AI Features Status | `AIFeaturesStatus.tsx` |
+| Shadow Mode | `ShadowMode.tsx` |
+| Archive Upload | `ArchiveUpload.tsx` |
+| AGM Governance AI | `AgmGovernanceAi.tsx` |
+| Autonomous Intervention | `AutonomousIntervention.tsx` |
+
+### Analytics & Reporting
+| Page | File |
+|---|---|
+| Analytics Dashboard | `AnalyticsDashboard.tsx` |
+| Dashboard Analytics | `DashboardAnalytics.tsx` |
+| Advanced Reporting | `AdvancedReporting.tsx` |
+| Benchmarks | `Benchmarks.tsx` |
+| Benchmarking Dashboard | `BenchmarkingDashboard.tsx` |
+| Market Reaction | `MarketReaction.tsx` |
+| Sentiment Dashboard | `SentimentDashboard.tsx` |
+| Tagged Metrics | `TaggedMetricsDashboard.tsx` |
+| Communication Index | `CommunicationIndex.tsx` |
+| Interconnection Analytics | `InterconnectionAnalytics.tsx` |
+| API Usage Dashboard | `ApiUsageDashboard.tsx` |
+
+### Billing & Finance
+| Page | File |
+|---|---|
+| Billing | `Billing.tsx` |
+| Billing Preview | `BillingPreview.tsx` |
+| Ageing Report | `AgeingReport.tsx` |
+| Invoice Viewer | `InvoiceViewer.tsx` |
+| Invoice View | `InvoiceView.tsx` |
+
+### Compliance & Security (36 pages)
+`ComplianceDashboard.tsx`, `ComplianceEngineDashboard.tsx`, `ComplianceReport.tsx`, `ComplianceAuditLog.tsx`, `ComplianceAuditTrail.tsx`, `ComplianceGapAnalysis.tsx`, `ComplianceMonitoringDashboard.tsx`, `ComplianceReportingDashboard.tsx`, `ComplianceReportExport.tsx`, `ComplianceAutomationWorkflows.tsx`, `AutomatedComplianceReporting.tsx`, `ISO27001Dashboard.tsx`, `SOC2Dashboard.tsx`, `ZeroTrustDashboard.tsx`, `HealthGuardian.tsx`, `SecurityPostureManagement.tsx`, `SecurityPostureBenchmarking.tsx`, `AdvancedThreatDetectionDashboard.tsx`, `AdvancedThreatHunting.tsx`, `ThreatIntelligenceDashboard.tsx`, `ThreatIntelligenceIntegration.tsx`, `ThreatIntelligenceIOC.tsx`, `ThreatResponseWorkflows.tsx`, `IncidentResponseAutomation.tsx`, `IncidentResponsePlaybook.tsx`, `IncidentTimeline.tsx`, `IncidentCorrelationEngine.tsx`, `VulnerabilityDashboard.tsx`, `SecurityRiskScoring.tsx`, `SecurityScorecardDashboard.tsx`, `SecurityMetricsKPIDashboard.tsx`, `SIEMIntegration.tsx`, `CICDSecurityDashboard.tsx`, `DataResidencyDashboard.tsx`, `IdentityAccessManagement.tsx`, `VendorRiskDashboard.tsx`, `SecurityTrainingAwareness.tsx`, `BackupDisasterRecoveryDashboard.tsx`, `FeatureFlagsDashboard.tsx`, `AutomatedIncidentResponse.tsx`, `ContinuousSecurityMonitoring.tsx`, `ExecutiveSecurityMetrics.tsx`, `SecurityMetricsExport.tsx`, `SecurityMetricsReportingDashboard.tsx`, `SecurityOrchestrationResponse.tsx`, `SecurityVendorEcosystem.tsx`, `SecurityVulnerabilityManagement.tsx`
+
+### Investor & Client
+`ClientPortal.tsx`, `ClientLiveDashboard.tsx`, `InvestorFollowUps.tsx`, `InvestorQuestionIntelligence.tsx`, `InvestorWaitingRoom.tsx`, `CallPreparation.tsx`, `BastionPartner.tsx`, `Bastion.tsx`, `LumiPartner.tsx`, `RoadshowDetailPage.tsx`, `BookingsEnhanced.tsx`
+
+### Content & Social
+`SocialMediaPage.tsx`, `MailingListManager.tsx`, `MailingListConfirm.tsx`, `SustainabilityDashboard.tsx`, `ToxicityFilterDashboard.tsx`, `TranscriptEditor.tsx`, `TranscriptPage.tsx`
+
+### Miscellaneous
+`BrandingSettings.tsx`, `ComponentShowcase.tsx`, `Demo.tsx`, `DemoRegistration.tsx`, `BookDemo.tsx`, `DevelopmentDashboard.tsx`, `EmbeddableQaWidget.tsx`, `EmbedWidget.tsx`, `FeatureMap.tsx`, `FeatureDetail.tsx`, `BundleDetail.tsx`, `IntegrationHub.tsx`, `ExternalToolsIntegration.tsx`, `WebhookManager.tsx`, `TemplateBuilder.tsx`, `WorkflowsPage.tsx`, `PostEvent.tsx`, `PlatformEmbed.tsx`, `PrivacyPolicy.tsx`, `TermsOfService.tsx`, `NotFound.tsx`, `TechHandover.tsx`, `AlertDashboard.tsx`, `SyncTest.tsx`, `TestGuide.tsx`, `TwilioDirectGuide.tsx`, `Training.tsx`, `TrainingPlatform.tsx`, `TrainingSubPage.tsx`, `ModeratorQAConsole.tsx`
 
 ---
 
-## 84. ENVIRONMENT VARIABLES
+## 20. FRONTEND COMPONENTS (COMPLETE - 75+ BUSINESS COMPONENTS)
 
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `DATABASE_URL` | Yes | PostgreSQL connection |
-| `JWT_SECRET` | Yes | JWT signing |
-| `ABLY_API_KEY` | Yes | Real-time pub/sub |
-| `RECALL_AI_API_KEY` | Yes* | Recall.ai bot deployment |
-| `RECALL_AI_BASE_URL` | No | Recall API region (default: eu-central-1) |
-| `RECALL_AI_WEBHOOK_SECRET` | No | Webhook signature verification |
-| `RECALL_WEBHOOK_BASE_URL` | No | Override webhook callback URL |
-| `MUX_WEBHOOK_SECRET` | No | Mux webhook verification |
-| `DEFAULT_OBJECT_STORAGE_BUCKET_ID` | Yes | S3 storage bucket |
-| `PRIVATE_OBJECT_DIR` | Yes | Private storage directory |
-| `PUBLIC_OBJECT_SEARCH_PATHS` | Yes | Public storage paths |
+### AI & Intelligence Components
+| Component | File | Purpose |
+|---|---|---|
+| AIChatBox | `AIChatBox.tsx` | AI conversational interface |
+| AIDashboard | `AIDashboard.tsx` | AI metrics dashboard |
+| AIApplicationsSection | `AIApplicationsSection.tsx` | AI apps catalog |
+| BoardIntelligenceCompass | `BoardIntelligenceCompass.tsx` | Board intelligence UI with sub-tabs (Overview/Commitments/Liabilities/Expectations/Actions) |
+| PreEventIntelligenceBriefing | `PreEventIntelligenceBriefing.tsx` | Pre-event briefing UI (Consensus/Q&A/Hotspots/Readiness) |
+| RegulatoryComplianceMonitor | `RegulatoryComplianceMonitor.tsx` | Regulatory compliance UI (Flags/Triggers/Jurisdictions/Actions) |
+| InsightsPanel | `InsightsPanel.tsx` | AI insights display |
+| BriefingPackPanel | `BriefingPackPanel.tsx` | Briefing pack viewer |
+| EventBriefPanel | `EventBriefPanel.tsx` | Event brief display |
 
-*Required for Recall.ai-supported platforms (Zoom, Teams, Meet, Webex)
+### Live Session Components
+| Component | File | Purpose |
+|---|---|---|
+| LiveTranscriptFeed | `LiveTranscriptFeed.tsx` | Real-time transcript display |
+| LiveTranscriptDisplay | `LiveTranscriptDisplay.tsx` | Transcript viewer |
+| LiveQaDashboard | `LiveQaDashboard.tsx` | Live Q&A management |
+| LiveQuestionBox | `LiveQuestionBox.tsx` | Question submission |
+| LivePolling | `LivePolling.tsx` | Live poll display |
+| LivePoll | `LivePoll.tsx` | Individual poll |
+| LiveRollingSummaryPanel | `LiveRollingSummaryPanel.tsx` | Rolling summary display |
+| LiveSessionPanel | `LiveSessionPanel.tsx` | Active session info |
+| RollingSummaryPanel | `RollingSummaryPanel.tsx` | Summary viewer |
+| SentimentTrendChart | `SentimentTrendChart.tsx` | Sentiment visualization |
+| CommitmentSignalPanel | `CommitmentSignalPanel.tsx` | Commitment signals |
+
+### Operator & Conference Components
+| Component | File | Purpose |
+|---|---|---|
+| OccRealtimeUpdates | `OccRealtimeUpdates.tsx` | Real-time OCC updates |
+| ParticipantStatusDashboard | `ParticipantStatusDashboard.tsx` | Participant state display |
+| MutingControlPanel | `MutingControlPanel.tsx` | Mute controls |
+| RecallAiBot | `RecallAiBot.tsx` | Recall.ai bot controls |
+| RecallBotPanel | `RecallBotPanel.tsx` | Bot status panel |
+| MuxStreamPanel | `MuxStreamPanel.tsx` | Mux stream controls |
+
+### Communication Components
+| Component | File | Purpose |
+|---|---|---|
+| Webphone | `Webphone.tsx` | Full webphone interface |
+| WebPhoneCallManager | `WebPhoneCallManager.tsx` | Call management |
+| WebPhoneJoinInstructions | `WebPhoneJoinInstructions.tsx` | Join instructions |
+| WebphoneActivityCard | `WebphoneActivityCard.tsx` | Call activity card |
+
+### Content & Media Components
+| Component | File | Purpose |
+|---|---|---|
+| AccessibleVideoPlayer | `AccessibleVideoPlayer.tsx` | Accessible video player |
+| EventReplayPlayer | `EventReplayPlayer.tsx` | Event recording playback |
+| TranscriptEditor | `TranscriptEditor.tsx` | Transcript editing UI |
+| TranscriptViewer | `TranscriptViewer.tsx` | Transcript display |
+| ContentGenerationTrigger | `ContentGenerationTrigger.tsx` | AI content trigger UI |
+| WebcastRecapGenerator | `WebcastRecapGenerator.tsx` | Recap generator |
+| WebcastRegistrationForm | `WebcastRegistrationForm.tsx` | Registration form |
+| IntelligentBroadcasterPanel | `IntelligentBroadcasterPanel.tsx` | Broadcaster AI panel |
+
+### Social & Analytics Components
+| Component | File | Purpose |
+|---|---|---|
+| SocialAnalyticsDashboard | `SocialAnalyticsDashboard.tsx` | Social analytics |
+| SocialMediaLinking | `SocialMediaLinking.tsx` | Social account linking |
+| SocialPostCreator | `SocialPostCreator.tsx` | Post creation |
+| InterconnectionGraph | `InterconnectionGraph.tsx` | Feature interconnection visualization |
+| InterconnectionModal | `InterconnectionModal.tsx` | Interconnection details |
+| EngagementDashboard | `EngagementDashboard.tsx` | Engagement metrics |
+
+### UI Infrastructure Components
+| Component | File | Purpose |
+|---|---|---|
+| DashboardLayout | `DashboardLayout.tsx` | Main layout with sidebar navigation |
+| DashboardLayoutSkeleton | `DashboardLayoutSkeleton.tsx` | Loading skeleton |
+| ErrorBoundary | `ErrorBoundary.tsx` | Error boundary wrapper |
+| RequireAuth | `RequireAuth.tsx` | Auth guard component |
+| RealtimeEventUpdates | `RealtimeEventUpdates.tsx` | Real-time update wrapper |
+| NotificationCenter | `NotificationCenter.tsx` | Notification display |
+| AlertFeed | `AlertFeed.tsx` | Alert notifications |
+| ExportDialog | `ExportDialog.tsx` | Export options dialog |
+| FeedbackForm | `FeedbackForm.tsx` | User feedback form |
+| FollowUpEmailDrafter | `FollowUpEmailDrafter.tsx` | Email draft UI |
+| Map | `Map.tsx` | Google Maps integration |
+| PollManager | `PollManager.tsx` | Poll management |
+| PollResults | `PollResults.tsx` | Poll results display |
+| PollWidget | `PollWidget.tsx` | Embeddable poll |
+| ProviderStateIndicator | `ProviderStateIndicator.tsx` | Service status indicator |
+| ServiceStatusPanel | `ServiceStatusPanel.tsx` | Service health panel |
+| SpeakerProfileCard | `SpeakerProfileCard.tsx` | Speaker info card |
+| SystemDiagnostics | `SystemDiagnostics.tsx` | System diagnostics panel |
+| BrandingEditor | `BrandingEditor.tsx` | Branding customization |
+| CustomisationPortal | `CustomisationPortal.tsx` | Client customization |
+| ComplianceDashboard | `ComplianceDashboard.tsx` | Compliance overview |
+| ComplianceMonitor | `ComplianceMonitor.tsx` | Real-time compliance |
 
 ---
 
-## 85. DEPLOYMENT ARCHITECTURE
+## 21. FRONTEND HOOKS & UTILITIES
 
-```
-                    ┌─────────────────┐
-                    │   CDN / Proxy   │
-                    └────────┬────────┘
-                             │
-                    ┌────────▼────────┐
-                    │  Express Server │
-                    │   (Node.js)     │
-                    ├─────────────────┤
-                    │ tRPC Middleware  │
-                    │ Static Assets   │
-                    │ Webhook Routes  │
-                    │ WebSocket       │
-                    └────────┬────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-     ┌────────▼──────┐ ┌────▼────┐ ┌───────▼──────┐
-     │  PostgreSQL   │ │  Ably   │ │   Recall.ai  │
-     │  (Drizzle)    │ │ Pub/Sub │ │   Bot API    │
-     └───────────────┘ └─────────┘ └──────────────┘
-              │                           │
-     ┌────────▼──────┐           ┌────────▼──────┐
-     │   AWS S3      │           │   Mux Video   │
-     │   Storage     │           │   Streaming   │
-     └───────────────┘           └───────────────┘
+### Custom Hooks (`client/src/hooks/`)
+| Hook | File | Purpose |
+|---|---|---|
+| useAblyChannel | `useAblyChannel.ts` | Subscribe to Ably channels with auto-cleanup |
+| useAblySessions | `useAblySessions.ts` | Track active Ably sessions |
+| useComposition | `useComposition.ts` | Input composition state (CJK support) |
+| useKeyboardShortcuts | `useKeyboardShortcuts.ts` | Keyboard shortcut registration |
+| useMetricsWebSocket | `useMetricsWebSocket.ts` | WebSocket metrics streaming |
+| useMobile | `useMobile.tsx` | Responsive breakpoint detection |
+| usePersistFn | `usePersistFn.ts` | Stable function reference |
+
+### Core Hooks (`client/src/_core/hooks/`)
+| Hook | Purpose |
+|---|---|
+| useAuth | Authentication state management |
+
+### Libraries (`client/src/lib/`)
+| File | Purpose |
+|---|---|
+| trpc.ts | tRPC client configuration (createTRPCReact, httpBatchLink, superjson transformer) |
+| utils.ts | Utility functions (cn = clsx + tailwind-merge) |
+| useSmartBack.ts | Smart navigation back (history-aware) |
+
+### Services (`client/src/services/`)
+| File | Purpose |
+|---|---|
+| sessionAutoSave.ts | Auto-persist session data to localStorage |
+
+### Audio Integrations (`client/replit_integrations/audio/`)
+| File | Purpose |
+|---|---|
+| audio-utils.ts | Audio utility functions |
+| audio-playback-worklet.js | AudioWorklet for playback |
+| useAudioPlayback.ts | Audio playback hook |
+| useVoiceRecorder.ts | Voice recording hook |
+| useVoiceStream.ts | Voice streaming hook |
+| index.ts | Audio integration barrel export |
+
+---
+
+## 22. BUILD, DEV & DEPLOYMENT
+
+### Package Scripts
+```json
+{
+  "dev": "NODE_ENV=development tsx watch server/_core/index.ts",
+  "build": "NODE_OPTIONS='--max-old-space-size=4096' vite build --logLevel warn && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+  "start": "NODE_ENV=production node dist/index.js",
+  "check": "NODE_OPTIONS='--max-old-space-size=4096' tsc --noEmit",
+  "format": "prettier --write .",
+  "test": "vitest run",
+  "test:coverage": "c8 vitest run",
+  "lint": "eslint .",
+  "lint:fix": "eslint . --fix",
+  "db:push": "drizzle-kit generate && drizzle-kit migrate",
+  "check:routers": "node scripts/check-router-sync.mjs"
+}
 ```
 
 ### Build Pipeline
+1. **Frontend:** Vite builds React app to `dist/_app/` (4GB max heap for large codebase)
+2. **Backend:** esbuild bundles `server/_core/index.ts` to `dist/index.js` (ESM format, external packages)
+3. **Production:** `node dist/index.js` serves both API and static files
+
+### Dev Server
+- `tsx watch` provides hot-reload for server changes
+- Vite dev server proxied for frontend HMR
+- Mockup sandbox on port 23636
+
+### TypeScript Configuration
+- `compilerOptions.paths`: `@/*` -> `client/src/*`, `@shared/*` -> `shared/*`
+- `include`: `["client", "server", "shared"]`
+- ESM module system
+
+### Rate Limiting
+| Endpoint | Production | Development |
+|---|---|---|
+| API / tRPC | 120 req/min | 500 req/min |
+| Auth routes | 20 req/15min | 200 req/15min |
+
+---
+
+## 23. SCRIPTS & MIGRATIONS
+
+### Database Scripts (`scripts/`)
+These scripts use raw SQL via `pg` Pool for creating tables that were added incrementally:
+
+| Script | Purpose |
+|---|---|
+| `create-missing-tables.ts` | Creates ai_generated_content, occ_transcription_segments, occ_live_rolling_summaries, qa_auto_triage_results, speaking_pace_analysis, toxicity_filter_results, transcript_edits, event_brief_results |
+| `create-agentic-brain-table.ts` | Creates agentic_brain_decisions |
+| `create-aggregate-intelligence-table.ts` | Creates aggregate_intelligence |
+| `create-agm-tables.ts` | Creates AGM governance tables |
+| `create-ai-evolution-tables.ts` | Creates AI evolution proposals/governance/tools tables |
+| `create-archive-events-table.ts` | Creates archive events table |
+| `create-autonomous-interventions-table.ts` | Creates autonomous interventions table |
+| `create-bastion-tables.ts` | Creates Bastion investor tables |
+| `create-call-preparations-table.ts` | Creates call preparations table |
+| `create-cip4-tables.ts` | Creates CIP4 patent module tables |
+| `create-communication-index-table.ts` | Creates communication index table |
+| `create-compliance-engine-tables.ts` | Creates compliance engine tables |
+| `create-compliance-framework-tables.ts` | Creates compliance framework tables |
+| `add-ai-report-column.ts` | Adds AI report column to existing tables |
+| `add-choruscall-platform.ts` | Adds ChorusCall platform support |
+| `add-event-id-to-archive.ts` | Adds eventId to archive table |
+| `add-interim-results-type.ts` | Adds interim results type |
+| `add-join-method-columns.ts` | Adds join method tracking columns |
+| `add-local-recording-column.ts` | Adds local recording path column |
+| `add-local-transcript-column.ts` | Adds local transcript column |
+| `update-sentiment-table.ts` | Adds columns to sentiment_snapshots |
+| `check-router-sync.mjs` | Verifies routers.eager.ts and routers.ts are in sync |
+
+### Migration Pattern
+```typescript
+import pg from 'pg';
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+await pool.query(`CREATE TABLE IF NOT EXISTS table_name (...)`);
 ```
-Dev:   tsx watch server/_core/index.ts (hot reload)
-Build: vite build (frontend) + esbuild (server bundle)
-Prod:  node dist/index.js
-```
+
+### Drizzle Migrations
+Standard Drizzle migration files in `drizzle/migrations/` directory, generated via `drizzle-kit generate` and applied via `drizzle-kit migrate`.
 
 ---
 
-## 86. KEY GOTCHAS
+## 24. FILE MANIFEST
 
-1. **Router dual registration** — routers must appear in BOTH `routers.eager.ts` AND `routers.ts`
-2. **Recall webhook before JSON parser** — `registerRecallWebhookRoute(app)` MUST come before `express.json()`
-3. **connectionQuality enum** — only `"excellent" | "good" | "fair" | "poor"` (never `"degraded"`)
-4. **SQL placeholder styles** — `rawSql()` uses `?`; direct `db.execute()` uses `$1`
-5. **DEV_BYPASS** — all auth auto-passes in development mode
-6. **Ably channel uniqueness** — shadow channels include timestamp: `shadow-{id}-{ts}`
-7. **Notes as JSON** — operator notes stored as JSON array in text column, not separate table
-8. **AI reports in archive_events** — stored in `ai_report` column keyed by `event_id`
-9. **AGM auto-creation** — AGM event type triggers automatic `agm_intelligence_sessions` record
-10. **Fire-and-forget AI** — `autoGenerateAiReport()` runs with `.catch()`, doesn't block response
-11. **Schema size** — 3,413 lines, 120+ tables. Use `db:push` for migrations, never manual SQL
-12. **Rate limiting** — `/api/trpc` (100/15min general), `/api/oauth` + `/api/auth` (20/15min)
-13. **Max body size** — 500MB (`express.json({ limit: "500mb" })`)
-14. **Dual carrier webphone** — Twilio primary, Telnyx fallback. Both have separate TwiML/TeXML endpoints
+### Total File Counts
+| Category | Count |
+|---|---|
+| Frontend Pages | 208 |
+| Frontend Business Components | 75+ |
+| Frontend UI Components (shadcn) | 53 |
+| Frontend Hooks | 8 |
+| Backend Router Files | 100+ |
+| Backend Service Files | 59 |
+| Database Tables | 100+ |
+| tRPC Router Keys | 90+ |
+| Environment Variables | 25+ |
+| Documentation Files | 30+ |
+| Migration Scripts | 20+ |
 
----
+### Critical Files for Clone
+1. `package.json` - All dependencies
+2. `pnpm-workspace.yaml` - Monorepo config
+3. `tsconfig.json` - TypeScript config with path aliases
+4. `vite.config.ts` - Build configuration
+5. `drizzle.config.ts` - Database ORM config
+6. `drizzle/schema.ts` - Complete database schema
+7. `drizzle/relations.ts` - Table relationships
+8. `server/_core/index.ts` - Server entry point
+9. `server/_core/trpc.ts` - tRPC setup + auth procedures
+10. `server/_core/context.ts` - tRPC context
+11. `server/_core/sdk.ts` - OAuth/JWT SDK
+12. `server/_core/env.ts` - Environment config
+13. `server/_core/llm.ts` - LLM integration (GPT-4o + Gemini)
+14. `server/_core/email.ts` - Resend email
+15. `server/_core/ably.ts` - Real-time messaging
+16. `server/routers.ts` - Router registry
+17. `server/routers.eager.ts` - Eager router registry (MUST stay in sync)
+18. `server/db.ts` - Database connection
+19. `client/src/App.tsx` - Frontend routing
+20. `client/src/main.tsx` - Frontend entry
+21. `shared/const.ts` - Shared constants
+22. All `scripts/create-*.ts` - Table creation scripts
 
-## BACKEND SERVICES INVENTORY (58 services)
-
-| Service | Lines | Purpose |
-|---------|-------|---------|
-| `AgmGovernanceAiService.ts` | 935 | AGM governance intelligence |
-| `AiEvolutionService.ts` | 913 | AI self-improvement pipeline |
-| `IpoMandAIntelligenceService.ts` | 834 | IPO/M&A deal intelligence |
-| `PredictiveEventIntelligenceService.ts` | 767 | Predictive event analysis |
-| `OrganizationalKnowledgeGraphService.ts` | 742 | Knowledge graph management |
-| `BastionInvestorAiService.ts` | 729 | Bastion investor AI |
-| `HealthGuardianService.ts` | 543 | Platform health monitoring |
-| `ComplianceEngineService.ts` | 525 | Compliance framework engine |
-| `InvestorEngagementScoringService.ts` | 504 | Investor engagement scoring |
-| `TranscriptEditorService.ts` | 491 | Transcript editing AI |
-| `AeosQuoteToCashService.ts` | 487 | Quote-to-cash automation |
-| `LumiBookingService.ts` | 486 | Lumi partner bookings |
-| `BastionBookingService.ts` | 476 | Bastion partner bookings |
-| `ContentPerformanceAnalyticsService.ts` | 470 | Content performance metrics |
-| `AblyRealtimeService.ts` | 458 | Ably real-time management |
-| `LiveSubtitleTranslationService.ts` | 428 | Live subtitle translation |
-| `EventBriefGeneratorService.ts` | 427 | Event briefing generation |
-| `RealtimeCollaborationService.ts` | 405 | Real-time collaboration |
-| `SentimentAnalysisService.ts` | 402 | Sentiment analysis |
-| `ConferenceDialoutService.ts` | 402 | Phone dial-out management |
-| `ToxicityFilterService.ts` | 382 | Content toxicity filtering |
-| `RedactionWorkflowService.ts` | 369 | Transcript redaction |
-| `QaAutoTriageService.ts` | 367 | Q&A auto-triage |
-| `AeosSemanticApiService.ts` | 357 | Semantic API queries |
-| `SpeakingPaceCoachService.ts` | 354 | Speaker pace coaching |
-| `TranscriptionService.ts` | 337 | Transcription pipeline |
-| `WebcastArchiveAiService.ts` | 330 | Webcast archive analysis |
-| `LiveRollingSummaryService.ts` | 307 | Live summary generation |
-| `ContentGenerationTriggerService.ts` | 306 | Content trigger management |
-| `MaterialityRiskOracleService.ts` | — | Material risk assessment |
-| `MarketImpactPredictorService.ts` | — | Market impact prediction |
-| `InvestorIntentionDecoderService.ts` | — | Investor intent analysis |
-| `CrossEventConsistencyService.ts` | — | Cross-event message consistency |
-| `VolatilitySimulatorService.ts` | — | Stock volatility simulation |
-| `RegulatoryInterventionService.ts` | — | Regulatory issue flagging |
-| `EventIntegrityTwinService.ts` | — | Digital twin verification |
-| `EvasiveAnswerDetectionService.ts` | — | Evasive answer detection |
-| `MultiModalComplianceService.ts` | — | Multi-modal compliance |
-| `ExternalSentimentService.ts` | — | External sentiment feeds |
-| `PersonalizedBriefingService.ts` | — | Personalized briefings |
-| `ShadowModeGuardianService.ts` | 153 | Shadow session watchdog |
-| `LiveQaTriageService.ts` | — | Q&A AI triage |
-| `ComplianceModerator.ts` | — | Compliance moderation |
-| `AudioEnhancer.ts` | — | Audio enhancement |
-| `LanguageDubber.ts` | — | Language dubbing |
-| `PersonalizationEngine.ts` | — | Content personalization |
-| `PlatformEmbedService.ts` | — | Embed widget management |
-| `PodcastConverterService.ts` | — | Event-to-podcast conversion |
-| `SocialMediaService.ts` | — | Social media management |
-| `SustainabilityOptimizer.ts` | — | ESG optimization |
-| `TranscriptSyncService.ts` | — | Transcript synchronization |
-| `VirtualStudioService.ts` | — | Virtual studio management |
-| `WebcastRecapService.ts` | — | Webcast recap generation |
-| `AgiComplianceService.ts` | — | AGI compliance |
-| `AgiToolGeneratorService.ts` | — | AI tool auto-generation |
-| `AeosSovereignDataService.ts` | — | Data sovereignty |
-| `EventEchoPipeline.ts` | — | Event echo analysis |
-| `KnowledgeRetrievalService.ts` | — | Knowledge base retrieval |
+### Clone Procedure
+1. Copy entire codebase
+2. Set up PostgreSQL database
+3. Configure all environment variables (Section 4)
+4. Run `pnpm install`
+5. Run `pnpm run db:push` for Drizzle tables
+6. Run all `scripts/create-*.ts` for supplementary tables
+7. Seed jurisdiction profiles (6 profiles for regulatory compliance)
+8. Run `pnpm run dev` for development or `pnpm run build && pnpm run start` for production
 
 ---
 
-## FRONTEND PAGE COUNT SUMMARY
-
-| Category | Page Count | Total Lines |
-|----------|-----------|-------------|
-| Security & Compliance dashboards | ~30 | ~15,000 |
-| Intelligence & Analytics pages | ~20 | ~12,000 |
-| Operator tools (OCC, Shadow, Hub) | ~15 | ~15,000 |
-| Webcasting & Studio | ~8 | ~5,000 |
-| Billing & Admin | ~8 | ~5,000 |
-| Training & Onboarding | ~5 | ~3,500 |
-| Event management | ~10 | ~6,000 |
-| Partner integrations | ~5 | ~3,000 |
-| Other (profile, settings, etc.) | ~15 | ~5,000 |
-| **Total** | **~170** | **~108,000** |
-
----
-
-### END OF COMPLETE CURALIVE PLATFORM BRIEF
-
-**Total routers:** 93
-**Total services:** 58
-**Total frontend pages:** 170+
-**Total database tables:** 120+
-**Total codebase:** ~184,000 lines
-
+*End of CuraLive Platform Complete Technical Brief*

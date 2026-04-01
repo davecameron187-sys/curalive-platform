@@ -558,3 +558,9 @@ id = "HH0dWw1B4VBlJyJtpMIKw"
 uri = "file://exports/CuraLive_Manus_Backend_Integration_Corrected_Brief.md"
 type = "text"
 title = "CuraLive — Corrective Backend Integration Brief for Manus"
+
+[[outputs]]
+id = "rvhWsazekNRo2o7KRmXe1"
+uri = "file://exports/CURALIVE_COMPLETE_PLATFORM_BRIEF.md"
+type = "text"
+title = "CuraLive Complete Platform Brief"
