@@ -636,3 +636,45 @@ id = "9nHbwrhOak7MzXJ6wnEB1"
 uri = "file://exports/CuraLive_Complete_Source_Code.docx"
 type = "word_document"
 title = "CuraLive Complete Source Code (Word Document - 3.2MB)"
+
+[[outputs]]
+id = "ytBIEL-fy72iWlJyVEQLk"
+uri = "file://exports/CuraLive_EXACT_Clone_Guide_For_Manus.docx"
+type = "word_document"
+title = "CuraLive EXACT Clone Guide for Manus (Word Document)"
+
+[[outputs]]
+id = "W7xsSfj3XqAeSwhdVPBl3"
+uri = "file://exports/screenshots/overview-full.jpg"
+type = "image"
+title = "Screenshot: Overview Tab"
+
+[[outputs]]
+id = "zSGBYyftLHuqTbnoqKG5I"
+uri = "file://exports/screenshots/shadow-mode-full.jpg"
+type = "image"
+title = "Screenshot: Shadow Mode Tab"
+
+[[outputs]]
+id = "s-EI583sgIX9UPzi113uE"
+uri = "file://exports/screenshots/events.jpg"
+type = "image"
+title = "Screenshot: Events Tab"
+
+[[outputs]]
+id = "DIPQKQl5RG_g2XIB4yjzq"
+uri = "file://exports/screenshots/partners.jpg"
+type = "image"
+title = "Screenshot: Partners Tab"
+
+[[outputs]]
+id = "IuvJqpWehhGFheGpF1I08"
+uri = "file://exports/screenshots/billing.jpg"
+type = "image"
+title = "Screenshot: Billing Tab"
+
+[[outputs]]
+id = "tg57zHFvVAMJMZiGq5g8A"
+uri = "file://exports/screenshots/settings.jpg"
+type = "image"
+title = "Screenshot: Settings Tab"
