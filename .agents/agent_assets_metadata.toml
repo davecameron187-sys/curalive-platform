@@ -684,3 +684,15 @@ id = "QaadsHqeOWrkkoLUW_wNb"
 uri = "file://exports/CuraLive_COMPLETE_For_Manus.docx"
 type = "word_document"
 title = "CuraLive COMPLETE Guide + Source Code for Manus (3.6MB Word Document)"
+
+[[outputs]]
+id = "VZLE2NFUMcc5wTRcPdDa3"
+uri = "file://exports/curalive-source.tar.gz"
+type = "unspecified"
+title = "CuraLive ACTUAL Source Code (tar.gz — extract and run)"
+
+[[outputs]]
+id = "DbRluBNp4hxIJpadV_0tr"
+uri = "file://exports/MANUS_INSTRUCTIONS.txt"
+type = "text"
+title = "Instructions for Manus (read first)"
