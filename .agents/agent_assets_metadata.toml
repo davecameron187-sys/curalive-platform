@@ -534,3 +534,9 @@ id = "hyOgDbXH8ZJSEmAcGH1ra"
 uri = "file://exports/MANUS_NUCLEAR_OPTION.docx"
 type = "word_document"
 title = "NUCLEAR OPTION: Standalone HTML File + Instructions for Manus"
+
+[[outputs]]
+id = "aBmIAOsacvpTLU7y8vzXV"
+uri = "file://exports/CURALIVE_TECHNICAL_ARCHITECTURE_BRIEF.docx"
+type = "word_document"
+title = "CuraLive Technical Architecture Brief — Operator Console & Full Connectivity"
