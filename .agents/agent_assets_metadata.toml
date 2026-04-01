@@ -576,3 +576,57 @@ id = "RkYTidefEZ-gcblAXR-i-"
 uri = "file://exports/CuraLive_Complete_Platform_Brief.docx"
 type = "word_document"
 title = "CuraLive Complete Platform Brief (Word Document)"
+
+[[outputs]]
+id = "3E2Uv7WXPLeTSB9TloFJ_"
+uri = "file://exports/MANUS_CLONE_INSTRUCTIONS.txt"
+type = "text"
+title = "1. READ FIRST - Clone Instructions for Manus"
+
+[[outputs]]
+id = "BPnSwFAgOZ1nJb6zdlejK"
+uri = "file://exports/CURALIVE_SOURCE_PART_00.txt"
+type = "text"
+title = "2. Source Code Part 1 of 5 (Config, Schema, Server Core)"
+
+[[outputs]]
+id = "2WBl560tYeIpgLRU6kB5T"
+uri = "file://exports/CURALIVE_SOURCE_PART_01.txt"
+type = "text"
+title = "3. Source Code Part 2 of 5 (Routers, Services)"
+
+[[outputs]]
+id = "oYXwHUkGGoE0PWUNE0L6c"
+uri = "file://exports/CURALIVE_SOURCE_PART_02.txt"
+type = "text"
+title = "4. Source Code Part 3 of 5 (Server Files, Client Pages A-M)"
+
+[[outputs]]
+id = "TZFpCekn19uYynlY8x536"
+uri = "file://exports/CURALIVE_SOURCE_PART_03.txt"
+type = "text"
+title = "5. Source Code Part 4 of 5 (Client Pages M-Z)"
+
+[[outputs]]
+id = "CfbzJvyQ77RmPZsRJwRLu"
+uri = "file://exports/CURALIVE_SOURCE_PART_04.txt"
+type = "text"
+title = "6. Source Code Part 5 of 5 (Components, UI Library, Scripts)"
+
+[[outputs]]
+id = "_Sxl7KGydXxLdSllk8qQ3"
+uri = "file://exports/CURALIVE_FULL_SOURCE_CODE.txt"
+type = "text"
+title = "7. COMPLETE Source (single file - 10MB, all 230K lines)"
+
+[[outputs]]
+id = "OtyqSwM6zao4c0wfZDZsp"
+uri = "file://exports/screenshots/home.jpg"
+type = "image"
+title = "8. Screenshot - Dashboard"
+
+[[outputs]]
+id = "_CjlnPOeOfCfDRZF9rARM"
+uri = "file://exports/screenshots/shadow-mode.jpg"
+type = "image"
+title = "9. Screenshot - Shadow Mode"
