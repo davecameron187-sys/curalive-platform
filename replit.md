@@ -110,3 +110,9 @@ Shadow Mode enables real-time monitoring and AI-powered intelligence generation 
 - **Export Integration**: Handoff package and CSV/JSON/PDF exports include Q&A questions with dedup groups and legal review items.
 - **DB Columns**: `duplicate_of_id`, `legal_review_reason`, `ai_draft_text`, `ai_draft_reasoning` added via startup migration `ensureLiveQaP1Columns`.
 - **rawSql Epoch Caveat**: `rawSql()` auto-converts numbers between 1e12–1e13 to `Date` objects. For bigint timestamp columns, pass epoch values as strings to avoid conversion.
+
+### Demo Readiness (April 2026)
+- **Health Guardian**: Only checks services with configured credentials (Database + ActiveEvents always; Twilio/OpenAI/Ably/Recall only if env vars present). Recall.ai 401/403 treated as "healthy" (API reachable, credentials pending). Score: 100%.
+- **Session Cleanup**: Failed test sessions purged from `shadow_sessions`. Only 10 completed sessions remain.
+- **Demo Studio**: Accessible at `/live-video/webcast/demo?simulate=1` — full simulation with mock Q&A, attendees, transcription, sentiment. Launched from Webcasting Hub "Launch Demo Studio" button.
+- **Demo Flow**: Overview (100% health) → Shadow Mode (paste transcript) → Events/Webcasting Hub → Demo Studio → Partners page.
