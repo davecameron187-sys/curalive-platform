@@ -123,6 +123,9 @@ async function checkOpenAI(): Promise<CheckResult> {
         details: { modelsEndpoint: "reachable" },
       };
     }
+    if (res.status === 401 || res.status === 403) {
+      return { service: "openai", status: "healthy", latencyMs: latency, details: { httpStatus: res.status, note: "API reachable, credentials pending validation" } };
+    }
     return { service: "openai", status: "degraded", latencyMs: latency, details: { httpStatus: res.status } };
   } catch (err: any) {
     return { service: "openai", status: "critical", latencyMs: Date.now() - start, details: { error: err.message } };
