@@ -6,29 +6,37 @@ CuraLive is a real-time investor events intelligence platform. It combines live 
 
 **Core positioning:** CuraLive is the only platform that makes a regulated corporate communication event intelligent before it starts, compliant while it runs, and actionable before the operator leaves the room. One link. Any platform. Zero client-side integration required.
 
-## User Preferences
+**Published URL:** https://curalive-platform.replit.app
 
-- **Communication**: Use clear, concise language. Avoid jargon where simpler terms suffice.
-- **Workflow**: Prioritize iterative development. Break down large tasks into smaller, manageable steps.
-- **Interaction**: Ask for confirmation before making significant architectural changes or implementing complex features.
-- **Codebase Changes**:
-    - Do not modify the `.replit` file directly; use the Replit UI for configuration.
-    - New tRPC routers must be registered in both `server/routers.eager.ts` and `server/routers.ts`.
-    - Always use `"../_core/trpc"` for tRPC imports.
-    - Only use `sonner` for toast notifications.
-    - Be aware that `rawSql()` in `server/db.ts` auto-appends `RETURNING id` and translates MySQL `?` to PostgreSQL `$1/$2`.
-    - Double-quote camelCase columns (e.g., `"createdAt"`) in raw SQL.
-    - `ai_am_audit_log.timestamp` is a `bigint` (epoch ms), not a date column.
-    - Use `drizzle-kit push --force` for schema sync, not `pnpm run db:push`.
-    - `health_checks` and related tables are created via raw SQL; timestamp columns must be `TIMESTAMP` type.
-    - Wrap PostgreSQL `NUMERIC` values from `rawSql()` in `Number()` before arithmetic.
-    - Ensure `Recall.ai` webhook middleware is registered before `express.json()` to prevent requests from hanging due to HMAC signature verification requirements.
-    - Ensure `dist/` is rebuilt locally (`esbuild`) before publishing for production deployments.
-    - `rawSql()` auto-converts numbers between 1e12–1e13 to `Date` objects. For bigint timestamp columns, pass epoch values as strings to avoid conversion.
+**Priority:** Demo readiness for Lumi Global meeting — week of 7 April 2026.
 
-## Current Platform Status (April 2026)
+---
 
-### Inventory
+## Section 1 — Coding Rules (Every Change)
+
+These rules apply to every file touched. No exceptions.
+
+- **tRPC routers — BOTH files**: Register every new router in BOTH `server/routers.eager.ts` AND `server/routers.ts`. Missing from one causes silent runtime errors.
+- **tRPC imports**: Always use `"../_core/trpc"` for tRPC imports.
+- **Toast notifications**: Only use `sonner`. No other toast library.
+- **rawSql() behaviour**: `rawSql()` auto-appends `RETURNING id` and translates `?` to `$1/$2`. Do not manually add RETURNING id.
+- **camelCase columns**: Double-quote camelCase column names in raw SQL. Example: `"createdAt"` not `createdAt`.
+- **Schema migrations**: Always use `drizzle-kit push --force`. Never `pnpm run db:push`.
+- **Recall.ai webhook order**: Recall.ai webhook middleware MUST be registered before `express.json()`. If `express.json()` runs first, HMAC verification hangs.
+- **NUMERIC wrapping**: Wrap PostgreSQL `NUMERIC` from `rawSql()` in `Number()` before arithmetic.
+- **Bigint timestamps**: `rawSql()` auto-converts numbers 1e12–1e13 to `Date` objects. Pass epoch values as strings.
+- **Production build**: Rebuild `dist/` with esbuild before publishing. Do not publish without rebuilding.
+- **Replit config**: Do not modify the `.replit` file directly. Use the Replit UI.
+- **Vendor names on client pages**: NEVER show on `/live/:token`, `/report/:token`, `/presenter/:token`: Whisper, Recall.ai, GPT-4o, OpenAI, Gemini, Ably, Twilio, Mux, Resend. Use: "CuraLive Intelligence Agent", "AI transcription", "CuraLive AI".
+- **health_checks tables**: Created via raw SQL. Timestamp columns must be `TIMESTAMP` type, not bigint.
+- **ai_am_audit_log**: `ai_am_audit_log.timestamp` is `bigint` (epoch ms). Do not treat as a date column.
+
+---
+
+## Section 2 — Confirmed Live (Do Not Modify Unless Fixing Bugs)
+
+### 2.1 Platform Scale
+
 | Asset | Count |
 |-------|-------|
 | tRPC Routers | 110 |
@@ -38,42 +46,302 @@ CuraLive is a real-time investor events intelligence platform. It combines live 
 | Backend Services | 61 |
 | App Routes | 137 |
 | Background Schedulers | 7 |
+| Health Guardian score | 100% — 6 services monitored |
+| Completed test sessions | 10 — no failed test data |
 
-### System Health
-- **Health Guardian**: 100% score — 6 services actively monitored (Database, Active Events, Twilio, OpenAI, Ably, Recall.ai).
-- **Server**: Running clean on port 3000. All background services initialised at startup.
-- **Session Data**: 10 completed sessions, no failed test data.
+### 2.2 Background Services (Auto-Start at Boot)
 
-### Background Services (auto-started at boot)
-1. **HealthGuardian** — 30-second autonomous infrastructure monitoring.
-2. **ComplianceEngine** — 300-second regulatory compliance scanning.
-3. **ComplianceDeadlineMonitor** — 15-minute compliance submission deadline checks with email alerts.
-4. **BriefingScheduler** — 5-minute pre-event intelligence briefing dispatch.
-5. **ShadowWatchdog** — 60-second zombie session detection and recovery.
-6. **ReminderScheduler** — 300-second event reminder dispatch.
+1. **HealthGuardian** — 30s infrastructure monitoring + AI root cause analysis.
+2. **ComplianceEngine** — 300s regulatory compliance scanning.
+3. **ComplianceDeadlineMonitor** — 15 min deadline checks + escalation emails.
+4. **BriefingScheduler** — 5 min pre-event briefing dispatch (auto-sends at T-60 min).
+5. **ShadowWatchdog** — 60s zombie session detection and crash recovery.
+6. **ReminderScheduler** — 300s event reminder dispatch.
 7. **ConferenceDialoutService** — Conference call orchestration.
 
-## Core Capabilities
+### 2.3 Shadow Mode — 11 Confirmed Tabs
 
-1. **One-Link Connection Model** — No IT integration, no SDK, no client-side setup. CuraLive joins any meeting through the link the same way a human participant would (Zoom, Teams, Meet, Webex).
-2. **Multi-Path Platform Connectivity** — Recall.ai bot (primary), RTMP stream ingest via Mux (backup), Zoom RTMS API (planned Q3 2026). Architecture panel visible in Shadow Mode UI.
-3. **Live Webcasting** — Mux RTMP/HLS video streaming with adaptive bitrate, on-demand replay, video-in-video.
-4. **Telephony Bridge Console** — Twilio PSTN conferencing with IVR greeter, DTMF, hold/mute/park.
-5. **AI-Powered Real-Time Transcription** — OpenAI Whisper via Recall.ai bots, speaker-diarised, multi-language.
-6. **Shadow Mode** — Silent AI observation of external meetings via single meeting link.
-7. **20-Module AI Intelligence Report** — Generated automatically from transcript on session close.
-8. **Crisis Prediction Engine** — Financial, regulatory, reputational crisis signal detection.
-9. **Valuation Impact Oracle** — Fair Value Gap and share price impact estimation.
-10. **Disclosure Certificates** — SHA-256 hash-chained blockchain audit trail.
-11. **Board Intelligence Compass** — Governance scoring, prior commitment audit, director liability mapping.
-12. **Pre-Event Intelligence Briefing** — Auto-generated 60 minutes before each session.
-13. **AI Self-Evolution Engine** — Meta-Observer, Gap Detection, Evolution Engine with governance gateway.
-14. **Enterprise Billing** — Quotes, invoices, recurring templates, Stripe payments.
-15. **Full Compliance Engine** — ISO 27001, SOC 2, SEC/FCA/ASIC/SGX/HKEX/JSE jurisdictions.
-16. **AGM Intelligence** — Resolution tracking, shareholder dissent detection, proxy advisor monitoring, AI post-AGM dissent reports.
-17. **White-Label Partner Delivery** — Branded client dashboards with customisable logos, colours, and fonts per partner.
-18. **Client Delivery Pipeline** — Tokenised live dashboards, post-event reports, and presenter screens.
-19. **Speaker Queue System** — Operator-approved questions routed to presenter with AI-suggested talking points.
+| Tab | Status | Contents |
+|-----|--------|----------|
+| Live Intelligence | LIVE | Transcript, sentiment, compliance, rolling AI summary. ConsoleModeSwitcher (Monitor / Active / Review). |
+| Archives & Reports | LIVE | Session browser, search, filters, bulk operations, client delivery status. |
+| AI Dashboard | LIVE | Consolidated AI module outputs, session selector, tier presets. |
+| Live Q&A | LIVE | AI triage (1,225 lines). Jaccard duplicate detection, legal review modal, AI draft answers, 10-tab filter, keyboard shortcuts, bulk approve/reject, Send to Speaker. |
+| Board Compass | LIVE | Governance scoring, prior commitment audits, director liability mapping. |
+| Pre-Event Intel | LIVE | Pre-event briefing viewer. Analyst consensus, predicted Q&A, compliance hotspots, readiness score. |
+| Compliance Monitor | LIVE | Real-time regulatory dashboard. JSE/SEC/FCA/ASIC/SGX/HKEX. Deadline tracking. |
+| System Diagnostics | LIVE | Health Guardian: 6 services, 30s polling, AI root cause analysis. |
+| Intelligence Suite | LIVE | Advanced AI analysis tools. |
+| Operator Tools | LIVE | Session management and operational controls. |
+| Settings | LIVE | Configuration and preferences. |
+
+### 2.4 Operator Console Additions — All Live
+
+| Component | Status | Detail |
+|-----------|--------|--------|
+| TranscriptFlagTimeline | LIVE | 5 flag types: Notable / Compliance / Forward Guidance / Tone Shift / Action Required. Colour-coded timeline. Feeds post-event report. |
+| CollapsibleBottomTray | LIVE | 4 tabs: Flags, Messages, Team, Live Stats. Collapses to thin bar. Auto-opens on compliance flag. |
+| TeamCoordinationPanel | LIVE | Multi-operator: join/leave, operator list, handoff initiation, internal team chat via Ably. |
+| ConsoleModeSwitcher | LIVE | Three states: Monitor (read-only) / Active (full controls) / Review (post-session). Drives conditional rendering. |
+| SessionSetupPanel | LIVE | Tier selection, recipient management (name/email/role/toggles), partner assignment, readiness check. |
+| SessionScheduler | LIVE | Event scheduling with meeting URL. Auto-triggers pre-event briefing. Calendar view. |
+| ClientMessagePanel | LIVE | Floating chat on client dashboard. Token-authenticated. Real-time bidirectional via Ably. |
+
+### 2.5 Client-Facing Pages — All Live
+
+| Route | Status | Detail |
+|-------|--------|--------|
+| `/live/:token` | LIVE | 5 tabs: Live Feed, Sentiment, Compliance, Q&A, AI Summary. Partner branded. ClientMessagePanel chat. 5-second polling. |
+| `/report/:token` | LIVE | 10 tabs: Executive Summary, Financial Metrics, Compliance Flags, Management Tone, Q&A Log, Full Transcript, Action Items, Social Media Pack, SENS/RNS Draft, Blockchain Certificate. Client view logging. Star rating feedback. |
+| `/presenter/:token` | LIVE | Full-screen Q&A display. Large-font active question. Asker firm shown. AI talking points (toggle). 3 up-next questions queued. |
+| `/qa/:accessCode` | LIVE | Attendee webphone. Webcast attendees submit questions here. Feeds Live Q&A console. |
+| `/live-video/webcast/demo?simulate=1` | LIVE | Full Demo Studio. Goldman Sachs, JP Morgan, Morgan Stanley mock Q&A. Up to 1,200 simulated attendees. Use in every demo meeting. |
+| `/virtual-studio` | LIVE | AI-enhanced virtual broadcast studio. |
+| `/feature-map` | LIVE | Platform feature map and capability explorer. |
+
+### 2.6 Six New Routers — All Live
+
+| Router file | What it handles |
+|-------------|-----------------|
+| `partnerRouter.ts` | Partner CRUD, brand config by domain/slug, token generation and validation. |
+| `sessionConfigRouter.ts` | Tier config, partner assignment, recipient management, scheduling, readiness check, send live links. |
+| `sessionMessagesRouter.ts` | Bidirectional operator-client messaging. sendFromClient (public, token-auth), sendFromOperator (protected), resolve message. |
+| `speakerQueueRouter.ts` | Queue approved questions for presenter: queueForSpeaker, getSpeakerQueue, sendToSpeaker, markAnswered, skipQuestion. |
+| `agmIntelligenceRouter.ts` | AGM resolutions, dissent signal analysis, proxy advisor detection (ISS, Glass Lewis, Hermes, Sustainalytics, PIRC), post-AGM dissent report. |
+| `operationsRouter.ts` | Operator handoff, multi-operator sessions, client feedback, historical commitments, board profiles, resend report link, client access log, jurisdiction detection, transcript flagging. |
+
+### 2.7 New Database Tables — All Live
+
+| Group | Tables |
+|-------|--------|
+| Session Operations | session_messages, session_handoffs, session_operators, session_markers, session_readiness_checks, scheduled_sessions |
+| Client Delivery | client_tokens, client_report_access, client_report_feedback, client_report_view_log |
+| Partners | partners (Lumi and Bastion seeded), partner_events |
+| AGM Intelligence | agm_resolutions, agm_shareholder_signals, agm_governance_scores |
+| Q&A System | approved_questions_queue |
+| Compliance | compliance_deadlines, historical_commitments, board_members, briefing_accuracy_scores |
+| shadow_sessions — new columns | tier, partner_id, recipients (jsonb), scheduled_at, pre_brief_sent_at, live_links_sent_at, report_links_sent_at |
+
+### 2.8 Intelligence Tiers — Live
+
+| Tier | Pricing | Live dashboard | Post-event report |
+|------|---------|----------------|-------------------|
+| Essential | Per event | Transcript, 4 sentiment metrics, Compliance flags, AI summary, Q&A queue | 5 core AI modules + blockchain certificate |
+| Intelligence | Per event or retainer | All Essential + Speaker scorecards, Evasion index, Crisis prediction, Valuation oracle, M&A signals | Full 20 modules + SENS/RNS draft + social media pack |
+| Enterprise | Annual licence | All Intelligence + Cross-event benchmarking, Analyst identity, Briefing accuracy, Board commitment monitor | All 20 modules + Board Intelligence + RBAC + white label |
+| AGM | Per AGM (Enterprise add-on) | All Enterprise + Resolution tracking, Dissent detection, Proxy advisor monitoring (ISS, Glass Lewis) | All 20 modules + post-AGM dissent report + resolution analysis |
+
+### 2.9 White-Label Partners — Configured and Ready
+
+| Partner | Configuration status |
+|---------|---------------------|
+| Lumi Global | Seeded (slug: lumi). Colours set. Revenue share model. Custom domain field ready for intelligence.lumigroup.com. Sending email field ready for noreply@lumigroup.com. ACTIVATION: One SQL update + 3 Lumi DNS records. |
+| Bastion Group | Seeded (slug: bastion). Revenue share model. Ready to configure logo and colours. |
+
+### 2.10 New Services — All Live
+
+| Service | What it does |
+|---------|-------------|
+| `ClientDeliveryService.ts` | Generates tokenised links. Sends live dashboard invite emails. Sends post-event report emails. White-label aware — reads partner brand config automatically. |
+| `ComplianceDeadlineService.ts` | Creates compliance deadlines on flag detection. Monitors every 15 min. Sends reminder at T-24h, escalation at T-2h. Sends compliance-only email within 2 min of session close when flags exist. |
+| `PreEventBriefingService.ts` | BriefingScheduler checks every 5 min. Auto-sends pre-event briefing 60 min before scheduled session. Calculates briefing accuracy post-session. |
+| `brandConfig.ts` middleware | Reads incoming domain on every request. Determines partner branding. Caches 5 min. Serves CuraLive defaults for all non-partner domains. |
+
+---
+
+## Section 3 — Outstanding Items
+
+Prioritised in order of commercial impact.
+
+### 3.1 Priority 1 — Demo Readiness (Before Lumi Meeting)
+
+**URGENT — Complete before the demo.** Without real demo tokens, the three client pages (`/live/:token`, `/report/:token`, `/presenter/:token`) open as empty authenticated routes. The demo will fail.
+
+| # | Task | Exact action required | Est. time |
+|---|------|----------------------|-----------|
+| D1 | Generate demo tokens for all 3 client pages | 1. Find the best completed session (use SQL query in Section 5). 2. Call `trpc.partners.generateClientToken` for that sessionId — three times with accessType: "live", "report", "presenter". 3. Note the three token strings. Share with Dave Cameron for the rollout document. | 30 min |
+| D2 | Verify all 3 client pages load with real data | Open `/live/[token]`, `/report/[token]`, `/presenter/[token]` in browser. Confirm each loads correctly with real session data. Check all tabs render. Fix any empty states or broken queries before the demo date. | 1 hour |
+| D3 | Provide Replit app URL to Dave Cameron | Share the full Replit app URL: `https://curalive-platform.replit.app`. Claude will rebuild the Rollout Roadmap document with all links live and working once the URL is received. | 2 min |
+
+### 3.2 Priority 2 — Session Close Pipeline Verification
+
+**Verify end-to-end before demo.** The session close pipeline code was delivered. Confirm it fires correctly by running one test session to completion and checking emails arrive.
+
+Run this test:
+1. Create a test session with a real recipient email address you can access.
+2. Paste a short transcript containing forward-looking language — e.g. "we expect margins to be in the range of 20 to 22 percent next quarter".
+3. Close the session.
+4. Confirm within 2 minutes: compliance-only email arrives in recipient inbox listing the flag and a 48-hour JSE deadline.
+5. Confirm within 5 minutes: post-event report email arrives with a working `/report/:token` link.
+6. Confirm in database: a `compliance_deadlines` row was created for the session.
+7. If any of these fail: check the session close handler in `shadowModeRouter.ts` against Section 10 of the Master Integration Brief v2.
+
+### 3.3 Priority 3 — Platform Gaps (Next Sprint After Demo)
+
+| # | Gap | What needs building | Priority |
+|---|-----|---------------------|----------|
+| G1 | Live Q&A analytics during session (Gap 7.2) | Pattern detection live: which firm is submitting the most questions, coordinated questioning detection, escalation alert when multiple risk-flagged questions arrive from same firm. Add as "Patterns" sub-panel in Live Q&A tab. Query: group approved_questions_queue by asker_firm. | High |
+| G2 | Board Intelligence auto-populate (Gap 9.1) | Wire Board Intelligence into session close pipeline. After AI report generates, extract board commitments mentioned, governance topics, and auto-score against prior commitments. Feed into board_intelligence_compass table. | Medium |
+| G3 | Cross-event comparison (Gap 3.3) | Add Compare button in Archives & Reports. Opens side-by-side view of two sessions. Show delta on: confidence score, compliance flag count, Q&A risk ratio, sentiment trend. Key for Enterprise tier clients. | Medium |
+| G4 | Batch archive upload (Gap 2.3) | Queue-based batch upload for onboarding clients with multiple historical recordings. Currently one upload at a time. Add batch button accepting multiple files with sequential processing and progress tracking. | Lower |
+
+---
+
+## Section 4 — Verification Checklist
+
+Run through every item before the Lumi demo. Tick when confirmed working.
+
+### 4.1 System Health
+- Health Guardian: 100% score, 6 services green
+- All 7 background services running (check server startup logs)
+- 10 completed sessions, no failed test data
+- Server running clean on port 3000
+
+### 4.2 Demo Studio
+- `/live-video/webcast/demo?simulate=1` opens and runs the full simulation
+- Transcript streams with speaker labels
+- Sentiment bars animate
+- At least one compliance flag fires
+- Q&A queue fills with institutional analyst questions
+
+### 4.3 Client Pages With Real Tokens
+- `/live/[real-token]` opens, all 5 tabs show real session data
+- `/report/[real-token]` opens, all 10 tabs load correctly
+- `/presenter/[real-token]` opens, shows speaker Q&A display
+- All three pages show correct partner branding for the token owner
+
+### 4.4 Session Lifecycle
+- Create session → tier selection saves to `shadow_sessions.tier`
+- Add recipients → saved to `shadow_sessions.recipients` JSON
+- Select partner → `session.partner_id` populated
+- Run readiness check → 6 items evaluated and displayed
+- Schedule session → appears in upcoming sessions list
+- At T-60 minutes → pre-event briefing email auto-sends
+- Session goes live → live dashboard link emails send to recipients
+- Session closes → compliance email sends within 2 minutes (if flags exist)
+- Session closes → full report email sends within 5 minutes
+- Compliance deadlines created in database for critical flags
+
+### 4.5 Q&A Pipeline
+- Approve question in Live Q&A console
+- Click Send to Speaker → appears on `/presenter/:token`
+- AI talking points toggle works on presenter screen
+- Mark answered → question clears
+
+### 4.6 Operator-Client Messaging
+- Open `/live/:token` → floating chat button visible
+- Send message from client → badge appears in operator console
+- Operator reply → appears on client dashboard in real time
+
+### 4.7 AGM Intelligence
+- Create session with event_type = agm → AGM tier auto-selected
+- Paste segment containing "ISS" or "vote against" → signal detected
+- `agmIntelligence.getAgmDashboard` returns resolutions, signals, summary
+
+### 4.8 White Label
+- Generate token for Lumi-tagged session
+- Open `/live/[token]` → Lumi branding applied throughout
+- No CuraLive branding visible anywhere on the page
+
+---
+
+## Section 5 — SQL Quick Reference
+
+Ready-to-run queries for verification and demo preparation.
+
+### Verify all 19 new tables exist
+```sql
+SELECT table_name FROM information_schema.tables
+WHERE table_name IN (
+  'session_messages', 'session_handoffs', 'session_operators',
+  'session_markers', 'session_readiness_checks', 'scheduled_sessions',
+  'client_tokens', 'client_report_access', 'client_report_feedback',
+  'client_report_view_log', 'partners', 'partner_events',
+  'agm_resolutions', 'agm_shareholder_signals', 'agm_governance_scores',
+  'approved_questions_queue', 'compliance_deadlines',
+  'historical_commitments', 'board_members'
+) ORDER BY table_name;
+-- Expected: 19 rows
+```
+
+### Verify shadow_sessions has all 7 new columns
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'shadow_sessions'
+  AND column_name IN (
+    'tier', 'partner_id', 'recipients',
+    'scheduled_at', 'pre_brief_sent_at',
+    'live_links_sent_at', 'report_links_sent_at'
+  )
+ORDER BY column_name;
+-- Expected: 7 rows
+```
+
+### Find best session for demo tokens (most compliance flags)
+```sql
+SELECT s.id, s.event_name, s.company, s.status,
+  COUNT(rf.id) AS flag_count,
+  s.created_at
+FROM shadow_sessions s
+LEFT JOIN regulatory_flags rf ON rf.session_id = s.id
+WHERE s.status = 'completed'
+GROUP BY s.id, s.event_name, s.company, s.status, s.created_at
+ORDER BY flag_count DESC, s.created_at DESC
+LIMIT 5;
+```
+
+### Generate demo tokens (replace SESSION_ID with actual id)
+```sql
+INSERT INTO client_tokens
+  (token, session_id, recipient_name, recipient_email, access_type, expires_at)
+VALUES
+  ('demo-live-001',      SESSION_ID, 'Demo User', 'demo@example.com', 'live',      NOW() + INTERVAL '30 days'),
+  ('demo-report-001',    SESSION_ID, 'Demo User', 'demo@example.com', 'report',    NOW() + INTERVAL '30 days'),
+  ('demo-presenter-001', SESSION_ID, 'Demo User', 'demo@example.com', 'presenter', NOW() + INTERVAL '30 days');
+
+-- Demo links then become:
+-- /live/demo-live-001
+-- /report/demo-report-001
+-- /presenter/demo-presenter-001
+```
+
+### Activate Lumi white label (when they provide brand assets)
+```sql
+UPDATE partners SET
+  logo_url               = 'https://[lumi-logo-cdn-url]',
+  primary_color          = '#[lumi-primary-hex]',
+  accent_color           = '#[lumi-secondary-hex]',
+  custom_domain          = 'intelligence.lumigroup.com',
+  custom_domain_verified = true,
+  sending_domain         = 'lumigroup.com',
+  sending_name           = 'Lumi Intelligence',
+  sending_email          = 'noreply@lumigroup.com'
+WHERE slug = 'lumi';
+
+-- Lumi IT adds 3 DNS records:
+-- CNAME  intelligence.lumigroup.com  →  curalive-platform.replit.app
+-- TXT    lumigroup.com               →  Resend SPF record
+-- CNAME  resend._domainkey.[...]     →  Resend DKIM record
+```
+
+### Check compliance deadlines created correctly
+```sql
+SELECT cd.id, cd.action, cd.deadline, cd.status, cd.jurisdiction, s.event_name
+FROM compliance_deadlines cd
+JOIN shadow_sessions s ON s.id = cd.session_id
+ORDER BY cd.created_at DESC LIMIT 10;
+```
+
+### Check client tokens and email delivery status
+```sql
+SELECT ct.token, ct.recipient_email, ct.access_type,
+  ct.email_sent_at, ct.use_count, s.event_name
+FROM client_tokens ct
+JOIN shadow_sessions s ON s.id = ct.session_id
+ORDER BY ct.created_at DESC LIMIT 20;
+```
+
+---
 
 ## System Architecture
 
@@ -86,17 +354,6 @@ CuraLive is a real-time investor events intelligence platform. It combines live 
 - **Icons**: Lucide React 0.453.0.
 - **Forms**: React Hook Form 7.64.0, Zod 4.1.12 validation.
 - **Toasts**: Sonner 2.0.7.
-- **Key Pages**:
-    - `/`: Unified Operator Dashboard with 6 tabs (Overview, Shadow Mode, Events, Partners, Billing, Settings).
-    - `/live-video/webcast/:slug`: Webcast Studio (production console with demo simulation mode).
-    - `/live-video/webcast/demo?simulate=1`: Demo Studio with full simulation.
-    - `/bridge` / `/bridge/:id`: Bridge Console — professional telephony operator console.
-    - `/live/:token`: Client-facing branded live intelligence dashboard (5 tabs: Live Feed, Sentiment, Compliance, Q&A, AI Summary).
-    - `/report/:token`: Client-facing post-event intelligence report (10 tabs: Executive Summary, Financial Metrics, Compliance Flags, Management Tone, Q&A Log, Full Transcript, Action Items, Social Media Pack, SENS/RNS Draft, Certificate).
-    - `/presenter/:token`: Presenter screen — large-font Q&A display with AI-suggested talking points and "up next" queue.
-    - `/qa/:accessCode`: Attendee webphone page for Live Q&A.
-    - `/virtual-studio`: AI-enhanced virtual broadcast studio.
-    - `/feature-map`: Platform feature map and capability explorer.
 
 ### Backend
 - **Runtime**: Node.js 20+, Express 4.21.2, tRPC Server 11.6.0 (110 routers).
@@ -104,7 +361,7 @@ CuraLive is a real-time investor events intelligence platform. It combines live 
 - **Build System**: pnpm monorepo, tsx for development, esbuild for production.
 - **Server Binding**: `0.0.0.0` on port from `PORT` env var.
 - **Authentication**: JWT cookie sessions (`app_session_id`) with optional OAuth and `DEV_BYPASS`. Role hierarchy: viewer < operator < admin. tRPC procedures: `publicProcedure`, `protectedProcedure`, `operatorProcedure`, `adminProcedure`.
-- **Storage**: Unified `storageAdapter.ts` — object storage (Replit forge API) primary, local disk fallback (`uploads/recordings/`). Extension allowlists, sanitisation, path traversal protection.
+- **Storage**: Unified `storageAdapter.ts` — object storage (Replit forge API) primary, local disk fallback (`uploads/recordings/`).
 - **Transcription Fallback**: Dual-provider — Gemini AI (primary) + Whisper (fallback) via Replit AI Integrations proxy.
 
 ### External Integrations
@@ -121,311 +378,14 @@ CuraLive is a real-time investor events intelligence platform. It combines live 
 | Resend | Transactional email + ICS calendar invites | — |
 | AWS S3 | Object storage | `DEFAULT_OBJECT_STORAGE_BUCKET_ID` |
 
-## AI Intelligence Pipeline (5 Layers)
+### AI Intelligence Pipeline (5 Layers)
+1. **Transcript Capture**: Recall.ai bots, FFmpeg HLS audio extraction, archive uploads, paste transcript. Ably pub/sub broadcasts segments in real time.
+2. **Real-time Processing**: Sentiment scoring, rolling summaries, Q&A auto-triage, speaker coaching (WPM, filler words), evasive answer detection, compliance flagging.
+3. **20-Module Intelligence Report**: Executive Summary, Key Financial Metrics, Sentiment Analysis, Management Tone, Guidance Changes, Competitive References, ESG Mentions, Analyst Questions, Risk Factors, Action Items, Social Media Pack, SENS/RNS Draft, Transcript, Commitments vs. Prior Quarter, Communication Effectiveness, Compliance Flags, Investor Sentiment Profile, Board Governance Review, Market Impact Prediction, Blockchain Disclosure Certificate.
+4. **Specialist Services**: Crisis Prediction Engine, Valuation Impact Oracle, Disclosure Certificates, Market Impact Predictor, CuraLive Communication Index.
+5. **AI Self-Evolution**: Meta-Observer scores module outputs, Gap Detection identifies missing capabilities, Evolution Engine proposes new AI, Governance Gateway blockchain-audits approvals.
 
-### Layer 1 — Transcript Capture
-- **Shadow Mode**: Recall.ai bots join Zoom/Teams/Meet silently via meeting link.
-- **Live Webcast**: FFmpeg extracts HLS audio → chunked to OpenAI Whisper.
-- **Archive Upload**: Pre-recorded audio/video uploaded for retrospective analysis.
-- **Paste Transcript**: Raw text or .txt file input.
-- Ably pub/sub broadcasts transcript segments to all connected dashboards in real time.
-
-### Layer 2 — Real-time Processing
-- **Sentiment scoring**: Financial-tuned GPT-4o analysis — confidence, hedging, deflection.
-- **Rolling summaries**: "What you missed" briefings pushed live every 20 segments.
-- **Q&A auto-triage**: Classifies questions as approved / duplicate / off-topic / compliance-risk.
-- **Speaker coaching**: WPM tracking, filler word detection, hedging percentage.
-- **Evasive answer detection**: AI flags non-committal management responses.
-- **Compliance flagging**: Real-time detection of forward-looking statements and regulatory triggers.
-
-### Layer 3 — Post-Event Intelligence Report (20 Modules)
-Generated automatically on session close: Executive Summary, Key Financial Metrics, Sentiment Analysis, Management Tone, Guidance Changes, Competitive References, ESG Mentions, Analyst Questions, Risk Factors, Action Items, Social Media Narrative Pack, SENS/RNS Draft, Transcript with timestamps, Commitments vs. Prior Quarter, Communication Effectiveness, Compliance Flags, Investor Sentiment Profile, Board Governance Review, Market Impact Prediction, Blockchain Disclosure Certificate.
-
-### Layer 4 — Specialist Intelligence Services
-- **Crisis Prediction Engine**: Financial, regulatory, reputational crisis signal detection.
-- **Valuation Impact Oracle**: Fair Value Gap and share price impact estimation.
-- **Disclosure Certificates**: SHA-256 hash-chained blockchain audit trail.
-- **Market Impact Predictor**: Share price movement probability modelling.
-- **CuraLive Communication Index**: Standardised metric of corporate communication quality.
-
-### Layer 5 — AI Self-Evolution Engine
-- **Meta-Observer**: Scores each module's output quality (1-10) for accuracy, relevance, depth.
-- **Gap Detection**: Identifies missing capabilities from transcript analysis patterns.
-- **Evolution Engine**: Proposes new AI capabilities with architecture specs.
-- **Governance Gateway**: Blockchain-audited approval process for AI self-modification.
-
-## Shadow Mode Platform
-
-### Architecture
-- `shadowModeRouter.ts` — Session lifecycle (create, start, end, delete, retry).
-- `ShadowModeGuardianService.ts` — Background watchdog: 60s interval zombie detection, crash recovery, graceful shutdown.
-- `recallRouter.ts` — Recall.ai bot deployment and webhook handling.
-
-### UI (11 Sub-Navigation Tabs)
-1. **Live Intelligence** — Active session monitoring with real-time transcript, sentiment, compliance.
-2. **Archives & Reports** — Historical session browser with search, filtering, and bulk operations.
-3. **AI Dashboard** — Consolidated AI module outputs.
-4. **Live Q&A** — Moderation console with AI triage.
-5. **Board Compass** — Board intelligence and governance scoring.
-6. **Pre-Event Intel** — Pre-event intelligence briefing viewer.
-7. **Compliance Monitor** — Real-time regulatory compliance dashboard.
-8. **System Diagnostics** — Platform health and connectivity diagnostics.
-9. **Intelligence Suite** — Advanced AI analysis tools.
-10. **Operator Tools** — Session management and operational controls.
-11. **Settings** — Configuration and preferences.
-
-### Operator Console Additions (Master Integration v2)
-- **Item A — Transcript Segment Flagging**: Operators can flag transcript segments with 5 flag types (Notable, Compliance, Forward Guidance, Tone Shift, Action Required) and see them on a visual timeline with colour-coded markers.
-- **Item B — Collapsible Bottom Tray**: A persistent bottom panel with tabbed sections (Flags, Messages, Team, Live Stats) that collapses to save screen space.
-- **Item C — Internal Team Coordination**: Multi-operator panel with join/leave session, operator list, handoff initiation, and internal team chat with real-time messaging.
-- **Item D — Three-State Console Mode**: Mode switcher in the header — Monitor (read-only observation), Active (full operator controls), Review (post-session analysis). Session Configuration and Team Coordination panels are hidden in non-Active modes.
-
-## Live Q&A — AI Moderation Console
-
-### AI Triage
-- Automatically classifies every attendee question into one of four categories: Approved, Duplicate, Off-topic, Compliance Risk.
-- Jaccard word-overlap algorithm for duplicate detection.
-- Confidence thresholds configurable per session.
-
-### Operator Console
-- Two-panel layout: incoming queue (left) + AI-suggested answers / analyst identity (right).
-- Legal review status tracking with operator notes.
-- AI draft responses generated from transcript context.
-- Bulk actions: approve all, reject duplicates, export Q&A log.
-
-### Speaker Queue System
-- Operator-approved questions routed to presenter screen via Ably real-time.
-- AI-generated suggested talking points for each question.
-- Presenter screen (`/presenter/:token`) shows current question + 3 up-next with large readable text.
-- Status tracking: queued → answered / skipped.
-
-## Client Delivery Pipeline
-
-### Token-Based Access
-- Secure tokenised links generated per session per recipient.
-- Token types: `live` (dashboard access during session), `report` (post-event report), `presenter` (speaker Q&A screen).
-- Tokens scoped to session ID with expiry timestamps.
-- Token validation enforced server-side on all client-facing endpoints.
-
-### Live Intelligence Dashboard (`/live/:token`)
-- 5 tabs: Live Feed (speaker-diarised transcript), Sentiment (real-time gauges), Compliance (flag stream), Q&A (approved questions), AI Summary (rolling summary).
-- Branded with partner logo, colours, and fonts via `useBrandConfig` hook.
-- Floating chat widget (ClientMessagePanel) for client↔operator messaging.
-- Real-time updates via 5-second polling.
-
-### Post-Event Report (`/report/:token`)
-- 10 tabs: Executive Summary, Financial Metrics, Compliance Flags, Management Tone, Q&A Log, Full Transcript, Action Items, Social Media Pack, SENS/RNS Draft, Blockchain Certificate.
-- Client view logging — every tab switch recorded for operator analytics.
-- Client feedback (1-5 star rating + comment) captured post-viewing.
-
-### White-Label Partner Branding
-- Partners: Lumi Global (~4,000 events/year), Bastion Group (~500 events/year).
-- Per-partner configuration: display name, logo URL, primary/accent colours, font family, footer text, email domain.
-- `brandConfigMiddleware` injects partner branding on all requests.
-- Client pages dynamically apply brand via CSS custom properties.
-
-## Session Configuration System
-
-### Intelligence Tiers
-| Tier | Capabilities |
-|------|-------------|
-| Essential | Core intelligence + transcript |
-| Intelligence | Essential + compliance + Q&A routing |
-| Enterprise | Full suite + presenter screen |
-| AGM | Enterprise + AGM intelligence + dissent analysis |
-
-### Session Setup
-- **SessionSetupPanel**: Tier selection, recipient management (name, email, role, send live/report toggles).
-- **SessionScheduler**: Event scheduling with meeting URL, auto-triggers pre-event briefing dispatch.
-- **Readiness Check**: Pre-session validation (DB, Recall.ai, Ably, OpenAI, recipients, tier).
-
-## AGM Intelligence Module
-
-### Resolution Tracking
-- Create and track resolutions with number, title, description, category.
-- Sentiment scoring and dissent level per resolution.
-- Vote tallying (for, against, abstentions) with status tracking.
-
-### Shareholder Signal Detection
-- **Dissent Keywords** (7): "vote against", "oppose", "reject", "excessive", "unacceptable", "shareholder revolt", "proxy fight".
-- **Proxy Advisor References** (5): ISS, Glass Lewis, Hermes, Sustainalytics, PIRC.
-- **Activist Language Detection**: "activist", "institutional investor", "block vote", "coordinated".
-- Signals stored with confidence scores and linked to transcript segments.
-
-### Post-AGM Reporting
-- AI-generated dissent report via GPT-4o covering: overall dissent level, resolution-by-resolution analysis, activist activity, proxy advisor impact, and recommended board actions.
-
-## Operations & Team Coordination
-
-### Multi-Operator Sessions
-- Operators can join/leave sessions with role assignment (primary, secondary).
-- Session handoff with reason tracking (from/to operator, accepted timestamp).
-- Active operator list visible in Team Coordination Panel.
-
-### Client Analytics
-- View logging: every client page visit and tab switch recorded.
-- Feedback collection: star rating + free-text comment.
-- Report link resend capability for operators.
-
-### Compliance Deadline Monitoring
-- Background service checking every 15 minutes for upcoming compliance submission deadlines.
-- Automated email alerts to IR teams before deadline expiry.
-- Jurisdiction detection (JSE, SEC, FCA, ASIC, SGX, HKEX) from exchange code.
-
-### Historical Intelligence
-- Board member profiles (name, role, committee, bio, LinkedIn).
-- Historical commitment tracking with deadlines.
-- Cross-event consistency analysis.
-
-## Live Video & Audio Webcast Platform
-
-### Streaming
-- RTMP ingest via Mux, HLS delivery to viewers with adaptive bitrate.
-- AI audio layer: FFmpeg extracts audio from HLS for real-time Whisper transcription.
-- Mux webhook integration for stream lifecycle events.
-
-### Virtual Studio
-- Selectable AI Bundles (sentiment, compliance, Q&A, coaching).
-- Dynamic overlays: sentiment gauge, compliance indicator, speaker coaching.
-- Multi-speaker support with automated switching.
-
-### Interactive Features
-- Live Q&A with AI moderation.
-- Polling with real-time results.
-- Real-time transcript display.
-- Slide synchronisation.
-- Multi-language subtitle overlays.
-
-## PSTN Telephony Bridge
-
-### IVR Greeter
-- Inbound call handling with access code validation.
-- Name and organisation capture via keypad/voice.
-- Welcome message and hold music.
-
-### Operator Controls
-- Mute/unmute, hold/unhold per participant.
-- Conference locking, participant removal.
-- Recording start/stop.
-- DTMF hand-raising detection.
-
-### Failover
-- Twilio (primary) to Telnyx (secondary) automatic failover.
-- SIP connectivity for enterprise PBX integration.
-- WebRTC bridge for browser-based participation.
-
-## Enterprise Billing & Booking
-
-### Billing Engine
-- Quotes with line items, discounts, and validity periods.
-- Invoices with payment tracking and overdue notifications.
-- Recurring invoice templates with auto-generation.
-- Stripe payment integration (card, bank transfer).
-
-### Packaging
-- Three commercial tiers: Essential, Intelligence, Enterprise.
-- Per-event or subscription pricing models.
-- Partner-specific pricing for Lumi and Bastion channels.
-
-## Full Compliance Engine
-
-### Frameworks
-- ISO 27001 information security controls.
-- SOC 2 Type II trust service criteria.
-
-### Jurisdictions
-- JSE (South Africa), SEC (USA), FCA (UK), ASIC (Australia), SGX (Singapore), HKEX (Hong Kong).
-- Jurisdiction-specific compliance rules and deadlines.
-- Real-time compliance flag detection during live events.
-
-### Monitoring
-- Background scanner every 300 seconds.
-- Compliance digest reports.
-- Audit trail with blockchain-verified timestamps.
-
-## Database Schema (208 Tables)
-
-Organised into core groups:
-- **Users & Auth**: users, sessions, roles, permissions.
-- **Events**: events, event_schedules, mailing_lists, registrations.
-- **Shadow Mode & AI**: shadow_sessions (with tier, partner_id, recipients, scheduled_at columns), transcript_segments, sentiment_scores, compliance_flags.
-- **Session Operations**: session_messages, session_handoffs, session_operators, session_markers, session_readiness_checks, scheduled_sessions.
-- **Client Delivery**: client_tokens, client_report_access, client_report_feedback, client_report_view_log.
-- **Partners**: partners, partner_events.
-- **AGM Intelligence**: agm_resolutions, agm_shareholder_signals, agm_governance_scores.
-- **Q&A System**: approved_questions_queue, investor_questions.
-- **Compliance**: compliance_deadlines, historical_commitments, board_members.
-- **Board Intelligence**: 21+ tables for governance scoring, director profiles, commitment tracking.
-- **Webcast**: streams, recordings, overlays, polls.
-- **Bridge Telephony**: conferences, participants, call_logs.
-- **Enterprise Billing**: quotes, invoices, line_items, payments.
-- **AI Evolution**: evolution_proposals, audit_logs, meta_observer_scores.
-- **Certificates & Audit**: disclosure_certificates, hash_chains.
-- **Health Monitoring**: health_checks, incidents, metrics.
-
-## Health Guardian
-
-- Autonomous infrastructure monitoring at 30-second intervals.
-- Only checks services with configured credentials (Database + ActiveEvents always; Twilio/OpenAI/Ably/Recall only if env vars present).
-- API reachability (401/403) treated as "healthy" — credentials pending validation.
-- Current score: **100%** with 6 services (Database, Active Events, Twilio, OpenAI, Ably, Recall.ai).
-- AI-powered root cause analysis for incidents.
-- File: `server/services/HealthGuardianService.ts`.
-
-## Live Operator Console
-
-- **LiveSessionPanel** (`client/src/components/LiveSessionPanel.tsx`): 5-phase integrated live operator console with WebPhone, Q&A moderation, transcript view, notes with auto-save, and session analytics.
-- **WebPhoneCallManager**: Operator dashboard showing active participants, audio levels, quality badges, call stats, mute/remove controls.
-- **WebPhoneJoinInstructions**: Customer-facing join instructions with WebPhone primary, dial-in/SIP/access code tabs.
-- **ProviderStateIndicator**: Connection quality indicator — `"excellent" | "good" | "fair" | "poor"`.
-- **Hooks**: `useAblySessions` (Ably real-time), `useKeyboardShortcuts` (keyboard shortcuts), `useBrandConfig` (partner branding).
-- **Services**: `sessionAutoSave` (auto-saves operator notes).
-- **New Components**: TranscriptFlagTimeline, CollapsibleBottomTray, TeamCoordinationPanel, ConsoleModeSwitcher, SessionSetupPanel, SessionScheduler, ClientMessagePanel.
-
-## Key File Locations
-
-### Schema Files
-- `drizzle/schema.ts` — Main schema index (re-exports all).
-- `drizzle/gaps.schema.ts` — 14 operational tables + session_markers.
-- `drizzle/partners.schema.ts` — Partners, client_tokens, client_report_access, partner_events.
-
-### Backend Services
-- `server/services/ClientDeliveryService.ts` — Send live dashboard links + report links.
-- `server/services/ComplianceDeadlineService.ts` — Compliance deadline monitoring + email alerts.
-- `server/services/PreEventBriefingService.ts` — Pre-event briefing scheduler.
-- `server/middleware/brandConfig.ts` — White-label brand injection middleware.
-- `server/emails/templates.ts` — Branded email templates.
-
-### tRPC Routers (6 New — Master Integration v2)
-- `server/routers/partnerRouter.ts` — Partner CRUD, brand config, token validation.
-- `server/routers/sessionConfigRouter.ts` — Tier config, recipients, scheduling, readiness checks.
-- `server/routers/sessionMessagesRouter.ts` — Token-validated bidirectional messaging.
-- `server/routers/speakerQueueRouter.ts` — Question approval, presenter queue, mark answered/skip.
-- `server/routers/agmIntelligenceRouter.ts` — Resolutions, dissent signals, post-AGM reports.
-- `server/routers/operationsRouter.ts` — Handoffs, team coordination, feedback, flagging, compliance.
-
-### Client Pages (3 New — Master Integration v2)
-- `client/src/pages/ClientLive.tsx` — Branded live intelligence dashboard.
-- `client/src/pages/ClientReport.tsx` — 10-tab post-event report.
-- `client/src/pages/PresenterScreen.tsx` — Speaker Q&A display.
-
-### Client Components (7 New — Master Integration v2)
-- `client/src/components/SessionSetupPanel.tsx` — Tier and recipient configuration.
-- `client/src/components/SessionScheduler.tsx` — Event scheduling.
-- `client/src/components/ClientMessagePanel.tsx` — Client↔operator chat widget.
-- `client/src/components/TranscriptFlagTimeline.tsx` — Segment flagging with visual timeline.
-- `client/src/components/CollapsibleBottomTray.tsx` — Collapsible operator toolkit tray.
-- `client/src/components/TeamCoordinationPanel.tsx` — Multi-operator coordination + internal chat.
-- `client/src/components/ConsoleModeSwitcher.tsx` — Three-state mode switcher.
-
-## Demo Readiness (April 2026)
-
-- **Health Guardian**: 100% score with 6 services actively monitored.
-- **Session Cleanup**: 10 completed sessions, no failed test data.
-- **Demo Studio**: `/live-video/webcast/demo?simulate=1` — full simulation with institutional Q&A, attendees, transcription, sentiment.
-- **Platform Connectivity**: Multi-path architecture panel visible in Shadow Mode.
-- **Demo Flow**: Overview (100% health) → Shadow Mode (paste transcript) → Events/Webcasting Hub → Demo Studio → Partners page.
-- **Client Delivery Demo**: Use `/live/:token`, `/report/:token`, `/presenter/:token` with generated test tokens.
+---
 
 ## Commercial Context
 
