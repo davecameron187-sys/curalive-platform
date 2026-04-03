@@ -23,6 +23,12 @@ import {
   Zap, Network, Download, Video, ExternalLink, Trash2,
   FolderOpen, FolderClosed, CheckSquare, MessageCircle,
 } from "lucide-react";
+import { SessionSetupPanel } from "@/components/SessionSetupPanel";
+import { SessionScheduler } from "@/components/SessionScheduler";
+import { TranscriptFlagTimeline } from "@/components/TranscriptFlagTimeline";
+import { CollapsibleBottomTray } from "@/components/CollapsibleBottomTray";
+import { TeamCoordinationPanel } from "@/components/TeamCoordinationPanel";
+import { ConsoleModeSwitcher, type ConsoleMode } from "@/components/ConsoleModeSwitcher";
 import LocalAudioCapture from "@/components/LocalAudioCapture";
 import AIDashboard from "@/components/AIDashboard";
 import SystemDiagnostics from "@/components/SystemDiagnostics";
@@ -498,6 +504,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   // ── Live Intelligence state ────────────────────────────────────────────────
   const [showForm, setShowForm] = useState(false);
   const [showLiveConsole, setShowLiveConsole] = useState(false);
+  const [consoleMode, setConsoleMode] = useState<ConsoleMode>("active");
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [form, setForm] = useState({
     clientName: "", eventName: "",
@@ -1039,6 +1046,7 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <ConsoleModeSwitcher mode={consoleMode} onModeChange={setConsoleMode} />
             <Button onClick={() => {
               if (activeTab !== "live") setActiveTab("live");
               setShowForm(true);
@@ -2142,6 +2150,19 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                       </div>
 
                       <OperatorNotesPanel sessionId={liveSession.id} />
+
+                      {consoleMode === "active" && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <SessionSetupPanel sessionId={liveSession.id} />
+                          <SessionScheduler sessionId={liveSession.id} currentScheduledAt={liveSession.scheduledAt} />
+                        </div>
+                      )}
+
+                      <TranscriptFlagTimeline sessionId={liveSession.id} />
+
+                      {consoleMode === "active" && (
+                        <TeamCoordinationPanel sessionId={liveSession.id} />
+                      )}
 
                       <OperatorActionLogPanel sessionId={liveSession.id} />
 

@@ -3818,3 +3818,6 @@ export const complianceDetectionStats = pgTable("compliance_detection_stats", {
   falsePositiveRate: real("false_positive_rate"),
   recordedAt: timestamp("recorded_at").defaultNow().notNull(),
 });
+
+export * from "./gaps.schema";
+export * from "./partners.schema";

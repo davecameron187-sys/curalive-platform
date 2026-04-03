@@ -625,6 +625,9 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  const { brandConfigMiddleware } = await import("../middleware/brandConfig");
+  app.use(brandConfigMiddleware);
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // Slide deck file upload
@@ -1056,6 +1059,14 @@ async function startServer() {
       startComplianceEngine();
       seedFrameworkControls().catch(e => console.warn("[ComplianceEngine] Seed failed:", e.message));
     }).catch(e => console.warn("[ComplianceEngine] Failed to start:", e.message));
+
+    import("../services/ComplianceDeadlineService").then(({ startComplianceDeadlineMonitor }) => {
+      startComplianceDeadlineMonitor();
+    }).catch(e => console.warn("[ComplianceDeadline] Failed to start:", e.message));
+
+    import("../services/PreEventBriefingService").then(({ startBriefingScheduler }) => {
+      startBriefingScheduler();
+    }).catch(e => console.warn("[PreEventBriefing] Failed to start:", e.message));
 
     import("../services/ShadowModeGuardianService").then(({ reconcileShadowSessions, startShadowWatchdog }) => {
       reconcileShadowSessions().then(result => {

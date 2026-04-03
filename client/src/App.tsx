@@ -95,6 +95,9 @@ import ComplianceEngineDashboard from "./pages/ComplianceEngineDashboard";
 import BastionPartner from "./pages/BastionPartner";
 import LumiPartner from "./pages/LumiPartner";
 import ClientLiveDashboard from "./pages/ClientLiveDashboard";
+import ClientLive from "./pages/ClientLive";
+import ClientReport from "./pages/ClientReport";
+import PresenterScreen from "./pages/PresenterScreen";
 import ArchiveUpload from "./pages/ArchiveUpload";
 import Benchmarks from "./pages/Benchmarks";
 import SocialMediaPage from "./pages/SocialMediaPage";
@@ -239,7 +242,9 @@ function Router() {
       <Route path="/bastion-partner"><Redirect to="/?tab=partners" /></Route>
       <Route path="/lumi"><Redirect to="/?tab=partners&partner=lumi" /></Route>
       <Route path="/lumi-partner"><Redirect to="/?tab=partners&partner=lumi" /></Route>
-      <Route path="/live/:token" component={ClientLiveDashboard} />
+      <Route path="/live/:token" component={ClientLive} />
+      <Route path="/report/:token" component={ClientReport} />
+      <Route path="/presenter/:token" component={PresenterScreen} />
       <Route path="/archive-upload" component={ArchiveUpload} />
       <Route path="/benchmarks" component={Benchmarks} />
       <Route path="/social" component={SocialMediaPage} />
