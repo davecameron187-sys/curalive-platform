@@ -702,3 +702,9 @@ id = "mC3MgCMI3ju8ImH-s89hP"
 uri = "file://exports/CuraLive_Platform_Status_Replit.docx"
 type = "word_document"
 title = "CuraLive Platform Status — Full Brief (Word Doc)"
+
+[[outputs]]
+id = "4Hpbv9AOKrIshgwcIFlal"
+uri = "file://exports/CuraLive_Platform_Status_Report.docx"
+type = "word_document"
+title = "CuraLive Platform Status Report"
