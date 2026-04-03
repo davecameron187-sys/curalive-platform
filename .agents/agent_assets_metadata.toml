@@ -726,3 +726,9 @@ id = "3Cx0OJtxq04COmPqP1I9n"
 uri = "file://exports/CuraLive_Rollout_Roadmap_Live.doc"
 type = "word_document"
 title = "CuraLive Rollout Roadmap & Demo Guide — Word Document"
+
+[[outputs]]
+id = "MKU7Dlmc-Mj5td-povJDh"
+uri = "file://exports/CuraLive_Rollout_Roadmap_Live.pdf"
+type = "pdf"
+title = "CuraLive Rollout Roadmap & Demo Guide — PDF with Clickable Links"
