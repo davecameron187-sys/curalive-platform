@@ -708,3 +708,9 @@ id = "4Hpbv9AOKrIshgwcIFlal"
 uri = "file://exports/CuraLive_Platform_Status_Report.docx"
 type = "word_document"
 title = "CuraLive Platform Status Report"
+
+[[outputs]]
+id = "PF7Qx6KeP4LfxlGCnjN6T"
+uri = "file://exports/CuraLive_Replit_Status_Brief_v2_Updated.md"
+type = "text"
+title = "CuraLive Replit Status Brief v2 — Updated April 2026"
