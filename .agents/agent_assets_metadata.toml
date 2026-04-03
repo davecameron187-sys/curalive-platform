@@ -696,3 +696,9 @@ id = "DbRluBNp4hxIJpadV_0tr"
 uri = "file://exports/MANUS_INSTRUCTIONS.txt"
 type = "text"
 title = "Instructions for Manus (read first)"
+
+[[outputs]]
+id = "mC3MgCMI3ju8ImH-s89hP"
+uri = "file://exports/CuraLive_Platform_Status_Replit.docx"
+type = "word_document"
+title = "CuraLive Platform Status — Full Brief (Word Doc)"
