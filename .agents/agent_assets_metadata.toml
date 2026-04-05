@@ -732,3 +732,9 @@ id = "MKU7Dlmc-Mj5td-povJDh"
 uri = "file://exports/CuraLive_Rollout_Roadmap_Live.pdf"
 type = "pdf"
 title = "CuraLive Rollout Roadmap & Demo Guide — PDF with Clickable Links"
+
+[[outputs]]
+id = "yEDPWUTQWAaY_xqwoHmfE"
+uri = "file://CuraLive_Technical_Brief_April2026.docx"
+type = "word_document"
+title = "CuraLive Technical Brief -- April 2026"
