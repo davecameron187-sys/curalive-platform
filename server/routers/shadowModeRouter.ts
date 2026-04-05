@@ -479,16 +479,6 @@ export const shadowModeRouter = router({
           sourceType: "live_session",
         });
 
-        autoGenerateAiReport(
-          input.sessionId,
-          session.clientName,
-          session.eventName,
-          session.eventType ?? "other",
-          transcript,
-          sentimentAvg ?? null,
-          liveComplianceFlags
-        ).catch(err => console.error("[Shadow] Background AI report failed:", err));
-
         runSessionClosePipeline(input.sessionId).catch(console.error);
 
         await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: `${transcript.length} transcript segments, ${metricsCount} metrics generated`, metadata: { transcriptSegments: transcript.length, metricsCount } });
@@ -1387,6 +1377,25 @@ export const shadowModeRouter = router({
         filename: `curalive-session-${session.id}.json`,
         contentType: "application/json",
       };
+    }),
+
+  getReport: protectedProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const eventId = `shadow-${input.sessionId}`;
+      try {
+        const [rows] = await rawSql(
+          `SELECT ai_report FROM archive_events WHERE event_id = $1 LIMIT 1`,
+          [eventId]
+        );
+        if (rows?.[0]?.ai_report) {
+          const report = typeof rows[0].ai_report === "string"
+            ? JSON.parse(rows[0].ai_report)
+            : rows[0].ai_report;
+          return report;
+        }
+      } catch {}
+      return null;
     }),
 
 });

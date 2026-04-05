@@ -62,7 +62,9 @@ async function generateAndSendPreBriefing(session: any) {
         }
       ],
     });
-    briefingSummary = typeof result === "string" ? result : (result as any)?.content || "Pre-event briefing could not be generated. Please review historical data manually.";
+    const rawText = result.choices?.[0]?.message?.content ?? "";
+    briefingSummary = typeof rawText === "string" ? rawText : JSON.stringify(rawText);
+    if (!briefingSummary) briefingSummary = "Pre-event briefing could not be generated. Please review historical data manually.";
   } catch {
     briefingSummary = `<p><strong>Event:</strong> ${session.event_name}</p><p><strong>Company:</strong> ${session.company || "N/A"}</p><p>AI briefing generation unavailable. Please review your preparation materials.</p>`;
   }

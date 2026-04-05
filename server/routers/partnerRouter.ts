@@ -115,4 +115,30 @@ export const partnerRouter = router({
         } : null,
       };
     }),
+
+  getReportByToken: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const [tokenRows] = await rawSql(
+        `SELECT session_id FROM client_tokens
+         WHERE token = $1 AND access_type = 'report'
+           AND (expires_at IS NULL OR expires_at > NOW())`,
+        [input.token]
+      );
+      if (!tokenRows.length) return null;
+      const sessionId = tokenRows[0].session_id;
+      const eventId = `shadow-${sessionId}`;
+      try {
+        const [rows] = await rawSql(
+          `SELECT ai_report FROM archive_events WHERE event_id = $1 LIMIT 1`,
+          [eventId]
+        );
+        if (rows?.[0]?.ai_report) {
+          return typeof rows[0].ai_report === "string"
+            ? JSON.parse(rows[0].ai_report)
+            : rows[0].ai_report;
+        }
+      } catch {}
+      return null;
+    }),
 });

@@ -87,7 +87,7 @@ export async function runSessionClosePipeline(sessionId: number): Promise<void> 
 
   let reportModules: Record<string, string> = {};
   try {
-    reportModules = await generateAIReport(sessionId, session);
+    reportModules = await generateAIReportWrapper(sessionId, session);
     LOG(`AI report generated (${Date.now()-pipelineStart}ms)`);
   } catch (e) {
     ERR('AI report generation failed', e);
@@ -138,7 +138,7 @@ export async function runSessionClosePipeline(sessionId: number): Promise<void> 
   LOG(`Pipeline complete for session ${sessionId} in ${Date.now()-pipelineStart}ms`);
 }
 
-async function generateAIReport(
+async function generateAIReportWrapper(
   sessionId: number,
   session: any
 ): Promise<Record<string, string>> {
@@ -147,12 +147,17 @@ async function generateAIReport(
     [sessionId]
   );
 
-  await rawSql(
-    `UPDATE shadow_sessions SET status = 'completed' WHERE id = $1`,
-    [sessionId]
-  );
-
-  return {};
+  try {
+    const { generateAIReport } = await import("./AIReportPipeline");
+    return await generateAIReport(sessionId, session);
+  } catch (e) {
+    ERR("AIReportPipeline failed — marking completed anyway", e);
+    await rawSql(
+      `UPDATE shadow_sessions SET status = 'completed' WHERE id = $1`,
+      [sessionId]
+    );
+    return {};
+  }
 }
 
 async function getTranscriptText(sessionId: number): Promise<string> {

@@ -49,6 +49,7 @@ The CuraLive platform is built as a pnpm monorepo using TypeScript, with a React
     - **Operator Console Additions**: TranscriptFlagTimeline, CollapsibleBottomTray, TeamCoordinationPanel (multi-operator support), ConsoleModeSwitcher, SessionSetupPanel, SessionScheduler, ClientMessagePanel.
     - **Intelligence Tiers**: Essential, Intelligence, Enterprise, and AGM tiers offer varying levels of live dashboard features and post-event reporting modules.
     - **New Services**: `ClientDeliveryService.ts` for tokenized links and email dispatch, `ComplianceDeadlineService.ts` for monitoring and escalation, `PreEventBriefingService.ts` for automated briefings.
+    - **AI Report Pipeline**: `AIReportPipeline.ts` generates 10-module intelligence reports (executive summary, financial metrics, compliance flags, management tone, Q&A quality, board actions, social media pack, SENS/RNS draft, board intelligence, critical actions). Reports are stored in `archive_events.ai_report` (JSON column, keyed by `event_id = 'shadow-{sessionId}'`). Pipeline is invoked by `SessionClosePipeline.ts` on session end. Report data is read via `partners.getReportByToken` (public, token-scoped) for `/report/:token` pages.
 
 ## External Dependencies
 
