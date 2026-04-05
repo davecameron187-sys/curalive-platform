@@ -33,6 +33,7 @@ import LocalAudioCapture from "@/components/LocalAudioCapture";
 import AIDashboard from "@/components/AIDashboard";
 import SystemDiagnostics from "@/components/SystemDiagnostics";
 import LiveQaDashboard from "@/components/LiveQaDashboard";
+import { QAPatternPanel } from "@/components/QAPatternPanel";
 import LiveSessionPanel from "@/components/LiveSessionPanel";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -3503,11 +3504,19 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
             LIVE Q&A TAB
         ══════════════════════════════════════════════════ */}
         {activeTab === "liveqa" && (
-          <LiveQaDashboard
-            shadowSessionId={activeSessionId || undefined}
-            eventName={sessions.data?.find((s: any) => s.id === activeSessionId)?.eventName || "Live Event"}
-            clientName={sessions.data?.find((s: any) => s.id === activeSessionId)?.clientName || ""}
-          />
+          <div>
+            {activeSessionId && (
+              <QAPatternPanel
+                sessionId={activeSessionId}
+                isLive={sessions.data?.find((s: any) => s.id === activeSessionId)?.status === 'live'}
+              />
+            )}
+            <LiveQaDashboard
+              shadowSessionId={activeSessionId || undefined}
+              eventName={sessions.data?.find((s: any) => s.id === activeSessionId)?.eventName || "Live Event"}
+              clientName={sessions.data?.find((s: any) => s.id === activeSessionId)?.clientName || ""}
+            />
+          </div>
         )}
 
         {/* ══════════════════════════════════════════════════

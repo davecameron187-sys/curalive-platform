@@ -122,3 +122,5 @@ export async function sendReportLinks(opts: {
 
   console.log(`[ClientDelivery] ${opts.recipients.length} report links sent for session ${opts.sessionId}`);
 }
+
+export const sendPostEventReport = sendReportLinks;

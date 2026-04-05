@@ -8,6 +8,7 @@ import { invokeLLM } from "../_core/llm";
 import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
 import { generateFullAiReport } from "./archiveUploadRouter";
 import type { AiReport } from "./archiveUploadRouter";
+import { runSessionClosePipeline } from "../services/SessionClosePipeline";
 
 async function logOperatorAction(opts: {
   sessionId?: number | null;
@@ -488,6 +489,8 @@ export const shadowModeRouter = router({
           liveComplianceFlags
         ).catch(err => console.error("[Shadow] Background AI report failed:", err));
 
+        runSessionClosePipeline(input.sessionId).catch(console.error);
+
         await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: `${transcript.length} transcript segments, ${metricsCount} metrics generated`, metadata: { transcriptSegments: transcript.length, metricsCount } });
 
         return {
@@ -555,6 +558,8 @@ export const shadowModeRouter = router({
           liveComplianceFlags
         ).catch(err => console.error("[Shadow] Background AI report failed:", err));
 
+        runSessionClosePipeline(input.sessionId).catch(console.error);
+
         await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: `${localTranscript.length} local transcript segments, ${metricsCount} metrics generated`, metadata: { transcriptSegments: localTranscript.length, metricsCount } });
 
         return {
@@ -568,6 +573,8 @@ export const shadowModeRouter = router({
       await db.update(shadowSessions)
         .set({ status: "completed", endedAt: Date.now() })
         .where(eq(shadowSessions.id, input.sessionId));
+
+      runSessionClosePipeline(input.sessionId).catch(console.error);
 
       await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: "Session closed (no transcript captured)" });
 
