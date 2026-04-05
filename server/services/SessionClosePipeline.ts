@@ -158,7 +158,7 @@ async function generateAIReport(
 async function getTranscriptText(sessionId: number): Promise<string> {
   try {
     const [rows] = await rawSql(
-      `SELECT content as text FROM occ_transcription_segments
+      `SELECT text FROM occ_transcription_segments
        WHERE conference_id = $1
        ORDER BY created_at ASC
        LIMIT 500`,
