@@ -738,3 +738,9 @@ id = "yEDPWUTQWAaY_xqwoHmfE"
 uri = "file://CuraLive_Technical_Brief_April2026.docx"
 type = "word_document"
 title = "CuraLive Technical Brief -- April 2026"
+
+[[outputs]]
+id = "3NhsfidB5Zk6IX-FkOF28"
+uri = "file://attached_assets/CuraLive_Claude_Brief_April2026.md"
+type = "text"
+title = "CuraLive Technical Architecture Brief — April 2026"
