@@ -66,10 +66,11 @@ Return a JSON array. Each item must have:
 
 Return ONLY the JSON array, no other text.`;
 
-      const result = await invokeLLM({ messages: [{ role: 'user', content: extractPrompt }] });
-      const response = result.content;
+      const llmResult = await invokeLLM({ messages: [{ role: 'user', content: extractPrompt }] });
+      const responseText = llmResult.choices?.[0]?.message?.content ?? "";
+      const cleaned = typeof responseText === "string" ? responseText : JSON.stringify(responseText);
       try {
-        module08Data = { commitments: JSON.parse(response) };
+        module08Data = { commitments: JSON.parse(cleaned.replace(/```json|```/g, "").trim()) };
       } catch {
         return;
       }
@@ -159,11 +160,12 @@ Return a JSON array with objects: { id: number, status: "met"|"partial"|"at_risk
 Return ONLY the JSON array.`;
 
     const verifyResult = await invokeLLM({ messages: [{ role: 'user', content: verifyPrompt }] });
-    const response = verifyResult.content;
+    const responseText = verifyResult.choices?.[0]?.message?.content ?? "";
+    const cleaned = typeof responseText === "string" ? responseText : JSON.stringify(responseText);
 
     let verifications: Array<{ id: number; status: string; evidence: string }>;
     try {
-      verifications = JSON.parse(response);
+      verifications = JSON.parse(cleaned.replace(/```json|```/g, "").trim());
     } catch {
       return;
     }
