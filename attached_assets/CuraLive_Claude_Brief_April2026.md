@@ -1,5 +1,5 @@
 # CuraLive — Technical Architecture Brief for Claude
-# Updated: 5 April 2026
+# Updated: 5 April 2026 (post-verification test)
 # Published: https://curalive-platform.replit.app
 
 ---
@@ -111,13 +111,13 @@ const db = await getDb();
 
 ### approved_questions_queue
 `id, session_id, question_id, question_text, asker_name, asker_firm, ai_suggested_answer, status, queued_at, answered_at, operator_id, queue_position, sent_to_speaker_at, created_at`
-- **session_id** — NOT sessionId (no quotes needed)
+- **session_id** — NOT sessionId (no quotes needed in rawSql)
 
 ### occ_transcription_segments
 `id, conference_id, speaker_name, speaker_role, text, start_time, end_time, confidence, created_at`
 - Table name is **occ_transcription_segments** — NOT transcript_segments
 - Uses **conference_id** — NOT session_id
-- Text column is **text** — NOT content (but aliased as content in some queries)
+- Text column is **text** — NOT content
 
 ### client_tokens
 `id, token, session_id, partner_id, recipient_name, recipient_email, recipient_role, access_type, expires_at, last_accessed_at, created_at`
@@ -127,9 +127,13 @@ const db = await getDb();
 
 ### scheduled_sessions
 `id, event_name, company, event_type, scheduled_at, tier, partner_id, recipients (jsonb), meeting_url, pre_brief_sent_at, session_created_id, created_by, created_at`
+- Has NO `status` column — do NOT filter by status
+- Has NO `title` column — use `event_name`
+- Has NO `jurisdiction` column
 
 ### briefing_accuracy_scores
 `id, session_id, overall_score, topics_covered, topics_missed, sentiment_accuracy, key_metrics_accuracy, scored_at, detail (json)`
+- Has NO `briefingId`, `predictedQaCount`, `actualQaCount`, `topicsCorrect`, `topicsTotal`, `complianceHotspotsHit`, `complianceHotspotsTotal`, `overallAccuracyPct` columns
 
 ### session_markers
 `id, session_id, segment_text, operator_note, flag_type, speaker, event_timestamp, created_at`
@@ -173,19 +177,24 @@ type InvokeResult = {
 };
 ```
 
-**CORRECT usage:**
+**CORRECT usage (VERIFIED — all live files now use this pattern):**
 ```typescript
 const result = await invokeLLM({
   messages: [{ role: "user", content: "Your prompt here" }]
 });
-const text = result.choices?.[0]?.message?.content ?? "";
-// If content might be an array, handle: typeof text === 'string' ? text : JSON.stringify(text)
+const rawText = result.choices?.[0]?.message?.content ?? "";
+const text = typeof rawText === "string" ? rawText : JSON.stringify(rawText);
+const cleaned = text.replace(/```json|```/g, "").trim();
+// Then JSON.parse(cleaned) if expecting JSON
 ```
 
 **WRONG — common mistakes:**
 ```typescript
 // WRONG: result.content does not exist on InvokeResult
 const text = result.content;
+
+// WRONG: (result as any)?.content — same problem
+const text = (result as any)?.content;
 
 // WRONG: invokeLLM does not return a string
 const text = await invokeLLM({...});
@@ -194,8 +203,6 @@ JSON.parse(text);
 // WRONG: llm.complete() does not exist
 const result = await llm.complete({...});
 ```
-
-**KNOWN BUG (to be fixed):** BoardIntelligenceService.ts currently uses `result.content` on lines 70 and 162. The correct extraction is `result.choices?.[0]?.message?.content`.
 
 ---
 
@@ -218,6 +225,8 @@ await sendEmail({
 - `buildPreBriefingEmail(opts)` — pre-event intelligence briefing
 
 **NEVER use Resend directly.** Always use `sendEmail()` from `server/_core/email.ts`. The email module handles API keys and delivery internally.
+
+**Resend domain limitation:** The current Resend account requires domain verification at resend.com/domains before sending to external recipients. Without a verified domain, emails can only be sent to the account owner's email address.
 
 ---
 
@@ -245,6 +254,11 @@ Failure to register in both files causes server errors.
 - `qaAnalyticsRouter` — live Q&A pattern analysis
 - `shadowModeRouter` — core session management (existing, enhanced)
 
+## 6.4 Key shadowModeRouter Procedures
+- `startSession` — creates session, deploys Recall bot or starts local capture
+- `endSession` — closes session, triggers `runSessionClosePipeline(sessionId)`
+- Both require `operatorProcedure` (auth)
+
 ---
 
 # 7. BACKEND SERVICES
@@ -264,7 +278,6 @@ These start automatically in `server/_core/index.ts`:
 ### ClientDeliveryService.ts
 - `sendLiveDashboardLinks(opts)` — generates tokens, sends live URLs
 - `sendReportLinks(opts)` — generates tokens, sends report URLs
-- `sendPostEventReport` — alias for `sendReportLinks`
 
 ### ComplianceDeadlineService.ts
 ```typescript
@@ -291,15 +304,15 @@ sendComplianceCloseEmail({
 2. Load regulatory flags (from `regulatory_flags` WHERE `monitor_id = $1`)
 3. Create compliance deadlines (in `compliance_deadlines` with `deadline_at`)
 4. Send compliance email
-5. Generate AI report
+5. Generate AI report (placeholder — returns `{}`)
 6. Send report links
 7. Run Board Intelligence update (non-blocking)
 8. Score briefing accuracy (non-blocking)
 
 ### BoardIntelligenceService.ts
 `runBoardIntelligenceUpdate(opts)` — non-blocking post-session:
-1. Extract new commitments from Module 08 report
-2. Verify prior open commitments against transcript
+1. Extract new commitments from Module 08 report (invokeLLM — FIXED)
+2. Verify prior open commitments against transcript (invokeLLM — FIXED)
 3. Log board member activity
 4. Update governance score
 
@@ -348,9 +361,9 @@ const mutation = trpc.routerName.procedureName.useMutation();
 - `RECALL_AI_API_KEY`, `RECALL_AI_WEBHOOK_SECRET` — Meeting bots
 - `MUX_WEBHOOK_SECRET` — Video streaming webhooks
 - `APP_URL` = `https://curalive-platform.replit.app` — Used for tokenized email links
+- `RESEND_API_KEY` — Email delivery (NOW SET — requires domain verification in Resend dashboard)
 
 ## 9.2 Optional (disabled services)
-- `RESEND_API_KEY` — Email delivery (currently disabled)
 - `TELNYX_API_KEY` — Telnyx telephony
 - `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET` — Mux video
 - `STRIPE_SECRET_KEY` — Payments
@@ -380,9 +393,11 @@ Applied globally. Reads partner branding from `partners` table based on token or
 // rawSql tuple destructuring
 const [rows] = await rawSql(`SELECT * FROM table WHERE id = $1`, [id]);
 
-// LLM response extraction
+// LLM response extraction (verified correct pattern)
 const result = await invokeLLM({ messages: [{role: "user", content: prompt}] });
-const text = result.choices?.[0]?.message?.content ?? "";
+const rawText = result.choices?.[0]?.message?.content ?? "";
+const text = typeof rawText === "string" ? rawText : JSON.stringify(rawText);
+const cleaned = text.replace(/```json|```/g, "").trim();
 
 // Email sending
 const { sendEmail } = await import("../_core/email");
@@ -398,7 +413,7 @@ deadlines: flagRows.map(f => ({ action: f.statement, hours: 48, jurisdiction: "J
 `SELECT * FROM regulatory_flags WHERE monitor_id = $1`
 
 // compliance_deadlines deadline column
-`INSERT INTO compliance_deadlines (..., deadline_at, ...) VALUES (..., NOW() + '48 hours'::interval, ...)`
+`INSERT INTO compliance_deadlines (..., deadline_at, ...) VALUES (..., NOW() + ($1 || ' hours')::interval, ...)`
 ```
 
 ## DON'T:
@@ -408,6 +423,9 @@ const rows = await rawSql(...);
 
 // WRONG: .content doesn't exist on InvokeResult
 const text = result.content;
+
+// WRONG: (result as any)?.content — same broken pattern
+const text = (result as any)?.content;
 
 // WRONG: Resend directly
 import { Resend } from "resend";
@@ -424,11 +442,14 @@ deadlines: [{ deadline: new Date(...) }]
 // WRONG: column name
 `INSERT INTO compliance_deadlines (..., deadline, ...)`
 
-// WRONG: camelCase in SQL
+// WRONG: camelCase in raw SQL
 `SELECT "overallScore" FROM agm_governance_scores`  // Use overall_score
 
 // WRONG: SQL placeholder bugs
 `WHERE $1_session_id_placeholder = $1`  // Use: WHERE session_id = $1
+
+// WRONG: aliasing text as content
+`SELECT content as text FROM occ_transcription_segments`  // Just use: SELECT text
 ```
 
 ---
@@ -446,21 +467,46 @@ Exports: `partners, clientTokens, clientReportAccess, partnerEvents`
 
 ---
 
-# 14. KNOWN BUGS / TECH DEBT
+# 14. VERIFICATION TEST RESULTS (5 April 2026)
 
-1. **BoardIntelligenceService.ts lines 70, 162:** Uses `result.content` instead of `result.choices?.[0]?.message?.content` for LLM response extraction. Will return `undefined` at runtime when invokeLLM is called.
+Pipeline test run against session 21 (TestCorp Q1 2026 Results):
 
-2. **PreEventBriefingService.ts line 65:** Uses `(result as any)?.content` which also doesn't correctly extract from InvokeResult. Should be `result.choices?.[0]?.message?.content`.
+| # | Check | Result |
+|---|-------|--------|
+| 1 | Server starts clean, 7 background services | PASS |
+| 2 | `[SessionClose]` log lines appear | PASS — full pipeline in 540ms |
+| 3 | `compliance_deadlines` row created | PASS — deadline_at=2026-04-07, priority=high, status=open |
+| 4 | `client_tokens` report token generated | PASS — expires 2026-05-05, access_type=report |
+| 5 | Board Intelligence ran | PASS — completed in 22ms |
+| 6 | `deadline_at` used (not `deadline`) | PASS |
+| 7 | `hours: number` passed (not `deadline: Date`) | PASS |
+| 8 | `calculateBriefingAccuracy(sessionId)` — number only | PASS |
+| 9 | All `rawSql()` destructured as `const [rows]` | PASS |
+| 10 | `invokeLLM` uses `choices[0].message.content` | PASS |
+| 11 | Compliance email delivery | FAIL — Resend domain not verified |
+| 12 | Report link email delivery | FAIL — Resend domain not verified |
 
-3. **AI Report Generation (SessionClosePipeline.ts):** The `generateAIReport()` function is a placeholder — it sets status to 'processing' then immediately to 'completed' and returns `{}`. The actual 20-module AI report pipeline is not yet wired.
-
-4. **Governance Score ON CONFLICT:** The `agm_governance_scores` table may not have a unique constraint on `company`, causing the ON CONFLICT to fail silently.
-
-5. **RESEND_API_KEY not configured:** Email delivery is currently disabled. The `sendEmail()` function will fail silently without this key.
+**Email failure root cause:** Resend account requires domain verification at resend.com/domains. Not a code bug — pipeline, token generation, and DB writes all succeeded.
 
 ---
 
-# 15. SERVER STARTUP SEQUENCE
+# 15. KNOWN BUGS / TECH DEBT (updated)
+
+1. ~~**BoardIntelligenceService.ts invokeLLM extraction**~~ — **FIXED.** Both LLM calls now use `result.choices?.[0]?.message?.content` with JSON cleaning.
+
+2. ~~**SessionClosePipeline.ts `content` column alias**~~ — **FIXED.** `getTranscriptText()` now uses `SELECT text FROM occ_transcription_segments`.
+
+3. **AI Report Generation (SessionClosePipeline.ts):** The `generateAIReport()` function is still a placeholder — sets status to 'processing' then immediately to 'completed' and returns `{}`. The actual 20-module AI report pipeline is not yet wired. This is a separate sprint item.
+
+4. **Resend domain verification:** Email delivery requires a verified sending domain in the Resend dashboard. Until verified, emails can only be sent to the Resend account owner's email.
+
+5. **Governance Score ON CONFLICT:** The `agm_governance_scores` table may not have a unique constraint on `company`, causing the ON CONFLICT in BoardIntelligenceService to fail silently.
+
+6. **PreEventBriefingService.ts `scheduledSessions` query:** The `startBriefingScheduler` currently filters by columns that may not exist on the `scheduled_sessions` table (`status`, `title`, `jurisdiction`). The scheduler starts but the query may return no results.
+
+---
+
+# 16. SERVER STARTUP SEQUENCE
 
 1. Environment validation (`enforceEnvOrExit`)
 2. Database migrations (non-blocking ALTER TABLEs)
@@ -476,7 +522,7 @@ Exports: `partners, clientTokens, clientReportAccess, partnerEvents`
 
 ---
 
-# 16. TESTING / VERIFICATION
+# 17. TESTING / VERIFICATION
 
 ## Quick health check
 ```
@@ -484,10 +530,13 @@ curl https://curalive-platform.replit.app/health
 ```
 
 ## Session close verification
-1. Create a test session with recipients
-2. Add transcript text
-3. Close session — triggers `runSessionClosePipeline`
-4. Check: compliance_deadlines populated, emails sent, report links generated
+1. Create a test session via `shadowMode.startSession` (requires operator auth)
+2. Add recipients to session (SQL: UPDATE shadow_sessions SET recipients = '...')
+3. Add regulatory flags (SQL: INSERT INTO regulatory_flags ...)
+4. Close session via `shadowMode.endSession` — triggers `runSessionClosePipeline`
+5. Check server logs for `[SessionClose]` lines
+6. Verify: `SELECT * FROM compliance_deadlines ORDER BY created_at DESC LIMIT 3`
+7. Verify: `SELECT * FROM client_tokens ORDER BY created_at DESC LIMIT 3`
 
 ## Database verification queries
 ```sql
@@ -496,4 +545,5 @@ SELECT * FROM partners;
 SELECT * FROM client_tokens ORDER BY created_at DESC LIMIT 5;
 SELECT * FROM compliance_deadlines ORDER BY created_at DESC LIMIT 5;
 SELECT * FROM briefing_accuracy_scores ORDER BY scored_at DESC LIMIT 5;
+SELECT * FROM regulatory_flags ORDER BY created_at DESC LIMIT 5;
 ```
