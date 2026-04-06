@@ -744,3 +744,9 @@ id = "3NhsfidB5Zk6IX-FkOF28"
 uri = "file://attached_assets/CuraLive_Claude_Brief_April2026.md"
 type = "text"
 title = "CuraLive Technical Architecture Brief — April 2026 (Post-Verification)"
+
+[[outputs]]
+id = "HLyZCGMsTk1QjanMxoTFJ"
+uri = "file://curalive-key-files.tar.gz"
+type = "unspecified"
+title = "CuraLive Key Files (8 files)"
