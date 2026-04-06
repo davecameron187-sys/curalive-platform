@@ -538,16 +538,6 @@ export const shadowModeRouter = router({
           sourceType: "live_session",
         });
 
-        autoGenerateAiReport(
-          input.sessionId,
-          session.clientName,
-          session.eventName,
-          session.eventType ?? "other",
-          localTranscript,
-          sentimentAvg ?? null,
-          liveComplianceFlags
-        ).catch(err => console.error("[Shadow] Background AI report failed:", err));
-
         runSessionClosePipeline(input.sessionId).catch(console.error);
 
         await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: `${localTranscript.length} local transcript segments, ${metricsCount} metrics generated`, metadata: { transcriptSegments: localTranscript.length, metricsCount } });
