@@ -750,3 +750,9 @@ id = "HLyZCGMsTk1QjanMxoTFJ"
 uri = "file://curalive-key-files.tar.gz"
 type = "unspecified"
 title = "CuraLive Key Files (8 files)"
+
+[[outputs]]
+id = "KkcALiMGH97EjKwePytXR"
+uri = "file://exports/CuraLive_Master_Technical_Brief.md"
+type = "text"
+title = "CuraLive Master Technical Brief"
