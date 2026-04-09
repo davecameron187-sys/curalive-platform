@@ -75,21 +75,23 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 
 ### Endpoints
 - `GET /health` — Health check
-- `POST /api/v1/events` — Create event
-- `POST /api/v1/events/ingest` — Ingest event (alias)
-- `GET /api/v1/events/{event_id}` — Get event by UUID
-- `POST /api/v1/jobs/analyze` — Enqueue analysis job
+- `POST /api/events/ingest` — Ingest raw event, normalize to canonical event model
+- `POST /api/analysis/run` — Run AI analysis modules against a canonical event
 
-### Database Tables (prefixed `aic_` to avoid conflicts with Node.js app)
-- `aic_events` — Canonical event storage (UUID PKs)
-- `aic_commitments` — Management commitment tracking
-- `aic_drift_events` — Commitment drift detection
-- `aic_analysis_jobs` — Analysis job queue
+### Analysis Modules (Phase 2 — all operational)
+- **Sentiment** (`sentiment`): Per-segment and per-speaker sentiment scoring, tone shift detection, positive/negative signal counts
+- **Engagement** (`engagement`): Speaking balance (Gini-based), share of voice, pace analysis (WPM), Q&A density, engagement score
+- **Compliance Signals** (`compliance_signals`): Forward-looking statement detection, hedging language, regulatory triggers (IFRS/SEC/JSE/FSCA/King IV), risk level assessment
+- **Commitment Extraction** (`commitment_extraction`): Explicit commitment extraction with deadline detection, quantitative target identification, confidence scoring, commitment type classification
 
-### Key Fixes Applied from Original ZIP
-1. **DATABASE_URL format**: Replit uses `postgresql://` but psycopg3 needs `postgresql+psycopg://` — auto-converted via model validator in `config.py`
-2. **`metadata` column name**: Reserved by SQLAlchemy DeclarativeBase — renamed Python attribute to `extra_data` (DB column still `metadata`)
-3. **Table name conflicts**: Existing Node.js `events` table has integer PKs, Python models use UUID PKs — prefixed all tables with `aic_`
-4. **Auto-migration**: Added `Base.metadata.create_all()` in FastAPI lifespan handler to create tables on startup
-5. **Missing requirements.txt**: Created from `pyproject.toml` dependencies (removed `pgvector` as unnecessary for skeleton)
-6. **Missing /ingest endpoint**: Added `POST /api/v1/events/ingest` route as requested
+### Key Files
+- `app/main.py` — FastAPI bootstrap, router registration
+- `app/api/routes/events.py` — Event ingestion endpoint
+- `app/api/routes/analysis.py` — Analysis orchestration endpoint
+- `app/schemas/event_ingest.py` — Canonical event model schemas
+- `app/schemas/analysis.py` — Analysis request/response schemas
+- `app/services/canonical_model.py` — Canonical event builder
+- `app/services/sentiment.py` — Sentiment analysis service
+- `app/services/engagement.py` — Engagement scoring service
+- `app/services/compliance_signals.py` — Compliance signal detection service
+- `app/services/commitment_extraction.py` — Commitment extraction service
