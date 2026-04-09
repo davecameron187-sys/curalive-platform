@@ -1,31 +1,23 @@
-from uuid import UUID
+from fastapi import APIRouter, HTTPException
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-
-from app.db.session import get_db
-from app.schemas.event import EventCreate, EventRead
-from app.services.event_service import EventService
+from app.schemas.event_ingest import EventIngestRequest, EventIngestResponse
+from app.services.canonical_model import CanonicalEventModelBuilder
 
 router = APIRouter()
 
 
-@router.post("", response_model=EventRead, status_code=status.HTTP_201_CREATED)
-def create_event(payload: EventCreate, db: Session = Depends(get_db)) -> EventRead:
-    service = EventService(db)
-    return service.create_event(payload)
-
-
-@router.post("/ingest", response_model=EventRead, status_code=status.HTTP_201_CREATED)
-def ingest_event(payload: EventCreate, db: Session = Depends(get_db)) -> EventRead:
-    service = EventService(db)
-    return service.create_event(payload)
-
-
-@router.get("/{event_id}", response_model=EventRead)
-def get_event(event_id: UUID, db: Session = Depends(get_db)) -> EventRead:
-    service = EventService(db)
-    event = service.get_event(event_id)
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return event
+@router.post("/ingest", response_model=EventIngestResponse)
+async def ingest_event(payload: EventIngestRequest) -> EventIngestResponse:
+    """
+    Ingest raw event inputs and normalize them into the CuraLive canonical event model.
+    """
+    try:
+        builder = CanonicalEventModelBuilder()
+        canonical = builder.build(payload)
+        return EventIngestResponse(
+            status="ok",
+            event_id=payload.event_id,
+            canonical_event=canonical,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
