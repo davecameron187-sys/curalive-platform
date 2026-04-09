@@ -80,6 +80,8 @@ class BenchmarkSummary(BaseModel):
     most_common_risk_level: str | None = None
     top_topics: list[str] = Field(default_factory=list)
     confidence: float = 0.0
+    low_sample: bool = False
+    quality_notes: list[str] = Field(default_factory=list)
 
 
 class BenchmarkResponse(BaseModel):
@@ -98,6 +100,10 @@ class BenchmarkResponse(BaseModel):
     summary: BenchmarkSummary
     confidence: float
     version: int
+    last_refresh_source: str | None = None
+    refresh_scope: str | None = None
+    low_sample: bool = False
+    fallback_segment_used: str | None = None
     duration_ms: float | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -125,6 +131,10 @@ class BenchmarkRetrieveResponse(BaseModel):
     summary: dict[str, Any]
     confidence: float
     version: int
+    last_refresh_source: str | None = None
+    refresh_scope: str | None = None
+    low_sample: bool = False
+    fallback_segment_used: str | None = None
     created_at: datetime
     updated_at: datetime
 

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Float, Integer, String
+from sqlalchemy import Boolean, DateTime, Float, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,5 +26,9 @@ class Benchmark(Base):
     summary: Mapped[dict] = mapped_column(JSONB, default=dict)
     confidence: Mapped[float] = mapped_column(Float, default=0.0)
     version: Mapped[int] = mapped_column(Integer, default=1)
+    last_refresh_source: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    refresh_scope: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    low_sample: Mapped[bool] = mapped_column(Boolean, default=False)
+    fallback_segment_used: Mapped[str | None] = mapped_column(String(256), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

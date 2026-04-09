@@ -51,6 +51,16 @@ class NarrativeRisk(BaseModel):
     detail: str
 
 
+class BenchmarkContextSchema(BaseModel):
+    benchmark_segment: str = ""
+    benchmark_event_count: int = 0
+    benchmark_quality: str = "unknown"
+    fallback_segment_used: str | None = None
+    dimensions: dict[str, Any] = Field(default_factory=dict)
+    benchmark_concerns: list[str] = Field(default_factory=list)
+    benchmark_strengths: list[str] = Field(default_factory=list)
+
+
 class BriefingResponse(BaseModel):
     briefing_id: str
     organisation_id: str
@@ -61,6 +71,7 @@ class BriefingResponse(BaseModel):
     sentiment_summary: SentimentSummary
     predicted_questions: list[PredictedQuestion]
     narrative_risk: NarrativeRisk
+    benchmark_context: BenchmarkContextSchema | None = None
     signals_used: int
     commitments_referenced: int
     drift_events_referenced: int

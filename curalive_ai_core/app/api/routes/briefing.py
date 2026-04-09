@@ -8,11 +8,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.models.benchmark import Benchmark
 from app.models.briefing import Briefing
 from app.models.commitment import Commitment, CommitmentStatus
 from app.models.drift_event import DriftEvent
+from app.models.org_profile import OrgProfile
 from app.models.stakeholder_signal import StakeholderSignal
 from app.schemas.briefing import (
+    BenchmarkContextSchema,
     BriefingGenerateRequest,
     BriefingResponse,
     BriefingRetrieveResponse,
@@ -22,6 +25,7 @@ from app.schemas.briefing import (
     SentimentSummary,
     TopicEntry,
 )
+from app.services.benchmark_generator import BenchmarkGenerator
 from app.services.briefing_generator import (
     BriefingGenerator,
     CommitmentRecord,
@@ -40,6 +44,73 @@ def _dc_to_dict(obj):
     if isinstance(obj, dict):
         return {k: _dc_to_dict(v) for k, v in obj.items()}
     return obj
+
+
+def _load_benchmark_context(
+    db: Session,
+    organisation_id: str,
+    event_type: str | None,
+) -> dict | None:
+    try:
+        profile = db.query(OrgProfile).filter(OrgProfile.organisation_id == organisation_id).first()
+        if not profile:
+            return None
+
+        all_bms = db.query(Benchmark).all()
+        if not all_bms:
+            return None
+
+        candidates = []
+        for bm in all_bms:
+            candidates.append({
+                "segment_key": bm.segment_key,
+                "event_count": bm.event_count,
+                "organisation_count": bm.organisation_count,
+                "confidence": bm.confidence,
+                "low_sample": bm.low_sample or False,
+                "compliance_baselines": bm.compliance_baselines or {},
+                "commitment_baselines": bm.commitment_baselines or {},
+                "drift_baselines": bm.drift_baselines or {},
+                "sentiment_baselines": bm.sentiment_baselines or {},
+                "governance_baselines": bm.governance_baselines or {},
+                "summary": bm.summary or {},
+            })
+
+        bm_gen = BenchmarkGenerator()
+
+        preferred = []
+        if event_type:
+            et_key = f"event_type:{event_type}"
+            preferred = [c for c in candidates if c["segment_key"] == et_key]
+        if not preferred:
+            preferred = [c for c in candidates if c["segment_key"] == "global:all"]
+        if not preferred:
+            preferred = candidates
+
+        best_bm, fallback_used = bm_gen.select_best_segment(preferred)
+        if not best_bm:
+            best_bm, fallback_used = bm_gen.select_best_segment(candidates)
+
+        if not best_bm:
+            return None
+
+        org_dict = {
+            "compliance_risk_profile": profile.compliance_risk_profile or {},
+            "commitment_delivery_profile": profile.commitment_delivery_profile or {},
+            "stakeholder_relationship_profile": profile.stakeholder_relationship_profile or {},
+            "governance_trajectory_profile": profile.governance_trajectory_profile or {},
+            "sector_context": profile.sector_context or {},
+            "events_incorporated": profile.events_incorporated,
+        }
+
+        ctx = bm_gen.build_briefing_benchmark_context(org_dict, best_bm)
+        if ctx and fallback_used:
+            ctx["benchmark_quality"] = "fallback"
+            ctx["fallback_segment_used"] = fallback_used
+        return ctx
+    except Exception as exc:
+        print(f"[Briefing] Benchmark context loading failed (non-blocking): {exc}")
+        return None
 
 
 @router.post("/generate", response_model=BriefingResponse)
@@ -112,8 +183,10 @@ async def generate_briefing(
         for d in drift_rows
     ]
 
+    benchmark_ctx = _load_benchmark_context(db, request.organisation_id, request.event_type)
+
     generator = BriefingGenerator()
-    result = generator.generate(signals, commitments, drifts, request.event_type or "earnings_call")
+    result = generator.generate(signals, commitments, drifts, request.event_type or "earnings_call", benchmark_ctx)
 
     elapsed = round((time.monotonic() - start) * 1000, 1)
 
@@ -144,6 +217,21 @@ async def generate_briefing(
 
     sentiment = result.sentiment_summary
     narrative = result.narrative_risk
+
+    bm_ctx_schema = None
+    if result.benchmark_context:
+        bm = result.benchmark_context
+        bm_quality = benchmark_ctx.get("benchmark_quality", bm.benchmark_quality) if benchmark_ctx else bm.benchmark_quality
+        fb_used = benchmark_ctx.get("fallback_segment_used") if benchmark_ctx else None
+        bm_ctx_schema = BenchmarkContextSchema(
+            benchmark_segment=bm.benchmark_segment,
+            benchmark_event_count=bm.benchmark_event_count,
+            benchmark_quality=bm_quality,
+            fallback_segment_used=fb_used,
+            dimensions=bm.dimensions,
+            benchmark_concerns=bm.benchmark_concerns,
+            benchmark_strengths=bm.benchmark_strengths,
+        )
 
     return BriefingResponse(
         briefing_id=str(briefing.id),
@@ -179,6 +267,7 @@ async def generate_briefing(
             indicators=narrative.indicators if narrative else [],
             detail=narrative.detail if narrative else "",
         ),
+        benchmark_context=bm_ctx_schema,
         signals_used=result.signals_used,
         commitments_referenced=result.commitments_referenced,
         drift_events_referenced=result.drift_events_referenced,

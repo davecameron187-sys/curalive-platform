@@ -81,6 +81,16 @@ class NarrativeRisk:
 
 
 @dataclass
+class BenchmarkContext:
+    benchmark_segment: str = ""
+    benchmark_event_count: int = 0
+    benchmark_quality: str = "unknown"
+    dimensions: dict = field(default_factory=dict)
+    benchmark_concerns: list[str] = field(default_factory=list)
+    benchmark_strengths: list[str] = field(default_factory=list)
+
+
+@dataclass
 class BriefingResult:
     likely_topics: list[TopicEntry] = field(default_factory=list)
     pressure_points: list[PressurePoint] = field(default_factory=list)
@@ -91,6 +101,7 @@ class BriefingResult:
     commitments_referenced: int = 0
     drift_events_referenced: int = 0
     confidence: float = 0.0
+    benchmark_context: BenchmarkContext | None = None
 
 
 TOPIC_QUESTION_TEMPLATES: dict[str, list[tuple[str, str]]] = {
@@ -159,6 +170,7 @@ class BriefingGenerator:
         commitments: list[CommitmentRecord],
         drifts: list[DriftRecord],
         event_type: str = "earnings_call",
+        benchmark_context: dict | None = None,
     ) -> BriefingResult:
         result = BriefingResult(
             signals_used=len(signals),
@@ -172,11 +184,77 @@ class BriefingGenerator:
         result.predicted_questions = self._build_questions(signals, commitments, drifts, result.likely_topics)
         result.narrative_risk = self._build_narrative_risk(drifts, signals)
 
+        if benchmark_context:
+            bm_ctx = BenchmarkContext(
+                benchmark_segment=benchmark_context.get("benchmark_segment", ""),
+                benchmark_event_count=benchmark_context.get("benchmark_event_count", 0),
+                benchmark_quality=benchmark_context.get("benchmark_quality", "unknown"),
+                dimensions=benchmark_context.get("dimensions", {}),
+                benchmark_concerns=benchmark_context.get("benchmark_concerns", []),
+                benchmark_strengths=benchmark_context.get("benchmark_strengths", []),
+            )
+            result.benchmark_context = bm_ctx
+            self._enrich_with_benchmark(result, bm_ctx)
+
         topic_conf = sum(t.confidence for t in result.likely_topics) / max(len(result.likely_topics), 1)
         data_richness = min(1.0, (len(signals) * 0.1 + len(commitments) * 0.05 + len(drifts) * 0.15))
         result.confidence = round(min(1.0, (topic_conf * 0.4 + data_richness * 0.6)), 2)
 
         return result
+
+    def _enrich_with_benchmark(self, result: BriefingResult, bm: BenchmarkContext) -> None:
+        for concern in bm.benchmark_concerns:
+            area = "benchmark_comparison"
+            if "compliance" in concern.lower():
+                area = "compliance"
+            elif "drift" in concern.lower():
+                area = "commitment_drift"
+            elif "sentiment" in concern.lower():
+                area = "stakeholder_sentiment"
+            elif "governance" in concern.lower():
+                area = "governance"
+            result.pressure_points.append(PressurePoint(
+                area=area,
+                severity="medium",
+                source=f"benchmark:{bm.benchmark_segment}",
+                detail=concern,
+            ))
+
+        dims = bm.dimensions
+        drift_dim = dims.get("drift_rate", {})
+        if drift_dim.get("position") == "below_benchmark":
+            result.predicted_questions.append(PredictedQuestion(
+                question="Your commitment drift rate exceeds the benchmark average — what steps are being taken to improve delivery?",
+                likelihood="high",
+                source=f"benchmark:{bm.benchmark_segment}",
+                theme="benchmark:drift_rate",
+                rationale=f"Organisation drift rate ({drift_dim.get('org', 0)}) exceeds benchmark ({drift_dim.get('benchmark', 0)})",
+            ))
+
+        compliance_dim = dims.get("compliance_flags_per_event", {})
+        if compliance_dim.get("position") == "below_benchmark":
+            result.predicted_questions.append(PredictedQuestion(
+                question="Your compliance flag rate is above the industry benchmark — can you address the remediation plan?",
+                likelihood="medium",
+                source=f"benchmark:{bm.benchmark_segment}",
+                theme="benchmark:compliance",
+                rationale=f"Compliance flags per event ({compliance_dim.get('org', 0)}) exceed benchmark ({compliance_dim.get('benchmark', 0)})",
+            ))
+
+        sentiment_dim = dims.get("sentiment_score", {})
+        if sentiment_dim.get("position") == "below_benchmark":
+            result.predicted_questions.append(PredictedQuestion(
+                question="Stakeholder sentiment is below the benchmark average — what is your engagement strategy?",
+                likelihood="medium",
+                source=f"benchmark:{bm.benchmark_segment}",
+                theme="benchmark:sentiment",
+                rationale=f"Sentiment score ({sentiment_dim.get('org', 0)}) is below benchmark ({sentiment_dim.get('benchmark', 0)})",
+            ))
+
+        if bm.benchmark_quality == "low_sample":
+            for pp in result.pressure_points:
+                if pp.source.startswith("benchmark:"):
+                    pp.detail += " (benchmark based on limited sample — interpret with caution)"
 
     def _build_topics(
         self,

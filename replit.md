@@ -194,3 +194,14 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - **Baseline dimensions**: compliance, commitment, drift, sentiment, governance, topics
 - **Sector enrichment**: compares org profile vs benchmark, positions as above/at/below benchmark, updates sector_context + profile_summary
 - **No pipeline integration** yet — benchmarks are built on-demand via API
+
+### Phase 8B — Benchmark Hardening + Auto-Enrichment
+- **Quality controls** in `BenchmarkGenerator`: `assess_quality()` flags low_sample (< 3 events), zero_events, weak_confidence (< 0.3); `select_best_segment()` filters zero-event/weak-confidence candidates, falls back to global:all
+- **aic_benchmarks new columns**: `last_refresh_source` (VARCHAR 128), `refresh_scope` (VARCHAR 32), `low_sample` (BOOLEAN), `fallback_segment_used` (VARCHAR 256)
+- **Benchmark summary** now includes `low_sample` flag and `quality_notes` array
+- **Auto-benchmark refresh**: Profile update triggers incremental refresh of global:all, event_type:{type}, and organisation:{org_id} benchmark segments
+- **Auto-sector enrichment**: After profile update, best benchmark is selected (quality-aware), sector_context auto-enriched with benchmark positions (compliance/commitment/drift/sentiment/governance), enrichment_source and enrichment_timestamp persisted
+- **Briefing benchmark context**: Briefing generation loads org profile + best benchmark, passes `benchmark_context` to generator; adds benchmark-relative pressure points and predicted questions; response includes `benchmark_context` schema
+- **Profile schema extended**: `SectorContextSchema` gains benchmark_segment, benchmark_quality, compliance/commitment/drift/sentiment/governance_position, enrichment_source, enrichment_timestamp
+- **Persistence metadata**: All benchmark build/refresh operations persist last_refresh_source (manual_build/profile_update), refresh_scope (full/incremental), low_sample flag
+- **Pipeline flow** (final): compliance email → AI Core analysis → drift detection → governance → **profile update → auto-benchmark-refresh → auto-sector-enrichment** → AI report → delivery → board intelligence → briefing accuracy

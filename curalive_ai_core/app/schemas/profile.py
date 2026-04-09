@@ -72,6 +72,15 @@ class SectorContextSchema(BaseModel):
     jurisdiction: str | None = None
     regulatory_framework: str | None = None
     notes: str = "Sector context will be enriched in future phases."
+    benchmark_segment: str | None = None
+    benchmark_quality: str | None = None
+    compliance_position: str | None = None
+    commitment_position: str | None = None
+    drift_position: str | None = None
+    sentiment_position: str | None = None
+    governance_position: str | None = None
+    enrichment_source: str | None = None
+    enrichment_timestamp: str | None = None
 
 
 class ProfileSummarySchema(BaseModel):

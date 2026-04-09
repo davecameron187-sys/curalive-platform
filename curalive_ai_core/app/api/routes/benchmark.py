@@ -292,6 +292,10 @@ def _build_response(bm_row: Benchmark, duration_ms: float | None = None) -> Benc
         summary=BenchmarkSummary(**sm) if sm else BenchmarkSummary(segment_key=bm_row.segment_key, segment_type=bm_row.segment_type, segment_value=bm_row.segment_value),
         confidence=bm_row.confidence,
         version=bm_row.version,
+        last_refresh_source=bm_row.last_refresh_source,
+        refresh_scope=bm_row.refresh_scope,
+        low_sample=bm_row.low_sample or False,
+        fallback_segment_used=bm_row.fallback_segment_used,
         duration_ms=duration_ms,
         created_at=bm_row.created_at,
         updated_at=bm_row.updated_at,
@@ -330,6 +334,10 @@ async def build_benchmarks(
             existing.summary = result.summary
             existing.confidence = result.confidence
             existing.version = (existing.version or 0) + 1
+            existing.last_refresh_source = "manual_build"
+            existing.refresh_scope = "full"
+            existing.low_sample = result.quality.low_sample
+            existing.fallback_segment_used = None
             bm_row = existing
         else:
             if existing and request.force_rebuild:
@@ -351,6 +359,9 @@ async def build_benchmarks(
                 summary=result.summary,
                 confidence=result.confidence,
                 version=1,
+                last_refresh_source="manual_build",
+                refresh_scope="full",
+                low_sample=result.quality.low_sample,
             )
             db.add(bm_row)
 
@@ -400,6 +411,10 @@ async def list_benchmarks(
             summary=r.summary or {},
             confidence=r.confidence,
             version=r.version,
+            last_refresh_source=r.last_refresh_source,
+            refresh_scope=r.refresh_scope,
+            low_sample=r.low_sample or False,
+            fallback_segment_used=r.fallback_segment_used,
             created_at=r.created_at,
             updated_at=r.updated_at,
         )
@@ -434,6 +449,10 @@ async def get_benchmark(
         summary=bm.summary or {},
         confidence=bm.confidence,
         version=bm.version,
+        last_refresh_source=bm.last_refresh_source,
+        refresh_scope=bm.refresh_scope,
+        low_sample=bm.low_sample or False,
+        fallback_segment_used=bm.fallback_segment_used,
         created_at=bm.created_at,
         updated_at=bm.updated_at,
     )
