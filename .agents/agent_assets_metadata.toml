@@ -798,3 +798,9 @@ id = "C4p5Tqc8dbhz6tfDEPs0g"
 uri = "file://exports/CuraLive_Replit_Update_Phase6_2026_04_09.md"
 type = "text"
 title = "CuraLive Phase 6 Update Brief — Governance Record Generation"
+
+[[outputs]]
+id = "8RD2kCqb7T6yBscIBGuxX"
+uri = "file://exports/CuraLive_Replit_Update_Phase7A_2026_04_09.md"
+type = "text"
+title = "CuraLive Phase 7A Update Brief — Heartbeat Foundation / Institutional Knowledge Profile"

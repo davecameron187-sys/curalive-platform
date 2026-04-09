@@ -453,3 +453,80 @@ export async function generateGovernanceRecord(
 export async function getGovernanceRecord(recordId: string): Promise<AICoreGovernanceResponse> {
   return fetchJSON<AICoreGovernanceResponse>(`${AI_CORE_BASE_URL}/api/governance/${recordId}`);
 }
+
+export interface AICoreProfileUpdateRequest {
+  organisation_id: string;
+  event_id?: string | null;
+  event_name?: string | null;
+  event_type?: string | null;
+  force_rebuild?: boolean;
+}
+
+export interface AICoreProfileSummary {
+  organisation_id: string;
+  events_incorporated: number;
+  overall_risk_level: string;
+  delivery_reliability: string;
+  relationship_health: string;
+  governance_quality: string;
+  key_concerns: string[];
+  key_strengths: string[];
+  confidence: number;
+}
+
+export interface AICoreProfileResponse {
+  profile_id: string;
+  organisation_id: string;
+  speaker_profiles: Record<string, any>;
+  compliance_risk_profile: Record<string, any>;
+  commitment_delivery_profile: Record<string, any>;
+  stakeholder_relationship_profile: Record<string, any>;
+  governance_trajectory_profile: Record<string, any>;
+  sector_context: Record<string, any>;
+  profile_summary: AICoreProfileSummary;
+  events_incorporated: number;
+  last_event_id: string | null;
+  confidence: number;
+  version: number;
+  duration_ms: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface AICoreProfileSummaryResponse {
+  organisation_id: string;
+  profile_summary: AICoreProfileSummary;
+  events_incorporated: number;
+  last_event_id: string | null;
+  confidence: number;
+  version: number;
+  updated_at: string;
+}
+
+export async function updateOrgProfile(
+  request: AICoreProfileUpdateRequest,
+): Promise<AICoreProfileResponse> {
+  LOG(`Updating profile for org=${request.organisation_id} event=${request.event_id ?? "none"}`);
+  const start = Date.now();
+
+  const result = await fetchJSON<AICoreProfileResponse>(
+    `${AI_CORE_BASE_URL}/api/profile/update`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    },
+  );
+
+  const ps = result.profile_summary;
+  LOG(`Profile updated: v${result.version} (risk=${ps.overall_risk_level}, reliability=${ps.delivery_reliability}, health=${ps.relationship_health}, governance=${ps.governance_quality}, ${ps.key_concerns.length} concerns, ${ps.key_strengths.length} strengths) in ${Date.now() - start}ms`);
+  return result;
+}
+
+export async function getOrgProfile(organisationId: string): Promise<AICoreProfileResponse> {
+  return fetchJSON<AICoreProfileResponse>(`${AI_CORE_BASE_URL}/api/profile/${organisationId}`);
+}
+
+export async function getOrgProfileSummary(organisationId: string): Promise<AICoreProfileSummaryResponse> {
+  return fetchJSON<AICoreProfileSummaryResponse>(`${AI_CORE_BASE_URL}/api/profile/${organisationId}/summary`);
+}

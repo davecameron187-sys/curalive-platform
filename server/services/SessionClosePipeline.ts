@@ -3,8 +3,8 @@ import { sendComplianceCloseEmail } from "./ComplianceDeadlineService";
 import { sendReportLinks }          from "./ClientDeliveryService";
 import { runBoardIntelligenceUpdate } from "./BoardIntelligenceService";
 import { calculateBriefingAccuracy }  from "./PreEventBriefingService";
-import { checkAICoreHealth, runAICoreAnalysis, runAICoreDriftDetection, generateGovernanceRecord } from "./AICoreClient";
-import type { AICoreAnalysisResponse, AICoreDriftResponse, AICoreDriftSourceStatement, AICoreGovernanceResponse } from "./AICoreClient";
+import { checkAICoreHealth, runAICoreAnalysis, runAICoreDriftDetection, generateGovernanceRecord, updateOrgProfile } from "./AICoreClient";
+import type { AICoreAnalysisResponse, AICoreDriftResponse, AICoreDriftSourceStatement, AICoreGovernanceResponse, AICoreProfileResponse } from "./AICoreClient";
 import { buildCanonicalPayload } from "./AICorePayloadMapper";
 
 const LOG = (msg: string) => console.log(`[SessionClose] ${msg}`);
@@ -111,6 +111,12 @@ export async function runSessionClosePipeline(sessionId: number): Promise<void> 
       await runGovernanceRecordStep(sessionId, session, aiCoreResult);
     } catch (e) {
       ERR('Governance record generation failed — continuing pipeline', e);
+    }
+
+    try {
+      await runProfileUpdateStep(sessionId, session, aiCoreResult);
+    } catch (e) {
+      ERR('Profile update failed — continuing pipeline', e);
     }
   }
 
@@ -316,6 +322,49 @@ async function runDriftDetectionStep(
   );
 
   LOG(`Drift detection complete: ${driftResult.drift_events_created} drifts across ${driftResult.commitments_evaluated} commitments (${driftResult.duration_ms}ms)`);
+}
+
+async function runProfileUpdateStep(
+  sessionId: number,
+  session: any,
+  aiCoreResult: AICoreAnalysisResponse,
+): Promise<void> {
+  const organisationId = aiCoreResult.organisation_id;
+
+  const profileResult = await updateOrgProfile({
+    organisation_id: organisationId,
+    event_id: `shadow-${sessionId}`,
+    event_name: session.event_name ?? session.company ?? 'Event',
+    event_type: session.event_type ?? 'earnings_call',
+  });
+
+  const profileSummary = {
+    profile_id: profileResult.profile_id,
+    version: profileResult.version,
+    overall_risk_level: profileResult.profile_summary.overall_risk_level,
+    delivery_reliability: profileResult.profile_summary.delivery_reliability,
+    relationship_health: profileResult.profile_summary.relationship_health,
+    governance_quality: profileResult.profile_summary.governance_quality,
+    events_incorporated: profileResult.events_incorporated,
+    confidence: profileResult.confidence,
+    key_concerns: profileResult.profile_summary.key_concerns,
+    key_strengths: profileResult.profile_summary.key_strengths,
+  };
+
+  await rawSql(
+    `UPDATE shadow_sessions
+     SET ai_profile_version = $1,
+         ai_profile_summary = $2
+     WHERE id = $3`,
+    [
+      profileResult.version,
+      JSON.stringify(profileSummary),
+      sessionId,
+    ]
+  );
+
+  const ps = profileResult.profile_summary;
+  LOG(`Profile updated: v${profileResult.version} (risk=${ps.overall_risk_level}, reliability=${ps.delivery_reliability}, health=${ps.relationship_health}, governance=${ps.governance_quality}, ${ps.key_concerns.length} concerns, ${ps.key_strengths.length} strengths)`);
 }
 
 async function runGovernanceRecordStep(

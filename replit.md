@@ -169,3 +169,16 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - **Non-blocking**: governance failures are logged and pipeline continues
 - **Governance inputs**: transcript segments, commitments, compliance flags, drift events, briefing context
 - **Governance outputs**: meeting summary (speakers, topics, contributions), commitment register (with drift annotations), risk/compliance summary (flags + drift + narrative risk), matters arising (from drifts + escalated/deadline commitments)
+
+### Phase 7A — Heartbeat Foundation / Institutional Knowledge Profile
+- `curalive_ai_core/app/models/org_profile.py` — OrgProfile ORM model (15 cols, unique on organisation_id)
+- `curalive_ai_core/app/schemas/profile.py` — Pydantic schemas for update/retrieval/summary with typed sub-schemas
+- `curalive_ai_core/app/services/profile_generator.py` — ProfileGenerator: builds 6-dimension profile from all data sources
+- `curalive_ai_core/app/api/routes/profile.py` — `POST /api/profile/update`, `GET /api/profile/{org_id}`, `GET /api/profile/{org_id}/summary`
+- `server/services/AICoreClient.ts` — Added `updateOrgProfile()`, `getOrgProfile()`, `getOrgProfileSummary()` + typed interfaces
+- `server/services/SessionClosePipeline.ts` — Added `runProfileUpdateStep()` after governance step; persists `ai_profile_version` + `ai_profile_summary` JSONB to `shadow_sessions`
+- **Table**: `aic_org_profiles` (15 cols, unique org_id, versioned)
+- **shadow_sessions columns added**: `ai_profile_version` (INTEGER), `ai_profile_summary` (JSONB)
+- **Profile dimensions**: speaker_profiles, compliance_risk_profile, commitment_delivery_profile, stakeholder_relationship_profile, governance_trajectory_profile, sector_context
+- **Flow**: AI Core analysis → drift → governance → **profile update** → AI report → delivery
+- **Non-blocking**: profile failures are logged and pipeline continues
