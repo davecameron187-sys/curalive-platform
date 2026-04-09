@@ -126,3 +126,11 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - `server/services/SessionClosePipeline.ts` — Now calls Python AI Core after session close, persists job_id and results
 - **shadow_sessions columns added**: `ai_core_job_id` (VARCHAR), `ai_core_status` (VARCHAR), `ai_core_results` (JSONB)
 - **Flow**: Session close → load transcript segments → map to canonical → POST /api/analysis/run → persist job_id + status + full results JSONB to shadow_sessions
+
+### Phase 4A — Commitment Drift Detection
+- `curalive_ai_core/app/services/commitment_drift.py` — Drift detection service: semantic, numerical, timing, directional inconsistency detection
+- `curalive_ai_core/app/schemas/drift.py` — Pydantic schemas for drift request/response
+- `curalive_ai_core/app/api/routes/drift.py` — `POST /api/drift/run` endpoint
+- `curalive_ai_core/app/models/drift_event.py` — Updated DriftEvent model (14 cols)
+- `server/services/AICoreClient.ts` — Added `runAICoreDriftDetection()` + typed interfaces
+- **Table**: `aic_drift_events` — id, commitment_id, job_id, event_id, organisation_id, source_type, source_reference, drift_type, severity, matched_text, explanation, confidence, original_commitment_text, created_at

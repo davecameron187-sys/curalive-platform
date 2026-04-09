@@ -124,3 +124,61 @@ export async function getAICoreJobSummary(jobId: string): Promise<AICoreJobSumma
 export async function getAICoreJobResults(jobId: string): Promise<AICoreJobResults> {
   return fetchJSON<AICoreJobResults>(`${AI_CORE_BASE_URL}/api/analysis/jobs/${jobId}/results`);
 }
+
+export interface AICoreDriftSourceStatement {
+  text: string;
+  speaker_id?: string | null;
+  speaker_name?: string | null;
+  source_type?: string;
+  source_reference?: string;
+  timestamp?: number | null;
+}
+
+export interface AICoreDriftRequest {
+  organisation_id: string;
+  event_id?: string | null;
+  job_id?: string | null;
+  statements: AICoreDriftSourceStatement[];
+}
+
+export interface AICoreDriftEventSummary {
+  drift_event_id: string;
+  commitment_id: string;
+  commitment_text: string;
+  drift_type: "semantic" | "numerical" | "timing" | "directional";
+  severity: "low" | "medium" | "high";
+  matched_text: string;
+  explanation: string;
+  confidence: number;
+  source_type: string;
+  source_reference: string;
+}
+
+export interface AICoreDriftResponse {
+  organisation_id: string;
+  event_id: string | null;
+  commitments_evaluated: number;
+  statements_processed: number;
+  drift_events_created: number;
+  drift_events: AICoreDriftEventSummary[];
+  duration_ms: number | null;
+}
+
+export async function runAICoreDriftDetection(
+  request: AICoreDriftRequest,
+): Promise<AICoreDriftResponse> {
+  LOG(`Running drift detection for org=${request.organisation_id} (${request.statements.length} statements)`);
+  const start = Date.now();
+
+  const result = await fetchJSON<AICoreDriftResponse>(
+    `${AI_CORE_BASE_URL}/api/drift/run`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    },
+  );
+
+  LOG(`Drift detection complete: ${result.drift_events_created} drifts found across ${result.commitments_evaluated} commitments (${Date.now() - start}ms)`);
+  return result;
+}

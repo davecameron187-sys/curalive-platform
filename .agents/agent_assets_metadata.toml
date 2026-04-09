@@ -774,3 +774,9 @@ id = "27k1x9_Jzns7Pq-ChvVac"
 uri = "file://exports/CuraLive_Replit_Update_Phase3B_2026_04_09.md"
 type = "text"
 title = "CuraLive Phase 3B Update Brief — 9 April 2026"
+
+[[outputs]]
+id = "lyHwj1sYA_pRmzeMFuUv6"
+uri = "file://exports/CuraLive_Replit_Update_Phase4A_2026_04_09.md"
+type = "text"
+title = "CuraLive Phase 4A Update Brief — Commitment Drift Detection"
