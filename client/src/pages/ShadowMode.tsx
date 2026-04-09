@@ -35,6 +35,7 @@ import SystemDiagnostics from "@/components/SystemDiagnostics";
 import LiveQaDashboard from "@/components/LiveQaDashboard";
 import { QAPatternPanel } from "@/components/QAPatternPanel";
 import LiveSessionPanel from "@/components/LiveSessionPanel";
+import { IntelligenceSummaryPanel } from "@/components/IntelligenceSummaryPanel";
 
 const PLATFORM_LABELS: Record<string, string> = {
   zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", choruscall: "Chorus Call", other: "Other",
@@ -2166,6 +2167,10 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                       )}
 
                       <OperatorActionLogPanel sessionId={liveSession.id} />
+
+                      {(liveSession.status === "completed" || liveSession.status === "processing") && (
+                        <IntelligenceSummaryPanel sessionId={liveSession.id} />
+                      )}
 
                       {(liveSession.status === "completed" || liveSession.status === "failed") && (
                         <SessionHandoffPanel sessionId={liveSession.id} clientName={liveSession.clientName} eventName={liveSession.eventName} />

@@ -204,4 +204,13 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - **Briefing benchmark context**: Briefing generation loads org profile + best benchmark, passes `benchmark_context` to generator; adds benchmark-relative pressure points and predicted questions; response includes `benchmark_context` schema
 - **Profile schema extended**: `SectorContextSchema` gains benchmark_segment, benchmark_quality, compliance/commitment/drift/sentiment/governance_position, enrichment_source, enrichment_timestamp
 - **Persistence metadata**: All benchmark build/refresh operations persist last_refresh_source (manual_build/profile_update), refresh_scope (full/incremental), low_sample flag
+
+### Phase 9 — Product Surfacing and Output Unification
+- `server/services/UnifiedIntelligenceService.ts` — Unified AI output layer aggregating all AI Core outputs (analysis, drift, governance, profile, benchmark, briefing) into a single normalized `IntelligenceSummary` object per session or organisation
+- `server/routers/unifiedIntelligenceRouter.ts` — tRPC router with `getSessionIntelligence` (by session ID) and `getOrgIntelligence` (by organisation ID) procedures
+- `client/src/components/IntelligenceSummaryPanel.tsx` — Accordion-style UI panel showing all 10 intelligence dimensions with expand/collapse, risk badges, benchmark positions, export to JSON
+- **IntelligenceSummary schema** (10 sections): overall_risk, sentiment_summary, key_commitments, drift_status, top_compliance_issues, top_predicted_questions, key_pressure_points, governance_summary, profile_summary, benchmark_context
+- **UI surfaces updated**: Shadow Mode session detail (shows panel for completed/processing sessions), Event Brief Generator (shows org intelligence after brief generation)
+- **Data flow**: Session-based queries pull persisted pipeline data from shadow_sessions columns (ai_core_results, ai_drift_results, ai_governance_results, ai_profile_summary) + live AI Core enrichment (profile, benchmark, briefing, governance detail); Org-based queries pull directly from AI Core APIs
+- **Pipeline order unchanged**: compliance email → AI Core analysis → drift → governance → profile update → auto-benchmark-refresh → auto-sector-enrichment → AI report → delivery → board intelligence → briefing accuracy
 - **Pipeline flow** (final): compliance email → AI Core analysis → drift detection → governance → **profile update → auto-benchmark-refresh → auto-sector-enrichment** → AI report → delivery → board intelligence → briefing accuracy

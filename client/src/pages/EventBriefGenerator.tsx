@@ -447,6 +447,7 @@ export default function EventBriefGenerator() {
                 </Card>
               </div>
             )}
+
           </TabsContent>
 
           {/* History Tab */}
