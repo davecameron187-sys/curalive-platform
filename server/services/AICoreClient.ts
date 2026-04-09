@@ -319,3 +319,137 @@ export async function generateBriefing(
 export async function getBriefing(briefingId: string): Promise<AICoreBriefingResponse> {
   return fetchJSON<AICoreBriefingResponse>(`${AI_CORE_BASE_URL}/api/briefing/${briefingId}`);
 }
+
+export interface AICoreGovernanceSegment {
+  speaker_id?: string | null;
+  speaker_name?: string | null;
+  text: string;
+  start_time?: number | null;
+  word_count?: number | null;
+}
+
+export interface AICoreGovernanceRequest {
+  organisation_id: string;
+  event_id?: string | null;
+  event_name?: string | null;
+  event_type?: string | null;
+  event_date?: string | null;
+  analysis_job_id?: string | null;
+  briefing_id?: string | null;
+  segments?: AICoreGovernanceSegment[];
+  include_matters_arising?: boolean;
+}
+
+export interface AICoreGovernanceMeetingSummary {
+  title: string;
+  date: string | null;
+  event_type: string | null;
+  duration: string | null;
+  total_speakers: number;
+  total_segments: number;
+  key_topics: string[];
+  executive_summary: string;
+  speaker_contributions: Array<{
+    speaker_name: string;
+    word_count: number;
+    segment_count: number;
+    share_pct: number;
+  }>;
+}
+
+export interface AICoreGovernanceCommitmentEntry {
+  commitment_id: string;
+  speaker: string | null;
+  commitment_text: string;
+  commitment_type: string;
+  deadline: string | null;
+  has_quantitative_target: boolean;
+  quantitative_values: string[];
+  status: string;
+  confidence: number;
+  drift_detected: boolean;
+  drift_details: Record<string, any> | null;
+}
+
+export interface AICoreGovernanceComplianceFlag {
+  flag_id: string;
+  flag_type: string;
+  severity: string;
+  speaker: string | null;
+  matched_pattern: string;
+  segment_text: string;
+}
+
+export interface AICoreGovernanceRiskSummary {
+  total_flags: number;
+  critical_flags: number;
+  high_flags: number;
+  medium_flags: number;
+  low_flags: number;
+  flags: AICoreGovernanceComplianceFlag[];
+  drift_summary: Record<string, any>;
+  narrative_risk: Record<string, any>;
+  overall_risk_level: string;
+}
+
+export interface AICoreGovernanceMattersArising {
+  source: string;
+  reference_type: string;
+  reference_id: string | null;
+  description: string;
+  status: string;
+  original_event: string | null;
+  current_position: string | null;
+  severity: string;
+}
+
+export interface AICoreGovernanceDataSources {
+  analysis_job_id: string | null;
+  briefing_id: string | null;
+  commitments_count: number;
+  compliance_flags_count: number;
+  drift_events_count: number;
+  signals_count: number;
+  segments_count: number;
+}
+
+export interface AICoreGovernanceResponse {
+  governance_record_id: string;
+  organisation_id: string;
+  event_id: string | null;
+  event_name: string | null;
+  event_type: string | null;
+  event_date: string | null;
+  record_type: string;
+  meeting_summary: AICoreGovernanceMeetingSummary;
+  commitment_register: AICoreGovernanceCommitmentEntry[];
+  risk_compliance_summary: AICoreGovernanceRiskSummary;
+  matters_arising: AICoreGovernanceMattersArising[];
+  data_sources: AICoreGovernanceDataSources;
+  confidence: number;
+  duration_ms: number | null;
+  created_at: string | null;
+}
+
+export async function generateGovernanceRecord(
+  request: AICoreGovernanceRequest,
+): Promise<AICoreGovernanceResponse> {
+  LOG(`Generating governance record for org=${request.organisation_id} event=${request.event_id ?? "none"}`);
+  const start = Date.now();
+
+  const result = await fetchJSON<AICoreGovernanceResponse>(
+    `${AI_CORE_BASE_URL}/api/governance/generate`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    },
+  );
+
+  LOG(`Governance record generated: ${result.governance_record_id} (${result.commitment_register.length} commitments, ${result.risk_compliance_summary.total_flags} flags, ${result.matters_arising.length} matters arising, risk=${result.risk_compliance_summary.overall_risk_level}) in ${Date.now() - start}ms`);
+  return result;
+}
+
+export async function getGovernanceRecord(recordId: string): Promise<AICoreGovernanceResponse> {
+  return fetchJSON<AICoreGovernanceResponse>(`${AI_CORE_BASE_URL}/api/governance/${recordId}`);
+}

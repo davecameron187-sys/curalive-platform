@@ -792,3 +792,9 @@ id = "hALI_BUkGd_G8x-COc5Bl"
 uri = "file://exports/CuraLive_Replit_Update_Phase5_2026_04_09.md"
 type = "text"
 title = "CuraLive Phase 5 Update Brief — Stakeholder Intelligence + Pre-Event Briefing"
+
+[[outputs]]
+id = "C4p5Tqc8dbhz6tfDEPs0g"
+uri = "file://exports/CuraLive_Replit_Update_Phase6_2026_04_09.md"
+type = "text"
+title = "CuraLive Phase 6 Update Brief — Governance Record Generation"

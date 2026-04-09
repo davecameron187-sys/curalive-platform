@@ -3,8 +3,8 @@ import { sendComplianceCloseEmail } from "./ComplianceDeadlineService";
 import { sendReportLinks }          from "./ClientDeliveryService";
 import { runBoardIntelligenceUpdate } from "./BoardIntelligenceService";
 import { calculateBriefingAccuracy }  from "./PreEventBriefingService";
-import { checkAICoreHealth, runAICoreAnalysis, runAICoreDriftDetection } from "./AICoreClient";
-import type { AICoreAnalysisResponse, AICoreDriftResponse, AICoreDriftSourceStatement } from "./AICoreClient";
+import { checkAICoreHealth, runAICoreAnalysis, runAICoreDriftDetection, generateGovernanceRecord } from "./AICoreClient";
+import type { AICoreAnalysisResponse, AICoreDriftResponse, AICoreDriftSourceStatement, AICoreGovernanceResponse } from "./AICoreClient";
 import { buildCanonicalPayload } from "./AICorePayloadMapper";
 
 const LOG = (msg: string) => console.log(`[SessionClose] ${msg}`);
@@ -103,6 +103,14 @@ export async function runSessionClosePipeline(sessionId: number): Promise<void> 
       await runDriftDetectionStep(sessionId, session, aiCoreResult);
     } catch (e) {
       ERR('Drift detection failed — continuing pipeline', e);
+    }
+  }
+
+  if (aiCoreResult) {
+    try {
+      await runGovernanceRecordStep(sessionId, session, aiCoreResult);
+    } catch (e) {
+      ERR('Governance record generation failed — continuing pipeline', e);
     }
   }
 
@@ -308,6 +316,81 @@ async function runDriftDetectionStep(
   );
 
   LOG(`Drift detection complete: ${driftResult.drift_events_created} drifts across ${driftResult.commitments_evaluated} commitments (${driftResult.duration_ms}ms)`);
+}
+
+async function runGovernanceRecordStep(
+  sessionId: number,
+  session: any,
+  aiCoreResult: AICoreAnalysisResponse,
+): Promise<void> {
+  const organisationId = aiCoreResult.organisation_id;
+
+  const [segRows] = await rawSql(
+    `SELECT speaker_name, text, start_time
+     FROM occ_transcription_segments
+     WHERE conference_id = $1
+     ORDER BY created_at ASC
+     LIMIT 2000`,
+    [sessionId]
+  );
+
+  let segments: Array<{ speaker_name: string | null; text: string; start_time: number | null }> = segRows;
+
+  if (segments.length === 0 && session.local_transcript_json) {
+    try {
+      const parsed = JSON.parse(session.local_transcript_json);
+      if (Array.isArray(parsed)) {
+        segments = parsed.map((s: any) => ({
+          speaker_name: s.speaker ?? s.speaker_name ?? null,
+          text: s.text ?? '',
+          start_time: s.start_time ?? s.timestamp ?? null,
+        }));
+      }
+    } catch {}
+  }
+
+  const govSegments = segments.map(seg => ({
+    speaker_name: seg.speaker_name ?? undefined,
+    text: seg.text,
+    start_time: seg.start_time != null ? seg.start_time / 1000 : undefined,
+    word_count: seg.text.split(/\s+/).length,
+  }));
+
+  const govResult = await generateGovernanceRecord({
+    organisation_id: organisationId,
+    event_id: `shadow-${sessionId}`,
+    event_name: session.event_name ?? session.company ?? 'Event',
+    event_type: session.event_type ?? 'earnings_call',
+    analysis_job_id: aiCoreResult.job_id,
+    briefing_id: session.ai_briefing_id ?? undefined,
+    segments: govSegments,
+    include_matters_arising: true,
+  });
+
+  const govSummary = {
+    governance_record_id: govResult.governance_record_id,
+    record_type: govResult.record_type,
+    commitments: govResult.commitment_register.length,
+    compliance_flags: govResult.risk_compliance_summary.total_flags,
+    matters_arising: govResult.matters_arising.length,
+    overall_risk_level: govResult.risk_compliance_summary.overall_risk_level,
+    confidence: govResult.confidence,
+    duration_ms: govResult.duration_ms,
+  };
+
+  await rawSql(
+    `UPDATE shadow_sessions
+     SET ai_governance_id = $1,
+         ai_governance_results = $2
+     WHERE id = $3`,
+    [
+      govResult.governance_record_id,
+      JSON.stringify(govSummary),
+      sessionId,
+    ]
+  );
+
+  LOG(`Governance record generated: ${govResult.governance_record_id} (${govResult.commitment_register.length} commitments, ${govResult.risk_compliance_summary.total_flags} flags, ${govResult.matters_arising.length} matters arising, risk=${govResult.risk_compliance_summary.overall_risk_level})`);
 }
 
 async function runAICoreAnalysisStep(

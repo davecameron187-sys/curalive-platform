@@ -155,3 +155,17 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - `server/services/PreEventBriefingService.ts` — Enriched with AI Core briefing before LLM fallback
 - **Tables**: `aic_stakeholder_signals` (15 cols), `aic_briefings` (16 cols)
 - **scheduled_sessions columns added**: `ai_briefing_id` (VARCHAR), `ai_briefing_results` (JSONB)
+
+### Phase 6 — Governance Record Generation
+- `curalive_ai_core/app/models/governance_record.py` — GovernanceRecord ORM model (15 cols)
+- `curalive_ai_core/app/schemas/governance.py` — Pydantic schemas for generation (with segment input) and retrieval
+- `curalive_ai_core/app/services/governance_generator.py` — Generates structured governance records: meeting summary, commitment register, risk/compliance summary, matters arising
+- `curalive_ai_core/app/api/routes/governance.py` — `POST /api/governance/generate`, `GET /api/governance/{id}`
+- `server/services/AICoreClient.ts` — Added `generateGovernanceRecord()`, `getGovernanceRecord()` + 10 typed interfaces
+- `server/services/SessionClosePipeline.ts` — Added `runGovernanceRecordStep()` after drift detection; persists `ai_governance_id` + `ai_governance_results` JSONB to `shadow_sessions`
+- **Table**: `aic_governance_records` (15 cols)
+- **shadow_sessions columns added**: `ai_governance_id` (VARCHAR), `ai_governance_results` (JSONB)
+- **Flow**: AI Core analysis → drift detection → governance generation → persist to shadow_sessions
+- **Non-blocking**: governance failures are logged and pipeline continues
+- **Governance inputs**: transcript segments, commitments, compliance flags, drift events, briefing context
+- **Governance outputs**: meeting summary (speakers, topics, contributions), commitment register (with drift annotations), risk/compliance summary (flags + drift + narrative risk), matters arising (from drifts + escalated/deadline commitments)
