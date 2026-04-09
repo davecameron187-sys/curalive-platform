@@ -289,17 +289,29 @@ function buildArchiveReportEmail(opts: {
   metricsGenerated: number;
   notes: string | null;
   aiReport: AiReport | null;
+  brandName?: string;
+  brandLogoUrl?: string;
+  brandPrimaryColor?: string;
 }): string {
   const sentimentColor = (opts.sentimentAvg ?? 50) >= 70 ? "#10b981" : (opts.sentimentAvg ?? 50) >= 50 ? "#f59e0b" : "#ef4444";
   const sentimentLabel = (opts.sentimentAvg ?? 50) >= 70 ? "Positive" : (opts.sentimentAvg ?? 50) >= 50 ? "Neutral" : "Negative";
   const complianceColor = opts.complianceFlags > 3 ? "#ef4444" : opts.complianceFlags > 1 ? "#f59e0b" : "#10b981";
   const complianceLabel = opts.complianceFlags > 3 ? "High Risk" : opts.complianceFlags > 1 ? "Moderate" : "Low Risk";
+  const riskCount = opts.aiReport?.riskFactors?.length ?? 0;
+  const actionCount = (opts.aiReport?.actionItems?.length ?? 0) + (opts.aiReport?.criticalActions?.length ?? 0);
+  const riskColor = riskCount > 3 ? "#ef4444" : riskCount > 0 ? "#f59e0b" : "#10b981";
   const eventTypeLabels: Record<string, string> = {
     earnings_call: "Earnings Call", agm: "AGM", capital_markets_day: "Capital Markets Day",
     ceo_town_hall: "CEO Town Hall", board_meeting: "Board Meeting", webcast: "Webcast", other: "Other",
   };
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const sevColor = (s: string) => s === "Low" || s === "Positive" ? "#10b981" : s === "High" || s === "Critical" || s === "Negative" ? "#ef4444" : "#f59e0b";
+
+  const headerBrandName = opts.brandName || "CuraLive";
+  const headerPrimary = opts.brandPrimaryColor || "#1e3a5f";
+  const headerLogo = opts.brandLogoUrl
+    ? `<img src="${esc(opts.brandLogoUrl)}" alt="${esc(headerBrandName)}" style="max-height:32px;margin-bottom:8px;" />`
+    : "";
 
   const sectionHeader = (title: string, color: string) =>
     `<tr><td style="padding:28px 40px 12px;">
@@ -320,30 +332,20 @@ function buildArchiveReportEmail(opts: {
     }</table></td></tr>`;
 
   const r = opts.aiReport;
+  const execSummary = r?.executiveSummary
+    ? typeof r.executiveSummary === "string" ? r.executiveSummary : (r.executiveSummary as any)?.verdict ?? JSON.stringify(r.executiveSummary)
+    : null;
 
   let reportSections = "";
 
   if (r) {
-    if (r.executiveSummary) {
+    if (execSummary) {
       reportSections += sectionHeader("Executive Summary", "#a78bfa");
-      reportSections += textBlock(r.executiveSummary);
-    }
-
-    if (r.sentimentAnalysis) {
-      reportSections += sectionHeader("Sentiment Analysis", "#10b981");
-      reportSections += `<tr><td style="padding:4px 40px 8px;">
-        <table cellpadding="0" cellspacing="0"><tr>
-          <td style="background:#0f172a;border-radius:6px;padding:8px 16px;border:1px solid #1e293b;">
-            <span style="font-size:24px;font-weight:800;color:${sentimentColor};">${r.sentimentAnalysis.score}</span>
-            <span style="font-size:13px;color:#64748b;">/100 · ${sentimentLabel}</span>
-          </td>
-        </tr></table>
+      reportSections += `<tr><td style="padding:4px 40px 16px;">
+        <table width="100%" style="background:linear-gradient(135deg,#1e1b4b15,#0f172a15);border-radius:8px;border:1px solid #a78bfa30;"><tr><td style="padding:20px;">
+          <p style="margin:0;font-size:14px;color:#e2e8f0;line-height:1.7;">${esc(execSummary)}</p>
+        </td></tr></table>
       </td></tr>`;
-      reportSections += textBlock(r.sentimentAnalysis.narrative);
-      if (r.sentimentAnalysis.keyDrivers?.length > 0) {
-        reportSections += `<tr><td style="padding:0 40px 4px;"><p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Key Drivers</p></td></tr>`;
-        reportSections += bulletList(r.sentimentAnalysis.keyDrivers);
-      }
     }
 
     if (r.complianceReview) {
@@ -365,6 +367,47 @@ function buildArchiveReportEmail(opts: {
       }
     }
 
+    if (r.riskFactors?.length > 0) {
+      reportSections += sectionHeader("Risk Factors", "#ef4444");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Factor</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Impact</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Likelihood</td></tr>
+        ${r.riskFactors.map(f => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;">${esc(f.factor)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(f.impact)};font-weight:600;">${esc(f.impact)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(f.likelihood)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+
+    if (r.sentimentAnalysis) {
+      reportSections += sectionHeader("Sentiment Analysis", "#10b981");
+      reportSections += `<tr><td style="padding:4px 40px 8px;">
+        <table cellpadding="0" cellspacing="0"><tr>
+          <td style="background:#0f172a;border-radius:6px;padding:8px 16px;border:1px solid #1e293b;">
+            <span style="font-size:24px;font-weight:800;color:${sentimentColor};">${r.sentimentAnalysis.score}</span>
+            <span style="font-size:13px;color:#64748b;">/100 · ${sentimentLabel}</span>
+          </td>
+        </tr></table>
+      </td></tr>`;
+      reportSections += textBlock(r.sentimentAnalysis.narrative);
+      if (r.sentimentAnalysis.keyDrivers?.length > 0) {
+        reportSections += `<tr><td style="padding:0 40px 4px;"><p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Key Drivers</p></td></tr>`;
+        reportSections += bulletList(r.sentimentAnalysis.keyDrivers);
+      }
+    }
+
+    if (r.actionItems?.length > 0) {
+      reportSections += sectionHeader("Action Items", "#ec4899");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Action Item</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Owner</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Deadline</td></tr>
+        ${r.actionItems.map(a => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;">${esc(a.item)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(a.owner)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(a.deadline)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+
+    if (r.investorSignals?.length > 0) {
+      reportSections += sectionHeader("Investor Signals", "#f97316");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Signal</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Interpretation</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Severity</td></tr>
+        ${r.investorSignals.map(s => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;font-weight:600;">${esc(s.signal)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;line-height:1.5;">${esc(s.interpretation)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(s.severity)};font-weight:600;">${esc(s.severity)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+
     if (r.keyTopics?.length > 0) {
       reportSections += sectionHeader("Key Topics", "#60a5fa");
       reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
@@ -383,14 +426,6 @@ function buildArchiveReportEmail(opts: {
       }
     }
 
-    if (r.investorSignals?.length > 0) {
-      reportSections += sectionHeader("Investor Signals", "#f97316");
-      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
-        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Signal</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Interpretation</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Severity</td></tr>
-        ${r.investorSignals.map(s => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;font-weight:600;">${esc(s.signal)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;line-height:1.5;">${esc(s.interpretation)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(s.severity)};font-weight:600;">${esc(s.severity)}</td></tr>`).join("")}
-      </table></td></tr>`;
-    }
-
     if (r.questionsAsked?.length > 0) {
       reportSections += sectionHeader("Q&A Breakdown", "#06b6d4");
       for (const q of r.questionsAsked) {
@@ -401,14 +436,6 @@ function buildArchiveReportEmail(opts: {
           </td></tr></table>
         </td></tr>`;
       }
-    }
-
-    if (r.actionItems?.length > 0) {
-      reportSections += sectionHeader("Action Items", "#ec4899");
-      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
-        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Action Item</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Owner</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Deadline</td></tr>
-        ${r.actionItems.map(a => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;">${esc(a.item)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(a.owner)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(a.deadline)}</td></tr>`).join("")}
-      </table></td></tr>`;
     }
 
     if (r.communicationScore) {
@@ -432,14 +459,6 @@ function buildArchiveReportEmail(opts: {
         </tr></table>
       </td></tr>`;
       reportSections += textBlock(cs.narrative);
-    }
-
-    if (r.riskFactors?.length > 0) {
-      reportSections += sectionHeader("Risk Factors", "#ef4444");
-      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
-        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Factor</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Impact</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Likelihood</td></tr>
-        ${r.riskFactors.map(f => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;">${esc(f.factor)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(f.impact)};font-weight:600;">${esc(f.impact)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(f.likelihood)}</td></tr>`).join("")}
-      </table></td></tr>`;
     }
 
     if (r.financialHighlights?.length > 0) {
@@ -528,8 +547,9 @@ function buildArchiveReportEmail(opts: {
 <body style="margin:0;padding:0;background:#0a0d14;font-family:'Inter',Arial,sans-serif;color:#e2e8f0;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0d14;padding:40px 20px;"><tr><td align="center">
 <table width="640" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;border:1px solid #1e293b;">
-<tr><td style="background:linear-gradient(135deg,#1e3a5f,#0f172a);padding:32px 40px;">
-<p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;">CuraLive Post-Event Intelligence Report</p>
+<tr><td style="background:linear-gradient(135deg,${headerPrimary},#0f172a);padding:32px 40px;">
+${headerLogo}
+<p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;">${esc(headerBrandName)} Post-Event Intelligence Report</p>
 <h1 style="margin:0;font-size:22px;font-weight:700;color:#f1f5f9;line-height:1.3;">${esc(opts.eventName)}</h1>
 <p style="margin:8px 0 0;font-size:14px;color:#94a3b8;">${esc(opts.clientName)} · ${eventTypeLabels[opts.eventType] ?? opts.eventType}${opts.eventDate ? ` · ${opts.eventDate}` : ""}</p>
 </td></tr>
@@ -551,12 +571,14 @@ function buildArchiveReportEmail(opts: {
 <p style="margin:2px 0 0;font-size:11px;color:${complianceColor};font-weight:600;">${complianceLabel}</p>
 </td></tr></table></td>
 <td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:14px;text-align:center;">
-<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Words</p>
-<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:#60a5fa;">${opts.wordCount.toLocaleString()}</p>
+<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Risk Factors</p>
+<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:${riskColor};">${riskCount}</p>
+<p style="margin:2px 0 0;font-size:11px;color:${riskColor};font-weight:600;">${riskCount > 3 ? "Elevated" : riskCount > 0 ? "Manageable" : "Clear"}</p>
 </td></tr></table></td>
 <td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:14px;text-align:center;">
-<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Segments</p>
-<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:#60a5fa;">${opts.segmentCount}</p>
+<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Action Items</p>
+<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:#a78bfa;">${actionCount}</p>
+<p style="margin:2px 0 0;font-size:11px;color:#a78bfa;font-weight:600;">${actionCount > 0 ? "to follow up" : "none"}</p>
 </td></tr></table></td>
 </tr>
 </table>
@@ -571,7 +593,7 @@ ${opts.notes ? `<tr><td style="padding:12px 40px 20px;"><table width="100%" styl
 <p style="margin:0;font-size:14px;color:#cbd5e1;line-height:1.6;">${esc(opts.notes)}</p>
 </td></tr></table></td></tr>` : ""}
 <tr><td style="background:#0f172a;padding:24px 40px;border-top:1px solid #1e293b;">
-<p style="margin:0 0 4px;font-size:12px;color:#475569;text-align:center;">CuraLive Intelligence Platform · Automated Post-Event Report</p>
+<p style="margin:0 0 4px;font-size:12px;color:#475569;text-align:center;">${esc(headerBrandName)} Intelligence Platform · Automated Post-Event Report</p>
 <p style="margin:0;font-size:11px;color:#334155;text-align:center;">This report was generated by AI and should be reviewed alongside primary source materials.</p>
 </td></tr>
 </table></td></tr></table></body></html>`;
