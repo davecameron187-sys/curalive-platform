@@ -1,0 +1,126 @@
+const AI_CORE_BASE_URL = process.env.AI_CORE_URL ?? "http://localhost:5000";
+const LOG = (msg: string) => console.log(`[AICoreClient] ${msg}`);
+const ERR = (msg: string, e: any) => console.error(`[AICoreClient] ${msg}`, e);
+
+export interface AICoreAnalysisRequest {
+  canonical_event: {
+    event_id: string;
+    title: string;
+    organisation_id: string;
+    organisation_name?: string | null;
+    event_type: string;
+    jurisdiction?: string | null;
+    signal_source?: string;
+    speakers: Array<{
+      speaker_id: string;
+      display_name?: string | null;
+      role?: string | null;
+      segment_count: number;
+      total_words: number;
+    }>;
+    segments: Array<{
+      speaker_id: string;
+      speaker_name?: string | null;
+      text: string;
+      start_time?: number | null;
+      end_time?: number | null;
+      word_count: number;
+    }>;
+    total_segments: number;
+    total_words: number;
+    total_speakers: number;
+    questions: Array<Record<string, any>>;
+    compliance_flags: Array<Record<string, any>>;
+  };
+  modules: string[];
+}
+
+export interface AICoreModuleOutput {
+  module: string;
+  status: string;
+  result: Record<string, any>;
+  error?: string | null;
+}
+
+export interface AICoreAnalysisResponse {
+  job_id: string;
+  event_id: string;
+  organisation_id: string;
+  overall_status: "complete" | "partial" | "error" | "queued" | "running";
+  modules_requested: string[];
+  modules_completed: string[];
+  modules_failed: string[];
+  outputs: AICoreModuleOutput[];
+  duration_ms: number | null;
+  created_at: string | null;
+}
+
+export interface AICoreJobSummary {
+  job_id: string;
+  event_id: string;
+  organisation_id: string;
+  overall_status: string;
+  requested_modules: string[];
+  completed_modules: string[];
+  failed_modules: string[];
+  duration_ms: number | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AICoreJobResults {
+  job_id: string;
+  event_id: string;
+  organisation_id: string;
+  overall_status: string;
+  modules: AICoreModuleOutput[];
+  commitments_persisted: number;
+  compliance_flags_persisted: number;
+}
+
+async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`AI Core ${res.status}: ${body}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function checkAICoreHealth(): Promise<boolean> {
+  try {
+    const data = await fetchJSON<{ status: string }>(`${AI_CORE_BASE_URL}/health`);
+    return data.status === "ok";
+  } catch (e) {
+    ERR("Health check failed", e);
+    return false;
+  }
+}
+
+export async function runAICoreAnalysis(
+  request: AICoreAnalysisRequest
+): Promise<AICoreAnalysisResponse> {
+  LOG(`Running analysis for event ${request.canonical_event.event_id} (${request.modules.length} modules)`);
+  const start = Date.now();
+
+  const result = await fetchJSON<AICoreAnalysisResponse>(
+    `${AI_CORE_BASE_URL}/api/analysis/run`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }
+  );
+
+  LOG(`Analysis complete: job=${result.job_id} status=${result.overall_status} (${Date.now() - start}ms)`);
+  return result;
+}
+
+export async function getAICoreJobSummary(jobId: string): Promise<AICoreJobSummary> {
+  return fetchJSON<AICoreJobSummary>(`${AI_CORE_BASE_URL}/api/analysis/jobs/${jobId}`);
+}
+
+export async function getAICoreJobResults(jobId: string): Promise<AICoreJobResults> {
+  return fetchJSON<AICoreJobResults>(`${AI_CORE_BASE_URL}/api/analysis/jobs/${jobId}/results`);
+}

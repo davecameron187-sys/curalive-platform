@@ -3,6 +3,9 @@ import { sendComplianceCloseEmail } from "./ComplianceDeadlineService";
 import { sendReportLinks }          from "./ClientDeliveryService";
 import { runBoardIntelligenceUpdate } from "./BoardIntelligenceService";
 import { calculateBriefingAccuracy }  from "./PreEventBriefingService";
+import { checkAICoreHealth, runAICoreAnalysis } from "./AICoreClient";
+import type { AICoreAnalysisResponse } from "./AICoreClient";
+import { buildCanonicalPayload } from "./AICorePayloadMapper";
 
 const LOG = (msg: string) => console.log(`[SessionClose] ${msg}`);
 const ERR = (msg: string, e: any) => console.error(`[SessionClose] ${msg}`, e);
@@ -83,6 +86,16 @@ export async function runSessionClosePipeline(sessionId: number): Promise<void> 
     } catch (e) {
       ERR('Compliance email failed', e);
     }
+  }
+
+  let aiCoreResult: AICoreAnalysisResponse | null = null;
+  try {
+    aiCoreResult = await runAICoreAnalysisStep(sessionId, session);
+    if (aiCoreResult) {
+      LOG(`AI Core analysis complete: job=${aiCoreResult.job_id} status=${aiCoreResult.overall_status} (${Date.now()-pipelineStart}ms)`);
+    }
+  } catch (e) {
+    ERR('AI Core analysis failed — continuing with legacy pipeline', e);
   }
 
   let reportModules: Record<string, string> = {};
@@ -205,4 +218,53 @@ function calculateDuration(session: any): string {
   } catch {
     return '—';
   }
+}
+
+async function runAICoreAnalysisStep(
+  sessionId: number,
+  session: any
+): Promise<AICoreAnalysisResponse | null> {
+  const healthy = await checkAICoreHealth();
+  if (!healthy) {
+    LOG('AI Core not available — skipping');
+    return null;
+  }
+
+  const payload = await buildCanonicalPayload(sessionId, session);
+
+  if (payload.canonical_event.segments.length === 0) {
+    LOG('No transcript segments — skipping AI Core analysis');
+    return null;
+  }
+
+  await rawSql(
+    `UPDATE shadow_sessions SET ai_core_status = 'running' WHERE id = $1`,
+    [sessionId]
+  );
+
+  const result = await runAICoreAnalysis(payload);
+
+  const outputsSummary: Record<string, any> = {};
+  for (const output of result.outputs) {
+    if (output.status === 'ok') {
+      outputsSummary[output.module] = output.result;
+    }
+  }
+
+  await rawSql(
+    `UPDATE shadow_sessions
+     SET ai_core_job_id = $1,
+         ai_core_status = $2,
+         ai_core_results = $3
+     WHERE id = $4`,
+    [
+      result.job_id,
+      result.overall_status,
+      JSON.stringify(outputsSummary),
+      sessionId,
+    ]
+  );
+
+  LOG(`Persisted AI Core results: job=${result.job_id}, modules=${result.modules_completed.length}/${result.modules_requested.length}`);
+  return result;
 }

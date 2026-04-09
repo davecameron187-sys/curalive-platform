@@ -105,7 +105,7 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - Full JSON contract documented in `curalive_ai_core/docs/integration_contract.md`
 - Covers request/response/error formats, job status values, Node.js integration pattern
 
-### Key Files
+### Key Files (Python)
 - `app/main.py` — FastAPI bootstrap with DB lifespan, router registration
 - `app/api/routes/events.py` — Event ingestion endpoint
 - `app/api/routes/analysis.py` — Analysis orchestration with persistence + job retrieval
@@ -119,3 +119,10 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - `app/services/engagement.py` — Engagement scoring service
 - `app/services/compliance_signals.py` — Compliance signal detection service
 - `app/services/commitment_extraction.py` — Commitment extraction service
+
+### Node.js ↔ Python Integration (Phase 3B)
+- `server/services/AICoreClient.ts` — Reusable HTTP client for all Python AI Core calls (health, run, job summary, job results)
+- `server/services/AICorePayloadMapper.ts` — Maps Node session/transcript data into canonical event format
+- `server/services/SessionClosePipeline.ts` — Now calls Python AI Core after session close, persists job_id and results
+- **shadow_sessions columns added**: `ai_core_job_id` (VARCHAR), `ai_core_status` (VARCHAR), `ai_core_results` (JSONB)
+- **Flow**: Session close → load transcript segments → map to canonical → POST /api/analysis/run → persist job_id + status + full results JSONB to shadow_sessions
