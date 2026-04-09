@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Download } from 'lucide-react';
+import { Download, BarChart3, MessageSquare, Shield, CheckCircle } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 
 export function PreEventIntelligenceBriefing({ sessionId }: { sessionId: number }) {
@@ -36,34 +36,81 @@ export function PreEventIntelligenceBriefing({ sessionId }: { sessionId: number 
     }
   };
 
+  const getRiskLabel = (level: string) => {
+    switch (level) {
+      case 'high': return 'High Risk';
+      case 'medium': return 'Moderate';
+      case 'low': return 'Low Risk';
+      default: return level?.toUpperCase() ?? 'N/A';
+    }
+  };
+
+  const readinessPercent = (score: any) => (((score.score ?? 0) / (score.maxScore || 1)) * 100);
+  const readinessColor = (pct: number) => pct >= 80 ? 'text-emerald-400' : pct >= 50 ? 'text-amber-400' : 'text-red-400';
+  const readinessBarColor = (pct: number) => pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
+
+  if (briefing.isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Pre-Event Intelligence Briefing</h2>
+          <p className="text-sm text-muted-foreground mt-1">Loading briefing data...</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (briefing.isError || !briefing.data) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Pre-Event Intelligence Briefing</h2>
+          <p className="text-sm text-muted-foreground mt-1">Unable to load briefing data for this session.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Pre-Event Intelligence Briefing</h2>
-          <p className="text-sm text-muted-foreground mt-1">60-minute prep briefing with analyst consensus, predicted Q&A, and compliance hotspots</p>
+          <p className="text-sm text-muted-foreground mt-1">Analyst consensus, predicted Q&A, compliance review, and readiness assessment</p>
         </div>
         <Button variant="outline" className="gap-2">
           <Download className="w-4 h-4" />
-          Export Briefing
+          Export Briefing Pack
         </Button>
       </div>
 
       {scores.data && scores.data.length > 0 && (
         <Card className="bg-gradient-to-br from-blue-900 to-blue-800 border-blue-700">
-          <CardHeader>
-            <CardTitle className="text-white">Event Readiness Score</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-white flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-blue-300" />
+              Event Readiness
+            </CardTitle>
+            <CardDescription className="text-blue-200/70">
+              Preparation status across key categories
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 gap-4">
-              {scores.data.slice(0, 4).map((score: any) => (
-                <div key={score.id} className="text-center">
-                  <div className="text-3xl font-bold text-blue-300">
-                    {(((score.score ?? 0) / (score.maxScore || 1)) * 100).toFixed(0)}%
+              {scores.data.slice(0, 4).map((score: any) => {
+                const pct = readinessPercent(score);
+                return (
+                  <div key={score.id} className="text-center">
+                    <div className={`text-3xl font-bold ${readinessColor(pct)}`}>
+                      {pct.toFixed(0)}%
+                    </div>
+                    <p className="text-xs text-blue-200 mt-1 capitalize">{score.category}</p>
                   </div>
-                  <p className="text-xs text-blue-200 mt-1">{score.category}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -71,23 +118,39 @@ export function PreEventIntelligenceBriefing({ sessionId }: { sessionId: number 
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="consensus">Consensus</TabsTrigger>
-          <TabsTrigger value="qa">Predicted Q&A</TabsTrigger>
-          <TabsTrigger value="hotspots">Hotspots</TabsTrigger>
-          <TabsTrigger value="readiness">Readiness</TabsTrigger>
+          <TabsTrigger value="consensus" className="gap-1.5">
+            <BarChart3 className="w-3.5 h-3.5 hidden sm:inline" />
+            Analyst Consensus
+          </TabsTrigger>
+          <TabsTrigger value="qa" className="gap-1.5">
+            <MessageSquare className="w-3.5 h-3.5 hidden sm:inline" />
+            Predicted Q&A
+          </TabsTrigger>
+          <TabsTrigger value="hotspots" className="gap-1.5">
+            <Shield className="w-3.5 h-3.5 hidden sm:inline" />
+            Compliance
+          </TabsTrigger>
+          <TabsTrigger value="readiness" className="gap-1.5">
+            <CheckCircle className="w-3.5 h-3.5 hidden sm:inline" />
+            Readiness
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="consensus" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Analyst Consensus Data</CardTitle>
-              <CardDescription>Key metrics and analyst expectations</CardDescription>
+              <CardDescription>Key financial metrics and analyst expectations ahead of the event</CardDescription>
             </CardHeader>
             <CardContent>
               {consensus.isLoading ? (
-                <p className="text-muted-foreground">Loading consensus data...</p>
+                <p className="text-muted-foreground">Loading analyst consensus data...</p>
               ) : consensus.data?.length === 0 ? (
-                <p className="text-muted-foreground">No consensus data available</p>
+                <div className="text-center py-8">
+                  <BarChart3 className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-muted-foreground">No analyst consensus data available for this event.</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Consensus data is populated when analyst estimates are provided prior to the event.</p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {consensus.data?.map((item: any) => (
@@ -95,7 +158,7 @@ export function PreEventIntelligenceBriefing({ sessionId }: { sessionId: number 
                       <div className="flex justify-between items-start mb-2">
                         <p className="font-medium">{item.metric}</p>
                         <Badge variant={item.revisionTrend === 'up' ? 'default' : 'secondary'}>
-                          {item.revisionTrend?.toUpperCase() ?? 'FLAT'}
+                          {item.revisionTrend === 'up' ? 'Revised Up' : item.revisionTrend === 'down' ? 'Revised Down' : 'Flat'}
                         </Badge>
                       </div>
                       <div className="grid grid-cols-3 gap-4 text-sm">
@@ -105,11 +168,11 @@ export function PreEventIntelligenceBriefing({ sessionId }: { sessionId: number 
                         </div>
                         <div>
                           <p className="text-muted-foreground">Range</p>
-                          <p className="font-semibold">{item.lowEstimate} - {item.highEstimate}</p>
+                          <p className="font-semibold">{item.lowEstimate} — {item.highEstimate}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Analysts</p>
-                          <p className="font-semibold">{item.numAnalysts}</p>
+                          <p className="font-semibold">{item.numAnalysts} covering</p>
                         </div>
                       </div>
                     </div>
@@ -123,14 +186,18 @@ export function PreEventIntelligenceBriefing({ sessionId }: { sessionId: number 
         <TabsContent value="qa" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Predicted Q&A</CardTitle>
-              <CardDescription>Likely questions and suggested responses</CardDescription>
+              <CardTitle>Predicted Questions</CardTitle>
+              <CardDescription>Likely analyst and investor questions with suggested responses and risk assessment</CardDescription>
             </CardHeader>
             <CardContent>
               {qa.isLoading ? (
-                <p className="text-muted-foreground">Loading Q&A...</p>
+                <p className="text-muted-foreground">Generating predicted Q&A...</p>
               ) : qa.data?.length === 0 ? (
-                <p className="text-muted-foreground">No predicted Q&A available</p>
+                <div className="text-center py-8">
+                  <MessageSquare className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-muted-foreground">No predicted questions generated for this event.</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Questions are generated based on historical data and current market conditions.</p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {qa.data?.map((item: any) => (
@@ -138,7 +205,7 @@ export function PreEventIntelligenceBriefing({ sessionId }: { sessionId: number 
                       <div className="flex justify-between items-start mb-2">
                         <p className="font-medium">{item.topic}</p>
                         <Badge className={getRiskColor(item.riskLevel ?? 'low')}>
-                          {(item.riskLevel ?? 'LOW').toUpperCase()}
+                          {getRiskLabel(item.riskLevel ?? 'low')}
                         </Badge>
                       </div>
                       <div className="mb-3">
@@ -158,13 +225,17 @@ export function PreEventIntelligenceBriefing({ sessionId }: { sessionId: number 
           <Card>
             <CardHeader>
               <CardTitle>Compliance Hotspots</CardTitle>
-              <CardDescription>Areas requiring careful attention</CardDescription>
+              <CardDescription>Regulatory areas and topics requiring careful attention during the event</CardDescription>
             </CardHeader>
             <CardContent>
               {hotspots.isLoading ? (
-                <p className="text-muted-foreground">Loading hotspots...</p>
+                <p className="text-muted-foreground">Scanning for compliance hotspots...</p>
               ) : hotspots.data?.length === 0 ? (
-                <p className="text-muted-foreground">No compliance hotspots identified</p>
+                <div className="text-center py-8">
+                  <Shield className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-muted-foreground">No compliance hotspots identified for this event.</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">This is a positive signal — no areas of elevated regulatory concern were detected.</p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {hotspots.data?.map((hotspot: any) => (
@@ -172,12 +243,14 @@ export function PreEventIntelligenceBriefing({ sessionId }: { sessionId: number 
                       <div className="flex justify-between items-start mb-2">
                         <p className="font-medium">{hotspot.area}</p>
                         <Badge className={getRiskColor(hotspot.riskLevel ?? 'low')}>
-                          {(hotspot.riskLevel ?? 'LOW').toUpperCase()}
+                          {getRiskLabel(hotspot.riskLevel ?? 'low')}
                         </Badge>
                       </div>
                       <p className="text-sm mb-2">{hotspot.description}</p>
-                      <p className="text-xs font-semibold mb-1">Regulatory: {hotspot.regulatoryBasis}</p>
-                      <p className="text-xs">Action: {hotspot.recommendedAction}</p>
+                      <div className="text-xs space-y-1">
+                        <p><span className="font-semibold">Regulatory basis:</span> {hotspot.regulatoryBasis}</p>
+                        <p><span className="font-semibold">Recommended action:</span> {hotspot.recommendedAction}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -190,31 +263,46 @@ export function PreEventIntelligenceBriefing({ sessionId }: { sessionId: number 
           <Card>
             <CardHeader>
               <CardTitle>Readiness Assessment</CardTitle>
-              <CardDescription>Preparation status by category</CardDescription>
+              <CardDescription>Preparation completeness across key event readiness categories</CardDescription>
             </CardHeader>
             <CardContent>
               {scores.isLoading ? (
-                <p className="text-muted-foreground">Loading readiness scores...</p>
+                <p className="text-muted-foreground">Calculating readiness scores...</p>
               ) : scores.data?.length === 0 ? (
-                <p className="text-muted-foreground">No readiness data available</p>
+                <div className="text-center py-8">
+                  <CheckCircle className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-muted-foreground">No readiness data available yet.</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Readiness scores are generated once pre-event data is collected.</p>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {scores.data?.map((score: any) => (
-                    <div key={score.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">{score.category}</p>
-                        <p className="font-semibold">{(((score.score ?? 0) / (score.maxScore || 1)) * 100).toFixed(0)}%</p>
+                  {scores.data?.map((score: any) => {
+                    const pct = readinessPercent(score);
+                    return (
+                      <div key={score.id} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <p className="font-medium capitalize">{score.category}</p>
+                          <p className={`font-semibold ${readinessColor(pct)}`}>{pct.toFixed(0)}%</p>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                          <div
+                            className={`${readinessBarColor(pct)} h-2 rounded-full transition-all duration-500`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        {score.gaps && (
+                          <p className="text-xs text-muted-foreground mb-1">
+                            <span className="font-medium text-amber-600">Gaps:</span> {score.gaps}
+                          </p>
+                        )}
+                        {score.recommendations && (
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-medium text-blue-600">Next steps:</span> {score.recommendations}
+                          </p>
+                        )}
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${((score.score ?? 0) / (score.maxScore || 1)) * 100}%` }}
-                        />
-                      </div>
-                      {score.gaps && <p className="text-xs text-muted-foreground mb-1">Gaps: {score.gaps}</p>}
-                      {score.recommendations && <p className="text-xs font-semibold">Recommendations: {score.recommendations}</p>}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

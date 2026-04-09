@@ -273,7 +273,8 @@ td{padding:8px 10px;border:1px solid #e5e7eb;vertical-align:top}.section{margin-
     html += `Exported: ${new Date(s.exportedAt).toLocaleString()}</div>`;
 
     if (d.aiReport?.executiveSummary) {
-      html += `<h2>Executive Summary</h2><div class="summary-box">${escHtml(d.aiReport.executiveSummary)}</div>`;
+      const execSummary = typeof d.aiReport.executiveSummary === "string" ? d.aiReport.executiveSummary : d.aiReport.executiveSummary?.verdict ?? JSON.stringify(d.aiReport.executiveSummary);
+      html += `<h2>Executive Summary</h2><div class="summary-box">${escHtml(execSummary)}</div>`;
     }
     if (d.aiReport?.sentimentAnalysis) {
       const sa = d.aiReport.sentimentAnalysis;
@@ -427,7 +428,11 @@ td{padding:8px 10px;border:1px solid #e5e7eb;vertical-align:top}.section{margin-
               <Brain className="w-3.5 h-3.5 text-violet-400" />
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Executive Summary</span>
             </div>
-            <p className="text-sm text-slate-300 leading-relaxed">{pkg.aiReport.executiveSummary}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              {typeof pkg.aiReport.executiveSummary === "string"
+                ? pkg.aiReport.executiveSummary
+                : pkg.aiReport.executiveSummary?.verdict ?? JSON.stringify(pkg.aiReport.executiveSummary)}
+            </p>
           </div>
         </div>
       )}
@@ -1699,11 +1704,17 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                               <Building2 className="w-3.5 h-3.5" />
                               <span>{liveSession.clientName}</span>
                               <span>·</span>
-                              <span>{EVENT_TYPE_LABELS[liveSession.eventType]}</span>
+                              <span>{EVENT_TYPE_LABELS[liveSession.eventType] ?? liveSession.eventType}</span>
                               <span>·</span>
-                              <span>{PLATFORM_LABELS[liveSession.platform]}</span>
-                              {liveSession.startedAt && (
-                                <><span>·</span><span>{duration}m elapsed</span></>
+                              <span>{PLATFORM_LABELS[liveSession.platform] ?? liveSession.platform}</span>
+                              {isActive && liveSession.startedAt && (
+                                <><span>·</span><span className="text-emerald-400">{duration}m elapsed</span></>
+                              )}
+                              {liveSession.status === "completed" && liveSession.endedAt && (
+                                <><span>·</span><span>Completed {new Date(liveSession.endedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span></>
+                              )}
+                              {liveSession.status === "completed" && liveSession.startedAt && liveSession.endedAt && (
+                                <><span>·</span><span>{Math.round((new Date(liveSession.endedAt).getTime() - new Date(liveSession.startedAt).getTime()) / 60000)}m duration</span></>
                               )}
                             </div>
                           </div>
@@ -1759,17 +1770,18 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {[
-                          { label: "Transcript Segments", value: Array.isArray(liveSession.transcriptSegments) ? liveSession.transcriptSegments.length : ((liveSession.transcriptSegments as unknown as number) ?? 0), icon: MessageSquare, color: "text-blue-400" },
-                          { label: "Avg Sentiment", value: liveSession.sentimentAvg != null ? `${Math.round(liveSession.sentimentAvg)}%` : "—", icon: Activity, color: "text-emerald-400" },
-                          { label: "Compliance Flags", value: liveSession.complianceFlags ?? 0, icon: Shield, color: "text-amber-400" },
-                          { label: "Metrics Generated", value: liveSession.taggedMetricsGenerated ?? 0, icon: Tag, color: "text-violet-400" },
+                          { label: "Transcript", sublabel: "segments captured", value: Array.isArray(liveSession.transcriptSegments) ? liveSession.transcriptSegments.length : ((liveSession.transcriptSegments as unknown as number) ?? 0), icon: MessageSquare, color: "text-blue-400" },
+                          { label: "Sentiment", sublabel: "average score", value: liveSession.sentimentAvg != null ? `${Math.round(liveSession.sentimentAvg)}%` : "—", icon: Activity, color: liveSession.sentimentAvg != null && liveSession.sentimentAvg >= 60 ? "text-emerald-400" : liveSession.sentimentAvg != null && liveSession.sentimentAvg < 40 ? "text-red-400" : "text-amber-400" },
+                          { label: "Compliance", sublabel: "flags raised", value: liveSession.complianceFlags ?? 0, icon: Shield, color: (liveSession.complianceFlags ?? 0) > 0 ? "text-amber-400" : "text-emerald-400" },
+                          { label: "Metrics", sublabel: "data points", value: liveSession.taggedMetricsGenerated ?? 0, icon: Tag, color: "text-violet-400" },
                         ].map(stat => {
                           const Icon = stat.icon;
                           return (
                             <div key={stat.label} className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
                               <Icon className={`w-4 h-4 ${stat.color} mb-2`} />
                               <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-                              <div className="text-xs text-slate-600 mt-0.5">{stat.label}</div>
+                              <div className="text-xs text-slate-500 mt-0.5">{stat.label}</div>
+                              <div className="text-[10px] text-slate-700">{stat.sublabel}</div>
                             </div>
                           );
                         })}
@@ -2793,24 +2805,15 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                                 <Sparkles className="w-4 h-4 text-cyan-400" />
                                 <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Executive Summary</span>
                               </div>
-                              <p className="text-sm text-slate-300 leading-relaxed">{r.executiveSummary}</p>
+                              <p className="text-[13px] text-slate-300 leading-relaxed">
+                                {typeof r.executiveSummary === "string"
+                                  ? r.executiveSummary
+                                  : typeof r.executiveSummary === "object" && r.executiveSummary.verdict
+                                    ? r.executiveSummary.verdict
+                                    : JSON.stringify(r.executiveSummary)}
+                              </p>
                             </div>
                           )}
-
-                          <ReportSection id="sentiment" icon={Activity} title="Sentiment Analysis" iconColor="text-emerald-400">
-                            <p className="text-sm text-slate-400 leading-relaxed mb-3">{r.sentimentAnalysis?.narrative}</p>
-                            {r.sentimentAnalysis?.keyDrivers?.length > 0 && (
-                              <div className="space-y-1.5">
-                                <p className="text-xs text-slate-500 uppercase tracking-wider">Key Drivers</p>
-                                {r.sentimentAnalysis.keyDrivers.map((d: string, i: number) => (
-                                  <div key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                                    <span>{d}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </ReportSection>
 
                           <ReportSection id="compliance" icon={Shield} title="Compliance Review" iconColor="text-amber-400"
                             count={r.complianceReview?.flaggedPhrases?.length || 0}>
@@ -2841,6 +2844,73 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                                 ))}
                               </div>
                             )}
+                          </ReportSection>
+
+                          <ReportSection id="risks" icon={AlertTriangle} title="Risk Factors" iconColor="text-red-400"
+                            count={r.riskFactors?.length || 0}>
+                            <div className="space-y-2">
+                              {(r.riskFactors || []).map((rf: any, i: number) => (
+                                <div key={i} className="flex items-start justify-between gap-3 bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                  <span className="text-sm text-slate-200">{rf.factor}</span>
+                                  <div className="flex gap-2 shrink-0">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${severityColor(rf.impact === "High" ? "Critical" : rf.impact === "Low" ? "Positive" : "Neutral")}`}>
+                                      Impact: {rf.impact}
+                                    </span>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${severityColor(rf.likelihood === "High" ? "Critical" : rf.likelihood === "Low" ? "Positive" : "Neutral")}`}>
+                                      Likelihood: {rf.likelihood}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </ReportSection>
+
+                          <ReportSection id="sentiment" icon={Activity} title="Sentiment Analysis" iconColor="text-emerald-400">
+                            <p className="text-sm text-slate-400 leading-relaxed mb-3">{r.sentimentAnalysis?.narrative}</p>
+                            {r.sentimentAnalysis?.keyDrivers?.length > 0 && (
+                              <div className="space-y-1.5">
+                                <p className="text-xs text-slate-500 uppercase tracking-wider">Key Drivers</p>
+                                {r.sentimentAnalysis.keyDrivers.map((d: string, i: number) => (
+                                  <div key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                                    <span>{d}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </ReportSection>
+
+                          <ReportSection id="actions" icon={ListChecks} title="Action Items & Follow-ups" iconColor="text-green-400"
+                            count={r.actionItems?.length || 0}>
+                            <div className="space-y-2">
+                              {(r.actionItems || []).map((a: any, i: number) => (
+                                <div key={i} className="flex items-start gap-3 bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                  <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-sm text-slate-200">{a.item}</p>
+                                    <div className="flex gap-3 text-xs text-slate-500 mt-1">
+                                      <span>Owner: <span className="text-slate-400">{a.owner}</span></span>
+                                      {a.deadline && a.deadline !== "Not mentioned" && <span>Deadline: <span className="text-slate-400">{a.deadline}</span></span>}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </ReportSection>
+
+                          <ReportSection id="signals" icon={Target} title="Investor Signals" iconColor="text-orange-400"
+                            count={r.investorSignals?.length || 0}>
+                            <div className="space-y-2">
+                              {(r.investorSignals || []).map((sig: any, i: number) => (
+                                <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium text-slate-200">{sig.signal}</span>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${severityColor(sig.severity)}`}>{sig.severity}</span>
+                                  </div>
+                                  <p className="text-xs text-slate-400">{sig.interpretation}</p>
+                                </div>
+                              ))}
+                            </div>
                           </ReportSection>
 
                           <ReportSection id="topics" icon={Tag} title="Key Topics Discussed" iconColor="text-violet-400"
@@ -2896,39 +2966,6 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                             </div>
                           </ReportSection>
 
-                          <ReportSection id="signals" icon={Target} title="Investor Signals" iconColor="text-orange-400"
-                            count={r.investorSignals?.length || 0}>
-                            <div className="space-y-2">
-                              {(r.investorSignals || []).map((s: any, i: number) => (
-                                <div key={i} className="bg-white/[0.02] border border-white/5 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium text-slate-200">{s.signal}</span>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${severityColor(s.severity)}`}>{s.severity}</span>
-                                  </div>
-                                  <p className="text-xs text-slate-400">{s.interpretation}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </ReportSection>
-
-                          <ReportSection id="actions" icon={ListChecks} title="Action Items" iconColor="text-green-400"
-                            count={r.actionItems?.length || 0}>
-                            <div className="space-y-2">
-                              {(r.actionItems || []).map((a: any, i: number) => (
-                                <div key={i} className="flex items-start gap-3 bg-white/[0.02] border border-white/5 rounded-lg p-3">
-                                  <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                                  <div className="min-w-0">
-                                    <p className="text-sm text-slate-200">{a.item}</p>
-                                    <div className="flex gap-3 text-xs text-slate-500 mt-1">
-                                      <span>Owner: <span className="text-slate-400">{a.owner}</span></span>
-                                      {a.deadline && a.deadline !== "Not mentioned" && <span>Deadline: <span className="text-slate-400">{a.deadline}</span></span>}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </ReportSection>
-
                           <ReportSection id="communication" icon={MessageSquare} title="Communication Assessment" iconColor="text-indigo-400">
                             <div className="grid grid-cols-3 gap-3 mb-3">
                               {[
@@ -2946,25 +2983,6 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
                               })}
                             </div>
                             <p className="text-sm text-slate-400 leading-relaxed">{r.communicationScore?.narrative}</p>
-                          </ReportSection>
-
-                          <ReportSection id="risks" icon={AlertTriangle} title="Risk Factors" iconColor="text-red-400"
-                            count={r.riskFactors?.length || 0}>
-                            <div className="space-y-2">
-                              {(r.riskFactors || []).map((rf: any, i: number) => (
-                                <div key={i} className="flex items-start justify-between gap-3 bg-white/[0.02] border border-white/5 rounded-lg p-3">
-                                  <span className="text-sm text-slate-200">{rf.factor}</span>
-                                  <div className="flex gap-2 shrink-0">
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${severityColor(rf.impact === "High" ? "Critical" : rf.impact === "Low" ? "Positive" : "Neutral")}`}>
-                                      Impact: {rf.impact}
-                                    </span>
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${severityColor(rf.likelihood === "High" ? "Critical" : rf.likelihood === "Low" ? "Positive" : "Neutral")}`}>
-                                      Likelihood: {rf.likelihood}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
                           </ReportSection>
 
                           <ReportSection id="competitive" icon={Swords} title="Competitive Intelligence" iconColor="text-pink-400"

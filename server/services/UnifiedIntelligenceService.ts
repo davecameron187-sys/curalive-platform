@@ -220,21 +220,26 @@ function emptyIntelligenceSummary(
 function generateExecutiveTakeaway(s: IntelligenceSummary): string {
   const parts: string[] = [];
 
+  const orgName = s.organisation_id;
   const risk = s.overall_risk.level;
-  if (risk === "critical" || risk === "high") {
-    parts.push(`Overall risk is ${risk.toUpperCase()}.`);
+  if (risk === "critical") {
+    parts.push(orgName ? `${orgName}: Critical risk level identified.` : `Critical risk level identified.`);
+  } else if (risk === "high") {
+    parts.push(orgName ? `${orgName}: High risk — review recommended.` : `High risk — review recommended.`);
   } else if (risk === "medium" || risk === "elevated") {
-    parts.push(`Moderate risk profile.`);
-  } else if (risk !== "unknown") {
-    parts.push(`Low risk profile.`);
+    parts.push(orgName ? `${orgName}: Moderate risk profile.` : `Moderate risk profile.`);
+  } else if (risk === "low" || risk === "minimal") {
+    parts.push(orgName ? `${orgName}: Low risk profile.` : `Low risk profile.`);
+  } else {
+    parts.push(orgName ? `${orgName}: Risk assessment pending.` : `Risk assessment pending — limited data available.`);
   }
 
   if (s.drift_status.events_created > 0) {
     const highDrifts = s.drift_status.top_drifts.filter(d => d.severity === "high" || d.severity === "critical").length;
     if (highDrifts > 0) {
-      parts.push(`${highDrifts} high-severity commitment drift${highDrifts > 1 ? "s" : ""} detected — requires attention.`);
+      parts.push(`${highDrifts} high-severity commitment drift${highDrifts > 1 ? "s" : ""} detected — executive attention required.`);
     } else {
-      parts.push(`${s.drift_status.events_created} drift event${s.drift_status.events_created > 1 ? "s" : ""} flagged.`);
+      parts.push(`${s.drift_status.events_created} drift event${s.drift_status.events_created > 1 ? "s" : ""} flagged for review.`);
     }
   }
 
@@ -243,26 +248,48 @@ function generateExecutiveTakeaway(s: IntelligenceSummary): string {
   if (critFlags > 0) {
     parts.push(`${critFlags} critical compliance flag${critFlags > 1 ? "s" : ""} requiring immediate review.`);
   } else if (highFlags > 0) {
-    parts.push(`${highFlags} high-priority compliance issue${highFlags > 1 ? "s" : ""}.`);
+    parts.push(`${highFlags} high-priority compliance issue${highFlags > 1 ? "s" : ""} identified.`);
+  } else if (s.top_compliance_issues.length === 0 && s.data_sources.analysis_loaded) {
+    parts.push(`No compliance concerns.`);
   }
 
   if (s.sentiment_summary.overall === "negative" && s.sentiment_summary.score < -0.2) {
-    parts.push(`Negative sentiment detected (${(s.sentiment_summary.score * 100).toFixed(0)}%).`);
+    parts.push(`Negative sentiment trend (${(s.sentiment_summary.score * 100).toFixed(0)}%).`);
   } else if (s.sentiment_summary.overall === "positive" && s.sentiment_summary.score > 0.3) {
-    parts.push(`Positive sentiment tone.`);
+    parts.push(`Positive sentiment tone (${(s.sentiment_summary.score * 100).toFixed(0)}%).`);
   }
 
   if (s.key_commitments.length > 0) {
+    const drifted = s.key_commitments.filter(c => c.drift_detected).length;
     const lowConf = s.key_commitments.filter(c => c.confidence < 0.6).length;
-    if (lowConf > 0) {
+    if (drifted > 0) {
+      parts.push(`${drifted} of ${s.key_commitments.length} commitments show drift.`);
+    } else if (lowConf > 0) {
       parts.push(`${lowConf} of ${s.key_commitments.length} commitments have low confidence.`);
     } else {
-      parts.push(`${s.key_commitments.length} commitments tracked.`);
+      parts.push(`${s.key_commitments.length} commitments tracked, all on track.`);
     }
   }
 
-  if (parts.length === 0) {
-    return "Insufficient data to generate executive takeaway.";
+  const govQuality = s.governance_summary.overall_risk_level;
+  if (govQuality && govQuality !== "unknown" && s.data_sources.governance_loaded) {
+    const govLabel = govQuality === "low" || govQuality === "minimal" ? "Good" : govQuality === "medium" || govQuality === "elevated" ? "Moderate" : "Elevated concern";
+    parts.push(`Governance: ${govLabel.toLowerCase()}.`);
+  }
+
+  const benchPos = s.benchmark_context.positions;
+  if (s.benchmark_context.segment && Object.keys(benchPos).length > 0) {
+    const below = Object.entries(benchPos).filter(([, v]) => v === "below_benchmark").map(([k]) => k);
+    const above = Object.entries(benchPos).filter(([, v]) => v === "above_benchmark").map(([k]) => k);
+    if (below.length > 0) {
+      parts.push(`Below benchmark on ${below.join(", ")}.`);
+    } else if (above.length > 0) {
+      parts.push(`Above benchmark on ${above.join(", ")}.`);
+    }
+  }
+
+  if (parts.length <= 1 && s.data_sources.partial) {
+    parts.push("Some data sources are still loading — summary may be incomplete.");
   }
 
   return parts.join(" ");
