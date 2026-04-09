@@ -63,3 +63,33 @@ The CuraLive platform is built as a pnpm monorepo using TypeScript, with a React
 - **Stripe**: Payment processing.
 - **Resend**: Transactional email and ICS calendar invites.
 - **AWS S3**: Object storage for media and files.
+
+## CuraLive AI Core (Python FastAPI)
+
+A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, running alongside the main Node.js platform.
+
+### Location
+- **Directory**: `curalive_ai_core/`
+- **Workflow**: "CuraLive AI Core" (port 5000)
+- **Runtime**: Python 3.12, FastAPI, SQLAlchemy 2.0, psycopg3
+
+### Endpoints
+- `GET /health` — Health check
+- `POST /api/v1/events` — Create event
+- `POST /api/v1/events/ingest` — Ingest event (alias)
+- `GET /api/v1/events/{event_id}` — Get event by UUID
+- `POST /api/v1/jobs/analyze` — Enqueue analysis job
+
+### Database Tables (prefixed `aic_` to avoid conflicts with Node.js app)
+- `aic_events` — Canonical event storage (UUID PKs)
+- `aic_commitments` — Management commitment tracking
+- `aic_drift_events` — Commitment drift detection
+- `aic_analysis_jobs` — Analysis job queue
+
+### Key Fixes Applied from Original ZIP
+1. **DATABASE_URL format**: Replit uses `postgresql://` but psycopg3 needs `postgresql+psycopg://` — auto-converted via model validator in `config.py`
+2. **`metadata` column name**: Reserved by SQLAlchemy DeclarativeBase — renamed Python attribute to `extra_data` (DB column still `metadata`)
+3. **Table name conflicts**: Existing Node.js `events` table has integer PKs, Python models use UUID PKs — prefixed all tables with `aic_`
+4. **Auto-migration**: Added `Base.metadata.create_all()` in FastAPI lifespan handler to create tables on startup
+5. **Missing requirements.txt**: Created from `pyproject.toml` dependencies (removed `pgvector` as unnecessary for skeleton)
+6. **Missing /ingest endpoint**: Added `POST /api/v1/events/ingest` route as requested
