@@ -182,3 +182,15 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - **Profile dimensions**: speaker_profiles, compliance_risk_profile, commitment_delivery_profile, stakeholder_relationship_profile, governance_trajectory_profile, sector_context
 - **Flow**: AI Core analysis → drift → governance → **profile update** → AI report → delivery
 - **Non-blocking**: profile failures are logged and pipeline continues
+
+### Phase 8A — Internal Benchmarking Foundation / Sector Context Enrichment
+- `curalive_ai_core/app/models/benchmark.py` — Benchmark ORM model (17 cols, unique segment_key)
+- `curalive_ai_core/app/schemas/benchmark.py` — Pydantic schemas for build/retrieve/list/enrich with typed baseline sub-schemas
+- `curalive_ai_core/app/services/benchmark_generator.py` — BenchmarkGenerator: aggregates event/org data into baselines + sector enrichment
+- `curalive_ai_core/app/api/routes/benchmark.py` — `POST /api/benchmark/build`, `GET /api/benchmark/list`, `GET /api/benchmark/{segment_key}`, `POST /api/benchmark/enrich-sector`
+- `server/services/AICoreClient.ts` — Added `buildBenchmarks()`, `listBenchmarks()`, `getBenchmark()`, `enrichSectorContext()` + 7 typed interfaces
+- **Table**: `aic_benchmarks` (17 cols, unique segment_key, versioned)
+- **Segmentation**: global, event_type, organisation (extensible to jurisdiction, sector, reporting_period)
+- **Baseline dimensions**: compliance, commitment, drift, sentiment, governance, topics
+- **Sector enrichment**: compares org profile vs benchmark, positions as above/at/below benchmark, updates sector_context + profile_summary
+- **No pipeline integration** yet — benchmarks are built on-demand via API

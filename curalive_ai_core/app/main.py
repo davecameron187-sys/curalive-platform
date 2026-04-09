@@ -10,6 +10,7 @@ from app.api.routes.stakeholder import router as stakeholder_router
 from app.api.routes.briefing import router as briefing_router
 from app.api.routes.governance import router as governance_router
 from app.api.routes.profile import router as profile_router
+from app.api.routes.benchmark import router as benchmark_router
 from app.db.base import Base
 from app.db.session import engine
 
@@ -22,6 +23,7 @@ import app.models.stakeholder_signal
 import app.models.briefing
 import app.models.governance_record
 import app.models.org_profile
+import app.models.benchmark
 import app.models.event
 
 
@@ -46,6 +48,7 @@ app.include_router(stakeholder_router, prefix="/api/stakeholder", tags=["stakeho
 app.include_router(briefing_router, prefix="/api/briefing", tags=["briefing"])
 app.include_router(governance_router, prefix="/api/governance", tags=["governance"])
 app.include_router(profile_router, prefix="/api/profile", tags=["profile"])
+app.include_router(benchmark_router, prefix="/api/benchmark", tags=["benchmark"])
 
 
 @app.get("/health")

@@ -530,3 +530,138 @@ export async function getOrgProfile(organisationId: string): Promise<AICoreProfi
 export async function getOrgProfileSummary(organisationId: string): Promise<AICoreProfileSummaryResponse> {
   return fetchJSON<AICoreProfileSummaryResponse>(`${AI_CORE_BASE_URL}/api/profile/${organisationId}/summary`);
 }
+
+export interface AICoreBenchmarkBuildRequest {
+  segment_type?: string | null;
+  segment_value?: string | null;
+  force_rebuild?: boolean;
+}
+
+export interface AICoreBenchmarkSummary {
+  segment_key: string;
+  segment_type: string;
+  segment_value: string;
+  event_count: number;
+  organisation_count: number;
+  avg_flags_per_event: number;
+  avg_commitments_per_event: number;
+  drift_rate: number;
+  avg_sentiment_score: number;
+  avg_governance_confidence: number;
+  most_common_risk_level: string | null;
+  top_topics: string[];
+  confidence: number;
+}
+
+export interface AICoreBenchmarkResponse {
+  benchmark_id: string;
+  segment_key: string;
+  segment_type: string;
+  segment_value: string;
+  event_count: number;
+  organisation_count: number;
+  compliance_baselines: Record<string, any>;
+  commitment_baselines: Record<string, any>;
+  drift_baselines: Record<string, any>;
+  sentiment_baselines: Record<string, any>;
+  governance_baselines: Record<string, any>;
+  topic_baselines: Record<string, any>;
+  summary: AICoreBenchmarkSummary;
+  confidence: number;
+  version: number;
+  duration_ms: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface AICoreBenchmarkBuildResponse {
+  benchmarks_built: number;
+  segments: AICoreBenchmarkResponse[];
+  duration_ms: number;
+}
+
+export interface AICoreBenchmarkListResponse {
+  benchmarks: Array<{
+    benchmark_id: string;
+    segment_key: string;
+    segment_type: string;
+    segment_value: string;
+    event_count: number;
+    organisation_count: number;
+    compliance_baselines: Record<string, any>;
+    commitment_baselines: Record<string, any>;
+    drift_baselines: Record<string, any>;
+    sentiment_baselines: Record<string, any>;
+    governance_baselines: Record<string, any>;
+    topic_baselines: Record<string, any>;
+    summary: Record<string, any>;
+    confidence: number;
+    version: number;
+    created_at: string;
+    updated_at: string;
+  }>;
+  total: number;
+}
+
+export interface AICoreSectorEnrichmentRequest {
+  organisation_id: string;
+  apply?: boolean;
+}
+
+export interface AICoreSectorEnrichmentResponse {
+  organisation_id: string;
+  sector_context: Record<string, any>;
+  benchmark_comparison: Record<string, any>;
+  profile_summary_updates: Record<string, any> | null;
+  applied: boolean;
+  duration_ms: number;
+}
+
+export async function buildBenchmarks(
+  request: AICoreBenchmarkBuildRequest,
+): Promise<AICoreBenchmarkBuildResponse> {
+  LOG(`Building benchmarks (type=${request.segment_type ?? "all"}, value=${request.segment_value ?? "all"})`);
+  const start = Date.now();
+
+  const result = await fetchJSON<AICoreBenchmarkBuildResponse>(
+    `${AI_CORE_BASE_URL}/api/benchmark/build`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    },
+  );
+
+  LOG(`Benchmarks built: ${result.benchmarks_built} segments in ${Date.now() - start}ms`);
+  return result;
+}
+
+export async function listBenchmarks(segmentType?: string): Promise<AICoreBenchmarkListResponse> {
+  const url = segmentType
+    ? `${AI_CORE_BASE_URL}/api/benchmark/list?segment_type=${encodeURIComponent(segmentType)}`
+    : `${AI_CORE_BASE_URL}/api/benchmark/list`;
+  return fetchJSON<AICoreBenchmarkListResponse>(url);
+}
+
+export async function getBenchmark(segmentKey: string): Promise<AICoreBenchmarkResponse> {
+  return fetchJSON<AICoreBenchmarkResponse>(`${AI_CORE_BASE_URL}/api/benchmark/${segmentKey}`);
+}
+
+export async function enrichSectorContext(
+  request: AICoreSectorEnrichmentRequest,
+): Promise<AICoreSectorEnrichmentResponse> {
+  LOG(`Enriching sector context for org=${request.organisation_id} (apply=${request.apply ?? false})`);
+  const start = Date.now();
+
+  const result = await fetchJSON<AICoreSectorEnrichmentResponse>(
+    `${AI_CORE_BASE_URL}/api/benchmark/enrich-sector`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    },
+  );
+
+  LOG(`Sector enrichment complete: applied=${result.applied} in ${Date.now() - start}ms`);
+  return result;
+}
