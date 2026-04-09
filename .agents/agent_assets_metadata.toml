@@ -756,3 +756,9 @@ id = "KkcALiMGH97EjKwePytXR"
 uri = "file://exports/CuraLive_Master_Technical_Brief.md"
 type = "text"
 title = "CuraLive Master Technical Brief"
+
+[[outputs]]
+id = "6sQ4dfAd4YsRkd7c6pXeg"
+uri = "file://exports/CuraLive_Replit_Update_Brief_2026_04_09.md"
+type = "text"
+title = "CuraLive Replit Update Brief — 9 April 2026"
