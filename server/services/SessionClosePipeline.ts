@@ -3,8 +3,8 @@ import { sendComplianceCloseEmail } from "./ComplianceDeadlineService";
 import { sendReportLinks }          from "./ClientDeliveryService";
 import { runBoardIntelligenceUpdate } from "./BoardIntelligenceService";
 import { calculateBriefingAccuracy }  from "./PreEventBriefingService";
-import { checkAICoreHealth, runAICoreAnalysis } from "./AICoreClient";
-import type { AICoreAnalysisResponse } from "./AICoreClient";
+import { checkAICoreHealth, runAICoreAnalysis, runAICoreDriftDetection } from "./AICoreClient";
+import type { AICoreAnalysisResponse, AICoreDriftResponse, AICoreDriftSourceStatement } from "./AICoreClient";
 import { buildCanonicalPayload } from "./AICorePayloadMapper";
 
 const LOG = (msg: string) => console.log(`[SessionClose] ${msg}`);
@@ -96,6 +96,14 @@ export async function runSessionClosePipeline(sessionId: number): Promise<void> 
     }
   } catch (e) {
     ERR('AI Core analysis failed — continuing with legacy pipeline', e);
+  }
+
+  if (aiCoreResult && aiCoreResult.overall_status === 'complete') {
+    try {
+      await runDriftDetectionStep(sessionId, session, aiCoreResult);
+    } catch (e) {
+      ERR('Drift detection failed — continuing pipeline', e);
+    }
   }
 
   let reportModules: Record<string, string> = {};
@@ -218,6 +226,88 @@ function calculateDuration(session: any): string {
   } catch {
     return '—';
   }
+}
+
+async function runDriftDetectionStep(
+  sessionId: number,
+  session: any,
+  aiCoreResult: AICoreAnalysisResponse,
+): Promise<void> {
+  const organisationId = aiCoreResult.organisation_id;
+
+  const [segRows] = await rawSql(
+    `SELECT speaker_name, text, start_time
+     FROM occ_transcription_segments
+     WHERE conference_id = $1
+     ORDER BY created_at ASC
+     LIMIT 2000`,
+    [sessionId]
+  );
+
+  let segments: Array<{ speaker_name: string | null; text: string; start_time: number | null }> = segRows;
+
+  if (segments.length === 0 && session.local_transcript_json) {
+    try {
+      const parsed = JSON.parse(session.local_transcript_json);
+      if (Array.isArray(parsed)) {
+        segments = parsed.map((s: any) => ({
+          speaker_name: s.speaker ?? s.speaker_name ?? null,
+          text: s.text ?? '',
+          start_time: s.start_time ?? s.timestamp ?? null,
+        }));
+      }
+    } catch {}
+  }
+
+  if (segments.length === 0) {
+    LOG('No segments for drift detection — skipping');
+    return;
+  }
+
+  const statements: AICoreDriftSourceStatement[] = segments.map((seg, idx) => ({
+    text: seg.text,
+    speaker_id: seg.speaker_name
+      ? seg.speaker_name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+      : undefined,
+    speaker_name: seg.speaker_name ?? undefined,
+    source_type: 'transcript',
+    source_reference: `session-${sessionId}/segment-${idx}`,
+    timestamp: seg.start_time != null ? seg.start_time / 1000 : undefined,
+  }));
+
+  await rawSql(
+    `UPDATE shadow_sessions SET ai_drift_status = 'running' WHERE id = $1`,
+    [sessionId]
+  );
+
+  const driftResult = await runAICoreDriftDetection({
+    organisation_id: organisationId,
+    event_id: `shadow-${sessionId}`,
+    job_id: aiCoreResult.job_id,
+    statements,
+  });
+
+  const driftSummary = {
+    commitments_evaluated: driftResult.commitments_evaluated,
+    statements_processed: driftResult.statements_processed,
+    drift_events_created: driftResult.drift_events_created,
+    drift_events: driftResult.drift_events,
+    duration_ms: driftResult.duration_ms,
+  };
+
+  await rawSql(
+    `UPDATE shadow_sessions
+     SET ai_drift_status = $1,
+         ai_drift_results = $2
+     WHERE id = $3`,
+    [
+      driftResult.drift_events_created > 0 ? 'drift_detected' : 'no_drift',
+      JSON.stringify(driftSummary),
+      sessionId,
+    ]
+  );
+
+  LOG(`Drift detection complete: ${driftResult.drift_events_created} drifts across ${driftResult.commitments_evaluated} commitments (${driftResult.duration_ms}ms)`);
 }
 
 async function runAICoreAnalysisStep(

@@ -780,3 +780,9 @@ id = "lyHwj1sYA_pRmzeMFuUv6"
 uri = "file://exports/CuraLive_Replit_Update_Phase4A_2026_04_09.md"
 type = "text"
 title = "CuraLive Phase 4A Update Brief — Commitment Drift Detection"
+
+[[outputs]]
+id = "KhkmxmAxaAHp7dUQWOi_o"
+uri = "file://exports/CuraLive_Replit_Update_Phase4B_2026_04_09.md"
+type = "text"
+title = "CuraLive Phase 4B Update Brief — Drift in SessionClosePipeline"

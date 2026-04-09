@@ -134,3 +134,10 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - `curalive_ai_core/app/models/drift_event.py` — Updated DriftEvent model (14 cols)
 - `server/services/AICoreClient.ts` — Added `runAICoreDriftDetection()` + typed interfaces
 - **Table**: `aic_drift_events` — id, commitment_id, job_id, event_id, organisation_id, source_type, source_reference, drift_type, severity, matched_text, explanation, confidence, original_commitment_text, created_at
+
+### Phase 4B — Drift Detection in SessionClosePipeline
+- `server/services/SessionClosePipeline.ts` — Added `runDriftDetectionStep()`, triggered after AI Core analysis completes
+- **shadow_sessions columns added**: `ai_drift_status` (VARCHAR), `ai_drift_results` (JSONB)
+- **Flow**: Analysis complete → load transcript segments → map to drift statements → POST /api/drift/run → persist drift_status + drift_results JSONB
+- **Non-blocking**: drift failures are logged and pipeline continues
+- **Drift status values**: `running`, `drift_detected`, `no_drift`
