@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, operatorProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import { boardIntelligenceCompass, priorCommitmentAudits, directorLiabilityMaps, analystExpectationAudits, governanceCommunicationScores, boardResolutions } from "../../drizzle/schema";
@@ -11,7 +11,7 @@ async function requireDb() {
 }
 
 export const boardIntelligenceRouter = router({
-  getOrCreateCompass: protectedProcedure
+  getOrCreateCompass: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       const db = await requireDb();
@@ -25,28 +25,28 @@ export const boardIntelligenceRouter = router({
       return created;
     }),
 
-  getPriorCommitmentAudit: protectedProcedure
+  getPriorCommitmentAudit: operatorProcedure
     .input(z.object({ compassId: z.number() }))
     .query(async ({ input }) => {
       const db = await requireDb();
       return await db.select().from(priorCommitmentAudits).where(eq(priorCommitmentAudits.compassId, input.compassId));
     }),
 
-  getDirectorLiabilityMap: protectedProcedure
+  getDirectorLiabilityMap: operatorProcedure
     .input(z.object({ compassId: z.number() }))
     .query(async ({ input }) => {
       const db = await requireDb();
       return await db.select().from(directorLiabilityMaps).where(eq(directorLiabilityMaps.compassId, input.compassId));
     }),
 
-  getAnalystExpectationAudit: protectedProcedure
+  getAnalystExpectationAudit: operatorProcedure
     .input(z.object({ compassId: z.number() }))
     .query(async ({ input }) => {
       const db = await requireDb();
       return await db.select().from(analystExpectationAudits).where(eq(analystExpectationAudits.compassId, input.compassId));
     }),
 
-  getGovernanceCommunicationScore: protectedProcedure
+  getGovernanceCommunicationScore: operatorProcedure
     .input(z.object({ compassId: z.number() }))
     .query(async ({ input }) => {
       const db = await requireDb();
@@ -54,14 +54,14 @@ export const boardIntelligenceRouter = router({
       return results[0] ?? null;
     }),
 
-  getBoardResolutions: protectedProcedure
+  getBoardResolutions: operatorProcedure
     .input(z.object({ compassId: z.number() }))
     .query(async ({ input }) => {
       const db = await requireDb();
       return await db.select().from(boardResolutions).where(eq(boardResolutions.compassId, input.compassId));
     }),
 
-  createBoardResolution: protectedProcedure
+  createBoardResolution: operatorProcedure
     .input(z.object({
       compassId: z.number(),
       actionType: z.string(),
@@ -84,7 +84,7 @@ export const boardIntelligenceRouter = router({
       return created;
     }),
 
-  updateResolutionStatus: protectedProcedure
+  updateResolutionStatus: operatorProcedure
     .input(z.object({
       resolutionId: z.number(),
       status: z.enum(['pending', 'in_progress', 'completed']),
@@ -98,7 +98,7 @@ export const boardIntelligenceRouter = router({
       return updated;
     }),
 
-  generateBoardBriefing: protectedProcedure
+  generateBoardBriefing: operatorProcedure
     .input(z.object({ compassId: z.number() }))
     .query(async ({ input }) => {
       const db = await requireDb();

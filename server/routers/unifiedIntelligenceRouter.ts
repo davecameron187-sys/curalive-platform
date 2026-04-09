@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { router, protectedProcedure, operatorProcedure } from "../_core/trpc";
+import { router, operatorProcedure } from "../_core/trpc";
 import { getSessionIntelligence, getOrgIntelligence } from "../services/UnifiedIntelligenceService";
 import { seedDemoData } from "../scripts/seedDemoData";
 
 export const unifiedIntelligenceRouter = router({
-  getSessionIntelligence: protectedProcedure
+  getSessionIntelligence: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -15,7 +15,7 @@ export const unifiedIntelligenceRouter = router({
       }
     }),
 
-  getOrgIntelligence: protectedProcedure
+  getOrgIntelligence: operatorProcedure
     .input(z.object({ organisationId: z.string() }))
     .query(async ({ input }) => {
       try {

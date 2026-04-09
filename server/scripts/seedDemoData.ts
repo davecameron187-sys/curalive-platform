@@ -160,6 +160,10 @@ export async function seedDemoData(): Promise<{ success: boolean; details: strin
         })),
       };
 
+      const govExecutiveSummary = org.riskLevel === "high"
+        ? "Atlas Energy faces elevated governance risk following disclosure of previously unreported environmental liabilities across three sites. The board has suspended interim dividends to preserve cash and has commissioned an independent PwC review. Net debt to EBITDA has breached the 2.5x target at 3.2x. A comprehensive turnaround plan targeting 800M rand in cost reductions has been announced, with measurable results expected within 18 months. Board composition has been strengthened with two additional independent directors."
+        : "Meridian Holdings demonstrates strong governance discipline with transparent financial reporting and clear commitment tracking. The company delivered 12% revenue growth with margin expansion to 42.3%. European expansion is progressing with breakeven targeted by Q3 2026. One area requiring monitoring is the pending DMR regulatory review in Eastern Cape, for which a 45M rand provision has been prudently established. ESG commitments remain on track.";
+
       const govSummary = {
         governance_record_id: `demo-gov-${org.id}`,
         record_type: org.eventType === "agm" ? "agm_minutes" : "event_governance",
@@ -169,6 +173,7 @@ export async function seedDemoData(): Promise<{ success: boolean; details: strin
         overall_risk_level: org.riskLevel,
         confidence: org.riskLevel === "high" ? 0.72 : 0.85,
         duration_ms: 450,
+        executive_summary: govExecutiveSummary,
       };
 
       const profileSummary = {
@@ -184,19 +189,22 @@ export async function seedDemoData(): Promise<{ success: boolean; details: strin
         key_strengths: org.profileSummary.key_strengths,
       };
 
+      const pipelineBase = Date.now() - 120000;
       const pipelineTrace = {
         session_id: org.sessionId,
-        started_at: new Date(Date.now() - 120000).toISOString(),
-        completed_at: new Date(Date.now() - 115000).toISOString(),
+        started_at: new Date(pipelineBase).toISOString(),
+        completed_at: new Date(pipelineBase + 4850).toISOString(),
         total_duration_ms: 4850,
         steps: [
-          { step: "compliance_email", status: "ok", started_at: new Date(Date.now() - 120000).toISOString(), duration_ms: 320, detail: { recipients: 2, flags: org.complianceFlags.length } },
-          { step: "ai_core_analysis", status: "ok", started_at: new Date(Date.now() - 119680).toISOString(), duration_ms: 1850, detail: { job_id: `demo-job-${org.id}`, status: "complete", modules: 4 } },
-          { step: "drift_detection", status: "ok", started_at: new Date(Date.now() - 117830).toISOString(), duration_ms: 920, detail: { drifts: org.driftEvents.length } },
-          { step: "governance_record", status: "ok", started_at: new Date(Date.now() - 116910).toISOString(), duration_ms: 680, detail: { commitments: org.commitments.length } },
-          { step: "profile_update", status: "ok", started_at: new Date(Date.now() - 116230).toISOString(), duration_ms: 450, detail: { version: 3, risk: org.riskLevel } },
-          { step: "ai_report", status: "ok", started_at: new Date(Date.now() - 115780).toISOString(), duration_ms: 580, detail: { modules: 10 } },
-          { step: "report_delivery", status: "ok", started_at: new Date(Date.now() - 115200).toISOString(), duration_ms: 200, detail: { recipients: 3 } },
+          { step: "compliance_email", status: "ok", started_at: new Date(pipelineBase).toISOString(), duration_ms: 320, detail: { recipients: 2, flags: org.complianceFlags.length } },
+          { step: "ai_core_analysis", status: "ok", started_at: new Date(pipelineBase + 320).toISOString(), duration_ms: 1850, detail: { job_id: `demo-job-${org.id}`, status: "complete", modules: 4 } },
+          { step: "drift_detection", status: "ok", started_at: new Date(pipelineBase + 2170).toISOString(), duration_ms: 920, detail: { drifts: org.driftEvents.length } },
+          { step: "governance_record", status: "ok", started_at: new Date(pipelineBase + 3090).toISOString(), duration_ms: 680, detail: { commitments: org.commitments.length } },
+          { step: "profile_update", status: "ok", started_at: new Date(pipelineBase + 3770).toISOString(), duration_ms: 450, detail: { version: 3, risk: org.riskLevel } },
+          { step: "ai_report", status: "ok", started_at: new Date(pipelineBase + 4220).toISOString(), duration_ms: 580, detail: { modules: 10 } },
+          { step: "report_delivery", status: "ok", started_at: new Date(pipelineBase + 4800).toISOString(), duration_ms: 50, detail: { recipients: 3 } },
+          { step: "board_intelligence", status: "skipped", started_at: new Date(pipelineBase + 4850).toISOString(), duration_ms: 0, detail: { reason: "async_deferred" } },
+          { step: "briefing_accuracy", status: "skipped", started_at: new Date(pipelineBase + 4850).toISOString(), duration_ms: 0, detail: { reason: "async_deferred" } },
         ],
         overall_status: "complete",
       };

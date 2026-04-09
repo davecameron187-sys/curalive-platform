@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { z } from "zod";
-import { router, operatorProcedure, protectedProcedure } from "../_core/trpc";
+import { router, operatorProcedure } from "../_core/trpc";
 import {getDb, rawSql } from "../db";
 import { shadowSessions, taggedMetrics, recallBots, agmIntelligenceSessions, operatorActions } from "../../drizzle/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
@@ -561,14 +561,14 @@ export const shadowModeRouter = router({
       return { success: true, transcriptSegments: 0, taggedMetricsGenerated: 0, message: "Session closed." };
     }),
 
-  listSessions: protectedProcedure.query(async () => {
+  listSessions: operatorProcedure.query(async () => {
     try {
       const db = await getDb();
       return db.select().from(shadowSessions).orderBy(desc(shadowSessions.createdAt)).limit(50);
     } catch { return []; }
   }),
 
-  getSession: protectedProcedure
+  getSession: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1369,7 +1369,7 @@ export const shadowModeRouter = router({
       };
     }),
 
-  getReport: protectedProcedure
+  getReport: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       const eventId = `shadow-${input.sessionId}`;

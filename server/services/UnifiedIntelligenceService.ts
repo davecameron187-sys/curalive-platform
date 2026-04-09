@@ -75,6 +75,8 @@ export interface IntelligenceSummary {
   event_id: string | null;
   generated_at: string;
 
+  executive_takeaway: string;
+
   overall_risk: {
     level: string;
     score: number;
@@ -188,6 +190,7 @@ function emptyIntelligenceSummary(
     organisation_id: orgId,
     event_id: eventId,
     generated_at: new Date().toISOString(),
+    executive_takeaway: "",
     overall_risk: { level: "unknown", score: 0, source: "none" },
     sentiment_summary: { overall: "neutral", score: 0, positive_signals: 0, negative_signals: 0, neutral_signals: 0, key_themes: [] },
     key_commitments: [],
@@ -212,6 +215,57 @@ function emptyIntelligenceSummary(
     generated_in_ms: 0,
     pipeline_trace: null,
   };
+}
+
+function generateExecutiveTakeaway(s: IntelligenceSummary): string {
+  const parts: string[] = [];
+
+  const risk = s.overall_risk.level;
+  if (risk === "critical" || risk === "high") {
+    parts.push(`Overall risk is ${risk.toUpperCase()}.`);
+  } else if (risk === "medium" || risk === "elevated") {
+    parts.push(`Moderate risk profile.`);
+  } else if (risk !== "unknown") {
+    parts.push(`Low risk profile.`);
+  }
+
+  if (s.drift_status.events_created > 0) {
+    const highDrifts = s.drift_status.top_drifts.filter(d => d.severity === "high" || d.severity === "critical").length;
+    if (highDrifts > 0) {
+      parts.push(`${highDrifts} high-severity commitment drift${highDrifts > 1 ? "s" : ""} detected — requires attention.`);
+    } else {
+      parts.push(`${s.drift_status.events_created} drift event${s.drift_status.events_created > 1 ? "s" : ""} flagged.`);
+    }
+  }
+
+  const critFlags = s.top_compliance_issues.filter(f => f.severity === "critical").length;
+  const highFlags = s.top_compliance_issues.filter(f => f.severity === "high").length;
+  if (critFlags > 0) {
+    parts.push(`${critFlags} critical compliance flag${critFlags > 1 ? "s" : ""} requiring immediate review.`);
+  } else if (highFlags > 0) {
+    parts.push(`${highFlags} high-priority compliance issue${highFlags > 1 ? "s" : ""}.`);
+  }
+
+  if (s.sentiment_summary.overall === "negative" && s.sentiment_summary.score < -0.2) {
+    parts.push(`Negative sentiment detected (${(s.sentiment_summary.score * 100).toFixed(0)}%).`);
+  } else if (s.sentiment_summary.overall === "positive" && s.sentiment_summary.score > 0.3) {
+    parts.push(`Positive sentiment tone.`);
+  }
+
+  if (s.key_commitments.length > 0) {
+    const lowConf = s.key_commitments.filter(c => c.confidence < 0.6).length;
+    if (lowConf > 0) {
+      parts.push(`${lowConf} of ${s.key_commitments.length} commitments have low confidence.`);
+    } else {
+      parts.push(`${s.key_commitments.length} commitments tracked.`);
+    }
+  }
+
+  if (parts.length === 0) {
+    return "Insufficient data to generate executive takeaway.";
+  }
+
+  return parts.join(" ");
 }
 
 export async function getSessionIntelligence(sessionId: number): Promise<IntelligenceSummary> {
@@ -274,7 +328,7 @@ export async function getSessionIntelligence(sessionId: number): Promise<Intelli
       total_commitments: govSummary.commitments ?? 0,
       total_flags: govSummary.compliance_flags ?? 0,
       overall_risk_level: govSummary.overall_risk_level ?? "unknown",
-      executive_summary: "",
+      executive_summary: govSummary.executive_summary ?? "",
       matters_arising: govSummary.matters_arising ?? 0,
     };
     summary.data_sources.governance_loaded = true;
@@ -313,6 +367,7 @@ export async function getSessionIntelligence(sessionId: number): Promise<Intelli
     .filter(([k, v]) => k.endsWith("_loaded") && v === true).length;
   summary.data_sources.partial = loadedCount < 6;
 
+  summary.executive_takeaway = generateExecutiveTakeaway(summary);
   summary.generated_in_ms = Date.now() - start;
   LOG(`Session ${sessionId} intelligence assembled in ${summary.generated_in_ms}ms (${loadedCount}/6 sources loaded)`);
   return summary;
@@ -326,6 +381,7 @@ export async function getOrgIntelligence(organisationId: string): Promise<Intell
   summary.data_sources.ai_core_available = healthy;
   if (!healthy) {
     LOG(`AI Core not available for org ${organisationId}`);
+    summary.executive_takeaway = generateExecutiveTakeaway(summary);
     summary.generated_in_ms = Date.now() - start;
     return summary;
   }
@@ -334,8 +390,9 @@ export async function getOrgIntelligence(organisationId: string): Promise<Intell
 
   const orgRelevantSources = ["profile_loaded", "benchmark_loaded"];
   const orgLoadedCount = orgRelevantSources.filter(k => (summary.data_sources as any)[k] === true).length;
-  summary.data_sources.partial = orgLoadedCount < 1;
+  summary.data_sources.partial = orgLoadedCount < orgRelevantSources.length;
 
+  summary.executive_takeaway = generateExecutiveTakeaway(summary);
   summary.generated_in_ms = Date.now() - start;
   LOG(`Org ${organisationId} intelligence assembled in ${summary.generated_in_ms}ms (${orgLoadedCount}/2 org sources loaded)`);
   return summary;

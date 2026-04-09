@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, operatorProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import { regulatoryComplianceMonitors, regulatoryFlags, disclosureTriggers, jurisdictionProfiles, complianceActionItems } from "../../drizzle/schema";
@@ -11,7 +11,7 @@ async function requireDb() {
 }
 
 export const regulatoryComplianceRouter = router({
-  getOrCreateMonitor: protectedProcedure
+  getOrCreateMonitor: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       const db = await requireDb();
@@ -25,7 +25,7 @@ export const regulatoryComplianceRouter = router({
       return created;
     }),
 
-  getSessionRegulatoryFlags: protectedProcedure
+  getSessionRegulatoryFlags: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       const db = await requireDb();
@@ -36,7 +36,7 @@ export const regulatoryComplianceRouter = router({
       return { flags };
     }),
 
-  getEventComplianceSummary: protectedProcedure
+  getEventComplianceSummary: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       const db = await requireDb();
@@ -73,7 +73,7 @@ export const regulatoryComplianceRouter = router({
       };
     }),
 
-  getJurisdictionRules: protectedProcedure
+  getJurisdictionRules: operatorProcedure
     .input(z.object({ jurisdiction: z.string() }))
     .query(async ({ input }) => {
       const db = await requireDb();
@@ -86,14 +86,14 @@ export const regulatoryComplianceRouter = router({
       };
     }),
 
-  getJurisdictionProfiles: protectedProcedure
+  getJurisdictionProfiles: operatorProcedure
     .query(async () => {
       const db = await requireDb();
       const jurisdictions = await db.select().from(jurisdictionProfiles);
       return { jurisdictions };
     }),
 
-  addRegulatoryFlag: protectedProcedure
+  addRegulatoryFlag: operatorProcedure
     .input(z.object({
       monitorId: z.number(),
       flagType: z.string(),
@@ -119,7 +119,7 @@ export const regulatoryComplianceRouter = router({
       return created;
     }),
 
-  addDisclosureTrigger: protectedProcedure
+  addDisclosureTrigger: operatorProcedure
     .input(z.object({
       monitorId: z.number(),
       filingType: z.string(),
@@ -136,7 +136,7 @@ export const regulatoryComplianceRouter = router({
       return created;
     }),
 
-  updateDisclosureStatus: protectedProcedure
+  updateDisclosureStatus: operatorProcedure
     .input(z.object({
       disclosureId: z.number(),
       status: z.enum(['draft', 'pending_review', 'submitted']),
@@ -150,7 +150,7 @@ export const regulatoryComplianceRouter = router({
       return updated;
     }),
 
-  createComplianceAction: protectedProcedure
+  createComplianceAction: operatorProcedure
     .input(z.object({
       monitorId: z.number(),
       actionType: z.string(),
