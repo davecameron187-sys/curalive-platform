@@ -786,3 +786,9 @@ id = "KhkmxmAxaAHp7dUQWOi_o"
 uri = "file://exports/CuraLive_Replit_Update_Phase4B_2026_04_09.md"
 type = "text"
 title = "CuraLive Phase 4B Update Brief — Drift in SessionClosePipeline"
+
+[[outputs]]
+id = "hALI_BUkGd_G8x-COc5Bl"
+uri = "file://exports/CuraLive_Replit_Update_Phase5_2026_04_09.md"
+type = "text"
+title = "CuraLive Phase 5 Update Brief — Stakeholder Intelligence + Pre-Event Briefing"

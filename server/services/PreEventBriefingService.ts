@@ -1,6 +1,8 @@
 import { rawSql } from "../db";
 import { buildPreBriefingEmail } from "../emails/templates";
 import crypto from "crypto";
+import { checkAICoreHealth, generateBriefing } from "./AICoreClient";
+import type { AICoreBriefingResponse } from "./AICoreClient";
 
 const APP_URL = () => process.env.APP_URL || `https://${process.env.REPLIT_DEV_DOMAIN || "localhost:3000"}`;
 
@@ -47,26 +49,69 @@ async function generateAndSendPreBriefing(session: any) {
     return;
   }
 
-  let briefingSummary = "";
+  let aiCoreBriefing: AICoreBriefingResponse | null = null;
   try {
-    const { invokeLLM } = await import("../_core/llm");
-    const result = await invokeLLM({
-      messages: [
-        {
-          role: "system",
-          content: "You are a financial intelligence briefing generator for investor events. Generate a concise pre-event briefing for the IR team."
-        },
-        {
-          role: "user",
-          content: `Generate a pre-event briefing for: ${session.event_name} (${session.company || "Company"}). Include: key topics to watch, historical context, potential Q&A areas, and compliance considerations. Keep it under 300 words.`
-        }
-      ],
-    });
-    const rawText = result.choices?.[0]?.message?.content ?? "";
-    briefingSummary = typeof rawText === "string" ? rawText : JSON.stringify(rawText);
-    if (!briefingSummary) briefingSummary = "Pre-event briefing could not be generated. Please review historical data manually.";
-  } catch {
-    briefingSummary = `<p><strong>Event:</strong> ${session.event_name}</p><p><strong>Company:</strong> ${session.company || "N/A"}</p><p>AI briefing generation unavailable. Please review your preparation materials.</p>`;
+    const healthy = await checkAICoreHealth();
+    if (healthy) {
+      const orgId = (session.company || session.event_name || "unknown")
+        .toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      aiCoreBriefing = await generateBriefing({
+        organisation_id: orgId,
+        event_id: `scheduled-${session.id}`,
+        event_name: session.event_name,
+        event_type: "earnings_call",
+      });
+      console.log(`[BriefingScheduler] AI Core briefing generated: ${aiCoreBriefing.briefing_id} (${aiCoreBriefing.likely_topics.length} topics, ${aiCoreBriefing.predicted_questions.length} questions, risk=${aiCoreBriefing.narrative_risk.level})`);
+
+      try {
+        await rawSql(
+          `UPDATE scheduled_sessions
+           SET ai_briefing_id = $1, ai_briefing_results = $2
+           WHERE id = $3`,
+          [aiCoreBriefing.briefing_id, JSON.stringify(aiCoreBriefing), session.id]
+        );
+      } catch {}
+    }
+  } catch (e: any) {
+    console.warn(`[BriefingScheduler] AI Core briefing failed — falling back to LLM:`, e?.message);
+  }
+
+  let briefingSummary = "";
+  if (aiCoreBriefing && aiCoreBriefing.likely_topics.length > 0) {
+    const topicsList = aiCoreBriefing.likely_topics.map(t => `• ${t.topic} (confidence: ${(t.confidence * 100).toFixed(0)}%)`).join("\n");
+    const pressureList = aiCoreBriefing.pressure_points.map(p => `• ${p.area} [${p.severity}]: ${p.detail.slice(0, 100)}`).join("\n");
+    const questionsList = aiCoreBriefing.predicted_questions.map(q => `• ${q.question}`).join("\n");
+    const risk = aiCoreBriefing.narrative_risk;
+
+    briefingSummary = [
+      `<h3>Likely Topics</h3><pre>${topicsList}</pre>`,
+      aiCoreBriefing.pressure_points.length > 0 ? `<h3>Pressure Points</h3><pre>${pressureList}</pre>` : "",
+      `<h3>Stakeholder Sentiment</h3><p>${aiCoreBriefing.sentiment_summary.overall} (score: ${aiCoreBriefing.sentiment_summary.score})</p>`,
+      aiCoreBriefing.predicted_questions.length > 0 ? `<h3>Predicted Questions</h3><pre>${questionsList}</pre>` : "",
+      `<h3>Narrative Risk</h3><p><strong>${risk.level.toUpperCase()}</strong> (${(risk.score * 100).toFixed(0)}%): ${risk.detail}</p>`,
+      `<p><em>Based on ${aiCoreBriefing.signals_used} signals, ${aiCoreBriefing.commitments_referenced} commitments, ${aiCoreBriefing.drift_events_referenced} drift events</em></p>`,
+    ].filter(Boolean).join("\n");
+  } else {
+    try {
+      const { invokeLLM } = await import("../_core/llm");
+      const result = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: "You are a financial intelligence briefing generator for investor events. Generate a concise pre-event briefing for the IR team."
+          },
+          {
+            role: "user",
+            content: `Generate a pre-event briefing for: ${session.event_name} (${session.company || "Company"}). Include: key topics to watch, historical context, potential Q&A areas, and compliance considerations. Keep it under 300 words.`
+          }
+        ],
+      });
+      const rawText = result.choices?.[0]?.message?.content ?? "";
+      briefingSummary = typeof rawText === "string" ? rawText : JSON.stringify(rawText);
+      if (!briefingSummary) briefingSummary = "Pre-event briefing could not be generated. Please review historical data manually.";
+    } catch {
+      briefingSummary = `<p><strong>Event:</strong> ${session.event_name}</p><p><strong>Company:</strong> ${session.company || "N/A"}</p><p>AI briefing generation unavailable. Please review your preparation materials.</p>`;
+    }
   }
 
   let brand: any = undefined;

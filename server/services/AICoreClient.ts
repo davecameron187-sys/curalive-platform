@@ -182,3 +182,140 @@ export async function runAICoreDriftDetection(
   LOG(`Drift detection complete: ${result.drift_events_created} drifts found across ${result.commitments_evaluated} commitments (${Date.now() - start}ms)`);
   return result;
 }
+
+export interface AICoreStakeholderSignalInput {
+  organisation_id: string;
+  signal_type: string;
+  source_name: string;
+  source_url?: string | null;
+  author?: string | null;
+  title?: string | null;
+  content: string;
+  sentiment?: string | null;
+  topics?: string[] | null;
+  relevance_score?: number;
+  signal_date?: string | null;
+  metadata?: Record<string, any> | null;
+}
+
+export interface AICoreStakeholderBatchRequest {
+  signals: AICoreStakeholderSignalInput[];
+}
+
+export interface AICoreStakeholderSignalResponse {
+  signal_id: string;
+  organisation_id: string;
+  signal_type: string;
+  source_name: string;
+  sentiment: string | null;
+  sentiment_score: number | null;
+  topics: string[] | null;
+  created_at: string;
+}
+
+export interface AICoreStakeholderBatchResponse {
+  ingested: number;
+  signals: AICoreStakeholderSignalResponse[];
+}
+
+export async function ingestStakeholderSignals(
+  request: AICoreStakeholderBatchRequest,
+): Promise<AICoreStakeholderBatchResponse> {
+  LOG(`Ingesting ${request.signals.length} stakeholder signals`);
+  const result = await fetchJSON<AICoreStakeholderBatchResponse>(
+    `${AI_CORE_BASE_URL}/api/stakeholder/ingest`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    },
+  );
+  LOG(`Ingested ${result.ingested} signals`);
+  return result;
+}
+
+export interface AICoreBriefingRequest {
+  organisation_id: string;
+  event_id?: string | null;
+  event_name?: string | null;
+  event_type?: string | null;
+}
+
+export interface AICoreBriefingTopicEntry {
+  topic: string;
+  confidence: number;
+  source: string;
+  detail: string | null;
+}
+
+export interface AICoreBriefingPressurePoint {
+  area: string;
+  severity: string;
+  source: string;
+  detail: string;
+}
+
+export interface AICoreBriefingSentimentSummary {
+  overall: string;
+  score: number;
+  positive_signals: number;
+  negative_signals: number;
+  neutral_signals: number;
+  key_themes: string[];
+}
+
+export interface AICoreBriefingPredictedQuestion {
+  question: string;
+  likelihood: string;
+  source: string;
+  theme: string;
+  rationale: string;
+}
+
+export interface AICoreBriefingNarrativeRisk {
+  level: string;
+  score: number;
+  indicators: string[];
+  detail: string;
+}
+
+export interface AICoreBriefingResponse {
+  briefing_id: string;
+  organisation_id: string;
+  event_id: string | null;
+  event_name: string | null;
+  likely_topics: AICoreBriefingTopicEntry[];
+  pressure_points: AICoreBriefingPressurePoint[];
+  sentiment_summary: AICoreBriefingSentimentSummary;
+  predicted_questions: AICoreBriefingPredictedQuestion[];
+  narrative_risk: AICoreBriefingNarrativeRisk;
+  signals_used: number;
+  commitments_referenced: number;
+  drift_events_referenced: number;
+  confidence: number;
+  duration_ms: number | null;
+  created_at: string | null;
+}
+
+export async function generateBriefing(
+  request: AICoreBriefingRequest,
+): Promise<AICoreBriefingResponse> {
+  LOG(`Generating briefing for org=${request.organisation_id} event=${request.event_id ?? "none"}`);
+  const start = Date.now();
+
+  const result = await fetchJSON<AICoreBriefingResponse>(
+    `${AI_CORE_BASE_URL}/api/briefing/generate`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    },
+  );
+
+  LOG(`Briefing generated: ${result.briefing_id} (${result.likely_topics.length} topics, ${result.predicted_questions.length} questions, risk=${result.narrative_risk.level}) in ${Date.now() - start}ms`);
+  return result;
+}
+
+export async function getBriefing(briefingId: string): Promise<AICoreBriefingResponse> {
+  return fetchJSON<AICoreBriefingResponse>(`${AI_CORE_BASE_URL}/api/briefing/${briefingId}`);
+}

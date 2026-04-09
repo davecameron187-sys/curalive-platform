@@ -141,3 +141,17 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - **Flow**: Analysis complete → load transcript segments → map to drift statements → POST /api/drift/run → persist drift_status + drift_results JSONB
 - **Non-blocking**: drift failures are logged and pipeline continues
 - **Drift status values**: `running`, `drift_detected`, `no_drift`
+
+### Phase 5 — Stakeholder Intelligence + Pre-Event Briefing
+- `curalive_ai_core/app/models/stakeholder_signal.py` — StakeholderSignal model (15 cols)
+- `curalive_ai_core/app/models/briefing.py` — Briefing model (16 cols)
+- `curalive_ai_core/app/services/stakeholder_intelligence.py` — Auto sentiment/topic analysis for signals
+- `curalive_ai_core/app/services/briefing_generator.py` — Generates structured briefings from signals + commitments + drifts
+- `curalive_ai_core/app/schemas/stakeholder.py` — Pydantic schemas for signal ingestion/query
+- `curalive_ai_core/app/schemas/briefing.py` — Pydantic schemas for briefing generation/retrieval
+- `curalive_ai_core/app/api/routes/stakeholder.py` — `POST /api/stakeholder/ingest`, `POST /api/stakeholder/query`
+- `curalive_ai_core/app/api/routes/briefing.py` — `POST /api/briefing/generate`, `GET /api/briefing/{id}`
+- `server/services/AICoreClient.ts` — Added `ingestStakeholderSignals()`, `generateBriefing()`, `getBriefing()` + typed interfaces
+- `server/services/PreEventBriefingService.ts` — Enriched with AI Core briefing before LLM fallback
+- **Tables**: `aic_stakeholder_signals` (15 cols), `aic_briefings` (16 cols)
+- **scheduled_sessions columns added**: `ai_briefing_id` (VARCHAR), `ai_briefing_results` (JSONB)
