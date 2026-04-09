@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import {
   Shield, AlertTriangle, TrendingUp, MessageSquare, Brain, Activity,
-  Target, BarChart3, ChevronDown, Loader2, RefreshCw, Download
+  Target, BarChart3, ChevronDown, Loader2, RefreshCw, Download, Clock, CheckCircle2, XCircle, SkipForward, Zap
 } from "lucide-react";
 import { useState } from "react";
 
@@ -362,9 +362,21 @@ export function IntelligenceSummaryPanel({ sessionId, organisationId }: Props) {
         <div className="flex items-center gap-2">
           <Brain className="w-4 h-4 text-violet-400" />
           <span className="text-sm text-slate-300 font-medium">AI Intelligence Summary</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/20">
-            Phase 9
-          </span>
+          {data.data_sources && !data.data_sources.partial && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 flex items-center gap-1">
+              <CheckCircle2 className="w-2.5 h-2.5" /> Complete
+            </span>
+          )}
+          {data.data_sources?.partial && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/20">
+              Partial
+            </span>
+          )}
+          {data.generated_in_ms > 0 && (
+            <span className="text-[10px] text-slate-600 flex items-center gap-0.5">
+              <Zap className="w-2.5 h-2.5" /> {data.generated_in_ms}ms
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => query.refetch()}
@@ -406,7 +418,72 @@ export function IntelligenceSummaryPanel({ sessionId, organisationId }: Props) {
             </div>
           );
         })}
+
+        {data.pipeline_trace && (
+          <div>
+            <button
+              onClick={() => toggle("pipeline_trace")}
+              className="w-full px-5 py-3 flex items-center gap-2 hover:bg-white/[0.02] transition-colors text-left"
+            >
+              <Clock className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+              <span className="text-sm text-slate-300 flex-1">Pipeline Trace</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                data.pipeline_trace.overall_status === "complete"
+                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                  : data.pipeline_trace.overall_status === "partial"
+                  ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                  : "bg-red-500/15 text-red-400 border-red-500/30"
+              }`}>
+                {data.pipeline_trace.overall_status} · {data.pipeline_trace.total_duration_ms}ms
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-600 transition-transform ${expanded.pipeline_trace ? "rotate-180" : ""}`} />
+            </button>
+            {expanded.pipeline_trace && (
+              <div className="px-5 pb-4 space-y-1">
+                {data.pipeline_trace.steps.map((step: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    {step.status === "ok" ? (
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                    ) : step.status === "skipped" ? (
+                      <SkipForward className="w-3 h-3 text-slate-500 shrink-0" />
+                    ) : (
+                      <XCircle className="w-3 h-3 text-red-400 shrink-0" />
+                    )}
+                    <span className="text-slate-400 w-32 truncate">{step.step.replace(/_/g, " ")}</span>
+                    <span className={`${step.status === "ok" ? "text-slate-500" : step.status === "skipped" ? "text-slate-600" : "text-red-400"}`}>
+                      {step.status === "skipped" ? "skipped" : `${step.duration_ms}ms`}
+                    </span>
+                    {step.error && (
+                      <span className="text-red-400/60 truncate max-w-[200px]" title={step.error}>{step.error.slice(0, 50)}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {data.data_sources && (
+        <div className="px-5 py-2 border-t border-white/5 flex items-center gap-3 text-[10px] text-slate-600 flex-wrap">
+          <span className="flex items-center gap-1">
+            {data.data_sources.ai_core_available ? (
+              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+            ) : (
+              <XCircle className="w-2.5 h-2.5 text-red-500" />
+            )}
+            AI Core
+          </span>
+          {["analysis", "drift", "governance", "profile", "benchmark", "briefing"].map(src => {
+            const loaded = (data.data_sources as any)[`${src}_loaded`];
+            return (
+              <span key={src} className={`${loaded ? "text-slate-500" : "text-slate-700"}`}>
+                {loaded ? "\u2713" : "\u2717"} {src}
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

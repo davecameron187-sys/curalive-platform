@@ -12,8 +12,62 @@ import type {
   AICoreProfileResponse,
   AICoreBenchmarkResponse,
 } from "./AICoreClient";
+import type { PipelineTrace } from "./SessionClosePipeline";
 
 const LOG = (msg: string) => console.log(`[UnifiedIntel] ${msg}`);
+
+const CACHE_TTL_MS = 120_000;
+
+interface CacheEntry<T> {
+  data: T;
+  expires: number;
+}
+
+const profileCache = new Map<string, CacheEntry<AICoreProfileResponse>>();
+const benchmarkCache = new Map<string, CacheEntry<AICoreBenchmarkResponse>>();
+
+function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expires) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T): void {
+  cache.set(key, { data, expires: Date.now() + CACHE_TTL_MS });
+  if (cache.size > 200) {
+    const oldest = cache.keys().next().value;
+    if (oldest) cache.delete(oldest);
+  }
+}
+
+async function cachedProfile(orgId: string): Promise<AICoreProfileResponse | null> {
+  const cached = getCached(profileCache, orgId);
+  if (cached) { LOG(`Profile cache hit: ${orgId}`); return cached; }
+  try {
+    const profile = await getOrgProfile(orgId);
+    setCache(profileCache, orgId, profile);
+    return profile;
+  } catch (e) {
+    LOG(`Profile fetch failed for ${orgId}: ${(e as Error).message}`);
+    return null;
+  }
+}
+
+async function cachedBenchmark(segmentKey: string): Promise<AICoreBenchmarkResponse | null> {
+  const cached = getCached(benchmarkCache, segmentKey);
+  if (cached) { LOG(`Benchmark cache hit: ${segmentKey}`); return cached; }
+  try {
+    const bm = await getBenchmark(segmentKey);
+    setCache(benchmarkCache, segmentKey, bm);
+    return bm;
+  } catch {
+    return null;
+  }
+}
 
 export interface IntelligenceSummary {
   session_id: number | null;
@@ -107,6 +161,21 @@ export interface IntelligenceSummary {
     strengths: string[];
     positions: Record<string, string>;
   };
+
+  data_sources: {
+    ai_core_available: boolean;
+    analysis_loaded: boolean;
+    drift_loaded: boolean;
+    governance_loaded: boolean;
+    profile_loaded: boolean;
+    benchmark_loaded: boolean;
+    briefing_loaded: boolean;
+    partial: boolean;
+    failed_sources: string[];
+  };
+
+  generated_in_ms: number;
+  pipeline_trace: PipelineTrace | null;
 }
 
 function emptyIntelligenceSummary(
@@ -129,6 +198,19 @@ function emptyIntelligenceSummary(
     governance_summary: { record_id: null, record_type: null, total_commitments: 0, total_flags: 0, overall_risk_level: "unknown", executive_summary: "", matters_arising: 0 },
     profile_summary: { version: 0, events_incorporated: 0, overall_risk_level: "unknown", delivery_reliability: "unknown", relationship_health: "unknown", governance_quality: "unknown", confidence: 0, key_concerns: [], key_strengths: [] },
     benchmark_context: { segment: "", quality: "unknown", event_count: 0, concerns: [], strengths: [], positions: {} },
+    data_sources: {
+      ai_core_available: false,
+      analysis_loaded: false,
+      drift_loaded: false,
+      governance_loaded: false,
+      profile_loaded: false,
+      benchmark_loaded: false,
+      briefing_loaded: false,
+      partial: true,
+      failed_sources: [],
+    },
+    generated_in_ms: 0,
+    pipeline_trace: null,
   };
 }
 
@@ -141,7 +223,8 @@ export async function getSessionIntelligence(sessionId: number): Promise<Intelli
             ai_core_status, ai_core_results,
             ai_drift_status, ai_drift_results,
             ai_governance_id, ai_governance_results,
-            ai_profile_version, ai_profile_summary
+            ai_profile_version, ai_profile_summary,
+            ai_pipeline_trace
      FROM shadow_sessions WHERE id = $1`,
     [sessionId],
   );
@@ -158,9 +241,15 @@ export async function getSessionIntelligence(sessionId: number): Promise<Intelli
   const driftResults = parseJson(session.ai_drift_results);
   const govSummary = parseJson(session.ai_governance_results);
   const profileSummary = parseJson(session.ai_profile_summary);
+  const pipelineTrace = parseJson(session.ai_pipeline_trace);
+
+  if (pipelineTrace) {
+    summary.pipeline_trace = pipelineTrace as unknown as PipelineTrace;
+  }
 
   if (aiResults) {
     fillAnalysisOutputs(summary, aiResults);
+    summary.data_sources.analysis_loaded = true;
   }
 
   if (driftResults) {
@@ -175,6 +264,7 @@ export async function getSessionIntelligence(sessionId: number): Promise<Intelli
         explanation: d.explanation ?? "",
       })),
     };
+    summary.data_sources.drift_loaded = true;
   }
 
   if (govSummary) {
@@ -187,6 +277,7 @@ export async function getSessionIntelligence(sessionId: number): Promise<Intelli
       executive_summary: "",
       matters_arising: govSummary.matters_arising ?? 0,
     };
+    summary.data_sources.governance_loaded = true;
 
     if (govSummary.overall_risk_level) {
       summary.overall_risk = {
@@ -209,14 +300,21 @@ export async function getSessionIntelligence(sessionId: number): Promise<Intelli
       key_concerns: profileSummary.key_concerns ?? [],
       key_strengths: profileSummary.key_strengths ?? [],
     };
+    summary.data_sources.profile_loaded = true;
   }
 
   const healthy = await checkAICoreHealth().catch(() => false);
+  summary.data_sources.ai_core_available = healthy;
   if (healthy && orgId) {
     await enrichFromAICore(summary, orgId, eventId);
   }
 
-  LOG(`Session ${sessionId} intelligence assembled in ${Date.now() - start}ms`);
+  const loadedCount = Object.entries(summary.data_sources)
+    .filter(([k, v]) => k.endsWith("_loaded") && v === true).length;
+  summary.data_sources.partial = loadedCount < 6;
+
+  summary.generated_in_ms = Date.now() - start;
+  LOG(`Session ${sessionId} intelligence assembled in ${summary.generated_in_ms}ms (${loadedCount}/6 sources loaded)`);
   return summary;
 }
 
@@ -225,14 +323,21 @@ export async function getOrgIntelligence(organisationId: string): Promise<Intell
   const summary = emptyIntelligenceSummary(null, organisationId, null);
 
   const healthy = await checkAICoreHealth().catch(() => false);
+  summary.data_sources.ai_core_available = healthy;
   if (!healthy) {
     LOG(`AI Core not available for org ${organisationId}`);
+    summary.generated_in_ms = Date.now() - start;
     return summary;
   }
 
   await enrichFromAICore(summary, organisationId, null);
 
-  LOG(`Org ${organisationId} intelligence assembled in ${Date.now() - start}ms`);
+  const orgRelevantSources = ["profile_loaded", "benchmark_loaded"];
+  const orgLoadedCount = orgRelevantSources.filter(k => (summary.data_sources as any)[k] === true).length;
+  summary.data_sources.partial = orgLoadedCount < 1;
+
+  summary.generated_in_ms = Date.now() - start;
+  LOG(`Org ${organisationId} intelligence assembled in ${summary.generated_in_ms}ms (${orgLoadedCount}/2 org sources loaded)`);
   return summary;
 }
 
@@ -241,22 +346,23 @@ async function enrichFromAICore(
   orgId: string,
   eventId: string | null,
 ): Promise<void> {
-  try {
-    const profile = await getOrgProfile(orgId);
+  const profile = await cachedProfile(orgId);
+  if (profile) {
     applyProfile(summary, profile);
-  } catch (e) {
-    LOG(`Profile fetch skipped for ${orgId}: ${(e as Error).message}`);
+    summary.data_sources.profile_loaded = true;
+  } else {
+    summary.data_sources.failed_sources.push("profile");
   }
 
-  try {
-    const orgSlug = orgId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const orgBm = await getBenchmark(`organisation:${orgSlug}`).catch(() => null);
-    const globalBm = await getBenchmark("global:all").catch(() => null);
-    const bm = orgBm ?? globalBm;
-    if (bm) {
-      applyBenchmark(summary, bm);
-    }
-  } catch {
+  const orgSlug = orgId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const orgBm = await cachedBenchmark(`organisation:${orgSlug}`);
+  const globalBm = orgBm ? null : await cachedBenchmark("global:all");
+  const bm = orgBm ?? globalBm;
+  if (bm) {
+    applyBenchmark(summary, bm);
+    summary.data_sources.benchmark_loaded = true;
+  } else {
+    summary.data_sources.failed_sources.push("benchmark");
   }
 
   if (eventId) {
@@ -264,11 +370,13 @@ async function enrichFromAICore(
       const briefing = await generateBriefing({
         organisation_id: orgId,
         event_id: eventId,
-      }).catch(() => null);
+      });
       if (briefing) {
         applyBriefing(summary, briefing);
+        summary.data_sources.briefing_loaded = true;
       }
     } catch {
+      summary.data_sources.failed_sources.push("briefing");
     }
   }
 
@@ -277,6 +385,7 @@ async function enrichFromAICore(
       const gov = await getGovernanceRecord(summary.governance_summary.record_id);
       applyGovernance(summary, gov);
     } catch {
+      summary.data_sources.failed_sources.push("governance_detail");
     }
   }
 }

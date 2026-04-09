@@ -2,6 +2,24 @@ const AI_CORE_BASE_URL = process.env.AI_CORE_URL ?? "http://localhost:5000";
 const LOG = (msg: string) => console.log(`[AICoreClient] ${msg}`);
 const ERR = (msg: string, e: any) => console.error(`[AICoreClient] ${msg}`, e);
 
+const DEFAULT_TIMEOUT_MS = 30_000;
+const LONG_TIMEOUT_MS = 120_000;
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1_000;
+
+export class AICoreError extends Error {
+  constructor(
+    message: string,
+    public readonly errorType: "timeout" | "network" | "upstream" | "parse",
+    public readonly statusCode?: number,
+    public readonly endpoint?: string,
+    public readonly durationMs?: number,
+  ) {
+    super(message);
+    this.name = "AICoreError";
+  }
+}
+
 export interface AICoreAnalysisRequest {
   canonical_event: {
     event_id: string;
@@ -79,18 +97,107 @@ export interface AICoreJobResults {
   compliance_flags_persisted: number;
 }
 
-async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`AI Core ${res.status}: ${body}`);
+interface FetchOptions extends RequestInit {
+  timeoutMs?: number;
+  retries?: number;
+  label?: string;
+}
+
+async function fetchJSON<T>(url: string, options?: FetchOptions): Promise<T> {
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const retries = options?.retries ?? 0;
+  const label = options?.label ?? url;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const start = Date.now();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      const elapsed = Date.now() - start;
+
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        if (res.status >= 500 && attempt < retries) {
+          ERR(`${label} attempt ${attempt + 1} failed (${res.status}), retrying in ${RETRY_DELAY_MS}ms`, body);
+          await sleep(RETRY_DELAY_MS * (attempt + 1));
+          continue;
+        }
+        throw new AICoreError(
+          `AI Core ${res.status}: ${body.slice(0, 500)}`,
+          "upstream",
+          res.status,
+          label,
+          elapsed,
+        );
+      }
+
+      try {
+        return await res.json() as T;
+      } catch (parseErr) {
+        throw new AICoreError(
+          `Failed to parse response from ${label}`,
+          "parse",
+          res.status,
+          label,
+          elapsed,
+        );
+      }
+    } catch (e) {
+      clearTimeout(timer);
+      const elapsed = Date.now() - start;
+
+      if (e instanceof AICoreError) throw e;
+
+      if ((e as any)?.name === "AbortError") {
+        if (attempt < retries) {
+          ERR(`${label} timed out after ${timeoutMs}ms (attempt ${attempt + 1}), retrying in ${RETRY_DELAY_MS * (attempt + 1)}ms`, null);
+          await sleep(RETRY_DELAY_MS * (attempt + 1));
+          continue;
+        }
+        throw new AICoreError(
+          `AI Core request to ${label} timed out after ${timeoutMs}ms`,
+          "timeout",
+          undefined,
+          label,
+          elapsed,
+        );
+      }
+
+      if (attempt < retries) {
+        ERR(`${label} network error (attempt ${attempt + 1}), retrying`, e);
+        await sleep(RETRY_DELAY_MS * (attempt + 1));
+        continue;
+      }
+
+      throw new AICoreError(
+        `Network error calling ${label}: ${(e as Error).message}`,
+        "network",
+        undefined,
+        label,
+        elapsed,
+      );
+    }
   }
-  return res.json() as Promise<T>;
+
+  throw new AICoreError(`Exhausted retries for ${label}`, "network", undefined, label);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export async function checkAICoreHealth(): Promise<boolean> {
   try {
-    const data = await fetchJSON<{ status: string }>(`${AI_CORE_BASE_URL}/health`);
+    const data = await fetchJSON<{ status: string }>(`${AI_CORE_BASE_URL}/health`, {
+      timeoutMs: 5_000,
+      label: "health",
+    });
     return data.status === "ok";
   } catch (e) {
     ERR("Health check failed", e);
@@ -110,6 +217,9 @@ export async function runAICoreAnalysis(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: MAX_RETRIES,
+      label: "analysis/run",
     }
   );
 
@@ -118,11 +228,17 @@ export async function runAICoreAnalysis(
 }
 
 export async function getAICoreJobSummary(jobId: string): Promise<AICoreJobSummary> {
-  return fetchJSON<AICoreJobSummary>(`${AI_CORE_BASE_URL}/api/analysis/jobs/${jobId}`);
+  return fetchJSON<AICoreJobSummary>(`${AI_CORE_BASE_URL}/api/analysis/jobs/${jobId}`, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: `jobs/${jobId}/summary`,
+  });
 }
 
 export async function getAICoreJobResults(jobId: string): Promise<AICoreJobResults> {
-  return fetchJSON<AICoreJobResults>(`${AI_CORE_BASE_URL}/api/analysis/jobs/${jobId}/results`);
+  return fetchJSON<AICoreJobResults>(`${AI_CORE_BASE_URL}/api/analysis/jobs/${jobId}/results`, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: `jobs/${jobId}/results`,
+  });
 }
 
 export interface AICoreDriftSourceStatement {
@@ -176,6 +292,9 @@ export async function runAICoreDriftDetection(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: MAX_RETRIES,
+      label: "drift/run",
     },
   );
 
@@ -228,6 +347,9 @@ export async function ingestStakeholderSignals(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
+      timeoutMs: DEFAULT_TIMEOUT_MS,
+      retries: 1,
+      label: "stakeholder/ingest",
     },
   );
   LOG(`Ingested ${result.ingested} signals`);
@@ -309,6 +431,9 @@ export async function generateBriefing(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: 1,
+      label: "briefing/generate",
     },
   );
 
@@ -317,7 +442,10 @@ export async function generateBriefing(
 }
 
 export async function getBriefing(briefingId: string): Promise<AICoreBriefingResponse> {
-  return fetchJSON<AICoreBriefingResponse>(`${AI_CORE_BASE_URL}/api/briefing/${briefingId}`);
+  return fetchJSON<AICoreBriefingResponse>(`${AI_CORE_BASE_URL}/api/briefing/${briefingId}`, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: `briefing/${briefingId}`,
+  });
 }
 
 export interface AICoreGovernanceSegment {
@@ -443,6 +571,9 @@ export async function generateGovernanceRecord(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: 1,
+      label: "governance/generate",
     },
   );
 
@@ -451,7 +582,10 @@ export async function generateGovernanceRecord(
 }
 
 export async function getGovernanceRecord(recordId: string): Promise<AICoreGovernanceResponse> {
-  return fetchJSON<AICoreGovernanceResponse>(`${AI_CORE_BASE_URL}/api/governance/${recordId}`);
+  return fetchJSON<AICoreGovernanceResponse>(`${AI_CORE_BASE_URL}/api/governance/${recordId}`, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: `governance/${recordId}`,
+  });
 }
 
 export interface AICoreProfileUpdateRequest {
@@ -515,6 +649,9 @@ export async function updateOrgProfile(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: 1,
+      label: "profile/update",
     },
   );
 
@@ -524,11 +661,17 @@ export async function updateOrgProfile(
 }
 
 export async function getOrgProfile(organisationId: string): Promise<AICoreProfileResponse> {
-  return fetchJSON<AICoreProfileResponse>(`${AI_CORE_BASE_URL}/api/profile/${organisationId}`);
+  return fetchJSON<AICoreProfileResponse>(`${AI_CORE_BASE_URL}/api/profile/${organisationId}`, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: `profile/${organisationId}`,
+  });
 }
 
 export async function getOrgProfileSummary(organisationId: string): Promise<AICoreProfileSummaryResponse> {
-  return fetchJSON<AICoreProfileSummaryResponse>(`${AI_CORE_BASE_URL}/api/profile/${organisationId}/summary`);
+  return fetchJSON<AICoreProfileSummaryResponse>(`${AI_CORE_BASE_URL}/api/profile/${organisationId}/summary`, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: `profile/${organisationId}/summary`,
+  });
 }
 
 export interface AICoreBenchmarkBuildRequest {
@@ -629,6 +772,9 @@ export async function buildBenchmarks(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: 1,
+      label: "benchmark/build",
     },
   );
 
@@ -640,11 +786,17 @@ export async function listBenchmarks(segmentType?: string): Promise<AICoreBenchm
   const url = segmentType
     ? `${AI_CORE_BASE_URL}/api/benchmark/list?segment_type=${encodeURIComponent(segmentType)}`
     : `${AI_CORE_BASE_URL}/api/benchmark/list`;
-  return fetchJSON<AICoreBenchmarkListResponse>(url);
+  return fetchJSON<AICoreBenchmarkListResponse>(url, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: "benchmark/list",
+  });
 }
 
 export async function getBenchmark(segmentKey: string): Promise<AICoreBenchmarkResponse> {
-  return fetchJSON<AICoreBenchmarkResponse>(`${AI_CORE_BASE_URL}/api/benchmark/${segmentKey}`);
+  return fetchJSON<AICoreBenchmarkResponse>(`${AI_CORE_BASE_URL}/api/benchmark/${segmentKey}`, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: `benchmark/${segmentKey}`,
+  });
 }
 
 export async function enrichSectorContext(
@@ -659,6 +811,9 @@ export async function enrichSectorContext(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: 1,
+      label: "benchmark/enrich-sector",
     },
   );
 

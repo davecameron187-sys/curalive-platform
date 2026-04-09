@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, operatorProcedure } from "../_core/trpc";
 import { getSessionIntelligence, getOrgIntelligence } from "../services/UnifiedIntelligenceService";
+import { seedDemoData } from "../scripts/seedDemoData";
 
 export const unifiedIntelligenceRouter = router({
   getSessionIntelligence: protectedProcedure
@@ -23,5 +24,10 @@ export const unifiedIntelligenceRouter = router({
         console.error("[UnifiedIntel Router] Org intel failed:", e);
         throw e;
       }
+    }),
+
+  seedDemoData: operatorProcedure
+    .mutation(async () => {
+      return await seedDemoData();
     }),
 });

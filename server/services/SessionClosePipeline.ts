@@ -3,16 +3,72 @@ import { sendComplianceCloseEmail } from "./ComplianceDeadlineService";
 import { sendReportLinks }          from "./ClientDeliveryService";
 import { runBoardIntelligenceUpdate } from "./BoardIntelligenceService";
 import { calculateBriefingAccuracy }  from "./PreEventBriefingService";
-import { checkAICoreHealth, runAICoreAnalysis, runAICoreDriftDetection, generateGovernanceRecord, updateOrgProfile } from "./AICoreClient";
+import { checkAICoreHealth, runAICoreAnalysis, runAICoreDriftDetection, generateGovernanceRecord, updateOrgProfile, AICoreError } from "./AICoreClient";
 import type { AICoreAnalysisResponse, AICoreDriftResponse, AICoreDriftSourceStatement, AICoreGovernanceResponse, AICoreProfileResponse } from "./AICoreClient";
 import { buildCanonicalPayload } from "./AICorePayloadMapper";
 
 const LOG = (msg: string) => console.log(`[SessionClose] ${msg}`);
 const ERR = (msg: string, e: any) => console.error(`[SessionClose] ${msg}`, e);
 
+export interface PipelineStepTrace {
+  step: string;
+  status: "ok" | "skipped" | "error" | "timeout";
+  started_at: string;
+  duration_ms: number;
+  error?: string;
+  error_type?: string;
+  detail?: Record<string, any>;
+}
+
+export interface PipelineTrace {
+  session_id: number;
+  started_at: string;
+  completed_at: string;
+  total_duration_ms: number;
+  steps: PipelineStepTrace[];
+  overall_status: "complete" | "partial" | "error";
+}
+
+function traceStep(step: string, fn: () => Promise<Record<string, any> | void>): Promise<PipelineStepTrace> {
+  const startedAt = new Date().toISOString();
+  const t0 = Date.now();
+  return fn()
+    .then((detail) => ({
+      step,
+      status: "ok" as const,
+      started_at: startedAt,
+      duration_ms: Date.now() - t0,
+      detail: detail ?? undefined,
+    }))
+    .catch((e) => {
+      const isTimeout = e instanceof AICoreError && e.errorType === "timeout";
+      return {
+        step,
+        status: isTimeout ? "timeout" as const : "error" as const,
+        started_at: startedAt,
+        duration_ms: Date.now() - t0,
+        error: (e as Error).message?.slice(0, 500),
+        error_type: e instanceof AICoreError ? e.errorType : "unknown",
+      };
+    });
+}
+
+function skipStep(step: string, reason: string): PipelineStepTrace {
+  return {
+    step,
+    status: "skipped",
+    started_at: new Date().toISOString(),
+    duration_ms: 0,
+    detail: { reason },
+  };
+}
+
 export async function runSessionClosePipeline(sessionId: number): Promise<void> {
   const pipelineStart = Date.now();
+  const pipelineStartedAt = new Date().toISOString();
   LOG(`Starting pipeline for session ${sessionId}`);
+
+  const steps: PipelineStepTrace[] = [];
 
   const db = await getDb();
   if (!db) { ERR('No database connection', null); return; }
@@ -46,7 +102,7 @@ export async function runSessionClosePipeline(sessionId: number): Promise<void> 
   );
 
   if (flagRows.length > 0 && complianceRecipients.length > 0) {
-    try {
+    const compStep = await traceStep("compliance_email", async () => {
       for (const flag of flagRows) {
         const deadlineHours = 48;
         await rawSql(
@@ -82,55 +138,67 @@ export async function runSessionClosePipeline(sessionId: number): Promise<void> 
         recipients: complianceRecipients.map(r => ({ name: r.name, email: r.email })),
       });
 
-      LOG(`Compliance email sent to ${complianceRecipients.length} recipients (${Date.now()-pipelineStart}ms)`);
-    } catch (e) {
-      ERR('Compliance email failed', e);
-    }
+      return { recipients: complianceRecipients.length, flags: flagRows.length };
+    });
+    steps.push(compStep);
+    if (compStep.status === "ok") LOG(`Compliance email sent to ${complianceRecipients.length} recipients (${compStep.duration_ms}ms)`);
+    else ERR(`Compliance email ${compStep.status}`, compStep.error);
+  } else {
+    steps.push(skipStep("compliance_email", flagRows.length === 0 ? "no_flags" : "no_recipients"));
   }
 
   let aiCoreResult: AICoreAnalysisResponse | null = null;
-  try {
+  const analysisStep = await traceStep("ai_core_analysis", async () => {
     aiCoreResult = await runAICoreAnalysisStep(sessionId, session);
-    if (aiCoreResult) {
-      LOG(`AI Core analysis complete: job=${aiCoreResult.job_id} status=${aiCoreResult.overall_status} (${Date.now()-pipelineStart}ms)`);
-    }
-  } catch (e) {
-    ERR('AI Core analysis failed — continuing with legacy pipeline', e);
+    if (!aiCoreResult) return { skipped: true, reason: "no_segments_or_unhealthy" };
+    return { job_id: aiCoreResult.job_id, status: aiCoreResult.overall_status, modules: aiCoreResult.modules_completed.length };
+  });
+  steps.push(analysisStep);
+  if (analysisStep.status === "ok" && aiCoreResult) {
+    LOG(`AI Core analysis complete: job=${(aiCoreResult as AICoreAnalysisResponse).job_id} status=${(aiCoreResult as AICoreAnalysisResponse).overall_status} (${analysisStep.duration_ms}ms)`);
+  } else if (analysisStep.status !== "ok") {
+    ERR(`AI Core analysis ${analysisStep.status} — continuing`, analysisStep.error);
   }
 
-  if (aiCoreResult && aiCoreResult.overall_status === 'complete') {
-    try {
-      await runDriftDetectionStep(sessionId, session, aiCoreResult);
-    } catch (e) {
-      ERR('Drift detection failed — continuing pipeline', e);
-    }
+  if (aiCoreResult && (aiCoreResult as AICoreAnalysisResponse).overall_status === 'complete') {
+    const driftStep = await traceStep("drift_detection", async () => {
+      await runDriftDetectionStep(sessionId, session, aiCoreResult!);
+    });
+    steps.push(driftStep);
+    if (driftStep.status !== "ok") ERR(`Drift detection ${driftStep.status}`, driftStep.error);
+  } else {
+    steps.push(skipStep("drift_detection", aiCoreResult ? "analysis_incomplete" : "no_analysis"));
   }
 
   if (aiCoreResult) {
-    try {
-      await runGovernanceRecordStep(sessionId, session, aiCoreResult);
-    } catch (e) {
-      ERR('Governance record generation failed — continuing pipeline', e);
-    }
+    const govStep = await traceStep("governance_record", async () => {
+      await runGovernanceRecordStep(sessionId, session, aiCoreResult!);
+    });
+    steps.push(govStep);
+    if (govStep.status !== "ok") ERR(`Governance ${govStep.status}`, govStep.error);
 
-    try {
-      await runProfileUpdateStep(sessionId, session, aiCoreResult);
-    } catch (e) {
-      ERR('Profile update failed — continuing pipeline', e);
-    }
+    const profileStep = await traceStep("profile_update", async () => {
+      await runProfileUpdateStep(sessionId, session, aiCoreResult!);
+    });
+    steps.push(profileStep);
+    if (profileStep.status !== "ok") ERR(`Profile update ${profileStep.status}`, profileStep.error);
+  } else {
+    steps.push(skipStep("governance_record", "no_analysis"));
+    steps.push(skipStep("profile_update", "no_analysis"));
   }
 
   let reportModules: Record<string, string> = {};
-  try {
+  const reportStep = await traceStep("ai_report", async () => {
     reportModules = await generateAIReportWrapper(sessionId, session);
-    LOG(`AI report generated (${Date.now()-pipelineStart}ms)`);
-  } catch (e) {
-    ERR('AI report generation failed', e);
-  }
+    return { modules: Object.keys(reportModules).length };
+  });
+  steps.push(reportStep);
+  if (reportStep.status === "ok") LOG(`AI report generated (${reportStep.duration_ms}ms)`);
+  else ERR(`AI report ${reportStep.status}`, reportStep.error);
 
   const reportRecipients = recipients.filter(r => r.sendReport !== false);
   if (reportRecipients.length > 0) {
-    try {
+    const deliveryStep = await traceStep("report_delivery", async () => {
       await sendReportLinks({
         sessionId,
         eventName:    session.event_name ?? 'Event',
@@ -142,11 +210,17 @@ export async function runSessionClosePipeline(sessionId: number): Promise<void> 
         recipients:   reportRecipients.map(r => ({ name: r.name, email: r.email })),
         partnerId:    session.partner_id ?? undefined,
       });
-      LOG(`Report links sent to ${reportRecipients.length} recipients (${Date.now()-pipelineStart}ms)`);
-    } catch (e) {
-      ERR('Report delivery failed', e);
-    }
+      return { recipients: reportRecipients.length };
+    });
+    steps.push(deliveryStep);
+    if (deliveryStep.status === "ok") LOG(`Report links sent to ${reportRecipients.length} recipients (${deliveryStep.duration_ms}ms)`);
+    else ERR(`Report delivery ${deliveryStep.status}`, deliveryStep.error);
+  } else {
+    steps.push(skipStep("report_delivery", "no_recipients"));
   }
+
+  steps.push(skipStep("board_intelligence", "async_deferred"));
+  steps.push(skipStep("briefing_accuracy", "async_deferred"));
 
   runBoardIntelligenceUpdate({
     sessionId,
@@ -165,12 +239,29 @@ export async function runSessionClosePipeline(sessionId: number): Promise<void> 
     ERR('Briefing accuracy scoring failed', e)
   );
 
-  rawSql(
-    `UPDATE shadow_sessions SET report_links_sent_at = NOW() WHERE id = $1`,
-    [sessionId]
+  const errorCount = steps.filter(s => s.status === "error" || s.status === "timeout").length;
+  const okCount = steps.filter(s => s.status === "ok").length;
+  const overallStatus: PipelineTrace["overall_status"] =
+    errorCount === 0 ? "complete" : okCount === 0 ? "error" : "partial";
+
+  const trace: PipelineTrace = {
+    session_id: sessionId,
+    started_at: pipelineStartedAt,
+    completed_at: new Date().toISOString(),
+    total_duration_ms: Date.now() - pipelineStart,
+    steps,
+    overall_status: overallStatus,
+  };
+
+  await rawSql(
+    `UPDATE shadow_sessions
+     SET report_links_sent_at = NOW(),
+         ai_pipeline_trace = $1
+     WHERE id = $2`,
+    [JSON.stringify(trace), sessionId]
   ).catch(() => {});
 
-  LOG(`Pipeline complete for session ${sessionId} in ${Date.now()-pipelineStart}ms`);
+  LOG(`Pipeline ${overallStatus} for session ${sessionId} in ${trace.total_duration_ms}ms (${okCount} ok, ${steps.filter(s=>s.status==="skipped").length} skipped, ${errorCount} errors)`);
 }
 
 async function generateAIReportWrapper(
