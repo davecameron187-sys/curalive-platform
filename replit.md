@@ -76,7 +76,9 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 ### Endpoints
 - `GET /health` — Health check
 - `POST /api/events/ingest` — Ingest raw event, normalize to canonical event model
-- `POST /api/analysis/run` — Run AI analysis modules against a canonical event
+- `POST /api/analysis/run` — Run AI analysis modules, persist results to DB, return structured output
+- `GET /api/analysis/jobs/{job_id}` — Retrieve job summary (status, timing, module list)
+- `GET /api/analysis/jobs/{job_id}/results` — Retrieve full module outputs from DB
 
 ### Analysis Modules (Phase 2 — all operational)
 - **Sentiment** (`sentiment`): Per-segment and per-speaker sentiment scoring, tone shift detection, positive/negative signal counts
@@ -84,13 +86,35 @@ A separate Python FastAPI backend skeleton for the CuraLive intelligence layer, 
 - **Compliance Signals** (`compliance_signals`): Forward-looking statement detection, hedging language, regulatory triggers (IFRS/SEC/JSE/FSCA/King IV), risk level assessment
 - **Commitment Extraction** (`commitment_extraction`): Explicit commitment extraction with deadline detection, quantitative target identification, confidence scoring, commitment type classification
 
+### Database Tables (prefixed `aic_`)
+- `aic_events` — Canonical event storage (UUID PKs)
+- `aic_analysis_jobs` — Job tracking with status, timing, module lists (event_id, organisation_id indexed)
+- `aic_analysis_results` — Per-module result payloads (JSONB), linked to job_id
+- `aic_commitments` — Persisted commitments with type, deadline, confidence, quantitative targets
+- `aic_compliance_flags` — Persisted compliance flags with type, severity, matched pattern
+- `aic_drift_events` — Commitment drift detection (reserved for Phase 3+)
+
+### Job Status Values
+- `queued` — Created, not yet started
+- `running` — Analysis in progress
+- `complete` — All modules succeeded
+- `partial` — Some modules succeeded, some failed
+- `error` — All modules failed
+
+### Integration Contract
+- Full JSON contract documented in `curalive_ai_core/docs/integration_contract.md`
+- Covers request/response/error formats, job status values, Node.js integration pattern
+
 ### Key Files
-- `app/main.py` — FastAPI bootstrap, router registration
+- `app/main.py` — FastAPI bootstrap with DB lifespan, router registration
 - `app/api/routes/events.py` — Event ingestion endpoint
-- `app/api/routes/analysis.py` — Analysis orchestration endpoint
+- `app/api/routes/analysis.py` — Analysis orchestration with persistence + job retrieval
 - `app/schemas/event_ingest.py` — Canonical event model schemas
-- `app/schemas/analysis.py` — Analysis request/response schemas
-- `app/services/canonical_model.py` — Canonical event builder
+- `app/schemas/analysis.py` — Analysis request/response/job schemas
+- `app/models/analysis_job.py` — AnalysisJob ORM model
+- `app/models/analysis_result.py` — AnalysisResult ORM model
+- `app/models/commitment.py` — Commitment ORM model
+- `app/models/compliance_flag.py` — ComplianceFlag ORM model
 - `app/services/sentiment.py` — Sentiment analysis service
 - `app/services/engagement.py` — Engagement scoring service
 - `app/services/compliance_signals.py` — Compliance signal detection service

@@ -1,12 +1,33 @@
+from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator
+
 from fastapi import FastAPI
 
 from app.api.routes.events import router as events_router
 from app.api.routes.analysis import router as analysis_router
+from app.db.base import Base
+from app.db.session import engine
+
+import app.models.analysis_job
+import app.models.analysis_result
+import app.models.commitment
+import app.models.compliance_flag
+import app.models.drift_event
+import app.models.event
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    Base.metadata.create_all(bind=engine)
+    print("[CuraLive AI Core] Database tables created/verified")
+    yield
+
 
 app = FastAPI(
     title="CuraLive AI Core",
-    version="0.2.0",
+    version="0.3.0",
     description="Canonical event ingestion, normalization, and AI analysis service.",
+    lifespan=lifespan,
 )
 
 app.include_router(events_router, prefix="/api/events", tags=["events"])
