@@ -72,25 +72,13 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath, {
-    maxAge: 0,
-    index: false,
-    setHeaders: (res) => {
-      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
-    },
-  }));
+  const indexPath = path.resolve(distPath, "_index.html");
+  const assetsDir = path.resolve(distPath, "assets");
 
-  app.use("*", (_req, res, next) => {
-    const url = _req.originalUrl || _req.url || "";
-    if (url.startsWith("/api/") || url.startsWith("/health")) {
-      return next();
-    }
-    const indexPath = path.resolve(distPath, "_index.html");
+  let cachedHtml: string | null = null;
+  function getSpaHtml(): string {
+    if (cachedHtml) return cachedHtml;
     let html = fs.readFileSync(indexPath, "utf-8");
-
-    const assetsDir = path.resolve(distPath, "assets");
     if (fs.existsSync(assetsDir)) {
       const jsFiles = fs.readdirSync(assetsDir).filter(f => f.startsWith("index") && f.endsWith(".js"));
       if (jsFiles.length > 0) {
@@ -113,7 +101,31 @@ export function serveStatic(app: Express) {
         }
       }
     }
+    cachedHtml = html;
+    console.log(`[Static] SPA HTML prepared, serving bundle from _index.html`);
+    return html;
+  }
 
-    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "X-Served-By": "curalive-catchall" }).end(html);
+  app.use((req, res, next) => {
+    const url = req.originalUrl || req.url || "";
+    if (url.startsWith("/api/") || url.startsWith("/health")) {
+      return next();
+    }
+    const hasExtension = /\.\w+$/.test(url.split("?")[0]);
+    if (hasExtension) {
+      return next();
+    }
+    const html = getSpaHtml();
+    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "X-Served-By": "curalive-catchall-v2" }).end(html);
   });
+
+  app.use(express.static(distPath, {
+    maxAge: 0,
+    index: false,
+    setHeaders: (res) => {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    },
+  }));
 }

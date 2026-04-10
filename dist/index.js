@@ -46999,23 +46999,12 @@ function serveStatic(app) {
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
-  app.use(express.static(distPath, {
-    maxAge: 0,
-    index: false,
-    setHeaders: (res) => {
-      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
-    }
-  }));
-  app.use("*", (_req, res, next) => {
-    const url = _req.originalUrl || _req.url || "";
-    if (url.startsWith("/api/") || url.startsWith("/health")) {
-      return next();
-    }
-    const indexPath = path3.resolve(distPath, "_index.html");
+  const indexPath = path3.resolve(distPath, "_index.html");
+  const assetsDir = path3.resolve(distPath, "assets");
+  let cachedHtml = null;
+  function getSpaHtml() {
+    if (cachedHtml) return cachedHtml;
     let html = fs2.readFileSync(indexPath, "utf-8");
-    const assetsDir = path3.resolve(distPath, "assets");
     if (fs2.existsSync(assetsDir)) {
       const jsFiles = fs2.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".js"));
       if (jsFiles.length > 0) {
@@ -47038,8 +47027,31 @@ function serveStatic(app) {
         }
       }
     }
-    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "X-Served-By": "curalive-catchall" }).end(html);
+    cachedHtml = html;
+    console.log(`[Static] SPA HTML prepared, serving bundle from _index.html`);
+    return html;
+  }
+  app.use((req, res, next) => {
+    const url = req.originalUrl || req.url || "";
+    if (url.startsWith("/api/") || url.startsWith("/health")) {
+      return next();
+    }
+    const hasExtension = /\.\w+$/.test(url.split("?")[0]);
+    if (hasExtension) {
+      return next();
+    }
+    const html = getSpaHtml();
+    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "X-Served-By": "curalive-catchall-v2" }).end(html);
   });
+  app.use(express.static(distPath, {
+    maxAge: 0,
+    index: false,
+    setHeaders: (res) => {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    }
+  }));
 }
 var init_vite = __esm({
   "server/_core/vite.ts"() {
