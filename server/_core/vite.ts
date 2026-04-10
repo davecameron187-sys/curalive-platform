@@ -71,9 +71,41 @@ export function serveStatic(app: Express) {
   function getSpaHtml(): string {
     if (cachedHtml) return cachedHtml;
     let html = fs.readFileSync(indexPath, "utf-8");
+
+    const hasManusRuntime = html.includes("manus-runtime") || html.includes("__MANUS_HOST");
+    if (hasManusRuntime) {
+      console.warn("[Static] ⚠ Detected stale Manus runtime in index.html — rebuilding clean HTML");
+      const cssFiles = fs.existsSync(assetsDir)
+        ? fs.readdirSync(assetsDir).filter(f => f.startsWith("index") && f.endsWith(".css"))
+        : [];
+      const jsFiles = fs.existsSync(assetsDir)
+        ? fs.readdirSync(assetsDir).filter(f => f.startsWith("index") && f.endsWith(".js"))
+        : [];
+      const cssFile = cssFiles[0] || "index.css";
+      const jsFile = jsFiles.find(f => f === "index.js") || jsFiles[0] || "index.js";
+      const bundleHash = Date.now().toString(36);
+      html = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>CuraLive — Live Event Intelligence Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="/assets/${jsFile}?v=${bundleHash}"></script>
+    <link rel="stylesheet" crossorigin href="/assets/${cssFile}">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`;
+      console.log("[Static] ✓ Clean HTML generated — Manus runtime stripped");
+    }
+
     if (fs.existsSync(assetsDir)) {
       const jsFiles = fs.readdirSync(assetsDir).filter(f => f.startsWith("index") && f.endsWith(".js"));
-      if (jsFiles.length > 0) {
+      if (jsFiles.length > 0 && !hasManusRuntime) {
         const preferUnhashed = jsFiles.find(f => f === "index.js");
         const newestBundle = preferUnhashed || jsFiles.sort((a, b) => {
           const statA = fs.statSync(path.resolve(assetsDir, a));
