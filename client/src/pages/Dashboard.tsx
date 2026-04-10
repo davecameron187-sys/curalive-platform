@@ -580,32 +580,23 @@ export default function Dashboard() {
 
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-1 overflow-x-auto">
-            {TAB_CONFIG.map(({ id, label, icon: Icon, color, activeColor }) => {
-              const el = (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === id ? activeColor : `border-transparent ${color}`
-                  }`}>
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </button>
-              );
-              if (id === "shadow-mode") {
-                return [
-                  el,
-                  <a
-                    key="dashboard-link"
-                    href="/operator/dashboard"
-                    className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-blue-400 hover:text-blue-300 transition-colors whitespace-nowrap">
-                    <LayoutDashboard className="w-4 h-4" />
-                    Dashboard
-                  </a>
-                ];
-              }
-              return el;
-            })}
+            <a
+              href="/operator/dashboard"
+              className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-blue-400 text-blue-300 transition-colors whitespace-nowrap">
+              <LayoutDashboard className="w-4 h-4" />
+              Dashboard
+            </a>
+            {TAB_CONFIG.map(({ id, label, icon: Icon, color, activeColor }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === id ? activeColor : `border-transparent ${color}`
+                }`}>
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
