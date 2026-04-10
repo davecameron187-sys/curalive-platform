@@ -146,6 +146,7 @@ async function startServer() {
     const storage = getStorageHealth();
     return res.json({
       ok: validation.isCoreValid,
+      version: "2026.04.10-C",
       environment: process.env.NODE_ENV ?? "development",
       coreReady: validation.isCoreValid,
       missingCore: validation.missing.map((m: any) => m.key),
