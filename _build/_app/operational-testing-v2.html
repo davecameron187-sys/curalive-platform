@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuraLive Operational Testing - Interactive Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 30px 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 32px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+
+        .workflow-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .workflow-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 2px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .workflow-card:hover {
+            border-color: #60a5fa;
+            background: rgba(30, 41, 59, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .workflow-card.active {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+
+        .workflow-card h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #60a5fa;
+        }
+
+        .workflow-card p {
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        .workflow-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .workflow-content {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .phase {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .phase:last-child {
+            border-bottom: none;
+        }
+
+        .phase h2 {
+            font-size: 22px;
+            color: #60a5fa;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .phase-number {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .step {
+            background: rgba(15, 23, 42, 0.5);
+            border-left: 4px solid #60a5fa;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+
+        .step h3 {
+            color: #cbd5e1;
+            font-size: 16px;
+            flex: 1;
+        }
+
+        .step-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(96, 165, 250, 0.3);
+        }
+
+        .action-btn.secondary {
+            background: rgba(148, 163, 184, 0.1);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .action-btn.secondary:hover {
+            background: rgba(148, 163, 184, 0.2);
+        }
+
+        .step-content {
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .step-content p {
+            margin-bottom: 10px;
+        }
+
+        .expected-result {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid #22c55e;
+            padding: 12px 15px;
+            margin-top: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #86efac;
+        }
+
+        .deliverables-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+
+        .deliverables-table th {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid rgba(96, 165, 250, 0.3);
+        }
+
+        .deliverables-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            color: #cbd5e1;
+        }
+
+        .deliverables-table tr:hover {
+            background: rgba(96, 165, 250, 0.05);
+        }
+
+        .checkmark {
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(96, 165, 250, 0.3);
+        }
+
+        .success-criteria {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .success-criteria h3 {
+            color: #22c55e;
+            margin-bottom: 15px;
+        }
+
+        .criteria-list {
+            list-style: none;
+        }
+
+        .criteria-list li {
+            padding: 8px 0;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .criteria-list li:before {
+            content: "✓";
+            color: #22c55e;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .troubleshooting {
+            background: rgba(249, 115, 22, 0.1);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .troubleshooting h3 {
+            color: #fb923c;
+            margin-bottom: 15px;
+        }
+
+        .troubleshooting-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(249, 115, 22, 0.2);
+        }
+
+        .troubleshooting-item:last-child {
+            border-bottom: none;
+        }
+
+        .troubleshooting-item strong {
+            color: #fed7aa;
+        }
+
+        @media (max-width: 768px) {
+            .workflow-selector {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 24px;
+            }
+
+            .workflow-content {
+                padding: 20px;
+            }
+
+            .step-header {
+                flex-direction: column;
+            }
+
+            .step-actions {
+                justify-content: flex-start;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .workflow-selector,
+            .action-buttons,
+            .step-actions {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎚️ CuraLive Operational Testing</h1>
+            <p>Complete End-to-End Workflow Testing with Direct Navigation</p>
+        </header>
+
+        <div class="workflow-selector">
+            <div class="workflow-card active" onclick="selectWorkflow(0)">
+                <div class="workflow-icon">🔊</div>
+                <h3>Audio Conference</h3>
+                <p>Phone dial-in with transcription & sentiment</p>
+            </div>
+            <div class="workflow-card" onclick="selectWorkflow(1)">
+                <div class="workflow-icon">🎥</div>
+                <h3>Video Conference</h3>
+                <p>Zoom, Teams, or Webex integration</p>
+            </div>
+            <div class="workflow-card" onclick="selectWorkflow(2)">
+                <div class="workflow-icon">📡</div>
+                <h3>Webcast</h3>
+                <p>Live streaming to public audience</p>
+            </div>
+        </div>
+
+        <div class="workflow-content" id="workflowContent">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="printWorkflow()">🖨️ Print Guide</button>
+        </div>
+    </div>
+
+    <script>
+        const workflows = [
+            {
+                name: "Audio Conference Call",
+                icon: "🔊",
+                phases: [
+                    {
+                        title: "Book the Event",
+                        steps: [
+                            {
+                                title: "Create Event in Booking System",
+                                content: "Navigate to the Bookings module and create a new event with details: Event Name, Type (Audio Conference), Date & Time, Expected Participants, and Services (Transcription, Sentiment, Q&A).",
+                                result: "Event appears in calendar view with status 'Scheduled'",
+                                actions: [
+                                    { label: "📅 Go to Bookings", url: "testing-bookings.html", icon: "→" },
+                                    { label: "📖 View Guide", url: "#", action: "showGuide" }
+                                ]
+                            },
+                            {
+                                title: "Configure Audio Bridge",
+                                content: "Select Audio Bridge option, choose platform (Twilio + Telnyx), set dial-in number and PIN, enable recording.",
+                                result: "Dial-in number and PIN are displayed and ready to share",
+                                actions: [
+                                    { label: "🔊 Audio Bridge Settings", url: "/event-settings", icon: "→" },
+                                    { label: "📞 Twilio Console", url: "https://www.twilio.com/console", icon: "↗" }
+                                ]
+                            },
+                            {
+                                title: "Generate Event Materials",
+                                content: "Generate calendar invite, email template with dial-in details, and QR code for participants.",
+                                result: "All materials are ready for distribution",
+                                actions: [
+                                    { label: "📧 Generate Materials", url: "/event-materials", icon: "→" },
+                                    { label: "📨 Email Template", url: "/templates", icon: "→" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "Manage Registrations",
+                        steps: [
+                            {
+                                title: "Add Participants",
+                                content: "Upload CSV with participant data (email, name, company, role) or add manually.",
+                                result: "Participants appear in registration list with status 'Invited'",
+                                actions: [
+                                    { label: "👥 Registrations Module", url: "testing-registrations.html", icon: "→" },
+                                    { label: "📤 Upload CSV", url: "/registrations/import", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Send Invitations",
+                                content: "Send invitations with event details, dial-in number, PIN, and calendar invite.",
+                                result: "Email delivery status shows 'Sent' for each participant",
+                                actions: [
+                                    { label: "📬 Send Invitations", url: "/registrations/send", icon: "→" },
+                                    { label: "📊 Delivery Status", url: "/registrations/status", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Monitor Registration Status",
+                                content: "Track participant status: Invited → Registered → Attended. Filter by status to see who has responded.",
+                                result: "Registration statuses update as participants respond",
+                                actions: [
+                                    { label: "📈 Registration Dashboard", url: "/registrations/dashboard", icon: "→" },
+                                    { label: "🔍 Filter by Status", url: "/registrations/filter", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Export Registration Report",
+                                content: "Export participant data in CSV or Excel format with all relevant fields.",
+                                result: "File downloads with all participant data",
+                                actions: [
+                                    { label: "📥 Export Report", url: "/registrations/export", icon: "→" },
+                                    { label: "📊 Analytics", url: "/registrations/analytics", icon: "→" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "Run Live Event",
+                        steps: [
+                            {
+                                title: "Load Event into OCC",
+                                content: "Navigate to OCC, select the event, and load it with all configurations (participants, dial-in, recording, transcription).",
+                                result: "Event is fully loaded in OCC with all settings applied",
+                                actions: [
+                                    { label: "🎚️ Open OCC", url: "testing-occ.html", icon: "→" },
+                                    { label: "📂 Load Event", url: "/occ/load-event", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Pre-Event Verification",
+                                content: "Verify dial-in number, PIN, recording enabled, transcription ready, sentiment analysis ready, Q&A moderation ready.",
+                                result: "All systems show 'Ready' status",
+                                actions: [
+                                    { label: "✓ Verify Settings", url: "/occ/verify", icon: "→" },
+                                    { label: "🔧 System Status", url: "/occ/status", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Start Event",
+                                content: "Click 'Start Event' button. System transitions to LIVE status, dial-in bridge becomes active, recording starts, transcription begins.",
+                                result: "Event status shows 'LIVE' with red indicator",
+                                actions: [
+                                    { label: "▶️ Start Event", url: "/occ/start", icon: "→" },
+                                    { label: "🔴 Live Status", url: "/occ/live", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Participants Call In",
+                                content: "Have test participants call the dial-in number and enter PIN. Participants appear in OCC as they join.",
+                                result: "Participant count increases as each person joins",
+                                actions: [
+                                    { label: "📞 Dial-in Number", url: "/occ/dial-in", icon: "→" },
+                                    { label: "👥 Participant List", url: "/occ/participants", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Monitor Live Transcription",
+                                content: "As participants speak, verify transcription appears in real-time (<2 seconds latency) with speaker identification.",
+                                result: "Live transcription updates continuously with accurate speaker names",
+                                actions: [
+                                    { label: "📝 Live Transcript", url: "/occ/transcript", icon: "→" },
+                                    { label: "⏱️ Latency Check", url: "/occ/performance", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Monitor Sentiment Analysis",
+                                content: "Watch sentiment scores update for each speaker. Verify sentiment matches actual tone (Positive/Neutral/Negative).",
+                                result: "Sentiment scores appear for each speaker segment",
+                                actions: [
+                                    { label: "📊 Sentiment Dashboard", url: "/occ/sentiment", icon: "→" },
+                                    { label: "📈 Sentiment Trends", url: "/occ/sentiment-trends", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Test Q&A Moderation",
+                                content: "Have participants submit questions. Operator approves/rejects questions. Approved questions visible to all.",
+                                result: "Q&A workflow functions correctly",
+                                actions: [
+                                    { label: "💬 Q&A Panel", url: "/occ/qa", icon: "→" },
+                                    { label: "✓ Approve Questions", url: "/occ/qa/approve", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "End Event",
+                                content: "Click 'End Event' button. System stops recording, completes transcription, changes status to 'Completed'.",
+                                result: "Event transitions to completed state",
+                                actions: [
+                                    { label: "⏹️ End Event", url: "/occ/end", icon: "→" },
+                                    { label: "✓ Finalize", url: "/occ/finalize", icon: "→" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "Post-Event Delivery",
+                        steps: [
+                            {
+                                title: "Access Post-Event Dashboard",
+                                content: "View event summary, transcription, sentiment analysis, Q&A summary, and recording status.",
+                                result: "All post-event data is available",
+                                actions: [
+                                       { label: "📊 Post-Event Report", url: "testing-post-event.html", icon: "→" },
+                                    { label: "📂 Event Summary", url: "/post-event/summary", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Generate AI Summary",
+                                content: "System processes transcription through LLM to generate executive summary, topic extraction, sentiment trends, and key quotes.",
+                                result: "AI summary appears within 30-60 seconds",
+                                actions: [
+                                    { label: "🤖 Generate AI Summary", url: "/post-event/ai-summary", icon: "→" },
+                                    { label: "⏳ Processing Status", url: "/post-event/status", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Download Transcription",
+                                content: "Choose format (TXT, PDF, VTT, SRT, JSON) and download. Verify format contains speaker names and timestamps.",
+                                result: "Transcription file downloads in selected format",
+                                actions: [
+                                    { label: "📥 Download Transcript", url: "/post-event/transcript/download", icon: "→" },
+                                    { label: "📄 Format Options", url: "/post-event/transcript/formats", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Download Recording",
+                                content: "Choose format (MP3, WAV, M4A) and quality (High/Medium/Low). Download and verify playback.",
+                                result: "Recording file downloads and plays correctly",
+                                actions: [
+                                    { label: "🎵 Download Recording", url: "/post-event/recording/download", icon: "→" },
+                                    { label: "🎚️ Quality Settings", url: "/post-event/recording/quality", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Generate Compliance Report",
+                                content: "System scans transcript for regulatory language, prohibited statements, and risk indicators. Report shows compliance score and flagged items.",
+                                result: "Compliance report is generated with flagged items",
+                                actions: [
+                                    { label: "⚖️ Compliance Report", url: "/post-event/compliance", icon: "→" },
+                                    { label: "🚩 Flagged Items", url: "/post-event/compliance/flags", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Generate Analytics Report",
+                                content: "Report includes participation metrics, engagement stats, topic analysis, Q&A analytics, and sentiment trends.",
+                                result: "Comprehensive analytics report is generated",
+                                actions: [
+                                    { label: "📊 Analytics Report", url: "/post-event/analytics", icon: "→" },
+                                    { label: "📈 Detailed Metrics", url: "/post-event/analytics/detailed", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Configure Automatic Delivery",
+                                content: "Set rules for auto-sending transcription, recording, summary, compliance report, and analytics. Choose delivery timing and method.",
+                                result: "Delivery rules are saved",
+                                actions: [
+                                    { label: "⚙️ Delivery Settings", url: "/post-event/delivery/config", icon: "→" },
+                                    { label: "📅 Schedule Delivery", url: "/post-event/delivery/schedule", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Manual Delivery to Customer",
+                                content: "Select what to send (transcription, recording, AI summary, compliance report, analytics), choose recipients, add custom message, and send.",
+                                result: "Email is sent with selected attachments",
+                                actions: [
+                                    { label: "📧 Send to Customer", url: "/post-event/delivery/send", icon: "→" },
+                                    { label: "📋 Select Items", url: "/post-event/delivery/select", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Verify Delivery",
+                                content: "Check email inbox for delivery. Open each file to verify content is correct and files are accessible.",
+                                result: "All files are correct and accessible",
+                                actions: [
+                                    { label: "✓ Verify Delivery", url: "/post-event/delivery/verify", icon: "→" },
+                                    { label: "📬 Delivery Log", url: "/post-event/delivery/log", icon: "→" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "Video Conference (Zoom/Teams/Webex)",
+                icon: "🎥",
+                phases: [
+                    {
+                        title: "Book the Event",
+                        steps: [
+                            {
+                                title: "Create Video Conference Event",
+                                content: "Follow audio workflow steps 1.1-1.3, but select 'Video Conference' and choose platform (Zoom, Teams, or Webex).",
+                                result: "Video conference event is booked with platform selected",
+                                actions: [
+                                    { label: "📅 Go to Bookings", url: "testing-bookings.html", icon: "→" },
+                                    { label: "🎥 Video Settings", url: "/event-settings/video", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Configure Video Settings",
+                                content: "Enable recording, screen sharing, and select video quality (HD or 4K).",
+                                result: "Video settings are configured",
+                                actions: [
+                                    { label: "⚙️ Video Configuration", url: "/event-settings/video-config", icon: "→" },
+                                    { label: "🎬 Recording Settings", url: "/event-settings/recording", icon: "→" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "Manage Registrations",
+                        steps: [
+                            {
+                                title: "Register Participants",
+                                content: "Follow audio workflow steps 2.1-2.4. Participants receive meeting link instead of dial-in number.",
+                                result: "Participants are registered and invited with meeting link",
+                                actions: [
+                                    { label: "👥 Registrations Module", url: "testing-registrations.html", icon: "→" },
+                                    { label: "🔗 Meeting Link", url: "/registrations/meeting-link", icon: "→" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "Run Live Event",
+                        steps: [
+                            {
+                                title: "Load and Start Event",
+                                content: "Follow audio workflow steps 3.1-3.3. Participants join via Zoom/Teams/Webex meeting link.",
+                                result: "Video event is running with participants joined",
+                                actions: [
+                                    { label: "🎚️ Open OCC", url: "testing-occ.html", icon: "→" },
+                                    { label: "▶️ Start Event", url: "/occ/start", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Monitor Video & Transcription",
+                                content: "Follow audio workflow steps 3.5-3.7. Transcription captures video audio. Q&A includes chat messages from video platform.",
+                                result: "Video, transcription, and Q&A all functioning",
+                                actions: [
+                                    { label: "📝 Live Transcript", url: "/occ/transcript", icon: "→" },
+                                    { label: "💬 Q&A Panel", url: "/occ/qa", icon: "→" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "Post-Event Delivery",
+                        steps: [
+                            {
+                                title: "Deliver Video Recording",
+                                content: "Follow audio workflow steps 4.1-4.9. Recording includes video (MP4 format). Video can be edited before delivery.",
+                                result: "Video recording is delivered to customer",
+                                actions: [
+                                    { label: "🎥 Video Recording", url: "/post-event/recording", icon: "→" },
+                                    { label: "✂️ Edit Video", url: "/post-event/recording/edit", icon: "→" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "Webcast (Live Streaming)",
+                icon: "📡",
+                phases: [
+                    {
+                        title: "Book the Event",
+                        steps: [
+                            {
+                                title: "Create Webcast Event",
+                                content: "Follow audio workflow steps 1.1-1.3, but select 'Webcast' option. Configure streaming platform (Mux, YouTube Live, or custom RTMP).",
+                                result: "Webcast event is booked with streaming configured",
+                                actions: [
+                                    { label: "📅 Go to Bookings", url: "testing-bookings.html", icon: "→" },
+                                    { label: "📡 Streaming Settings", url: "/event-settings/streaming", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Generate Streaming Keys",
+                                content: "System generates RTMP URL and streaming key for encoder setup.",
+                                result: "Streaming key and RTMP URL are ready",
+                                actions: [
+                                    { label: "🔑 Streaming Keys", url: "/event-settings/streaming-keys", icon: "→" },
+                                    { label: "📋 RTMP Settings", url: "/event-settings/rtmp", icon: "→" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "Manage Registrations",
+                        steps: [
+                            {
+                                title: "Register Participants",
+                                content: "Follow audio workflow steps 2.1-2.4. Participants receive webcast link and can register for reminders.",
+                                result: "Participants are registered and invited with webcast link",
+                                actions: [
+                                    { label: "👥 Registrations Module", url: "testing-registrations.html", icon: "→" },
+                                    { label: "🔗 Webcast Link", url: "/registrations/webcast-link", icon: "→" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "Run Live Event",
+                        steps: [
+                            {
+                                title: "Start Streaming",
+                                content: "Load event in OCC, verify streaming service is ready, start event and streaming begins simultaneously.",
+                                result: "Webcast streams to public audience",
+                                actions: [
+                                    { label: "🎚️ Open OCC", url: "testing-occ.html", icon: "→" },
+                                    { label: "▶️ Start Streaming", url: "/occ/start-stream", icon: "→" }
+                                ]
+                            },
+                            {
+                                title: "Monitor Stream Quality",
+                                content: "Verify participants can join via webcast link, transcription captures audio, sentiment and Q&A work correctly.",
+                                result: "Stream quality is good and all features working",
+                                actions: [
+                                    { label: "📊 Stream Quality", url: "/occ/stream-quality", icon: "→" },
+                                    { label: "📈 Viewer Count", url: "/occ/viewers", icon: "→" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "Post-Event Delivery",
+                        steps: [
+                            {
+                                title: "Deliver Webcast Recording",
+                                content: "Follow audio workflow steps 4.1-4.9. Recording is available as MP4 (high quality) and can be made on-demand accessible.",
+                                result: "Webcast recording is delivered and accessible",
+                                actions: [
+                                    { label: "🎬 Webcast Recording", url: "/post-event/recording", icon: "→" },
+                                    { label: "📺 On-Demand Portal", url: "/post-event/on-demand", icon: "→" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        function selectWorkflow(index) {
+            document.querySelectorAll('.workflow-card').forEach((card, i) => {
+                card.classList.toggle('active', i === index);
+            });
+            renderWorkflow(index);
+        }
+
+        function renderWorkflow(index) {
+            const workflow = workflows[index];
+            let html = '';
+
+            workflow.phases.forEach((phase, phaseIndex) => {
+                html += `<div class="phase">
+                    <h2><span class="phase-number">${phaseIndex + 1}</span>${phase.title}</h2>`;
+
+                phase.steps.forEach((step, stepIndex) => {
+                    html += `<div class="step">
+                        <div class="step-header">
+                            <h3>${stepIndex + 1}. ${step.title}</h3>
+                            <div class="step-actions">`;
+
+                    if (step.actions) {
+                        step.actions.forEach(action => {
+                            if (action.url.startsWith('http')) {
+                                html += `<a href="${action.url}" target="_blank" class="action-btn">${action.label}</a>`;
+                            } else {
+                                html += `<button class="action-btn" onclick="navigateTo('${action.url}')">${action.label}</button>`;
+                            }
+                        });
+                    }
+
+                    html += `</div>
+                        </div>
+                        <div class="step-content">
+                            <p>${step.content}</p>
+                            <div class="expected-result">✓ Expected Result: ${step.result}</div>
+                        </div>
+                    </div>`;
+                });
+
+                html += `</div>`;
+            });
+
+            document.getElementById('workflowContent').innerHTML = html;
+        }
+
+        function navigateTo(url) {
+            if (url.startsWith('/')) {
+                window.location.href = url;
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+
+        function printWorkflow() {
+            window.print();
+        }
+
+        // Initialize
+        renderWorkflow(0);
+    </script>
+</body>
+</html>

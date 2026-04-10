@@ -49,7 +49,7 @@ export async function setupVite(app: Express, server: Server) {
 export function serveStatic(app: Express) {
   const distPath =
     process.env.NODE_ENV === "development"
-      ? path.resolve(import.meta.dirname, "../..", "dist", "_app")
+      ? path.resolve(import.meta.dirname, "../..", "_build", "_app")
       : path.resolve(import.meta.dirname, "_app");
 
   if (!fs.existsSync(distPath)) {
