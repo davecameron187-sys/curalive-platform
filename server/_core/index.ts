@@ -120,6 +120,25 @@ async function startServer() {
 
   const isProd = process.env.NODE_ENV === "production";
 
+  app.get("/api/debug-static", (_req, res) => {
+    const distPath = path.resolve(import.meta.dirname, "_app");
+    const assetsDir = path.resolve(distPath, "assets");
+    const indexHtmlExists = fs.existsSync(path.resolve(distPath, "index.html"));
+    const _indexHtmlExists = fs.existsSync(path.resolve(distPath, "_index.html"));
+    const assetFiles = fs.existsSync(assetsDir) ? fs.readdirSync(assetsDir).filter(f => f.startsWith("index")) : [];
+    const allHtmlFiles = fs.existsSync(distPath) ? fs.readdirSync(distPath).filter(f => f.endsWith(".html")) : [];
+    res.json({
+      version: "2025.04.10-C",
+      distPath,
+      indexHtmlExists,
+      _indexHtmlExists,
+      assetFiles,
+      allHtmlFiles,
+      dirname: import.meta.dirname,
+      nodeEnv: process.env.NODE_ENV,
+    });
+  });
+
   app.get("/health", async (_req, res) => {
     const { validateEnv } = await import("./config/env");
     const { getServiceStatus } = await import("./config/serviceStatus");

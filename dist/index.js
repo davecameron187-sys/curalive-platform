@@ -9298,8 +9298,8 @@ var init_webcastRouter = __esm({
 import { z as z7 } from "zod";
 import { TRPCError as TRPCError3 } from "@trpc/server";
 import { eq as eq15 } from "drizzle-orm";
-async function recallFetch(path4, options = {}) {
-  const res = await fetch(`${RECALL_BASE_URL}${path4}`, {
+async function recallFetch(path5, options = {}) {
+  const res = await fetch(`${RECALL_BASE_URL}${path5}`, {
     ...options,
     headers: {
       "Authorization": `Token ${RECALL_API_KEY}`,
@@ -9641,8 +9641,8 @@ var init_voiceTranscription = __esm({
 
 // server/audioIngest.ts
 import { spawn } from "child_process";
-import { promises as fs } from "fs";
-import path from "path";
+import { promises as fs2 } from "fs";
+import path2 from "path";
 import os from "os";
 function isTranscriptionError(r) {
   return typeof r === "object" && r !== null && "error" in r;
@@ -9670,9 +9670,9 @@ async function ablyPublish3(channel, name, data) {
 }
 async function processChunk(chunkPath, worker, chunkIndex) {
   try {
-    const wavBuffer = await fs.readFile(chunkPath);
+    const wavBuffer = await fs2.readFile(chunkPath);
     if (wavBuffer.length < 1e3) {
-      await fs.unlink(chunkPath).catch(() => {
+      await fs2.unlink(chunkPath).catch(() => {
       });
       return;
     }
@@ -9685,13 +9685,13 @@ async function processChunk(chunkPath, worker, chunkIndex) {
     });
     if (isTranscriptionError(rawResult)) {
       console.warn(`[AudioIngest] Transcription error for chunk ${chunkIndex}:`, rawResult.error);
-      await fs.unlink(chunkPath).catch(() => {
+      await fs2.unlink(chunkPath).catch(() => {
       });
       return;
     }
     const transcribedText = rawResult.text?.trim();
     if (!transcribedText) {
-      await fs.unlink(chunkPath).catch(() => {
+      await fs2.unlink(chunkPath).catch(() => {
       });
       return;
     }
@@ -9715,11 +9715,11 @@ async function processChunk(chunkPath, worker, chunkIndex) {
     console.log(
       `[AudioIngest] ${worker.streamId} chunk ${chunkIndex}: "${transcribedText.slice(0, 60)}..."`
     );
-    await fs.unlink(chunkPath).catch(() => {
+    await fs2.unlink(chunkPath).catch(() => {
     });
   } catch (err) {
     console.error(`[AudioIngest] Error processing chunk ${chunkIndex}:`, err);
-    await fs.unlink(chunkPath).catch(() => {
+    await fs2.unlink(chunkPath).catch(() => {
     });
   }
 }
@@ -9732,12 +9732,12 @@ function startChunkWatcher(worker) {
       return;
     }
     try {
-      const files = await fs.readdir(worker.chunkDir);
+      const files = await fs2.readdir(worker.chunkDir);
       const wavFiles = files.filter((f) => f.endsWith(".wav") && !processedChunks.has(f)).sort();
       for (const file of wavFiles) {
         if (file === wavFiles[wavFiles.length - 1]) continue;
         processedChunks.add(file);
-        const chunkPath = path.join(worker.chunkDir, file);
+        const chunkPath = path2.join(worker.chunkDir, file);
         await processChunk(chunkPath, worker, chunkIndex++);
       }
     } catch (err) {
@@ -9747,8 +9747,8 @@ function startChunkWatcher(worker) {
 }
 async function startIngest(streamId, hlsUrl, ablyChannel) {
   await stopIngest(streamId);
-  const chunkDir = path.join(os.tmpdir(), `curalive-ingest-${streamId}`);
-  await fs.mkdir(chunkDir, { recursive: true });
+  const chunkDir = path2.join(os.tmpdir(), `curalive-ingest-${streamId}`);
+  await fs2.mkdir(chunkDir, { recursive: true });
   const worker = {
     streamId,
     hlsUrl,
@@ -9789,7 +9789,7 @@ async function startIngest(streamId, hlsUrl, ablyChannel) {
     "-reset_timestamps",
     "1",
     // Reset timestamps per segment
-    path.join(chunkDir, "chunk_%03d.wav")
+    path2.join(chunkDir, "chunk_%03d.wav")
   ];
   console.log(`[AudioIngest] Starting ffmpeg for stream ${streamId}`);
   console.log(`[AudioIngest] HLS URL: ${hlsUrl}`);
@@ -9834,7 +9834,7 @@ async function stopIngest(streamId) {
     worker.ffmpegProcess = null;
   }
   try {
-    await fs.rm(worker.chunkDir, { recursive: true, force: true });
+    await fs2.rm(worker.chunkDir, { recursive: true, force: true });
   } catch (err) {
     console.warn(`[AudioIngest] Failed to clean up chunk dir:`, err);
   }
@@ -9865,8 +9865,8 @@ function muxAuthHeader() {
   const credentials = Buffer.from(`${MUX_TOKEN_ID}:${MUX_TOKEN_SECRET}`).toString("base64");
   return `Basic ${credentials}`;
 }
-async function muxFetch(path4, options = {}) {
-  const res = await fetch(`${MUX_API_BASE}${path4}`, {
+async function muxFetch(path5, options = {}) {
+  const res = await fetch(`${MUX_API_BASE}${path5}`, {
     ...options,
     headers: {
       "Authorization": muxAuthHeader(),
@@ -25624,11 +25624,11 @@ async function tryWhisperTranscribe(buffer, filename) {
 }
 async function transcribeArchiveAudio(savedRecordingPath) {
   try {
-    const path4 = await import("path");
+    const path5 = await import("path");
     const { readFile: readFile2 } = await import("fs/promises");
-    const fullPath = path4.resolve(process.cwd(), "uploads", "recordings", path4.basename(savedRecordingPath));
+    const fullPath = path5.resolve(process.cwd(), "uploads", "recordings", path5.basename(savedRecordingPath));
     const buffer = await readFile2(fullPath);
-    const filename = path4.basename(savedRecordingPath);
+    const filename = path5.basename(savedRecordingPath);
     const geminiResult = await tryGeminiTranscribe(buffer, filename);
     if (geminiResult.ok) return geminiResult;
     console.warn(`[TranscribeArchive] Gemini failed (${geminiResult.errorMessage?.substring(0, 80)}), trying Whisper...`);
@@ -26607,12 +26607,12 @@ var init_archiveUploadRouter = __esm({
         const db2 = await getDb();
         let validatedRecordingPath = null;
         if (input.savedRecordingPath) {
-          const path4 = await import("path");
-          const fs3 = await import("fs");
-          const basename2 = path4.basename(input.savedRecordingPath);
+          const path5 = await import("path");
+          const fs4 = await import("fs");
+          const basename2 = path5.basename(input.savedRecordingPath);
           if (/^\d+_[a-f0-9]{12}\.\w+$/.test(basename2)) {
-            const fullPath = path4.resolve(process.cwd(), "uploads", "recordings", basename2);
-            if (fs3.existsSync(fullPath)) {
+            const fullPath = path5.resolve(process.cwd(), "uploads", "recordings", basename2);
+            if (fs4.existsSync(fullPath)) {
               validatedRecordingPath = basename2;
             } else {
               console.warn(`[processTranscript] Recording file not found: ${basename2}`);
@@ -29147,8 +29147,8 @@ function getWebhookBaseUrl(overrideUrl) {
     "Cannot determine webhook URL. Set RECALL_WEBHOOK_BASE_URL or APP_URL, or ensure REPLIT_DEV_DOMAIN / REPLIT_DEPLOYMENT_URL is available."
   );
 }
-async function recallFetch2(path4, options = {}) {
-  const res = await fetch(`${RECALL_BASE_URL2}${path4}`, {
+async function recallFetch2(path5, options = {}) {
+  const res = await fetch(`${RECALL_BASE_URL2}${path5}`, {
     ...options,
     headers: {
       "Authorization": `Token ${RECALL_API_KEY2}`,
@@ -46894,7 +46894,7 @@ var init_context = __esm({
 // vite.config.ts
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import path2 from "node:path";
+import path3 from "node:path";
 import { defineConfig } from "vite";
 var plugins, vite_config_default;
 var init_vite_config = __esm({
@@ -46905,16 +46905,16 @@ var init_vite_config = __esm({
       plugins,
       resolve: {
         alias: {
-          "@": path2.resolve(import.meta.dirname, "client", "src"),
-          "@shared": path2.resolve(import.meta.dirname, "shared"),
-          "@assets": path2.resolve(import.meta.dirname, "attached_assets")
+          "@": path3.resolve(import.meta.dirname, "client", "src"),
+          "@shared": path3.resolve(import.meta.dirname, "shared"),
+          "@assets": path3.resolve(import.meta.dirname, "attached_assets")
         }
       },
-      envDir: path2.resolve(import.meta.dirname),
-      root: path2.resolve(import.meta.dirname, "client"),
-      publicDir: path2.resolve(import.meta.dirname, "client", "public"),
+      envDir: path3.resolve(import.meta.dirname),
+      root: path3.resolve(import.meta.dirname, "client"),
+      publicDir: path3.resolve(import.meta.dirname, "client", "public"),
       build: {
-        outDir: path2.resolve(import.meta.dirname, "dist/_app"),
+        outDir: path3.resolve(import.meta.dirname, "dist/_app"),
         emptyOutDir: true,
         rollupOptions: {
           output: {
@@ -46939,9 +46939,9 @@ var init_vite_config = __esm({
 
 // server/_core/vite.ts
 import express from "express";
-import fs2 from "fs";
+import fs3 from "fs";
 import { nanoid } from "nanoid";
-import path3 from "path";
+import path4 from "path";
 import { createServer as createViteServer } from "vite";
 async function setupVite(app, server) {
   const serverOptions = {
@@ -46959,13 +46959,13 @@ async function setupVite(app, server) {
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
-      const clientTemplate = path3.resolve(
+      const clientTemplate = path4.resolve(
         import.meta.dirname,
         "../..",
         "client",
         "index.html"
       );
-      let template = await fs2.promises.readFile(clientTemplate, "utf-8");
+      let template = await fs3.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -46979,48 +46979,48 @@ async function setupVite(app, server) {
   });
 }
 function serveStatic(app) {
-  const distPath = process.env.NODE_ENV === "development" ? path3.resolve(import.meta.dirname, "../..", "dist", "_app") : path3.resolve(import.meta.dirname, "_app");
-  console.log(`[Static] distPath=${distPath} exists=${fs2.existsSync(distPath)} dirname=${import.meta.dirname}`);
-  if (fs2.existsSync(path3.resolve(distPath, "assets"))) {
-    const allAssets = fs2.readdirSync(path3.resolve(distPath, "assets")).filter((f) => f.startsWith("index"));
+  const distPath = process.env.NODE_ENV === "development" ? path4.resolve(import.meta.dirname, "../..", "dist", "_app") : path4.resolve(import.meta.dirname, "_app");
+  console.log(`[Static] distPath=${distPath} exists=${fs3.existsSync(distPath)} dirname=${import.meta.dirname}`);
+  if (fs3.existsSync(path4.resolve(distPath, "assets"))) {
+    const allAssets = fs3.readdirSync(path4.resolve(distPath, "assets")).filter((f) => f.startsWith("index"));
     console.log(`[Static] index assets: ${JSON.stringify(allAssets)}`);
   }
-  const staleIndex = path3.resolve(distPath, "index.html");
-  if (fs2.existsSync(staleIndex)) {
+  const staleIndex = path4.resolve(distPath, "index.html");
+  if (fs3.existsSync(staleIndex)) {
     console.log(`[Static] REMOVING stale index.html from ${staleIndex}`);
-    fs2.unlinkSync(staleIndex);
+    fs3.unlinkSync(staleIndex);
   } else {
     console.log(`[Static] No stale index.html found (good)`);
   }
-  const rootFiles = fs2.existsSync(distPath) ? fs2.readdirSync(distPath).filter((f) => f.endsWith(".html")) : [];
+  const rootFiles = fs3.existsSync(distPath) ? fs3.readdirSync(distPath).filter((f) => f.endsWith(".html")) : [];
   console.log(`[Static] HTML files in distPath: ${JSON.stringify(rootFiles)}`);
-  if (!fs2.existsSync(distPath)) {
+  if (!fs3.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
-  const indexPath = path3.resolve(distPath, "_index.html");
-  const assetsDir = path3.resolve(distPath, "assets");
+  const indexPath = path4.resolve(distPath, "_index.html");
+  const assetsDir = path4.resolve(distPath, "assets");
   let cachedHtml = null;
   function getSpaHtml() {
     if (cachedHtml) return cachedHtml;
-    let html = fs2.readFileSync(indexPath, "utf-8");
-    if (fs2.existsSync(assetsDir)) {
-      const jsFiles = fs2.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".js"));
+    let html = fs3.readFileSync(indexPath, "utf-8");
+    if (fs3.existsSync(assetsDir)) {
+      const jsFiles = fs3.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".js"));
       if (jsFiles.length > 0) {
         const preferUnhashed = jsFiles.find((f) => f === "index.js");
         const newestBundle = preferUnhashed || jsFiles.sort((a, b) => {
-          const statA = fs2.statSync(path3.resolve(assetsDir, a));
-          const statB = fs2.statSync(path3.resolve(assetsDir, b));
+          const statA = fs3.statSync(path4.resolve(assetsDir, a));
+          const statB = fs3.statSync(path4.resolve(assetsDir, b));
           return statB.mtimeMs - statA.mtimeMs;
         })[0];
-        const bundleHash = fs2.statSync(path3.resolve(assetsDir, newestBundle)).mtimeMs.toString(36);
+        const bundleHash = fs3.statSync(path4.resolve(assetsDir, newestBundle)).mtimeMs.toString(36);
         html = html.replace(/src="\/assets\/index[^"]*"/, `src="/assets/${newestBundle}?v=${bundleHash}"`);
-        const cssFiles = fs2.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".css"));
+        const cssFiles = fs3.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".css"));
         if (cssFiles.length > 0) {
           const newestCss = cssFiles.sort((a, b) => {
-            const statA = fs2.statSync(path3.resolve(assetsDir, a));
-            const statB = fs2.statSync(path3.resolve(assetsDir, b));
+            const statA = fs3.statSync(path4.resolve(assetsDir, a));
+            const statB = fs3.statSync(path4.resolve(assetsDir, b));
             return statB.mtimeMs - statA.mtimeMs;
           })[0];
           html = html.replace(/href="\/assets\/index[^"]*\.css"/, `href="/assets/${newestCss}"`);
@@ -47167,13 +47167,13 @@ async function getDurationSeconds(inputPath) {
     const duration = parseFloat(info.format?.duration ?? "0");
     if (duration > 0) return duration;
     console.warn("[Audio] ffprobe returned 0 duration \u2014 estimating from file size");
-    const fs3 = await import("fs");
-    const stat = fs3.statSync(inputPath);
+    const fs4 = await import("fs");
+    const stat = fs4.statSync(inputPath);
     return Math.max(10, Math.round(stat.size / 16e3));
   } catch (e) {
     console.warn("[Audio] ffprobe failed \u2014 estimating duration from file size:", e?.message || e);
-    const fs3 = await import("fs");
-    const stat = fs3.statSync(inputPath);
+    const fs4 = await import("fs");
+    const stat = fs4.statSync(inputPath);
     return Math.max(10, Math.round(stat.size / 16e3));
   }
 }
@@ -47351,15 +47351,15 @@ function registerAudioTranscribeRoute(app) {
         const isAudio = AUDIO_EXTENSIONS.test(originalname);
         console.log(`[AudioTranscribe] Received ${originalname} (${sizeMB.toFixed(1)}MB, video=${isVideo})`);
         try {
-          const path4 = await import("path");
-          const fs3 = await import("fs");
+          const path5 = await import("path");
+          const fs4 = await import("fs");
           const crypto6 = await import("crypto");
-          const RECORDINGS_DIR2 = path4.resolve(process.cwd(), "uploads", "recordings");
-          if (!fs3.existsSync(RECORDINGS_DIR2)) fs3.mkdirSync(RECORDINGS_DIR2, { recursive: true });
-          const rawExt = (path4.extname(originalname) || ".mp3").toLowerCase();
+          const RECORDINGS_DIR2 = path5.resolve(process.cwd(), "uploads", "recordings");
+          if (!fs4.existsSync(RECORDINGS_DIR2)) fs4.mkdirSync(RECORDINGS_DIR2, { recursive: true });
+          const rawExt = (path5.extname(originalname) || ".mp3").toLowerCase();
           const safeExt = /^\.(mp3|mp4|wav|m4a|webm|ogg|flac|aac)$/.test(rawExt) ? rawExt : ".mp3";
           const uniqueName = `${Date.now()}_${crypto6.randomBytes(6).toString("hex")}${safeExt}`;
-          const destPath = path4.join(RECORDINGS_DIR2, uniqueName);
+          const destPath = path5.join(RECORDINGS_DIR2, uniqueName);
           await writeFile(destPath, buffer);
           savedRecordingPath = uniqueName;
           console.log(`[AudioTranscribe] Saved recording: ${uniqueName} (${sizeMB.toFixed(1)}MB)`);
@@ -49259,6 +49259,24 @@ async function startServer() {
   const server = http.createServer(app);
   app.set("trust proxy", 1);
   const isProd = process.env.NODE_ENV === "production";
+  app.get("/api/debug-static", (_req, res) => {
+    const distPath = path.resolve(import.meta.dirname, "_app");
+    const assetsDir = path.resolve(distPath, "assets");
+    const indexHtmlExists = fs.existsSync(path.resolve(distPath, "index.html"));
+    const _indexHtmlExists = fs.existsSync(path.resolve(distPath, "_index.html"));
+    const assetFiles = fs.existsSync(assetsDir) ? fs.readdirSync(assetsDir).filter((f) => f.startsWith("index")) : [];
+    const allHtmlFiles = fs.existsSync(distPath) ? fs.readdirSync(distPath).filter((f) => f.endsWith(".html")) : [];
+    res.json({
+      version: "2025.04.10-C",
+      distPath,
+      indexHtmlExists,
+      _indexHtmlExists,
+      assetFiles,
+      allHtmlFiles,
+      dirname: import.meta.dirname,
+      nodeEnv: process.env.NODE_ENV
+    });
+  });
   app.get("/health", async (_req, res) => {
     const { validateEnv: validateEnv2 } = await Promise.resolve().then(() => (init_env2(), env_exports));
     const { getServiceStatus: getServiceStatus2 } = await Promise.resolve().then(() => (init_serviceStatus(), serviceStatus_exports));
@@ -49865,7 +49883,7 @@ ${"=".repeat(40)}
       const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
       const archiver2 = (await import("archiver")).default;
       const { resolveRecordingFile: resolveRecordingFile2 } = await Promise.resolve().then(() => (init_storageAdapter(), storageAdapter_exports));
-      const fs3 = await import("fs");
+      const fs4 = await import("fs");
       const idsParam = req.query.ids;
       let rows;
       if (idsParam) {
@@ -49914,7 +49932,7 @@ ${"=".repeat(40)}
         archive.append(header + ev.transcript_text, { name: `${folder}/${safeName}_Transcript.txt` });
         if (ev.recording_path && ev.recording_path.trim()) {
           const resolution = await resolveRecordingFile2(ev.recording_path);
-          if (resolution.found && resolution.localPath && fs3.existsSync(resolution.localPath)) {
+          if (resolution.found && resolution.localPath && fs4.existsSync(resolution.localPath)) {
             archive.file(resolution.localPath, { name: `${folder}/${safeName}_Recording.mp3` });
           }
         }
