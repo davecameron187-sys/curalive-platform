@@ -15,7 +15,7 @@ run = "pnpm --filter @workspace/api-server run dev"
 
 [services.production]
 build = "cd /home/runner/workspace && rm -rf dist && pnpm run build && echo 'CURALIVE_BUILD_V2_COMPLETE'"
-run = "cd /home/runner/workspace && rm -rf dist && pnpm run build && NODE_ENV=production node dist/index.js"
+run = "bash /home/runner/workspace/scripts/start-production.sh"
 
 [services.env]
 PORT = "3000"
