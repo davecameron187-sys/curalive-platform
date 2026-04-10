@@ -120,6 +120,11 @@ async function startServer() {
 
   const isProd = process.env.NODE_ENV === "production";
 
+  app.use((req, res, next) => {
+    res.setHeader("X-CuraLive-Build", "20260410-D");
+    next();
+  });
+
   app.get("/api/debug-static", (_req, res) => {
     const distPath = path.resolve(import.meta.dirname, "_app");
     const assetsDir = path.resolve(distPath, "assets");

@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuraLive Testing Plan & Prerequisites</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 20px 0;
+            margin-bottom: 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab-button:hover {
+            color: #cbd5e1;
+        }
+
+        .tab-button.active {
+            color: #60a5fa;
+            border-bottom-color: #60a5fa;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .section h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h3 {
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #cbd5e1;
+        }
+
+        .test-item {
+            background: rgba(15, 23, 42, 0.5);
+            border-left: 3px solid #60a5fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .test-item h4 {
+            color: #60a5fa;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .test-item p {
+            color: #cbd5e1;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .test-duration {
+            display: inline-block;
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .checklist {
+            list-style: none;
+        }
+
+        .checklist li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #60a5fa;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .checkbox:hover {
+            background: rgba(96, 165, 250, 0.1);
+        }
+
+        .checkbox.checked {
+            background: #60a5fa;
+            border-color: #60a5fa;
+        }
+
+        .checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .checklist-label {
+            flex: 1;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .code-block {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 4px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            color: #a5f3fc;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .status-ready {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .status-pending {
+            background: rgba(249, 115, 22, 0.1);
+            color: #f97316;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 12px;
+            margin-top: 40px;
+        }
+
+        .download-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 15px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(96, 165, 250, 0.3);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 4px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🎚️ CuraLive Testing Plan</h1>
+            <p>Step-by-step guide to validate all platform features</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-button active" data-tab="overview">Overview</button>
+            <button class="tab-button" data-tab="prerequisites">Prerequisites</button>
+            <button class="tab-button" data-tab="test-1">Test 1: Audio Bridge</button>
+            <button class="tab-button" data-tab="test-2">Test 2: Webcasts</button>
+            <button class="tab-button" data-tab="test-3">Test 3: Video Platforms</button>
+            <button class="tab-button" data-tab="test-4">Test 4: Shadow Page</button>
+            <button class="tab-button" data-tab="test-5">Test 5: AI Services</button>
+            <button class="tab-button" data-tab="test-6">Test 6: Reports</button>
+            <button class="tab-button" data-tab="test-7">Test 7: AI Infrastructure</button>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div id="overview" class="tab-content active">
+            <div class="section">
+                <h2>📋 Testing Overview</h2>
+                <p>This comprehensive testing plan validates all CuraLive platform features through 7 sequential tests. Each test is designed to be completed in one session and takes 30-60 minutes.</p>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="number">7</div>
+                        <div class="label">Test Suites</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">~6 hrs</div>
+                        <div class="label">Total Time</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">45+</div>
+                        <div class="label">Test Cases</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">15</div>
+                        <div class="label">Prerequisites</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🎯 Test Sequence</h2>
+                <div class="test-item">
+                    <h4>Test 1: Audio Bridge (PSTN Dial-In)</h4>
+                    <p>Validate Twilio and Telnyx integration for phone dial-in functionality</p>
+                    <span class="test-duration">45 minutes</span>
+                </div>
+                <div class="test-item">
+                    <h4>Test 2: Webcasts (Mux Streaming)</h4>
+                    <p>Validate live streaming and HLS playback for webcast audiences</p>
+                    <span class="test-duration">45 minutes</span>
+                </div>
+                <div class="test-item">
+                    <h4>Test 3: Video Platforms (Zoom, Teams, Webex, RTMP)</h4>
+                    <p>Validate integration with major video conferencing platforms</p>
+                    <span class="test-duration">60 minutes</span>
+                </div>
+                <div class="test-item">
+                    <h4>Test 4: Shadow Page (Operator Monitoring)</h4>
+                    <p>Validate operator console monitoring and control interface</p>
+                    <span class="test-duration">30 minutes</span>
+                </div>
+                <div class="test-item">
+                    <h4>Test 5: AI Services (Transcription, Sentiment, Q&A)</h4>
+                    <p>Validate AI-powered features and real-time analysis</p>
+                    <span class="test-duration">60 minutes</span>
+                </div>
+                <div class="test-item">
+                    <h4>Test 6: Reports (Analytics & Summaries)</h4>
+                    <p>Validate post-event reporting and data export functionality</p>
+                    <span class="test-duration">45 minutes</span>
+                </div>
+                <div class="test-item">
+                    <h4>Test 7: AI Infrastructure (LLM, Compliance, Automation)</h4>
+                    <p>Validate advanced AI infrastructure and automation features</p>
+                    <span class="test-duration">60 minutes</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>✅ How to Use This Guide</h2>
+                <ol style="margin-left: 20px; color: #cbd5e1;">
+                    <li style="margin-bottom: 10px;">Start with the <strong>Prerequisites</strong> tab and verify all 15 items are ready</li>
+                    <li style="margin-bottom: 10px;">Complete tests sequentially, one per day if possible</li>
+                    <li style="margin-bottom: 10px;">Follow each step carefully and note any issues found</li>
+                    <li style="margin-bottom: 10px;">Document results for each test</li>
+                    <li style="margin-bottom: 10px;">Move to the next test only after current test passes</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- PREREQUISITES TAB -->
+        <div id="prerequisites" class="tab-content">
+            <div class="section">
+                <h2>✓ Prerequisites Checklist</h2>
+                <p style="margin-bottom: 20px;">Complete all 15 items before starting any tests. Use the checkboxes to track your progress.</p>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><span id="progressText">0</span>/15 items completed</p>
+
+                <h3 style="margin-top: 30px;">Development Environment</h3>
+                <ul class="checklist">
+                    <li>
+                        <div class="checkbox" data-index="0"></div>
+                        <span class="checklist-label">Dev server is running (pnpm dev)</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="1"></div>
+                        <span class="checklist-label">No compilation errors in console</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="2"></div>
+                        <span class="checklist-label">Database connection verified</span>
+                    </li>
+                </ul>
+
+                <h3>External Services</h3>
+                <ul class="checklist">
+                    <li>
+                        <div class="checkbox" data-index="3"></div>
+                        <span class="checklist-label">Twilio account configured</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="4"></div>
+                        <span class="checklist-label">Telnyx account configured</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="5"></div>
+                        <span class="checklist-label">Mux account configured</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="6"></div>
+                        <span class="checklist-label">Recall.ai account configured</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="7"></div>
+                        <span class="checklist-label">Ably account configured</span>
+                    </li>
+                </ul>
+
+                <h3>Test Infrastructure</h3>
+                <ul class="checklist">
+                    <li>
+                        <div class="checkbox" data-index="8"></div>
+                        <span class="checklist-label">Test event created (test-event-001)</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="9"></div>
+                        <span class="checklist-label">Test participants registered (3+)</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="10"></div>
+                        <span class="checklist-label">OBS Studio installed</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="11"></div>
+                        <span class="checklist-label">Test phone numbers available (2+)</span>
+                    </li>
+                </ul>
+
+                <h3>Video Platforms</h3>
+                <ul class="checklist">
+                    <li>
+                        <div class="checkbox" data-index="12"></div>
+                        <span class="checklist-label">Zoom account configured</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="13"></div>
+                        <span class="checklist-label">Microsoft Teams account configured</span>
+                    </li>
+                    <li>
+                        <div class="checkbox" data-index="14"></div>
+                        <span class="checklist-label">Webex account configured</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TEST 1 TAB -->
+        <div id="test-1" class="tab-content">
+            <div class="section">
+                <h2>🔊 Test 1: Audio Bridge (PSTN Dial-In)</h2>
+                <p>Validate Twilio and Telnyx integration for phone dial-in functionality</p>
+                <span class="test-duration">45 minutes</span>
+                <span class="status-badge status-pending">In Progress</span>
+
+                <h3>Prerequisites</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>Twilio account with active phone number</li>
+                    <li>Telnyx account with SIP configuration</li>
+                    <li>Test event created in OCC</li>
+                    <li>2 test phone numbers available</li>
+                </ul>
+
+                <h3>Step-by-Step Instructions</h3>
+                <div class="test-item">
+                    <h4>Step 1: Verify Twilio Configuration</h4>
+                    <p>Check that Twilio credentials are properly configured</p>
+                    <div class="code-block">echo $TWILIO_ACCOUNT_SID</div>
+                    <p style="margin-top: 10px;">Expected: Your Twilio Account SID should be displayed</p>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 2: Create Test Event in OCC</h4>
+                    <p>Navigate to OCC and create a test event for audio bridge testing</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Go to http://localhost:3000/occ</li>
+                        <li>Click "Create New Event"</li>
+                        <li>Fill in event details (name, duration, platform)</li>
+                        <li>Select "PSTN Dial-In" as platform</li>
+                        <li>Save event</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 3: Start Event and Get Dial-In Number</h4>
+                    <p>Start the event and retrieve the dial-in phone number</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Click "Start Event" in OCC</li>
+                        <li>Copy the displayed dial-in phone number</li>
+                        <li>Note the event PIN/access code</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 4: Test Dial-In from Phone 1</h4>
+                    <p>Call the dial-in number from your first test phone</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Dial the provided phone number</li>
+                        <li>Enter the event PIN when prompted</li>
+                        <li>Verify you hear the event audio</li>
+                        <li>Speak a few words to test audio input</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 5: Verify Transcription</h4>
+                    <p>Check that your speech is being transcribed in real-time</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Look at OCC transcription panel</li>
+                        <li>Verify your words appear in the transcript</li>
+                        <li>Check speaker name is correctly identified</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 6: Test Dial-In from Phone 2</h4>
+                    <p>Repeat the dial-in process from a second phone</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Dial the same phone number from phone 2</li>
+                        <li>Enter the event PIN</li>
+                        <li>Verify both participants can hear each other</li>
+                        <li>Speak to test two-way audio</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 7: Test Disconnect and Reconnect</h4>
+                    <p>Verify participants can disconnect and reconnect</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Hang up from phone 1</li>
+                        <li>Verify participant is removed from OCC</li>
+                        <li>Dial back in from phone 1</li>
+                        <li>Verify participant is re-added to OCC</li>
+                    </ol>
+                </div>
+
+                <h3>Success Criteria</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>✓ Both phones can dial in successfully</li>
+                    <li>✓ Audio is clear and two-way communication works</li>
+                    <li>✓ Transcription captures speech in real-time</li>
+                    <li>✓ Speaker identification is correct</li>
+                    <li>✓ Participants can disconnect and reconnect</li>
+                    <li>✓ OCC shows accurate participant count</li>
+                </ul>
+
+                <h3>Troubleshooting</h3>
+                <div style="background: rgba(249, 115, 22, 0.1); border-left: 3px solid #f97316; padding: 15px; margin-top: 15px; border-radius: 4px;">
+                    <p><strong>Issue:</strong> Dial-in number not working</p>
+                    <p style="margin-top: 10px; color: #fbbf24;"><strong>Solution:</strong> Verify Twilio credentials are set correctly. Check that the phone number is active in Twilio dashboard.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEST 2 TAB -->
+        <div id="test-2" class="tab-content">
+            <div class="section">
+                <h2>📡 Test 2: Webcasts (Mux Streaming)</h2>
+                <p>Validate live streaming and HLS playback for webcast audiences</p>
+                <span class="test-duration">45 minutes</span>
+                <span class="status-badge status-pending">Not Started</span>
+
+                <p style="margin-top: 20px; color: #fbbf24; background: rgba(249, 115, 22, 0.1); padding: 12px; border-radius: 4px;">
+                    <strong>Note:</strong> This test requires OBS Studio to be installed and configured. See Prerequisites tab.
+                </p>
+
+                <h3>Prerequisites</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>Mux account with API credentials</li>
+                    <li>OBS Studio installed and working</li>
+                    <li>Test event created in OCC</li>
+                    <li>Microphone and camera working</li>
+                </ul>
+
+                <h3>Step-by-Step Instructions</h3>
+                <div class="test-item">
+                    <h4>Step 1: Create Live Stream in Mux</h4>
+                    <p>Create a new live stream in Mux for the test event</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Go to Mux dashboard</li>
+                        <li>Click "Create Live Stream"</li>
+                        <li>Note the RTMP ingest URL and stream key</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 2: Configure OBS Studio</h4>
+                    <p>Set up OBS to stream to Mux</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Open OBS Studio</li>
+                        <li>Go to Settings → Stream</li>
+                        <li>Set Service to "Custom"</li>
+                        <li>Paste the RTMP URL and stream key from Mux</li>
+                        <li>Click Apply</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 3: Start Streaming</h4>
+                    <p>Begin streaming from OBS to Mux</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Click "Start Streaming" in OBS</li>
+                        <li>Verify stream status shows "Live" in Mux dashboard</li>
+                        <li>Check bitrate and frame rate are stable</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 4: View Stream in OCC</h4>
+                    <p>Verify the stream is visible in the OCC webcast view</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Navigate to OCC webcast view</li>
+                        <li>Verify video is playing</li>
+                        <li>Check audio is audible</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 5: Test Public Playback</h4>
+                    <p>Share the public stream URL and verify viewers can watch</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Get the public playback URL from Mux</li>
+                        <li>Open URL in a new browser window</li>
+                        <li>Verify video plays without authentication</li>
+                        <li>Check video quality and latency</li>
+                    </ol>
+                </div>
+
+                <h3>Success Criteria</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>✓ Stream starts successfully in OBS</li>
+                    <li>✓ Mux shows stream as "Live"</li>
+                    <li>✓ OCC displays the webcast video</li>
+                    <li>✓ Public viewers can watch the stream</li>
+                    <li>✓ Video quality is HD (720p or higher)</li>
+                    <li>✓ Audio is synchronized with video</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TEST 3 TAB -->
+        <div id="test-3" class="tab-content">
+            <div class="section">
+                <h2>🎥 Test 3: Video Platforms</h2>
+                <p>Validate integration with major video conferencing platforms</p>
+                <span class="test-duration">60 minutes</span>
+                <span class="status-badge status-pending">Not Started</span>
+
+                <h3>Prerequisites</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>Zoom account with meeting creation ability</li>
+                    <li>Microsoft Teams account</li>
+                    <li>Webex account</li>
+                    <li>Test event created in OCC</li>
+                </ul>
+
+                <h3>Test Suites</h3>
+                <div class="test-item">
+                    <h4>Test 3A: Zoom Integration</h4>
+                    <p>Validate CuraLive integration with Zoom meetings</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Create a Zoom meeting</li>
+                        <li>Add CuraLive bot to the meeting</li>
+                        <li>Verify bot joins as participant</li>
+                        <li>Check audio capture is working</li>
+                        <li>Verify transcription appears in OCC</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Test 3B: Microsoft Teams Integration</h4>
+                    <p>Validate CuraLive integration with Teams meetings</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Create a Teams meeting</li>
+                        <li>Add CuraLive bot to the meeting</li>
+                        <li>Verify bot joins as participant</li>
+                        <li>Check audio capture is working</li>
+                        <li>Verify transcription appears in OCC</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Test 3C: Webex Integration</h4>
+                    <p>Validate CuraLive integration with Webex meetings</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Create a Webex meeting</li>
+                        <li>Add CuraLive bot to the meeting</li>
+                        <li>Verify bot joins as participant</li>
+                        <li>Check audio capture is working</li>
+                        <li>Verify transcription appears in OCC</li>
+                    </ol>
+                </div>
+
+                <h3>Success Criteria</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>✓ Bot successfully joins all three platforms</li>
+                    <li>✓ Audio is captured from each platform</li>
+                    <li>✓ Transcription is accurate and real-time</li>
+                    <li>✓ Speaker identification works correctly</li>
+                    <li>✓ No audio feedback or echo</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TEST 4 TAB -->
+        <div id="test-4" class="tab-content">
+            <div class="section">
+                <h2>👁️ Test 4: Shadow Page (Operator Monitoring)</h2>
+                <p>Validate operator console monitoring and control interface</p>
+                <span class="test-duration">30 minutes</span>
+                <span class="status-badge status-pending">Not Started</span>
+
+                <h3>Prerequisites</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>OCC access with operator role</li>
+                    <li>Active event with participants</li>
+                    <li>Real-time transcription running</li>
+                </ul>
+
+                <h3>Step-by-Step Instructions</h3>
+                <div class="test-item">
+                    <h4>Step 1: Access Shadow Page</h4>
+                    <p>Navigate to the shadow page monitoring interface</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Go to http://localhost:3000/shadow</li>
+                        <li>Select your test event</li>
+                        <li>Verify page loads without errors</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 2: Monitor Real-Time Metrics</h4>
+                    <p>Verify real-time metrics are updating</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Check participant count updates</li>
+                        <li>Verify sentiment scores are updating</li>
+                        <li>Check transcription is flowing</li>
+                        <li>Monitor audio levels</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 3: Test Controls</h4>
+                    <p>Verify operator controls are functional</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Test mute/unmute controls</li>
+                        <li>Test recording start/stop</li>
+                        <li>Test participant removal</li>
+                        <li>Test alert/notification sending</li>
+                    </ol>
+                </div>
+
+                <h3>Success Criteria</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>✓ Shadow page loads correctly</li>
+                    <li>✓ All metrics update in real-time</li>
+                    <li>✓ Controls are responsive</li>
+                    <li>✓ Changes are reflected immediately</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TEST 5 TAB -->
+        <div id="test-5" class="tab-content">
+            <div class="section">
+                <h2>🤖 Test 5: AI Services</h2>
+                <p>Validate AI-powered features and real-time analysis</p>
+                <span class="test-duration">60 minutes</span>
+                <span class="status-badge status-pending">Not Started</span>
+
+                <h3>Prerequisites</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>Recall.ai account configured</li>
+                    <li>Active event with participants speaking</li>
+                    <li>Real-time transcription running</li>
+                </ul>
+
+                <h3>Test Suites</h3>
+                <div class="test-item">
+                    <h4>Test 5A: Real-Time Transcription</h4>
+                    <p>Validate speech-to-text accuracy and latency</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Have a participant speak clearly</li>
+                        <li>Check transcription appears within 2 seconds</li>
+                        <li>Verify accuracy of transcribed text</li>
+                        <li>Test with different accents and speaking speeds</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Test 5B: Sentiment Analysis</h4>
+                    <p>Validate sentiment detection and scoring</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Have participant speak positively</li>
+                        <li>Check sentiment score shows positive</li>
+                        <li>Have participant speak negatively</li>
+                        <li>Check sentiment score shows negative</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Test 5C: Q&A Auto-Triage</h4>
+                    <p>Validate automatic question categorization</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Submit various questions</li>
+                        <li>Check auto-categorization is accurate</li>
+                        <li>Verify priority scoring is correct</li>
+                    </ol>
+                </div>
+
+                <h3>Success Criteria</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>✓ Transcription is accurate (>95%)</li>
+                    <li>✓ Latency is <2 seconds</li>
+                    <li>✓ Sentiment detection is accurate</li>
+                    <li>✓ Q&A categorization is correct</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TEST 6 TAB -->
+        <div id="test-6" class="tab-content">
+            <div class="section">
+                <h2>📊 Test 6: Reports</h2>
+                <p>Validate post-event reporting and data export functionality</p>
+                <span class="test-duration">45 minutes</span>
+                <span class="status-badge status-pending">Not Started</span>
+
+                <h3>Prerequisites</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>Completed event with full data</li>
+                    <li>Transcription, sentiment, and Q&A data</li>
+                    <li>Access to post-event report page</li>
+                </ul>
+
+                <h3>Step-by-Step Instructions</h3>
+                <div class="test-item">
+                    <h4>Step 1: Generate Post-Event Report</h4>
+                    <p>Create a comprehensive post-event report</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Navigate to completed event</li>
+                        <li>Click "Generate Report"</li>
+                        <li>Wait for report generation to complete</li>
+                        <li>Verify report loads without errors</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 2: Verify Report Contents</h4>
+                    <p>Check all report sections are populated correctly</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Check event summary section</li>
+                        <li>Verify participant statistics</li>
+                        <li>Check sentiment timeline graph</li>
+                        <li>Verify key topics extracted</li>
+                        <li>Check Q&A summary</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 3: Export Transcript</h4>
+                    <p>Test transcript export in multiple formats</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Export as TXT file</li>
+                        <li>Export as PDF document</li>
+                        <li>Export as CSV data</li>
+                        <li>Verify all exports contain correct data</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Step 4: Export Participant Data</h4>
+                    <p>Test participant data export</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Export participant list as CSV</li>
+                        <li>Export attendance report</li>
+                        <li>Export engagement metrics</li>
+                        <li>Verify data accuracy</li>
+                    </ol>
+                </div>
+
+                <h3>Success Criteria</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>✓ Report generates successfully</li>
+                    <li>✓ All sections contain correct data</li>
+                    <li>✓ Exports work in all formats</li>
+                    <li>✓ Data is accurate and complete</li>
+                    <li>✓ Files are properly formatted</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TEST 7 TAB -->
+        <div id="test-7" class="tab-content">
+            <div class="section">
+                <h2>⚙️ Test 7: AI Infrastructure</h2>
+                <p>Validate advanced AI infrastructure and automation features</p>
+                <span class="test-duration">60 minutes</span>
+                <span class="status-badge status-pending">Not Started</span>
+
+                <h3>Prerequisites</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>LLM integration configured</li>
+                    <li>Compliance rules set up</li>
+                    <li>Automation workflows defined</li>
+                </ul>
+
+                <h3>Test Suites</h3>
+                <div class="test-item">
+                    <h4>Test 7A: LLM Integration</h4>
+                    <p>Validate language model integration for summaries and insights</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Generate AI summary of event</li>
+                        <li>Verify summary is accurate and concise</li>
+                        <li>Generate key insights from transcript</li>
+                        <li>Verify insights are relevant</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Test 7B: Compliance Monitoring</h4>
+                    <p>Validate compliance flag detection</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Review compliance flags in transcript</li>
+                        <li>Verify accuracy of flagged items</li>
+                        <li>Check compliance score calculation</li>
+                    </ol>
+                </div>
+
+                <div class="test-item">
+                    <h4>Test 7C: Automation Workflows</h4>
+                    <p>Validate automated actions and notifications</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Trigger automated workflow</li>
+                        <li>Verify action executes correctly</li>
+                        <li>Check notifications are sent</li>
+                    </ol>
+                </div>
+
+                <h3>Success Criteria</h3>
+                <ul style="margin-left: 20px; color: #cbd5e1;">
+                    <li>✓ LLM generates accurate summaries</li>
+                    <li>✓ Compliance detection works correctly</li>
+                    <li>✓ Automation workflows execute as expected</li>
+                    <li>✓ Notifications are timely and accurate</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>CuraLive Testing Guide v1.0 | Last Updated: March 13, 2026</p>
+        <p>For issues or questions, contact your development team</p>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.getAttribute('data-tab');
+                
+                // Hide all tabs
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Show selected tab
+                document.getElementById(tabName).classList.add('active');
+                button.classList.add('active');
+            });
+        });
+
+        // Checkbox functionality
+        document.querySelectorAll('.checkbox').forEach(checkbox => {
+            checkbox.addEventListener('click', () => {
+                checkbox.classList.toggle('checked');
+                updateProgress();
+            });
+        });
+
+        function updateProgress() {
+            const total = document.querySelectorAll('.checkbox').length;
+            const checked = document.querySelectorAll('.checkbox.checked').length;
+            const percentage = (checked / total) * 100;
+            
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('progressText').textContent = checked;
+        }
+    </script>
+</body>
+</html>
