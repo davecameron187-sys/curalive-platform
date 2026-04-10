@@ -3807,7 +3807,12 @@ function getPool() {
   if (!_pool) {
     const connStr = getConnectionString();
     if (connStr) {
-      _pool = new pg.Pool({ connectionString: connStr });
+      _pool = new pg.Pool({
+        connectionString: connStr,
+        max: 20,
+        idleTimeoutMillis: 3e4,
+        connectionTimeoutMillis: 1e4
+      });
     }
   }
   return _pool;

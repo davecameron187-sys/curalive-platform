@@ -21,7 +21,12 @@ function getPool(): pg.Pool | null {
   if (!_pool) {
     const connStr = getConnectionString();
     if (connStr) {
-      _pool = new pg.Pool({ connectionString: connStr });
+      _pool = new pg.Pool({
+        connectionString: connStr,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+      });
     }
   }
   return _pool;
