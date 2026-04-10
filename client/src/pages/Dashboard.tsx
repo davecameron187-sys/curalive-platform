@@ -559,11 +559,6 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/operator/dashboard"
-              className="flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/20 transition-colors">
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              Dashboard
-            </a>
             {isAuthenticated ? (
               <>
                 <span className="text-xs text-slate-500 hidden lg:block">{user?.name}</span>
@@ -585,17 +580,32 @@ export default function Dashboard() {
 
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-1 overflow-x-auto">
-            {TAB_CONFIG.map(({ id, label, icon: Icon, color, activeColor }) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === id ? activeColor : `border-transparent ${color}`
-                }`}>
-                <Icon className="w-4 h-4" />
-                {label}
-              </button>
-            ))}
+            {TAB_CONFIG.map(({ id, label, icon: Icon, color, activeColor }) => {
+              const el = (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    activeTab === id ? activeColor : `border-transparent ${color}`
+                  }`}>
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </button>
+              );
+              if (id === "shadow-mode") {
+                return [
+                  el,
+                  <a
+                    key="dashboard-link"
+                    href="/operator/dashboard"
+                    className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-blue-400 hover:text-blue-300 transition-colors whitespace-nowrap">
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </a>
+                ];
+              }
+              return el;
+            })}
           </div>
         </div>
       </div>
