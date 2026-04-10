@@ -52,6 +52,11 @@ export function serveStatic(app: Express) {
     process.env.NODE_ENV === "development"
       ? path.resolve(import.meta.dirname, "../..", "dist", "_app")
       : path.resolve(import.meta.dirname, "_app");
+  console.log(`[Static] distPath=${distPath} exists=${fs.existsSync(distPath)} dirname=${import.meta.dirname}`);
+  if (fs.existsSync(path.resolve(distPath, "assets"))) {
+    const allAssets = fs.readdirSync(path.resolve(distPath, "assets")).filter(f => f.startsWith("index"));
+    console.log(`[Static] index assets: ${JSON.stringify(allAssets)}`);
+  }
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`

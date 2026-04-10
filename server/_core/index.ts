@@ -1047,7 +1047,7 @@ async function startServer() {
   }
 
   server.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${port}/`);
+    console.log(`[CuraLive v2025.04.10-B] Server running on http://0.0.0.0:${port}/`);
     const origin = process.env.APP_ORIGIN ?? `http://localhost:${port}`;
     startReminderScheduler(origin);
 

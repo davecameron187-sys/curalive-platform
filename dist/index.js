@@ -46980,6 +46980,11 @@ async function setupVite(app, server) {
 }
 function serveStatic(app) {
   const distPath = process.env.NODE_ENV === "development" ? path3.resolve(import.meta.dirname, "../..", "dist", "_app") : path3.resolve(import.meta.dirname, "_app");
+  console.log(`[Static] distPath=${distPath} exists=${fs2.existsSync(distPath)} dirname=${import.meta.dirname}`);
+  if (fs2.existsSync(path3.resolve(distPath, "assets"))) {
+    const allAssets = fs2.readdirSync(path3.resolve(distPath, "assets")).filter((f) => f.startsWith("index"));
+    console.log(`[Static] index assets: ${JSON.stringify(allAssets)}`);
+  }
   if (!fs2.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -50028,7 +50033,7 @@ ${"=".repeat(40)}
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
   server.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${port}/`);
+    console.log(`[CuraLive v2025.04.10-B] Server running on http://0.0.0.0:${port}/`);
     const origin = process.env.APP_ORIGIN ?? `http://localhost:${port}`;
     startReminderScheduler(origin);
     Promise.resolve().then(() => (init_HealthGuardianService(), HealthGuardianService_exports)).then(({ startHealthGuardian: startHealthGuardian2 }) => {
