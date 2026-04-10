@@ -14,8 +14,8 @@ paths = ["/"]
 run = "pnpm --filter @workspace/api-server run dev"
 
 [services.production]
-build = "echo 'build phase placeholder'"
-run = "cd /home/runner/workspace && rm -rf dist node_modules/.vite && NODE_OPTIONS='--max-old-space-size=4096' npx vite build --logLevel warn && mv dist/_app/index.html dist/_app/_index.html && npx esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && NODE_ENV=production node dist/index.js"
+build = "echo 'Using pre-built dist'"
+run = "cd /home/runner/workspace && NODE_ENV=production node dist/index.js"
 
 [services.env]
 PORT = "3000"
