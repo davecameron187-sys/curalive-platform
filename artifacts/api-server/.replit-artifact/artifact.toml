@@ -14,7 +14,7 @@ paths = ["/"]
 run = "pnpm --filter @workspace/api-server run dev"
 
 [services.production]
-build = "echo 'Using pre-built dist - v2'"
+build = "cd /home/runner/workspace && cp dist/_app/_index.html dist/_app/index.html && echo 'Build complete - index.html prepared'"
 run = "cd /home/runner/workspace && NODE_ENV=production node dist/index.js"
 
 [services.env]
