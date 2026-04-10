@@ -79,7 +79,8 @@ export function serveStatic(app: Express) {
     if (fs.existsSync(assetsDir)) {
       const jsFiles = fs.readdirSync(assetsDir).filter(f => f.startsWith("index") && f.endsWith(".js"));
       if (jsFiles.length > 0) {
-        const newestBundle = jsFiles.sort((a, b) => {
+        const preferUnhashed = jsFiles.find(f => f === "index.js");
+        const newestBundle = preferUnhashed || jsFiles.sort((a, b) => {
           const statA = fs.statSync(path.resolve(assetsDir, a));
           const statB = fs.statSync(path.resolve(assetsDir, b));
           return statB.mtimeMs - statA.mtimeMs;
