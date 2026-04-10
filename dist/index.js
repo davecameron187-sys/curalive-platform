@@ -3749,7 +3749,8 @@ var init_env = __esm({
   "server/_core/env.ts"() {
     "use strict";
     ENV = {
-      appId: process.env.VITE_APP_ID ?? "",
+      appId: process.env.APP_ID ?? "",
+      appOrigin: process.env.APP_ORIGIN ?? "https://curalive-platform.replit.app",
       cookieSecret: process.env.JWT_SECRET ?? "",
       databaseUrl: process.env.DATABASE_URL ?? "",
       oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
@@ -46978,27 +46979,18 @@ async function setupVite(app, server) {
 }
 function serveStatic(app) {
   const distPath = process.env.NODE_ENV === "development" ? path4.resolve(import.meta.dirname, "../..", "dist", "_app") : path4.resolve(import.meta.dirname, "_app");
-  console.log(`[Static] distPath=${distPath} exists=${fs3.existsSync(distPath)} dirname=${import.meta.dirname}`);
-  if (fs3.existsSync(path4.resolve(distPath, "assets"))) {
-    const allAssets = fs3.readdirSync(path4.resolve(distPath, "assets")).filter((f) => f.startsWith("index"));
-    console.log(`[Static] index assets: ${JSON.stringify(allAssets)}`);
-  }
-  const staleIndex = path4.resolve(distPath, "index.html");
-  if (fs3.existsSync(staleIndex)) {
-    console.log(`[Static] REMOVING stale index.html from ${staleIndex}`);
-    fs3.unlinkSync(staleIndex);
-  } else {
-    console.log(`[Static] No stale index.html found (good)`);
-  }
-  const rootFiles = fs3.existsSync(distPath) ? fs3.readdirSync(distPath).filter((f) => f.endsWith(".html")) : [];
-  console.log(`[Static] HTML files in distPath: ${JSON.stringify(rootFiles)}`);
   if (!fs3.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
+    return;
   }
-  const indexPath = path4.resolve(distPath, "_index.html");
+  const indexPath = path4.resolve(distPath, "index.html");
   const assetsDir = path4.resolve(distPath, "assets");
+  if (!fs3.existsSync(indexPath)) {
+    console.error(`[Static] index.html not found at ${indexPath}`);
+    return;
+  }
   let cachedHtml = null;
   function getSpaHtml() {
     if (cachedHtml) return cachedHtml;
@@ -47026,7 +47018,7 @@ function serveStatic(app) {
       }
     }
     cachedHtml = html;
-    console.log(`[Static] SPA HTML prepared, serving bundle from _index.html`);
+    console.log(`[Static] SPA HTML prepared from index.html`);
     return html;
   }
   app.use((req, res, next) => {
@@ -47039,16 +47031,16 @@ function serveStatic(app) {
       return next();
     }
     const html = getSpaHtml();
-    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "X-Served-By": "curalive-catchall-v2" }).end(html);
+    res.status(200).set({
+      "Content-Type": "text/html",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "X-Served-By": "curalive-spa"
+    }).end(html);
   });
   app.use(express.static(distPath, {
-    maxAge: 0,
-    index: false,
-    setHeaders: (res) => {
-      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
-    }
+    maxAge: "1h",
+    index: false
   }));
 }
 var init_vite = __esm({
@@ -49261,14 +49253,12 @@ async function startServer() {
     const distPath = path.resolve(import.meta.dirname, "_app");
     const assetsDir = path.resolve(distPath, "assets");
     const indexHtmlExists = fs.existsSync(path.resolve(distPath, "index.html"));
-    const _indexHtmlExists = fs.existsSync(path.resolve(distPath, "_index.html"));
     const assetFiles = fs.existsSync(assetsDir) ? fs.readdirSync(assetsDir).filter((f) => f.startsWith("index")) : [];
     const allHtmlFiles = fs.existsSync(distPath) ? fs.readdirSync(distPath).filter((f) => f.endsWith(".html")) : [];
     res.json({
-      version: "2025.04.10-C",
+      version: "2026.04.10",
       distPath,
       indexHtmlExists,
-      _indexHtmlExists,
       assetFiles,
       allHtmlFiles,
       dirname: import.meta.dirname,

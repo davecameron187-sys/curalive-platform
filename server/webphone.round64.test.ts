@@ -47,33 +47,31 @@ vi.mock("./webphone/carrierManager", () => ({
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("Twilio Inbound Routing Configuration", () => {
-  it("should construct the correct Voice URL from VITE_APP_ID", () => {
-    const appId = "curalive-mdu4k2ib";
-    const voiceUrl = `https://${appId}.manus.space/api/webphone/inbound`;
-    expect(voiceUrl).toBe("https://curalive-mdu4k2ib.manus.space/api/webphone/inbound");
+  it("should construct the correct Voice URL from APP_ORIGIN", () => {
+    const origin = "https://curalive-platform.replit.app";
+    const voiceUrl = `${origin}/api/webphone/inbound`;
+    expect(voiceUrl).toBe("https://curalive-platform.replit.app/api/webphone/inbound");
     expect(voiceUrl).toContain("/api/webphone/inbound");
   });
 
-  it("should fall back to input voiceUrl when VITE_APP_ID is not set", () => {
-    const appId = "";
+  it("should fall back to input voiceUrl when provided", () => {
     const inputVoiceUrl = "https://custom-domain.com/api/webphone/inbound";
-    const defaultVoiceUrl = appId ? `https://${appId}.manus.space/api/webphone/inbound` : "";
+    const defaultVoiceUrl = "https://curalive-platform.replit.app/api/webphone/inbound";
     const voiceUrl = inputVoiceUrl || defaultVoiceUrl;
     expect(voiceUrl).toBe("https://custom-domain.com/api/webphone/inbound");
   });
 
-  it("should fail when no Voice URL can be determined", () => {
-    const appId = "";
+  it("should use default origin when no override provided", () => {
     const inputVoiceUrl = "";
-    const defaultVoiceUrl = appId ? `https://${appId}.manus.space/api/webphone/inbound` : "";
+    const defaultVoiceUrl = "https://curalive-platform.replit.app/api/webphone/inbound";
     const voiceUrl = inputVoiceUrl || defaultVoiceUrl;
-    expect(voiceUrl).toBe("");
+    expect(voiceUrl).toBe("https://curalive-platform.replit.app/api/webphone/inbound");
   });
 
   it("should derive status callback from voice URL", () => {
-    const voiceUrl = "https://curalive-mdu4k2ib.manus.space/api/webphone/inbound";
+    const voiceUrl = "https://curalive-platform.replit.app/api/webphone/inbound";
     const statusCallback = voiceUrl.replace("/inbound", "/status");
-    expect(statusCallback).toBe("https://curalive-mdu4k2ib.manus.space/api/webphone/status");
+    expect(statusCallback).toBe("https://curalive-platform.replit.app/api/webphone/status");
   });
 });
 

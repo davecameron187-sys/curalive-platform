@@ -32,7 +32,6 @@ export async function setupVite(app: Express, server: Server) {
         "index.html"
       );
 
-      // always reload the index.html file from disk incase it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
@@ -52,28 +51,21 @@ export function serveStatic(app: Express) {
     process.env.NODE_ENV === "development"
       ? path.resolve(import.meta.dirname, "../..", "dist", "_app")
       : path.resolve(import.meta.dirname, "_app");
-  console.log(`[Static] distPath=${distPath} exists=${fs.existsSync(distPath)} dirname=${import.meta.dirname}`);
-  if (fs.existsSync(path.resolve(distPath, "assets"))) {
-    const allAssets = fs.readdirSync(path.resolve(distPath, "assets")).filter(f => f.startsWith("index"));
-    console.log(`[Static] index assets: ${JSON.stringify(allAssets)}`);
-  }
-  const staleIndex = path.resolve(distPath, "index.html");
-  if (fs.existsSync(staleIndex)) {
-    console.log(`[Static] REMOVING stale index.html from ${staleIndex}`);
-    fs.unlinkSync(staleIndex);
-  } else {
-    console.log(`[Static] No stale index.html found (good)`);
-  }
-  const rootFiles = fs.existsSync(distPath) ? fs.readdirSync(distPath).filter(f => f.endsWith(".html")) : [];
-  console.log(`[Static] HTML files in distPath: ${JSON.stringify(rootFiles)}`);
+
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
+    return;
   }
 
-  const indexPath = path.resolve(distPath, "_index.html");
+  const indexPath = path.resolve(distPath, "index.html");
   const assetsDir = path.resolve(distPath, "assets");
+
+  if (!fs.existsSync(indexPath)) {
+    console.error(`[Static] index.html not found at ${indexPath}`);
+    return;
+  }
 
   let cachedHtml: string | null = null;
   function getSpaHtml(): string {
@@ -102,7 +94,7 @@ export function serveStatic(app: Express) {
       }
     }
     cachedHtml = html;
-    console.log(`[Static] SPA HTML prepared, serving bundle from _index.html`);
+    console.log(`[Static] SPA HTML prepared from index.html`);
     return html;
   }
 
@@ -116,16 +108,16 @@ export function serveStatic(app: Express) {
       return next();
     }
     const html = getSpaHtml();
-    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "X-Served-By": "curalive-catchall-v2" }).end(html);
+    res.status(200).set({
+      "Content-Type": "text/html",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "X-Served-By": "curalive-spa",
+    }).end(html);
   });
 
   app.use(express.static(distPath, {
-    maxAge: 0,
+    maxAge: "1h",
     index: false,
-    setHeaders: (res) => {
-      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
-    },
   }));
 }

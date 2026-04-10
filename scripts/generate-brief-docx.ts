@@ -35,7 +35,7 @@ const doc = new Document({
       heading("CuraLive CIPC Patent Portfolio"),
       heading("Submission 4 Alignment Brief", HeadingLevel.HEADING_2),
       spacer(),
-      body("Prepared for: Manus AI Processing"),
+      body("Prepared for: CuraLive Platform"),
       body("Date: 19 March 2026"),
       body("Applicant: David Cameron"),
       body("Subject: Pre-filing review of CIP Submission 4 (Modules 30–31) against prior submissions"),
@@ -149,7 +149,7 @@ const doc = new Document({
       spacer(),
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: "Prepared by CuraLive development platform for Manus AI processing — 19 March 2026", italics: true, size: 18, font: "Calibri", color: "6B7280" })],
+        children: [new TextRun({ text: "Prepared by CuraLive development platform — April 2026", italics: true, size: 18, font: "Calibri", color: "6B7280" })],
       }),
     ],
   }],

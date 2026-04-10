@@ -65,7 +65,7 @@ function createOperatorContext(): TrpcContext {
     openId: "operator-1",
     email: "operator@curalive.cc",
     name: "Sarah Nkosi",
-    loginMethod: "manus",
+    loginMethod: "oauth",
     role: "operator",
     createdAt: new Date(),
     updatedAt: new Date(),

@@ -26,8 +26,8 @@ vi.mock("../server/_core/env", () => ({
     TELNYX_SIP_DOMAIN: "sip.telnyx.com",
     TELNYX_SIP_CONNECTION_ID: "conn_test",
     ABLY_API_KEY: "test_ably_key",
-    VITE_APP_ID: "curalive-test",
-    BUILT_IN_FORGE_API_URL: "https://api.manus.im",
+    APP_ID: "curalive-test",
+    APP_ORIGIN: "https://curalive-platform.replit.app",
     BUILT_IN_FORGE_API_KEY: "test_forge_key",
   },
 }));
@@ -42,7 +42,7 @@ vi.mock("twilio", () => {
         { sid: "PN_test", phoneNumber: "+15005550006", voiceUrl: "" },
       ]),
       get: vi.fn(() => ({
-        update: vi.fn().mockResolvedValue({ sid: "PN_test", voiceUrl: "https://curalive-test.manus.space/api/webphone/inbound" }),
+        update: vi.fn().mockResolvedValue({ sid: "PN_test", voiceUrl: "https://curalive-platform.replit.app/api/webphone/inbound" }),
       })),
     },
     tokens: {
@@ -88,8 +88,8 @@ describe("Voicemail TwiML", () => {
     response.record({
       maxLength: 120,
       playBeep: true,
-      action: "https://curalive-test.manus.space/api/webphone/voicemail-status",
-      recordingStatusCallback: "https://curalive-test.manus.space/api/webphone/voicemail-status",
+      action: "https://curalive-platform.replit.app/api/webphone/voicemail-status",
+      recordingStatusCallback: "https://curalive-platform.replit.app/api/webphone/voicemail-status",
     });
 
     const xml = response.toString();
@@ -143,7 +143,7 @@ describe("Blind Transfer", () => {
     const result = await mockClient.calls.create({
       to: "+27821234567",
       from: "+15005550006",
-      url: "https://curalive-test.manus.space/api/webphone/twiml",
+      url: "https://curalive-platform.replit.app/api/webphone/twiml",
     });
 
     expect(result.sid).toBe("CA_transfer_test");
