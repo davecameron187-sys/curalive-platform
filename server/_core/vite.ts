@@ -65,6 +65,7 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath, {
     maxAge: 0,
+    index: false,
     setHeaders: (res) => {
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.setHeader("Pragma", "no-cache");
