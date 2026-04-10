@@ -1,0 +1,21 @@
+kind = "web"
+previewPath = "/"
+title = "CuraLive Platform"
+version = "1.0.0"
+id = "artifacts/api-server"
+router = "path"
+
+[[services]]
+localPort = 3000
+name = "CuraLive Server"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/api-server run dev"
+
+[services.production]
+build = "cd /home/runner/workspace && rm -rf dist node_modules/.vite && pnpm install --frozen-lockfile && NODE_OPTIONS='--max-old-space-size=4096' npx vite build --logLevel warn && mv dist/_app/index.html dist/_app/_index.html && npx esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist"
+run = "cd /home/runner/workspace && NODE_ENV=production node dist/index.js"
+
+[services.env]
+PORT = "3000"
