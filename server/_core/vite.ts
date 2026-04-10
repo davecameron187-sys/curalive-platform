@@ -57,6 +57,15 @@ export function serveStatic(app: Express) {
     const allAssets = fs.readdirSync(path.resolve(distPath, "assets")).filter(f => f.startsWith("index"));
     console.log(`[Static] index assets: ${JSON.stringify(allAssets)}`);
   }
+  const staleIndex = path.resolve(distPath, "index.html");
+  if (fs.existsSync(staleIndex)) {
+    console.log(`[Static] REMOVING stale index.html from ${staleIndex}`);
+    fs.unlinkSync(staleIndex);
+  } else {
+    console.log(`[Static] No stale index.html found (good)`);
+  }
+  const rootFiles = fs.existsSync(distPath) ? fs.readdirSync(distPath).filter(f => f.endsWith(".html")) : [];
+  console.log(`[Static] HTML files in distPath: ${JSON.stringify(rootFiles)}`);
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -105,6 +114,6 @@ export function serveStatic(app: Express) {
       }
     }
 
-    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache" }).end(html);
+    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "X-Served-By": "curalive-catchall" }).end(html);
   });
 }

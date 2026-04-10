@@ -46985,6 +46985,15 @@ function serveStatic(app) {
     const allAssets = fs2.readdirSync(path3.resolve(distPath, "assets")).filter((f) => f.startsWith("index"));
     console.log(`[Static] index assets: ${JSON.stringify(allAssets)}`);
   }
+  const staleIndex = path3.resolve(distPath, "index.html");
+  if (fs2.existsSync(staleIndex)) {
+    console.log(`[Static] REMOVING stale index.html from ${staleIndex}`);
+    fs2.unlinkSync(staleIndex);
+  } else {
+    console.log(`[Static] No stale index.html found (good)`);
+  }
+  const rootFiles = fs2.existsSync(distPath) ? fs2.readdirSync(distPath).filter((f) => f.endsWith(".html")) : [];
+  console.log(`[Static] HTML files in distPath: ${JSON.stringify(rootFiles)}`);
   if (!fs2.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -47029,7 +47038,7 @@ function serveStatic(app) {
         }
       }
     }
-    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache" }).end(html);
+    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "X-Served-By": "curalive-catchall" }).end(html);
   });
 }
 var init_vite = __esm({
