@@ -966,7 +966,7 @@ Recipients: ${allEmails.join(", ")}
                 <p style="margin: 4px 0;"><strong>Service Interest:</strong> ${input.serviceInterest.replace(/_/g, " ")}</p>
                 ${input.preferredDate ? `<p style="margin: 4px 0;"><strong>Preferred Date:</strong> ${input.preferredDate}</p>` : ""}
               </div>
-              <p style="color: #94a3b8; font-size: 13px;">In the meantime, explore the live platform at <a href="https://curalive-mdu4k2ib.manus.space" style="color: #ef4444;">curalive-mdu4k2ib.manus.space</a></p>
+              <p style="color: #94a3b8; font-size: 13px;">In the meantime, explore the live platform at <a href="https://curalive-platform.replit.app" style="color: #ef4444;">curalive-platform.replit.app</a></p>
             </div>
           `,
         }).catch(() => {});

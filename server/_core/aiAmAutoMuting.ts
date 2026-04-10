@@ -327,7 +327,7 @@ ${muteStatus.muteEndTime ? `Auto-Unmute At: ${muteStatus.muteEndTime.toLocaleTim
 Action Required: Review violations and confirm mute action.
   `;
 
-  // In production, send via Manus notification API
+  // In production, send via notification API
   console.log("[Auto-Mute Notification]", message);
 }
 

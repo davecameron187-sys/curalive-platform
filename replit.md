@@ -15,7 +15,7 @@ CuraLive is a patented, real-time investor events intelligence platform designed
 - **Recall.ai webhook order**: Recall.ai webhook middleware MUST be registered before `express.json()`.
 - **NUMERIC wrapping**: Wrap PostgreSQL `NUMERIC` from `rawSql()` in `Number()` before arithmetic.
 - **Bigint timestamps**: `rawSql()` auto-converts numbers 1e12–1e13 to `Date` objects. Pass epoch values as strings.
-- **Production build**: Rebuild `dist/` with esbuild before publishing.
+- **Production build**: `pnpm run build` runs Vite (client) + esbuild (server). Deployment runs this automatically via artifact.toml build step.
 - **Replit config**: Do not modify the `.replit` file directly.
 - **Vendor names on client pages**: NEVER show on `/live/:token`, `/report/:token`, `/presenter/:token`: Whisper, Recall.ai, GPT-4o, OpenAI, Gemini, Ably, Twilio, Mux, Resend. Use: "CuraLive Intelligence Agent", "AI transcription", "CuraLive AI".
 - **health_checks tables**: Created via raw SQL. Timestamp columns must be `TIMESTAMP` type, not bigint.

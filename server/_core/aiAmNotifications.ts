@@ -220,7 +220,7 @@ export async function sendInAppNotification(
   userId: number
 ): Promise<boolean> {
   try {
-    // Use Manus notification API
+    // Use notification API
     const notified = await notifyOwner({
       title: `${alert.severity.toUpperCase()} Compliance Alert`,
       content: `${alert.violationType.replace(/_/g, " ")} detected: "${alert.transcriptExcerpt.substring(0, 100)}..."`,

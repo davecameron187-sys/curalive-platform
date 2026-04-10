@@ -269,10 +269,8 @@ async function startServer() {
       return;
     }
     // Build recording callback URL based on the app domain
-    const appId = process.env.VITE_APP_ID ?? "";
-    const recordingCallbackUrl = appId
-      ? `https://${appId}.manus.space/api/webphone/recording-status`
-      : undefined;
+    const appOrigin = process.env.APP_ORIGIN ?? `https://curalive-platform.replit.app`;
+    const recordingCallbackUrl = `${appOrigin}/api/webphone/recording-status`;
     const twiml = buildTwiMLVoiceResponse(to, callerId, {
       record: true,
       recordingCallbackUrl,
@@ -289,20 +287,15 @@ async function startServer() {
     console.log(`[TwiML Inbound] from=${from} to=${to} callSid=${callSid}`);
     const twiml = new twilio_twiml.twiml.VoiceResponse();
 
-    // Enable recording on inbound calls
-    const appId = process.env.VITE_APP_ID ?? "";
-    const recordingCallbackUrl = appId
-      ? `https://${appId}.manus.space/api/webphone/recording-status`
-      : undefined;
+    const inboundOrigin = process.env.APP_ORIGIN ?? `https://curalive-platform.replit.app`;
+    const inboundRecordingUrl = `${inboundOrigin}/api/webphone/recording-status`;
 
     const dialOptions: Record<string, string> = {
       record: "record-from-answer-dual",
+      recordingStatusCallback: inboundRecordingUrl,
+      recordingStatusCallbackMethod: "POST",
+      recordingStatusCallbackEvent: "completed",
     };
-    if (recordingCallbackUrl) {
-      dialOptions.recordingStatusCallback = recordingCallbackUrl;
-      dialOptions.recordingStatusCallbackMethod = "POST";
-      dialOptions.recordingStatusCallbackEvent = "completed";
-    }
 
     // Smart routing: find the next available operator from DB
     let targetIdentity: string | null = null;
@@ -336,19 +329,15 @@ async function startServer() {
     }
 
     if (targetIdentity) {
-      // Route to an available operator with a 30-second timeout
-      const appIdForFallback = process.env.VITE_APP_ID ?? "";
-      const fallbackUrl = appIdForFallback
-        ? `https://${appIdForFallback}.manus.space/api/webphone/voicemail-fallback`
-        : "/api/webphone/voicemail-fallback";
+      const fallbackOrigin = process.env.APP_ORIGIN ?? `https://curalive-platform.replit.app`;
+      const fallbackUrl = `${fallbackOrigin}/api/webphone/voicemail-fallback`;
       const dial = twiml.dial({ ...dialOptions, timeout: 30, action: fallbackUrl } as Record<string, unknown>);
       dial.client(targetIdentity);
     } else {
       // No operators available — go straight to voicemail
       twiml.say({ voice: "Polly.Joanna" }, "Thank you for calling. All operators are currently unavailable. Please leave a message after the tone and we will return your call as soon as possible.");
-      const voicemailCallbackUrl = appId
-        ? `https://${appId}.manus.space/api/webphone/voicemail-status`
-        : "/api/webphone/voicemail-status";
+      const vmOrigin = process.env.APP_ORIGIN ?? `https://curalive-platform.replit.app`;
+      const voicemailCallbackUrl = `${vmOrigin}/api/webphone/voicemail-status`;
       twiml.record({
         maxLength: 120,
         playBeep: true,
@@ -430,10 +419,8 @@ async function startServer() {
 
     // Operator didn't answer — record voicemail
     twimlVm.say({ voice: "Polly.Joanna" as any }, "The operator is not available right now. Please leave a message after the tone and we will return your call.");
-    const vmAppId = process.env.VITE_APP_ID ?? "";
-    const vmCallbackUrl = vmAppId
-      ? `https://${vmAppId}.manus.space/api/webphone/voicemail-status`
-      : "/api/webphone/voicemail-status";
+    const vmFallbackOrigin = process.env.APP_ORIGIN ?? `https://curalive-platform.replit.app`;
+    const vmCallbackUrl = `${vmFallbackOrigin}/api/webphone/voicemail-status`;
     twimlVm.record({
       maxLength: 120,
       playBeep: true,
@@ -963,52 +950,40 @@ async function startServer() {
 <div class="page">
   <h1>CuraLive — Project Owner Checklist</h1>
 
-  <h2>Starting a Replit Session</h2>
+  <h2>Starting a Session</h2>
   <ul>
-    <li>Say: "Check GitHub for new Manus specs"</li>
-    <li>Review what Replit Agent reports — note any spec-ready features</li>
-    <li>If Manus has a new spec → open the file on GitHub, copy the REPLIT SUMMARY block, paste it into the Replit chat</li>
+    <li>Open Replit and review the current project state</li>
+    <li>Check docs/specs/STATUS.md for any pending features</li>
+    <li>Describe the feature or fix you want to the Replit Agent</li>
   </ul>
 
-  <h2>Starting a Manus Session</h2>
+  <h2>During a Session</h2>
   <ul>
-    <li>Tell Manus which features to spec next</li>
-    <li>Remind Manus: spec files only in docs/specs/ — no code files</li>
-    <li>Remind Manus: every spec needs a REPLIT SUMMARY block at the top</li>
-    <li>Ask Manus to update docs/specs/STATUS.md when done (mark as spec-ready)</li>
+    <li>Review changes as the Agent builds them</li>
+    <li>Test features in the preview pane</li>
+    <li>Provide feedback or corrections as needed</li>
   </ul>
 
-  <h2>Ending a Replit Session</h2>
+  <h2>Ending a Session</h2>
   <ul>
-    <li>Say: "Push to GitHub"</li>
-    <li>Confirm the push succeeded (Replit Agent will confirm with a commit ID)</li>
-    <li>Tell Manus which features are now implemented so they don't re-spec them</li>
+    <li>Verify all features work in the preview</li>
+    <li>Publish when ready — the Agent will handle deployment</li>
   </ul>
 
-  <h2>Ending a Manus Session</h2>
-  <ul>
-    <li>Check that Manus committed to docs/specs/ only (not client/ or server/)</li>
-    <li>Check that docs/specs/STATUS.md is updated to spec-ready</li>
-    <li>You are ready to start a Replit session</li>
-  </ul>
-
-  <div class="rule">The one-line rule: Manus writes → you copy the summary → Replit builds → you say push.</div>
+  <div class="rule">All development happens on Replit. Describe what you want and the Agent builds it.</div>
 
   <h2>Warning Signs</h2>
   <table>
     <tr><th>What you see</th><th>What to do</th></tr>
-    <tr><td>Manus says "I already built that"</td><td>Remind them: specs only, no code</td></tr>
-    <tr><td>Sync check shows unexpected GitHub files</td><td>Tell Replit Agent — it will fix it</td></tr>
-    <tr><td>Push fails</td><td>Tell Replit Agent — it will diagnose</td></tr>
-    <tr><td>Unsure what's built</td><td>Ask Replit Agent: "What's currently implemented?"</td></tr>
-    <tr><td>Unsure what Manus is working on</td><td>Ask Manus directly</td></tr>
+    <tr><td>Preview not loading</td><td>Ask the Agent to restart the server</td></tr>
+    <tr><td>Feature not working</td><td>Describe the issue to the Agent</td></tr>
+    <tr><td>Unsure what's built</td><td>Ask the Agent: "What's currently implemented?"</td></tr>
   </table>
 
-  <h2>Copy-Paste Phrases</h2>
-  <div class="phrase-box"><strong>To Replit at session start</strong>Check GitHub for any new Manus specs or unimplemented work</div>
-  <div class="phrase-box"><strong>To Replit at session end</strong>Push to GitHub</div>
-  <div class="phrase-box"><strong>To Manus when requesting a spec</strong>Please write a spec for [feature name] and save it to docs/specs/ with a REPLIT SUMMARY block at the top. Mark it spec-ready in STATUS.md when done.</div>
-  <div class="phrase-box"><strong>To Manus as a reminder</strong>Please do not push any code files — specs only in docs/specs/. Replit Agent handles all implementation.</div>
+  <h2>Quick Actions</h2>
+  <div class="phrase-box"><strong>To check status</strong>What features are currently implemented?</div>
+  <div class="phrase-box"><strong>To request a feature</strong>Please build [feature name] following the spec in docs/specs/</div>
+  <div class="phrase-box"><strong>To deploy</strong>Please publish the latest changes to production</div>
 
   <button class="print-btn" onclick="window.print()">Save as PDF / Print</button>
 </div>

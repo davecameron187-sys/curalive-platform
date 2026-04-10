@@ -440,7 +440,7 @@ export const webcastRouter = router({
       // Fetch event details for the confirmation email
       const [event] = await db.select().from(webcastEvents).where(eq(webcastEvents.id, input.eventId)).limit(1);
       if (event) {
-        const baseUrl = origin ?? "https://curalive-mdu4k2ib.manus.space";
+        const baseUrl = origin ?? "https://curalive-platform.replit.app";
         const attendUrl = `${baseUrl}/live-video/webcast/${event.slug}/attend?token=${attendeeToken}`;
         const startTs = event.startTime ?? Date.now() + 24 * 60 * 60 * 1000;
         const endTs = event.endTime ?? startTs + 90 * 60 * 1000;

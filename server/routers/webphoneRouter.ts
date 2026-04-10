@@ -423,14 +423,11 @@ export const webphoneRouter = router({
         }
 
         // Determine the Voice URL — use the published domain or input override
-        const appId = process.env.VITE_APP_ID ?? "";
-        const defaultVoiceUrl = appId
-          ? `https://${appId}.manus.space/api/webphone/inbound`
-          : "";
+        const defaultVoiceUrl = `${process.env.APP_ORIGIN ?? "https://curalive-platform.replit.app"}/api/webphone/inbound`;
         const voiceUrl = input.voiceUrl || defaultVoiceUrl;
 
         if (!voiceUrl) {
-          return { success: false, error: "Cannot determine Voice URL. Set VITE_APP_ID or provide a voiceUrl." };
+          return { success: false, error: "Cannot determine Voice URL. Set APP_ORIGIN or provide a voiceUrl." };
         }
 
         // Update the phone number's Voice URL
@@ -466,8 +463,7 @@ export const webphoneRouter = router({
       const client = twilio(accountSid, authToken);
       const incomingNumbers = await client.incomingPhoneNumbers.list({ limit: 20 });
 
-      const appId = process.env.VITE_APP_ID ?? "";
-      const expectedUrl = appId ? `https://${appId}.manus.space/api/webphone/inbound` : "";
+      const expectedUrl = `${process.env.APP_ORIGIN ?? "https://curalive-platform.replit.app"}/api/webphone/inbound`;
 
       return {
         numbers: incomingNumbers.map(n => ({

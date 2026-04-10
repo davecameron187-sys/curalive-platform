@@ -62,8 +62,8 @@ function StepCard({
   );
 }
 
-const WEBHOOK_URL_PLACEHOLDER = "https://curalive-mdu4k2ib.manus.space/api/voice/inbound";
-const PIN_WEBHOOK_URL_PLACEHOLDER = "https://curalive-mdu4k2ib.manus.space/api/voice/pin";
+const WEBHOOK_URL_PLACEHOLDER = "https://curalive-platform.replit.app/api/voice/inbound";
+const PIN_WEBHOOK_URL_PLACEHOLDER = "https://curalive-platform.replit.app/api/voice/pin";
 
 const TWIML_INBOUND = `<?xml version="1.0" encoding="UTF-8"?>
 <!-- This TwiML is generated dynamically by /api/voice/inbound -->
@@ -188,7 +188,7 @@ export default function TwilioDirectGuide() {
             <ul className="list-disc list-inside space-y-1 text-slate-300 mt-2">
               <li><strong>HTTP Method:</strong> POST</li>
             </ul>
-            <p className="text-xs text-slate-500 mt-2">Replace the domain above with your published Manus domain if you have configured a custom domain.</p>
+            <p className="text-xs text-slate-500 mt-2">Replace the domain above with your published domain if you have configured a custom domain.</p>
           </StepCard>
 
           <StepCard number={3} title="Verify the PIN webhook endpoint">

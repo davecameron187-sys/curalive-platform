@@ -42,7 +42,7 @@ const SECTIONS: Section[] = [
         step: 1,
         action: "Log in to the platform",
         url: `${BASE_URL}`,
-        note: "Click the 'Login' button in the top-right corner of the homepage. Use your Manus account (the same account used to manage this project). The platform owner (David Cameron) is automatically granted admin + operator access.",
+        note: "Click the 'Login' button in the top-right corner of the homepage. Use your account credentials. The platform owner (David Cameron) is automatically granted admin + operator access.",
       },
       {
         step: 2,

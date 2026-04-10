@@ -134,7 +134,7 @@ const PHASES: Phase[] = [
         icon: Activity,
         color: "text-emerald-400",
         deepLinks: [
-          { label: "Go to OCC Login", path: "/occ", description: "Sign in with Manus OAuth" },
+          { label: "Go to OCC Login", path: "/occ", description: "Sign in with OAuth" },
         ],
         content: (
           <div className="space-y-4">
@@ -147,7 +147,7 @@ const PHASES: Phase[] = [
             <ol className="space-y-3">
               {[
                 { step: "1", text: "Navigate to the OCC URL", detail: `${APP_BASE}/occ` },
-                { step: "2", text: "Click \"Sign in with Manus\" and complete OAuth", detail: "Your session persists across page reloads" },
+                { step: "2", text: "Click \"Sign in\" and complete OAuth", detail: "Your session persists across page reloads" },
                 { step: "3", text: "Locate the status indicator in the top-right of the OCC bar", detail: "Shows your current presence state" },
                 { step: "4", text: "Click the status dropdown and select Present & Ready", detail: "Status broadcasts via Ably to all other operators" },
               ].map(({ step, text, detail }) => (

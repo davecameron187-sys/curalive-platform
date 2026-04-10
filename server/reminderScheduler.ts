@@ -64,7 +64,7 @@ function buildAttendUrl(origin: string, slug: string, token: string | null): str
 
 /**
  * Run one reminder pass: check all upcoming events and send any due reminders.
- * @param origin - The public origin of the app (e.g. "https://curalive.manus.space")
+ * @param origin - The public origin of the app (e.g. "https://curalive-platform.replit.app")
  */
 export async function runReminderPass(origin: string): Promise<{
   sent24h: number;
@@ -211,7 +211,7 @@ export async function runReminderPass(origin: string): Promise<{
 /**
  * Start the reminder scheduler.
  * Runs an initial pass immediately, then repeats every SCHEDULER_INTERVAL_MS.
- * @param origin - The public origin of the app (e.g. "https://curalive.manus.space")
+ * @param origin - The public origin of the app (e.g. "https://curalive-platform.replit.app")
  */
 export function startReminderScheduler(origin: string): NodeJS.Timeout {
   console.log(`[ReminderScheduler] Started — interval: ${SCHEDULER_INTERVAL_MS / 1000}s, origin: ${origin}`);

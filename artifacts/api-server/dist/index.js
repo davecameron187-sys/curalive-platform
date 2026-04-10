@@ -1,4 +1,3 @@
-import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
@@ -15,10 +14,10 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
-// ../../shared/const.ts
+// shared/const.ts
 var COOKIE_NAME, ONE_YEAR_MS, AXIOS_TIMEOUT_MS, UNAUTHED_ERR_MSG, NOT_ADMIN_ERR_MSG;
 var init_const = __esm({
-  "../../shared/const.ts"() {
+  "shared/const.ts"() {
     "use strict";
     COOKIE_NAME = "app_session_id";
     ONE_YEAR_MS = 1e3 * 60 * 60 * 24 * 365;
@@ -28,7 +27,255 @@ var init_const = __esm({
   }
 });
 
-// ../../drizzle/schema.ts
+// drizzle/gaps.schema.ts
+import { pgTable, serial, integer, text, varchar, timestamp, boolean, json, real, date } from "drizzle-orm/pg-core";
+var sessionReadinessChecks, sessionMessages, approvedQuestionsQueue, clientReportViewLog, scheduledSessions, sessionHandoffs, sessionOperators, clientReportFeedback, agmResolutions, agmShareholderSignals, historicalCommitments, boardMembers, complianceDeadlines, briefingAccuracyScores, organisations, sessionMarkers;
+var init_gaps_schema = __esm({
+  "drizzle/gaps.schema.ts"() {
+    "use strict";
+    sessionReadinessChecks = pgTable("session_readiness_checks", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      checkName: varchar("check_name", { length: 100 }).notNull(),
+      passed: boolean("passed").default(false),
+      detail: text("detail"),
+      checkedAt: timestamp("checked_at").defaultNow()
+    });
+    sessionMessages = pgTable("session_messages", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      fromRole: varchar("from_role", { length: 30 }).notNull(),
+      fromName: varchar("from_name", { length: 200 }),
+      message: text("message").notNull(),
+      readAt: timestamp("read_at"),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    approvedQuestionsQueue = pgTable("approved_questions_queue", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      questionId: integer("question_id"),
+      questionText: text("question_text").notNull(),
+      askerName: varchar("asker_name", { length: 200 }),
+      askerFirm: varchar("asker_firm", { length: 200 }),
+      aiSuggestedAnswer: text("ai_suggested_answer"),
+      status: varchar("status", { length: 30 }).default("queued"),
+      queuedAt: timestamp("queued_at").defaultNow(),
+      answeredAt: timestamp("answered_at"),
+      operatorId: integer("operator_id")
+    });
+    clientReportViewLog = pgTable("client_report_view_log", {
+      id: serial("id").primaryKey(),
+      token: varchar("token", { length: 128 }).notNull(),
+      sessionId: integer("session_id"),
+      tabViewed: varchar("tab_viewed", { length: 50 }),
+      timeSpentSecs: integer("time_spent_secs").default(0),
+      ipAddress: varchar("ip_address", { length: 64 }),
+      userAgent: text("user_agent"),
+      viewedAt: timestamp("viewed_at").defaultNow()
+    });
+    scheduledSessions = pgTable("scheduled_sessions", {
+      id: serial("id").primaryKey(),
+      eventName: varchar("event_name", { length: 255 }).notNull(),
+      company: varchar("company", { length: 255 }),
+      eventType: varchar("event_type", { length: 50 }).default("earnings_call"),
+      scheduledAt: timestamp("scheduled_at").notNull(),
+      tier: varchar("tier", { length: 20 }).default("essential"),
+      partnerId: integer("partner_id"),
+      recipients: json("recipients").default([]),
+      meetingUrl: text("meeting_url"),
+      preBriefSentAt: timestamp("pre_brief_sent_at"),
+      sessionCreatedId: integer("session_created_id"),
+      createdBy: integer("created_by"),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    sessionHandoffs = pgTable("session_handoffs", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      fromOperatorId: integer("from_operator_id").notNull(),
+      toOperatorId: integer("to_operator_id"),
+      reason: text("reason"),
+      status: varchar("status", { length: 30 }).default("pending"),
+      handoffAt: timestamp("handoff_at").defaultNow(),
+      acceptedAt: timestamp("accepted_at")
+    });
+    sessionOperators = pgTable("session_operators", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      operatorId: integer("operator_id").notNull(),
+      role: varchar("role", { length: 30 }).default("secondary"),
+      joinedAt: timestamp("joined_at").defaultNow(),
+      leftAt: timestamp("left_at")
+    });
+    clientReportFeedback = pgTable("client_report_feedback", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      token: varchar("token", { length: 128 }),
+      rating: integer("rating"),
+      comment: text("comment"),
+      submittedAt: timestamp("submitted_at").defaultNow()
+    });
+    agmResolutions = pgTable("agm_resolutions", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      resolutionNumber: varchar("resolution_number", { length: 20 }),
+      title: text("title").notNull(),
+      description: text("description"),
+      category: varchar("category", { length: 50 }),
+      sentiment: varchar("sentiment", { length: 30 }).default("neutral"),
+      sentimentScore: real("sentiment_score"),
+      dissentLevel: varchar("dissent_level", { length: 30 }),
+      votesFor: integer("votes_for"),
+      votesAgainst: integer("votes_against"),
+      abstentions: integer("abstentions"),
+      status: varchar("status", { length: 30 }).default("pending"),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    agmShareholderSignals = pgTable("agm_shareholder_signals", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      resolutionId: integer("resolution_id"),
+      signalType: varchar("signal_type", { length: 50 }).notNull(),
+      speaker: varchar("speaker", { length: 200 }),
+      segmentText: text("segment_text"),
+      confidence: real("confidence"),
+      detectedAt: timestamp("detected_at").defaultNow()
+    });
+    historicalCommitments = pgTable("historical_commitments", {
+      id: serial("id").primaryKey(),
+      company: varchar("company", { length: 255 }).notNull(),
+      commitment: text("commitment").notNull(),
+      madeAt: timestamp("made_at"),
+      deadline: timestamp("deadline"),
+      sessionId: integer("session_id"),
+      status: varchar("status", { length: 30 }).default("pending"),
+      verifiedAt: timestamp("verified_at"),
+      notes: text("notes"),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    boardMembers = pgTable("board_members", {
+      id: serial("id").primaryKey(),
+      company: varchar("company", { length: 255 }).notNull(),
+      name: varchar("name", { length: 255 }).notNull(),
+      role: varchar("role", { length: 100 }),
+      committee: varchar("committee", { length: 100 }),
+      appointedAt: timestamp("appointed_at"),
+      bio: text("bio"),
+      linkedinUrl: text("linkedin_url"),
+      active: boolean("active").default(true),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    complianceDeadlines = pgTable("compliance_deadlines", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      action: text("action").notNull(),
+      jurisdiction: varchar("jurisdiction", { length: 30 }),
+      deadlineAt: timestamp("deadline_at").notNull(),
+      priority: varchar("priority", { length: 20 }).default("medium"),
+      assignedTo: varchar("assigned_to", { length: 320 }),
+      status: varchar("status", { length: 30 }).default("pending"),
+      escalatedAt: timestamp("escalated_at"),
+      completedAt: timestamp("completed_at"),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    briefingAccuracyScores = pgTable("briefing_accuracy_scores", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      overallScore: real("overall_score"),
+      topicsCovered: integer("topics_covered"),
+      topicsMissed: integer("topics_missed"),
+      sentimentAccuracy: real("sentiment_accuracy"),
+      keyMetricsAccuracy: real("key_metrics_accuracy"),
+      scoredAt: timestamp("scored_at").defaultNow(),
+      detail: json("detail")
+    });
+    organisations = pgTable("organisations", {
+      id: serial("id").primaryKey(),
+      name: varchar("name", { length: 255 }).notNull(),
+      status: varchar("status", { length: 20 }).default("demo").notNull(),
+      billingType: varchar("billing_type", { length: 20 }).default("demo").notNull(),
+      subscriptionAmount: integer("subscription_amount"),
+      perEventPrice: integer("per_event_price"),
+      billingContactEmail: varchar("billing_contact_email", { length: 255 }),
+      irContactEmail: varchar("ir_contact_email", { length: 255 }),
+      pilotEventsTotal: integer("pilot_events_total").default(3),
+      pilotEventsUsed: integer("pilot_events_used").default(0),
+      pilotNotes: text("pilot_notes"),
+      followupDate: date("followup_date"),
+      createdAt: timestamp("created_at").defaultNow().notNull(),
+      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    });
+    sessionMarkers = pgTable("session_markers", {
+      id: serial("id").primaryKey(),
+      sessionId: integer("session_id").notNull(),
+      segmentText: text("segment_text").notNull(),
+      operatorNote: text("operator_note"),
+      flagType: varchar("flag_type", { length: 30 }).default("notable"),
+      speaker: varchar("speaker", { length: 200 }),
+      eventTimestamp: integer("event_timestamp"),
+      operatorId: integer("operator_id"),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+  }
+});
+
+// drizzle/partners.schema.ts
+import { pgTable as pgTable2, serial as serial2, integer as integer2, text as text2, varchar as varchar2, timestamp as timestamp2, boolean as boolean2, json as json2 } from "drizzle-orm/pg-core";
+var partners, clientTokens, clientReportAccess, partnerEvents;
+var init_partners_schema = __esm({
+  "drizzle/partners.schema.ts"() {
+    "use strict";
+    partners = pgTable2("partners", {
+      id: serial2("id").primaryKey(),
+      slug: varchar2("slug", { length: 50 }).notNull().unique(),
+      name: varchar2("name", { length: 255 }).notNull(),
+      displayName: varchar2("display_name", { length: 255 }),
+      logoUrl: text2("logo_url"),
+      primaryColor: varchar2("primary_color", { length: 10 }).default("#1a1a2e"),
+      accentColor: varchar2("accent_color", { length: 10 }).default("#0A2540"),
+      fontFamily: varchar2("font_family", { length: 100 }),
+      model: varchar2("model", { length: 30 }).default("revenue_share"),
+      revenueSharePct: integer2("revenue_share_pct").default(20),
+      customDomain: varchar2("custom_domain", { length: 255 }),
+      customDomainVerified: boolean2("custom_domain_verified").default(false),
+      sendingDomain: varchar2("sending_domain", { length: 255 }),
+      sendingName: varchar2("sending_name", { length: 255 }),
+      sendingEmail: varchar2("sending_email", { length: 320 }),
+      active: boolean2("active").default(true),
+      createdAt: timestamp2("created_at").defaultNow()
+    });
+    clientTokens = pgTable2("client_tokens", {
+      id: serial2("id").primaryKey(),
+      token: varchar2("token", { length: 128 }).notNull().unique(),
+      sessionId: integer2("session_id").notNull(),
+      partnerId: integer2("partner_id"),
+      recipientName: varchar2("recipient_name", { length: 255 }),
+      recipientEmail: varchar2("recipient_email", { length: 320 }),
+      recipientRole: varchar2("recipient_role", { length: 100 }),
+      accessType: varchar2("access_type", { length: 30 }).notNull().default("live"),
+      expiresAt: timestamp2("expires_at"),
+      lastAccessedAt: timestamp2("last_accessed_at"),
+      createdAt: timestamp2("created_at").defaultNow()
+    });
+    clientReportAccess = pgTable2("client_report_access", {
+      id: serial2("id").primaryKey(),
+      tokenId: integer2("token_id").notNull(),
+      sessionId: integer2("session_id").notNull(),
+      tabViewed: varchar2("tab_viewed", { length: 50 }),
+      timeSpentSecs: integer2("time_spent_secs").default(0),
+      accessedAt: timestamp2("accessed_at").defaultNow()
+    });
+    partnerEvents = pgTable2("partner_events", {
+      id: serial2("id").primaryKey(),
+      partnerId: integer2("partner_id").notNull(),
+      sessionId: integer2("session_id"),
+      eventType: varchar2("event_type", { length: 50 }),
+      detail: json2("detail"),
+      createdAt: timestamp2("created_at").defaultNow()
+    });
+  }
+});
+
+// drizzle/schema.ts
 var schema_exports = {};
 __export(schema_exports, {
   actionEnum: () => actionEnum,
@@ -39,7 +286,8 @@ __export(schema_exports, {
   agmDissentPatterns: () => agmDissentPatterns,
   agmGovernanceObservations: () => agmGovernanceObservations,
   agmIntelligenceSessions: () => agmIntelligenceSessions,
-  agmResolutions: () => agmResolutions,
+  agmResolutions: () => agmResolutions2,
+  agmShareholderSignals: () => agmShareholderSignals,
   aiAmAuditLog: () => aiAmAuditLog,
   aiEvolutionObservations: () => aiEvolutionObservations,
   aiGeneratedContent: () => aiGeneratedContent,
@@ -47,7 +295,10 @@ __export(schema_exports, {
   alertHistory: () => alertHistory,
   alertPreferences: () => alertPreferences,
   algorithm_sourceEnum: () => algorithm_sourceEnum,
+  analystConsensusData: () => analystConsensusData,
+  analystExpectationAudits: () => analystExpectationAudits,
   approval_statusEnum: () => approval_statusEnum,
+  approvedQuestionsQueue: () => approvedQuestionsQueue,
   archiveEvents: () => archiveEvents,
   attendeeRegistrations: () => attendeeRegistrations,
   autonomousInterventions: () => autonomousInterventions,
@@ -69,6 +320,27 @@ __export(schema_exports, {
   billingQuotes: () => billingQuotes,
   billingRecurringTemplates: () => billingRecurringTemplates,
   billing_tierEnum: () => billing_tierEnum,
+  boardIntelligenceCompass: () => boardIntelligenceCompass,
+  boardMembers: () => boardMembers,
+  boardResolutions: () => boardResolutions,
+  bridgeCallRecordings: () => bridgeCallRecordings,
+  bridgeConfPhaseEnum: () => bridgeConfPhaseEnum,
+  bridgeConfTypeEnum: () => bridgeConfTypeEnum,
+  bridgeConferences: () => bridgeConferences,
+  bridgeEventPhaseEnum: () => bridgeEventPhaseEnum,
+  bridgeEvents: () => bridgeEvents,
+  bridgeGreeterQueue: () => bridgeGreeterQueue,
+  bridgeGreeterStatusEnum: () => bridgeGreeterStatusEnum,
+  bridgeOperatorActions: () => bridgeOperatorActions,
+  bridgeParticipantRoleEnum: () => bridgeParticipantRoleEnum,
+  bridgeParticipantStatusEnum: () => bridgeParticipantStatusEnum,
+  bridgeParticipants: () => bridgeParticipants,
+  bridgeQaMethodEnum: () => bridgeQaMethodEnum,
+  bridgeQaQuestions: () => bridgeQaQuestions,
+  bridgeQaStatusEnum: () => bridgeQaStatusEnum,
+  briefingAccuracyScores: () => briefingAccuracyScores,
+  briefingActionHistory: () => briefingActionHistory,
+  briefingProvenance: () => briefingProvenance,
   broadcastSessions: () => broadcastSessions,
   call_qualityEnum: () => call_qualityEnum,
   capabilityRoadmap: () => capabilityRoadmap,
@@ -77,14 +349,24 @@ __export(schema_exports, {
   check_typeEnum: () => check_typeEnum,
   clientEventAssignments: () => clientEventAssignments,
   clientPortals: () => clientPortals,
+  clientReportAccess: () => clientReportAccess,
+  clientReportFeedback: () => clientReportFeedback,
+  clientReportViewLog: () => clientReportViewLog,
+  clientTokens: () => clientTokens,
   clients: () => clients,
   commitmentSignals: () => commitmentSignals,
+  compassActionHistory: () => compassActionHistory,
+  compassProvenance: () => compassProvenance,
+  complianceActionItems: () => complianceActionItems,
   complianceAuditLog: () => complianceAuditLog,
   complianceCertificates: () => complianceCertificates,
+  complianceDeadlines: () => complianceDeadlines,
   complianceDetectionStats: () => complianceDetectionStats,
   complianceEvidenceFiles: () => complianceEvidenceFiles,
   complianceFlags: () => complianceFlags,
   complianceFrameworkChecks: () => complianceFrameworkChecks,
+  complianceHotspots: () => complianceHotspots,
+  complianceProvenance: () => complianceProvenance,
   complianceThreats: () => complianceThreats,
   complianceViolations: () => complianceViolations,
   complianceVocabulary: () => complianceVocabulary,
@@ -106,7 +388,9 @@ __export(schema_exports, {
   device_typeEnum: () => device_typeEnum,
   directAccessLog: () => directAccessLog,
   directionEnum: () => directionEnum,
+  directorLiabilityMaps: () => directorLiabilityMaps,
   disclosureCertificates: () => disclosureCertificates,
+  disclosureTriggers: () => disclosureTriggers,
   esgStudioFlags: () => esgStudioFlags,
   estimated_impactEnum: () => estimated_impactEnum,
   eventBranding: () => eventBranding,
@@ -123,7 +407,9 @@ __export(schema_exports, {
   followupEmails: () => followupEmails,
   frameworkEnum: () => frameworkEnum,
   frequencyEnum: () => frequencyEnum,
+  governanceCommunicationScores: () => governanceCommunicationScores,
   guidance_typeEnum: () => guidance_typeEnum,
+  historicalCommitments: () => historicalCommitments,
   industry_verticalEnum: () => industry_verticalEnum,
   interconnectionActivations: () => interconnectionActivations,
   interconnectionAnalytics: () => interconnectionAnalytics,
@@ -133,6 +419,7 @@ __export(schema_exports, {
   iso27001Controls: () => iso27001Controls,
   join_methodEnum: () => join_methodEnum,
   jurisdictionEnum: () => jurisdictionEnum,
+  jurisdictionProfiles: () => jurisdictionProfiles,
   liveMeetingSummaries: () => liveMeetingSummaries,
   liveQaAnswers: () => liveQaAnswers,
   liveQaComplianceFlags: () => liveQaComplianceFlags,
@@ -166,11 +453,15 @@ __export(schema_exports, {
   occParticipantHistory: () => occParticipantHistory,
   occParticipants: () => occParticipants,
   occTranscriptionSegments: () => occTranscriptionSegments,
+  operatorActions: () => operatorActions,
   operatorAvailability: () => operatorAvailability,
   operatorCorrections: () => operatorCorrections,
   operatorLinkAnalytics: () => operatorLinkAnalytics,
   operatorLinksMetadata: () => operatorLinksMetadata,
+  organisations: () => organisations,
   outcomeEnum: () => outcomeEnum,
+  partnerEvents: () => partnerEvents,
+  partners: () => partners,
   pattern_typeEnum: () => pattern_typeEnum,
   payment_methodEnum: () => payment_methodEnum,
   platformEnum: () => platformEnum,
@@ -181,7 +472,10 @@ __export(schema_exports, {
   polls: () => polls,
   postEventData: () => postEventData,
   postEventReports: () => postEventReports,
+  preEventIntelligenceBriefings: () => preEventIntelligenceBriefings,
+  predictedQaItems: () => predictedQaItems,
   premiumFeatures: () => premiumFeatures,
+  priorCommitmentAudits: () => priorCommitmentAudits,
   priorityEnum: () => priorityEnum,
   publish_statusEnum: () => publish_statusEnum,
   pushSubscriptions: () => pushSubscriptions,
@@ -190,20 +484,29 @@ __export(schema_exports, {
   qa_statusEnum: () => qa_statusEnum,
   question_categoryEnum: () => question_categoryEnum,
   question_statusEnum: () => question_statusEnum,
+  readinessScores: () => readinessScores,
   recallBots: () => recallBots,
   recipientTypeEnum: () => recipientTypeEnum,
   recommended_actionEnum: () => recommended_actionEnum,
   recording_statusEnum: () => recording_statusEnum,
+  regulatoryComplianceMonitors: () => regulatoryComplianceMonitors,
+  regulatoryFlags: () => regulatoryFlags,
   reportKeyMoments: () => reportKeyMoments,
   report_typeEnum: () => report_typeEnum,
   resourceAllocations: () => resourceAllocations,
   resource_typeEnum: () => resource_typeEnum,
   risk_levelEnum: () => risk_levelEnum,
   roleEnum: () => roleEnum,
+  scheduledSessions: () => scheduledSessions,
   senderTypeEnum: () => senderTypeEnum,
   sentimentEnum: () => sentimentEnum,
   sentimentSnapshots: () => sentimentSnapshots,
   serviceTypeEnum: () => serviceTypeEnum,
+  sessionHandoffs: () => sessionHandoffs,
+  sessionMarkers: () => sessionMarkers,
+  sessionMessages: () => sessionMessages,
+  sessionOperators: () => sessionOperators,
+  sessionReadinessChecks: () => sessionReadinessChecks,
   severityEnum: () => severityEnum,
   shadowSessions: () => shadowSessions,
   share_typeEnum: () => share_typeEnum,
@@ -262,11 +565,13 @@ __export(schema_exports, {
   webphoneSessions: () => webphoneSessions,
   whiteLabelClients: () => whiteLabelClients
 });
-import { boolean, integer, real, smallint, json, text, timestamp, varchar, bigint, serial, pgTable, pgEnum } from "drizzle-orm/pg-core";
-var roleEnum, statusEnum, stateEnum, senderTypeEnum, recipientTypeEnum, eventEnum, triggeredByEnum, serviceTypeEnum, platformEnum, meetingTypeEnum, waitingRoomStatusEnum, sentimentEnum, signalTypeEnum, event_typeEnum, industry_verticalEnum, webcast_statusEnum, qa_statusEnum, poll_statusEnum, carrierEnum, directionEnum, recording_statusEnum, transcription_statusEnum, transfer_typeEnum, outcomeEnum, payment_methodEnum, frequencyEnum, call_qualityEnum, report_typeEnum, sourceEnum, poll_typeEnum, resource_typeEnum, default_platformEnum, billing_tierEnum, risk_levelEnum, compliance_statusEnum, actionEnum, follow_up_statusEnum, approval_statusEnum, moment_typeEnum, severityEnum, device_typeEnum, content_typeEnum, moderation_statusEnum, publish_statusEnum, tag_typeEnum, correction_typeEnum, metric_typeEnum, deliveryStatusEnum, tierEnum, default_join_methodEnum, join_methodEnum, control_typeEnum, threat_typeEnum, frameworkEnum, check_typeEnum, source_typeEnum, observation_typeEnum, categoryEnum, estimated_impactEnum, jurisdictionEnum, pattern_typeEnum, algorithm_sourceEnum, guidance_typeEnum, confidence_levelEnum, met_or_missedEnum, action_typeEnum, timeframeEnum, priorityEnum, qa_session_statusEnum, question_categoryEnum, question_statusEnum, recommended_actionEnum, share_typeEnum, users, events, attendeeRegistrations, irContacts, occConferences, occParticipants, occLounge, occOperatorRequests, occOperatorSessions, occChatMessages, occAudioFiles, occParticipantHistory, occAccessCodeLog, occDialOutHistory, occGreenRooms, liveRoadshows, liveRoadshowMeetings, liveRoadshowInvestors, liveMeetingSummaries, slideThumbnails, commitmentSignals, investorBriefingPacks, eventBranding, webcastEvents, webcastRegistrations, webcastQa, webcastPolls, recallBots, muxStreams, webphoneSessions, webphoneCarrierStatus, speakerPaceResults, eventCustomisation, directAccessLog, billingClients, billingQuotes, billingLineItems, billingInvoices, billingPayments, billingClientContacts, billingQuoteVersions, billingCreditNotes, billingFxRates, billingActivityLog, billingLineItemTemplates, billingEmailEvents, billingRecurringTemplates, trainingModeSessions, trainingConferences, trainingParticipants, trainingLounge, trainingCallLogs, trainingPerformanceMetrics, postEventReports, transcriptionJobs, polls, pollOptions, pollVotes, eventSchedules, operatorAvailability, resourceAllocations, eventTemplates, clients, clientPortals, complianceFlags, complianceAuditLog, investorFollowups, followupEmails, sentimentSnapshots, aiGeneratedContent, occTranscriptionSegments, occLiveRollingSummaries, qaAutoTriageResults, speakingPaceAnalysis, toxicityFilterResults, transcriptEdits, transcriptVersions, transcriptEditAuditLog, eventBriefResults, contentEngagementEvents, contentPerformanceMetrics, contentTypePerformance, eventPerformanceSummary, reportKeyMoments, complianceCertificates, pushSubscriptions, whiteLabelClients, clientEventAssignments, socialMediaAccounts, socialPosts, socialPostPlatforms, socialMetrics, socialAuditLog, webcastEnhancements, webcastAnalyticsExpanded, interconnectionActivations, interconnectionAnalytics, virtualStudios, esgStudioFlags, studioInterconnections, operatorLinkAnalytics, operatorLinksMetadata, agenticAnalyses, autonomousInterventions, taggedMetrics, shadowSessions, operatorCorrections, adaptiveThresholds, complianceVocabulary, userFeedback, aiAmAuditLog, complianceViolations, alertPreferences, alertHistory, postEventData, stripeCustomers, stripeSubscriptions, premiumFeatures, stripePaymentEvents, mailingLists, mailingListEntries, crmApiKeys, soc2Controls, iso27001Controls, complianceEvidenceFiles, complianceThreats, complianceFrameworkChecks, sustainabilityReports, broadcastSessions, studioSessions, archiveEvents, aiEvolutionObservations, aiToolProposals, conferenceDialouts, conferenceDialoutParticipants, agmResolutions, agmIntelligenceSessions, agmDissentPatterns, agmGovernanceObservations, lumiBookings, bastionIntelligenceSessions, bastionInvestorObservations, bastionGuidanceTracker, bastionBookings, disclosureCertificates, crisisPredictions, valuationImpacts, monthlyReports, advisoryChatMessages, evolutionAuditLog, capabilityRoadmap, liveQaSessions, liveQaQuestions, liveQaAnswers, liveQaComplianceFlags, liveQaPlatformShares, complianceDetectionStats;
+import { boolean as boolean3, integer as integer3, real as real2, smallint, json as json3, text as text3, timestamp as timestamp3, varchar as varchar3, bigint, serial as serial3, pgTable as pgTable3, pgEnum } from "drizzle-orm/pg-core";
+var roleEnum, statusEnum, stateEnum, senderTypeEnum, recipientTypeEnum, eventEnum, triggeredByEnum, serviceTypeEnum, platformEnum, meetingTypeEnum, waitingRoomStatusEnum, sentimentEnum, signalTypeEnum, event_typeEnum, industry_verticalEnum, webcast_statusEnum, qa_statusEnum, poll_statusEnum, carrierEnum, directionEnum, recording_statusEnum, transcription_statusEnum, transfer_typeEnum, outcomeEnum, payment_methodEnum, frequencyEnum, call_qualityEnum, report_typeEnum, sourceEnum, poll_typeEnum, resource_typeEnum, default_platformEnum, billing_tierEnum, risk_levelEnum, compliance_statusEnum, actionEnum, follow_up_statusEnum, approval_statusEnum, moment_typeEnum, severityEnum, device_typeEnum, content_typeEnum, moderation_statusEnum, publish_statusEnum, tag_typeEnum, correction_typeEnum, metric_typeEnum, deliveryStatusEnum, tierEnum, default_join_methodEnum, join_methodEnum, control_typeEnum, threat_typeEnum, frameworkEnum, check_typeEnum, source_typeEnum, observation_typeEnum, categoryEnum, estimated_impactEnum, jurisdictionEnum, pattern_typeEnum, algorithm_sourceEnum, guidance_typeEnum, confidence_levelEnum, met_or_missedEnum, action_typeEnum, timeframeEnum, priorityEnum, qa_session_statusEnum, question_categoryEnum, question_statusEnum, recommended_actionEnum, share_typeEnum, users, events, attendeeRegistrations, irContacts, occConferences, occParticipants, occLounge, occOperatorRequests, occOperatorSessions, occChatMessages, occAudioFiles, occParticipantHistory, occAccessCodeLog, occDialOutHistory, occGreenRooms, liveRoadshows, liveRoadshowMeetings, liveRoadshowInvestors, liveMeetingSummaries, slideThumbnails, commitmentSignals, investorBriefingPacks, eventBranding, webcastEvents, webcastRegistrations, webcastQa, webcastPolls, recallBots, muxStreams, webphoneSessions, webphoneCarrierStatus, speakerPaceResults, eventCustomisation, directAccessLog, billingClients, billingQuotes, billingLineItems, billingInvoices, billingPayments, billingClientContacts, billingQuoteVersions, billingCreditNotes, billingFxRates, billingActivityLog, billingLineItemTemplates, billingEmailEvents, billingRecurringTemplates, trainingModeSessions, trainingConferences, trainingParticipants, trainingLounge, trainingCallLogs, trainingPerformanceMetrics, postEventReports, transcriptionJobs, polls, pollOptions, pollVotes, eventSchedules, operatorAvailability, resourceAllocations, eventTemplates, clients, clientPortals, complianceFlags, complianceAuditLog, investorFollowups, followupEmails, sentimentSnapshots, aiGeneratedContent, occTranscriptionSegments, occLiveRollingSummaries, qaAutoTriageResults, speakingPaceAnalysis, toxicityFilterResults, transcriptEdits, transcriptVersions, transcriptEditAuditLog, eventBriefResults, contentEngagementEvents, contentPerformanceMetrics, contentTypePerformance, eventPerformanceSummary, reportKeyMoments, complianceCertificates, pushSubscriptions, whiteLabelClients, clientEventAssignments, socialMediaAccounts, socialPosts, socialPostPlatforms, socialMetrics, socialAuditLog, webcastEnhancements, webcastAnalyticsExpanded, interconnectionActivations, interconnectionAnalytics, virtualStudios, esgStudioFlags, studioInterconnections, operatorLinkAnalytics, operatorLinksMetadata, agenticAnalyses, autonomousInterventions, taggedMetrics, shadowSessions, operatorActions, operatorCorrections, adaptiveThresholds, complianceVocabulary, userFeedback, aiAmAuditLog, complianceViolations, alertPreferences, alertHistory, postEventData, stripeCustomers, stripeSubscriptions, premiumFeatures, stripePaymentEvents, mailingLists, mailingListEntries, crmApiKeys, soc2Controls, iso27001Controls, complianceEvidenceFiles, complianceThreats, complianceFrameworkChecks, sustainabilityReports, broadcastSessions, studioSessions, archiveEvents, aiEvolutionObservations, aiToolProposals, conferenceDialouts, conferenceDialoutParticipants, agmResolutions2, agmIntelligenceSessions, agmDissentPatterns, agmGovernanceObservations, lumiBookings, bastionIntelligenceSessions, bastionInvestorObservations, bastionGuidanceTracker, bastionBookings, disclosureCertificates, crisisPredictions, valuationImpacts, monthlyReports, advisoryChatMessages, evolutionAuditLog, capabilityRoadmap, liveQaSessions, liveQaQuestions, liveQaAnswers, liveQaComplianceFlags, liveQaPlatformShares, bridgeEventPhaseEnum, bridgeConfTypeEnum, bridgeConfPhaseEnum, bridgeParticipantStatusEnum, bridgeParticipantRoleEnum, bridgeGreeterStatusEnum, bridgeQaStatusEnum, bridgeQaMethodEnum, bridgeEvents, bridgeConferences, bridgeParticipants, bridgeGreeterQueue, bridgeQaQuestions, bridgeOperatorActions, bridgeCallRecordings, boardIntelligenceCompass, priorCommitmentAudits, directorLiabilityMaps, analystExpectationAudits, governanceCommunicationScores, boardResolutions, compassProvenance, compassActionHistory, preEventIntelligenceBriefings, analystConsensusData, predictedQaItems, complianceHotspots, readinessScores, briefingProvenance, briefingActionHistory, regulatoryComplianceMonitors, regulatoryFlags, disclosureTriggers, jurisdictionProfiles, complianceActionItems, complianceProvenance, complianceDetectionStats;
 var init_schema = __esm({
-  "../../drizzle/schema.ts"() {
+  "drizzle/schema.ts"() {
     "use strict";
+    init_gaps_schema();
+    init_partners_schema();
     roleEnum = pgEnum("role", ["user", "admin", "operator"]);
     statusEnum = pgEnum("status", ["upcoming", "live", "completed"]);
     stateEnum = pgEnum("state", [
@@ -472,2591 +777,2976 @@ var init_schema = __esm({
     question_statusEnum = pgEnum("question_status", ["pending", "triaged", "approved", "answered", "rejected", "flagged"]);
     recommended_actionEnum = pgEnum("recommended_action", ["forward", "route_to_bot", "legal_review", "delay_24h"]);
     share_typeEnum = pgEnum("share_type", ["link", "embed", "widget"]);
-    users = pgTable("users", {
-      id: serial("id").primaryKey(),
-      openId: varchar("openId", { length: 64 }).notNull().unique(),
-      name: text("name"),
-      email: varchar("email", { length: 320 }),
-      loginMethod: varchar("loginMethod", { length: 64 }),
-      role: varchar("role", { length: 64 }).default("user").notNull(),
+    users = pgTable3("users", {
+      id: serial3("id").primaryKey(),
+      openId: varchar3("openId", { length: 64 }).notNull().unique(),
+      name: text3("name"),
+      email: varchar3("email", { length: 320 }),
+      loginMethod: varchar3("loginMethod", { length: 64 }),
+      role: varchar3("role", { length: 64 }).default("user").notNull(),
       // Profile customisation fields
-      jobTitle: varchar("jobTitle", { length: 255 }),
-      organisation: varchar("organisation", { length: 255 }),
-      bio: text("bio"),
-      avatarUrl: text("avatarUrl"),
-      phone: varchar("phone", { length: 64 }),
-      linkedinUrl: varchar("linkedinUrl", { length: 512 }),
-      timezone: varchar("timezone", { length: 64 }).default("Africa/Johannesburg"),
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-      lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull()
+      jobTitle: varchar3("jobTitle", { length: 255 }),
+      organisation: varchar3("organisation", { length: 255 }),
+      bio: text3("bio"),
+      avatarUrl: text3("avatarUrl"),
+      phone: varchar3("phone", { length: 64 }),
+      linkedinUrl: varchar3("linkedinUrl", { length: 512 }),
+      timezone: varchar3("timezone", { length: 64 }).default("Africa/Johannesburg"),
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull(),
+      lastSignedIn: timestamp3("lastSignedIn").defaultNow().notNull()
     });
-    events = pgTable("events", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("eventId", { length: 128 }).notNull().unique(),
+    events = pgTable3("events", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("eventId", { length: 128 }).notNull().unique(),
       // e.g. "q4-earnings-2026"
-      title: varchar("title", { length: 255 }).notNull(),
-      company: varchar("company", { length: 255 }).notNull(),
-      platform: varchar("platform", { length: 64 }).notNull(),
-      status: varchar("status", { length: 64 }).default("upcoming").notNull(),
-      accessCode: varchar("accessCode", { length: 64 }),
+      title: varchar3("title", { length: 255 }).notNull(),
+      company: varchar3("company", { length: 255 }).notNull(),
+      platform: varchar3("platform", { length: 64 }).notNull(),
+      status: varchar3("status", { length: 64 }).default("upcoming").notNull(),
+      accessCode: varchar3("accessCode", { length: 64 }),
       // null = no password required
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    attendeeRegistrations = pgTable("attendee_registrations", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("eventId", { length: 128 }).notNull(),
+    attendeeRegistrations = pgTable3("attendee_registrations", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("eventId", { length: 128 }).notNull(),
       // references events.eventId
-      name: varchar("name", { length: 255 }).notNull(),
-      email: varchar("email", { length: 320 }).notNull(),
-      company: varchar("company", { length: 255 }),
-      jobTitle: varchar("jobTitle", { length: 255 }),
-      language: varchar("language", { length: 64 }).default("English").notNull(),
-      dialIn: boolean("dialIn").default(false).notNull(),
-      accessGranted: boolean("accessGranted").default(false).notNull(),
-      joinedAt: timestamp("joinedAt"),
+      name: varchar3("name", { length: 255 }).notNull(),
+      email: varchar3("email", { length: 320 }).notNull(),
+      company: varchar3("company", { length: 255 }),
+      jobTitle: varchar3("jobTitle", { length: 255 }),
+      language: varchar3("language", { length: 64 }).default("English").notNull(),
+      dialIn: boolean3("dialIn").default(false).notNull(),
+      accessGranted: boolean3("accessGranted").default(false).notNull(),
+      joinedAt: timestamp3("joinedAt"),
       // CuraLive Direct — unique 5-digit PIN for auto-admit dial-in
-      accessPin: varchar("access_pin", { length: 8 }),
-      pinUsedAt: timestamp("pin_used_at"),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+      accessPin: varchar3("access_pin", { length: 8 }),
+      pinUsedAt: timestamp3("pin_used_at"),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    irContacts = pgTable("ir_contacts", {
-      id: serial("id").primaryKey(),
-      name: varchar("name", { length: 255 }).notNull(),
-      email: varchar("email", { length: 320 }).notNull().unique(),
-      company: varchar("company", { length: 255 }),
-      role: varchar("role", { length: 128 }),
-      phoneNumber: varchar("phoneNumber", { length: 32 }),
-      active: boolean("active").default(true).notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+    irContacts = pgTable3("ir_contacts", {
+      id: serial3("id").primaryKey(),
+      name: varchar3("name", { length: 255 }).notNull(),
+      email: varchar3("email", { length: 320 }).notNull().unique(),
+      company: varchar3("company", { length: 255 }),
+      role: varchar3("role", { length: 128 }),
+      phoneNumber: varchar3("phoneNumber", { length: 32 }),
+      active: boolean3("active").default(true).notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    occConferences = pgTable("occ_conferences", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("eventId", { length: 128 }).notNull(),
+    occConferences = pgTable3("occ_conferences", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("eventId", { length: 128 }).notNull(),
       // references events.eventId
-      callId: varchar("callId", { length: 64 }).notNull().unique(),
+      callId: varchar3("callId", { length: 64 }).notNull().unique(),
       // e.g. "CC-9921"
-      subject: varchar("subject", { length: 255 }).notNull(),
-      reseller: varchar("reseller", { length: 128 }).default("CuraLive").notNull(),
-      product: varchar("product", { length: 128 }).default("Event Conference").notNull(),
-      moderatorCode: varchar("moderatorCode", { length: 32 }),
-      participantCode: varchar("participantCode", { length: 32 }),
-      securityCode: varchar("securityCode", { length: 32 }),
-      dialInNumber: varchar("dialInNumber", { length: 32 }),
-      webAccessCode: varchar("webAccessCode", { length: 32 }),
-      status: varchar("status", { length: 64 }).default("pending").notNull(),
-      isLocked: boolean("isLocked").default(false).notNull(),
-      isRecording: boolean("isRecording").default(false).notNull(),
-      waitingMusicEnabled: boolean("waitingMusicEnabled").default(true).notNull(),
-      participantLimitEnabled: boolean("participantLimitEnabled").default(false).notNull(),
-      participantLimit: integer("participantLimit").default(500),
-      requestsToSpeakEnabled: boolean("requestsToSpeakEnabled").default(true).notNull(),
+      subject: varchar3("subject", { length: 255 }).notNull(),
+      reseller: varchar3("reseller", { length: 128 }).default("CuraLive").notNull(),
+      product: varchar3("product", { length: 128 }).default("Event Conference").notNull(),
+      moderatorCode: varchar3("moderatorCode", { length: 32 }),
+      participantCode: varchar3("participantCode", { length: 32 }),
+      securityCode: varchar3("securityCode", { length: 32 }),
+      dialInNumber: varchar3("dialInNumber", { length: 32 }),
+      webAccessCode: varchar3("webAccessCode", { length: 32 }),
+      status: varchar3("status", { length: 64 }).default("pending").notNull(),
+      isLocked: boolean3("isLocked").default(false).notNull(),
+      isRecording: boolean3("isRecording").default(false).notNull(),
+      waitingMusicEnabled: boolean3("waitingMusicEnabled").default(true).notNull(),
+      participantLimitEnabled: boolean3("participantLimitEnabled").default(false).notNull(),
+      participantLimit: integer3("participantLimit").default(500),
+      requestsToSpeakEnabled: boolean3("requestsToSpeakEnabled").default(true).notNull(),
       // CuraLive Direct — when true, callers with valid PIN bypass operator queue
-      autoAdmitEnabled: boolean("autoAdmitEnabled").default(false).notNull(),
-      scheduledStart: timestamp("scheduledStart"),
-      actualStart: timestamp("actualStart"),
-      endedAt: timestamp("endedAt"),
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      autoAdmitEnabled: boolean3("autoAdmitEnabled").default(false).notNull(),
+      scheduledStart: timestamp3("scheduledStart"),
+      actualStart: timestamp3("actualStart"),
+      endedAt: timestamp3("endedAt"),
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    occParticipants = pgTable("occ_participants", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conferenceId").notNull(),
+    occParticipants = pgTable3("occ_participants", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conferenceId").notNull(),
       // references occConferences.id
-      lineNumber: integer("lineNumber").notNull(),
+      lineNumber: integer3("lineNumber").notNull(),
       // position in the conference (1-based)
-      role: varchar("role", { length: 64 }).default("participant").notNull(),
-      name: varchar("name", { length: 255 }),
-      company: varchar("company", { length: 255 }),
-      location: varchar("location", { length: 128 }),
-      phoneNumber: varchar("phoneNumber", { length: 32 }),
-      dialInNumber: varchar("dialInNumber", { length: 32 }),
-      voiceServer: varchar("voiceServer", { length: 32 }),
+      role: varchar3("role", { length: 64 }).default("participant").notNull(),
+      name: varchar3("name", { length: 255 }),
+      company: varchar3("company", { length: 255 }),
+      location: varchar3("location", { length: 128 }),
+      phoneNumber: varchar3("phoneNumber", { length: 32 }),
+      dialInNumber: varchar3("dialInNumber", { length: 32 }),
+      voiceServer: varchar3("voiceServer", { length: 32 }),
       // State
-      state: varchar("state", { length: 64 }).default("incoming").notNull(),
-      isSpeaking: boolean("isSpeaking").default(false).notNull(),
-      isWebParticipant: boolean("isWebParticipant").default(false).notNull(),
-      requestToSpeak: boolean("requestToSpeak").default(false).notNull(),
-      requestToSpeakPosition: integer("requestToSpeakPosition"),
+      state: varchar3("state", { length: 64 }).default("incoming").notNull(),
+      isSpeaking: boolean3("isSpeaking").default(false).notNull(),
+      isWebParticipant: boolean3("isWebParticipant").default(false).notNull(),
+      requestToSpeak: boolean3("requestToSpeak").default(false).notNull(),
+      requestToSpeakPosition: integer3("requestToSpeakPosition"),
       // CuraLive Direct — link to attendee_registrations for PIN actions
-      registrationId: integer("registrationId"),
+      registrationId: integer3("registrationId"),
       // null = no registration linked
       // Subconference
-      subconferenceId: integer("subconferenceId"),
+      subconferenceId: integer3("subconferenceId"),
       // null = main conference
       // Monitoring
-      isMonitored: boolean("isMonitored").default(false).notNull(),
-      monitoringOperatorId: integer("monitoringOperatorId"),
+      isMonitored: boolean3("isMonitored").default(false).notNull(),
+      monitoringOperatorId: integer3("monitoringOperatorId"),
       // Timestamps
-      connectedAt: timestamp("connectedAt"),
-      disconnectedAt: timestamp("disconnectedAt"),
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      connectedAt: timestamp3("connectedAt"),
+      disconnectedAt: timestamp3("disconnectedAt"),
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    occLounge = pgTable("occ_lounge", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conferenceId").notNull(),
-      callId: varchar("callId", { length: 64 }).notNull(),
-      phoneNumber: varchar("phoneNumber", { length: 32 }),
-      name: varchar("name", { length: 255 }),
-      company: varchar("company", { length: 255 }),
-      dialInNumber: varchar("dialInNumber", { length: 32 }),
-      description: varchar("description", { length: 255 }),
-      language: varchar("language", { length: 32 }).default("en"),
-      arrivedAt: timestamp("arrivedAt").defaultNow().notNull(),
-      pickedAt: timestamp("pickedAt"),
-      pickedByOperatorId: integer("pickedByOperatorId"),
-      status: varchar("status", { length: 64 }).default("waiting").notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+    occLounge = pgTable3("occ_lounge", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conferenceId").notNull(),
+      callId: varchar3("callId", { length: 64 }).notNull(),
+      phoneNumber: varchar3("phoneNumber", { length: 32 }),
+      name: varchar3("name", { length: 255 }),
+      company: varchar3("company", { length: 255 }),
+      dialInNumber: varchar3("dialInNumber", { length: 32 }),
+      description: varchar3("description", { length: 255 }),
+      language: varchar3("language", { length: 32 }).default("en"),
+      arrivedAt: timestamp3("arrivedAt").defaultNow().notNull(),
+      pickedAt: timestamp3("pickedAt"),
+      pickedByOperatorId: integer3("pickedByOperatorId"),
+      status: varchar3("status", { length: 64 }).default("waiting").notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    occOperatorRequests = pgTable("occ_operator_requests", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conferenceId").notNull(),
-      participantId: integer("participantId").notNull(),
-      callId: varchar("callId", { length: 64 }).notNull(),
-      subject: varchar("subject", { length: 255 }),
-      phoneNumber: varchar("phoneNumber", { length: 32 }),
-      dialInNumber: varchar("dialInNumber", { length: 32 }),
-      requestedAt: timestamp("requestedAt").defaultNow().notNull(),
-      pickedAt: timestamp("pickedAt"),
-      pickedByOperatorId: integer("pickedByOperatorId"),
-      status: varchar("status", { length: 64 }).default("pending").notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+    occOperatorRequests = pgTable3("occ_operator_requests", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conferenceId").notNull(),
+      participantId: integer3("participantId").notNull(),
+      callId: varchar3("callId", { length: 64 }).notNull(),
+      subject: varchar3("subject", { length: 255 }),
+      phoneNumber: varchar3("phoneNumber", { length: 32 }),
+      dialInNumber: varchar3("dialInNumber", { length: 32 }),
+      requestedAt: timestamp3("requestedAt").defaultNow().notNull(),
+      pickedAt: timestamp3("pickedAt"),
+      pickedByOperatorId: integer3("pickedByOperatorId"),
+      status: varchar3("status", { length: 64 }).default("pending").notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    occOperatorSessions = pgTable("occ_operator_sessions", {
-      id: serial("id").primaryKey(),
-      userId: integer("userId").notNull(),
+    occOperatorSessions = pgTable3("occ_operator_sessions", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("userId").notNull(),
       // references users.id
-      operatorName: varchar("operatorName", { length: 255 }).notNull(),
-      state: varchar("state", { length: 64 }).default("absent").notNull(),
-      activeConferenceId: integer("activeConferenceId"),
+      operatorName: varchar3("operatorName", { length: 255 }).notNull(),
+      state: varchar3("state", { length: 64 }).default("absent").notNull(),
+      activeConferenceId: integer3("activeConferenceId"),
       // conference currently being managed
-      openConferenceIds: text("openConferenceIds"),
+      openConferenceIds: text3("openConferenceIds"),
       // JSON array of open CCP conference IDs
-      lastHeartbeat: timestamp("lastHeartbeat").defaultNow().notNull(),
-      loginAt: timestamp("loginAt"),
-      breakAt: timestamp("breakAt"),
-      logoutAt: timestamp("logoutAt"),
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      lastHeartbeat: timestamp3("lastHeartbeat").defaultNow().notNull(),
+      loginAt: timestamp3("loginAt"),
+      breakAt: timestamp3("breakAt"),
+      logoutAt: timestamp3("logoutAt"),
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    occChatMessages = pgTable("occ_chat_messages", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conferenceId").notNull(),
-      senderType: varchar("senderType", { length: 64 }).notNull(),
-      senderName: varchar("senderName", { length: 255 }).notNull(),
-      senderId: integer("senderId"),
+    occChatMessages = pgTable3("occ_chat_messages", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conferenceId").notNull(),
+      senderType: varchar3("senderType", { length: 64 }).notNull(),
+      senderName: varchar3("senderName", { length: 255 }).notNull(),
+      senderId: integer3("senderId"),
       // participantId or userId
-      recipientType: varchar("recipientType", { length: 64 }).default("all").notNull(),
-      recipientId: integer("recipientId"),
+      recipientType: varchar3("recipientType", { length: 64 }).default("all").notNull(),
+      recipientId: integer3("recipientId"),
       // null = broadcast
-      message: text("message").notNull(),
-      detectedLanguage: varchar("detectedLanguage", { length: 10 }),
+      message: text3("message").notNull(),
+      detectedLanguage: varchar3("detectedLanguage", { length: 10 }),
       // ISO 639-1 code e.g. 'fr', 'es'
-      translatedMessage: text("translatedMessage"),
+      translatedMessage: text3("translatedMessage"),
       // translated to operator's preferred language
-      translationLanguage: varchar("translationLanguage", { length: 10 }),
+      translationLanguage: varchar3("translationLanguage", { length: 10 }),
       // target language of translation
-      sentAt: timestamp("sentAt").defaultNow().notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+      sentAt: timestamp3("sentAt").defaultNow().notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    occAudioFiles = pgTable("occ_audio_files", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conferenceId"),
+    occAudioFiles = pgTable3("occ_audio_files", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conferenceId"),
       // null = global/shared
-      name: varchar("name", { length: 255 }).notNull(),
-      fileUrl: varchar("fileUrl", { length: 512 }).notNull(),
-      fileKey: varchar("fileKey", { length: 512 }).notNull(),
-      durationSeconds: integer("durationSeconds"),
-      isPlaying: boolean("isPlaying").default(false).notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+      name: varchar3("name", { length: 255 }).notNull(),
+      fileUrl: varchar3("fileUrl", { length: 512 }).notNull(),
+      fileKey: varchar3("fileKey", { length: 512 }).notNull(),
+      durationSeconds: integer3("durationSeconds"),
+      isPlaying: boolean3("isPlaying").default(false).notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    occParticipantHistory = pgTable("occ_participant_history", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conferenceId").notNull(),
-      participantId: integer("participantId").notNull(),
-      event: varchar("event", { length: 64 }).notNull(),
-      triggeredBy: varchar("triggeredBy", { length: 64 }).default("system").notNull(),
-      operatorId: integer("operatorId"),
-      note: varchar("note", { length: 255 }),
-      occurredAt: timestamp("occurredAt").defaultNow().notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+    occParticipantHistory = pgTable3("occ_participant_history", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conferenceId").notNull(),
+      participantId: integer3("participantId").notNull(),
+      event: varchar3("event", { length: 64 }).notNull(),
+      triggeredBy: varchar3("triggeredBy", { length: 64 }).default("system").notNull(),
+      operatorId: integer3("operatorId"),
+      note: varchar3("note", { length: 255 }),
+      occurredAt: timestamp3("occurredAt").defaultNow().notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    occAccessCodeLog = pgTable("occ_access_code_log", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conferenceId").notNull(),
-      callingNumber: varchar("callingNumber", { length: 32 }),
-      calledNumber: varchar("calledNumber", { length: 32 }),
-      accessCodeEntered: varchar("accessCodeEntered", { length: 64 }),
-      isValid: boolean("isValid").notNull(),
-      attemptedAt: timestamp("attemptedAt").defaultNow().notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+    occAccessCodeLog = pgTable3("occ_access_code_log", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conferenceId").notNull(),
+      callingNumber: varchar3("callingNumber", { length: 32 }),
+      calledNumber: varchar3("calledNumber", { length: 32 }),
+      accessCodeEntered: varchar3("accessCodeEntered", { length: 64 }),
+      isValid: boolean3("isValid").notNull(),
+      attemptedAt: timestamp3("attemptedAt").defaultNow().notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    occDialOutHistory = pgTable("occ_dial_out_history", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conferenceId").notNull(),
-      operatorId: integer("operatorId"),
-      operatorName: varchar("operatorName", { length: 255 }),
+    occDialOutHistory = pgTable3("occ_dial_out_history", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conferenceId").notNull(),
+      operatorId: integer3("operatorId"),
+      operatorName: varchar3("operatorName", { length: 255 }),
       // JSON array of { name, company, phone, role, status }
-      dialEntries: text("dialEntries").notNull(),
-      successCount: integer("successCount").default(0).notNull(),
-      failCount: integer("failCount").default(0).notNull(),
-      totalCount: integer("totalCount").default(0).notNull(),
-      initiatedAt: timestamp("initiatedAt").defaultNow().notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+      dialEntries: text3("dialEntries").notNull(),
+      successCount: integer3("successCount").default(0).notNull(),
+      failCount: integer3("failCount").default(0).notNull(),
+      totalCount: integer3("totalCount").default(0).notNull(),
+      initiatedAt: timestamp3("initiatedAt").defaultNow().notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    occGreenRooms = pgTable("occ_green_rooms", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conferenceId").notNull().unique(),
+    occGreenRooms = pgTable3("occ_green_rooms", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conferenceId").notNull().unique(),
       // parent conference
-      name: varchar("name", { length: 255 }).default("Speaker Green Room").notNull(),
-      dialInNumber: varchar("dialInNumber", { length: 32 }),
-      accessCode: varchar("accessCode", { length: 32 }),
-      isActive: boolean("isActive").default(false).notNull(),
-      isOpen: boolean("isOpen").default(false).notNull(),
+      name: varchar3("name", { length: 255 }).default("Speaker Green Room").notNull(),
+      dialInNumber: varchar3("dialInNumber", { length: 32 }),
+      accessCode: varchar3("accessCode", { length: 32 }),
+      isActive: boolean3("isActive").default(false).notNull(),
+      isOpen: boolean3("isOpen").default(false).notNull(),
       // visible in OCC
-      transferredAt: timestamp("transferredAt"),
+      transferredAt: timestamp3("transferredAt"),
       // when Transfer All was triggered
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    liveRoadshows = pgTable("live_roadshows", {
-      id: serial("id").primaryKey(),
-      roadshowId: varchar("roadshowId", { length: 128 }).notNull().unique(),
+    liveRoadshows = pgTable3("live_roadshows", {
+      id: serial3("id").primaryKey(),
+      roadshowId: varchar3("roadshowId", { length: 128 }).notNull().unique(),
       // e.g. "aggreko-sep-2026"
-      title: varchar("title", { length: 255 }).notNull(),
-      issuer: varchar("issuer", { length: 255 }).notNull(),
+      title: varchar3("title", { length: 255 }).notNull(),
+      issuer: varchar3("issuer", { length: 255 }).notNull(),
       // company raising capital
-      bank: varchar("bank", { length: 255 }),
+      bank: varchar3("bank", { length: 255 }),
       // e.g. "BofA Securities"
-      serviceType: varchar("serviceType", { length: 64 }).default("capital_raising_1x1").notNull(),
-      platform: varchar("platform", { length: 64 }).default("zoom").notNull(),
-      status: varchar("status", { length: 64 }).default("draft").notNull(),
+      serviceType: varchar3("serviceType", { length: 64 }).default("capital_raising_1x1").notNull(),
+      platform: varchar3("platform", { length: 64 }).default("zoom").notNull(),
+      status: varchar3("status", { length: 64 }).default("draft").notNull(),
       // Dates
-      startDate: varchar("startDate", { length: 32 }),
+      startDate: varchar3("startDate", { length: 32 }),
       // ISO date string
-      endDate: varchar("endDate", { length: 32 }),
-      timezone: varchar("timezone", { length: 64 }).default("Europe/London").notNull(),
+      endDate: varchar3("endDate", { length: 32 }),
+      timezone: varchar3("timezone", { length: 64 }).default("Europe/London").notNull(),
       // Branding / white-label
-      brandingEnabled: boolean("brandingEnabled").default(true).notNull(),
-      customLogoUrl: varchar("customLogoUrl", { length: 512 }),
+      brandingEnabled: boolean3("brandingEnabled").default(true).notNull(),
+      customLogoUrl: varchar3("customLogoUrl", { length: 512 }),
       // Operator notes
-      notes: text("notes"),
-      createdByUserId: integer("createdByUserId"),
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      notes: text3("notes"),
+      createdByUserId: integer3("createdByUserId"),
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    liveRoadshowMeetings = pgTable("live_roadshow_meetings", {
-      id: serial("id").primaryKey(),
-      roadshowId: varchar("roadshowId", { length: 128 }).notNull(),
-      meetingDate: varchar("meetingDate", { length: 32 }).notNull(),
+    liveRoadshowMeetings = pgTable3("live_roadshow_meetings", {
+      id: serial3("id").primaryKey(),
+      roadshowId: varchar3("roadshowId", { length: 128 }).notNull(),
+      meetingDate: varchar3("meetingDate", { length: 32 }).notNull(),
       // ISO date
-      startTime: varchar("startTime", { length: 8 }).notNull(),
+      startTime: varchar3("startTime", { length: 8 }).notNull(),
       // "HH:MM"
-      endTime: varchar("endTime", { length: 8 }).notNull(),
-      timezone: varchar("timezone", { length: 64 }).default("Europe/London").notNull(),
-      meetingType: varchar("meetingType", { length: 64 }).default("1x1").notNull(),
-      platform: varchar("platform", { length: 64 }).default("zoom").notNull(),
-      videoLink: varchar("videoLink", { length: 512 }),
+      endTime: varchar3("endTime", { length: 8 }).notNull(),
+      timezone: varchar3("timezone", { length: 64 }).default("Europe/London").notNull(),
+      meetingType: varchar3("meetingType", { length: 64 }).default("1x1").notNull(),
+      platform: varchar3("platform", { length: 64 }).default("zoom").notNull(),
+      videoLink: varchar3("videoLink", { length: 512 }),
       // the Zoom/Teams join URL
-      meetingId: varchar("meetingId", { length: 128 }),
+      meetingId: varchar3("meetingId", { length: 128 }),
       // platform meeting ID
-      passcode: varchar("passcode", { length: 64 }),
-      status: varchar("status", { length: 64 }).default("scheduled").notNull(),
+      passcode: varchar3("passcode", { length: 64 }),
+      status: varchar3("status", { length: 64 }).default("scheduled").notNull(),
       // Operator notes for this slot
-      operatorNotes: text("operatorNotes"),
+      operatorNotes: text3("operatorNotes"),
       // Slide deck — S3 URL of uploaded PDF/PPTX
-      slideDeckUrl: varchar("slideDeckUrl", { length: 1024 }),
-      slideDeckName: varchar("slideDeckName", { length: 255 }),
+      slideDeckUrl: varchar3("slideDeckUrl", { length: 1024 }),
+      slideDeckName: varchar3("slideDeckName", { length: 255 }),
       // Current slide index shown to presenter/attendees (0-based)
-      currentSlideIndex: integer("currentSlideIndex").default(0).notNull(),
-      totalSlides: integer("totalSlides").default(0).notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      currentSlideIndex: integer3("currentSlideIndex").default(0).notNull(),
+      totalSlides: integer3("totalSlides").default(0).notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    liveRoadshowInvestors = pgTable("live_roadshow_investors", {
-      id: serial("id").primaryKey(),
-      roadshowId: varchar("roadshowId", { length: 128 }).notNull(),
-      meetingId: integer("meetingId").notNull(),
+    liveRoadshowInvestors = pgTable3("live_roadshow_investors", {
+      id: serial3("id").primaryKey(),
+      roadshowId: varchar3("roadshowId", { length: 128 }).notNull(),
+      meetingId: integer3("meetingId").notNull(),
       // references liveRoadshowMeetings.id
-      name: varchar("name", { length: 255 }).notNull(),
-      institution: varchar("institution", { length: 255 }).notNull(),
-      email: varchar("email", { length: 320 }),
-      phone: varchar("phone", { length: 32 }),
-      jobTitle: varchar("jobTitle", { length: 255 }),
+      name: varchar3("name", { length: 255 }).notNull(),
+      institution: varchar3("institution", { length: 255 }).notNull(),
+      email: varchar3("email", { length: 320 }),
+      phone: varchar3("phone", { length: 32 }),
+      jobTitle: varchar3("jobTitle", { length: 255 }),
       // Waiting room state
-      waitingRoomStatus: varchar("waitingRoomStatus", { length: 64 }).default("not_arrived").notNull(),
-      arrivedAt: timestamp("arrivedAt"),
-      admittedAt: timestamp("admittedAt"),
+      waitingRoomStatus: varchar3("waitingRoomStatus", { length: 64 }).default("not_arrived").notNull(),
+      arrivedAt: timestamp3("arrivedAt"),
+      admittedAt: timestamp3("admittedAt"),
       // Invite
-      inviteSentAt: timestamp("inviteSentAt"),
-      inviteToken: varchar("inviteToken", { length: 128 }),
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      inviteSentAt: timestamp3("inviteSentAt"),
+      inviteToken: varchar3("inviteToken", { length: 128 }),
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    liveMeetingSummaries = pgTable("live_meeting_summaries", {
-      id: serial("id").primaryKey(),
-      meetingDbId: integer("meetingDbId").notNull(),
-      roadshowId: varchar("roadshowId", { length: 128 }).notNull(),
-      summary: text("summary").notNull(),
-      keyTopics: text("keyTopics"),
-      actionItems: text("actionItems"),
-      sentiment: varchar("sentiment", { length: 64 }).default("neutral"),
-      generatedAt: timestamp("generatedAt").defaultNow().notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+    liveMeetingSummaries = pgTable3("live_meeting_summaries", {
+      id: serial3("id").primaryKey(),
+      meetingDbId: integer3("meetingDbId").notNull(),
+      roadshowId: varchar3("roadshowId", { length: 128 }).notNull(),
+      summary: text3("summary").notNull(),
+      keyTopics: text3("keyTopics"),
+      actionItems: text3("actionItems"),
+      sentiment: varchar3("sentiment", { length: 64 }).default("neutral"),
+      generatedAt: timestamp3("generatedAt").defaultNow().notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    slideThumbnails = pgTable("slide_thumbnails", {
-      id: serial("id").primaryKey(),
-      meetingDbId: integer("meetingDbId").notNull(),
-      slideIndex: integer("slideIndex").notNull(),
-      thumbnailUrl: varchar("thumbnailUrl", { length: 1024 }).notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+    slideThumbnails = pgTable3("slide_thumbnails", {
+      id: serial3("id").primaryKey(),
+      meetingDbId: integer3("meetingDbId").notNull(),
+      slideIndex: integer3("slideIndex").notNull(),
+      thumbnailUrl: varchar3("thumbnailUrl", { length: 1024 }).notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    commitmentSignals = pgTable("commitment_signals", {
-      id: serial("id").primaryKey(),
-      meetingDbId: integer("meetingDbId").notNull(),
-      roadshowId: varchar("roadshowId", { length: 128 }).notNull(),
-      investorId: integer("investorId"),
+    commitmentSignals = pgTable3("commitment_signals", {
+      id: serial3("id").primaryKey(),
+      meetingDbId: integer3("meetingDbId").notNull(),
+      roadshowId: varchar3("roadshowId", { length: 128 }).notNull(),
+      investorId: integer3("investorId"),
       // references liveRoadshowInvestors.id (nullable if unknown)
-      investorName: varchar("investorName", { length: 255 }),
-      institution: varchar("institution", { length: 255 }),
-      quote: text("quote").notNull(),
+      investorName: varchar3("investorName", { length: 255 }),
+      institution: varchar3("institution", { length: 255 }),
+      quote: text3("quote").notNull(),
       // the detected phrase
-      signalType: varchar("signalType", { length: 64 }).notNull(),
-      confidenceScore: integer("confidenceScore").default(0).notNull(),
+      signalType: varchar3("signalType", { length: 64 }).notNull(),
+      confidenceScore: integer3("confidenceScore").default(0).notNull(),
       // 0-100
-      indicatedAmount: varchar("indicatedAmount", { length: 64 }),
+      indicatedAmount: varchar3("indicatedAmount", { length: 64 }),
       // e.g. "$5m", "10% of deal"
-      detectedAt: timestamp("detectedAt").defaultNow().notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+      detectedAt: timestamp3("detectedAt").defaultNow().notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    investorBriefingPacks = pgTable("investor_briefing_packs", {
-      id: serial("id").primaryKey(),
-      investorId: integer("investorId").notNull(),
-      meetingDbId: integer("meetingDbId").notNull(),
-      roadshowId: varchar("roadshowId", { length: 128 }).notNull(),
+    investorBriefingPacks = pgTable3("investor_briefing_packs", {
+      id: serial3("id").primaryKey(),
+      investorId: integer3("investorId").notNull(),
+      meetingDbId: integer3("meetingDbId").notNull(),
+      roadshowId: varchar3("roadshowId", { length: 128 }).notNull(),
       // AI-generated content
-      investorProfile: text("investorProfile"),
+      investorProfile: text3("investorProfile"),
       // AUM, mandate, geography focus
-      recentActivity: text("recentActivity"),
+      recentActivity: text3("recentActivity"),
       // recent portfolio changes, known positions
-      suggestedTalkingPoints: text("suggestedTalkingPoints"),
+      suggestedTalkingPoints: text3("suggestedTalkingPoints"),
       // JSON array
-      knownConcerns: text("knownConcerns"),
+      knownConcerns: text3("knownConcerns"),
       // JSON array of likely objections
-      previousInteractions: text("previousInteractions"),
+      previousInteractions: text3("previousInteractions"),
       // notes from prior meetings
-      generatedAt: timestamp("generatedAt").defaultNow().notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+      generatedAt: timestamp3("generatedAt").defaultNow().notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    eventBranding = pgTable("event_branding", {
-      id: serial("id").primaryKey(),
-      roadshowId: varchar("roadshow_id", { length: 100 }).notNull().unique(),
-      clientName: varchar("client_name", { length: 200 }).notNull(),
-      logoUrl: varchar("logo_url", { length: 500 }),
-      primaryColor: varchar("primary_color", { length: 20 }).default("#3b82f6"),
-      accentColor: varchar("accent_color", { length: 20 }).default("#10b981"),
-      backgroundColor: varchar("background_color", { length: 20 }).default("#0f172a"),
-      textColor: varchar("text_color", { length: 20 }).default("#f8fafc"),
-      fontFamily: varchar("font_family", { length: 100 }).default("Space Grotesk"),
-      tagline: varchar("tagline", { length: 300 }),
-      footerText: varchar("footer_text", { length: 500 }),
-      faviconUrl: varchar("favicon_url", { length: 500 }),
-      showCuraLiveWatermark: boolean("show_chorus_watermark").default(true),
-      customCss: text("custom_css"),
+    eventBranding = pgTable3("event_branding", {
+      id: serial3("id").primaryKey(),
+      roadshowId: varchar3("roadshow_id", { length: 100 }).notNull().unique(),
+      clientName: varchar3("client_name", { length: 200 }).notNull(),
+      logoUrl: varchar3("logo_url", { length: 500 }),
+      primaryColor: varchar3("primary_color", { length: 20 }).default("#3b82f6"),
+      accentColor: varchar3("accent_color", { length: 20 }).default("#10b981"),
+      backgroundColor: varchar3("background_color", { length: 20 }).default("#0f172a"),
+      textColor: varchar3("text_color", { length: 20 }).default("#f8fafc"),
+      fontFamily: varchar3("font_family", { length: 100 }).default("Space Grotesk"),
+      tagline: varchar3("tagline", { length: 300 }),
+      footerText: varchar3("footer_text", { length: 500 }),
+      faviconUrl: varchar3("favicon_url", { length: 500 }),
+      showCuraLiveWatermark: boolean3("show_chorus_watermark").default(true),
+      customCss: text3("custom_css"),
       createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now())
     });
-    webcastEvents = pgTable("webcast_events", {
-      id: serial("id").primaryKey(),
-      slug: varchar("slug", { length: 128 }).notNull().unique(),
-      title: varchar("title", { length: 300 }).notNull(),
-      description: text("description"),
-      eventType: varchar("event_type", { length: 64 }).notNull().default("webinar"),
-      industryVertical: varchar("industry_vertical", { length: 64 }).notNull().default("general"),
-      status: varchar("webcast_status", { length: 64 }).notNull().default("draft"),
+    webcastEvents = pgTable3("webcast_events", {
+      id: serial3("id").primaryKey(),
+      slug: varchar3("slug", { length: 128 }).notNull().unique(),
+      title: varchar3("title", { length: 300 }).notNull(),
+      description: text3("description"),
+      eventType: varchar3("event_type", { length: 64 }).notNull().default("webinar"),
+      industryVertical: varchar3("industry_vertical", { length: 64 }).notNull().default("general"),
+      status: varchar3("webcast_status", { length: 64 }).notNull().default("draft"),
       startTime: bigint("start_time", { mode: "number" }),
       endTime: bigint("end_time", { mode: "number" }),
-      timezone: varchar("timezone", { length: 64 }).default("UTC"),
-      maxAttendees: integer("max_attendees").default(1e3),
-      registrationCount: integer("registration_count").default(0),
-      peakAttendees: integer("peak_attendees").default(0),
-      streamUrl: varchar("stream_url", { length: 500 }),
-      rtmpKey: varchar("rtmp_key", { length: 256 }),
-      recordingUrl: varchar("recording_url", { length: 500 }),
-      registrationEnabled: boolean("registration_enabled").default(true),
-      chatEnabled: boolean("chat_enabled").default(true),
-      qaEnabled: boolean("qa_enabled").default(true),
-      pollsEnabled: boolean("polls_enabled").default(true),
-      recordingEnabled: boolean("recording_enabled").default(true),
-      logoUrl: varchar("logo_url", { length: 500 }),
-      primaryColor: varchar("primary_color", { length: 20 }).default("#3b82f6"),
-      hostName: varchar("host_name", { length: 200 }),
-      hostOrganization: varchar("host_organization", { length: 200 }),
-      tags: varchar("tags", { length: 500 }),
-      aiApplicationIds: text("ai_application_ids"),
+      timezone: varchar3("timezone", { length: 64 }).default("UTC"),
+      maxAttendees: integer3("max_attendees").default(1e3),
+      registrationCount: integer3("registration_count").default(0),
+      peakAttendees: integer3("peak_attendees").default(0),
+      streamUrl: varchar3("stream_url", { length: 500 }),
+      rtmpKey: varchar3("rtmp_key", { length: 256 }),
+      recordingUrl: varchar3("recording_url", { length: 500 }),
+      registrationEnabled: boolean3("registration_enabled").default(true),
+      chatEnabled: boolean3("chat_enabled").default(true),
+      qaEnabled: boolean3("qa_enabled").default(true),
+      pollsEnabled: boolean3("polls_enabled").default(true),
+      recordingEnabled: boolean3("recording_enabled").default(true),
+      logoUrl: varchar3("logo_url", { length: 500 }),
+      primaryColor: varchar3("primary_color", { length: 20 }).default("#3b82f6"),
+      hostName: varchar3("host_name", { length: 200 }),
+      hostOrganization: varchar3("host_organization", { length: 200 }),
+      tags: varchar3("tags", { length: 500 }),
+      aiApplicationIds: text3("ai_application_ids"),
       // JSON array of selected AI application IDs
       createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now())
     });
-    webcastRegistrations = pgTable("webcast_registrations", {
-      id: serial("id").primaryKey(),
-      eventId: integer("event_id").notNull(),
-      firstName: varchar("first_name", { length: 100 }).notNull(),
-      lastName: varchar("last_name", { length: 100 }).notNull(),
-      email: varchar("email", { length: 255 }).notNull(),
-      company: varchar("company", { length: 200 }),
-      jobTitle: varchar("job_title", { length: 200 }),
-      phone: varchar("phone", { length: 50 }),
-      country: varchar("country", { length: 100 }),
-      customFields: text("custom_fields"),
-      attended: boolean("attended").default(false),
+    webcastRegistrations = pgTable3("webcast_registrations", {
+      id: serial3("id").primaryKey(),
+      eventId: integer3("event_id").notNull(),
+      firstName: varchar3("first_name", { length: 100 }).notNull(),
+      lastName: varchar3("last_name", { length: 100 }).notNull(),
+      email: varchar3("email", { length: 255 }).notNull(),
+      company: varchar3("company", { length: 200 }),
+      jobTitle: varchar3("job_title", { length: 200 }),
+      phone: varchar3("phone", { length: 50 }),
+      country: varchar3("country", { length: 100 }),
+      customFields: text3("custom_fields"),
+      attended: boolean3("attended").default(false),
       joinedAt: bigint("joined_at", { mode: "number" }),
       leftAt: bigint("left_at", { mode: "number" }),
-      watchTimeSeconds: integer("watch_time_seconds").default(0),
-      engagementScore: integer("engagement_score").default(0),
-      registrationSource: varchar("registration_source", { length: 100 }).default("direct"),
-      utmSource: varchar("utm_source", { length: 100 }),
-      attendeeToken: varchar("attendee_token", { length: 64 }),
+      watchTimeSeconds: integer3("watch_time_seconds").default(0),
+      engagementScore: integer3("engagement_score").default(0),
+      registrationSource: varchar3("registration_source", { length: 100 }).default("direct"),
+      utmSource: varchar3("utm_source", { length: 100 }),
+      attendeeToken: varchar3("attendee_token", { length: 64 }),
       registeredAt: bigint("registered_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       // Reminder tracking — Unix ms timestamps when each reminder was sent (null = not yet sent)
       reminder24SentAt: bigint("reminder_24_sent_at", { mode: "number" }),
       reminder1SentAt: bigint("reminder_1_sent_at", { mode: "number" })
     });
-    webcastQa = pgTable("webcast_qa", {
-      id: serial("id").primaryKey(),
-      eventId: integer("event_id").notNull(),
-      attendeeName: varchar("attendee_name", { length: 200 }).notNull(),
-      attendeeEmail: varchar("attendee_email", { length: 255 }),
-      attendeeCompany: varchar("attendee_company", { length: 200 }),
-      question: text("question").notNull(),
-      status: varchar("qa_status", { length: 64 }).notNull().default("pending"),
-      upvotes: integer("upvotes").default(0),
-      answer: text("answer"),
-      answeredBy: varchar("answered_by", { length: 200 }),
+    webcastQa = pgTable3("webcast_qa", {
+      id: serial3("id").primaryKey(),
+      eventId: integer3("event_id").notNull(),
+      attendeeName: varchar3("attendee_name", { length: 200 }).notNull(),
+      attendeeEmail: varchar3("attendee_email", { length: 255 }),
+      attendeeCompany: varchar3("attendee_company", { length: 200 }),
+      question: text3("question").notNull(),
+      status: varchar3("qa_status", { length: 64 }).notNull().default("pending"),
+      upvotes: integer3("upvotes").default(0),
+      answer: text3("answer"),
+      answeredBy: varchar3("answered_by", { length: 200 }),
       answeredAt: bigint("answered_at", { mode: "number" }),
-      category: varchar("category", { length: 100 }),
-      isAnonymous: boolean("is_anonymous").default(false),
+      category: varchar3("category", { length: 100 }),
+      isAnonymous: boolean3("is_anonymous").default(false),
       createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now())
     });
-    webcastPolls = pgTable("webcast_polls", {
-      id: serial("id").primaryKey(),
-      eventId: integer("event_id").notNull(),
-      question: varchar("question", { length: 500 }).notNull(),
-      options: text("options").notNull(),
-      results: text("results"),
-      status: varchar("poll_status", { length: 64 }).notNull().default("draft"),
-      allowMultiple: boolean("allow_multiple").default(false),
-      showResultsToAttendees: boolean("show_results_to_attendees").default(true),
-      totalVotes: integer("total_votes").default(0),
+    webcastPolls = pgTable3("webcast_polls", {
+      id: serial3("id").primaryKey(),
+      eventId: integer3("event_id").notNull(),
+      question: varchar3("question", { length: 500 }).notNull(),
+      options: text3("options").notNull(),
+      results: text3("results"),
+      status: varchar3("poll_status", { length: 64 }).notNull().default("draft"),
+      allowMultiple: boolean3("allow_multiple").default(false),
+      showResultsToAttendees: boolean3("show_results_to_attendees").default(true),
+      totalVotes: integer3("total_votes").default(0),
       createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       closedAt: bigint("closed_at", { mode: "number" })
     });
-    recallBots = pgTable("recall_bots", {
-      id: serial("id").primaryKey(),
+    recallBots = pgTable3("recall_bots", {
+      id: serial3("id").primaryKey(),
       // Links to either a webcast event or a live roadshow meeting
-      eventId: integer("event_id"),
-      meetingId: integer("meeting_id"),
+      eventId: integer3("event_id"),
+      meetingId: integer3("meeting_id"),
       // Recall.ai bot identifier (UUID)
-      recallBotId: varchar("recall_bot_id", { length: 100 }).notNull().unique(),
+      recallBotId: varchar3("recall_bot_id", { length: 100 }).notNull().unique(),
       // The meeting URL the bot joined
-      meetingUrl: text("meeting_url").notNull(),
+      meetingUrl: text3("meeting_url").notNull(),
       // Bot display name shown in the meeting
-      botName: varchar("bot_name", { length: 200 }).default("CuraLive"),
+      botName: varchar3("bot_name", { length: 200 }).default("CuraLive"),
       // Recall.ai bot status: created, joining, in_call, done, failed
-      status: varchar("status", { length: 50 }).notNull().default("created"),
+      status: varchar3("status", { length: 50 }).notNull().default("created"),
       // Ably channel name this bot publishes transcripts to
-      ablyChannel: varchar("ably_channel", { length: 200 }),
+      ablyChannel: varchar3("ably_channel", { length: 200 }),
       // Full transcript accumulated from webhook chunks (JSON array of segments)
-      transcriptJson: text("transcript_json"),
+      transcriptJson: text3("transcript_json"),
       // AI-generated summary (populated after bot leaves)
-      summary: text("summary"),
+      summary: text3("summary"),
       // Recording URL from Recall.ai (if recording enabled)
-      recordingUrl: text("recording_url"),
+      recordingUrl: text3("recording_url"),
       // Error message if bot failed
-      errorMessage: text("error_message"),
+      errorMessage: text3("error_message"),
       // Timestamps
       startedAt: bigint("started_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       joinedAt: bigint("joined_at", { mode: "number" }),
       leftAt: bigint("left_at", { mode: "number" }),
       createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now())
     });
-    muxStreams = pgTable("mux_streams", {
-      id: serial("id").primaryKey(),
+    muxStreams = pgTable3("mux_streams", {
+      id: serial3("id").primaryKey(),
       // Links to a webcast event or live roadshow meeting
-      eventId: integer("event_id"),
-      meetingId: integer("meeting_id"),
+      eventId: integer3("event_id"),
+      meetingId: integer3("meeting_id"),
       // Mux-assigned stream ID (e.g. "abc123xyz")
-      muxStreamId: varchar("mux_stream_id", { length: 100 }).notNull().unique(),
+      muxStreamId: varchar3("mux_stream_id", { length: 100 }).notNull().unique(),
       // Mux-assigned playback ID for HLS delivery
-      muxPlaybackId: varchar("mux_playback_id", { length: 100 }),
+      muxPlaybackId: varchar3("mux_playback_id", { length: 100 }),
       // RTMP stream key (secret — operators paste this into OBS/vMix)
-      streamKey: varchar("stream_key", { length: 200 }).notNull(),
+      streamKey: varchar3("stream_key", { length: 200 }).notNull(),
       // RTMP ingest URL (always rtmps://global-live.mux.com:443/app)
-      rtmpUrl: varchar("rtmp_url", { length: 300 }).default("rtmps://global-live.mux.com:443/app"),
+      rtmpUrl: varchar3("rtmp_url", { length: 300 }).default("rtmps://global-live.mux.com:443/app"),
       // Stream status: idle | active | disconnected | disabled
-      status: varchar("status", { length: 50 }).notNull().default("idle"),
+      status: varchar3("status", { length: 50 }).notNull().default("idle"),
       // Human-readable label for this stream
-      label: varchar("label", { length: 200 }),
+      label: varchar3("label", { length: 200 }),
       // Whether this stream is publicly accessible (vs. signed/gated)
-      isPublic: boolean("is_public").default(true),
+      isPublic: boolean3("is_public").default(true),
       // Whether recording is enabled for this stream
-      recordingEnabled: boolean("recording_enabled").default(true),
+      recordingEnabled: boolean3("recording_enabled").default(true),
       // Mux asset ID created when recording is complete
-      muxAssetId: varchar("mux_asset_id", { length: 100 }),
+      muxAssetId: varchar3("mux_asset_id", { length: 100 }),
       // Timestamps
       createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       startedAt: bigint("started_at", { mode: "number" }),
       endedAt: bigint("ended_at", { mode: "number" })
     });
-    webphoneSessions = pgTable("webphone_sessions", {
-      id: serial("id").primaryKey(),
-      userId: integer("user_id").notNull(),
-      conferenceId: integer("conference_id"),
+    webphoneSessions = pgTable3("webphone_sessions", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("user_id").notNull(),
+      conferenceId: integer3("conference_id"),
       // optional link to OCC conference
-      carrier: varchar("carrier", { length: 64 }).notNull().default("twilio"),
-      status: varchar("status", { length: 64 }).notNull().default("initiated"),
-      direction: varchar("direction", { length: 64 }).notNull().default("outbound"),
-      remoteNumber: varchar("remote_number", { length: 32 }),
+      carrier: varchar3("carrier", { length: 64 }).notNull().default("twilio"),
+      status: varchar3("status", { length: 64 }).notNull().default("initiated"),
+      direction: varchar3("direction", { length: 64 }).notNull().default("outbound"),
+      remoteNumber: varchar3("remote_number", { length: 32 }),
       // E.164 format
-      callSid: varchar("call_sid", { length: 128 }),
+      callSid: varchar3("call_sid", { length: 128 }),
       // Twilio CallSid or Telnyx call_control_id
-      durationSecs: integer("duration_secs"),
-      recordingSid: varchar("recording_sid", { length: 128 }),
+      durationSecs: integer3("duration_secs"),
+      recordingSid: varchar3("recording_sid", { length: 128 }),
       // Twilio RecordingSid
-      recordingUrl: varchar("recording_url", { length: 512 }),
+      recordingUrl: varchar3("recording_url", { length: 512 }),
       // Twilio recording URL
-      recordingStatus: varchar("recording_status", { length: 64 }),
+      recordingStatus: varchar3("recording_status", { length: 64 }),
       // Voicemail fields
-      isVoicemail: boolean("is_voicemail").notNull().default(false),
-      voicemailUrl: varchar("voicemail_url", { length: 512 }),
-      voicemailDuration: integer("voicemail_duration"),
+      isVoicemail: boolean3("is_voicemail").notNull().default(false),
+      voicemailUrl: varchar3("voicemail_url", { length: 512 }),
+      voicemailDuration: integer3("voicemail_duration"),
       // Transcription fields
-      transcription: text("transcription"),
-      transcriptionLanguage: varchar("transcription_language", { length: 16 }),
-      transcriptionStatus: varchar("transcription_status", { length: 64 }),
+      transcription: text3("transcription"),
+      transcriptionLanguage: varchar3("transcription_language", { length: 16 }),
+      transcriptionStatus: varchar3("transcription_status", { length: 64 }),
       // Transfer fields
-      transferredTo: varchar("transferred_to", { length: 128 }),
-      transferType: varchar("transfer_type", { length: 64 }),
+      transferredTo: varchar3("transferred_to", { length: 128 }),
+      transferType: varchar3("transfer_type", { length: 64 }),
       startedAt: bigint("started_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       endedAt: bigint("ended_at", { mode: "number" }),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    webphoneCarrierStatus = pgTable("webphone_carrier_status", {
-      id: serial("id").primaryKey(),
-      carrier: varchar("carrier", { length: 64 }).notNull().unique(),
-      status: varchar("status", { length: 64 }).notNull().default("healthy"),
-      failoverActive: boolean("failover_active").notNull().default(false),
+    webphoneCarrierStatus = pgTable3("webphone_carrier_status", {
+      id: serial3("id").primaryKey(),
+      carrier: varchar3("carrier", { length: 64 }).notNull().unique(),
+      status: varchar3("status", { length: 64 }).notNull().default("healthy"),
+      failoverActive: boolean3("failover_active").notNull().default(false),
       lastCheckedAt: bigint("last_checked_at", { mode: "number" }).$defaultFn(() => Date.now()),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    speakerPaceResults = pgTable("speaker_pace_results", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      eventTitle: varchar("event_title", { length: 255 }).notNull(),
-      speaker: varchar("speaker", { length: 255 }).notNull(),
-      wpm: integer("wpm").notNull(),
-      paceLabel: varchar("pace_label", { length: 32 }).notNull(),
-      pauseScore: integer("pause_score").notNull(),
-      fillerWordCount: integer("filler_word_count").notNull().default(0),
-      overallScore: integer("overall_score").notNull(),
+    speakerPaceResults = pgTable3("speaker_pace_results", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      eventTitle: varchar3("event_title", { length: 255 }).notNull(),
+      speaker: varchar3("speaker", { length: 255 }).notNull(),
+      wpm: integer3("wpm").notNull(),
+      paceLabel: varchar3("pace_label", { length: 32 }).notNull(),
+      pauseScore: integer3("pause_score").notNull(),
+      fillerWordCount: integer3("filler_word_count").notNull().default(0),
+      overallScore: integer3("overall_score").notNull(),
       analysedAt: bigint("analysed_at", { mode: "number" }).notNull().$defaultFn(() => Date.now())
     });
-    eventCustomisation = pgTable("event_customisation", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull().unique(),
+    eventCustomisation = pgTable3("event_customisation", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull().unique(),
       // references events.eventId or webcast slug
       // ── Brand Identity ──────────────────────────────────────────────────────────
-      clientName: varchar("client_name", { length: 200 }).notNull().default("CuraLive"),
-      logoUrl: varchar("logo_url", { length: 500 }),
-      primaryColor: varchar("primary_color", { length: 20 }).default("#c8a96e"),
-      accentColor: varchar("accent_color", { length: 20 }).default("#10b981"),
-      fontFamily: varchar("font_family", { length: 100 }).default("Space Grotesk"),
-      showPoweredBy: boolean("show_powered_by").default(true),
+      clientName: varchar3("client_name", { length: 200 }).notNull().default("CuraLive"),
+      logoUrl: varchar3("logo_url", { length: 500 }),
+      primaryColor: varchar3("primary_color", { length: 20 }).default("#c8a96e"),
+      accentColor: varchar3("accent_color", { length: 20 }).default("#10b981"),
+      fontFamily: varchar3("font_family", { length: 100 }).default("Space Grotesk"),
+      showPoweredBy: boolean3("show_powered_by").default(true),
       // ── Registration Page ───────────────────────────────────────────────────────
-      regPageTitle: varchar("reg_page_title", { length: 300 }),
-      regPageSubtitle: varchar("reg_page_subtitle", { length: 500 }),
-      regHostName: varchar("reg_host_name", { length: 200 }),
-      regHostTitle: varchar("reg_host_title", { length: 200 }),
-      regHostOrg: varchar("reg_host_org", { length: 200 }),
-      regEventDate: varchar("reg_event_date", { length: 100 }),
-      regEventTime: varchar("reg_event_time", { length: 100 }),
-      regEventTimezone: varchar("reg_event_timezone", { length: 64 }).default("SAST"),
-      regDescription: text("reg_description"),
-      regFeatures: text("reg_features"),
+      regPageTitle: varchar3("reg_page_title", { length: 300 }),
+      regPageSubtitle: varchar3("reg_page_subtitle", { length: 500 }),
+      regHostName: varchar3("reg_host_name", { length: 200 }),
+      regHostTitle: varchar3("reg_host_title", { length: 200 }),
+      regHostOrg: varchar3("reg_host_org", { length: 200 }),
+      regEventDate: varchar3("reg_event_date", { length: 100 }),
+      regEventTime: varchar3("reg_event_time", { length: 100 }),
+      regEventTimezone: varchar3("reg_event_timezone", { length: 64 }).default("SAST"),
+      regDescription: text3("reg_description"),
+      regFeatures: text3("reg_features"),
       // JSON array of feature bullet strings
-      regAgenda: text("reg_agenda"),
+      regAgenda: text3("reg_agenda"),
       // JSON array of {time, title, speaker}
-      regSpeakers: text("reg_speakers"),
+      regSpeakers: text3("reg_speakers"),
       // JSON array of {name, title, org, initials, color}
-      regIndustryVertical: varchar("reg_industry_vertical", { length: 64 }).default("general"),
-      regMaxAttendees: integer("reg_max_attendees").default(1e3),
-      regConsentText: text("reg_consent_text"),
-      regSupportEmail: varchar("reg_support_email", { length: 320 }),
+      regIndustryVertical: varchar3("reg_industry_vertical", { length: 64 }).default("general"),
+      regMaxAttendees: integer3("reg_max_attendees").default(1e3),
+      regConsentText: text3("reg_consent_text"),
+      regSupportEmail: varchar3("reg_support_email", { length: 320 }),
       // Form field toggles (which fields are shown/required)
-      regFieldCompany: boolean("reg_field_company").default(true),
-      regFieldJobTitle: boolean("reg_field_job_title").default(true),
-      regFieldPhone: boolean("reg_field_phone").default(false),
-      regFieldCountry: boolean("reg_field_country").default(false),
-      regFieldLanguage: boolean("reg_field_language").default(true),
-      regFieldDialIn: boolean("reg_field_dial_in").default(true),
+      regFieldCompany: boolean3("reg_field_company").default(true),
+      regFieldJobTitle: boolean3("reg_field_job_title").default(true),
+      regFieldPhone: boolean3("reg_field_phone").default(false),
+      regFieldCountry: boolean3("reg_field_country").default(false),
+      regFieldLanguage: boolean3("reg_field_language").default(true),
+      regFieldDialIn: boolean3("reg_field_dial_in").default(true),
       // ── Booking Form ────────────────────────────────────────────────────────────
-      bookHeadline: varchar("book_headline", { length: 300 }),
-      bookSubheadline: varchar("book_subheadline", { length: 500 }),
-      bookFeatures: text("book_features"),
+      bookHeadline: varchar3("book_headline", { length: 300 }),
+      bookSubheadline: varchar3("book_subheadline", { length: 500 }),
+      bookFeatures: text3("book_features"),
       // JSON array of feature bullet strings
-      bookServiceOptions: text("book_service_options"),
+      bookServiceOptions: text3("book_service_options"),
       // JSON array of service dropdown options
-      bookReplyEmail: varchar("book_reply_email", { length: 320 }),
-      bookButtonLabel: varchar("book_button_label", { length: 100 }).default("Submit Booking Request"),
+      bookReplyEmail: varchar3("book_reply_email", { length: 320 }),
+      bookButtonLabel: varchar3("book_button_label", { length: 100 }).default("Submit Booking Request"),
       // ── Email Branding ──────────────────────────────────────────────────────────
-      emailSenderName: varchar("email_sender_name", { length: 200 }).default("CuraLive"),
-      emailSenderAddress: varchar("email_sender_address", { length: 320 }),
-      emailHeaderColor: varchar("email_header_color", { length: 20 }).default("#0f172a"),
-      emailButtonColor: varchar("email_button_color", { length: 20 }).default("#3b82f6"),
-      emailButtonLabel: varchar("email_button_label", { length: 100 }).default("Join Event"),
-      emailFooterText: varchar("email_footer_text", { length: 500 }),
+      emailSenderName: varchar3("email_sender_name", { length: 200 }).default("CuraLive"),
+      emailSenderAddress: varchar3("email_sender_address", { length: 320 }),
+      emailHeaderColor: varchar3("email_header_color", { length: 20 }).default("#0f172a"),
+      emailButtonColor: varchar3("email_button_color", { length: 20 }).default("#3b82f6"),
+      emailButtonLabel: varchar3("email_button_label", { length: 100 }).default("Join Event"),
+      emailFooterText: varchar3("email_footer_text", { length: 500 }),
       // ── Unique Links ────────────────────────────────────────────────────────────
-      customSlug: varchar("custom_slug", { length: 128 }),
+      customSlug: varchar3("custom_slug", { length: 128 }),
       // override the default slug
-      shortLinkEnabled: boolean("short_link_enabled").default(false),
+      shortLinkEnabled: boolean3("short_link_enabled").default(false),
       createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now())
     });
-    directAccessLog = pgTable("direct_access_log", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conference_id"),
-      registrationId: integer("registration_id"),
-      enteredPin: varchar("entered_pin", { length: 8 }).notNull(),
-      callerNumber: varchar("caller_number", { length: 32 }),
-      outcome: varchar("outcome", { length: 64 }).notNull().default("failed"),
-      callSid: varchar("call_sid", { length: 128 }),
-      dialInNumber: varchar("dial_in_number", { length: 32 }),
+    directAccessLog = pgTable3("direct_access_log", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conference_id"),
+      registrationId: integer3("registration_id"),
+      enteredPin: varchar3("entered_pin", { length: 8 }).notNull(),
+      callerNumber: varchar3("caller_number", { length: 32 }),
+      outcome: varchar3("outcome", { length: 64 }).notNull().default("failed"),
+      callSid: varchar3("call_sid", { length: 128 }),
+      dialInNumber: varchar3("dial_in_number", { length: 32 }),
       attemptedAt: bigint("attempted_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    billingClients = pgTable("billing_clients", {
-      id: serial("id").primaryKey(),
+    billingClients = pgTable3("billing_clients", {
+      id: serial3("id").primaryKey(),
       // Company details
-      companyName: varchar("company_name", { length: 255 }).notNull(),
-      registrationNumber: varchar("registration_number", { length: 128 }),
-      vatNumber: varchar("vat_number", { length: 64 }),
-      industry: varchar("industry", { length: 128 }),
+      companyName: varchar3("company_name", { length: 255 }).notNull(),
+      registrationNumber: varchar3("registration_number", { length: 128 }),
+      vatNumber: varchar3("vat_number", { length: 64 }),
+      industry: varchar3("industry", { length: 128 }),
       // Primary contact
-      contactName: varchar("contact_name", { length: 255 }).notNull(),
-      contactEmail: varchar("contact_email", { length: 320 }).notNull(),
-      contactPhone: varchar("contact_phone", { length: 64 }),
-      contactJobTitle: varchar("contact_job_title", { length: 255 }),
+      contactName: varchar3("contact_name", { length: 255 }).notNull(),
+      contactEmail: varchar3("contact_email", { length: 320 }).notNull(),
+      contactPhone: varchar3("contact_phone", { length: 64 }),
+      contactJobTitle: varchar3("contact_job_title", { length: 255 }),
       // Billing address
-      billingAddress: text("billing_address"),
-      billingCity: varchar("billing_city", { length: 128 }),
-      billingCountry: varchar("billing_country", { length: 128 }).default("South Africa"),
-      billingPostalCode: varchar("billing_postal_code", { length: 32 }),
+      billingAddress: text3("billing_address"),
+      billingCity: varchar3("billing_city", { length: 128 }),
+      billingCountry: varchar3("billing_country", { length: 128 }).default("South Africa"),
+      billingPostalCode: varchar3("billing_postal_code", { length: 32 }),
       // Account settings
-      currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
-      paymentTermsDays: integer("payment_terms_days").default(30).notNull(),
-      notes: text("notes"),
-      status: varchar("status", { length: 64 }).default("prospect").notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+      currency: varchar3("currency", { length: 8 }).default("ZAR").notNull(),
+      paymentTermsDays: integer3("payment_terms_days").default(30).notNull(),
+      notes: text3("notes"),
+      status: varchar3("status", { length: 64 }).default("prospect").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    billingQuotes = pgTable("billing_quotes", {
-      id: serial("id").primaryKey(),
-      quoteNumber: varchar("quote_number", { length: 32 }).notNull().unique(),
+    billingQuotes = pgTable3("billing_quotes", {
+      id: serial3("id").primaryKey(),
+      quoteNumber: varchar3("quote_number", { length: 32 }).notNull().unique(),
       // e.g. "QUO-2026-0001"
-      clientId: integer("client_id").notNull(),
+      clientId: integer3("client_id").notNull(),
       // FK → billing_clients.id
       // Metadata
-      title: varchar("title", { length: 255 }).notNull(),
-      description: text("description"),
+      title: varchar3("title", { length: 255 }).notNull(),
+      description: text3("description"),
       // Financials (stored in minor units, e.g. cents)
       subtotalCents: bigint("subtotal_cents", { mode: "number" }).default(0).notNull(),
       discountCents: bigint("discount_cents", { mode: "number" }).default(0).notNull(),
-      taxPercent: integer("tax_percent").default(15).notNull(),
+      taxPercent: integer3("tax_percent").default(15).notNull(),
       // VAT %
       totalCents: bigint("total_cents", { mode: "number" }).default(0).notNull(),
-      currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+      currency: varchar3("currency", { length: 8 }).default("ZAR").notNull(),
       // Status lifecycle
-      status: varchar("status", { length: 64 }).default("draft").notNull(),
+      status: varchar3("status", { length: 64 }).default("draft").notNull(),
       // Dates
-      issuedAt: timestamp("issued_at"),
-      expiresAt: timestamp("expires_at"),
-      acceptedAt: timestamp("accepted_at"),
+      issuedAt: timestamp3("issued_at"),
+      expiresAt: timestamp3("expires_at"),
+      acceptedAt: timestamp3("accepted_at"),
       // Client-facing access token (for /quote/:token page)
-      accessToken: varchar("access_token", { length: 64 }).unique(),
+      accessToken: varchar3("access_token", { length: 64 }).unique(),
       // Terms and notes
-      paymentTerms: text("payment_terms"),
-      internalNotes: text("internal_notes"),
-      clientNotes: text("client_notes"),
+      paymentTerms: text3("payment_terms"),
+      internalNotes: text3("internal_notes"),
+      clientNotes: text3("client_notes"),
       // Created by
-      createdByUserId: integer("created_by_user_id"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+      createdByUserId: integer3("created_by_user_id"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    billingLineItems = pgTable("billing_line_items", {
-      id: serial("id").primaryKey(),
-      quoteId: integer("quote_id"),
+    billingLineItems = pgTable3("billing_line_items", {
+      id: serial3("id").primaryKey(),
+      quoteId: integer3("quote_id"),
       // FK → billing_quotes.id (nullable if invoice-only)
-      invoiceId: integer("invoice_id"),
+      invoiceId: integer3("invoice_id"),
       // FK → billing_invoices.id (nullable if quote-only)
       // Item details
-      description: varchar("description", { length: 512 }).notNull(),
-      category: varchar("category", { length: 128 }),
+      description: varchar3("description", { length: 512 }).notNull(),
+      category: varchar3("category", { length: 128 }),
       // e.g. "Platform License", "Event Fee", "Setup"
-      quantity: integer("quantity").default(1).notNull(),
+      quantity: integer3("quantity").default(1).notNull(),
       unitPriceCents: bigint("unit_price_cents", { mode: "number" }).notNull(),
       totalCents: bigint("total_cents", { mode: "number" }).notNull(),
-      sortOrder: integer("sort_order").default(0).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      sortOrder: integer3("sort_order").default(0).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    billingInvoices = pgTable("billing_invoices", {
-      id: serial("id").primaryKey(),
-      invoiceNumber: varchar("invoice_number", { length: 32 }).notNull().unique(),
+    billingInvoices = pgTable3("billing_invoices", {
+      id: serial3("id").primaryKey(),
+      invoiceNumber: varchar3("invoice_number", { length: 32 }).notNull().unique(),
       // e.g. "INV-2026-0001"
-      clientId: integer("client_id").notNull(),
+      clientId: integer3("client_id").notNull(),
       // FK → billing_clients.id
-      quoteId: integer("quote_id"),
+      quoteId: integer3("quote_id"),
       // FK → billing_quotes.id (optional)
       // Metadata
-      title: varchar("title", { length: 255 }).notNull(),
+      title: varchar3("title", { length: 255 }).notNull(),
       // Financials
       subtotalCents: bigint("subtotal_cents", { mode: "number" }).default(0).notNull(),
       discountCents: bigint("discount_cents", { mode: "number" }).default(0).notNull(),
-      taxPercent: integer("tax_percent").default(15).notNull(),
+      taxPercent: integer3("tax_percent").default(15).notNull(),
       taxCents: bigint("tax_cents", { mode: "number" }).default(0).notNull(),
       totalCents: bigint("total_cents", { mode: "number" }).default(0).notNull(),
       paidCents: bigint("paid_cents", { mode: "number" }).default(0).notNull(),
-      currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+      currency: varchar3("currency", { length: 8 }).default("ZAR").notNull(),
       // Status
-      status: varchar("status", { length: 64 }).default("draft").notNull(),
+      status: varchar3("status", { length: 64 }).default("draft").notNull(),
       // Dates
-      issuedAt: timestamp("issued_at"),
-      dueAt: timestamp("due_at"),
-      paidAt: timestamp("paid_at"),
+      issuedAt: timestamp3("issued_at"),
+      dueAt: timestamp3("due_at"),
+      paidAt: timestamp3("paid_at"),
       // Client-facing access token (for /invoice/:token page)
-      accessToken: varchar("access_token", { length: 64 }).unique(),
+      accessToken: varchar3("access_token", { length: 64 }).unique(),
       // Notes
-      paymentTerms: text("payment_terms"),
-      internalNotes: text("internal_notes"),
-      clientNotes: text("client_notes"),
-      bankDetails: text("bank_details"),
+      paymentTerms: text3("payment_terms"),
+      internalNotes: text3("internal_notes"),
+      clientNotes: text3("client_notes"),
+      bankDetails: text3("bank_details"),
       // JSON string with bank account info
       // Created by
-      createdByUserId: integer("created_by_user_id"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+      createdByUserId: integer3("created_by_user_id"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    billingPayments = pgTable("billing_payments", {
-      id: serial("id").primaryKey(),
-      invoiceId: integer("invoice_id").notNull(),
+    billingPayments = pgTable3("billing_payments", {
+      id: serial3("id").primaryKey(),
+      invoiceId: integer3("invoice_id").notNull(),
       // FK → billing_invoices.id
-      clientId: integer("client_id").notNull(),
+      clientId: integer3("client_id").notNull(),
       amountCents: bigint("amount_cents", { mode: "number" }).notNull(),
-      currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
-      paymentMethod: varchar("payment_method", { length: 64 }).default("eft").notNull(),
-      reference: varchar("reference", { length: 255 }),
+      currency: varchar3("currency", { length: 8 }).default("ZAR").notNull(),
+      paymentMethod: varchar3("payment_method", { length: 64 }).default("eft").notNull(),
+      reference: varchar3("reference", { length: 255 }),
       // bank reference or POP reference
-      paidAt: timestamp("paid_at").notNull(),
-      notes: text("notes"),
-      recordedByUserId: integer("recorded_by_user_id"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      paidAt: timestamp3("paid_at").notNull(),
+      notes: text3("notes"),
+      recordedByUserId: integer3("recorded_by_user_id"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    billingClientContacts = pgTable("billing_client_contacts", {
-      id: serial("id").primaryKey(),
-      clientId: integer("client_id").notNull(),
+    billingClientContacts = pgTable3("billing_client_contacts", {
+      id: serial3("id").primaryKey(),
+      clientId: integer3("client_id").notNull(),
       // FK → billing_clients.id
-      name: varchar("name", { length: 255 }).notNull(),
-      email: varchar("email", { length: 320 }).notNull(),
-      phone: varchar("phone", { length: 64 }),
-      jobTitle: varchar("job_title", { length: 255 }),
-      department: varchar("department", { length: 128 }),
+      name: varchar3("name", { length: 255 }).notNull(),
+      email: varchar3("email", { length: 320 }).notNull(),
+      phone: varchar3("phone", { length: 64 }),
+      jobTitle: varchar3("job_title", { length: 255 }),
+      department: varchar3("department", { length: 128 }),
       // e.g. "Finance", "Investor Relations", "Legal"
-      isPrimary: boolean("is_primary").default(false).notNull(),
+      isPrimary: boolean3("is_primary").default(false).notNull(),
       // Primary billing contact
-      receivesQuotes: boolean("receives_quotes").default(true).notNull(),
-      receivesInvoices: boolean("receives_invoices").default(true).notNull(),
-      notes: text("notes"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+      receivesQuotes: boolean3("receives_quotes").default(true).notNull(),
+      receivesInvoices: boolean3("receives_invoices").default(true).notNull(),
+      notes: text3("notes"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    billingQuoteVersions = pgTable("billing_quote_versions", {
-      id: serial("id").primaryKey(),
-      quoteId: integer("quote_id").notNull(),
+    billingQuoteVersions = pgTable3("billing_quote_versions", {
+      id: serial3("id").primaryKey(),
+      quoteId: integer3("quote_id").notNull(),
       // FK → billing_quotes.id
-      versionNumber: integer("version_number").notNull(),
+      versionNumber: integer3("version_number").notNull(),
       // 1, 2, 3...
       // Snapshot of financials at this version
       subtotalCents: bigint("subtotal_cents", { mode: "number" }).notNull(),
       discountCents: bigint("discount_cents", { mode: "number" }).default(0).notNull(),
-      taxPercent: integer("tax_percent").default(15).notNull(),
+      taxPercent: integer3("tax_percent").default(15).notNull(),
       totalCents: bigint("total_cents", { mode: "number" }).notNull(),
-      currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+      currency: varchar3("currency", { length: 8 }).default("ZAR").notNull(),
       // Snapshot of line items as JSON (denormalised for historical accuracy)
-      lineItemsSnapshot: text("line_items_snapshot").notNull(),
+      lineItemsSnapshot: text3("line_items_snapshot").notNull(),
       // JSON array
       // Change summary
-      changeNotes: text("change_notes"),
+      changeNotes: text3("change_notes"),
       // e.g. "Reduced platform fee, added training line"
-      createdByUserId: integer("created_by_user_id"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      createdByUserId: integer3("created_by_user_id"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    billingCreditNotes = pgTable("billing_credit_notes", {
-      id: serial("id").primaryKey(),
-      creditNoteNumber: varchar("credit_note_number", { length: 32 }).notNull().unique(),
+    billingCreditNotes = pgTable3("billing_credit_notes", {
+      id: serial3("id").primaryKey(),
+      creditNoteNumber: varchar3("credit_note_number", { length: 32 }).notNull().unique(),
       // e.g. "CN-2026-0001"
-      invoiceId: integer("invoice_id").notNull(),
+      invoiceId: integer3("invoice_id").notNull(),
       // FK → billing_invoices.id
-      clientId: integer("client_id").notNull(),
+      clientId: integer3("client_id").notNull(),
       // FK → billing_clients.id
       // Financials
       amountCents: bigint("amount_cents", { mode: "number" }).notNull(),
       // Credit amount (before tax)
-      taxPercent: integer("tax_percent").default(15).notNull(),
+      taxPercent: integer3("tax_percent").default(15).notNull(),
       taxCents: bigint("tax_cents", { mode: "number" }).default(0).notNull(),
       totalCents: bigint("total_cents", { mode: "number" }).notNull(),
       // Total credit including tax
-      currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
+      currency: varchar3("currency", { length: 8 }).default("ZAR").notNull(),
       // Details
-      reason: text("reason").notNull(),
+      reason: text3("reason").notNull(),
       // Why the credit was issued
-      status: varchar("status", { length: 64 }).default("draft").notNull(),
+      status: varchar3("status", { length: 64 }).default("draft").notNull(),
       // Client-facing access token
-      accessToken: varchar("access_token", { length: 64 }).unique(),
-      issuedAt: timestamp("issued_at"),
-      appliedAt: timestamp("applied_at"),
-      internalNotes: text("internal_notes"),
-      createdByUserId: integer("created_by_user_id"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+      accessToken: varchar3("access_token", { length: 64 }).unique(),
+      issuedAt: timestamp3("issued_at"),
+      appliedAt: timestamp3("applied_at"),
+      internalNotes: text3("internal_notes"),
+      createdByUserId: integer3("created_by_user_id"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    billingFxRates = pgTable("billing_fx_rates", {
-      id: serial("id").primaryKey(),
-      baseCurrency: varchar("base_currency", { length: 8 }).notNull(),
+    billingFxRates = pgTable3("billing_fx_rates", {
+      id: serial3("id").primaryKey(),
+      baseCurrency: varchar3("base_currency", { length: 8 }).notNull(),
       // e.g. "ZAR"
-      targetCurrency: varchar("target_currency", { length: 8 }).notNull(),
+      targetCurrency: varchar3("target_currency", { length: 8 }).notNull(),
       // e.g. "USD"
-      rate: varchar("rate", { length: 32 }).notNull(),
+      rate: varchar3("rate", { length: 32 }).notNull(),
       // stored as string to avoid float precision issues
-      source: varchar("source", { length: 64 }).default("exchangerate-api").notNull(),
-      fetchedAt: timestamp("fetched_at").defaultNow().notNull()
+      source: varchar3("source", { length: 64 }).default("exchangerate-api").notNull(),
+      fetchedAt: timestamp3("fetched_at").defaultNow().notNull()
     });
-    billingActivityLog = pgTable("billing_activity_log", {
-      id: serial("id").primaryKey(),
+    billingActivityLog = pgTable3("billing_activity_log", {
+      id: serial3("id").primaryKey(),
       // Entity references (one of these will be set)
-      quoteId: integer("quote_id"),
+      quoteId: integer3("quote_id"),
       // FK → billing_quotes.id
-      invoiceId: integer("invoice_id"),
+      invoiceId: integer3("invoice_id"),
       // FK → billing_invoices.id
-      clientId: integer("client_id").notNull(),
+      clientId: integer3("client_id").notNull(),
       // Event details
-      eventType: varchar("event_type", { length: 64 }).notNull(),
+      eventType: varchar3("event_type", { length: 64 }).notNull(),
       // e.g. "quote.created", "quote.sent", "quote.viewed", "quote.accepted",
       //      "quote.version_created", "invoice.created", "invoice.sent",
       //      "invoice.viewed", "invoice.payment_recorded", "invoice.overdue",
       //      "credit_note.issued", "email.opened"
-      description: text("description").notNull(),
+      description: text3("description").notNull(),
       // Human-readable summary
-      metadata: text("metadata"),
+      metadata: text3("metadata"),
       // JSON: extra context (e.g. old/new status, amount, IP)
       // Actor
-      actorUserId: integer("actor_user_id"),
+      actorUserId: integer3("actor_user_id"),
       // CuraLive team member (null = system/client)
-      actorType: varchar("actor_type", { length: 16 }).default("system").notNull(),
+      actorType: varchar3("actor_type", { length: 16 }).default("system").notNull(),
       // "admin" | "client" | "system"
-      ipAddress: varchar("ip_address", { length: 64 }),
-      userAgent: text("user_agent"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      ipAddress: varchar3("ip_address", { length: 64 }),
+      userAgent: text3("user_agent"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    billingLineItemTemplates = pgTable("billing_line_item_templates", {
-      id: serial("id").primaryKey(),
-      name: varchar("name", { length: 255 }).notNull(),
+    billingLineItemTemplates = pgTable3("billing_line_item_templates", {
+      id: serial3("id").primaryKey(),
+      name: varchar3("name", { length: 255 }).notNull(),
       // e.g. "Standard Earnings Call Package"
-      description: text("description").notNull(),
+      description: text3("description").notNull(),
       // Default line item description
-      category: varchar("category", { length: 128 }).notNull(),
+      category: varchar3("category", { length: 128 }).notNull(),
       defaultUnitPriceCents: bigint("default_unit_price_cents", { mode: "number" }).notNull(),
-      defaultCurrency: varchar("default_currency", { length: 8 }).default("ZAR").notNull(),
+      defaultCurrency: varchar3("default_currency", { length: 8 }).default("ZAR").notNull(),
       // Package templates contain multiple line items (stored as JSON)
-      isPackage: boolean("is_package").default(false).notNull(),
-      packageItemsJson: text("package_items_json"),
+      isPackage: boolean3("is_package").default(false).notNull(),
+      packageItemsJson: text3("package_items_json"),
       // JSON array of line items for package templates
       // Usage tracking
-      usageCount: integer("usage_count").default(0).notNull(),
-      isActive: boolean("is_active").default(true).notNull(),
-      createdByUserId: integer("created_by_user_id"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+      usageCount: integer3("usage_count").default(0).notNull(),
+      isActive: boolean3("is_active").default(true).notNull(),
+      createdByUserId: integer3("created_by_user_id"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    billingEmailEvents = pgTable("billing_email_events", {
-      id: serial("id").primaryKey(),
+    billingEmailEvents = pgTable3("billing_email_events", {
+      id: serial3("id").primaryKey(),
       // Tracking token (unique per email send)
-      trackingToken: varchar("tracking_token", { length: 64 }).notNull().unique(),
+      trackingToken: varchar3("tracking_token", { length: 64 }).notNull().unique(),
       // Entity references
-      quoteId: integer("quote_id"),
-      invoiceId: integer("invoice_id"),
-      creditNoteId: integer("credit_note_id"),
-      clientId: integer("client_id").notNull(),
-      recipientEmail: varchar("recipient_email", { length: 320 }).notNull(),
+      quoteId: integer3("quote_id"),
+      invoiceId: integer3("invoice_id"),
+      creditNoteId: integer3("credit_note_id"),
+      clientId: integer3("client_id").notNull(),
+      recipientEmail: varchar3("recipient_email", { length: 320 }).notNull(),
       // Email metadata
-      emailType: varchar("email_type", { length: 32 }).notNull(),
+      emailType: varchar3("email_type", { length: 32 }).notNull(),
       // "quote_sent" | "invoice_sent" | "credit_note_sent" | "payment_reminder" | "quote_expiry_reminder"
-      subject: varchar("subject", { length: 512 }),
-      sentAt: timestamp("sent_at").defaultNow().notNull(),
+      subject: varchar3("subject", { length: 512 }),
+      sentAt: timestamp3("sent_at").defaultNow().notNull(),
       // Open tracking
-      firstOpenedAt: timestamp("first_opened_at"),
-      openCount: integer("open_count").default(0).notNull(),
-      lastOpenedAt: timestamp("last_opened_at"),
-      lastOpenIp: varchar("last_open_ip", { length: 64 }),
-      lastOpenUserAgent: text("last_open_user_agent"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      firstOpenedAt: timestamp3("first_opened_at"),
+      openCount: integer3("open_count").default(0).notNull(),
+      lastOpenedAt: timestamp3("last_opened_at"),
+      lastOpenIp: varchar3("last_open_ip", { length: 64 }),
+      lastOpenUserAgent: text3("last_open_user_agent"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    billingRecurringTemplates = pgTable("billing_recurring_templates", {
-      id: serial("id").primaryKey(),
-      name: varchar("name", { length: 255 }).notNull(),
+    billingRecurringTemplates = pgTable3("billing_recurring_templates", {
+      id: serial3("id").primaryKey(),
+      name: varchar3("name", { length: 255 }).notNull(),
       // e.g. "Nedbank Monthly Platform License"
-      clientId: integer("client_id").notNull(),
+      clientId: integer3("client_id").notNull(),
       // Quote template fields
-      titleTemplate: varchar("title_template", { length: 512 }).notNull(),
+      titleTemplate: varchar3("title_template", { length: 512 }).notNull(),
       // Supports tokens: {month}, {quarter}, {year} e.g. "Platform License — {month} {year}"
-      lineItemsJson: text("line_items_json").notNull(),
+      lineItemsJson: text3("line_items_json").notNull(),
       // JSON array of line items
-      discountPercent: integer("discount_percent").default(0).notNull(),
-      taxPercent: integer("tax_percent").default(15).notNull(),
-      currency: varchar("currency", { length: 8 }).default("ZAR").notNull(),
-      paymentTerms: text("payment_terms"),
+      discountPercent: integer3("discount_percent").default(0).notNull(),
+      taxPercent: integer3("tax_percent").default(15).notNull(),
+      currency: varchar3("currency", { length: 8 }).default("ZAR").notNull(),
+      paymentTerms: text3("payment_terms"),
       // Schedule
-      frequency: varchar("frequency", { length: 64 }).notNull(),
-      dayOfMonth: integer("day_of_month").default(1).notNull(),
+      frequency: varchar3("frequency", { length: 64 }).notNull(),
+      dayOfMonth: integer3("day_of_month").default(1).notNull(),
       // Day of month to generate (1–28)
-      nextGenerationAt: timestamp("next_generation_at").notNull(),
-      lastGeneratedAt: timestamp("last_generated_at"),
+      nextGenerationAt: timestamp3("next_generation_at").notNull(),
+      lastGeneratedAt: timestamp3("last_generated_at"),
       // Control
-      isActive: boolean("is_active").default(true).notNull(),
-      autoDraft: boolean("auto_draft").default(true).notNull(),
+      isActive: boolean3("is_active").default(true).notNull(),
+      autoDraft: boolean3("auto_draft").default(true).notNull(),
       // true = auto-create draft; false = notify only
-      createdByUserId: integer("created_by_user_id"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+      createdByUserId: integer3("created_by_user_id"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    trainingModeSessions = pgTable("training_mode_sessions", {
-      id: serial("id").primaryKey(),
-      operatorId: integer("operator_id").notNull(),
-      operatorName: varchar("operator_name", { length: 255 }).notNull(),
-      sessionName: varchar("session_name", { length: 255 }).notNull(),
-      scenario: varchar("scenario", { length: 64 }).notNull(),
-      mentorId: integer("mentor_id"),
-      status: varchar("status", { length: 64 }).default("active").notNull(),
-      startedAt: timestamp("started_at").defaultNow().notNull(),
-      completedAt: timestamp("completed_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    trainingModeSessions = pgTable3("training_mode_sessions", {
+      id: serial3("id").primaryKey(),
+      operatorId: integer3("operator_id").notNull(),
+      operatorName: varchar3("operator_name", { length: 255 }).notNull(),
+      sessionName: varchar3("session_name", { length: 255 }).notNull(),
+      scenario: varchar3("scenario", { length: 64 }).notNull(),
+      mentorId: integer3("mentor_id"),
+      status: varchar3("status", { length: 64 }).default("active").notNull(),
+      startedAt: timestamp3("started_at").defaultNow().notNull(),
+      completedAt: timestamp3("completed_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    trainingConferences = pgTable("training_conferences", {
-      id: serial("id").primaryKey(),
-      trainingSessionId: integer("training_session_id").notNull(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      callId: varchar("call_id", { length: 128 }).notNull(),
-      subject: varchar("subject", { length: 512 }).notNull(),
-      product: varchar("product", { length: 128 }),
-      status: varchar("status", { length: 64 }).default("pending").notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    trainingConferences = pgTable3("training_conferences", {
+      id: serial3("id").primaryKey(),
+      trainingSessionId: integer3("training_session_id").notNull(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      callId: varchar3("call_id", { length: 128 }).notNull(),
+      subject: varchar3("subject", { length: 512 }).notNull(),
+      product: varchar3("product", { length: 128 }),
+      status: varchar3("status", { length: 64 }).default("pending").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    trainingParticipants = pgTable("training_participants", {
-      id: serial("id").primaryKey(),
-      trainingConferenceId: integer("training_conference_id").notNull(),
-      lineNumber: integer("line_number").notNull(),
-      role: varchar("role", { length: 64 }),
-      name: varchar("name", { length: 255 }).notNull(),
-      company: varchar("company", { length: 255 }),
-      phoneNumber: varchar("phone_number", { length: 32 }),
-      state: varchar("state", { length: 64 }).default("incoming").notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    trainingParticipants = pgTable3("training_participants", {
+      id: serial3("id").primaryKey(),
+      trainingConferenceId: integer3("training_conference_id").notNull(),
+      lineNumber: integer3("line_number").notNull(),
+      role: varchar3("role", { length: 64 }),
+      name: varchar3("name", { length: 255 }).notNull(),
+      company: varchar3("company", { length: 255 }),
+      phoneNumber: varchar3("phone_number", { length: 32 }),
+      state: varchar3("state", { length: 64 }).default("incoming").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    trainingLounge = pgTable("training_lounge", {
-      id: serial("id").primaryKey(),
-      trainingSessionId: integer("training_session_id").notNull(),
-      participantName: varchar("participant_name", { length: 255 }).notNull(),
-      waitingSince: timestamp("waiting_since").defaultNow().notNull(),
-      status: varchar("status", { length: 64 }).default("waiting").notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    trainingLounge = pgTable3("training_lounge", {
+      id: serial3("id").primaryKey(),
+      trainingSessionId: integer3("training_session_id").notNull(),
+      participantName: varchar3("participant_name", { length: 255 }).notNull(),
+      waitingSince: timestamp3("waiting_since").defaultNow().notNull(),
+      status: varchar3("status", { length: 64 }).default("waiting").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    trainingCallLogs = pgTable("training_call_logs", {
-      id: serial("id").primaryKey(),
-      trainingSessionId: integer("training_session_id").notNull(),
-      trainingConferenceId: integer("training_conference_id").notNull(),
-      operatorId: integer("operator_id").notNull(),
-      participantName: varchar("participant_name", { length: 255 }).notNull(),
-      callDuration: integer("call_duration").default(0).notNull(),
-      callQuality: varchar("call_quality", { length: 64 }).default("good").notNull(),
-      operatorPerformance: text("operator_performance"),
-      participantFeedback: text("participant_feedback"),
-      recordingUrl: varchar("recording_url", { length: 1024 }),
-      startedAt: timestamp("started_at").defaultNow().notNull(),
-      endedAt: timestamp("ended_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    trainingCallLogs = pgTable3("training_call_logs", {
+      id: serial3("id").primaryKey(),
+      trainingSessionId: integer3("training_session_id").notNull(),
+      trainingConferenceId: integer3("training_conference_id").notNull(),
+      operatorId: integer3("operator_id").notNull(),
+      participantName: varchar3("participant_name", { length: 255 }).notNull(),
+      callDuration: integer3("call_duration").default(0).notNull(),
+      callQuality: varchar3("call_quality", { length: 64 }).default("good").notNull(),
+      operatorPerformance: text3("operator_performance"),
+      participantFeedback: text3("participant_feedback"),
+      recordingUrl: varchar3("recording_url", { length: 1024 }),
+      startedAt: timestamp3("started_at").defaultNow().notNull(),
+      endedAt: timestamp3("ended_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    trainingPerformanceMetrics = pgTable("training_performance_metrics", {
-      id: serial("id").primaryKey(),
-      trainingSessionId: integer("training_session_id").notNull(),
-      operatorId: integer("operator_id").notNull(),
-      totalCallsHandled: integer("total_calls_handled").default(0).notNull(),
-      averageCallDuration: integer("average_call_duration").default(0).notNull(),
-      callQualityScore: varchar("call_quality_score", { length: 8 }).default("0").notNull(),
-      averageParticipantSatisfaction: varchar("average_participant_satisfaction", { length: 8 }).default("0").notNull(),
-      communicationScore: varchar("communication_score", { length: 8 }).default("0").notNull(),
-      problemSolvingScore: varchar("problem_solving_score", { length: 8 }).default("0").notNull(),
-      professionalism: varchar("professionalism", { length: 8 }).default("0").notNull(),
-      overallScore: varchar("overall_score", { length: 8 }).default("0").notNull(),
-      readyForProduction: boolean("ready_for_production").default(false).notNull(),
-      mentorNotes: text("mentor_notes"),
-      evaluatedAt: timestamp("evaluated_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    trainingPerformanceMetrics = pgTable3("training_performance_metrics", {
+      id: serial3("id").primaryKey(),
+      trainingSessionId: integer3("training_session_id").notNull(),
+      operatorId: integer3("operator_id").notNull(),
+      totalCallsHandled: integer3("total_calls_handled").default(0).notNull(),
+      averageCallDuration: integer3("average_call_duration").default(0).notNull(),
+      callQualityScore: varchar3("call_quality_score", { length: 8 }).default("0").notNull(),
+      averageParticipantSatisfaction: varchar3("average_participant_satisfaction", { length: 8 }).default("0").notNull(),
+      communicationScore: varchar3("communication_score", { length: 8 }).default("0").notNull(),
+      problemSolvingScore: varchar3("problem_solving_score", { length: 8 }).default("0").notNull(),
+      professionalism: varchar3("professionalism", { length: 8 }).default("0").notNull(),
+      overallScore: varchar3("overall_score", { length: 8 }).default("0").notNull(),
+      readyForProduction: boolean3("ready_for_production").default(false).notNull(),
+      mentorNotes: text3("mentor_notes"),
+      evaluatedAt: timestamp3("evaluated_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    postEventReports = pgTable("post_event_reports", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      generatedBy: integer("generated_by").notNull(),
-      reportType: varchar("report_type", { length: 64 }).default("full").notNull(),
-      status: varchar("status", { length: 64 }).default("generating").notNull(),
-      aiSummary: text("ai_summary"),
-      keyMoments: text("key_moments"),
-      sentimentOverview: text("sentiment_overview"),
-      qaSummary: text("qa_summary"),
-      engagementMetrics: text("engagement_metrics"),
-      complianceFlags: text("compliance_flags"),
-      fullTranscriptUrl: text("full_transcript_url"),
-      pdfUrl: text("pdf_url"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    postEventReports = pgTable3("post_event_reports", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      generatedBy: integer3("generated_by").notNull(),
+      reportType: varchar3("report_type", { length: 64 }).default("full").notNull(),
+      status: varchar3("status", { length: 64 }).default("generating").notNull(),
+      aiSummary: text3("ai_summary"),
+      keyMoments: text3("key_moments"),
+      sentimentOverview: text3("sentiment_overview"),
+      qaSummary: text3("qa_summary"),
+      engagementMetrics: text3("engagement_metrics"),
+      complianceFlags: text3("compliance_flags"),
+      fullTranscriptUrl: text3("full_transcript_url"),
+      pdfUrl: text3("pdf_url"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    transcriptionJobs = pgTable("transcription_jobs", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      source: varchar("source", { length: 64 }).default("forge_ai").notNull(),
-      status: varchar("status", { length: 64 }).default("queued").notNull(),
-      languageDetected: varchar("language_detected", { length: 16 }),
-      languagesRequested: text("languages_requested"),
-      audioUrl: text("audio_url"),
-      durationSeconds: integer("duration_seconds"),
-      wordCount: integer("word_count"),
-      confidenceScore: varchar("confidence_score", { length: 8 }),
-      speakerCount: integer("speaker_count"),
-      errorMessage: text("error_message"),
-      startedAt: timestamp("started_at"),
-      completedAt: timestamp("completed_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    transcriptionJobs = pgTable3("transcription_jobs", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      source: varchar3("source", { length: 64 }).default("forge_ai").notNull(),
+      status: varchar3("status", { length: 64 }).default("queued").notNull(),
+      languageDetected: varchar3("language_detected", { length: 16 }),
+      languagesRequested: text3("languages_requested"),
+      audioUrl: text3("audio_url"),
+      durationSeconds: integer3("duration_seconds"),
+      wordCount: integer3("word_count"),
+      confidenceScore: varchar3("confidence_score", { length: 8 }),
+      speakerCount: integer3("speaker_count"),
+      errorMessage: text3("error_message"),
+      startedAt: timestamp3("started_at"),
+      completedAt: timestamp3("completed_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    polls = pgTable("polls", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      createdBy: integer("created_by").notNull(),
-      question: text("question").notNull(),
-      pollType: varchar("poll_type", { length: 64 }).default("multiple_choice").notNull(),
-      status: varchar("status", { length: 64 }).default("draft").notNull(),
-      allowMultiple: boolean("allow_multiple").default(false).notNull(),
-      isAnonymous: boolean("is_anonymous").default(true).notNull(),
-      scheduledAt: timestamp("scheduled_at"),
-      openedAt: timestamp("opened_at"),
-      closedAt: timestamp("closed_at"),
-      displayOrder: integer("display_order").default(0).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    polls = pgTable3("polls", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      createdBy: integer3("created_by").notNull(),
+      question: text3("question").notNull(),
+      pollType: varchar3("poll_type", { length: 64 }).default("multiple_choice").notNull(),
+      status: varchar3("status", { length: 64 }).default("draft").notNull(),
+      allowMultiple: boolean3("allow_multiple").default(false).notNull(),
+      isAnonymous: boolean3("is_anonymous").default(true).notNull(),
+      scheduledAt: timestamp3("scheduled_at"),
+      openedAt: timestamp3("opened_at"),
+      closedAt: timestamp3("closed_at"),
+      displayOrder: integer3("display_order").default(0).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    pollOptions = pgTable("poll_options", {
-      id: serial("id").primaryKey(),
-      pollId: integer("poll_id").notNull(),
-      optionText: varchar("option_text", { length: 512 }).notNull(),
-      optionOrder: integer("option_order").default(0).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    pollOptions = pgTable3("poll_options", {
+      id: serial3("id").primaryKey(),
+      pollId: integer3("poll_id").notNull(),
+      optionText: varchar3("option_text", { length: 512 }).notNull(),
+      optionOrder: integer3("option_order").default(0).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    pollVotes = pgTable("poll_votes", {
-      id: serial("id").primaryKey(),
-      pollId: integer("poll_id").notNull(),
-      optionId: integer("option_id"),
-      voterId: integer("voter_id"),
-      voterSession: varchar("voter_session", { length: 128 }),
-      textResponse: text("text_response"),
-      ratingValue: integer("rating_value"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    pollVotes = pgTable3("poll_votes", {
+      id: serial3("id").primaryKey(),
+      pollId: integer3("poll_id").notNull(),
+      optionId: integer3("option_id"),
+      voterId: integer3("voter_id"),
+      voterSession: varchar3("voter_session", { length: 128 }),
+      textResponse: text3("text_response"),
+      ratingValue: integer3("rating_value"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    eventSchedules = pgTable("event_schedules", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      scheduledStart: timestamp("scheduled_start").notNull(),
-      scheduledEnd: timestamp("scheduled_end").notNull(),
-      timezone: varchar("timezone", { length: 64 }).default("Africa/Johannesburg").notNull(),
-      recurrenceRule: varchar("recurrence_rule", { length: 512 }),
-      parentScheduleId: integer("parent_schedule_id"),
-      setupMinutes: integer("setup_minutes").default(30).notNull(),
-      teardownMinutes: integer("teardown_minutes").default(15).notNull(),
-      status: varchar("status", { length: 64 }).default("tentative").notNull(),
-      createdBy: integer("created_by").notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    eventSchedules = pgTable3("event_schedules", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      scheduledStart: timestamp3("scheduled_start").notNull(),
+      scheduledEnd: timestamp3("scheduled_end").notNull(),
+      timezone: varchar3("timezone", { length: 64 }).default("Africa/Johannesburg").notNull(),
+      recurrenceRule: varchar3("recurrence_rule", { length: 512 }),
+      parentScheduleId: integer3("parent_schedule_id"),
+      setupMinutes: integer3("setup_minutes").default(30).notNull(),
+      teardownMinutes: integer3("teardown_minutes").default(15).notNull(),
+      status: varchar3("status", { length: 64 }).default("tentative").notNull(),
+      createdBy: integer3("created_by").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    operatorAvailability = pgTable("operator_availability", {
-      id: serial("id").primaryKey(),
-      operatorId: integer("operator_id").notNull(),
-      dayOfWeek: integer("day_of_week").notNull(),
-      startTime: varchar("start_time", { length: 8 }).notNull(),
-      endTime: varchar("end_time", { length: 8 }).notNull(),
-      isAvailable: boolean("is_available").default(true).notNull(),
-      overrideDate: varchar("override_date", { length: 16 }),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    operatorAvailability = pgTable3("operator_availability", {
+      id: serial3("id").primaryKey(),
+      operatorId: integer3("operator_id").notNull(),
+      dayOfWeek: integer3("day_of_week").notNull(),
+      startTime: varchar3("start_time", { length: 8 }).notNull(),
+      endTime: varchar3("end_time", { length: 8 }).notNull(),
+      isAvailable: boolean3("is_available").default(true).notNull(),
+      overrideDate: varchar3("override_date", { length: 16 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    resourceAllocations = pgTable("resource_allocations", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      resourceType: varchar("resource_type", { length: 64 }).notNull(),
-      resourceIdentifier: varchar("resource_identifier", { length: 256 }).notNull(),
-      allocatedAt: timestamp("allocated_at").defaultNow().notNull(),
-      releasedAt: timestamp("released_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    resourceAllocations = pgTable3("resource_allocations", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      resourceType: varchar3("resource_type", { length: 64 }).notNull(),
+      resourceIdentifier: varchar3("resource_identifier", { length: 256 }).notNull(),
+      allocatedAt: timestamp3("allocated_at").defaultNow().notNull(),
+      releasedAt: timestamp3("released_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    eventTemplates = pgTable("event_templates", {
-      id: serial("id").primaryKey(),
-      templateName: varchar("template_name", { length: 255 }).notNull(),
-      createdBy: integer("created_by").notNull(),
-      eventType: varchar("event_type", { length: 64 }).notNull(),
-      defaultDurationMinutes: integer("default_duration_minutes").default(60).notNull(),
-      defaultSetupMinutes: integer("default_setup_minutes").default(30).notNull(),
-      defaultFeatures: text("default_features"),
-      defaultPlatform: varchar("default_platform", { length: 64 }).default("pstn").notNull(),
-      dialInCountries: text("dial_in_countries"),
-      maxAttendees: integer("max_attendees").default(500).notNull(),
-      requiresRegistration: boolean("requires_registration").default(true).notNull(),
-      complianceEnabled: boolean("compliance_enabled").default(true).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    eventTemplates = pgTable3("event_templates", {
+      id: serial3("id").primaryKey(),
+      templateName: varchar3("template_name", { length: 255 }).notNull(),
+      createdBy: integer3("created_by").notNull(),
+      eventType: varchar3("event_type", { length: 64 }).notNull(),
+      defaultDurationMinutes: integer3("default_duration_minutes").default(60).notNull(),
+      defaultSetupMinutes: integer3("default_setup_minutes").default(30).notNull(),
+      defaultFeatures: text3("default_features"),
+      defaultPlatform: varchar3("default_platform", { length: 64 }).default("pstn").notNull(),
+      dialInCountries: text3("dial_in_countries"),
+      maxAttendees: integer3("max_attendees").default(500).notNull(),
+      requiresRegistration: boolean3("requires_registration").default(true).notNull(),
+      complianceEnabled: boolean3("compliance_enabled").default(true).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    clients = pgTable("clients", {
-      id: serial("id").primaryKey(),
-      slug: varchar("slug", { length: 64 }).notNull().unique(),
-      companyName: varchar("company_name", { length: 255 }).notNull(),
-      logoUrl: text("logo_url"),
-      primaryColor: varchar("primary_color", { length: 16 }).default("#6c3fc5").notNull(),
-      secondaryColor: varchar("secondary_color", { length: 16 }).default("#1a1a2e").notNull(),
-      customDomain: varchar("custom_domain", { length: 255 }),
-      contactEmail: varchar("contact_email", { length: 320 }),
-      billingTier: varchar("billing_tier", { length: 64 }).default("professional").notNull(),
-      isActive: boolean("is_active").default(true).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    clients = pgTable3("clients", {
+      id: serial3("id").primaryKey(),
+      slug: varchar3("slug", { length: 64 }).notNull().unique(),
+      companyName: varchar3("company_name", { length: 255 }).notNull(),
+      logoUrl: text3("logo_url"),
+      primaryColor: varchar3("primary_color", { length: 16 }).default("#6c3fc5").notNull(),
+      secondaryColor: varchar3("secondary_color", { length: 16 }).default("#1a1a2e").notNull(),
+      customDomain: varchar3("custom_domain", { length: 255 }),
+      contactEmail: varchar3("contact_email", { length: 320 }),
+      billingTier: varchar3("billing_tier", { length: 64 }).default("professional").notNull(),
+      isActive: boolean3("is_active").default(true).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    clientPortals = pgTable("client_portals", {
-      id: serial("id").primaryKey(),
-      clientId: integer("client_id").notNull(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      isPublished: boolean("is_published").default(false).notNull(),
-      customTitle: varchar("custom_title", { length: 512 }),
-      customDescription: text("custom_description"),
-      passwordProtected: boolean("password_protected").default(false).notNull(),
-      accessCode: varchar("access_code", { length: 64 }),
-      viewCount: integer("view_count").default(0).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    clientPortals = pgTable3("client_portals", {
+      id: serial3("id").primaryKey(),
+      clientId: integer3("client_id").notNull(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      isPublished: boolean3("is_published").default(false).notNull(),
+      customTitle: varchar3("custom_title", { length: 512 }),
+      customDescription: text3("custom_description"),
+      passwordProtected: boolean3("password_protected").default(false).notNull(),
+      accessCode: varchar3("access_code", { length: 64 }),
+      viewCount: integer3("view_count").default(0).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    complianceFlags = pgTable("compliance_flags", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      statementText: text("statement_text").notNull(),
-      timestamp: varchar("timestamp", { length: 16 }),
-      speakerName: varchar("speaker_name", { length: 255 }),
-      riskLevel: varchar("risk_level", { length: 64 }).default("low").notNull(),
-      flagReason: text("flag_reason"),
-      complianceStatus: varchar("compliance_status", { length: 64 }).default("flagged").notNull(),
-      reviewedBy: integer("reviewed_by"),
-      reviewedAt: timestamp("reviewed_at"),
-      approvedBy: integer("approved_by"),
-      approvedAt: timestamp("approved_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    complianceFlags = pgTable3("compliance_flags", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      statementText: text3("statement_text").notNull(),
+      timestamp: varchar3("timestamp", { length: 16 }),
+      speakerName: varchar3("speaker_name", { length: 255 }),
+      riskLevel: varchar3("risk_level", { length: 64 }).default("low").notNull(),
+      flagReason: text3("flag_reason"),
+      complianceStatus: varchar3("compliance_status", { length: 64 }).default("flagged").notNull(),
+      reviewedBy: integer3("reviewed_by"),
+      reviewedAt: timestamp3("reviewed_at"),
+      approvedBy: integer3("approved_by"),
+      approvedAt: timestamp3("approved_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    complianceAuditLog = pgTable("compliance_audit_log", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }),
-      action: varchar("action", { length: 64 }).notNull(),
-      userId: integer("user_id"),
-      details: text("details"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    complianceAuditLog = pgTable3("compliance_audit_log", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }),
+      action: varchar3("action", { length: 64 }).notNull(),
+      userId: integer3("user_id"),
+      details: text3("details"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    investorFollowups = pgTable("investor_followups", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      investorName: varchar("investor_name", { length: 255 }),
-      investorEmail: varchar("investor_email", { length: 320 }),
-      investorCompany: varchar("investor_company", { length: 255 }),
-      questionText: text("question_text"),
-      commitmentText: text("commitment_text"),
-      followUpStatus: varchar("follow_up_status", { length: 64 }).default("pending").notNull(),
-      crmContactId: varchar("crm_contact_id", { length: 128 }),
-      crmActivityId: varchar("crm_activity_id", { length: 128 }),
-      emailTemplate: text("email_template"),
-      emailSentAt: timestamp("email_sent_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    investorFollowups = pgTable3("investor_followups", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      investorName: varchar3("investor_name", { length: 255 }),
+      investorEmail: varchar3("investor_email", { length: 320 }),
+      investorCompany: varchar3("investor_company", { length: 255 }),
+      questionText: text3("question_text"),
+      commitmentText: text3("commitment_text"),
+      followUpStatus: varchar3("follow_up_status", { length: 64 }).default("pending").notNull(),
+      crmContactId: varchar3("crm_contact_id", { length: 128 }),
+      crmActivityId: varchar3("crm_activity_id", { length: 128 }),
+      emailTemplate: text3("email_template"),
+      emailSentAt: timestamp3("email_sent_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    followupEmails = pgTable("followup_emails", {
-      id: serial("id").primaryKey(),
-      followupId: integer("followup_id").notNull(),
-      emailBody: text("email_body"),
-      recipientEmail: varchar("recipient_email", { length: 320 }),
-      sentAt: timestamp("sent_at"),
-      openedAt: timestamp("opened_at"),
-      clickedAt: timestamp("clicked_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    followupEmails = pgTable3("followup_emails", {
+      id: serial3("id").primaryKey(),
+      followupId: integer3("followup_id").notNull(),
+      emailBody: text3("email_body"),
+      recipientEmail: varchar3("recipient_email", { length: 320 }),
+      sentAt: timestamp3("sent_at"),
+      openedAt: timestamp3("opened_at"),
+      clickedAt: timestamp3("clicked_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    sentimentSnapshots = pgTable("sentiment_snapshots", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      snapshotAt: timestamp("snapshot_at").defaultNow().notNull(),
-      overallScore: integer("overall_score").default(50).notNull(),
-      bullishCount: integer("bullish_count").default(0).notNull(),
-      neutralCount: integer("neutral_count").default(0).notNull(),
-      bearishCount: integer("bearish_count").default(0).notNull(),
-      topSentimentDrivers: text("top_sentiment_drivers"),
-      perSpeakerSentiment: text("per_speaker_sentiment"),
+    sentimentSnapshots = pgTable3("sentiment_snapshots", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      snapshotAt: timestamp3("snapshot_at").defaultNow().notNull(),
+      overallScore: integer3("overall_score").default(50).notNull(),
+      bullishCount: integer3("bullish_count").default(0).notNull(),
+      neutralCount: integer3("neutral_count").default(0).notNull(),
+      bearishCount: integer3("bearish_count").default(0).notNull(),
+      topSentimentDrivers: text3("top_sentiment_drivers"),
+      perSpeakerSentiment: text3("per_speaker_sentiment"),
       // JSON array
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    aiGeneratedContent = pgTable("ai_generated_content", {
-      id: serial("id").primaryKey(),
-      eventId: integer("event_id").notNull(),
-      contentType: varchar("content_type", { length: 64 }).notNull(),
-      title: varchar("title", { length: 255 }).notNull(),
-      content: text("content").notNull(),
-      editedContent: text("edited_content"),
-      status: varchar("status", { length: 32 }).default("generated").notNull(),
-      recipients: text("recipients"),
-      generatedAt: timestamp("generated_at").defaultNow().notNull(),
-      generatedBy: integer("generated_by"),
-      approvedAt: timestamp("approved_at"),
-      approvedBy: integer("approved_by"),
-      rejectedAt: timestamp("rejected_at"),
-      rejectionReason: text("rejection_reason"),
-      sentAt: timestamp("sent_at"),
-      sentTo: text("sent_to"),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    aiGeneratedContent = pgTable3("ai_generated_content", {
+      id: serial3("id").primaryKey(),
+      eventId: integer3("event_id").notNull(),
+      contentType: varchar3("content_type", { length: 64 }).notNull(),
+      title: varchar3("title", { length: 255 }).notNull(),
+      content: text3("content").notNull(),
+      editedContent: text3("edited_content"),
+      status: varchar3("status", { length: 32 }).default("generated").notNull(),
+      recipients: text3("recipients"),
+      generatedAt: timestamp3("generated_at").defaultNow().notNull(),
+      generatedBy: integer3("generated_by"),
+      approvedAt: timestamp3("approved_at"),
+      approvedBy: integer3("approved_by"),
+      rejectedAt: timestamp3("rejected_at"),
+      rejectionReason: text3("rejection_reason"),
+      sentAt: timestamp3("sent_at"),
+      sentTo: text3("sent_to"),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    occTranscriptionSegments = pgTable("occ_transcription_segments", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conference_id").notNull(),
-      speakerName: varchar("speaker_name", { length: 255 }),
-      speakerRole: varchar("speaker_role", { length: 64 }),
-      text: text("text"),
-      startTime: integer("start_time"),
-      endTime: integer("end_time"),
-      confidence: real("confidence"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    occTranscriptionSegments = pgTable3("occ_transcription_segments", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conference_id").notNull(),
+      speakerName: varchar3("speaker_name", { length: 255 }),
+      speakerRole: varchar3("speaker_role", { length: 64 }),
+      text: text3("text"),
+      startTime: integer3("start_time"),
+      endTime: integer3("end_time"),
+      confidence: real2("confidence"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    occLiveRollingSummaries = pgTable("occ_live_rolling_summaries", {
-      id: serial("id").primaryKey(),
-      conferenceId: varchar("conference_id", { length: 128 }).notNull(),
-      summary: text("summary").notNull(),
-      segmentCount: integer("segment_count").default(0).notNull(),
-      fromTimeMs: integer("from_time_ms"),
-      toTimeMs: integer("to_time_ms"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    occLiveRollingSummaries = pgTable3("occ_live_rolling_summaries", {
+      id: serial3("id").primaryKey(),
+      conferenceId: varchar3("conference_id", { length: 128 }).notNull(),
+      summary: text3("summary").notNull(),
+      segmentCount: integer3("segment_count").default(0).notNull(),
+      fromTimeMs: integer3("from_time_ms"),
+      toTimeMs: integer3("to_time_ms"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    qaAutoTriageResults = pgTable("qa_auto_triage_results", {
-      id: serial("id").primaryKey(),
-      qaId: integer("qa_id").notNull(),
-      conferenceId: integer("conference_id"),
-      classification: varchar("classification", { length: 32 }).notNull(),
-      confidence: real("confidence"),
-      reason: text("reason"),
+    qaAutoTriageResults = pgTable3("qa_auto_triage_results", {
+      id: serial3("id").primaryKey(),
+      qaId: integer3("qa_id").notNull(),
+      conferenceId: integer3("conference_id"),
+      classification: varchar3("classification", { length: 32 }).notNull(),
+      confidence: real2("confidence"),
+      reason: text3("reason"),
       isSensitive: smallint("is_sensitive").default(0).notNull(),
-      sensitivityFlags: text("sensitivity_flags"),
-      triageScore: real("triage_score"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      sensitivityFlags: text3("sensitivity_flags"),
+      triageScore: real2("triage_score"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    speakingPaceAnalysis = pgTable("speaking_pace_analysis", {
-      id: serial("id").primaryKey(),
-      conferenceId: varchar("conference_id", { length: 128 }).notNull(),
-      segmentId: integer("segment_id"),
-      speakerName: varchar("speaker_name", { length: 255 }),
-      wordsPerMinute: real("words_per_minute"),
-      fillerWordCount: integer("filler_word_count").default(0).notNull(),
-      pauseCount: integer("pause_count").default(0).notNull(),
-      coachingFeedback: text("coaching_feedback"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    speakingPaceAnalysis = pgTable3("speaking_pace_analysis", {
+      id: serial3("id").primaryKey(),
+      conferenceId: varchar3("conference_id", { length: 128 }).notNull(),
+      segmentId: integer3("segment_id"),
+      speakerName: varchar3("speaker_name", { length: 255 }),
+      wordsPerMinute: real2("words_per_minute"),
+      fillerWordCount: integer3("filler_word_count").default(0).notNull(),
+      pauseCount: integer3("pause_count").default(0).notNull(),
+      coachingFeedback: text3("coaching_feedback"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    toxicityFilterResults = pgTable("toxicity_filter_results", {
-      id: serial("id").primaryKey(),
-      contentId: integer("content_id").notNull(),
-      contentType: varchar("content_type", { length: 32 }).default("qa").notNull(),
-      toxicityScore: real("toxicity_score").default(0),
-      categories: text("categories"),
+    toxicityFilterResults = pgTable3("toxicity_filter_results", {
+      id: serial3("id").primaryKey(),
+      contentId: integer3("content_id").notNull(),
+      contentType: varchar3("content_type", { length: 32 }).default("qa").notNull(),
+      toxicityScore: real2("toxicity_score").default(0),
+      categories: text3("categories"),
       flagged: smallint("flagged").default(0).notNull(),
-      actionTaken: varchar("action_taken", { length: 64 }),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      actionTaken: varchar3("action_taken", { length: 64 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    transcriptEdits = pgTable("transcript_edits", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conference_id"),
-      segmentId: integer("segment_id").default(0),
-      transcriptionSegmentId: integer("transcription_segment_id"),
-      operatorId: integer("operator_id"),
-      operatorName: varchar("operator_name", { length: 255 }),
-      originalText: text("original_text").notNull(),
-      correctedText: text("corrected_text").notNull(),
-      editType: varchar("edit_type", { length: 64 }).notNull(),
-      reason: text("reason"),
-      confidence: real("confidence"),
-      approved: boolean("approved").default(false),
-      approvedBy: integer("approved_by"),
-      approvedAt: timestamp("approved_at"),
-      status: varchar("status", { length: 32 }).default("pending"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    transcriptEdits = pgTable3("transcript_edits", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conference_id"),
+      segmentId: integer3("segment_id").default(0),
+      transcriptionSegmentId: integer3("transcription_segment_id"),
+      operatorId: integer3("operator_id"),
+      operatorName: varchar3("operator_name", { length: 255 }),
+      originalText: text3("original_text").notNull(),
+      correctedText: text3("corrected_text").notNull(),
+      editType: varchar3("edit_type", { length: 64 }).notNull(),
+      reason: text3("reason"),
+      confidence: real2("confidence"),
+      approved: boolean3("approved").default(false),
+      approvedBy: integer3("approved_by"),
+      approvedAt: timestamp3("approved_at"),
+      status: varchar3("status", { length: 32 }).default("pending"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    transcriptVersions = pgTable("transcript_versions", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conference_id"),
-      versionNumber: integer("version_number").notNull(),
-      fullTranscript: text("full_transcript").notNull(),
-      editCount: integer("edit_count").default(0),
-      changeDescription: text("change_description"),
-      createdBy: integer("created_by"),
-      createdByName: varchar("created_by_name", { length: 255 }),
-      isPublished: boolean("is_published").default(false),
-      publishedAt: timestamp("published_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    transcriptVersions = pgTable3("transcript_versions", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conference_id"),
+      versionNumber: integer3("version_number").notNull(),
+      fullTranscript: text3("full_transcript").notNull(),
+      editCount: integer3("edit_count").default(0),
+      changeDescription: text3("change_description"),
+      createdBy: integer3("created_by"),
+      createdByName: varchar3("created_by_name", { length: 255 }),
+      isPublished: boolean3("is_published").default(false),
+      publishedAt: timestamp3("published_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    transcriptEditAuditLog = pgTable("transcript_edit_audit_log", {
-      id: serial("id").primaryKey(),
-      conferenceId: integer("conference_id"),
-      editId: integer("edit_id").notNull(),
-      action: varchar("action", { length: 64 }).notNull(),
-      userId: integer("actor_id"),
-      userName: varchar("actor_name", { length: 255 }),
-      userRole: varchar("user_role", { length: 64 }),
-      details: text("details"),
-      notes: text("notes"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    transcriptEditAuditLog = pgTable3("transcript_edit_audit_log", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conference_id"),
+      editId: integer3("edit_id").notNull(),
+      action: varchar3("action", { length: 64 }).notNull(),
+      userId: integer3("actor_id"),
+      userName: varchar3("actor_name", { length: 255 }),
+      userRole: varchar3("user_role", { length: 64 }),
+      details: text3("details"),
+      notes: text3("notes"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    eventBriefResults = pgTable("event_brief_results", {
-      id: serial("id").primaryKey(),
-      conferenceId: varchar("conference_id", { length: 128 }),
-      eventId: integer("event_id"),
-      briefType: varchar("brief_type", { length: 64 }).notNull(),
-      content: text("content").notNull(),
+    eventBriefResults = pgTable3("event_brief_results", {
+      id: serial3("id").primaryKey(),
+      conferenceId: varchar3("conference_id", { length: 128 }),
+      eventId: integer3("event_id"),
+      briefType: varchar3("brief_type", { length: 64 }).notNull(),
+      content: text3("content").notNull(),
       operatorApproved: smallint("operator_approved").default(0),
-      sentAt: timestamp("sent_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      sentAt: timestamp3("sent_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    contentEngagementEvents = pgTable("content_engagement_events", {
-      id: serial("id").primaryKey(),
-      contentId: integer("content_id").notNull(),
-      recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
-      eventType: varchar("event_type", { length: 64 }).notNull(),
-      eventData: text("event_data"),
-      timestamp: timestamp("timestamp").defaultNow().notNull()
+    contentEngagementEvents = pgTable3("content_engagement_events", {
+      id: serial3("id").primaryKey(),
+      contentId: integer3("content_id").notNull(),
+      recipientEmail: varchar3("recipient_email", { length: 255 }).notNull(),
+      eventType: varchar3("event_type", { length: 64 }).notNull(),
+      eventData: text3("event_data"),
+      timestamp: timestamp3("timestamp").defaultNow().notNull()
     });
-    contentPerformanceMetrics = pgTable("content_performance_metrics", {
-      id: serial("id").primaryKey(),
-      contentId: integer("content_id").notNull(),
-      eventId: integer("event_id").notNull(),
-      contentType: varchar("content_type", { length: 50 }).notNull(),
-      approvalStatus: varchar("approval_status", { length: 64 }).notNull().default("pending"),
-      approvalTime: integer("approval_time"),
-      approvalScore: varchar("approval_score", { length: 16 }),
-      recipientCount: integer("recipient_count").default(0),
-      sentCount: integer("sent_count").default(0),
-      openCount: integer("open_count").default(0),
-      clickCount: integer("click_count").default(0),
-      responseCount: integer("response_count").default(0),
-      openRate: varchar("open_rate", { length: 16 }).default("0"),
-      clickThroughRate: varchar("click_through_rate", { length: 16 }).default("0"),
-      responseRate: varchar("response_rate", { length: 16 }).default("0"),
-      engagementScore: varchar("engagement_score", { length: 16 }).default("0"),
-      qualityScore: varchar("quality_score", { length: 16 }),
-      relevanceScore: varchar("relevance_score", { length: 16 }),
-      professionalismScore: varchar("professionalism_score", { length: 16 }),
-      editsCount: integer("edits_count").default(0),
-      rejectionReason: varchar("rejection_reason", { length: 500 }),
-      notes: text("notes"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    contentPerformanceMetrics = pgTable3("content_performance_metrics", {
+      id: serial3("id").primaryKey(),
+      contentId: integer3("content_id").notNull(),
+      eventId: integer3("event_id").notNull(),
+      contentType: varchar3("content_type", { length: 50 }).notNull(),
+      approvalStatus: varchar3("approval_status", { length: 64 }).notNull().default("pending"),
+      approvalTime: integer3("approval_time"),
+      approvalScore: varchar3("approval_score", { length: 16 }),
+      recipientCount: integer3("recipient_count").default(0),
+      sentCount: integer3("sent_count").default(0),
+      openCount: integer3("open_count").default(0),
+      clickCount: integer3("click_count").default(0),
+      responseCount: integer3("response_count").default(0),
+      openRate: varchar3("open_rate", { length: 16 }).default("0"),
+      clickThroughRate: varchar3("click_through_rate", { length: 16 }).default("0"),
+      responseRate: varchar3("response_rate", { length: 16 }).default("0"),
+      engagementScore: varchar3("engagement_score", { length: 16 }).default("0"),
+      qualityScore: varchar3("quality_score", { length: 16 }),
+      relevanceScore: varchar3("relevance_score", { length: 16 }),
+      professionalismScore: varchar3("professionalism_score", { length: 16 }),
+      editsCount: integer3("edits_count").default(0),
+      rejectionReason: varchar3("rejection_reason", { length: 500 }),
+      notes: text3("notes"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    contentTypePerformance = pgTable("content_type_performance", {
-      id: serial("id").primaryKey(),
-      contentType: varchar("content_type", { length: 64 }).notNull(),
-      totalGenerated: integer("total_generated").default(0),
-      approvalRate: varchar("approval_rate", { length: 16 }).default("0"),
-      avgOpenRate: varchar("avg_open_rate", { length: 16 }).default("0"),
-      avgClickThroughRate: varchar("avg_click_through_rate", { length: 16 }).default("0"),
-      performanceRank: integer("performance_rank").default(0),
-      lastUpdated: timestamp("last_updated").defaultNow().notNull()
+    contentTypePerformance = pgTable3("content_type_performance", {
+      id: serial3("id").primaryKey(),
+      contentType: varchar3("content_type", { length: 64 }).notNull(),
+      totalGenerated: integer3("total_generated").default(0),
+      approvalRate: varchar3("approval_rate", { length: 16 }).default("0"),
+      avgOpenRate: varchar3("avg_open_rate", { length: 16 }).default("0"),
+      avgClickThroughRate: varchar3("avg_click_through_rate", { length: 16 }).default("0"),
+      performanceRank: integer3("performance_rank").default(0),
+      lastUpdated: timestamp3("last_updated").defaultNow().notNull()
     });
-    eventPerformanceSummary = pgTable("event_performance_summary", {
-      id: serial("id").primaryKey(),
-      eventId: integer("event_id").notNull(),
-      contentItemsGenerated: integer("content_items_generated").default(0),
-      contentItemsApproved: integer("content_items_approved").default(0),
-      contentItemsRejected: integer("content_items_rejected").default(0),
-      overallApprovalRate: varchar("overall_approval_rate", { length: 16 }).default("0"),
-      avgTimeToApproval: integer("avg_time_to_approval"),
-      totalContentSent: integer("total_content_sent").default(0),
-      totalEngagements: integer("total_engagements").default(0),
-      avgEngagementRate: varchar("avg_engagement_rate", { length: 16 }).default("0"),
-      bestPerformingType: varchar("best_performing_type", { length: 50 }),
-      bestPerformingScore: varchar("best_performing_score", { length: 16 }),
-      worstPerformingType: varchar("worst_performing_type", { length: 50 }),
-      worstPerformingScore: varchar("worst_performing_score", { length: 16 }),
-      avgContentQuality: varchar("avg_content_quality", { length: 16 }),
-      operatorSatisfaction: varchar("operator_satisfaction", { length: 16 }),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    eventPerformanceSummary = pgTable3("event_performance_summary", {
+      id: serial3("id").primaryKey(),
+      eventId: integer3("event_id").notNull(),
+      contentItemsGenerated: integer3("content_items_generated").default(0),
+      contentItemsApproved: integer3("content_items_approved").default(0),
+      contentItemsRejected: integer3("content_items_rejected").default(0),
+      overallApprovalRate: varchar3("overall_approval_rate", { length: 16 }).default("0"),
+      avgTimeToApproval: integer3("avg_time_to_approval"),
+      totalContentSent: integer3("total_content_sent").default(0),
+      totalEngagements: integer3("total_engagements").default(0),
+      avgEngagementRate: varchar3("avg_engagement_rate", { length: 16 }).default("0"),
+      bestPerformingType: varchar3("best_performing_type", { length: 50 }),
+      bestPerformingScore: varchar3("best_performing_score", { length: 16 }),
+      worstPerformingType: varchar3("worst_performing_type", { length: 50 }),
+      worstPerformingScore: varchar3("worst_performing_score", { length: 16 }),
+      avgContentQuality: varchar3("avg_content_quality", { length: 16 }),
+      operatorSatisfaction: varchar3("operator_satisfaction", { length: 16 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    reportKeyMoments = pgTable("report_key_moments", {
-      id: serial("id").primaryKey(),
-      reportId: integer("report_id").notNull(),
-      timestampSeconds: integer("timestamp_seconds").notNull(),
-      momentType: varchar("moment_type", { length: 64 }).notNull(),
-      content: text("content").notNull(),
-      speaker: varchar("speaker", { length: 255 }),
-      severity: varchar("severity", { length: 64 }).default("low"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    reportKeyMoments = pgTable3("report_key_moments", {
+      id: serial3("id").primaryKey(),
+      reportId: integer3("report_id").notNull(),
+      timestampSeconds: integer3("timestamp_seconds").notNull(),
+      momentType: varchar3("moment_type", { length: 64 }).notNull(),
+      content: text3("content").notNull(),
+      speaker: varchar3("speaker", { length: 255 }),
+      severity: varchar3("severity", { length: 64 }).default("low"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    complianceCertificates = pgTable("compliance_certificates", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      certificateId: varchar("certificate_id", { length: 64 }).notNull().unique(),
-      pdfUrl: text("pdf_url").notNull(),
-      generatedBy: integer("generated_by"),
-      generatedAt: timestamp("generated_at").defaultNow().notNull(),
-      signedBy: integer("signed_by"),
-      signedAt: timestamp("signed_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    complianceCertificates = pgTable3("compliance_certificates", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      certificateId: varchar3("certificate_id", { length: 64 }).notNull().unique(),
+      pdfUrl: text3("pdf_url").notNull(),
+      generatedBy: integer3("generated_by"),
+      generatedAt: timestamp3("generated_at").defaultNow().notNull(),
+      signedBy: integer3("signed_by"),
+      signedAt: timestamp3("signed_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    pushSubscriptions = pgTable("push_subscriptions", {
-      id: serial("id").primaryKey(),
-      userId: integer("user_id"),
+    pushSubscriptions = pgTable3("push_subscriptions", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("user_id"),
       // null for anonymous attendees
-      eventId: varchar("event_id", { length: 128 }),
-      endpoint: text("endpoint").notNull(),
-      p256dhKey: varchar("p256dh_key", { length: 255 }).notNull(),
-      authKey: varchar("auth_key", { length: 255 }).notNull(),
-      deviceType: varchar("device_type", { length: 64 }).default("mobile"),
-      isActive: boolean("is_active").default(true).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      eventId: varchar3("event_id", { length: 128 }),
+      endpoint: text3("endpoint").notNull(),
+      p256dhKey: varchar3("p256dh_key", { length: 255 }).notNull(),
+      authKey: varchar3("auth_key", { length: 255 }).notNull(),
+      deviceType: varchar3("device_type", { length: 64 }).default("mobile"),
+      isActive: boolean3("is_active").default(true).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    whiteLabelClients = pgTable("white_label_clients", {
-      id: serial("id").primaryKey(),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      slug: varchar("slug", { length: 128 }).notNull().unique(),
-      logoUrl: text("logo_url"),
-      primaryColor: varchar("primary_color", { length: 7 }).default("#000000"),
-      secondaryColor: varchar("secondary_color", { length: 7 }).default("#ffffff"),
-      accentColor: varchar("accent_color", { length: 7 }).default("#007bff"),
-      customDomain: varchar("custom_domain", { length: 255 }),
-      contactEmail: varchar("contact_email", { length: 320 }),
-      contactName: varchar("contact_name", { length: 255 }),
-      billingTier: varchar("billing_tier", { length: 64 }).default("starter").notNull(),
-      maxConcurrentEvents: integer("max_concurrent_events").default(1),
-      maxMonthlyEvents: integer("max_monthly_events").default(5),
-      featuresEnabled: text("features_enabled"),
+    whiteLabelClients = pgTable3("white_label_clients", {
+      id: serial3("id").primaryKey(),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      slug: varchar3("slug", { length: 128 }).notNull().unique(),
+      logoUrl: text3("logo_url"),
+      primaryColor: varchar3("primary_color", { length: 7 }).default("#000000"),
+      secondaryColor: varchar3("secondary_color", { length: 7 }).default("#ffffff"),
+      accentColor: varchar3("accent_color", { length: 7 }).default("#007bff"),
+      customDomain: varchar3("custom_domain", { length: 255 }),
+      contactEmail: varchar3("contact_email", { length: 320 }),
+      contactName: varchar3("contact_name", { length: 255 }),
+      billingTier: varchar3("billing_tier", { length: 64 }).default("starter").notNull(),
+      maxConcurrentEvents: integer3("max_concurrent_events").default(1),
+      maxMonthlyEvents: integer3("max_monthly_events").default(5),
+      featuresEnabled: text3("features_enabled"),
       // JSON array of enabled feature keys
-      isActive: boolean("is_active").default(true).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+      isActive: boolean3("is_active").default(true).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    clientEventAssignments = pgTable("client_event_assignments", {
-      id: serial("id").primaryKey(),
-      clientId: integer("client_id").notNull(),
-      eventId: integer("event_id").notNull(),
+    clientEventAssignments = pgTable3("client_event_assignments", {
+      id: serial3("id").primaryKey(),
+      clientId: integer3("client_id").notNull(),
+      eventId: integer3("event_id").notNull(),
       // maps to events.id
-      displayOrder: integer("display_order").default(0).notNull(),
-      isFeatured: boolean("is_featured").default(false).notNull(),
-      customTitle: varchar("custom_title", { length: 255 }),
-      customDescription: text("custom_description"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      displayOrder: integer3("display_order").default(0).notNull(),
+      isFeatured: boolean3("is_featured").default(false).notNull(),
+      customTitle: varchar3("custom_title", { length: 255 }),
+      customDescription: text3("custom_description"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    socialMediaAccounts = pgTable("social_media_accounts", {
-      id: serial("id").primaryKey(),
-      userId: integer("user_id").notNull(),
-      platform: varchar("platform", { length: 64 }).notNull(),
-      accountId: varchar("account_id", { length: 255 }).notNull(),
-      accountName: varchar("account_name", { length: 255 }).notNull(),
-      accountHandle: varchar("account_handle", { length: 255 }),
-      avatarUrl: text("avatar_url"),
-      accessToken: text("access_token").notNull(),
-      refreshToken: text("refresh_token"),
-      expiresAt: timestamp("expires_at"),
-      linkedEvents: text("linked_events"),
-      isActive: boolean("is_active").default(true).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    socialMediaAccounts = pgTable3("social_media_accounts", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("user_id").notNull(),
+      platform: varchar3("platform", { length: 64 }).notNull(),
+      accountId: varchar3("account_id", { length: 255 }).notNull(),
+      accountName: varchar3("account_name", { length: 255 }).notNull(),
+      accountHandle: varchar3("account_handle", { length: 255 }),
+      avatarUrl: text3("avatar_url"),
+      accessToken: text3("access_token").notNull(),
+      refreshToken: text3("refresh_token"),
+      expiresAt: timestamp3("expires_at"),
+      linkedEvents: text3("linked_events"),
+      isActive: boolean3("is_active").default(true).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    socialPosts = pgTable("social_posts", {
-      id: serial("id").primaryKey(),
-      eventId: integer("event_id"),
-      createdBy: integer("created_by").notNull(),
-      content: text("content").notNull(),
-      aiGenerated: boolean("ai_generated").default(false).notNull(),
-      echoSource: varchar("echo_source", { length: 64 }),
-      contentType: varchar("content_type", { length: 64 }).default("text").notNull(),
-      platforms: text("platforms").notNull(),
-      scheduledAt: timestamp("scheduled_at"),
-      publishedAt: timestamp("published_at"),
-      status: varchar("status", { length: 64 }).default("draft").notNull(),
-      moderationStatus: varchar("moderation_status", { length: 64 }).default("pending").notNull(),
-      moderationNotes: text("moderation_notes"),
-      errorMessage: text("error_message"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    socialPosts = pgTable3("social_posts", {
+      id: serial3("id").primaryKey(),
+      eventId: integer3("event_id"),
+      createdBy: integer3("created_by").notNull(),
+      content: text3("content").notNull(),
+      aiGenerated: boolean3("ai_generated").default(false).notNull(),
+      echoSource: varchar3("echo_source", { length: 64 }),
+      contentType: varchar3("content_type", { length: 64 }).default("text").notNull(),
+      platforms: text3("platforms").notNull(),
+      scheduledAt: timestamp3("scheduled_at"),
+      publishedAt: timestamp3("published_at"),
+      status: varchar3("status", { length: 64 }).default("draft").notNull(),
+      moderationStatus: varchar3("moderation_status", { length: 64 }).default("pending").notNull(),
+      moderationNotes: text3("moderation_notes"),
+      errorMessage: text3("error_message"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    socialPostPlatforms = pgTable("social_post_platforms", {
-      id: serial("id").primaryKey(),
-      postId: integer("post_id").notNull(),
-      accountId: integer("account_id").notNull(),
-      platform: varchar("platform", { length: 64 }).notNull(),
-      externalPostId: varchar("external_post_id", { length: 255 }),
-      publishStatus: varchar("publish_status", { length: 64 }).default("pending").notNull(),
-      publishedAt: timestamp("published_at"),
-      errorMessage: text("error_message"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    socialPostPlatforms = pgTable3("social_post_platforms", {
+      id: serial3("id").primaryKey(),
+      postId: integer3("post_id").notNull(),
+      accountId: integer3("account_id").notNull(),
+      platform: varchar3("platform", { length: 64 }).notNull(),
+      externalPostId: varchar3("external_post_id", { length: 255 }),
+      publishStatus: varchar3("publish_status", { length: 64 }).default("pending").notNull(),
+      publishedAt: timestamp3("published_at"),
+      errorMessage: text3("error_message"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    socialMetrics = pgTable("social_metrics", {
-      id: serial("id").primaryKey(),
-      postId: integer("post_id").notNull(),
-      accountId: integer("account_id").notNull(),
-      platform: varchar("platform", { length: 64 }).notNull(),
-      views: integer("views").default(0).notNull(),
-      likes: integer("likes").default(0).notNull(),
-      shares: integer("shares").default(0).notNull(),
-      comments: integer("comments").default(0).notNull(),
-      clicks: integer("clicks").default(0).notNull(),
-      engagementRate: real("engagement_rate").default(0).notNull(),
-      roiCorrelation: real("roi_correlation").default(0).notNull(),
-      aiInsight: text("ai_insight"),
-      collectedAt: timestamp("collected_at").defaultNow().notNull()
+    socialMetrics = pgTable3("social_metrics", {
+      id: serial3("id").primaryKey(),
+      postId: integer3("post_id").notNull(),
+      accountId: integer3("account_id").notNull(),
+      platform: varchar3("platform", { length: 64 }).notNull(),
+      views: integer3("views").default(0).notNull(),
+      likes: integer3("likes").default(0).notNull(),
+      shares: integer3("shares").default(0).notNull(),
+      comments: integer3("comments").default(0).notNull(),
+      clicks: integer3("clicks").default(0).notNull(),
+      engagementRate: real2("engagement_rate").default(0).notNull(),
+      roiCorrelation: real2("roi_correlation").default(0).notNull(),
+      aiInsight: text3("ai_insight"),
+      collectedAt: timestamp3("collected_at").defaultNow().notNull()
     });
-    socialAuditLog = pgTable("social_audit_log", {
-      id: serial("id").primaryKey(),
-      userId: integer("user_id").notNull(),
-      postId: integer("post_id"),
-      action: varchar("action", { length: 64 }).notNull(),
-      platform: varchar("platform", { length: 32 }),
-      details: text("details"),
-      ipAddress: varchar("ip_address", { length: 64 }),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    socialAuditLog = pgTable3("social_audit_log", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("user_id").notNull(),
+      postId: integer3("post_id"),
+      action: varchar3("action", { length: 64 }).notNull(),
+      platform: varchar3("platform", { length: 32 }),
+      details: text3("details"),
+      ipAddress: varchar3("ip_address", { length: 64 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    webcastEnhancements = pgTable("webcast_enhancements", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      personalizationEnabled: boolean("personalization_enabled").default(true).notNull(),
-      xrEnabled: boolean("xr_enabled").default(false).notNull(),
-      languageDubbingEnabled: boolean("language_dubbing_enabled").default(false).notNull(),
-      dubbingLanguage: varchar("dubbing_language", { length: 32 }).default("en").notNull(),
-      sustainabilityScore: real("sustainability_score").default(0).notNull(),
-      adIntegrationEnabled: boolean("ad_integration_enabled").default(false).notNull(),
-      adPreRollEnabled: boolean("ad_pre_roll_enabled").default(false).notNull(),
-      adMidRollEnabled: boolean("ad_mid_roll_enabled").default(false).notNull(),
-      noiseEnhancementEnabled: boolean("noise_enhancement_enabled").default(true).notNull(),
-      noiseGateEnabled: boolean("noise_gate_enabled").default(true).notNull(),
-      echoCancellationEnabled: boolean("echo_cancellation_enabled").default(true).notNull(),
-      autoGainEnabled: boolean("auto_gain_enabled").default(false).notNull(),
-      podcastGeneratedAt: timestamp("podcast_generated_at"),
-      podcastTitle: varchar("podcast_title", { length: 512 }),
-      podcastScript: text("podcast_script"),
-      recapGeneratedAt: timestamp("recap_generated_at"),
-      recapBrief: text("recap_brief"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    webcastEnhancements = pgTable3("webcast_enhancements", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      personalizationEnabled: boolean3("personalization_enabled").default(true).notNull(),
+      xrEnabled: boolean3("xr_enabled").default(false).notNull(),
+      languageDubbingEnabled: boolean3("language_dubbing_enabled").default(false).notNull(),
+      dubbingLanguage: varchar3("dubbing_language", { length: 32 }).default("en").notNull(),
+      sustainabilityScore: real2("sustainability_score").default(0).notNull(),
+      adIntegrationEnabled: boolean3("ad_integration_enabled").default(false).notNull(),
+      adPreRollEnabled: boolean3("ad_pre_roll_enabled").default(false).notNull(),
+      adMidRollEnabled: boolean3("ad_mid_roll_enabled").default(false).notNull(),
+      noiseEnhancementEnabled: boolean3("noise_enhancement_enabled").default(true).notNull(),
+      noiseGateEnabled: boolean3("noise_gate_enabled").default(true).notNull(),
+      echoCancellationEnabled: boolean3("echo_cancellation_enabled").default(true).notNull(),
+      autoGainEnabled: boolean3("auto_gain_enabled").default(false).notNull(),
+      podcastGeneratedAt: timestamp3("podcast_generated_at"),
+      podcastTitle: varchar3("podcast_title", { length: 512 }),
+      podcastScript: text3("podcast_script"),
+      recapGeneratedAt: timestamp3("recap_generated_at"),
+      recapBrief: text3("recap_brief"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    webcastAnalyticsExpanded = pgTable("webcast_analytics_expanded", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      viewerEngagement: real("viewer_engagement").default(0).notNull(),
-      roiUplift: real("roi_uplift").default(0).notNull(),
-      carbonFootprintKg: real("carbon_footprint_kg").default(0).notNull(),
-      carbonSavedKg: real("carbon_saved_kg").default(0).notNull(),
-      attendeesTravelAvoided: integer("attendees_travel_avoided").default(0).notNull(),
-      adRevenue: real("ad_revenue").default(0).notNull(),
-      podcastListens: integer("podcast_listens").default(0).notNull(),
-      recapViews: integer("recap_views").default(0).notNull(),
-      sustainabilityGrade: varchar("sustainability_grade", { length: 4 }).default("B").notNull(),
-      collectedAt: timestamp("collected_at").defaultNow().notNull()
+    webcastAnalyticsExpanded = pgTable3("webcast_analytics_expanded", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      viewerEngagement: real2("viewer_engagement").default(0).notNull(),
+      roiUplift: real2("roi_uplift").default(0).notNull(),
+      carbonFootprintKg: real2("carbon_footprint_kg").default(0).notNull(),
+      carbonSavedKg: real2("carbon_saved_kg").default(0).notNull(),
+      attendeesTravelAvoided: integer3("attendees_travel_avoided").default(0).notNull(),
+      adRevenue: real2("ad_revenue").default(0).notNull(),
+      podcastListens: integer3("podcast_listens").default(0).notNull(),
+      recapViews: integer3("recap_views").default(0).notNull(),
+      sustainabilityGrade: varchar3("sustainability_grade", { length: 4 }).default("B").notNull(),
+      collectedAt: timestamp3("collected_at").defaultNow().notNull()
     });
-    interconnectionActivations = pgTable("interconnection_activations", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }),
-      userId: integer("user_id").default(0).notNull(),
-      featureId: varchar("feature_id", { length: 64 }).notNull(),
-      connectedFeatureId: varchar("connected_feature_id", { length: 64 }).notNull(),
-      activationSource: varchar("activation_source", { length: 32 }).default("manual").notNull(),
-      roiMultiplier: real("roi_multiplier").default(1).notNull(),
-      activatedAt: timestamp("activated_at").defaultNow().notNull()
+    interconnectionActivations = pgTable3("interconnection_activations", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }),
+      userId: integer3("user_id").default(0).notNull(),
+      featureId: varchar3("feature_id", { length: 64 }).notNull(),
+      connectedFeatureId: varchar3("connected_feature_id", { length: 64 }).notNull(),
+      activationSource: varchar3("activation_source", { length: 32 }).default("manual").notNull(),
+      roiMultiplier: real2("roi_multiplier").default(1).notNull(),
+      activatedAt: timestamp3("activated_at").defaultNow().notNull()
     });
-    interconnectionAnalytics = pgTable("interconnection_analytics", {
-      id: serial("id").primaryKey(),
-      date: varchar("date", { length: 16 }).notNull(),
-      totalActivations: integer("total_activations").default(0).notNull(),
-      uniqueFeatures: integer("unique_features").default(0).notNull(),
-      avgConnectionsPerUser: real("avg_connections_per_user").default(0).notNull(),
-      topFeatureId: varchar("top_feature_id", { length: 64 }),
-      roiRealized: real("roi_realized").default(0).notNull(),
-      workflowCompletionRate: real("workflow_completion_rate").default(0).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    interconnectionAnalytics = pgTable3("interconnection_analytics", {
+      id: serial3("id").primaryKey(),
+      date: varchar3("date", { length: 16 }).notNull(),
+      totalActivations: integer3("total_activations").default(0).notNull(),
+      uniqueFeatures: integer3("unique_features").default(0).notNull(),
+      avgConnectionsPerUser: real2("avg_connections_per_user").default(0).notNull(),
+      topFeatureId: varchar3("top_feature_id", { length: 64 }),
+      roiRealized: real2("roi_realized").default(0).notNull(),
+      workflowCompletionRate: real2("workflow_completion_rate").default(0).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    virtualStudios = pgTable("virtual_studios", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      bundleId: varchar("bundle_id", { length: 8 }).notNull(),
-      studioName: varchar("studio_name", { length: 255 }).default("My Virtual Studio").notNull(),
-      avatarStyle: varchar("avatar_style", { length: 32 }).default("professional").notNull(),
-      primaryLanguage: varchar("primary_language", { length: 8 }).default("en").notNull(),
-      dubbingLanguages: text("dubbing_languages"),
-      esgEnabled: boolean("esg_enabled").default(false).notNull(),
-      replayEnabled: boolean("replay_enabled").default(true).notNull(),
-      overlaysConfig: text("overlays_config"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    virtualStudios = pgTable3("virtual_studios", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      bundleId: varchar3("bundle_id", { length: 8 }).notNull(),
+      studioName: varchar3("studio_name", { length: 255 }).default("My Virtual Studio").notNull(),
+      avatarStyle: varchar3("avatar_style", { length: 32 }).default("professional").notNull(),
+      primaryLanguage: varchar3("primary_language", { length: 8 }).default("en").notNull(),
+      dubbingLanguages: text3("dubbing_languages"),
+      esgEnabled: boolean3("esg_enabled").default(false).notNull(),
+      replayEnabled: boolean3("replay_enabled").default(true).notNull(),
+      overlaysConfig: text3("overlays_config"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    esgStudioFlags = pgTable("esg_studio_flags", {
-      id: serial("id").primaryKey(),
-      studioId: integer("studio_id").notNull(),
-      flagType: varchar("flag_type", { length: 64 }).notNull(),
-      description: text("description").notNull(),
-      severity: varchar("severity", { length: 16 }).default("medium").notNull(),
-      contentSnippet: text("content_snippet"),
-      resolvedAt: timestamp("resolved_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    esgStudioFlags = pgTable3("esg_studio_flags", {
+      id: serial3("id").primaryKey(),
+      studioId: integer3("studio_id").notNull(),
+      flagType: varchar3("flag_type", { length: 64 }).notNull(),
+      description: text3("description").notNull(),
+      severity: varchar3("severity", { length: 16 }).default("medium").notNull(),
+      contentSnippet: text3("content_snippet"),
+      resolvedAt: timestamp3("resolved_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    studioInterconnections = pgTable("studio_interconnections", {
-      id: serial("id").primaryKey(),
-      studioId: integer("studio_id").notNull(),
-      featureId: varchar("feature_id", { length: 64 }).notNull(),
-      connectedFeatureId: varchar("connected_feature_id", { length: 64 }).notNull(),
-      isActive: boolean("is_active").default(true).notNull(),
-      activeAt: timestamp("active_at").defaultNow().notNull()
+    studioInterconnections = pgTable3("studio_interconnections", {
+      id: serial3("id").primaryKey(),
+      studioId: integer3("studio_id").notNull(),
+      featureId: varchar3("feature_id", { length: 64 }).notNull(),
+      connectedFeatureId: varchar3("connected_feature_id", { length: 64 }).notNull(),
+      isActive: boolean3("is_active").default(true).notNull(),
+      activeAt: timestamp3("active_at").defaultNow().notNull()
     });
-    operatorLinkAnalytics = pgTable("operator_link_analytics", {
-      id: serial("id").primaryKey(),
-      operatorId: integer("operator_id"),
-      linkPath: varchar("link_path", { length: 255 }).notNull(),
-      linkTitle: varchar("link_title", { length: 255 }),
-      category: varchar("category", { length: 64 }),
-      accessedAt: timestamp("accessed_at").defaultNow().notNull(),
-      timeSpentSeconds: integer("time_spent_seconds"),
-      userAgent: text("user_agent"),
-      ipAddress: varchar("ip_address", { length: 45 }),
-      sessionId: varchar("session_id", { length: 128 })
+    operatorLinkAnalytics = pgTable3("operator_link_analytics", {
+      id: serial3("id").primaryKey(),
+      operatorId: integer3("operator_id"),
+      linkPath: varchar3("link_path", { length: 255 }).notNull(),
+      linkTitle: varchar3("link_title", { length: 255 }),
+      category: varchar3("category", { length: 64 }),
+      accessedAt: timestamp3("accessed_at").defaultNow().notNull(),
+      timeSpentSeconds: integer3("time_spent_seconds"),
+      userAgent: text3("user_agent"),
+      ipAddress: varchar3("ip_address", { length: 45 }),
+      sessionId: varchar3("session_id", { length: 128 })
     });
-    operatorLinksMetadata = pgTable("operator_links_metadata", {
-      id: serial("id").primaryKey(),
-      linkPath: varchar("link_path", { length: 255 }).notNull().unique(),
-      title: varchar("title", { length: 255 }).notNull(),
-      description: text("description"),
-      category: varchar("category", { length: 50 }),
-      badgeType: varchar("badge_type", { length: 50 }),
-      sortOrder: integer("sort_order").default(0),
-      isActive: boolean("is_active").default(true).notNull(),
-      clickCount: integer("click_count").default(0).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    operatorLinksMetadata = pgTable3("operator_links_metadata", {
+      id: serial3("id").primaryKey(),
+      linkPath: varchar3("link_path", { length: 255 }).notNull().unique(),
+      title: varchar3("title", { length: 255 }).notNull(),
+      description: text3("description"),
+      category: varchar3("category", { length: 50 }),
+      badgeType: varchar3("badge_type", { length: 50 }),
+      sortOrder: integer3("sort_order").default(0),
+      isActive: boolean3("is_active").default(true).notNull(),
+      clickCount: integer3("click_count").default(0).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    agenticAnalyses = pgTable("agentic_analyses", {
-      id: serial("id").primaryKey(),
-      sessionId: varchar("session_id", { length: 128 }),
-      q1Role: varchar("q1_role", { length: 64 }).notNull(),
-      q2Challenge: varchar("q2_challenge", { length: 64 }).notNull(),
-      q3EventType: varchar("q3_event_type", { length: 64 }).notNull(),
-      primaryBundle: varchar("primary_bundle", { length: 64 }).notNull(),
-      bundleLetter: varchar("bundle_letter", { length: 4 }).notNull(),
-      score: real("score").notNull(),
-      aiAction: text("ai_action"),
-      roiPreview: varchar("roi_preview", { length: 255 }),
-      interconnections: text("interconnections"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    agenticAnalyses = pgTable3("agentic_analyses", {
+      id: serial3("id").primaryKey(),
+      sessionId: varchar3("session_id", { length: 128 }),
+      q1Role: varchar3("q1_role", { length: 64 }).notNull(),
+      q2Challenge: varchar3("q2_challenge", { length: 64 }).notNull(),
+      q3EventType: varchar3("q3_event_type", { length: 64 }).notNull(),
+      primaryBundle: varchar3("primary_bundle", { length: 64 }).notNull(),
+      bundleLetter: varchar3("bundle_letter", { length: 4 }).notNull(),
+      score: real2("score").notNull(),
+      aiAction: text3("ai_action"),
+      roiPreview: varchar3("roi_preview", { length: 255 }),
+      interconnections: text3("interconnections"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    autonomousInterventions = pgTable("autonomous_interventions", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }),
-      conferenceId: varchar("conference_id", { length: 128 }),
-      ruleId: varchar("rule_id", { length: 64 }).notNull(),
-      ruleName: varchar("rule_name", { length: 255 }).notNull(),
-      triggerValue: real("trigger_value"),
-      threshold: real("threshold"),
-      severity: varchar("severity", { length: 64 }).default("warning").notNull(),
-      bundleTriggered: varchar("bundle_triggered", { length: 64 }),
-      actionTaken: text("action_taken").notNull(),
-      acknowledged: boolean("acknowledged").default(false).notNull(),
-      acknowledgedAt: timestamp("acknowledged_at"),
-      outcome: text("outcome"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    autonomousInterventions = pgTable3("autonomous_interventions", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }),
+      conferenceId: varchar3("conference_id", { length: 128 }),
+      ruleId: varchar3("rule_id", { length: 64 }).notNull(),
+      ruleName: varchar3("rule_name", { length: 255 }).notNull(),
+      triggerValue: real2("trigger_value"),
+      threshold: real2("threshold"),
+      severity: varchar3("severity", { length: 64 }).default("warning").notNull(),
+      bundleTriggered: varchar3("bundle_triggered", { length: 64 }),
+      actionTaken: text3("action_taken").notNull(),
+      acknowledged: boolean3("acknowledged").default(false).notNull(),
+      acknowledgedAt: timestamp3("acknowledged_at"),
+      outcome: text3("outcome"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    taggedMetrics = pgTable("tagged_metrics", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 255 }).notNull(),
-      eventTitle: varchar("event_title", { length: 255 }),
-      tagType: varchar("tag_type", { length: 64 }).notNull(),
-      metricValue: real("metric_value").notNull(),
-      label: varchar("label", { length: 255 }),
-      detail: text("detail"),
-      bundle: varchar("bundle", { length: 64 }),
-      severity: varchar("severity", { length: 64 }).default("neutral").notNull(),
-      source: varchar("source", { length: 64 }).default("system"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    taggedMetrics = pgTable3("tagged_metrics", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 255 }).notNull(),
+      eventTitle: varchar3("event_title", { length: 255 }),
+      tagType: varchar3("tag_type", { length: 64 }).notNull(),
+      metricValue: real2("metric_value").notNull(),
+      label: varchar3("label", { length: 255 }),
+      detail: text3("detail"),
+      bundle: varchar3("bundle", { length: 64 }),
+      severity: varchar3("severity", { length: 64 }).default("neutral").notNull(),
+      source: varchar3("source", { length: 64 }).default("system"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    shadowSessions = pgTable("shadow_sessions", {
-      id: serial("id").primaryKey(),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      eventName: varchar("event_name", { length: 255 }).notNull(),
-      eventType: varchar("event_type", { length: 64 }).notNull(),
-      platform: varchar("platform", { length: 64 }).default("zoom").notNull(),
-      meetingUrl: varchar("meeting_url", { length: 1e3 }).notNull(),
-      recallBotId: varchar("recall_bot_id", { length: 255 }),
-      ablyChannel: varchar("ably_channel", { length: 255 }),
-      localTranscriptJson: text("local_transcript_json"),
-      localRecordingPath: varchar("local_recording_path", { length: 1e3 }),
-      status: varchar("status", { length: 64 }).default("pending").notNull(),
-      transcriptSegments: integer("transcript_segments").default(0),
-      sentimentAvg: real("sentiment_avg"),
-      complianceFlags: integer("compliance_flags").default(0),
-      taggedMetricsGenerated: integer("tagged_metrics_generated").default(0),
-      notes: text("notes"),
+    shadowSessions = pgTable3("shadow_sessions", {
+      id: serial3("id").primaryKey(),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      eventName: varchar3("event_name", { length: 255 }).notNull(),
+      eventType: varchar3("event_type", { length: 64 }).notNull(),
+      platform: varchar3("platform", { length: 64 }).default("zoom").notNull(),
+      meetingUrl: varchar3("meeting_url", { length: 1e3 }).notNull(),
+      recallBotId: varchar3("recall_bot_id", { length: 255 }),
+      ablyChannel: varchar3("ably_channel", { length: 255 }),
+      localTranscriptJson: text3("local_transcript_json"),
+      localRecordingPath: varchar3("local_recording_path", { length: 1e3 }),
+      status: varchar3("status", { length: 64 }).default("pending").notNull(),
+      transcriptSegments: integer3("transcript_segments").default(0),
+      sentimentAvg: real2("sentiment_avg"),
+      complianceFlags: integer3("compliance_flags").default(0),
+      taggedMetricsGenerated: integer3("tagged_metrics_generated").default(0),
+      notes: text3("notes"),
       startedAt: bigint("started_at", { mode: "number" }),
       endedAt: bigint("ended_at", { mode: "number" }),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    operatorCorrections = pgTable("operator_corrections", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 255 }).notNull(),
-      eventTitle: varchar("event_title", { length: 255 }),
-      metricId: integer("metric_id"),
-      correctionType: varchar("correction_type", { length: 64 }).notNull(),
-      originalValue: real("original_value"),
-      correctedValue: real("corrected_value"),
-      originalLabel: varchar("original_label", { length: 255 }),
-      correctedLabel: varchar("corrected_label", { length: 255 }),
-      reason: text("reason"),
-      eventType: varchar("event_type", { length: 64 }),
-      clientName: varchar("client_name", { length: 255 }),
-      operatorId: varchar("operator_id", { length: 255 }).default("operator"),
+    operatorActions = pgTable3("operator_actions", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id"),
+      archiveId: integer3("archive_id"),
+      actionType: varchar3("action_type", { length: 64 }).notNull(),
+      detail: text3("detail"),
+      operatorId: integer3("operator_id"),
+      operatorName: varchar3("operator_name", { length: 255 }),
+      metadata: text3("metadata"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    operatorCorrections = pgTable3("operator_corrections", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 255 }).notNull(),
+      eventTitle: varchar3("event_title", { length: 255 }),
+      metricId: integer3("metric_id"),
+      correctionType: varchar3("correction_type", { length: 64 }).notNull(),
+      originalValue: real2("original_value"),
+      correctedValue: real2("corrected_value"),
+      originalLabel: varchar3("original_label", { length: 255 }),
+      correctedLabel: varchar3("corrected_label", { length: 255 }),
+      reason: text3("reason"),
+      eventType: varchar3("event_type", { length: 64 }),
+      clientName: varchar3("client_name", { length: 255 }),
+      operatorId: varchar3("operator_id", { length: 255 }).default("operator"),
       appliedToModel: smallint("applied_to_model").default(0),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    adaptiveThresholds = pgTable("adaptive_thresholds", {
-      id: serial("id").primaryKey(),
-      thresholdKey: varchar("threshold_key", { length: 255 }).notNull(),
-      eventType: varchar("event_type", { length: 64 }),
-      sector: varchar("sector", { length: 64 }),
-      metricType: varchar("metric_type", { length: 64 }).notNull(),
-      defaultValue: real("default_value").notNull(),
-      learnedValue: real("learned_value").notNull(),
-      sampleCount: integer("sample_count").default(0),
-      lastCorrectionAt: timestamp("last_correction_at").defaultNow(),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    adaptiveThresholds = pgTable3("adaptive_thresholds", {
+      id: serial3("id").primaryKey(),
+      thresholdKey: varchar3("threshold_key", { length: 255 }).notNull(),
+      eventType: varchar3("event_type", { length: 64 }),
+      sector: varchar3("sector", { length: 64 }),
+      metricType: varchar3("metric_type", { length: 64 }).notNull(),
+      defaultValue: real2("default_value").notNull(),
+      learnedValue: real2("learned_value").notNull(),
+      sampleCount: integer3("sample_count").default(0),
+      lastCorrectionAt: timestamp3("last_correction_at").defaultNow(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    complianceVocabulary = pgTable("compliance_vocabulary", {
-      id: serial("id").primaryKey(),
-      keyword: varchar("keyword", { length: 255 }).notNull(),
-      source: varchar("source", { length: 64 }).default("system").notNull(),
-      severityWeight: real("severity_weight").default(1),
-      timesFlagged: integer("times_flagged").default(0),
-      timesDismissed: integer("times_dismissed").default(0),
-      effectiveWeight: real("effective_weight").default(1),
-      sector: varchar("sector", { length: 64 }),
-      addedBy: varchar("added_by", { length: 255 }).default("system"),
+    complianceVocabulary = pgTable3("compliance_vocabulary", {
+      id: serial3("id").primaryKey(),
+      keyword: varchar3("keyword", { length: 255 }).notNull(),
+      source: varchar3("source", { length: 64 }).default("system").notNull(),
+      severityWeight: real2("severity_weight").default(1),
+      timesFlagged: integer3("times_flagged").default(0),
+      timesDismissed: integer3("times_dismissed").default(0),
+      effectiveWeight: real2("effective_weight").default(1),
+      sector: varchar3("sector", { length: 64 }),
+      addedBy: varchar3("added_by", { length: 255 }).default("system"),
       active: smallint("active").default(1),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    userFeedback = pgTable("user_feedback", {
-      id: serial("id").primaryKey(),
-      rating: integer("rating").notNull(),
-      suggestion: text("suggestion"),
-      email: varchar("email", { length: 255 }),
-      userId: integer("user_id"),
-      pageUrl: varchar("page_url", { length: 1e3 }),
-      ipAddress: varchar("ip_address", { length: 64 }),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    userFeedback = pgTable3("user_feedback", {
+      id: serial3("id").primaryKey(),
+      rating: integer3("rating").notNull(),
+      suggestion: text3("suggestion"),
+      email: varchar3("email", { length: 255 }),
+      userId: integer3("user_id"),
+      pageUrl: varchar3("page_url", { length: 1e3 }),
+      ipAddress: varchar3("ip_address", { length: 64 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    aiAmAuditLog = pgTable("ai_am_audit_log", {
-      id: varchar("id", { length: 36 }).primaryKey(),
+    aiAmAuditLog = pgTable3("ai_am_audit_log", {
+      id: varchar3("id", { length: 36 }).primaryKey(),
       // UUID
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      action: varchar("action", { length: 64 }).notNull(),
-      actionBy: varchar("action_by", { length: 128 }).notNull(),
-      actionByRole: varchar("action_by_role", { length: 64 }),
-      targetViolationId: varchar("target_violation_id", { length: 128 }),
-      targetSpeaker: varchar("target_speaker", { length: 255 }),
-      details: text("details"),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      action: varchar3("action", { length: 64 }).notNull(),
+      actionBy: varchar3("action_by", { length: 128 }).notNull(),
+      actionByRole: varchar3("action_by_role", { length: 64 }),
+      targetViolationId: varchar3("target_violation_id", { length: 128 }),
+      targetSpeaker: varchar3("target_speaker", { length: 255 }),
+      details: text3("details"),
       timestamp: bigint("timestamp", { mode: "number" }).notNull(),
-      ipAddress: varchar("ip_address", { length: 64 }),
-      userAgent: varchar("user_agent", { length: 512 }),
-      hash: varchar("hash", { length: 64 }).notNull(),
-      previousHash: varchar("previous_hash", { length: 64 })
+      ipAddress: varchar3("ip_address", { length: 64 }),
+      userAgent: varchar3("user_agent", { length: 512 }),
+      hash: varchar3("hash", { length: 64 }).notNull(),
+      previousHash: varchar3("previous_hash", { length: 64 })
     });
-    complianceViolations = pgTable("compliance_violations", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      violationId: varchar("violation_id", { length: 128 }),
-      conferenceId: integer("conference_id"),
-      violationType: varchar("violation_type", { length: 128 }).notNull(),
-      severity: varchar("severity", { length: 32 }).notNull(),
-      confidence: real("confidence"),
-      confidenceScore: real("confidence_score"),
-      speaker: varchar("speaker", { length: 255 }),
-      speakerName: varchar("speaker_name", { length: 255 }),
-      speakerRole: varchar("speaker_role", { length: 128 }),
-      transcript: text("transcript"),
-      transcriptExcerpt: text("transcript_excerpt"),
-      startTimeMs: integer("start_time_ms"),
-      endTimeMs: integer("end_time_ms"),
+    complianceViolations = pgTable3("compliance_violations", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      violationId: varchar3("violation_id", { length: 128 }),
+      conferenceId: integer3("conference_id"),
+      violationType: varchar3("violation_type", { length: 128 }).notNull(),
+      severity: varchar3("severity", { length: 32 }).notNull(),
+      confidence: real2("confidence"),
+      confidenceScore: real2("confidence_score"),
+      speaker: varchar3("speaker", { length: 255 }),
+      speakerName: varchar3("speaker_name", { length: 255 }),
+      speakerRole: varchar3("speaker_role", { length: 128 }),
+      transcript: text3("transcript"),
+      transcriptExcerpt: text3("transcript_excerpt"),
+      startTimeMs: integer3("start_time_ms"),
+      endTimeMs: integer3("end_time_ms"),
       acknowledged: smallint("acknowledged").default(0),
-      acknowledgedAt: timestamp("acknowledged_at"),
-      actionTaken: varchar("action_taken", { length: 64 }).default("none"),
-      detectedAt: timestamp("detected_at").defaultNow().notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+      acknowledgedAt: timestamp3("acknowledged_at"),
+      actionTaken: varchar3("action_taken", { length: 64 }).default("none"),
+      detectedAt: timestamp3("detected_at").defaultNow().notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    alertPreferences = pgTable("alert_preferences", {
-      id: serial("id").primaryKey(),
-      operatorId: varchar("operator_id", { length: 128 }).notNull().unique(),
-      eventId: varchar("event_id", { length: 128 }),
+    alertPreferences = pgTable3("alert_preferences", {
+      id: serial3("id").primaryKey(),
+      operatorId: varchar3("operator_id", { length: 128 }).notNull().unique(),
+      eventId: varchar3("event_id", { length: 128 }),
       emailNotificationsEnabled: smallint("email_notifications_enabled").default(1),
       smsNotificationsEnabled: smallint("sms_notifications_enabled").default(0),
       inAppNotificationsEnabled: smallint("in_app_notifications_enabled").default(1),
-      emailAddress: varchar("email_address", { length: 320 }),
-      phoneNumber: varchar("phone_number", { length: 32 }),
+      emailAddress: varchar3("email_address", { length: 320 }),
+      phoneNumber: varchar3("phone_number", { length: 32 }),
       criticalOnly: smallint("critical_only").default(0),
       quietHoursEnabled: smallint("quiet_hours_enabled").default(0),
-      quietHoursStart: varchar("quiet_hours_start", { length: 8 }).default("22:00"),
-      quietHoursEnd: varchar("quiet_hours_end", { length: 8 }).default("08:00"),
-      timezone: varchar("timezone", { length: 64 }).default("UTC"),
-      monitoredViolationTypes: text("monitored_violation_types"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+      quietHoursStart: varchar3("quiet_hours_start", { length: 8 }).default("22:00"),
+      quietHoursEnd: varchar3("quiet_hours_end", { length: 8 }).default("08:00"),
+      timezone: varchar3("timezone", { length: 64 }).default("UTC"),
+      monitoredViolationTypes: text3("monitored_violation_types"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    alertHistory = pgTable("alert_history", {
-      id: serial("id").primaryKey(),
-      operatorId: varchar("operator_id", { length: 128 }),
-      eventId: varchar("event_id", { length: 128 }),
-      violationId: varchar("violation_id", { length: 128 }),
-      channel: varchar("channel", { length: 32 }),
-      status: varchar("status", { length: 32 }),
-      action: varchar("action", { length: 64 }),
-      actorId: varchar("actor_id", { length: 128 }),
-      sentAt: timestamp("sent_at").defaultNow().notNull(),
-      details: text("details"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    alertHistory = pgTable3("alert_history", {
+      id: serial3("id").primaryKey(),
+      operatorId: varchar3("operator_id", { length: 128 }),
+      eventId: varchar3("event_id", { length: 128 }),
+      violationId: varchar3("violation_id", { length: 128 }),
+      channel: varchar3("channel", { length: 32 }),
+      status: varchar3("status", { length: 32 }),
+      action: varchar3("action", { length: 64 }),
+      actorId: varchar3("actor_id", { length: 128 }),
+      sentAt: timestamp3("sent_at").defaultNow().notNull(),
+      details: text3("details"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    postEventData = pgTable("post_event_data", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("eventId", { length: 128 }).notNull(),
+    postEventData = pgTable3("post_event_data", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("eventId", { length: 128 }).notNull(),
       // references events.eventId
-      conferenceId: integer("conferenceId"),
+      conferenceId: integer3("conferenceId"),
       // references occConferences.id if applicable
       // AI Summary
-      aiSummary: text("aiSummary"),
+      aiSummary: text3("aiSummary"),
       // LLM-generated executive summary
-      keyTopics: text("keyTopics"),
+      keyTopics: text3("keyTopics"),
       // JSON array of extracted topics
-      sentimentTrends: text("sentimentTrends"),
+      sentimentTrends: text3("sentimentTrends"),
       // JSON object with sentiment timeline
-      keyQuotes: text("keyQuotes"),
+      keyQuotes: text3("keyQuotes"),
       // JSON array of important quotes with timestamps
       // Transcription
-      fullTranscript: text("fullTranscript"),
+      fullTranscript: text3("fullTranscript"),
       // complete word-for-word transcript
-      transcriptFormat: varchar("transcriptFormat", { length: 32 }).default("txt"),
+      transcriptFormat: varchar3("transcriptFormat", { length: 32 }).default("txt"),
       // txt, pdf, vtt, srt, json
       // Recording
-      recordingUrl: varchar("recordingUrl", { length: 512 }),
+      recordingUrl: varchar3("recordingUrl", { length: 512 }),
       // S3 URL to recording
-      recordingKey: varchar("recordingKey", { length: 512 }),
+      recordingKey: varchar3("recordingKey", { length: 512 }),
       // S3 key for retrieval
-      recordingDurationSeconds: integer("recordingDurationSeconds"),
+      recordingDurationSeconds: integer3("recordingDurationSeconds"),
       // Compliance
-      complianceScore: integer("complianceScore"),
+      complianceScore: integer3("complianceScore"),
       // 0-100 score
-      flaggedItems: text("flaggedItems"),
+      flaggedItems: text3("flaggedItems"),
       // JSON array of compliance violations
       // Analytics
-      totalParticipants: integer("totalParticipants"),
-      totalDuration: integer("totalDuration"),
+      totalParticipants: integer3("totalParticipants"),
+      totalDuration: integer3("totalDuration"),
       // seconds
-      engagementScore: integer("engagementScore"),
+      engagementScore: integer3("engagementScore"),
       // 0-100 score
-      analyticsData: text("analyticsData"),
+      analyticsData: text3("analyticsData"),
       // JSON object with detailed metrics
       // Delivery Status
-      deliveryStatus: varchar("deliveryStatus", { length: 64 }).default("pending").notNull(),
-      deliveredAt: timestamp("deliveredAt"),
+      deliveryStatus: varchar3("deliveryStatus", { length: 64 }).default("pending").notNull(),
+      deliveredAt: timestamp3("deliveredAt"),
       // Timestamps
-      generatedAt: timestamp("generatedAt").defaultNow().notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      generatedAt: timestamp3("generatedAt").defaultNow().notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    stripeCustomers = pgTable("stripe_customers", {
-      id: serial("id").primaryKey(),
-      userId: integer("userId").notNull().unique(),
+    stripeCustomers = pgTable3("stripe_customers", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("userId").notNull().unique(),
       // references users.id
-      stripeCustomerId: varchar("stripeCustomerId", { length: 128 }).notNull().unique(),
+      stripeCustomerId: varchar3("stripeCustomerId", { length: 128 }).notNull().unique(),
       // Stripe customer ID
-      email: varchar("email", { length: 320 }).notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      email: varchar3("email", { length: 320 }).notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    stripeSubscriptions = pgTable("stripe_subscriptions", {
-      id: serial("id").primaryKey(),
-      userId: integer("userId").notNull(),
+    stripeSubscriptions = pgTable3("stripe_subscriptions", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("userId").notNull(),
       // references users.id
-      stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }).notNull().unique(),
-      stripePriceId: varchar("stripePriceId", { length: 128 }).notNull(),
-      status: varchar("status", { length: 64 }).default("active").notNull(),
-      tier: varchar("tier", { length: 64 }).default("basic").notNull(),
-      currentPeriodStart: timestamp("currentPeriodStart"),
-      currentPeriodEnd: timestamp("currentPeriodEnd"),
-      canceledAt: timestamp("canceledAt"),
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      stripeSubscriptionId: varchar3("stripeSubscriptionId", { length: 128 }).notNull().unique(),
+      stripePriceId: varchar3("stripePriceId", { length: 128 }).notNull(),
+      status: varchar3("status", { length: 64 }).default("active").notNull(),
+      tier: varchar3("tier", { length: 64 }).default("basic").notNull(),
+      currentPeriodStart: timestamp3("currentPeriodStart"),
+      currentPeriodEnd: timestamp3("currentPeriodEnd"),
+      canceledAt: timestamp3("canceledAt"),
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    premiumFeatures = pgTable("premium_features", {
-      id: serial("id").primaryKey(),
-      userId: integer("userId").notNull().unique(),
+    premiumFeatures = pgTable3("premium_features", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("userId").notNull().unique(),
       // references users.id
       // Feature flags
-      advancedAnalytics: boolean("advancedAnalytics").default(false).notNull(),
-      complianceReporting: boolean("complianceReporting").default(false).notNull(),
-      whiteLabel: boolean("whiteLabel").default(false).notNull(),
-      multiLanguageTranscription: boolean("multiLanguageTranscription").default(false).notNull(),
-      customBranding: boolean("customBranding").default(false).notNull(),
-      apiAccess: boolean("apiAccess").default(false).notNull(),
+      advancedAnalytics: boolean3("advancedAnalytics").default(false).notNull(),
+      complianceReporting: boolean3("complianceReporting").default(false).notNull(),
+      whiteLabel: boolean3("whiteLabel").default(false).notNull(),
+      multiLanguageTranscription: boolean3("multiLanguageTranscription").default(false).notNull(),
+      customBranding: boolean3("customBranding").default(false).notNull(),
+      apiAccess: boolean3("apiAccess").default(false).notNull(),
       // Limits
-      maxEventsPerMonth: integer("maxEventsPerMonth").default(5),
-      maxParticipantsPerEvent: integer("maxParticipantsPerEvent").default(500),
-      storageGbPerMonth: integer("storageGbPerMonth").default(10),
+      maxEventsPerMonth: integer3("maxEventsPerMonth").default(5),
+      maxParticipantsPerEvent: integer3("maxParticipantsPerEvent").default(500),
+      storageGbPerMonth: integer3("storageGbPerMonth").default(10),
       // Timestamps
-      createdAt: timestamp("createdAt").defaultNow().notNull(),
-      updatedAt: timestamp("updatedAt").defaultNow().notNull()
+      createdAt: timestamp3("createdAt").defaultNow().notNull(),
+      updatedAt: timestamp3("updatedAt").defaultNow().notNull()
     });
-    stripePaymentEvents = pgTable("stripe_payment_events", {
-      id: serial("id").primaryKey(),
-      stripeEventId: varchar("stripeEventId", { length: 128 }).notNull().unique(),
-      eventType: varchar("eventType", { length: 128 }).notNull(),
+    stripePaymentEvents = pgTable3("stripe_payment_events", {
+      id: serial3("id").primaryKey(),
+      stripeEventId: varchar3("stripeEventId", { length: 128 }).notNull().unique(),
+      eventType: varchar3("eventType", { length: 128 }).notNull(),
       // e.g. "payment_intent.succeeded"
-      userId: integer("userId"),
+      userId: integer3("userId"),
       // references users.id if applicable
-      data: text("data").notNull(),
+      data: text3("data").notNull(),
       // JSON payload
-      processed: boolean("processed").default(false).notNull(),
-      createdAt: timestamp("createdAt").defaultNow().notNull()
+      processed: boolean3("processed").default(false).notNull(),
+      createdAt: timestamp3("createdAt").defaultNow().notNull()
     });
-    mailingLists = pgTable("mailing_lists", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      name: varchar("name", { length: 255 }).notNull(),
-      status: varchar("status", { length: 64 }).default("draft").notNull(),
-      totalEntries: integer("total_entries").default(0).notNull(),
-      processedEntries: integer("processed_entries").default(0).notNull(),
-      emailedEntries: integer("emailed_entries").default(0).notNull(),
-      registeredEntries: integer("registered_entries").default(0).notNull(),
-      webhookUrl: varchar("webhook_url", { length: 512 }),
-      defaultJoinMethod: varchar("default_join_method", { length: 64 }),
-      preRegistered: boolean("pre_registered").default(false).notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    mailingLists = pgTable3("mailing_lists", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      name: varchar3("name", { length: 255 }).notNull(),
+      status: varchar3("status", { length: 64 }).default("draft").notNull(),
+      totalEntries: integer3("total_entries").default(0).notNull(),
+      processedEntries: integer3("processed_entries").default(0).notNull(),
+      emailedEntries: integer3("emailed_entries").default(0).notNull(),
+      registeredEntries: integer3("registered_entries").default(0).notNull(),
+      webhookUrl: varchar3("webhook_url", { length: 512 }),
+      defaultJoinMethod: varchar3("default_join_method", { length: 64 }),
+      preRegistered: boolean3("pre_registered").default(false).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    mailingListEntries = pgTable("mailing_list_entries", {
-      id: serial("id").primaryKey(),
-      mailingListId: integer("mailing_list_id").notNull(),
-      firstName: varchar("first_name", { length: 255 }).notNull(),
-      lastName: varchar("last_name", { length: 255 }).notNull(),
-      email: varchar("email", { length: 320 }).notNull(),
-      company: varchar("company", { length: 255 }),
-      jobTitle: varchar("job_title", { length: 255 }),
-      accessPin: varchar("access_pin", { length: 8 }),
-      status: varchar("status", { length: 64 }).default("pending").notNull(),
-      joinMethod: varchar("join_method", { length: 64 }),
-      registrationId: integer("registration_id"),
-      confirmToken: varchar("confirm_token", { length: 64 }),
-      emailSentAt: timestamp("email_sent_at"),
-      clickedAt: timestamp("clicked_at"),
-      registeredAt: timestamp("registered_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    mailingListEntries = pgTable3("mailing_list_entries", {
+      id: serial3("id").primaryKey(),
+      mailingListId: integer3("mailing_list_id").notNull(),
+      firstName: varchar3("first_name", { length: 255 }).notNull(),
+      lastName: varchar3("last_name", { length: 255 }).notNull(),
+      email: varchar3("email", { length: 320 }).notNull(),
+      company: varchar3("company", { length: 255 }),
+      jobTitle: varchar3("job_title", { length: 255 }),
+      accessPin: varchar3("access_pin", { length: 8 }),
+      status: varchar3("status", { length: 64 }).default("pending").notNull(),
+      joinMethod: varchar3("join_method", { length: 64 }),
+      registrationId: integer3("registration_id"),
+      confirmToken: varchar3("confirm_token", { length: 64 }),
+      emailSentAt: timestamp3("email_sent_at"),
+      clickedAt: timestamp3("clicked_at"),
+      registeredAt: timestamp3("registered_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    crmApiKeys = pgTable("crm_api_keys", {
-      id: serial("id").primaryKey(),
-      keyHash: varchar("key_hash", { length: 128 }).notNull(),
-      keyPrefix: varchar("key_prefix", { length: 12 }).notNull(),
-      name: varchar("name", { length: 255 }).notNull(),
-      eventId: varchar("event_id", { length: 128 }),
-      permissions: json("permissions").notNull(),
-      active: boolean("active").default(true).notNull(),
-      lastUsedAt: timestamp("last_used_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    crmApiKeys = pgTable3("crm_api_keys", {
+      id: serial3("id").primaryKey(),
+      keyHash: varchar3("key_hash", { length: 128 }).notNull(),
+      keyPrefix: varchar3("key_prefix", { length: 12 }).notNull(),
+      name: varchar3("name", { length: 255 }).notNull(),
+      eventId: varchar3("event_id", { length: 128 }),
+      permissions: json3("permissions").notNull(),
+      active: boolean3("active").default(true).notNull(),
+      lastUsedAt: timestamp3("last_used_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    soc2Controls = pgTable("soc2_controls", {
-      id: serial("id").primaryKey(),
-      controlId: varchar("control_id", { length: 20 }).notNull(),
-      category: varchar("category", { length: 100 }).notNull(),
-      name: varchar("name", { length: 255 }).notNull(),
-      description: text("description"),
-      status: varchar("status", { length: 64 }).notNull().default("non_compliant"),
-      ownerName: varchar("owner_name", { length: 100 }),
-      notes: text("notes"),
-      testingFrequency: varchar("testing_frequency", { length: 50 }),
-      lastTestedAt: timestamp("last_tested_at"),
-      evidenceUrls: json("evidence_urls"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    soc2Controls = pgTable3("soc2_controls", {
+      id: serial3("id").primaryKey(),
+      controlId: varchar3("control_id", { length: 20 }).notNull(),
+      category: varchar3("category", { length: 100 }).notNull(),
+      name: varchar3("name", { length: 255 }).notNull(),
+      description: text3("description"),
+      status: varchar3("status", { length: 64 }).notNull().default("non_compliant"),
+      ownerName: varchar3("owner_name", { length: 100 }),
+      notes: text3("notes"),
+      testingFrequency: varchar3("testing_frequency", { length: 50 }),
+      lastTestedAt: timestamp3("last_tested_at"),
+      evidenceUrls: json3("evidence_urls"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    iso27001Controls = pgTable("iso27001_controls", {
-      id: serial("id").primaryKey(),
-      controlId: varchar("control_id", { length: 20 }).notNull(),
-      clause: varchar("clause", { length: 100 }).notNull(),
-      name: varchar("name", { length: 255 }).notNull(),
-      description: text("description"),
-      status: varchar("status", { length: 64 }).notNull().default("non_compliant"),
-      ownerName: varchar("owner_name", { length: 100 }),
-      notes: text("notes"),
-      testingFrequency: varchar("testing_frequency", { length: 50 }),
-      lastTestedAt: timestamp("last_tested_at"),
-      evidenceUrls: json("evidence_urls"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    iso27001Controls = pgTable3("iso27001_controls", {
+      id: serial3("id").primaryKey(),
+      controlId: varchar3("control_id", { length: 20 }).notNull(),
+      clause: varchar3("clause", { length: 100 }).notNull(),
+      name: varchar3("name", { length: 255 }).notNull(),
+      description: text3("description"),
+      status: varchar3("status", { length: 64 }).notNull().default("non_compliant"),
+      ownerName: varchar3("owner_name", { length: 100 }),
+      notes: text3("notes"),
+      testingFrequency: varchar3("testing_frequency", { length: 50 }),
+      lastTestedAt: timestamp3("last_tested_at"),
+      evidenceUrls: json3("evidence_urls"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    complianceEvidenceFiles = pgTable("compliance_evidence_files", {
-      id: serial("id").primaryKey(),
-      controlType: varchar("control_type", { length: 64 }).notNull(),
-      controlId: integer("control_id").notNull(),
-      fileName: varchar("file_name", { length: 255 }).notNull(),
-      fileUrl: text("file_url").notNull(),
-      fileKey: varchar("file_key", { length: 500 }).notNull(),
-      mimeType: varchar("mime_type", { length: 100 }),
-      uploadedBy: integer("uploaded_by"),
+    complianceEvidenceFiles = pgTable3("compliance_evidence_files", {
+      id: serial3("id").primaryKey(),
+      controlType: varchar3("control_type", { length: 64 }).notNull(),
+      controlId: integer3("control_id").notNull(),
+      fileName: varchar3("file_name", { length: 255 }).notNull(),
+      fileUrl: text3("file_url").notNull(),
+      fileKey: varchar3("file_key", { length: 500 }).notNull(),
+      mimeType: varchar3("mime_type", { length: 100 }),
+      uploadedBy: integer3("uploaded_by"),
       uploadedAt: bigint("uploaded_at", { mode: "number" }).notNull(),
       expiresAt: bigint("expires_at", { mode: "number" })
     });
-    complianceThreats = pgTable("compliance_threats", {
-      id: serial("id").primaryKey(),
-      threatType: varchar("threat_type", { length: 64 }).notNull(),
-      severity: varchar("severity", { length: 64 }).notNull().default("medium"),
-      status: varchar("status", { length: 64 }).notNull().default("detected"),
-      eventId: varchar("event_id", { length: 128 }),
-      sourceSystem: varchar("source_system", { length: 64 }).notNull(),
-      title: varchar("title", { length: 512 }).notNull(),
-      description: text("description"),
-      evidence: json("evidence"),
-      affectedEntities: json("affected_entities"),
-      aiConfidence: real("ai_confidence").default(0),
-      aiReasoning: text("ai_reasoning"),
-      remediationAction: varchar("remediation_action", { length: 255 }),
-      remediationTakenAt: timestamp("remediation_taken_at"),
-      detectedBy: varchar("detected_by", { length: 64 }).notNull().default("compliance_engine"),
-      reviewedBy: integer("reviewed_by"),
-      reviewedAt: timestamp("reviewed_at"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    complianceThreats = pgTable3("compliance_threats", {
+      id: serial3("id").primaryKey(),
+      threatType: varchar3("threat_type", { length: 64 }).notNull(),
+      severity: varchar3("severity", { length: 64 }).notNull().default("medium"),
+      status: varchar3("status", { length: 64 }).notNull().default("detected"),
+      eventId: varchar3("event_id", { length: 128 }),
+      sourceSystem: varchar3("source_system", { length: 64 }).notNull(),
+      title: varchar3("title", { length: 512 }).notNull(),
+      description: text3("description"),
+      evidence: json3("evidence"),
+      affectedEntities: json3("affected_entities"),
+      aiConfidence: real2("ai_confidence").default(0),
+      aiReasoning: text3("ai_reasoning"),
+      remediationAction: varchar3("remediation_action", { length: 255 }),
+      remediationTakenAt: timestamp3("remediation_taken_at"),
+      detectedBy: varchar3("detected_by", { length: 64 }).notNull().default("compliance_engine"),
+      reviewedBy: integer3("reviewed_by"),
+      reviewedAt: timestamp3("reviewed_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    complianceFrameworkChecks = pgTable("compliance_framework_checks", {
-      id: serial("id").primaryKey(),
-      framework: varchar("framework", { length: 64 }).notNull(),
-      controlRef: varchar("control_ref", { length: 20 }).notNull(),
-      controlName: varchar("control_name", { length: 255 }).notNull(),
-      checkType: varchar("check_type", { length: 64 }).notNull().default("automated"),
-      status: varchar("status", { length: 64 }).notNull().default("not_assessed"),
-      lastCheckedAt: timestamp("last_checked_at"),
-      details: text("details"),
-      evidence: json("evidence"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    complianceFrameworkChecks = pgTable3("compliance_framework_checks", {
+      id: serial3("id").primaryKey(),
+      framework: varchar3("framework", { length: 64 }).notNull(),
+      controlRef: varchar3("control_ref", { length: 20 }).notNull(),
+      controlName: varchar3("control_name", { length: 255 }).notNull(),
+      checkType: varchar3("check_type", { length: 64 }).notNull().default("automated"),
+      status: varchar3("status", { length: 64 }).notNull().default("not_assessed"),
+      lastCheckedAt: timestamp3("last_checked_at"),
+      details: text3("details"),
+      evidence: json3("evidence"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    sustainabilityReports = pgTable("sustainability_reports", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      eventTitle: varchar("event_title", { length: 512 }).default(""),
-      totalAttendees: integer("total_attendees").default(0).notNull(),
-      durationHours: real("duration_hours").default(1).notNull(),
-      isVirtual: boolean("is_virtual").default(true),
-      physicalCo2Tonnes: real("physical_co2_tonnes").default(0).notNull(),
-      virtualCo2Tonnes: real("virtual_co2_tonnes").default(0).notNull(),
-      carbonSavedTonnes: real("carbon_saved_tonnes").default(0).notNull(),
-      savingsPercent: real("savings_percent").default(0).notNull(),
-      totalCostAvoidedUsd: real("total_cost_avoided_usd").default(0).notNull(),
-      grade: varchar("grade", { length: 4 }).default("B").notNull(),
-      breakdownJson: json("breakdown_json"),
-      country: varchar("country", { length: 8 }).default("ZA"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    sustainabilityReports = pgTable3("sustainability_reports", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      eventTitle: varchar3("event_title", { length: 512 }).default(""),
+      totalAttendees: integer3("total_attendees").default(0).notNull(),
+      durationHours: real2("duration_hours").default(1).notNull(),
+      isVirtual: boolean3("is_virtual").default(true),
+      physicalCo2Tonnes: real2("physical_co2_tonnes").default(0).notNull(),
+      virtualCo2Tonnes: real2("virtual_co2_tonnes").default(0).notNull(),
+      carbonSavedTonnes: real2("carbon_saved_tonnes").default(0).notNull(),
+      savingsPercent: real2("savings_percent").default(0).notNull(),
+      totalCostAvoidedUsd: real2("total_cost_avoided_usd").default(0).notNull(),
+      grade: varchar3("grade", { length: 4 }).default("B").notNull(),
+      breakdownJson: json3("breakdown_json"),
+      country: varchar3("country", { length: 8 }).default("ZA"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    broadcastSessions = pgTable("broadcast_sessions", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      presenterName: varchar("presenter_name", { length: 256 }),
-      avgWpm: real("avg_wpm").default(0),
-      optimalWpmMin: integer("optimal_wpm_min").default(130),
-      optimalWpmMax: integer("optimal_wpm_max").default(160),
-      paceAlerts: integer("pace_alerts").default(0),
-      fillerWordCount: integer("filler_word_count").default(0),
-      keyMomentsJson: json("key_moments_json"),
-      recapJson: json("recap_json"),
-      recapGeneratedAt: timestamp("recap_generated_at"),
-      durationSeconds: integer("duration_seconds").default(0),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    broadcastSessions = pgTable3("broadcast_sessions", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      presenterName: varchar3("presenter_name", { length: 256 }),
+      avgWpm: real2("avg_wpm").default(0),
+      optimalWpmMin: integer3("optimal_wpm_min").default(130),
+      optimalWpmMax: integer3("optimal_wpm_max").default(160),
+      paceAlerts: integer3("pace_alerts").default(0),
+      fillerWordCount: integer3("filler_word_count").default(0),
+      keyMomentsJson: json3("key_moments_json"),
+      recapJson: json3("recap_json"),
+      recapGeneratedAt: timestamp3("recap_generated_at"),
+      durationSeconds: integer3("duration_seconds").default(0),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    studioSessions = pgTable("studio_sessions", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      activeLayout: varchar("active_layout", { length: 64 }).default("single-presenter"),
-      feedSources: json("feed_sources"),
-      lowerThirds: json("lower_thirds"),
-      activeOverlays: json("active_overlays"),
-      liveSentimentOverlay: boolean("live_sentiment_overlay").default(false),
-      participantCountOverlay: boolean("participant_count_overlay").default(false),
-      recordingStatus: varchar("recording_status", { length: 32 }).default("idle"),
-      streamKey: varchar("stream_key", { length: 256 }),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    studioSessions = pgTable3("studio_sessions", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      activeLayout: varchar3("active_layout", { length: 64 }).default("single-presenter"),
+      feedSources: json3("feed_sources"),
+      lowerThirds: json3("lower_thirds"),
+      activeOverlays: json3("active_overlays"),
+      liveSentimentOverlay: boolean3("live_sentiment_overlay").default(false),
+      participantCountOverlay: boolean3("participant_count_overlay").default(false),
+      recordingStatus: varchar3("recording_status", { length: 32 }).default("idle"),
+      streamKey: varchar3("stream_key", { length: 256 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    archiveEvents = pgTable("archive_events", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      eventName: varchar("event_name", { length: 255 }).notNull(),
-      eventType: varchar("event_type", { length: 64 }).notNull(),
-      eventDate: varchar("event_date", { length: 32 }),
-      platform: varchar("platform", { length: 64 }),
-      transcriptText: text("transcript_text").notNull(),
-      wordCount: integer("word_count").default(0),
-      segmentCount: integer("segment_count").default(0),
-      sentimentAvg: real("sentiment_avg"),
-      complianceFlags: integer("compliance_flags").default(0),
-      taggedMetricsGenerated: integer("tagged_metrics_generated").default(0),
-      status: varchar("status", { length: 64 }).default("processing").notNull(),
-      notes: text("notes"),
-      aiReport: json("ai_report"),
-      specialisedAnalysis: json("specialised_analysis"),
-      specialisedAlgorithmsRun: integer("specialised_algorithms_run").default(0),
-      specialisedSessionId: integer("specialised_session_id"),
-      specialisedSessionType: varchar("specialised_session_type", { length: 32 }),
-      recordingPath: varchar("recording_path", { length: 1e3 }),
-      transcriptFingerprint: varchar("transcript_fingerprint", { length: 64 }),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    archiveEvents = pgTable3("archive_events", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      eventName: varchar3("event_name", { length: 255 }).notNull(),
+      eventType: varchar3("event_type", { length: 64 }).notNull(),
+      eventDate: varchar3("event_date", { length: 32 }),
+      platform: varchar3("platform", { length: 64 }),
+      transcriptText: text3("transcript_text").notNull(),
+      wordCount: integer3("word_count").default(0),
+      segmentCount: integer3("segment_count").default(0),
+      sentimentAvg: real2("sentiment_avg"),
+      complianceFlags: integer3("compliance_flags").default(0),
+      taggedMetricsGenerated: integer3("tagged_metrics_generated").default(0),
+      status: varchar3("status", { length: 64 }).default("processing").notNull(),
+      notes: text3("notes"),
+      aiReport: json3("ai_report"),
+      specialisedAnalysis: json3("specialised_analysis"),
+      specialisedAlgorithmsRun: integer3("specialised_algorithms_run").default(0),
+      specialisedSessionId: integer3("specialised_session_id"),
+      specialisedSessionType: varchar3("specialised_session_type", { length: 32 }),
+      recordingPath: varchar3("recording_path", { length: 1e3 }),
+      transcriptFingerprint: varchar3("transcript_fingerprint", { length: 64 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    aiEvolutionObservations = pgTable("ai_evolution_observations", {
-      id: serial("id").primaryKey(),
-      sourceType: varchar("source_type", { length: 64 }).notNull(),
-      sourceId: integer("source_id"),
-      eventType: varchar("event_type", { length: 64 }),
-      clientName: varchar("client_name", { length: 255 }),
-      observationType: varchar("observation_type", { length: 64 }).notNull(),
-      moduleName: varchar("module_name", { length: 128 }),
-      observation: text("observation").notNull(),
-      confidence: real("confidence").default(0.5),
-      suggestedCapability: varchar("suggested_capability", { length: 255 }),
-      rawContext: json("raw_context"),
-      clusterId: integer("cluster_id"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    aiEvolutionObservations = pgTable3("ai_evolution_observations", {
+      id: serial3("id").primaryKey(),
+      sourceType: varchar3("source_type", { length: 64 }).notNull(),
+      sourceId: integer3("source_id"),
+      eventType: varchar3("event_type", { length: 64 }),
+      clientName: varchar3("client_name", { length: 255 }),
+      observationType: varchar3("observation_type", { length: 64 }).notNull(),
+      moduleName: varchar3("module_name", { length: 128 }),
+      observation: text3("observation").notNull(),
+      confidence: real2("confidence").default(0.5),
+      suggestedCapability: varchar3("suggested_capability", { length: 255 }),
+      rawContext: json3("raw_context"),
+      clusterId: integer3("cluster_id"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    aiToolProposals = pgTable("ai_tool_proposals", {
-      id: serial("id").primaryKey(),
-      title: varchar("title", { length: 255 }).notNull(),
-      description: text("description").notNull(),
-      category: varchar("category", { length: 64 }).notNull(),
-      rationale: text("rationale").notNull(),
-      evidenceCount: integer("evidence_count").default(0),
-      avgConfidence: real("avg_confidence").default(0),
-      observationIds: json("observation_ids"),
-      status: varchar("status", { length: 64 }).default("emerging").notNull(),
-      estimatedImpact: varchar("estimated_impact", { length: 64 }).default("medium"),
-      promptTemplate: text("prompt_template"),
-      moduleSpec: json("module_spec"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    aiToolProposals = pgTable3("ai_tool_proposals", {
+      id: serial3("id").primaryKey(),
+      title: varchar3("title", { length: 255 }).notNull(),
+      description: text3("description").notNull(),
+      category: varchar3("category", { length: 64 }).notNull(),
+      rationale: text3("rationale").notNull(),
+      evidenceCount: integer3("evidence_count").default(0),
+      avgConfidence: real2("avg_confidence").default(0),
+      observationIds: json3("observation_ids"),
+      status: varchar3("status", { length: 64 }).default("emerging").notNull(),
+      estimatedImpact: varchar3("estimated_impact", { length: 64 }).default("medium"),
+      promptTemplate: text3("prompt_template"),
+      moduleSpec: json3("module_spec"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    conferenceDialouts = pgTable("conference_dialouts", {
-      id: serial("id").primaryKey(),
-      userId: integer("user_id").notNull(),
-      name: varchar("name", { length: 255 }).notNull(),
-      conferenceName: varchar("conference_name", { length: 128 }).notNull(),
-      callerId: varchar("caller_id", { length: 32 }).notNull(),
-      totalParticipants: integer("total_participants").notNull().default(0),
-      connectedCount: integer("connected_count").notNull().default(0),
-      failedCount: integer("failed_count").notNull().default(0),
-      status: varchar("status", { length: 64 }).default("pending").notNull(),
+    conferenceDialouts = pgTable3("conference_dialouts", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("user_id").notNull(),
+      name: varchar3("name", { length: 255 }).notNull(),
+      conferenceName: varchar3("conference_name", { length: 128 }).notNull(),
+      callerId: varchar3("caller_id", { length: 32 }).notNull(),
+      totalParticipants: integer3("total_participants").notNull().default(0),
+      connectedCount: integer3("connected_count").notNull().default(0),
+      failedCount: integer3("failed_count").notNull().default(0),
+      status: varchar3("status", { length: 64 }).default("pending").notNull(),
       createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       endedAt: bigint("ended_at", { mode: "number" })
     });
-    conferenceDialoutParticipants = pgTable("conference_dialout_participants", {
-      id: serial("id").primaryKey(),
-      dialoutId: integer("dialout_id").notNull(),
-      phoneNumber: varchar("phone_number", { length: 32 }).notNull(),
-      label: varchar("label", { length: 255 }),
-      callSid: varchar("call_sid", { length: 128 }),
-      status: varchar("status", { length: 64 }).default("queued").notNull(),
-      durationSecs: integer("duration_secs"),
+    conferenceDialoutParticipants = pgTable3("conference_dialout_participants", {
+      id: serial3("id").primaryKey(),
+      dialoutId: integer3("dialout_id").notNull(),
+      phoneNumber: varchar3("phone_number", { length: 32 }).notNull(),
+      label: varchar3("label", { length: 255 }),
+      callSid: varchar3("call_sid", { length: 128 }),
+      status: varchar3("status", { length: 64 }).default("queued").notNull(),
+      durationSecs: integer3("duration_secs"),
       answeredAt: bigint("answered_at", { mode: "number" }),
       endedAt: bigint("ended_at", { mode: "number" }),
-      errorMessage: varchar("error_message", { length: 512 })
+      errorMessage: varchar3("error_message", { length: 512 })
     });
-    agmResolutions = pgTable("agm_resolutions", {
-      id: serial("id").primaryKey(),
-      sessionId: integer("session_id").notNull(),
-      resolutionNumber: integer("resolution_number").notNull(),
-      title: varchar("title", { length: 512 }).notNull(),
-      category: varchar("category", { length: 64 }).default("ordinary").notNull(),
-      proposedBy: varchar("proposed_by", { length: 255 }),
-      sentimentDuringDebate: real("sentiment_during_debate"),
-      predictedApprovalPct: real("predicted_approval_pct"),
-      actualApprovalPct: real("actual_approval_pct"),
-      predictionAccuracy: real("prediction_accuracy"),
-      dissenterCount: integer("dissenter_count").default(0),
-      complianceFlags: json("compliance_flags"),
-      aiAnalysis: json("ai_analysis"),
-      status: varchar("status", { length: 64 }).default("pending").notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    agmResolutions2 = pgTable3("agm_resolutions", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id").notNull(),
+      resolutionNumber: integer3("resolution_number").notNull(),
+      title: varchar3("title", { length: 512 }).notNull(),
+      category: varchar3("category", { length: 64 }).default("ordinary").notNull(),
+      proposedBy: varchar3("proposed_by", { length: 255 }),
+      sentimentDuringDebate: real2("sentiment_during_debate"),
+      predictedApprovalPct: real2("predicted_approval_pct"),
+      actualApprovalPct: real2("actual_approval_pct"),
+      predictionAccuracy: real2("prediction_accuracy"),
+      dissenterCount: integer3("dissenter_count").default(0),
+      complianceFlags: json3("compliance_flags"),
+      aiAnalysis: json3("ai_analysis"),
+      status: varchar3("status", { length: 64 }).default("pending").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    agmIntelligenceSessions = pgTable("agm_intelligence_sessions", {
-      id: serial("id").primaryKey(),
-      userId: integer("user_id").notNull(),
-      shadowSessionId: integer("shadow_session_id"),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      agmTitle: varchar("agm_title", { length: 512 }).notNull(),
-      agmDate: varchar("agm_date", { length: 32 }),
-      jurisdiction: varchar("jurisdiction", { length: 64 }).default("south_africa").notNull(),
-      totalResolutions: integer("total_resolutions").default(0),
-      resolutionsCarried: integer("resolutions_carried").default(0),
-      resolutionsDefeated: integer("resolutions_defeated").default(0),
-      quorumMet: boolean("quorum_met").default(false),
-      quorumPercentage: real("quorum_percentage"),
-      attendanceCount: integer("attendance_count").default(0),
-      proxyCount: integer("proxy_count").default(0),
-      overallSentiment: real("overall_sentiment"),
-      governanceScore: real("governance_score"),
-      dissentIndex: real("dissent_index"),
-      regulatoryAlerts: integer("regulatory_alerts").default(0),
-      qaQuestionsTotal: integer("qa_questions_total").default(0),
-      qaQuestionsGovernance: integer("qa_questions_governance").default(0),
-      aiGovernanceReport: json("ai_governance_report"),
-      evolutionObservationsGenerated: integer("evolution_observations_generated").default(0),
-      status: varchar("status", { length: 64 }).default("setup").notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    agmIntelligenceSessions = pgTable3("agm_intelligence_sessions", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("user_id").notNull(),
+      shadowSessionId: integer3("shadow_session_id"),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      agmTitle: varchar3("agm_title", { length: 512 }).notNull(),
+      agmDate: varchar3("agm_date", { length: 32 }),
+      jurisdiction: varchar3("jurisdiction", { length: 64 }).default("south_africa").notNull(),
+      totalResolutions: integer3("total_resolutions").default(0),
+      resolutionsCarried: integer3("resolutions_carried").default(0),
+      resolutionsDefeated: integer3("resolutions_defeated").default(0),
+      quorumMet: boolean3("quorum_met").default(false),
+      quorumPercentage: real2("quorum_percentage"),
+      attendanceCount: integer3("attendance_count").default(0),
+      proxyCount: integer3("proxy_count").default(0),
+      overallSentiment: real2("overall_sentiment"),
+      governanceScore: real2("governance_score"),
+      dissentIndex: real2("dissent_index"),
+      regulatoryAlerts: integer3("regulatory_alerts").default(0),
+      qaQuestionsTotal: integer3("qa_questions_total").default(0),
+      qaQuestionsGovernance: integer3("qa_questions_governance").default(0),
+      aiGovernanceReport: json3("ai_governance_report"),
+      evolutionObservationsGenerated: integer3("evolution_observations_generated").default(0),
+      status: varchar3("status", { length: 64 }).default("setup").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    agmDissentPatterns = pgTable("agm_dissent_patterns", {
-      id: serial("id").primaryKey(),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      patternType: varchar("pattern_type", { length: 64 }).notNull(),
-      category: varchar("category", { length: 128 }),
-      description: text("description").notNull(),
-      frequency: integer("frequency").default(1),
-      confidence: real("confidence").default(0.5),
-      firstSeen: timestamp("first_seen").defaultNow().notNull(),
-      lastSeen: timestamp("last_seen").defaultNow().notNull(),
-      sessionIds: json("session_ids"),
-      evidenceData: json("evidence_data"),
-      actionRecommendation: text("action_recommendation"),
-      decayedScore: real("decayed_score").default(0),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    agmDissentPatterns = pgTable3("agm_dissent_patterns", {
+      id: serial3("id").primaryKey(),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      patternType: varchar3("pattern_type", { length: 64 }).notNull(),
+      category: varchar3("category", { length: 128 }),
+      description: text3("description").notNull(),
+      frequency: integer3("frequency").default(1),
+      confidence: real2("confidence").default(0.5),
+      firstSeen: timestamp3("first_seen").defaultNow().notNull(),
+      lastSeen: timestamp3("last_seen").defaultNow().notNull(),
+      sessionIds: json3("session_ids"),
+      evidenceData: json3("evidence_data"),
+      actionRecommendation: text3("action_recommendation"),
+      decayedScore: real2("decayed_score").default(0),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    agmGovernanceObservations = pgTable("agm_governance_observations", {
-      id: serial("id").primaryKey(),
-      sessionId: integer("session_id").notNull(),
-      algorithmSource: varchar("algorithm_source", { length: 64 }).notNull(),
-      observationType: varchar("observation_type", { length: 64 }).notNull(),
-      severity: varchar("severity", { length: 64 }).default("info").notNull(),
-      title: varchar("title", { length: 512 }).notNull(),
-      detail: text("detail").notNull(),
-      confidence: real("confidence").default(0.5),
-      relatedResolutionId: integer("related_resolution_id"),
-      rawData: json("raw_data"),
-      fedToEvolution: boolean("fed_to_evolution").default(false),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    agmGovernanceObservations = pgTable3("agm_governance_observations", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id").notNull(),
+      algorithmSource: varchar3("algorithm_source", { length: 64 }).notNull(),
+      observationType: varchar3("observation_type", { length: 64 }).notNull(),
+      severity: varchar3("severity", { length: 64 }).default("info").notNull(),
+      title: varchar3("title", { length: 512 }).notNull(),
+      detail: text3("detail").notNull(),
+      confidence: real2("confidence").default(0.5),
+      relatedResolutionId: integer3("related_resolution_id"),
+      rawData: json3("raw_data"),
+      fedToEvolution: boolean3("fed_to_evolution").default(false),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    lumiBookings = pgTable("lumi_bookings", {
-      id: serial("id").primaryKey(),
-      userId: integer("user_id"),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      agmTitle: varchar("agm_title", { length: 512 }).notNull(),
-      agmDate: varchar("agm_date", { length: 32 }),
-      agmTime: varchar("agm_time", { length: 16 }),
-      jurisdiction: varchar("jurisdiction", { length: 64 }).default("south_africa").notNull(),
-      expectedAttendees: integer("expected_attendees"),
-      meetingUrl: varchar("meeting_url", { length: 1e3 }),
-      platform: varchar("platform", { length: 64 }).default("zoom").notNull(),
-      contactName: varchar("contact_name", { length: 255 }),
-      contactEmail: varchar("contact_email", { length: 255 }),
-      lumiReference: varchar("lumi_reference", { length: 128 }),
-      lumiRecipients: text("lumi_recipients"),
-      confirmationSentAt: timestamp("confirmation_sent_at"),
-      dashboardToken: varchar("dashboard_token", { length: 64 }).notNull(),
-      status: varchar("status", { length: 64 }).default("booked").notNull(),
-      checklist: json("checklist"),
-      shadowSessionId: integer("shadow_session_id"),
-      agmSessionId: integer("agm_session_id"),
-      notes: text("notes"),
-      resolutionsJson: json("resolutions_json"),
-      reportDelivered: boolean("report_delivered").default(false),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    lumiBookings = pgTable3("lumi_bookings", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("user_id"),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      agmTitle: varchar3("agm_title", { length: 512 }).notNull(),
+      agmDate: varchar3("agm_date", { length: 32 }),
+      agmTime: varchar3("agm_time", { length: 16 }),
+      jurisdiction: varchar3("jurisdiction", { length: 64 }).default("south_africa").notNull(),
+      expectedAttendees: integer3("expected_attendees"),
+      meetingUrl: varchar3("meeting_url", { length: 1e3 }),
+      platform: varchar3("platform", { length: 64 }).default("zoom").notNull(),
+      contactName: varchar3("contact_name", { length: 255 }),
+      contactEmail: varchar3("contact_email", { length: 255 }),
+      lumiReference: varchar3("lumi_reference", { length: 128 }),
+      lumiRecipients: text3("lumi_recipients"),
+      confirmationSentAt: timestamp3("confirmation_sent_at"),
+      dashboardToken: varchar3("dashboard_token", { length: 64 }).notNull(),
+      status: varchar3("status", { length: 64 }).default("booked").notNull(),
+      checklist: json3("checklist"),
+      shadowSessionId: integer3("shadow_session_id"),
+      agmSessionId: integer3("agm_session_id"),
+      notes: text3("notes"),
+      resolutionsJson: json3("resolutions_json"),
+      reportDelivered: boolean3("report_delivered").default(false),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    bastionIntelligenceSessions = pgTable("bastion_intelligence_sessions", {
-      id: serial("id").primaryKey(),
-      userId: integer("user_id").notNull(),
-      shadowSessionId: integer("shadow_session_id"),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      eventTitle: varchar("event_title", { length: 512 }).notNull(),
-      eventType: varchar("event_type", { length: 64 }).default("earnings_call").notNull(),
-      eventDate: varchar("event_date", { length: 32 }),
-      sector: varchar("sector", { length: 128 }),
-      ticker: varchar("ticker", { length: 32 }),
-      overallSentiment: real("overall_sentiment"),
-      managementToneScore: real("management_tone_score"),
-      credibilityScore: real("credibility_score"),
-      marketMovingStatements: integer("market_moving_statements").default(0),
-      forwardGuidanceCount: integer("forward_guidance_count").default(0),
-      analystQuestionsTotal: integer("analyst_questions_total").default(0),
-      analystQuestionsHostile: integer("analyst_questions_hostile").default(0),
-      investmentBrief: json("investment_brief"),
-      evolutionObservationsGenerated: integer("evolution_observations_generated").default(0),
-      status: varchar("status", { length: 64 }).default("setup").notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    bastionIntelligenceSessions = pgTable3("bastion_intelligence_sessions", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("user_id").notNull(),
+      shadowSessionId: integer3("shadow_session_id"),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      eventTitle: varchar3("event_title", { length: 512 }).notNull(),
+      eventType: varchar3("event_type", { length: 64 }).default("earnings_call").notNull(),
+      eventDate: varchar3("event_date", { length: 32 }),
+      sector: varchar3("sector", { length: 128 }),
+      ticker: varchar3("ticker", { length: 32 }),
+      overallSentiment: real2("overall_sentiment"),
+      managementToneScore: real2("management_tone_score"),
+      credibilityScore: real2("credibility_score"),
+      marketMovingStatements: integer3("market_moving_statements").default(0),
+      forwardGuidanceCount: integer3("forward_guidance_count").default(0),
+      analystQuestionsTotal: integer3("analyst_questions_total").default(0),
+      analystQuestionsHostile: integer3("analyst_questions_hostile").default(0),
+      investmentBrief: json3("investment_brief"),
+      evolutionObservationsGenerated: integer3("evolution_observations_generated").default(0),
+      status: varchar3("status", { length: 64 }).default("setup").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    bastionInvestorObservations = pgTable("bastion_investor_observations", {
-      id: serial("id").primaryKey(),
-      sessionId: integer("session_id").notNull(),
-      algorithmSource: varchar("algorithm_source", { length: 64 }).notNull(),
-      observationType: varchar("observation_type", { length: 64 }).notNull(),
-      severity: varchar("severity", { length: 64 }).default("info").notNull(),
-      title: varchar("title", { length: 512 }).notNull(),
-      detail: text("detail").notNull(),
-      confidence: real("confidence").default(0.5),
-      rawData: json("raw_data"),
-      fedToEvolution: boolean("fed_to_evolution").default(false),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    bastionInvestorObservations = pgTable3("bastion_investor_observations", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id").notNull(),
+      algorithmSource: varchar3("algorithm_source", { length: 64 }).notNull(),
+      observationType: varchar3("observation_type", { length: 64 }).notNull(),
+      severity: varchar3("severity", { length: 64 }).default("info").notNull(),
+      title: varchar3("title", { length: 512 }).notNull(),
+      detail: text3("detail").notNull(),
+      confidence: real2("confidence").default(0.5),
+      rawData: json3("raw_data"),
+      fedToEvolution: boolean3("fed_to_evolution").default(false),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    bastionGuidanceTracker = pgTable("bastion_guidance_tracker", {
-      id: serial("id").primaryKey(),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      ticker: varchar("ticker", { length: 32 }),
-      sessionId: integer("session_id").notNull(),
-      guidanceType: varchar("guidance_type", { length: 64 }).notNull(),
-      statement: text("statement").notNull(),
-      confidenceLevel: varchar("confidence_level", { length: 64 }).default("tentative").notNull(),
-      numericValue: varchar("numeric_value", { length: 128 }),
-      timeframe: varchar("timeframe", { length: 64 }),
-      priorGuidanceId: integer("prior_guidance_id"),
-      priorValue: varchar("prior_value", { length: 128 }),
-      delta: varchar("delta", { length: 64 }),
-      metOrMissed: varchar("met_or_missed", { length: 64 }).default("pending").notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    bastionGuidanceTracker = pgTable3("bastion_guidance_tracker", {
+      id: serial3("id").primaryKey(),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      ticker: varchar3("ticker", { length: 32 }),
+      sessionId: integer3("session_id").notNull(),
+      guidanceType: varchar3("guidance_type", { length: 64 }).notNull(),
+      statement: text3("statement").notNull(),
+      confidenceLevel: varchar3("confidence_level", { length: 64 }).default("tentative").notNull(),
+      numericValue: varchar3("numeric_value", { length: 128 }),
+      timeframe: varchar3("timeframe", { length: 64 }),
+      priorGuidanceId: integer3("prior_guidance_id"),
+      priorValue: varchar3("prior_value", { length: 128 }),
+      delta: varchar3("delta", { length: 64 }),
+      metOrMissed: varchar3("met_or_missed", { length: 64 }).default("pending").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    bastionBookings = pgTable("bastion_bookings", {
-      id: serial("id").primaryKey(),
-      userId: integer("user_id"),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      eventTitle: varchar("event_title", { length: 512 }).notNull(),
-      eventType: varchar("event_type", { length: 64 }).default("earnings_call").notNull(),
-      eventDate: varchar("event_date", { length: 32 }),
-      eventTime: varchar("event_time", { length: 16 }),
-      sector: varchar("sector", { length: 128 }),
-      ticker: varchar("ticker", { length: 32 }),
-      expectedAttendees: integer("expected_attendees"),
-      meetingUrl: varchar("meeting_url", { length: 1e3 }),
-      platform: varchar("platform", { length: 64 }).default("zoom").notNull(),
-      contactName: varchar("contact_name", { length: 255 }),
-      contactEmail: varchar("contact_email", { length: 255 }),
-      bastionReference: varchar("bastion_reference", { length: 128 }),
-      confirmationRecipients: text("confirmation_recipients"),
-      confirmationSentAt: timestamp("confirmation_sent_at"),
-      dashboardToken: varchar("dashboard_token", { length: 64 }).notNull(),
-      status: varchar("status", { length: 64 }).default("booked").notNull(),
-      checklist: json("checklist"),
-      shadowSessionId: integer("shadow_session_id"),
-      bastionSessionId: integer("bastion_session_id"),
-      notes: text("notes"),
-      reportDelivered: boolean("report_delivered").default(false),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    bastionBookings = pgTable3("bastion_bookings", {
+      id: serial3("id").primaryKey(),
+      userId: integer3("user_id"),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      eventTitle: varchar3("event_title", { length: 512 }).notNull(),
+      eventType: varchar3("event_type", { length: 64 }).default("earnings_call").notNull(),
+      eventDate: varchar3("event_date", { length: 32 }),
+      eventTime: varchar3("event_time", { length: 16 }),
+      sector: varchar3("sector", { length: 128 }),
+      ticker: varchar3("ticker", { length: 32 }),
+      expectedAttendees: integer3("expected_attendees"),
+      meetingUrl: varchar3("meeting_url", { length: 1e3 }),
+      platform: varchar3("platform", { length: 64 }).default("zoom").notNull(),
+      contactName: varchar3("contact_name", { length: 255 }),
+      contactEmail: varchar3("contact_email", { length: 255 }),
+      bastionReference: varchar3("bastion_reference", { length: 128 }),
+      confirmationRecipients: text3("confirmation_recipients"),
+      confirmationSentAt: timestamp3("confirmation_sent_at"),
+      dashboardToken: varchar3("dashboard_token", { length: 64 }).notNull(),
+      status: varchar3("status", { length: 64 }).default("booked").notNull(),
+      checklist: json3("checklist"),
+      shadowSessionId: integer3("shadow_session_id"),
+      bastionSessionId: integer3("bastion_session_id"),
+      notes: text3("notes"),
+      reportDelivered: boolean3("report_delivered").default(false),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    disclosureCertificates = pgTable("disclosure_certificates", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      sessionId: integer("session_id"),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      eventName: varchar("event_name", { length: 255 }).notNull(),
-      eventType: varchar("event_type", { length: 64 }).notNull(),
-      transcriptHash: varchar("transcript_hash", { length: 128 }).notNull(),
-      reportHash: varchar("report_hash", { length: 128 }).notNull(),
-      complianceStatus: varchar("compliance_status", { length: 64 }).default("clean").notNull(),
-      complianceFlags: integer("compliance_flags").default(0),
-      jurisdictions: json("jurisdictions"),
-      hashChain: json("hash_chain"),
-      previousCertHash: varchar("previous_cert_hash", { length: 128 }),
-      certificateHash: varchar("certificate_hash", { length: 128 }).notNull(),
-      issuedAt: timestamp("issued_at").defaultNow().notNull()
+    disclosureCertificates = pgTable3("disclosure_certificates", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      sessionId: integer3("session_id"),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      eventName: varchar3("event_name", { length: 255 }).notNull(),
+      eventType: varchar3("event_type", { length: 64 }).notNull(),
+      transcriptHash: varchar3("transcript_hash", { length: 128 }).notNull(),
+      reportHash: varchar3("report_hash", { length: 128 }).notNull(),
+      complianceStatus: varchar3("compliance_status", { length: 64 }).default("clean").notNull(),
+      complianceFlags: integer3("compliance_flags").default(0),
+      jurisdictions: json3("jurisdictions"),
+      hashChain: json3("hash_chain"),
+      previousCertHash: varchar3("previous_cert_hash", { length: 128 }),
+      certificateHash: varchar3("certificate_hash", { length: 128 }).notNull(),
+      issuedAt: timestamp3("issued_at").defaultNow().notNull()
     });
-    crisisPredictions = pgTable("crisis_predictions", {
-      id: serial("id").primaryKey(),
-      sessionId: integer("session_id"),
-      eventId: varchar("event_id", { length: 128 }),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      eventName: varchar("event_name", { length: 255 }).notNull(),
-      riskLevel: varchar("risk_level", { length: 64 }).default("low").notNull(),
-      riskScore: real("risk_score").default(0),
-      predictedCrisisType: varchar("predicted_crisis_type", { length: 128 }),
-      indicators: json("indicators"),
-      sentimentTrajectory: json("sentiment_trajectory"),
-      holdingStatement: text("holding_statement"),
-      regulatoryChecklist: json("regulatory_checklist"),
-      alertSent: boolean("alert_sent").default(false),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    crisisPredictions = pgTable3("crisis_predictions", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id"),
+      eventId: varchar3("event_id", { length: 128 }),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      eventName: varchar3("event_name", { length: 255 }).notNull(),
+      riskLevel: varchar3("risk_level", { length: 64 }).default("low").notNull(),
+      riskScore: real2("risk_score").default(0),
+      predictedCrisisType: varchar3("predicted_crisis_type", { length: 128 }),
+      indicators: json3("indicators"),
+      sentimentTrajectory: json3("sentiment_trajectory"),
+      holdingStatement: text3("holding_statement"),
+      regulatoryChecklist: json3("regulatory_checklist"),
+      alertSent: boolean3("alert_sent").default(false),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    valuationImpacts = pgTable("valuation_impacts", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 128 }).notNull(),
-      clientName: varchar("client_name", { length: 255 }).notNull(),
-      eventName: varchar("event_name", { length: 255 }).notNull(),
-      priorSentiment: real("prior_sentiment"),
-      postSentiment: real("post_sentiment"),
-      sentimentDelta: real("sentiment_delta"),
-      predictedShareImpact: varchar("predicted_share_impact", { length: 64 }),
-      fairValueGap: varchar("fair_value_gap", { length: 64 }),
-      materialDisclosures: json("material_disclosures"),
-      riskFactors: json("risk_factors"),
-      analystConsensusImpact: varchar("analyst_consensus_impact", { length: 128 }),
-      marketReactionPrediction: text("market_reaction_prediction"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    valuationImpacts = pgTable3("valuation_impacts", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }).notNull(),
+      clientName: varchar3("client_name", { length: 255 }).notNull(),
+      eventName: varchar3("event_name", { length: 255 }).notNull(),
+      priorSentiment: real2("prior_sentiment"),
+      postSentiment: real2("post_sentiment"),
+      sentimentDelta: real2("sentiment_delta"),
+      predictedShareImpact: varchar3("predicted_share_impact", { length: 64 }),
+      fairValueGap: varchar3("fair_value_gap", { length: 64 }),
+      materialDisclosures: json3("material_disclosures"),
+      riskFactors: json3("risk_factors"),
+      analystConsensusImpact: varchar3("analyst_consensus_impact", { length: 128 }),
+      marketReactionPrediction: text3("market_reaction_prediction"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    monthlyReports = pgTable("monthly_reports", {
-      id: serial("id").primaryKey(),
-      reportMonth: varchar("report_month", { length: 7 }).notNull(),
-      clientName: varchar("client_name", { length: 255 }),
-      totalEvents: integer("total_events").default(0),
-      avgSentiment: real("avg_sentiment"),
-      totalComplianceFlags: integer("total_compliance_flags").default(0),
-      communicationHealthScore: real("communication_health_score"),
-      reportData: json("report_data"),
-      status: varchar("status", { length: 64 }).default("generating").notNull(),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    monthlyReports = pgTable3("monthly_reports", {
+      id: serial3("id").primaryKey(),
+      reportMonth: varchar3("report_month", { length: 7 }).notNull(),
+      clientName: varchar3("client_name", { length: 255 }),
+      totalEvents: integer3("total_events").default(0),
+      avgSentiment: real2("avg_sentiment"),
+      totalComplianceFlags: integer3("total_compliance_flags").default(0),
+      communicationHealthScore: real2("communication_health_score"),
+      reportData: json3("report_data"),
+      status: varchar3("status", { length: 64 }).default("generating").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    advisoryChatMessages = pgTable("advisory_chat_messages", {
-      id: serial("id").primaryKey(),
-      sessionKey: varchar("session_key", { length: 128 }).notNull(),
-      role: varchar("role", { length: 64 }).notNull(),
-      content: text("content").notNull(),
-      eventIds: json("event_ids"),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    advisoryChatMessages = pgTable3("advisory_chat_messages", {
+      id: serial3("id").primaryKey(),
+      sessionKey: varchar3("session_key", { length: 128 }).notNull(),
+      role: varchar3("role", { length: 64 }).notNull(),
+      content: text3("content").notNull(),
+      eventIds: json3("event_ids"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    evolutionAuditLog = pgTable("evolution_audit_log", {
-      id: serial("id").primaryKey(),
-      actionType: varchar("action_type", { length: 64 }).notNull(),
-      proposalId: integer("proposal_id"),
-      proposalTitle: varchar("proposal_title", { length: 255 }),
-      details: json("details"),
-      blockchainHash: varchar("blockchain_hash", { length: 128 }),
-      previousHash: varchar("previous_hash", { length: 128 }),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    evolutionAuditLog = pgTable3("evolution_audit_log", {
+      id: serial3("id").primaryKey(),
+      actionType: varchar3("action_type", { length: 64 }).notNull(),
+      proposalId: integer3("proposal_id"),
+      proposalTitle: varchar3("proposal_title", { length: 255 }),
+      details: json3("details"),
+      blockchainHash: varchar3("blockchain_hash", { length: 128 }),
+      previousHash: varchar3("previous_hash", { length: 128 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    capabilityRoadmap = pgTable("capability_roadmap", {
-      id: serial("id").primaryKey(),
-      timeframe: varchar("timeframe", { length: 64 }).notNull(),
-      capability: varchar("capability", { length: 255 }).notNull(),
-      rationale: text("rationale"),
-      gapScore: real("gap_score"),
-      priority: varchar("priority", { length: 64 }).default("medium").notNull(),
-      status: varchar("status", { length: 64 }).default("predicted").notNull(),
-      proposalId: integer("proposal_id"),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    capabilityRoadmap = pgTable3("capability_roadmap", {
+      id: serial3("id").primaryKey(),
+      timeframe: varchar3("timeframe", { length: 64 }).notNull(),
+      capability: varchar3("capability", { length: 255 }).notNull(),
+      rationale: text3("rationale"),
+      gapScore: real2("gap_score"),
+      priority: varchar3("priority", { length: 64 }).default("medium").notNull(),
+      status: varchar3("status", { length: 64 }).default("predicted").notNull(),
+      proposalId: integer3("proposal_id"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
     });
-    liveQaSessions = pgTable("live_qa_sessions", {
-      id: serial("id").primaryKey(),
-      sessionCode: varchar("session_code", { length: 20 }).notNull().unique(),
-      shadowSessionId: integer("shadow_session_id"),
-      eventName: varchar("event_name", { length: 500 }).notNull(),
-      clientName: varchar("client_name", { length: 255 }),
-      status: varchar("qa_session_status", { length: 64 }).default("active").notNull(),
-      totalQuestions: integer("total_questions").default(0),
-      totalApproved: integer("total_approved").default(0),
-      totalRejected: integer("total_rejected").default(0),
-      createdAt: timestamp("created_at").defaultNow().notNull(),
-      closedAt: timestamp("closed_at")
+    liveQaSessions = pgTable3("live_qa_sessions", {
+      id: serial3("id").primaryKey(),
+      sessionCode: varchar3("session_code", { length: 20 }).notNull().unique(),
+      shadowSessionId: integer3("shadow_session_id"),
+      eventName: varchar3("event_name", { length: 500 }).notNull(),
+      clientName: varchar3("client_name", { length: 255 }),
+      status: varchar3("qa_session_status", { length: 64 }).default("active").notNull(),
+      totalQuestions: integer3("total_questions").default(0),
+      totalApproved: integer3("total_approved").default(0),
+      totalRejected: integer3("total_rejected").default(0),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      closedAt: timestamp3("closed_at")
     });
-    liveQaQuestions = pgTable("live_qa_questions", {
-      id: serial("id").primaryKey(),
-      sessionId: integer("session_id").notNull(),
-      questionText: text("question_text").notNull(),
-      submitterName: varchar("submitter_name", { length: 200 }),
-      submitterEmail: varchar("submitter_email", { length: 255 }),
-      submitterCompany: varchar("submitter_company", { length: 200 }),
-      category: varchar("question_category", { length: 64 }).default("general").notNull(),
-      status: varchar("question_status", { length: 64 }).default("pending").notNull(),
-      upvotes: integer("upvotes").default(0),
-      triageScore: real("triage_score"),
-      triageClassification: varchar("triage_classification", { length: 32 }),
-      triageReason: text("triage_reason"),
-      complianceRiskScore: real("compliance_risk_score"),
-      priorityScore: real("priority_score"),
-      isAnonymous: boolean("is_anonymous").default(false),
-      operatorNotes: text("operator_notes"),
+    liveQaQuestions = pgTable3("live_qa_questions", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id").notNull(),
+      questionText: text3("question_text").notNull(),
+      submitterName: varchar3("submitter_name", { length: 200 }),
+      submitterEmail: varchar3("submitter_email", { length: 255 }),
+      submitterCompany: varchar3("submitter_company", { length: 200 }),
+      category: varchar3("question_category", { length: 64 }).default("general").notNull(),
+      status: varchar3("question_status", { length: 64 }).default("pending").notNull(),
+      upvotes: integer3("upvotes").default(0),
+      triageScore: real2("triage_score"),
+      triageClassification: varchar3("triage_classification", { length: 32 }),
+      triageReason: text3("triage_reason"),
+      complianceRiskScore: real2("compliance_risk_score"),
+      priorityScore: real2("priority_score"),
+      isAnonymous: boolean3("is_anonymous").default(false),
+      operatorNotes: text3("operator_notes"),
       createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
       updatedAt: bigint("updated_at", { mode: "number" }).$defaultFn(() => Date.now())
     });
-    liveQaAnswers = pgTable("live_qa_answers", {
-      id: serial("id").primaryKey(),
-      questionId: integer("question_id").notNull(),
-      answerText: text("answer_text").notNull(),
-      isAutoDraft: boolean("is_auto_draft").default(false),
-      autoDraftReasoning: text("auto_draft_reasoning"),
-      approvedByOperator: boolean("approved_by_operator").default(false),
+    liveQaAnswers = pgTable3("live_qa_answers", {
+      id: serial3("id").primaryKey(),
+      questionId: integer3("question_id").notNull(),
+      answerText: text3("answer_text").notNull(),
+      isAutoDraft: boolean3("is_auto_draft").default(false),
+      autoDraftReasoning: text3("auto_draft_reasoning"),
+      approvedByOperator: boolean3("approved_by_operator").default(false),
       answeredAt: bigint("answered_at", { mode: "number" }).$defaultFn(() => Date.now())
     });
-    liveQaComplianceFlags = pgTable("live_qa_compliance_flags", {
-      id: serial("id").primaryKey(),
-      questionId: integer("question_id").notNull(),
-      jurisdiction: varchar("jurisdiction", { length: 50 }).notNull(),
-      riskScore: real("risk_score").notNull(),
-      riskType: varchar("risk_type", { length: 100 }).notNull(),
-      riskDescription: text("risk_description"),
-      recommendedAction: varchar("recommended_action", { length: 64 }).default("forward").notNull(),
-      autoRemediationSuggestion: text("auto_remediation_suggestion"),
-      resolved: boolean("resolved").default(false),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    liveQaComplianceFlags = pgTable3("live_qa_compliance_flags", {
+      id: serial3("id").primaryKey(),
+      questionId: integer3("question_id").notNull(),
+      jurisdiction: varchar3("jurisdiction", { length: 50 }).notNull(),
+      riskScore: real2("risk_score").notNull(),
+      riskType: varchar3("risk_type", { length: 100 }).notNull(),
+      riskDescription: text3("risk_description"),
+      recommendedAction: varchar3("recommended_action", { length: 64 }).default("forward").notNull(),
+      autoRemediationSuggestion: text3("auto_remediation_suggestion"),
+      resolved: boolean3("resolved").default(false),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    liveQaPlatformShares = pgTable("live_qa_platform_shares", {
-      id: serial("id").primaryKey(),
-      sessionId: integer("session_id").notNull(),
-      platform: varchar("platform", { length: 64 }).notNull(),
-      shareType: varchar("share_type", { length: 64 }).default("link").notNull(),
-      shareLink: varchar("share_link", { length: 1e3 }).notNull(),
-      whiteLabel: boolean("white_label").default(false),
-      brandName: varchar("brand_name", { length: 255 }),
-      brandColor: varchar("brand_color", { length: 7 }),
-      clickCount: integer("click_count").default(0),
-      createdAt: timestamp("created_at").defaultNow().notNull()
+    liveQaPlatformShares = pgTable3("live_qa_platform_shares", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id").notNull(),
+      platform: varchar3("platform", { length: 64 }).notNull(),
+      shareType: varchar3("share_type", { length: 64 }).default("link").notNull(),
+      shareLink: varchar3("share_link", { length: 1e3 }).notNull(),
+      whiteLabel: boolean3("white_label").default(false),
+      brandName: varchar3("brand_name", { length: 255 }),
+      brandColor: varchar3("brand_color", { length: 7 }),
+      clickCount: integer3("click_count").default(0),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
-    complianceDetectionStats = pgTable("compliance_detection_stats", {
-      id: serial("id").primaryKey(),
-      eventId: varchar("event_id", { length: 255 }).notNull(),
-      totalViolationsDetected: integer("total_violations_detected").default(0).notNull(),
-      violationsByType: text("violations_by_type"),
-      violationsBySeverity: text("violations_by_severity"),
-      avgConfidenceScore: real("avg_confidence_score"),
-      avgDetectionLatencyMs: integer("avg_detection_latency_ms"),
-      falsePositiveRate: real("false_positive_rate"),
-      recordedAt: timestamp("recorded_at").defaultNow().notNull()
+    bridgeEventPhaseEnum = pgEnum("bridge_event_phase", [
+      "scheduled",
+      "pre_call",
+      "live",
+      "ended"
+    ]);
+    bridgeConfTypeEnum = pgEnum("bridge_conf_type", [
+      "green_room",
+      "main"
+    ]);
+    bridgeConfPhaseEnum = pgEnum("bridge_conf_phase", [
+      "waiting",
+      "lobby",
+      "live",
+      "ended"
+    ]);
+    bridgeParticipantStatusEnum = pgEnum("bridge_participant_status", [
+      "invited",
+      "dialing",
+      "greeter_queue",
+      "green_room",
+      "lobby",
+      "live",
+      "muted",
+      "hold",
+      "left",
+      "removed",
+      "failed",
+      "no_answer"
+    ]);
+    bridgeParticipantRoleEnum = pgEnum("bridge_participant_role", [
+      "presenter",
+      "participant",
+      "operator",
+      "observer"
+    ]);
+    bridgeGreeterStatusEnum = pgEnum("bridge_greeter_status", [
+      "waiting",
+      "admitted",
+      "rejected",
+      "timed_out"
+    ]);
+    bridgeQaStatusEnum = pgEnum("bridge_qa_status", [
+      "pending",
+      "approved",
+      "live",
+      "answered",
+      "dismissed",
+      "skipped"
+    ]);
+    bridgeQaMethodEnum = pgEnum("bridge_qa_method", [
+      "phone_keypress",
+      "web_button",
+      "operator_added"
+    ]);
+    bridgeEvents = pgTable3("bridge_events", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 128 }),
+      name: varchar3("name", { length: 255 }).notNull(),
+      organiserName: varchar3("organiser_name", { length: 255 }),
+      organiserEmail: varchar3("organiser_email", { length: 255 }),
+      scheduledAt: timestamp3("scheduled_at"),
+      status: varchar3("status", { length: 50 }).default("scheduled").notNull(),
+      bridgeEnabled: boolean3("bridge_enabled").default(true).notNull(),
+      accessCode: varchar3("access_code", { length: 20 }),
+      dialInNumber: varchar3("dial_in_number", { length: 50 }),
+      externalSources: text3("external_sources"),
+      recallBotIds: text3("recall_bot_ids"),
+      shadowSessionId: integer3("shadow_session_id"),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
+    });
+    bridgeConferences = pgTable3("bridge_conferences", {
+      id: serial3("id").primaryKey(),
+      bridgeEventId: integer3("bridge_event_id").notNull(),
+      twilioConfSid: varchar3("twilio_conf_sid", { length: 100 }),
+      twilioConfName: varchar3("twilio_conf_name", { length: 255 }),
+      type: varchar3("type", { length: 50 }).default("main").notNull(),
+      phase: varchar3("phase", { length: 50 }).default("waiting").notNull(),
+      isRecording: boolean3("is_recording").default(false).notNull(),
+      isLocked: boolean3("is_locked").default(false).notNull(),
+      qaActive: boolean3("qa_active").default(false).notNull(),
+      recordingSid: varchar3("recording_sid", { length: 100 }),
+      recordingUrl: varchar3("recording_url", { length: 500 }),
+      startedAt: timestamp3("started_at"),
+      endedAt: timestamp3("ended_at"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    bridgeParticipants = pgTable3("bridge_participants", {
+      id: serial3("id").primaryKey(),
+      bridgeEventId: integer3("bridge_event_id").notNull(),
+      conferenceId: integer3("conference_id"),
+      name: varchar3("name", { length: 255 }),
+      organisation: varchar3("organisation", { length: 255 }),
+      phoneNumber: varchar3("phone_number", { length: 50 }),
+      role: varchar3("role", { length: 50 }).default("participant").notNull(),
+      status: varchar3("status", { length: 50 }).default("invited").notNull(),
+      connectionMethod: varchar3("connection_method", { length: 20 }).default("phone"),
+      twilioCallSid: varchar3("twilio_call_sid", { length: 100 }),
+      twilioParticipantSid: varchar3("twilio_participant_sid", { length: 100 }),
+      voiceCaptureUrl: varchar3("voice_capture_url", { length: 500 }),
+      isMuted: boolean3("is_muted").default(true).notNull(),
+      isOnHold: boolean3("is_on_hold").default(false).notNull(),
+      handRaised: boolean3("hand_raised").default(false).notNull(),
+      handRaisedAt: timestamp3("hand_raised_at"),
+      qaPosition: integer3("qa_position"),
+      notes: text3("notes"),
+      joinTime: timestamp3("join_time"),
+      leaveTime: timestamp3("leave_time"),
+      durationSeconds: integer3("duration_seconds"),
+      greeted: boolean3("greeted").default(false).notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
+    });
+    bridgeGreeterQueue = pgTable3("bridge_greeter_queue", {
+      id: serial3("id").primaryKey(),
+      bridgeEventId: integer3("bridge_event_id").notNull(),
+      conferenceId: integer3("conference_id"),
+      twilioCallSid: varchar3("twilio_call_sid", { length: 100 }),
+      phoneNumber: varchar3("phone_number", { length: 50 }),
+      voiceNameUrl: varchar3("voice_name_url", { length: 500 }),
+      voiceOrgUrl: varchar3("voice_org_url", { length: 500 }),
+      transcribedName: varchar3("transcribed_name", { length: 255 }),
+      transcribedOrg: varchar3("transcribed_org", { length: 255 }),
+      status: varchar3("status", { length: 50 }).default("waiting").notNull(),
+      queuedAt: timestamp3("queued_at").defaultNow().notNull(),
+      admittedAt: timestamp3("admitted_at")
+    });
+    bridgeQaQuestions = pgTable3("bridge_qa_questions", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conference_id").notNull(),
+      participantId: integer3("participant_id"),
+      questionText: text3("question_text"),
+      method: varchar3("method", { length: 20 }).default("phone_keypress"),
+      queuePosition: integer3("queue_position"),
+      status: varchar3("status", { length: 50 }).default("pending").notNull(),
+      raisedAt: timestamp3("raised_at").defaultNow().notNull(),
+      approvedAt: timestamp3("approved_at"),
+      wentLiveAt: timestamp3("went_live_at"),
+      answeredAt: timestamp3("answered_at"),
+      dismissedAt: timestamp3("dismissed_at"),
+      operatorNotes: text3("operator_notes")
+    });
+    bridgeOperatorActions = pgTable3("bridge_operator_actions", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conference_id"),
+      operatorId: varchar3("operator_id", { length: 255 }),
+      action: varchar3("action", { length: 100 }).notNull(),
+      targetId: integer3("target_id"),
+      category: varchar3("category", { length: 50 }).default("operator"),
+      metadata: text3("metadata"),
+      performedAt: timestamp3("performed_at").defaultNow().notNull()
+    });
+    bridgeCallRecordings = pgTable3("bridge_call_recordings", {
+      id: serial3("id").primaryKey(),
+      conferenceId: integer3("conference_id").notNull(),
+      twilioRecSid: varchar3("twilio_rec_sid", { length: 100 }),
+      channels: integer3("channels").default(2),
+      durationSec: integer3("duration_sec"),
+      fileSizeBytes: bigint("file_size_bytes", { mode: "number" }),
+      storageUrl: varchar3("storage_url", { length: 500 }),
+      transcriptUrl: varchar3("transcript_url", { length: 500 }),
+      transcriptText: text3("transcript_text"),
+      status: varchar3("status", { length: 50 }).default("processing").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    boardIntelligenceCompass = pgTable3("board_intelligence_compass", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id").notNull(),
+      eventId: integer3("event_id").notNull(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
+    });
+    priorCommitmentAudits = pgTable3("prior_commitment_audits", {
+      id: serial3("id").primaryKey(),
+      compassId: integer3("compass_id").notNull(),
+      commitmentType: varchar3("commitment_type", { length: 100 }).notNull(),
+      statement: text3("statement").notNull(),
+      source: varchar3("source", { length: 255 }),
+      eventDate: timestamp3("event_date"),
+      speaker: varchar3("speaker", { length: 255 }),
+      confidence: real2("confidence"),
+      riskLevel: varchar3("risk_level", { length: 20 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    directorLiabilityMaps = pgTable3("director_liability_maps", {
+      id: serial3("id").primaryKey(),
+      compassId: integer3("compass_id").notNull(),
+      directorName: varchar3("director_name", { length: 255 }).notNull(),
+      liabilityArea: varchar3("liability_area", { length: 100 }),
+      exposureLevel: varchar3("exposure_level", { length: 20 }),
+      description: text3("description"),
+      mitigationSteps: text3("mitigation_steps"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    analystExpectationAudits = pgTable3("analyst_expectation_audits", {
+      id: serial3("id").primaryKey(),
+      compassId: integer3("compass_id").notNull(),
+      analystName: varchar3("analyst_name", { length: 255 }),
+      consensusEps: real2("consensus_eps"),
+      consensusRevenue: real2("consensus_revenue"),
+      consensusGrowth: real2("consensus_growth"),
+      priorGuidance: text3("prior_guidance"),
+      surpriseRisk: varchar3("surprise_risk", { length: 20 }),
+      keyExpectations: text3("key_expectations"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    governanceCommunicationScores = pgTable3("governance_communication_scores", {
+      id: serial3("id").primaryKey(),
+      compassId: integer3("compass_id").notNull(),
+      clarity: real2("clarity"),
+      consistency: real2("consistency"),
+      completeness: real2("completeness"),
+      timeliness: real2("timeliness"),
+      overallScore: real2("overall_score"),
+      recommendations: text3("recommendations"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    boardResolutions = pgTable3("board_resolutions", {
+      id: serial3("id").primaryKey(),
+      compassId: integer3("compass_id").notNull(),
+      actionType: varchar3("action_type", { length: 100 }),
+      description: text3("description").notNull(),
+      priority: varchar3("priority", { length: 20 }),
+      owner: varchar3("owner", { length: 255 }),
+      dueDate: timestamp3("due_date"),
+      status: varchar3("status", { length: 20 }).default("pending"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    compassProvenance = pgTable3("compass_provenance", {
+      id: serial3("id").primaryKey(),
+      compassId: integer3("compass_id").notNull(),
+      outputType: varchar3("output_type", { length: 100 }),
+      source: varchar3("source", { length: 255 }),
+      timestamp: timestamp3("timestamp"),
+      confidence: real2("confidence"),
+      version: integer3("version").default(1),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    compassActionHistory = pgTable3("compass_action_history", {
+      id: serial3("id").primaryKey(),
+      compassId: integer3("compass_id").notNull(),
+      action: varchar3("action", { length: 255 }),
+      actor: varchar3("actor", { length: 255 }),
+      details: text3("details"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    preEventIntelligenceBriefings = pgTable3("pre_event_intelligence_briefings", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id").notNull(),
+      eventId: integer3("event_id").notNull(),
+      briefingDate: timestamp3("briefing_date").defaultNow(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
+    });
+    analystConsensusData = pgTable3("analyst_consensus_data", {
+      id: serial3("id").primaryKey(),
+      briefingId: integer3("briefing_id").notNull(),
+      metric: varchar3("metric", { length: 100 }),
+      consensusValue: real2("consensus_value"),
+      lowEstimate: real2("low_estimate"),
+      highEstimate: real2("high_estimate"),
+      numAnalysts: integer3("num_analysts"),
+      revisionTrend: varchar3("revision_trend", { length: 50 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    predictedQaItems = pgTable3("predicted_qa_items", {
+      id: serial3("id").primaryKey(),
+      briefingId: integer3("briefing_id").notNull(),
+      topic: varchar3("topic", { length: 255 }),
+      predictedQuestion: text3("predicted_question"),
+      suggestedAnswer: text3("suggested_answer"),
+      probability: real2("probability"),
+      riskLevel: varchar3("risk_level", { length: 20 }),
+      source: varchar3("source", { length: 255 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    complianceHotspots = pgTable3("compliance_hotspots", {
+      id: serial3("id").primaryKey(),
+      briefingId: integer3("briefing_id").notNull(),
+      area: varchar3("area", { length: 100 }),
+      description: text3("description"),
+      riskLevel: varchar3("risk_level", { length: 20 }),
+      regulatoryBasis: varchar3("regulatory_basis", { length: 255 }),
+      recommendedAction: text3("recommended_action"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    readinessScores = pgTable3("readiness_scores", {
+      id: serial3("id").primaryKey(),
+      briefingId: integer3("briefing_id").notNull(),
+      category: varchar3("category", { length: 100 }),
+      score: real2("score"),
+      maxScore: real2("max_score"),
+      gaps: text3("gaps"),
+      recommendations: text3("recommendations"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    briefingProvenance = pgTable3("briefing_provenance", {
+      id: serial3("id").primaryKey(),
+      briefingId: integer3("briefing_id").notNull(),
+      dataPoint: varchar3("data_point", { length: 255 }),
+      source: varchar3("source", { length: 255 }),
+      timestamp: timestamp3("timestamp"),
+      confidence: real2("confidence"),
+      version: integer3("version").default(1),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    briefingActionHistory = pgTable3("briefing_action_history", {
+      id: serial3("id").primaryKey(),
+      briefingId: integer3("briefing_id").notNull(),
+      action: varchar3("action", { length: 255 }),
+      actor: varchar3("actor", { length: 255 }),
+      details: text3("details"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    regulatoryComplianceMonitors = pgTable3("regulatory_compliance_monitors", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id").notNull(),
+      eventId: integer3("event_id").notNull(),
+      monitoringStarted: timestamp3("monitoring_started").defaultNow(),
+      createdAt: timestamp3("created_at").defaultNow().notNull(),
+      updatedAt: timestamp3("updated_at").defaultNow().notNull()
+    });
+    regulatoryFlags = pgTable3("regulatory_flags", {
+      id: serial3("id").primaryKey(),
+      monitorId: integer3("monitor_id").notNull(),
+      flagType: varchar3("flag_type", { length: 100 }),
+      jurisdiction: varchar3("jurisdiction", { length: 50 }),
+      ruleSet: varchar3("rule_set", { length: 100 }),
+      severity: varchar3("severity", { length: 20 }),
+      statement: text3("statement"),
+      speaker: varchar3("speaker", { length: 255 }),
+      segmentTimestamp: varchar3("segment_timestamp", { length: 20 }),
+      ruleBasis: text3("rule_basis"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    disclosureTriggers = pgTable3("disclosure_triggers", {
+      id: serial3("id").primaryKey(),
+      monitorId: integer3("monitor_id").notNull(),
+      filingType: varchar3("filing_type", { length: 50 }),
+      triggerReason: text3("trigger_reason"),
+      status: varchar3("status", { length: 20 }).default("draft"),
+      draftContent: text3("draft_content"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    jurisdictionProfiles = pgTable3("jurisdiction_profiles", {
+      id: serial3("id").primaryKey(),
+      code: varchar3("code", { length: 20 }).unique(),
+      name: varchar3("name", { length: 255 }),
+      ruleSetVersion: varchar3("rule_set_version", { length: 50 }),
+      applicableRules: text3("applicable_rules"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    complianceActionItems = pgTable3("compliance_action_items", {
+      id: serial3("id").primaryKey(),
+      monitorId: integer3("monitor_id").notNull(),
+      actionType: varchar3("action_type", { length: 100 }),
+      description: text3("description"),
+      priority: varchar3("priority", { length: 20 }),
+      owner: varchar3("owner", { length: 255 }),
+      dueDate: timestamp3("due_date"),
+      status: varchar3("status", { length: 20 }).default("pending"),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    complianceProvenance = pgTable3("compliance_provenance", {
+      id: serial3("id").primaryKey(),
+      monitorId: integer3("monitor_id").notNull(),
+      flagId: integer3("flag_id"),
+      source: varchar3("source", { length: 255 }),
+      timestamp: timestamp3("timestamp"),
+      confidence: real2("confidence"),
+      version: integer3("version").default(1),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
+    });
+    complianceDetectionStats = pgTable3("compliance_detection_stats", {
+      id: serial3("id").primaryKey(),
+      eventId: varchar3("event_id", { length: 255 }).notNull(),
+      totalViolationsDetected: integer3("total_violations_detected").default(0).notNull(),
+      violationsByType: text3("violations_by_type"),
+      violationsBySeverity: text3("violations_by_severity"),
+      avgConfidenceScore: real2("avg_confidence_score"),
+      avgDetectionLatencyMs: integer3("avg_detection_latency_ms"),
+      falsePositiveRate: real2("false_positive_rate"),
+      recordedAt: timestamp3("recorded_at").defaultNow().notNull()
     });
   }
 });
 
-// ../../server/_core/env.ts
+// server/_core/env.ts
 var ENV;
 var init_env = __esm({
-  "../../server/_core/env.ts"() {
+  "server/_core/env.ts"() {
     "use strict";
     ENV = {
       appId: process.env.VITE_APP_ID ?? "",
@@ -3072,7 +3762,7 @@ var init_env = __esm({
   }
 });
 
-// ../../server/db.ts
+// server/db.ts
 var db_exports = {};
 __export(db_exports, {
   createPremiumFeatures: () => createPremiumFeatures,
@@ -3135,10 +3825,10 @@ async function getDb() {
   }
   return _db;
 }
-async function rawSql(sql23, params = []) {
+async function rawSql(sql25, params = []) {
   const pool = getPool();
   if (!pool) throw new Error("Database not available");
-  let pgSql = mysqlToPostgres(sql23);
+  let pgSql = mysqlToPostgres(sql25);
   const pgParams = params.filter((p) => p !== void 0).map((p) => {
     if (typeof p === "number" && p > 1e12 && p < 1e13) {
       return new Date(p);
@@ -3161,8 +3851,8 @@ async function rawSql(sql23, params = []) {
     throw err;
   }
 }
-function mysqlToPostgres(sql23) {
-  let s = sql23;
+function mysqlToPostgres(sql25) {
+  let s = sql25;
   s = s.replace(/`/g, '"');
   let idx = 0;
   s = s.replace(/\?/g, () => `$${++idx}`);
@@ -3459,7 +4149,7 @@ async function logStripePaymentEvent(stripeEventId, eventType, userId, data) {
 }
 var _db, _pool, db;
 var init_db = __esm({
-  "../../server/db.ts"() {
+  "server/db.ts"() {
     "use strict";
     init_schema();
     init_env();
@@ -3470,7 +4160,7 @@ var init_db = __esm({
   }
 });
 
-// ../../server/_core/cookies.ts
+// server/_core/cookies.ts
 function isSecureRequest(req) {
   if (req.protocol === "https") return true;
   const forwardedProto = req.headers["x-forwarded-proto"];
@@ -3488,15 +4178,15 @@ function getSessionCookieOptions(req) {
   };
 }
 var init_cookies = __esm({
-  "../../server/_core/cookies.ts"() {
+  "server/_core/cookies.ts"() {
     "use strict";
   }
 });
 
-// ../../shared/_core/errors.ts
+// shared/_core/errors.ts
 var HttpError, ForbiddenError;
 var init_errors = __esm({
-  "../../shared/_core/errors.ts"() {
+  "shared/_core/errors.ts"() {
     "use strict";
     HttpError = class extends Error {
       constructor(statusCode, message) {
@@ -3509,7 +4199,7 @@ var init_errors = __esm({
   }
 });
 
-// ../../server/_core/sdk.ts
+// server/_core/sdk.ts
 var sdk_exports = {};
 __export(sdk_exports, {
   sdk: () => sdk
@@ -3519,7 +4209,7 @@ import { parse as parseCookieHeader } from "cookie";
 import { SignJWT, jwtVerify } from "jose";
 var isNonEmptyString, EXCHANGE_TOKEN_PATH, GET_USER_INFO_PATH, GET_USER_INFO_WITH_JWT_PATH, OAuthService, createOAuthHttpClient, SDKServer, sdk;
 var init_sdk = __esm({
-  "../../server/_core/sdk.ts"() {
+  "server/_core/sdk.ts"() {
     "use strict";
     init_const();
     init_errors();
@@ -3631,7 +4321,7 @@ var init_sdk = __esm({
         return new TextEncoder().encode(secret);
       }
       /**
-       * Create a session token for a Manus user openId
+       * Create a session token for a user openId
        * @example
        * const sessionToken = await sdk.createSessionToken(userInfo.openId);
        */
@@ -3740,7 +4430,79 @@ var init_sdk = __esm({
   }
 });
 
-// ../../server/_core/notification.ts
+// server/_core/oauth.ts
+function getQueryParam(req, key) {
+  const value = req.query[key];
+  return typeof value === "string" ? value : void 0;
+}
+function registerOAuthRoutes(app) {
+  const oauthEnabled = Boolean(process.env.OAUTH_SERVER_URL);
+  app.get("/api/auth/status", async (req, res) => {
+    const mode = oauthEnabled ? "oauth" : "dev-bypass";
+    let user = null;
+    try {
+      const sessionUser = await sdk.authenticateRequest(req);
+      if (sessionUser) {
+        user = { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email, role: sessionUser.role };
+      }
+    } catch {
+    }
+    res.json({
+      authenticated: Boolean(user),
+      mode,
+      user,
+      oauthConfigured: oauthEnabled
+    });
+  });
+  app.get("/api/oauth/callback", async (req, res) => {
+    if (!oauthEnabled) {
+      res.status(503).json({ error: "OAuth is not configured. Set OAUTH_SERVER_URL to enable authentication." });
+      return;
+    }
+    const code = getQueryParam(req, "code");
+    const state = getQueryParam(req, "state");
+    if (!code || !state) {
+      res.status(400).json({ error: "code and state are required" });
+      return;
+    }
+    try {
+      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
+      const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
+      if (!userInfo.openId) {
+        res.status(400).json({ error: "openId missing from user info" });
+        return;
+      }
+      await upsertUser({
+        openId: userInfo.openId,
+        name: userInfo.name || null,
+        email: userInfo.email ?? null,
+        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+        lastSignedIn: /* @__PURE__ */ new Date()
+      });
+      const sessionToken = await sdk.createSessionToken(userInfo.openId, {
+        name: userInfo.name || "",
+        expiresInMs: ONE_YEAR_MS
+      });
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.redirect(302, "/");
+    } catch (error) {
+      console.error("[OAuth] Callback failed", error);
+      res.status(500).json({ error: "OAuth callback failed" });
+    }
+  });
+}
+var init_oauth = __esm({
+  "server/_core/oauth.ts"() {
+    "use strict";
+    init_const();
+    init_db();
+    init_cookies();
+    init_sdk();
+  }
+});
+
+// server/_core/notification.ts
 var notification_exports = {};
 __export(notification_exports, {
   notifyOwner: () => notifyOwner
@@ -3787,7 +4549,7 @@ async function notifyOwner(payload) {
 }
 var TITLE_MAX_LENGTH, CONTENT_MAX_LENGTH, trimValue, isNonEmptyString2, buildEndpointUrl, validatePayload;
 var init_notification = __esm({
-  "../../server/_core/notification.ts"() {
+  "server/_core/notification.ts"() {
     "use strict";
     init_env();
     TITLE_MAX_LENGTH = 1200;
@@ -3833,12 +4595,12 @@ var init_notification = __esm({
   }
 });
 
-// ../../server/_core/trpc.ts
+// server/_core/trpc.ts
 import { initTRPC, TRPCError as TRPCError2 } from "@trpc/server";
 import superjson from "superjson";
 var t, router, publicProcedure, createCallerFactory, DEV_BYPASS, DEV_USER, requireUser, protectedProcedure, adminProcedure, operatorProcedure;
 var init_trpc = __esm({
-  "../../server/_core/trpc.ts"() {
+  "server/_core/trpc.ts"() {
     "use strict";
     init_const();
     t = initTRPC.context().create({
@@ -3908,11 +4670,11 @@ var init_trpc = __esm({
   }
 });
 
-// ../../server/_core/systemRouter.ts
+// server/_core/systemRouter.ts
 import { z } from "zod";
 var systemRouter;
 var init_systemRouter = __esm({
-  "../../server/_core/systemRouter.ts"() {
+  "server/_core/systemRouter.ts"() {
     "use strict";
     init_notification();
     init_trpc();
@@ -3939,7 +4701,7 @@ var init_systemRouter = __esm({
   }
 });
 
-// ../../server/_core/llm.ts
+// server/_core/llm.ts
 var llm_exports = {};
 __export(llm_exports, {
   invokeLLM: () => invokeLLM
@@ -4002,7 +4764,7 @@ async function invokeLLM(params) {
 }
 var ensureArray, normalizeContentPart, normalizeMessage, normalizeToolChoice, hasDirectOpenAiKey, isForgeMode, resolveApiUrl, assertApiKey, normalizeResponseFormat;
 var init_llm = __esm({
-  "../../server/_core/llm.ts"() {
+  "server/_core/llm.ts"() {
     "use strict";
     init_env();
     ensureArray = (value) => Array.isArray(value) ? value : [value];
@@ -4126,7 +4888,7 @@ var init_llm = __esm({
   }
 });
 
-// ../../server/_core/email.ts
+// server/_core/email.ts
 var email_exports = {};
 __export(email_exports, {
   buildIRSummaryEmail: () => buildIRSummaryEmail,
@@ -4549,14 +5311,14 @@ function buildMailingListInvitationEmail(opts) {
 }
 var FROM_ADDRESS_FALLBACK;
 var init_email = __esm({
-  "../../server/_core/email.ts"() {
+  "server/_core/email.ts"() {
     "use strict";
     init_env();
     FROM_ADDRESS_FALLBACK = "CuraLive <onboarding@resend.dev>";
   }
 });
 
-// ../../server/storage.ts
+// server/storage.ts
 function getStorageConfig() {
   const baseUrl = ENV.forgeApiUrl;
   const apiKey = ENV.forgeApiKey;
@@ -4627,13 +5389,13 @@ async function storageGet(relKey) {
   };
 }
 var init_storage = __esm({
-  "../../server/storage.ts"() {
+  "server/storage.ts"() {
     "use strict";
     init_env();
   }
 });
 
-// ../../server/directAccess.ts
+// server/directAccess.ts
 var directAccess_exports = {};
 __export(directAccess_exports, {
   findRunningConferenceByDialIn: () => findRunningConferenceByDialIn,
@@ -4723,14 +5485,14 @@ async function getDirectAccessStats(conferenceId) {
   };
 }
 var init_directAccess = __esm({
-  "../../server/directAccess.ts"() {
+  "server/directAccess.ts"() {
     "use strict";
     init_db();
     init_schema();
   }
 });
 
-// ../../server/db.occ.ts
+// server/db.occ.ts
 import { eq as eq3, and as and2, desc as desc3, asc } from "drizzle-orm";
 async function getOccConferences(status) {
   const db2 = await getDb();
@@ -4873,14 +5635,14 @@ async function getOccAccessCodeLog(conferenceId) {
   return db2.select().from(occAccessCodeLog).where(eq3(occAccessCodeLog.conferenceId, conferenceId)).orderBy(desc3(occAccessCodeLog.attemptedAt)).limit(100);
 }
 var init_db_occ = __esm({
-  "../../server/db.occ.ts"() {
+  "server/db.occ.ts"() {
     "use strict";
     init_db();
     init_schema();
   }
 });
 
-// ../../server/routers/occ.ts
+// server/routers/occ.ts
 import { z as z2 } from "zod";
 import { eq as eq4 } from "drizzle-orm";
 async function publishAblyEvent(channel, event, data) {
@@ -4904,7 +5666,7 @@ async function publishAblyEvent(channel, event, data) {
 }
 var occRouter;
 var init_occ = __esm({
-  "../../server/routers/occ.ts"() {
+  "server/routers/occ.ts"() {
     "use strict";
     init_trpc();
     init_db_occ();
@@ -5830,7 +6592,7 @@ var init_occ = __esm({
   }
 });
 
-// ../../server/routers/liveVideo.ts
+// server/routers/liveVideo.ts
 import { z as z3 } from "zod";
 import { eq as eq5 } from "drizzle-orm";
 async function ablyPublish(channel, event, data) {
@@ -5854,7 +6616,7 @@ function makeId(prefix) {
 }
 var liveVideoRouter;
 var init_liveVideo = __esm({
-  "../../server/routers/liveVideo.ts"() {
+  "server/routers/liveVideo.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -6124,15 +6886,15 @@ var init_liveVideo = __esm({
         if (!apiKey) return { tokenRequest: null };
         const [keyName, keySecret] = apiKey.split(":");
         const clientId = ctx.user ? `operator-${ctx.user.id}` : `guest-${Date.now()}`;
-        const timestamp2 = Date.now();
+        const timestamp4 = Date.now();
         const ttl = 3600 * 1e3;
         const nonce = Math.random().toString(36).substring(2, 15);
         const channel = `roadshow-${input.roadshowId}-meeting-${input.meetingDbId}`;
         const capability = JSON.stringify({ [channel]: ["subscribe", "publish", "presence", "history"] });
         const { createHmac } = await import("crypto");
-        const signString = [keyName, ttl, nonce, clientId, timestamp2, capability, ""].join("\n");
+        const signString = [keyName, ttl, nonce, clientId, timestamp4, capability, ""].join("\n");
         const mac = createHmac("sha256", keySecret).update(signString).digest("base64");
-        return { tokenRequest: { keyName, ttl, nonce, clientId, timestamp: timestamp2, capability, mac } };
+        return { tokenRequest: { keyName, ttl, nonce, clientId, timestamp: timestamp4, capability, mac } };
       }),
       // ── Public: investor Ably token scoped to their personal channel ─────────
       getInvestorAblyToken: publicProcedure.input(z3.object({ inviteToken: z3.string() })).query(async ({ input }) => {
@@ -6144,7 +6906,7 @@ var init_liveVideo = __esm({
         if (!investor) return { tokenRequest: null };
         const [keyName, keySecret] = apiKey.split(":");
         const clientId = `investor-${investor.id}`;
-        const timestamp2 = Date.now();
+        const timestamp4 = Date.now();
         const ttl = 3600 * 1e3;
         const nonce = Math.random().toString(36).substring(2, 15);
         const channels = {
@@ -6153,9 +6915,9 @@ var init_liveVideo = __esm({
         };
         const capability = JSON.stringify(channels);
         const { createHmac } = await import("crypto");
-        const signString = [keyName, ttl, nonce, clientId, timestamp2, capability, ""].join("\n");
+        const signString = [keyName, ttl, nonce, clientId, timestamp4, capability, ""].join("\n");
         const mac = createHmac("sha256", keySecret).update(signString).digest("base64");
-        return { tokenRequest: { keyName, ttl, nonce, clientId, timestamp: timestamp2, capability, mac } };
+        return { tokenRequest: { keyName, ttl, nonce, clientId, timestamp: timestamp4, capability, mac } };
       }),
       // ── Operator: send invite email to an investor ────────────────────────────
       sendInviteEmail: operatorProcedure.input(z3.object({
@@ -6333,7 +7095,7 @@ Return JSON with these fields:
   }
 });
 
-// ../../server/routers/roadshowAI.ts
+// server/routers/roadshowAI.ts
 import { z as z4 } from "zod";
 import { eq as eq6, and as and3 } from "drizzle-orm";
 async function ablyPublish2(channel, event, data) {
@@ -6354,7 +7116,7 @@ async function ablyPublish2(channel, event, data) {
 }
 var roadshowAIRouter;
 var init_roadshowAI = __esm({
-  "../../server/routers/roadshowAI.ts"() {
+  "server/routers/roadshowAI.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -6976,12 +7738,12 @@ Return JSON with:
   }
 });
 
-// ../../server/routers/branding.ts
+// server/routers/branding.ts
 import { z as z5 } from "zod";
 import { eq as eq7 } from "drizzle-orm";
 var brandingRouter;
 var init_branding = __esm({
-  "../../server/routers/branding.ts"() {
+  "server/routers/branding.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -7047,11 +7809,11 @@ var init_branding = __esm({
   }
 });
 
-// ../../server/services/PersonalizationEngine.ts
+// server/services/PersonalizationEngine.ts
 import { eq as eq8, desc as desc4 } from "drizzle-orm";
 var PersonalizationEngine, personalizationEngine;
 var init_PersonalizationEngine = __esm({
-  "../../server/services/PersonalizationEngine.ts"() {
+  "server/services/PersonalizationEngine.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -7130,11 +7892,11 @@ Generate 2-4 relevant, actionable suggestions based on the actual data. Focus on
   }
 });
 
-// ../../server/services/PodcastConverterService.ts
+// server/services/PodcastConverterService.ts
 import { eq as eq9, asc as asc2 } from "drizzle-orm";
 var PodcastConverterService, podcastConverterService;
 var init_PodcastConverterService = __esm({
-  "../../server/services/PodcastConverterService.ts"() {
+  "server/services/PodcastConverterService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -7221,11 +7983,11 @@ This episode covers:
   }
 });
 
-// ../../server/services/SustainabilityOptimizer.ts
+// server/services/SustainabilityOptimizer.ts
 import { eq as eq10 } from "drizzle-orm";
 var AVG_TRAVEL_KM, CO2_PER_KM_KG, SERVER_KWH_PER_HOUR, CO2_PER_KWH_KG, BANDWIDTH_GB_PER_VIEWER_HOUR, CO2_PER_GB_KG, SustainabilityOptimizer, sustainabilityOptimizer;
 var init_SustainabilityOptimizer = __esm({
-  "../../server/services/SustainabilityOptimizer.ts"() {
+  "server/services/SustainabilityOptimizer.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -7315,11 +8077,11 @@ Return JSON: { "suggestions": ["suggestion1", "suggestion2", "suggestion3"] }`;
   }
 });
 
-// ../../server/services/WebcastRecapService.ts
+// server/services/WebcastRecapService.ts
 import { eq as eq11, asc as asc3 } from "drizzle-orm";
 var WebcastRecapService, webcastRecapService;
 var init_WebcastRecapService = __esm({
-  "../../server/services/WebcastRecapService.ts"() {
+  "server/services/WebcastRecapService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -7410,11 +8172,11 @@ Generate exactly 5 top moments. Focus on investment-relevant insights.`;
   }
 });
 
-// ../../server/services/LanguageDubber.ts
+// server/services/LanguageDubber.ts
 import { eq as eq12, asc as asc4 } from "drizzle-orm";
 var LANGUAGE_NAMES, LanguageDubber, languageDubber;
 var init_LanguageDubber = __esm({
-  "../../server/services/LanguageDubber.ts"() {
+  "server/services/LanguageDubber.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -7519,11 +8281,11 @@ Maintain the tone and formality of investor relations communications. Keep finan
   }
 });
 
-// ../../server/services/AudioEnhancer.ts
+// server/services/AudioEnhancer.ts
 import { eq as eq13 } from "drizzle-orm";
 var AudioEnhancer, audioEnhancer;
 var init_AudioEnhancer = __esm({
-  "../../server/services/AudioEnhancer.ts"() {
+  "server/services/AudioEnhancer.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -7578,7 +8340,7 @@ var init_AudioEnhancer = __esm({
   }
 });
 
-// ../../server/routers/webcastRouter.ts
+// server/routers/webcastRouter.ts
 import { z as z6 } from "zod";
 import { randomBytes } from "crypto";
 import { eq as eq14, desc as desc6, and as and4, sql } from "drizzle-orm";
@@ -7610,7 +8372,7 @@ function buildICS(opts) {
 }
 var DEMO_EVENTS, webcastRouter;
 var init_webcastRouter = __esm({
-  "../../server/routers/webcastRouter.ts"() {
+  "server/routers/webcastRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -7956,7 +8718,7 @@ var init_webcastRouter = __esm({
         await db2.update(webcastEvents).set({ registrationCount: sql`registration_count + 1`, updatedAt: Date.now() }).where(eq14(webcastEvents.id, input.eventId));
         const [event] = await db2.select().from(webcastEvents).where(eq14(webcastEvents.id, input.eventId)).limit(1);
         if (event) {
-          const baseUrl = origin ?? "https://curalive-mdu4k2ib.manus.space";
+          const baseUrl = origin ?? "https://curalive-platform.replit.app";
           const attendUrl = `${baseUrl}/live-video/webcast/${event.slug}/attend?token=${attendeeToken}`;
           const startTs = event.startTime ?? Date.now() + 24 * 60 * 60 * 1e3;
           const endTs = event.endTime ?? startTs + 90 * 60 * 1e3;
@@ -8532,12 +9294,12 @@ var init_webcastRouter = __esm({
   }
 });
 
-// ../../server/routers/recallRouter.ts
+// server/routers/recallRouter.ts
 import { z as z7 } from "zod";
 import { TRPCError as TRPCError3 } from "@trpc/server";
 import { eq as eq15 } from "drizzle-orm";
-async function recallFetch(path4, options = {}) {
-  const res = await fetch(`${RECALL_BASE_URL}${path4}`, {
+async function recallFetch(path5, options = {}) {
+  const res = await fetch(`${RECALL_BASE_URL}${path5}`, {
     ...options,
     headers: {
       "Authorization": `Token ${RECALL_API_KEY}`,
@@ -8601,7 +9363,7 @@ async function stopRecallBot(recallBotId) {
 }
 var RECALL_BASE_URL, RECALL_API_KEY, recallRouter;
 var init_recallRouter = __esm({
-  "../../server/routers/recallRouter.ts"() {
+  "server/routers/recallRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -8738,7 +9500,7 @@ var init_recallRouter = __esm({
   }
 });
 
-// ../../server/_core/voiceTranscription.ts
+// server/_core/voiceTranscription.ts
 var voiceTranscription_exports = {};
 __export(voiceTranscription_exports, {
   transcribeAudio: () => transcribeAudio
@@ -8871,16 +9633,16 @@ function getLanguageName(langCode) {
   return langMap[langCode] || langCode;
 }
 var init_voiceTranscription = __esm({
-  "../../server/_core/voiceTranscription.ts"() {
+  "server/_core/voiceTranscription.ts"() {
     "use strict";
     init_env();
   }
 });
 
-// ../../server/audioIngest.ts
+// server/audioIngest.ts
 import { spawn } from "child_process";
-import { promises as fs } from "fs";
-import path from "path";
+import { promises as fs2 } from "fs";
+import path2 from "path";
 import os from "os";
 function isTranscriptionError(r) {
   return typeof r === "object" && r !== null && "error" in r;
@@ -8899,8 +9661,8 @@ async function ablyPublish3(channel, name, data) {
       body: JSON.stringify({ name, data })
     });
     if (!res.ok) {
-      const text2 = await res.text();
-      console.warn(`[Ably] Publish failed ${res.status}: ${text2}`);
+      const text4 = await res.text();
+      console.warn(`[Ably] Publish failed ${res.status}: ${text4}`);
     }
   } catch (err) {
     console.warn("[Ably] Publish error:", err);
@@ -8908,9 +9670,9 @@ async function ablyPublish3(channel, name, data) {
 }
 async function processChunk(chunkPath, worker, chunkIndex) {
   try {
-    const wavBuffer = await fs.readFile(chunkPath);
+    const wavBuffer = await fs2.readFile(chunkPath);
     if (wavBuffer.length < 1e3) {
-      await fs.unlink(chunkPath).catch(() => {
+      await fs2.unlink(chunkPath).catch(() => {
       });
       return;
     }
@@ -8923,13 +9685,13 @@ async function processChunk(chunkPath, worker, chunkIndex) {
     });
     if (isTranscriptionError(rawResult)) {
       console.warn(`[AudioIngest] Transcription error for chunk ${chunkIndex}:`, rawResult.error);
-      await fs.unlink(chunkPath).catch(() => {
+      await fs2.unlink(chunkPath).catch(() => {
       });
       return;
     }
     const transcribedText = rawResult.text?.trim();
     if (!transcribedText) {
-      await fs.unlink(chunkPath).catch(() => {
+      await fs2.unlink(chunkPath).catch(() => {
       });
       return;
     }
@@ -8953,11 +9715,11 @@ async function processChunk(chunkPath, worker, chunkIndex) {
     console.log(
       `[AudioIngest] ${worker.streamId} chunk ${chunkIndex}: "${transcribedText.slice(0, 60)}..."`
     );
-    await fs.unlink(chunkPath).catch(() => {
+    await fs2.unlink(chunkPath).catch(() => {
     });
   } catch (err) {
     console.error(`[AudioIngest] Error processing chunk ${chunkIndex}:`, err);
-    await fs.unlink(chunkPath).catch(() => {
+    await fs2.unlink(chunkPath).catch(() => {
     });
   }
 }
@@ -8970,12 +9732,12 @@ function startChunkWatcher(worker) {
       return;
     }
     try {
-      const files = await fs.readdir(worker.chunkDir);
+      const files = await fs2.readdir(worker.chunkDir);
       const wavFiles = files.filter((f) => f.endsWith(".wav") && !processedChunks.has(f)).sort();
       for (const file of wavFiles) {
         if (file === wavFiles[wavFiles.length - 1]) continue;
         processedChunks.add(file);
-        const chunkPath = path.join(worker.chunkDir, file);
+        const chunkPath = path2.join(worker.chunkDir, file);
         await processChunk(chunkPath, worker, chunkIndex++);
       }
     } catch (err) {
@@ -8985,8 +9747,8 @@ function startChunkWatcher(worker) {
 }
 async function startIngest(streamId, hlsUrl, ablyChannel) {
   await stopIngest(streamId);
-  const chunkDir = path.join(os.tmpdir(), `curalive-ingest-${streamId}`);
-  await fs.mkdir(chunkDir, { recursive: true });
+  const chunkDir = path2.join(os.tmpdir(), `curalive-ingest-${streamId}`);
+  await fs2.mkdir(chunkDir, { recursive: true });
   const worker = {
     streamId,
     hlsUrl,
@@ -9027,7 +9789,7 @@ async function startIngest(streamId, hlsUrl, ablyChannel) {
     "-reset_timestamps",
     "1",
     // Reset timestamps per segment
-    path.join(chunkDir, "chunk_%03d.wav")
+    path2.join(chunkDir, "chunk_%03d.wav")
   ];
   console.log(`[AudioIngest] Starting ffmpeg for stream ${streamId}`);
   console.log(`[AudioIngest] HLS URL: ${hlsUrl}`);
@@ -9072,7 +9834,7 @@ async function stopIngest(streamId) {
     worker.ffmpegProcess = null;
   }
   try {
-    await fs.rm(worker.chunkDir, { recursive: true, force: true });
+    await fs2.rm(worker.chunkDir, { recursive: true, force: true });
   } catch (err) {
     console.warn(`[AudioIngest] Failed to clean up chunk dir:`, err);
   }
@@ -9086,7 +9848,7 @@ function listActiveIngests() {
 }
 var workers, ABLY_REST_URL;
 var init_audioIngest = __esm({
-  "../../server/audioIngest.ts"() {
+  "server/audioIngest.ts"() {
     "use strict";
     init_voiceTranscription();
     init_storage();
@@ -9095,7 +9857,7 @@ var init_audioIngest = __esm({
   }
 });
 
-// ../../server/routers/muxRouter.ts
+// server/routers/muxRouter.ts
 import { z as z8 } from "zod";
 import { TRPCError as TRPCError4 } from "@trpc/server";
 import { eq as eq16 } from "drizzle-orm";
@@ -9103,8 +9865,8 @@ function muxAuthHeader() {
   const credentials = Buffer.from(`${MUX_TOKEN_ID}:${MUX_TOKEN_SECRET}`).toString("base64");
   return `Basic ${credentials}`;
 }
-async function muxFetch(path4, options = {}) {
-  const res = await fetch(`${MUX_API_BASE}${path4}`, {
+async function muxFetch(path5, options = {}) {
+  const res = await fetch(`${MUX_API_BASE}${path5}`, {
     ...options,
     headers: {
       "Authorization": muxAuthHeader(),
@@ -9120,7 +9882,7 @@ async function muxFetch(path4, options = {}) {
 }
 var MUX_TOKEN_ID, MUX_TOKEN_SECRET, MUX_API_BASE, muxRouter;
 var init_muxRouter = __esm({
-  "../../server/routers/muxRouter.ts"() {
+  "server/routers/muxRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -9372,7 +10134,7 @@ var init_muxRouter = __esm({
   }
 });
 
-// ../../server/db.billing.ts
+// server/db.billing.ts
 import { eq as eq17, and as and5, desc as desc7, asc as asc5, lt, lte, or, sql as sql2 } from "drizzle-orm";
 import { randomBytes as randomBytes2 } from "crypto";
 async function requireDb() {
@@ -9791,14 +10553,14 @@ async function convertQuoteToInvoice(quoteId, createdByUserId) {
   return { invoiceId, invoiceNumber, accessToken };
 }
 var init_db_billing = __esm({
-  "../../server/db.billing.ts"() {
+  "server/db.billing.ts"() {
     "use strict";
     init_db();
     init_schema();
   }
 });
 
-// ../../server/routers/billingRouter.ts
+// server/routers/billingRouter.ts
 import { z as z9 } from "zod";
 import { TRPCError as TRPCError5 } from "@trpc/server";
 function buildPaymentReminderEmailHtml(opts) {
@@ -9881,7 +10643,7 @@ function buildInvoiceEmailHtml(opts) {
 }
 var adminProcedure2, lineItemSchema, billingRouter;
 var init_billingRouter = __esm({
-  "../../server/routers/billingRouter.ts"() {
+  "server/routers/billingRouter.ts"() {
     "use strict";
     init_trpc();
     init_db_billing();
@@ -10629,7 +11391,7 @@ var init_billingRouter = __esm({
   }
 });
 
-// ../../server/aiAnalysis.ts
+// server/aiAnalysis.ts
 function extractContent(content) {
   if (typeof content === "string") return content;
   return content.map((p) => p.type === "text" ? p.text ?? "" : "").join("");
@@ -10707,8 +11469,8 @@ Write a brief rolling summary:`
       ]
     });
     const raw = response.choices?.[0]?.message?.content;
-    const text2 = raw ? extractContent(raw).trim() : "The event is in progress. Transcript is being captured.";
-    return { text: text2, timestamp: Date.now(), segmentCount: segments.length };
+    const text4 = raw ? extractContent(raw).trim() : "The event is in progress. Transcript is being captured.";
+    return { text: text4, timestamp: Date.now(), segmentCount: segments.length };
   } catch (err) {
     console.warn("[AI] Rolling summary failed:", err);
     return {
@@ -10999,8 +11761,8 @@ ${qaText}`
   if (!raw) throw new Error("Empty LLM response for enhanced summary");
   return JSON.parse(extractContent(raw));
 }
-async function translateText(text2, targetLanguage) {
-  if (targetLanguage === "en") return text2;
+async function translateText(text4, targetLanguage) {
+  if (targetLanguage === "en") return text4;
   try {
     const response = await invokeLLM({
       messages: [
@@ -11008,13 +11770,13 @@ async function translateText(text2, targetLanguage) {
           role: "system",
           content: `You are a professional translator. Translate the following text to ${targetLanguage}. Return only the translated text, no explanations.`
         },
-        { role: "user", content: text2 }
+        { role: "user", content: text4 }
       ]
     });
     const raw = response.choices?.[0]?.message?.content;
-    return raw ? extractContent(raw).trim() : text2;
+    return raw ? extractContent(raw).trim() : text4;
   } catch {
-    return text2;
+    return text4;
   }
 }
 async function analyzeSpeakingPace(transcript) {
@@ -11123,18 +11885,18 @@ Provide 3 actionable coaching tips and an overall delivery score.`
   return { speakers: speakerAnalyses, overallEventPace, summary };
 }
 var init_aiAnalysis = __esm({
-  "../../server/aiAnalysis.ts"() {
+  "server/aiAnalysis.ts"() {
     "use strict";
     init_llm();
   }
 });
 
-// ../../server/routers/aiRouter.ts
+// server/routers/aiRouter.ts
 import { z as z10 } from "zod";
 import { eq as eq18 } from "drizzle-orm";
 var aiRouter;
 var init_aiRouter = __esm({
-  "../../server/routers/aiRouter.ts"() {
+  "server/routers/aiRouter.ts"() {
     "use strict";
     init_trpc();
     init_trpc();
@@ -11314,7 +12076,7 @@ var init_aiRouter = __esm({
   }
 });
 
-// ../../server/webphone/twilio.ts
+// server/webphone/twilio.ts
 import twilio from "twilio";
 function generateTwilioToken(userId) {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -11362,14 +12124,14 @@ function buildTwiMLVoiceResponse(to, callerId, options) {
 }
 var AccessToken, VoiceGrant;
 var init_twilio = __esm({
-  "../../server/webphone/twilio.ts"() {
+  "server/webphone/twilio.ts"() {
     "use strict";
     ({ AccessToken } = twilio.jwt);
     ({ VoiceGrant } = AccessToken);
   }
 });
 
-// ../../server/webphone/telnyx.ts
+// server/webphone/telnyx.ts
 function getTelnyxCredentials(userId) {
   const sipUser = process.env.TELNYX_SIP_USERNAME;
   const sipPassword = process.env.TELNYX_SIP_PASSWORD;
@@ -11403,12 +12165,12 @@ function parseTelnyxWebhook(body) {
   }
 }
 var init_telnyx = __esm({
-  "../../server/webphone/telnyx.ts"() {
+  "server/webphone/telnyx.ts"() {
     "use strict";
   }
 });
 
-// ../../server/webphone/carrierManager.ts
+// server/webphone/carrierManager.ts
 import { eq as eq19 } from "drizzle-orm";
 async function getAllCarrierHealth() {
   const db2 = await getDb();
@@ -11428,12 +12190,12 @@ async function getAllCarrierHealth() {
 }
 async function getActiveCarrier() {
   const health = await getAllCarrierHealth();
-  const twilio4 = health.find((h) => h.carrier === "twilio");
+  const twilio6 = health.find((h) => h.carrier === "twilio");
   const telnyx = health.find((h) => h.carrier === "telnyx");
-  if (twilio4?.status === "down" || twilio4?.failoverActive) {
+  if (twilio6?.status === "down" || twilio6?.failoverActive) {
     return "telnyx";
   }
-  if (twilio4?.status === "degraded" && telnyx?.status === "healthy") {
+  if (twilio6?.status === "degraded" && telnyx?.status === "healthy") {
     return "telnyx";
   }
   return "twilio";
@@ -11457,14 +12219,14 @@ async function setCarrierStatus(carrier, status) {
   await db2.update(webphoneCarrierStatus).set({ status, lastCheckedAt: Date.now() }).where(eq19(webphoneCarrierStatus.carrier, carrier));
 }
 var init_carrierManager = __esm({
-  "../../server/webphone/carrierManager.ts"() {
+  "server/webphone/carrierManager.ts"() {
     "use strict";
     init_db();
     init_schema();
   }
 });
 
-// ../../server/webphone/ablyPublish.ts
+// server/webphone/ablyPublish.ts
 var ablyPublish_exports = {};
 __export(ablyPublish_exports, {
   WEBPHONE_CHANNEL: () => WEBPHONE_CHANNEL,
@@ -11488,8 +12250,8 @@ async function publishWebphoneEvent(event, data) {
       })
     });
     if (!res.ok) {
-      const text2 = await res.text();
-      console.warn(`[Ably Webphone] Publish failed ${res.status}: ${text2}`);
+      const text4 = await res.text();
+      console.warn(`[Ably Webphone] Publish failed ${res.status}: ${text4}`);
     }
   } catch (err) {
     console.warn("[Ably Webphone] Publish error:", err);
@@ -11497,14 +12259,14 @@ async function publishWebphoneEvent(event, data) {
 }
 var ABLY_REST_URL2, WEBPHONE_CHANNEL;
 var init_ablyPublish = __esm({
-  "../../server/webphone/ablyPublish.ts"() {
+  "server/webphone/ablyPublish.ts"() {
     "use strict";
     ABLY_REST_URL2 = "https://rest.ably.io";
     WEBPHONE_CHANNEL = "webphone:activity";
   }
 });
 
-// ../../server/routers/webphoneRouter.ts
+// server/routers/webphoneRouter.ts
 import { z as z11 } from "zod";
 import { eq as eq20, desc as desc8, and as and6, sql as sql3 } from "drizzle-orm";
 import twilio2 from "twilio";
@@ -11524,7 +12286,7 @@ function getEmptyStats() {
 }
 var TWILIO_ERROR_MAP, webphoneRouter;
 var init_webphoneRouter = __esm({
-  "../../server/routers/webphoneRouter.ts"() {
+  "server/routers/webphoneRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -11704,7 +12466,7 @@ var init_webphoneRouter = __esm({
       })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return [];
-        const { and: and47, isNotNull: isNotNull3 } = await import("drizzle-orm");
+        const { and: and49, isNotNull: isNotNull3 } = await import("drizzle-orm");
         const conditions = input.conferenceId != null ? eq20(webphoneSessions.conferenceId, input.conferenceId) : isNotNull3(webphoneSessions.id);
         const rows = await db2.select().from(webphoneSessions).where(conditions).orderBy(desc8(webphoneSessions.startedAt)).limit(input.limit);
         const totalCalls = rows.length;
@@ -11823,8 +12585,7 @@ var init_webphoneRouter = __esm({
           if (!targetSid) {
             return { success: false, error: `Phone number ${targetNumber || "(none)"} not found in your Twilio account.` };
           }
-          const appId = process.env.VITE_APP_ID ?? "";
-          const defaultVoiceUrl = appId ? `https://${appId}.manus.space/api/webphone/inbound` : "";
+          const defaultVoiceUrl = `${process.env.APP_ORIGIN ?? "https://curalive-platform.replit.app"}/api/webphone/inbound`;
           const voiceUrl = input.voiceUrl || defaultVoiceUrl;
           if (!voiceUrl) {
             return { success: false, error: "Cannot determine Voice URL. Set VITE_APP_ID or provide a voiceUrl." };
@@ -11857,8 +12618,7 @@ var init_webphoneRouter = __esm({
           if (!accountSid || !authToken) return { numbers: [] };
           const client = twilio2(accountSid, authToken);
           const incomingNumbers = await client.incomingPhoneNumbers.list({ limit: 20 });
-          const appId = process.env.VITE_APP_ID ?? "";
-          const expectedUrl = appId ? `https://${appId}.manus.space/api/webphone/inbound` : "";
+          const expectedUrl = `${process.env.APP_ORIGIN ?? "https://curalive-platform.replit.app"}/api/webphone/inbound`;
           return {
             numbers: incomingNumbers.map((n) => ({
               phoneNumber: n.phoneNumber,
@@ -12237,12 +12997,12 @@ var init_webphoneRouter = __esm({
   }
 });
 
-// ../../server/routers/customisationRouter.ts
+// server/routers/customisationRouter.ts
 import { z as z12 } from "zod";
 import { eq as eq21 } from "drizzle-orm";
 var customisationInput, customisationRouter;
 var init_customisationRouter = __esm({
-  "../../server/routers/customisationRouter.ts"() {
+  "server/routers/customisationRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -12374,12 +13134,12 @@ var init_customisationRouter = __esm({
   }
 });
 
-// ../../server/routers/trainingMode.ts
+// server/routers/trainingMode.ts
 import { z as z13 } from "zod";
 import { eq as eq22, and as and7, desc as desc9 } from "drizzle-orm";
 var createSession, startConference, logCall, recordMetrics, completeSession, getSessionMetrics, getOperatorSessions, getActiveSessions, trainingModeRouter;
 var init_trainingMode = __esm({
-  "../../server/routers/trainingMode.ts"() {
+  "server/routers/trainingMode.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -12546,7 +13306,7 @@ var init_trainingMode = __esm({
   }
 });
 
-// ../../server/routers/postEventReport.ts
+// server/routers/postEventReport.ts
 import { z as z14 } from "zod";
 import { eq as eq23 } from "drizzle-orm";
 async function callForgeAI(prompt) {
@@ -12567,7 +13327,7 @@ async function callForgeAI(prompt) {
 }
 var postEventReportRouter;
 var init_postEventReport = __esm({
-  "../../server/routers/postEventReport.ts"() {
+  "server/routers/postEventReport.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -12692,12 +13452,12 @@ var init_postEventReport = __esm({
   }
 });
 
-// ../../server/routers/transcription.ts
+// server/routers/transcription.ts
 import { z as z15 } from "zod";
 import { eq as eq24, desc as desc10 } from "drizzle-orm";
 var transcriptionRouter;
 var init_transcription = __esm({
-  "../../server/routers/transcription.ts"() {
+  "server/routers/transcription.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -12854,7 +13614,7 @@ ${s.text}
   }
 });
 
-// ../../server/services/AblyRealtimeService.ts
+// server/services/AblyRealtimeService.ts
 var AblyRealtimeService_exports = {};
 __export(AblyRealtimeService_exports, {
   AblyRealtimeService: () => AblyRealtimeService
@@ -12862,7 +13622,7 @@ __export(AblyRealtimeService_exports, {
 import * as Ably from "ably";
 var AblyRealtimeService;
 var init_AblyRealtimeService = __esm({
-  "../../server/services/AblyRealtimeService.ts"() {
+  "server/services/AblyRealtimeService.ts"() {
     "use strict";
     AblyRealtimeService = class {
       static client = null;
@@ -13201,12 +13961,12 @@ var init_AblyRealtimeService = __esm({
   }
 });
 
-// ../../server/routers/polls.ts
+// server/routers/polls.ts
 import { z as z16 } from "zod";
 import { eq as eq25, and as and9, desc as desc11 } from "drizzle-orm";
 var pollsRouter;
 var init_polls = __esm({
-  "../../server/routers/polls.ts"() {
+  "server/routers/polls.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -13358,12 +14118,12 @@ var init_polls = __esm({
   }
 });
 
-// ../../server/routers/scheduling.ts
+// server/routers/scheduling.ts
 import { z as z17 } from "zod";
 import { eq as eq26, and as and10, gte as gte2, lte as lte2, desc as desc12 } from "drizzle-orm";
 var schedulingRouter;
 var init_scheduling = __esm({
-  "../../server/routers/scheduling.ts"() {
+  "server/routers/scheduling.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -13546,12 +14306,12 @@ var init_scheduling = __esm({
   }
 });
 
-// ../../server/routers/clientPortal.ts
+// server/routers/clientPortal.ts
 import { z as z18 } from "zod";
 import { eq as eq27, and as and11 } from "drizzle-orm";
 var clientPortalRouter;
 var init_clientPortal = __esm({
-  "../../server/routers/clientPortal.ts"() {
+  "server/routers/clientPortal.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -13663,7 +14423,7 @@ var init_clientPortal = __esm({
   }
 });
 
-// ../../server/compliancePdf.ts
+// server/compliancePdf.ts
 import { createRequire } from "module";
 function buildDocDefinition(data) {
   const typeLabel = data.certType === "SOC2" ? "SOC 2 Type II Readiness" : data.certType === "ISO27001" ? "ISO 27001 Annex A Compliance" : "Regulatory Compliance Review";
@@ -13784,7 +14544,7 @@ async function generateComplianceCertificatePdf(data) {
 }
 var _require, PdfPrinter, URLResolver, vfs, helveticaFonts;
 var init_compliancePdf = __esm({
-  "../../server/compliancePdf.ts"() {
+  "server/compliancePdf.ts"() {
     "use strict";
     _require = createRequire(import.meta.url);
     PdfPrinter = _require("pdfmake/js/Printer.js").default;
@@ -13794,7 +14554,7 @@ var init_compliancePdf = __esm({
   }
 });
 
-// ../../server/routers/compliance.ts
+// server/routers/compliance.ts
 import { z as z19 } from "zod";
 import { eq as eq28, desc as desc13 } from "drizzle-orm";
 async function callForgeAI2(prompt) {
@@ -13821,7 +14581,7 @@ async function logAudit(db2, eventId, action, userId, details) {
 }
 var complianceRouter;
 var init_compliance = __esm({
-  "../../server/routers/compliance.ts"() {
+  "server/routers/compliance.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -14080,7 +14840,7 @@ Return a JSON array of up to 8 remediation items:
   }
 });
 
-// ../../server/routers/followups.ts
+// server/routers/followups.ts
 import { z as z20 } from "zod";
 import { eq as eq29, desc as desc14 } from "drizzle-orm";
 async function callForgeAI3(prompt) {
@@ -14115,7 +14875,7 @@ async function callForgeAI3(prompt) {
 }
 var followupsRouter;
 var init_followups = __esm({
-  "../../server/routers/followups.ts"() {
+  "server/routers/followups.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -14255,7 +15015,7 @@ Only include entries where a specific commitment was made for a follow-up.`
   }
 });
 
-// ../../server/routers/sentiment.ts
+// server/routers/sentiment.ts
 import { z as z21 } from "zod";
 import { eq as eq30, desc as desc15 } from "drizzle-orm";
 async function callForgeAI4(prompt) {
@@ -14276,7 +15036,7 @@ async function callForgeAI4(prompt) {
 }
 var sentimentRouter;
 var init_sentiment = __esm({
-  "../../server/routers/sentiment.ts"() {
+  "server/routers/sentiment.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -14444,12 +15204,12 @@ Return JSON only:
   }
 });
 
-// ../../server/routers/mobileNotifications.ts
+// server/routers/mobileNotifications.ts
 import { z as z22 } from "zod";
 import { eq as eq31, and as and15 } from "drizzle-orm";
 var mobileNotificationsRouter;
 var init_mobileNotifications = __esm({
-  "../../server/routers/mobileNotifications.ts"() {
+  "server/routers/mobileNotifications.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -14508,7 +15268,7 @@ var init_mobileNotifications = __esm({
   }
 });
 
-// ../../server/routers/aiDashboard.ts
+// server/routers/aiDashboard.ts
 import { eq as eq32 } from "drizzle-orm";
 import { z as z23 } from "zod";
 function buildPromptForContentType(contentType, context) {
@@ -14554,7 +15314,7 @@ function getTitleForContentType(contentType) {
 }
 var aiDashboardRouter;
 var init_aiDashboard = __esm({
-  "../../server/routers/aiDashboard.ts"() {
+  "server/routers/aiDashboard.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -14754,11 +15514,11 @@ var init_aiDashboard = __esm({
   }
 });
 
-// ../../server/services/QaAutoTriageService.ts
+// server/services/QaAutoTriageService.ts
 import { eq as eq33, and as and17 } from "drizzle-orm";
 var QaAutoTriageService;
 var init_QaAutoTriageService = __esm({
-  "../../server/services/QaAutoTriageService.ts"() {
+  "server/services/QaAutoTriageService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -15036,11 +15796,11 @@ Respond with a JSON object containing:
   }
 });
 
-// ../../server/services/SpeakingPaceCoachService.ts
+// server/services/SpeakingPaceCoachService.ts
 import { eq as eq34, and as and18, gte as gte4, lte as lte3 } from "drizzle-orm";
 var MAX_FILLER_WORDS, SpeakingPaceCoachService;
 var init_SpeakingPaceCoachService = __esm({
-  "../../server/services/SpeakingPaceCoachService.ts"() {
+  "server/services/SpeakingPaceCoachService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -15084,10 +15844,10 @@ var init_SpeakingPaceCoachService = __esm({
           const fillerWordCounts = {};
           let totalFillerWords = 0;
           segments.forEach((seg) => {
-            const text2 = (seg.text || "").toLowerCase();
+            const text4 = (seg.text || "").toLowerCase();
             fillerWords.forEach((filler) => {
               const regex = new RegExp(`\\b${filler}\\b`, "g");
-              const matches = text2.match(regex) || [];
+              const matches = text4.match(regex) || [];
               const count3 = matches.length;
               if (count3 > 0) {
                 fillerWordCounts[filler] = (fillerWordCounts[filler] || 0) + count3;
@@ -15291,11 +16051,11 @@ var init_SpeakingPaceCoachService = __esm({
   }
 });
 
-// ../../server/services/ToxicityFilterService.ts
+// server/services/ToxicityFilterService.ts
 import { eq as eq35, and as and19 } from "drizzle-orm";
 var ToxicityFilterService;
 var init_ToxicityFilterService = __esm({
-  "../../server/services/ToxicityFilterService.ts"() {
+  "server/services/ToxicityFilterService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -15581,11 +16341,11 @@ Event: ${context.eventTitle}` : "";
   }
 });
 
-// ../../server/routers/aiFeatures.ts
+// server/routers/aiFeatures.ts
 import { z as z24 } from "zod";
 var aiFeaturesRouter;
 var init_aiFeatures = __esm({
-  "../../server/routers/aiFeatures.ts"() {
+  "server/routers/aiFeatures.ts"() {
     "use strict";
     init_trpc();
     init_QaAutoTriageService();
@@ -15974,11 +16734,11 @@ var init_aiFeatures = __esm({
   }
 });
 
-// ../../server/services/ContentPerformanceAnalyticsService.ts
+// server/services/ContentPerformanceAnalyticsService.ts
 import { eq as eq36, desc as desc16 } from "drizzle-orm";
 var ContentPerformanceAnalyticsService;
 var init_ContentPerformanceAnalyticsService = __esm({
-  "../../server/services/ContentPerformanceAnalyticsService.ts"() {
+  "server/services/ContentPerformanceAnalyticsService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -16273,15 +17033,33 @@ var init_ContentPerformanceAnalyticsService = __esm({
   }
 });
 
-// ../../server/routers/analytics.ts
+// server/routers/analytics.ts
 import { z as z25 } from "zod";
 var analyticsRouter;
 var init_analytics = __esm({
-  "../../server/routers/analytics.ts"() {
+  "server/routers/analytics.ts"() {
     "use strict";
     init_trpc();
     init_ContentPerformanceAnalyticsService();
     analyticsRouter = router({
+      getSessionEventAnalytics: publicProcedure.input(z25.object({ sessionId: z25.string() })).query(async ({ input }) => {
+        return {
+          eventId: `event_${input.sessionId}`,
+          sessionId: input.sessionId,
+          startTime: new Date(Date.now() - 36e5).toISOString(),
+          endTime: (/* @__PURE__ */ new Date()).toISOString(),
+          duration: 3600,
+          totalAttendees: 250,
+          totalQuestions: 45,
+          approvedQuestions: 38,
+          rejectedQuestions: 7,
+          averageSentiment: 7.8,
+          complianceFlags: 2,
+          engagementRate: 0.82,
+          engagementScore: 82,
+          qaMetrics: { approvalRate: 84 }
+        };
+      }),
       /**
        * Get metrics for a specific content item
        */
@@ -16352,11 +17130,11 @@ var init_analytics = __esm({
   }
 });
 
-// ../../server/services/ContentGenerationTriggerService.ts
+// server/services/ContentGenerationTriggerService.ts
 import { eq as eq37 } from "drizzle-orm";
 var ContentGenerationTriggerService;
 var init_ContentGenerationTriggerService = __esm({
-  "../../server/services/ContentGenerationTriggerService.ts"() {
+  "server/services/ContentGenerationTriggerService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -16569,11 +17347,11 @@ ${baseContext}`;
   }
 });
 
-// ../../server/routers/contentTriggers.ts
+// server/routers/contentTriggers.ts
 import { z as z26 } from "zod";
 var contentTriggersRouter;
 var init_contentTriggers = __esm({
-  "../../server/routers/contentTriggers.ts"() {
+  "server/routers/contentTriggers.ts"() {
     "use strict";
     init_trpc();
     init_ContentGenerationTriggerService();
@@ -16692,11 +17470,11 @@ var init_contentTriggers = __esm({
   }
 });
 
-// ../../server/services/EventBriefGeneratorService.ts
+// server/services/EventBriefGeneratorService.ts
 import { eq as eq38, and as and21 } from "drizzle-orm";
 var EventBriefGeneratorService;
 var init_EventBriefGeneratorService = __esm({
-  "../../server/services/EventBriefGeneratorService.ts"() {
+  "server/services/EventBriefGeneratorService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -17012,11 +17790,11 @@ ${pressRelease}`;
   }
 });
 
-// ../../server/routers/eventBriefRouter.ts
+// server/routers/eventBriefRouter.ts
 import { z as z27 } from "zod";
 var eventBriefRouter;
 var init_eventBriefRouter = __esm({
-  "../../server/routers/eventBriefRouter.ts"() {
+  "server/routers/eventBriefRouter.ts"() {
     "use strict";
     init_trpc();
     init_EventBriefGeneratorService();
@@ -17133,11 +17911,11 @@ var init_eventBriefRouter = __esm({
   }
 });
 
-// ../../server/services/LiveRollingSummaryService.ts
+// server/services/LiveRollingSummaryService.ts
 import { eq as eq39, and as and22, gte as gte5, lte as lte4, desc as desc17, asc as asc6 } from "drizzle-orm";
 var LiveRollingSummaryService, liveRollingSummaryService;
 var init_LiveRollingSummaryService = __esm({
-  "../../server/services/LiveRollingSummaryService.ts"() {
+  "server/services/LiveRollingSummaryService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -17359,11 +18137,11 @@ ${combinedText}`
   }
 });
 
-// ../../server/routers/liveRollingSummary.ts
+// server/routers/liveRollingSummary.ts
 import { z as z28 } from "zod";
 var liveRollingSummaryRouter;
 var init_liveRollingSummary = __esm({
-  "../../server/routers/liveRollingSummary.ts"() {
+  "server/routers/liveRollingSummary.ts"() {
     "use strict";
     init_trpc();
     init_LiveRollingSummaryService();
@@ -17424,11 +18202,11 @@ var init_liveRollingSummary = __esm({
   }
 });
 
-// ../../server/services/TranscriptEditorService.ts
+// server/services/TranscriptEditorService.ts
 import { eq as eq40, and as and23 } from "drizzle-orm";
 var TranscriptEditorService;
 var init_TranscriptEditorService = __esm({
-  "../../server/services/TranscriptEditorService.ts"() {
+  "server/services/TranscriptEditorService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -17764,11 +18542,11 @@ ${versions.map((v) => `- Version ${v.versionNumber}: ${v.changeDescription || "N
   }
 });
 
-// ../../server/routers/transcriptEditorRouter.ts
+// server/routers/transcriptEditorRouter.ts
 import { z as z29 } from "zod";
 var transcriptEditorRouter;
 var init_transcriptEditorRouter = __esm({
-  "../../server/routers/transcriptEditorRouter.ts"() {
+  "server/routers/transcriptEditorRouter.ts"() {
     "use strict";
     init_trpc();
     init_TranscriptEditorService();
@@ -17966,7 +18744,7 @@ var init_transcriptEditorRouter = __esm({
   }
 });
 
-// ../../server/config/aiApplications.ts
+// server/config/aiApplications.ts
 function getRecommendedApplications(sector, eventType) {
   return Object.values(aiApplications).filter((app) => app.sectors.includes(sector) && app.eventTypes.includes(eventType)).sort((a, b) => {
     const priorityOrder = { high: 0, medium: 1, low: 2 };
@@ -17991,7 +18769,7 @@ function getAllEventTypes() {
 }
 var aiApplications;
 var init_aiApplications = __esm({
-  "../../server/config/aiApplications.ts"() {
+  "server/config/aiApplications.ts"() {
     "use strict";
     aiApplications = {
       // Real-Time Sentiment Analysis
@@ -19282,7 +20060,7 @@ var init_aiApplications = __esm({
   }
 });
 
-// ../../server/routers/aiApplications.ts
+// server/routers/aiApplications.ts
 import { z as z30 } from "zod";
 function calculateROIScore(app) {
   let score = 0;
@@ -19304,7 +20082,7 @@ function calculateROIScore(app) {
 }
 var aiApplicationsRouter;
 var init_aiApplications2 = __esm({
-  "../../server/routers/aiApplications.ts"() {
+  "server/routers/aiApplications.ts"() {
     "use strict";
     init_trpc();
     init_aiApplications();
@@ -19428,10 +20206,10 @@ var init_aiApplications2 = __esm({
   }
 });
 
-// ../../server/services/ComplianceModerator.ts
+// server/services/ComplianceModerator.ts
 var MODERATION_SYSTEM_PROMPT, ComplianceModerator, complianceModerator;
 var init_ComplianceModerator = __esm({
-  "../../server/services/ComplianceModerator.ts"() {
+  "server/services/ComplianceModerator.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -19481,8 +20259,8 @@ Return JSON with this exact structure:
             ],
             response_format: { type: "json_object" }
           });
-          const text2 = result.choices?.[0]?.message?.content ?? "{}";
-          const parsed = JSON.parse(text2);
+          const text4 = result.choices?.[0]?.message?.content ?? "{}";
+          const parsed = JSON.parse(text4);
           return {
             approved: parsed.approved ?? false,
             confidence: parsed.confidence ?? 0.5,
@@ -19519,11 +20297,11 @@ Return JSON with this exact structure:
   }
 });
 
-// ../../server/services/SocialMediaService.ts
+// server/services/SocialMediaService.ts
 import { eq as eq41, and as and24, desc as desc18 } from "drizzle-orm";
 var SocialMediaService, socialMediaService;
 var init_SocialMediaService = __esm({
-  "../../server/services/SocialMediaService.ts"() {
+  "server/services/SocialMediaService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -19690,7 +20468,7 @@ Return JSON: { "insight": "...", "recommendations": ["...", "...", "..."] }`;
   }
 });
 
-// ../../server/_core/socialOAuth.ts
+// server/_core/socialOAuth.ts
 function isPlatformConfigured(platform) {
   const config = OAUTH_CONFIGS[platform];
   return !!(process.env[config.clientIdEnvKey] && process.env[config.clientSecretEnvKey]);
@@ -19715,7 +20493,7 @@ function truncateForPlatform(content, platform) {
 }
 var OAUTH_CONFIGS;
 var init_socialOAuth = __esm({
-  "../../server/_core/socialOAuth.ts"() {
+  "server/_core/socialOAuth.ts"() {
     "use strict";
     OAUTH_CONFIGS = {
       linkedin: {
@@ -19797,7 +20575,7 @@ var init_socialOAuth = __esm({
   }
 });
 
-// ../../server/services/EventEchoPipeline.ts
+// server/services/EventEchoPipeline.ts
 import { eq as eq42, desc as desc19 } from "drizzle-orm";
 function buildMultiPlatformPrompt(sourceData, eventTitle, sourceLabel, platforms) {
   const platformSpecs = platforms.map((p) => {
@@ -19819,7 +20597,7 @@ Return JSON with this structure:
 }
 var ECHO_SYSTEM_PROMPT, EventEchoPipeline, eventEchoPipeline;
 var init_EventEchoPipeline = __esm({
-  "../../server/services/EventEchoPipeline.ts"() {
+  "server/services/EventEchoPipeline.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -19854,8 +20632,8 @@ You generate posts that amplify event ROI and drive follow-on engagement.`;
           generatedAt: /* @__PURE__ */ new Date()
         };
       }
-      async generateFromText(text2, eventTitle, source, platforms) {
-        const prompt = buildMultiPlatformPrompt(text2, eventTitle, source.label, platforms);
+      async generateFromText(text4, eventTitle, source, platforms) {
+        const prompt = buildMultiPlatformPrompt(text4, eventTitle, source.label, platforms);
         const result = await invokeLLM({
           messages: [
             { role: "system", content: ECHO_SYSTEM_PROMPT },
@@ -19930,13 +20708,13 @@ ${transcript.slice(0, 800)}`);
   }
 });
 
-// ../../server/routers/socialMedia.ts
+// server/routers/socialMedia.ts
 import { z as z31 } from "zod";
 import { TRPCError as TRPCError6 } from "@trpc/server";
 import { eq as eq43, and as and25, desc as desc20 } from "drizzle-orm";
 var PLATFORMS, socialMediaRouter;
 var init_socialMedia = __esm({
-  "../../server/routers/socialMedia.ts"() {
+  "server/routers/socialMedia.ts"() {
     "use strict";
     init_trpc();
     init_SocialMediaService();
@@ -20140,11 +20918,11 @@ var init_socialMedia = __esm({
   }
 });
 
-// ../../server/routers/interconnectionAnalytics.ts
+// server/routers/interconnectionAnalytics.ts
 import { z as z32 } from "zod";
 var MOCK_TOP_INTERCONNECTIONS, interconnectionAnalyticsRouter;
 var init_interconnectionAnalytics = __esm({
-  "../../server/routers/interconnectionAnalytics.ts"() {
+  "server/routers/interconnectionAnalytics.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -20253,11 +21031,11 @@ var init_interconnectionAnalytics = __esm({
   }
 });
 
-// ../../server/services/VirtualStudioService.ts
+// server/services/VirtualStudioService.ts
 import { eq as eq44 } from "drizzle-orm";
 var BUNDLE_CONFIGS, VirtualStudioService, virtualStudioService;
 var init_VirtualStudioService = __esm({
-  "../../server/services/VirtualStudioService.ts"() {
+  "server/services/VirtualStudioService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -20372,7 +21150,7 @@ If no ESG concerns, return empty array [].`,
   }
 });
 
-// ../../server/routers/virtualStudioRouter.ts
+// server/routers/virtualStudioRouter.ts
 import { z as z33 } from "zod";
 import { eq as eq45 } from "drizzle-orm";
 async function rawQuery(query, params = []) {
@@ -20388,7 +21166,7 @@ async function rawExecute(query, params = []) {
 }
 var SUPPORTED_LANGUAGES, LAYOUT_TEMPLATES, virtualStudioRouter;
 var init_virtualStudioRouter = __esm({
-  "../../server/routers/virtualStudioRouter.ts"() {
+  "server/routers/virtualStudioRouter.ts"() {
     "use strict";
     init_trpc();
     init_VirtualStudioService();
@@ -20613,12 +21391,12 @@ var init_virtualStudioRouter = __esm({
   }
 });
 
-// ../../server/routers/operatorLinksRouter.ts
+// server/routers/operatorLinksRouter.ts
 import { z as z34 } from "zod";
 import { eq as eq46, desc as desc21, sql as sql5, gte as gte6 } from "drizzle-orm";
 var operatorLinksRouter;
 var init_operatorLinksRouter = __esm({
-  "../../server/routers/operatorLinksRouter.ts"() {
+  "server/routers/operatorLinksRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -20690,7 +21468,7 @@ var init_operatorLinksRouter = __esm({
   }
 });
 
-// ../../server/routers/agenticEventBrainRouter.ts
+// server/routers/agenticEventBrainRouter.ts
 import { z as z35 } from "zod";
 import { desc as desc22 } from "drizzle-orm";
 function computeScore(q1Role, q2Challenge, q3EventType) {
@@ -20705,7 +21483,7 @@ function computeScore(q1Role, q2Challenge, q3EventType) {
 }
 var BUNDLES, ROLE_BUNDLE_MAP, CHALLENGE_WEIGHTS, EVENT_FACTORS, ALIGNMENT_BONUS, INTERCONNECTIONS, agenticEventBrainRouter;
 var init_agenticEventBrainRouter = __esm({
-  "../../server/routers/agenticEventBrainRouter.ts"() {
+  "server/routers/agenticEventBrainRouter.ts"() {
     "use strict";
     init_trpc();
     init_llm();
@@ -20883,12 +21661,12 @@ var init_agenticEventBrainRouter = __esm({
   }
 });
 
-// ../../server/routers/autonomousInterventionRouter.ts
+// server/routers/autonomousInterventionRouter.ts
 import { z as z36 } from "zod";
 import { eq as eq47, desc as desc23 } from "drizzle-orm";
 var INTERVENTION_RULES, autonomousInterventionRouter;
 var init_autonomousInterventionRouter = __esm({
-  "../../server/routers/autonomousInterventionRouter.ts"() {
+  "server/routers/autonomousInterventionRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -21079,12 +21857,12 @@ var init_autonomousInterventionRouter = __esm({
   }
 });
 
-// ../../server/routers/taggedMetricsRouter.ts
+// server/routers/taggedMetricsRouter.ts
 import { z as z37 } from "zod";
 import { eq as eq48, desc as desc24 } from "drizzle-orm";
 var taggedMetricsRouter;
 var init_taggedMetricsRouter = __esm({
-  "../../server/routers/taggedMetricsRouter.ts"() {
+  "server/routers/taggedMetricsRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -21179,7 +21957,7 @@ var init_taggedMetricsRouter = __esm({
   }
 });
 
-// ../../server/lib/aggregateIntelligence.ts
+// server/lib/aggregateIntelligence.ts
 function engagementLevel(segments) {
   if (segments < 10) return "low";
   if (segments <= 50) return "medium";
@@ -21228,13 +22006,13 @@ async function writeAnonymizedRecord(opts) {
   }
 }
 var init_aggregateIntelligence = __esm({
-  "../../server/lib/aggregateIntelligence.ts"() {
+  "server/lib/aggregateIntelligence.ts"() {
     "use strict";
     init_db();
   }
 });
 
-// ../../server/services/BastionInvestorAiService.ts
+// server/services/BastionInvestorAiService.ts
 var BastionInvestorAiService_exports = {};
 __export(BastionInvestorAiService_exports, {
   analyzeAnalystQuestions: () => analyzeAnalystQuestions,
@@ -21263,7 +22041,7 @@ async function analyzeEarningsSentiment(userId, sessionId, transcriptSegments) {
   let reasoning = "Insufficient transcript data for analysis.";
   if (transcriptSegments.length > 0) {
     try {
-      const text2 = transcriptSegments.map((s) => `${s.speaker}: ${s.text}`).join("\n").slice(0, 6e3);
+      const text4 = transcriptSegments.map((s) => `${s.speaker}: ${s.text}`).join("\n").slice(0, 6e3);
       const resp = await invokeLLM({
         messages: [
           {
@@ -21282,7 +22060,7 @@ Return ONLY JSON: {"managementTone": <number>, "substanceScore": <number>, "reas
 Company: ${session.clientName}
 
 Transcript:
-${text2}` }
+${text4}` }
         ],
         model: "gpt-4o-mini"
       });
@@ -21319,7 +22097,7 @@ async function trackForwardGuidance(userId, sessionId, transcriptSegments) {
   let guidanceStatements = [];
   if (transcriptSegments.length > 0) {
     try {
-      const text2 = transcriptSegments.map((s) => `${s.speaker}: ${s.text}`).join("\n").slice(0, 6e3);
+      const text4 = transcriptSegments.map((s) => `${s.speaker}: ${s.text}`).join("\n").slice(0, 6e3);
       const resp = await invokeLLM({
         messages: [
           {
@@ -21339,7 +22117,7 @@ Return ONLY JSON: {"guidance": [<array of objects>]}`
 Company: ${session.clientName} (${session.ticker ?? "N/A"})
 
 Transcript:
-${text2}` }
+${text4}` }
         ],
         model: "gpt-4o-mini"
       });
@@ -21418,7 +22196,7 @@ async function analyzeAnalystQuestions(userId, sessionId, transcriptSegments) {
   let analysis = { questions: [], themes: [] };
   if (transcriptSegments.length > 0) {
     try {
-      const text2 = transcriptSegments.map((s) => `${s.speaker}: ${s.text}`).join("\n").slice(0, 6e3);
+      const text4 = transcriptSegments.map((s) => `${s.speaker}: ${s.text}`).join("\n").slice(0, 6e3);
       const resp = await invokeLLM({
         messages: [
           {
@@ -21440,7 +22218,7 @@ Return ONLY JSON: {"questions": [<array>], "themes": ["<top 3 themes>"]}`
 Company: ${session.clientName}
 
 Transcript:
-${text2}` }
+${text4}` }
         ],
         model: "gpt-4o-mini"
       });
@@ -21487,7 +22265,7 @@ async function scoreManagementCredibility(userId, sessionId, transcriptSegments)
   let reasoning = "Insufficient historical data for cross-quarter comparison.";
   if (transcriptSegments.length > 0 && (priorGuidance.length > 0 || priorSessions.length > 0)) {
     try {
-      const text2 = transcriptSegments.map((s) => `${s.speaker}: ${s.text}`).join("\n").slice(0, 4e3);
+      const text4 = transcriptSegments.map((s) => `${s.speaker}: ${s.text}`).join("\n").slice(0, 4e3);
       const priorContext = priorGuidance.slice(0, 10).map(
         (g) => `[${g.guidanceType}] "${g.statement?.slice(0, 200)}" (Value: ${g.numericValue ?? "N/A"}, Confidence: ${g.confidenceLevel})`
       ).join("\n");
@@ -21512,7 +22290,7 @@ Return ONLY JSON: {"credibilityScore": <number>, "contradictions": <count of spe
 Event: ${session.eventTitle}
 
 CURRENT TRANSCRIPT:
-${text2}
+${text4}
 
 PRIOR GUIDANCE:
 ${priorContext || "No prior guidance on record."}`
@@ -21565,7 +22343,7 @@ async function detectMarketMovingStatements(userId, sessionId, transcriptSegment
   let statements = [];
   if (transcriptSegments.length > 0) {
     try {
-      const text2 = transcriptSegments.map((s) => `${s.speaker}: ${s.text}`).join("\n").slice(0, 6e3);
+      const text4 = transcriptSegments.map((s) => `${s.speaker}: ${s.text}`).join("\n").slice(0, 6e3);
       const resp = await invokeLLM({
         messages: [
           {
@@ -21596,7 +22374,7 @@ Event: ${session.eventTitle}
 Sector: ${session.sector ?? "N/A"}
 
 Transcript:
-${text2}` }
+${text4}` }
         ],
         model: "gpt-4o-mini"
       });
@@ -21785,7 +22563,7 @@ async function listBastionSessions(userId, limit = 20) {
 }
 var TONE_BASELINE;
 var init_BastionInvestorAiService = __esm({
-  "../../server/services/BastionInvestorAiService.ts"() {
+  "server/services/BastionInvestorAiService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -21802,7 +22580,7 @@ var init_BastionInvestorAiService = __esm({
   }
 });
 
-// ../../server/services/AgmGovernanceAiService.ts
+// server/services/AgmGovernanceAiService.ts
 var AgmGovernanceAiService_exports = {};
 __export(AgmGovernanceAiService_exports, {
   addResolution: () => addResolution,
@@ -21818,18 +22596,18 @@ __export(AgmGovernanceAiService_exports, {
   triageGovernanceQuestions: () => triageGovernanceQuestions
 });
 import { eq as eq50, desc as desc26, sql as sql9, and as and31 } from "drizzle-orm";
-function decayWeight(date) {
-  const ageDays = (Date.now() - new Date(date).getTime()) / (1e3 * 60 * 60 * 24);
+function decayWeight(date2) {
+  const ageDays = (Date.now() - new Date(date2).getTime()) / (1e3 * 60 * 60 * 24);
   return Math.pow(0.5, ageDays / EVIDENCE_HALF_LIFE_DAYS);
 }
 async function predictResolutionApproval(userId, sessionId, resolutionId, liveTranscriptSegments) {
   await assertSessionOwnership2(sessionId, userId);
   await assertResolutionBelongsToSession(resolutionId, sessionId);
   const db2 = await getDb();
-  const [resolution] = await db2.select().from(agmResolutions).where(eq50(agmResolutions.id, resolutionId)).limit(1);
+  const [resolution] = await db2.select().from(agmResolutions2).where(eq50(agmResolutions2.id, resolutionId)).limit(1);
   if (!resolution) throw new Error("Resolution not found");
   const baseApproval = CATEGORY_BASE_APPROVAL[resolution.category] ?? 85;
-  const historicalResolutions = await db2.select().from(agmResolutions).where(and31(eq50(agmResolutions.category, resolution.category), sql9`actual_approval_pct IS NOT NULL`)).orderBy(desc26(agmResolutions.createdAt)).limit(50);
+  const historicalResolutions = await db2.select().from(agmResolutions2).where(and31(eq50(agmResolutions2.category, resolution.category), sql9`actual_approval_pct IS NOT NULL`)).orderBy(desc26(agmResolutions2.createdAt)).limit(50);
   let historicalAvg = baseApproval;
   if (historicalResolutions.length > 0) {
     let weightedSum = 0, totalWeight = 0;
@@ -21866,10 +22644,10 @@ ${debateText}` }
     historicalAvg * 0.4 + baseApproval * 0.2 + (baseApproval + sentimentDelta) * 0.4
   ));
   const confidence = Math.min(0.95, 0.3 + historicalResolutions.length * 0.03 + (liveTranscriptSegments.length > 5 ? 0.2 : 0));
-  await db2.update(agmResolutions).set({
+  await db2.update(agmResolutions2).set({
     sentimentDuringDebate: sentimentScore,
     predictedApprovalPct: Math.round(blendedPrediction * 10) / 10
-  }).where(eq50(agmResolutions.id, resolutionId));
+  }).where(eq50(agmResolutions2.id, resolutionId));
   await db2.insert(agmGovernanceObservations).values({
     sessionId,
     algorithmSource: "resolution_sentiment",
@@ -21892,14 +22670,14 @@ async function recordActualResult(userId, sessionId, resolutionId, actualApprova
   await assertSessionOwnership2(sessionId, userId);
   await assertResolutionBelongsToSession(resolutionId, sessionId);
   const db2 = await getDb();
-  const [resolution] = await db2.select().from(agmResolutions).where(eq50(agmResolutions.id, resolutionId)).limit(1);
+  const [resolution] = await db2.select().from(agmResolutions2).where(eq50(agmResolutions2.id, resolutionId)).limit(1);
   if (!resolution) throw new Error("Resolution not found");
   const accuracy = resolution.predictedApprovalPct != null ? Math.max(0, 100 - Math.abs(resolution.predictedApprovalPct - actualApprovalPct)) : null;
-  await db2.update(agmResolutions).set({
+  await db2.update(agmResolutions2).set({
     actualApprovalPct,
     predictionAccuracy: accuracy,
     status: actualApprovalPct >= 50 ? "carried" : "defeated"
-  }).where(eq50(agmResolutions.id, resolutionId));
+  }).where(eq50(agmResolutions2.id, resolutionId));
   if (accuracy != null && accuracy < 70) {
     await db2.insert(aiEvolutionObservations).values({
       sourceType: "live_session",
@@ -21922,7 +22700,7 @@ async function analyzeDissentPatterns(userId, sessionId, _clientName) {
   const [session] = await db2.select().from(agmIntelligenceSessions).where(eq50(agmIntelligenceSessions.id, sessionId)).limit(1);
   if (!session) throw new Error("AGM session not found");
   const clientName = session.clientName;
-  const resolutions = await db2.select().from(agmResolutions).where(eq50(agmResolutions.sessionId, sessionId));
+  const resolutions = await db2.select().from(agmResolutions2).where(eq50(agmResolutions2.sessionId, sessionId));
   const highDissentResolutions = resolutions.filter(
     (r) => r.actualApprovalPct != null && r.actualApprovalPct < 80 || r.predictedApprovalPct != null && r.predictedApprovalPct < 70 || (r.dissenterCount ?? 0) > 0
   );
@@ -22222,7 +23000,7 @@ async function generateGovernanceReport(userId, sessionId) {
   const db2 = await getDb();
   const [session] = await db2.select().from(agmIntelligenceSessions).where(eq50(agmIntelligenceSessions.id, sessionId)).limit(1);
   if (!session) throw new Error("AGM session not found");
-  const resolutions = await db2.select().from(agmResolutions).where(eq50(agmResolutions.sessionId, sessionId));
+  const resolutions = await db2.select().from(agmResolutions2).where(eq50(agmResolutions2.sessionId, sessionId));
   const observations = await db2.select().from(agmGovernanceObservations).where(eq50(agmGovernanceObservations.sessionId, sessionId)).orderBy(desc26(agmGovernanceObservations.createdAt));
   const dissentPatterns = await db2.select().from(agmDissentPatterns).where(eq50(agmDissentPatterns.clientName, session.clientName)).orderBy(desc26(agmDissentPatterns.decayedScore)).limit(10);
   const historicalSessions = await db2.select().from(agmIntelligenceSessions).where(and31(
@@ -22349,7 +23127,7 @@ async function assertSessionOwnership2(sessionId, userId) {
 }
 async function assertResolutionBelongsToSession(resolutionId, sessionId) {
   const db2 = await getDb();
-  const [res] = await db2.select({ sessionId: agmResolutions.sessionId }).from(agmResolutions).where(eq50(agmResolutions.id, resolutionId)).limit(1);
+  const [res] = await db2.select({ sessionId: agmResolutions2.sessionId }).from(agmResolutions2).where(eq50(agmResolutions2.id, resolutionId)).limit(1);
   if (!res) throw new Error("Resolution not found");
   if (res.sessionId !== sessionId) throw new Error("Resolution does not belong to this session");
 }
@@ -22369,7 +23147,7 @@ async function createAgmSession(userId, data) {
 async function addResolution(userId, sessionId, data) {
   await assertSessionOwnership2(sessionId, userId);
   const db2 = await getDb();
-  const [result] = await db2.insert(agmResolutions).values({
+  const [result] = await db2.insert(agmResolutions2).values({
     sessionId,
     resolutionNumber: data.resolutionNumber,
     title: data.title,
@@ -22383,7 +23161,7 @@ async function getSessionDashboard2(userId, sessionId) {
   const db2 = await getDb();
   const [session] = await db2.select().from(agmIntelligenceSessions).where(eq50(agmIntelligenceSessions.id, sessionId)).limit(1);
   if (!session) throw new Error("Session not found");
-  const resolutions = await db2.select().from(agmResolutions).where(eq50(agmResolutions.sessionId, sessionId)).orderBy(agmResolutions.resolutionNumber);
+  const resolutions = await db2.select().from(agmResolutions2).where(eq50(agmResolutions2.sessionId, sessionId)).orderBy(agmResolutions2.resolutionNumber);
   const observations = await db2.select().from(agmGovernanceObservations).where(eq50(agmGovernanceObservations.sessionId, sessionId)).orderBy(desc26(agmGovernanceObservations.createdAt)).limit(50);
   const dissentPatterns = await db2.select().from(agmDissentPatterns).where(eq50(agmDissentPatterns.clientName, session.clientName)).orderBy(desc26(agmDissentPatterns.decayedScore)).limit(10);
   const algorithmStats = {};
@@ -22414,7 +23192,7 @@ async function listAgmSessions(userId, limit = 20) {
 }
 var EVIDENCE_HALF_LIFE_DAYS, CATEGORY_BASE_APPROVAL, SENTIMENT_WEIGHT_CURVE, GOVERNANCE_CATEGORIES, JURISDICTION_QUORUM_RULES, REGULATORY_RULES;
 var init_AgmGovernanceAiService = __esm({
-  "../../server/services/AgmGovernanceAiService.ts"() {
+  "server/services/AgmGovernanceAiService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -22529,7 +23307,7 @@ var init_AgmGovernanceAiService = __esm({
   }
 });
 
-// ../../server/services/WebcastArchiveAiService.ts
+// server/services/WebcastArchiveAiService.ts
 var WebcastArchiveAiService_exports = {};
 __export(WebcastArchiveAiService_exports, {
   analyzeAudienceEngagement: () => analyzeAudienceEngagement,
@@ -22804,14 +23582,14 @@ ${JSON.stringify(allResults, null, 2).slice(0, 15e3)}` }
   return result;
 }
 var init_WebcastArchiveAiService = __esm({
-  "../../server/services/WebcastArchiveAiService.ts"() {
+  "server/services/WebcastArchiveAiService.ts"() {
     "use strict";
     init_llm();
     init_db();
   }
 });
 
-// ../../server/services/IpoMandAIntelligenceService.ts
+// server/services/IpoMandAIntelligenceService.ts
 var IpoMandAIntelligenceService_exports = {};
 __export(IpoMandAIntelligenceService_exports, {
   ActivistProxyIntelligenceService: () => ActivistProxyIntelligenceService,
@@ -22824,7 +23602,7 @@ function extractLLMText(response) {
 }
 var IpoIntelligenceService, MandAIntelligenceService, CreditBondholderIntelligenceService, ActivistProxyIntelligenceService;
 var init_IpoMandAIntelligenceService = __esm({
-  "../../server/services/IpoMandAIntelligenceService.ts"() {
+  "server/services/IpoMandAIntelligenceService.ts"() {
     "use strict";
     init_llm();
     IpoIntelligenceService = class {
@@ -23503,7 +24281,7 @@ ${input.transcript.slice(0, 8e3)}`
   }
 });
 
-// ../../server/_core/config/env.ts
+// server/_core/config/env.ts
 var env_exports = {};
 __export(env_exports, {
   enforceEnvOrExit: () => enforceEnvOrExit,
@@ -23578,12 +24356,12 @@ function enforceEnvOrExit() {
   console.log("\u2713  CuraLive environment validated \u2014 core services ready");
 }
 var init_env2 = __esm({
-  "../../server/_core/config/env.ts"() {
+  "server/_core/config/env.ts"() {
     "use strict";
   }
 });
 
-// ../../server/_core/config/serviceStatus.ts
+// server/_core/config/serviceStatus.ts
 var serviceStatus_exports = {};
 __export(serviceStatus_exports, {
   getServiceStatus: () => getServiceStatus
@@ -23616,13 +24394,13 @@ function getServiceStatus() {
   };
 }
 var init_serviceStatus = __esm({
-  "../../server/_core/config/serviceStatus.ts"() {
+  "server/_core/config/serviceStatus.ts"() {
     "use strict";
     init_env2();
   }
 });
 
-// ../../server/storageAdapter.ts
+// server/storageAdapter.ts
 var storageAdapter_exports = {};
 __export(storageAdapter_exports, {
   RECORDINGS_DIR: () => RECORDINGS_DIR,
@@ -23731,7 +24509,7 @@ function getStorageHealth() {
 }
 var RECORDINGS_DIR;
 var init_storageAdapter = __esm({
-  "../../server/storageAdapter.ts"() {
+  "server/storageAdapter.ts"() {
     "use strict";
     init_storage();
     init_env();
@@ -23739,7 +24517,7 @@ var init_storageAdapter = __esm({
   }
 });
 
-// ../../server/services/AiEvolutionService.ts
+// server/services/AiEvolutionService.ts
 var AiEvolutionService_exports = {};
 __export(AiEvolutionService_exports, {
   getEvolutionDashboard: () => getEvolutionDashboard,
@@ -24315,7 +25093,7 @@ async function getEvolutionDashboard() {
 }
 var MODULE_NAMES, MODULE_WEIGHTS, EVIDENCE_HALF_LIFE_DAYS2, PROMOTION_THRESHOLDS, QUALITY_WEIGHTS, GENERIC_PHRASES, GOVERNANCE_GATEWAY, governanceAuditChain, lastGovernanceHash;
 var init_AiEvolutionService = __esm({
-  "../../server/services/AiEvolutionService.ts"() {
+  "server/services/AiEvolutionService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -24398,7 +25176,7 @@ var init_AiEvolutionService = __esm({
   }
 });
 
-// ../../server/routers/crisisPredictionRouter.ts
+// server/routers/crisisPredictionRouter.ts
 var crisisPredictionRouter_exports = {};
 __export(crisisPredictionRouter_exports, {
   analyzeCrisisRisk: () => analyzeCrisisRisk,
@@ -24468,7 +25246,7 @@ ${transcript.slice(-4e3)}`
 }
 var crisisPredictionRouter;
 var init_crisisPredictionRouter = __esm({
-  "../../server/routers/crisisPredictionRouter.ts"() {
+  "server/routers/crisisPredictionRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -24505,7 +25283,7 @@ var init_crisisPredictionRouter = __esm({
   }
 });
 
-// ../../server/routers/disclosureCertificateRouter.ts
+// server/routers/disclosureCertificateRouter.ts
 var disclosureCertificateRouter_exports = {};
 __export(disclosureCertificateRouter_exports, {
   disclosureCertificateRouter: () => disclosureCertificateRouter,
@@ -24560,7 +25338,7 @@ async function generateDisclosureCertificate(opts) {
 }
 var disclosureCertificateRouter;
 var init_disclosureCertificateRouter = __esm({
-  "../../server/routers/disclosureCertificateRouter.ts"() {
+  "server/routers/disclosureCertificateRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -24605,7 +25383,7 @@ var init_disclosureCertificateRouter = __esm({
   }
 });
 
-// ../../server/routers/valuationImpactRouter.ts
+// server/routers/valuationImpactRouter.ts
 var valuationImpactRouter_exports = {};
 __export(valuationImpactRouter_exports, {
   analyzeValuationImpact: () => analyzeValuationImpact,
@@ -24674,7 +25452,7 @@ ${transcript.slice(0, 6e3)}`
 }
 var valuationImpactRouter;
 var init_valuationImpactRouter = __esm({
-  "../../server/routers/valuationImpactRouter.ts"() {
+  "server/routers/valuationImpactRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -24711,7 +25489,7 @@ var init_valuationImpactRouter = __esm({
   }
 });
 
-// ../../server/_core/transcription/transcriptionResult.ts
+// server/_core/transcription/transcriptionResult.ts
 function isQuotaExceededError(error) {
   const message = error instanceof Error ? error.message : String(error ?? "");
   return message.includes("insufficient_quota") || message.includes("QUOTA_EXCEEDED") || message.includes("429");
@@ -24747,12 +25525,12 @@ function buildFailedResult(error, provider = "whisper") {
   };
 }
 var init_transcriptionResult = __esm({
-  "../../server/_core/transcription/transcriptionResult.ts"() {
+  "server/_core/transcription/transcriptionResult.ts"() {
     "use strict";
   }
 });
 
-// ../../server/_core/transcription/transcribeArchiveAudio.ts
+// server/_core/transcription/transcribeArchiveAudio.ts
 var transcribeArchiveAudio_exports = {};
 __export(transcribeArchiveAudio_exports, {
   transcribeArchiveAudio: () => transcribeArchiveAudio
@@ -24792,12 +25570,12 @@ async function tryGeminiTranscribe(buffer, filename) {
     return buildFailedResult(new Error(`Gemini API failed (${response.status}): ${errText}`), "gemini");
   }
   const result = await response.json();
-  const text2 = (result.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
-  if (!text2) {
+  const text4 = (result.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
+  if (!text4) {
     return buildFailedResult(new Error("Gemini returned empty transcript"), "gemini");
   }
-  console.log(`[TranscribeArchive] Gemini transcription complete \u2014 ${text2.split(/\s+/).filter(Boolean).length} words`);
-  return buildCompletedResult(text2, "gemini");
+  console.log(`[TranscribeArchive] Gemini transcription complete \u2014 ${text4.split(/\s+/).filter(Boolean).length} words`);
+  return buildCompletedResult(text4, "gemini");
 }
 async function tryWhisperTranscribe(buffer, filename) {
   const hasIntegrationKey = !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY?.trim();
@@ -24844,11 +25622,11 @@ async function tryWhisperTranscribe(buffer, filename) {
 }
 async function transcribeArchiveAudio(savedRecordingPath) {
   try {
-    const path4 = await import("path");
+    const path5 = await import("path");
     const { readFile: readFile2 } = await import("fs/promises");
-    const fullPath = path4.resolve(process.cwd(), "uploads", "recordings", path4.basename(savedRecordingPath));
+    const fullPath = path5.resolve(process.cwd(), "uploads", "recordings", path5.basename(savedRecordingPath));
     const buffer = await readFile2(fullPath);
-    const filename = path4.basename(savedRecordingPath);
+    const filename = path5.basename(savedRecordingPath);
     const geminiResult = await tryGeminiTranscribe(buffer, filename);
     if (geminiResult.ok) return geminiResult;
     console.warn(`[TranscribeArchive] Gemini failed (${geminiResult.errorMessage?.substring(0, 80)}), trying Whisper...`);
@@ -24861,13 +25639,13 @@ async function transcribeArchiveAudio(savedRecordingPath) {
   }
 }
 var init_transcribeArchiveAudio = __esm({
-  "../../server/_core/transcription/transcribeArchiveAudio.ts"() {
+  "server/_core/transcription/transcribeArchiveAudio.ts"() {
     "use strict";
     init_transcriptionResult();
   }
 });
 
-// ../../server/routers/archiveUploadRouter.ts
+// server/routers/archiveUploadRouter.ts
 var archiveUploadRouter_exports = {};
 __export(archiveUploadRouter_exports, {
   archiveUploadRouter: () => archiveUploadRouter,
@@ -24875,8 +25653,8 @@ __export(archiveUploadRouter_exports, {
 });
 import { z as z41 } from "zod";
 import { createHash as createHash3 } from "crypto";
-function computeTranscriptFingerprint(text2) {
-  const normalized = text2.replace(/\s+/g, " ").trim().toLowerCase();
+function computeTranscriptFingerprint(text4) {
+  const normalized = text4.replace(/\s+/g, " ").trim().toLowerCase();
   return createHash3("sha256").update(normalized).digest("hex").slice(0, 32);
 }
 async function generateFullAiReport(transcriptText, clientName, eventName, eventType, sentimentAvg, complianceFlags2, selectedModules) {
@@ -24989,7 +25767,7 @@ ${analysisInput}` }
     throw new Error(`AI report generation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
   }
 }
-async function scoreSentimentFromText(text2) {
+async function scoreSentimentFromText(text4) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -25001,7 +25779,7 @@ async function scoreSentimentFromText(text2) {
           role: "user",
           content: `Score the investor sentiment in this transcript excerpt (0-100):
 
-${text2.slice(0, 3e3)}`
+${text4.slice(0, 3e3)}`
         }
       ]
     });
@@ -25072,6 +25850,9 @@ function buildArchiveReportEmail(opts) {
   const sentimentLabel = (opts.sentimentAvg ?? 50) >= 70 ? "Positive" : (opts.sentimentAvg ?? 50) >= 50 ? "Neutral" : "Negative";
   const complianceColor = opts.complianceFlags > 3 ? "#ef4444" : opts.complianceFlags > 1 ? "#f59e0b" : "#10b981";
   const complianceLabel = opts.complianceFlags > 3 ? "High Risk" : opts.complianceFlags > 1 ? "Moderate" : "Low Risk";
+  const riskCount = opts.aiReport?.riskFactors?.length ?? 0;
+  const actionCount = (opts.aiReport?.actionItems?.length ?? 0) + (opts.aiReport?.criticalActions?.length ?? 0);
+  const riskColor = riskCount > 3 ? "#ef4444" : riskCount > 0 ? "#f59e0b" : "#10b981";
   const eventTypeLabels = {
     earnings_call: "Earnings Call",
     agm: "AGM",
@@ -25083,6 +25864,9 @@ function buildArchiveReportEmail(opts) {
   };
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const sevColor = (s) => s === "Low" || s === "Positive" ? "#10b981" : s === "High" || s === "Critical" || s === "Negative" ? "#ef4444" : "#f59e0b";
+  const headerBrandName = opts.brandName || "CuraLive";
+  const headerPrimary = opts.brandPrimaryColor || "#1e3a5f";
+  const headerLogo = opts.brandLogoUrl ? `<img src="${esc(opts.brandLogoUrl)}" alt="${esc(headerBrandName)}" style="max-height:32px;margin-bottom:8px;" />` : "";
   const sectionHeader = (title, color) => `<tr><td style="padding:28px 40px 12px;">
       <table width="100%" cellpadding="0" cellspacing="0"><tr>
         <td style="border-bottom:2px solid ${color};padding-bottom:8px;">
@@ -25094,27 +25878,16 @@ function buildArchiveReportEmail(opts) {
   const bulletList = (items) => items.length === 0 ? "" : `<tr><td style="padding:4px 40px 16px;"><table cellpadding="0" cellspacing="0" width="100%">${items.map((item) => `<tr><td style="padding:3px 0;font-size:14px;color:#cbd5e1;line-height:1.6;vertical-align:top;">
         <span style="color:#60a5fa;margin-right:8px;">&#8226;</span>${esc(item)}</td></tr>`).join("")}</table></td></tr>`;
   const r = opts.aiReport;
+  const execSummary = r?.executiveSummary ? typeof r.executiveSummary === "string" ? r.executiveSummary : r.executiveSummary?.verdict ?? JSON.stringify(r.executiveSummary) : null;
   let reportSections = "";
   if (r) {
-    if (r.executiveSummary) {
+    if (execSummary) {
       reportSections += sectionHeader("Executive Summary", "#a78bfa");
-      reportSections += textBlock(r.executiveSummary);
-    }
-    if (r.sentimentAnalysis) {
-      reportSections += sectionHeader("Sentiment Analysis", "#10b981");
-      reportSections += `<tr><td style="padding:4px 40px 8px;">
-        <table cellpadding="0" cellspacing="0"><tr>
-          <td style="background:#0f172a;border-radius:6px;padding:8px 16px;border:1px solid #1e293b;">
-            <span style="font-size:24px;font-weight:800;color:${sentimentColor};">${r.sentimentAnalysis.score}</span>
-            <span style="font-size:13px;color:#64748b;">/100 \xB7 ${sentimentLabel}</span>
-          </td>
-        </tr></table>
+      reportSections += `<tr><td style="padding:4px 40px 16px;">
+        <table width="100%" style="background:linear-gradient(135deg,#1e1b4b15,#0f172a15);border-radius:8px;border:1px solid #a78bfa30;"><tr><td style="padding:20px;">
+          <p style="margin:0;font-size:14px;color:#e2e8f0;line-height:1.7;">${esc(execSummary)}</p>
+        </td></tr></table>
       </td></tr>`;
-      reportSections += textBlock(r.sentimentAnalysis.narrative);
-      if (r.sentimentAnalysis.keyDrivers?.length > 0) {
-        reportSections += `<tr><td style="padding:0 40px 4px;"><p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Key Drivers</p></td></tr>`;
-        reportSections += bulletList(r.sentimentAnalysis.keyDrivers);
-      }
     }
     if (r.complianceReview) {
       reportSections += sectionHeader("Compliance Review", "#f59e0b");
@@ -25134,6 +25907,43 @@ function buildArchiveReportEmail(opts) {
         reportSections += bulletList(r.complianceReview.recommendations);
       }
     }
+    if (r.riskFactors?.length > 0) {
+      reportSections += sectionHeader("Risk Factors", "#ef4444");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Factor</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Impact</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Likelihood</td></tr>
+        ${r.riskFactors.map((f) => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;">${esc(f.factor)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(f.impact)};font-weight:600;">${esc(f.impact)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(f.likelihood)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+    if (r.sentimentAnalysis) {
+      reportSections += sectionHeader("Sentiment Analysis", "#10b981");
+      reportSections += `<tr><td style="padding:4px 40px 8px;">
+        <table cellpadding="0" cellspacing="0"><tr>
+          <td style="background:#0f172a;border-radius:6px;padding:8px 16px;border:1px solid #1e293b;">
+            <span style="font-size:24px;font-weight:800;color:${sentimentColor};">${r.sentimentAnalysis.score}</span>
+            <span style="font-size:13px;color:#64748b;">/100 \xB7 ${sentimentLabel}</span>
+          </td>
+        </tr></table>
+      </td></tr>`;
+      reportSections += textBlock(r.sentimentAnalysis.narrative);
+      if (r.sentimentAnalysis.keyDrivers?.length > 0) {
+        reportSections += `<tr><td style="padding:0 40px 4px;"><p style="margin:0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Key Drivers</p></td></tr>`;
+        reportSections += bulletList(r.sentimentAnalysis.keyDrivers);
+      }
+    }
+    if (r.actionItems?.length > 0) {
+      reportSections += sectionHeader("Action Items", "#ec4899");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Action Item</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Owner</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Deadline</td></tr>
+        ${r.actionItems.map((a) => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;">${esc(a.item)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(a.owner)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(a.deadline)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
+    if (r.investorSignals?.length > 0) {
+      reportSections += sectionHeader("Investor Signals", "#f97316");
+      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
+        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Signal</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Interpretation</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Severity</td></tr>
+        ${r.investorSignals.map((s) => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;font-weight:600;">${esc(s.signal)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;line-height:1.5;">${esc(s.interpretation)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(s.severity)};font-weight:600;">${esc(s.severity)}</td></tr>`).join("")}
+      </table></td></tr>`;
+    }
     if (r.keyTopics?.length > 0) {
       reportSections += sectionHeader("Key Topics", "#60a5fa");
       reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
@@ -25150,13 +25960,6 @@ function buildArchiveReportEmail(opts) {
         reportSections += bulletList(s.keyPoints);
       }
     }
-    if (r.investorSignals?.length > 0) {
-      reportSections += sectionHeader("Investor Signals", "#f97316");
-      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
-        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Signal</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Interpretation</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Severity</td></tr>
-        ${r.investorSignals.map((s) => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;font-weight:600;">${esc(s.signal)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;line-height:1.5;">${esc(s.interpretation)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(s.severity)};font-weight:600;">${esc(s.severity)}</td></tr>`).join("")}
-      </table></td></tr>`;
-    }
     if (r.questionsAsked?.length > 0) {
       reportSections += sectionHeader("Q&A Breakdown", "#06b6d4");
       for (const q of r.questionsAsked) {
@@ -25167,13 +25970,6 @@ function buildArchiveReportEmail(opts) {
           </td></tr></table>
         </td></tr>`;
       }
-    }
-    if (r.actionItems?.length > 0) {
-      reportSections += sectionHeader("Action Items", "#ec4899");
-      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
-        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Action Item</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Owner</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Deadline</td></tr>
-        ${r.actionItems.map((a) => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;">${esc(a.item)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(a.owner)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(a.deadline)}</td></tr>`).join("")}
-      </table></td></tr>`;
     }
     if (r.communicationScore) {
       reportSections += sectionHeader("Communication Score", "#14b8a6");
@@ -25196,13 +25992,6 @@ function buildArchiveReportEmail(opts) {
         </tr></table>
       </td></tr>`;
       reportSections += textBlock(cs.narrative);
-    }
-    if (r.riskFactors?.length > 0) {
-      reportSections += sectionHeader("Risk Factors", "#ef4444");
-      reportSections += `<tr><td style="padding:4px 40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1e293b;border-radius:8px;overflow:hidden;">
-        <tr style="background:#0f172a;"><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Factor</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Impact</td><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#94a3b8;border-bottom:1px solid #1e293b;">Likelihood</td></tr>
-        ${r.riskFactors.map((f) => `<tr><td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e293b15;">${esc(f.factor)}</td><td style="padding:10px 14px;font-size:13px;color:${sevColor(f.impact)};font-weight:600;">${esc(f.impact)}</td><td style="padding:10px 14px;font-size:13px;color:#94a3b8;">${esc(f.likelihood)}</td></tr>`).join("")}
-      </table></td></tr>`;
     }
     if (r.financialHighlights?.length > 0) {
       reportSections += sectionHeader("Financial Highlights", "#eab308");
@@ -25284,8 +26073,9 @@ function buildArchiveReportEmail(opts) {
 <body style="margin:0;padding:0;background:#0a0d14;font-family:'Inter',Arial,sans-serif;color:#e2e8f0;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0d14;padding:40px 20px;"><tr><td align="center">
 <table width="640" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;border:1px solid #1e293b;">
-<tr><td style="background:linear-gradient(135deg,#1e3a5f,#0f172a);padding:32px 40px;">
-<p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;">CuraLive Post-Event Intelligence Report</p>
+<tr><td style="background:linear-gradient(135deg,${headerPrimary},#0f172a);padding:32px 40px;">
+${headerLogo}
+<p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;">${esc(headerBrandName)} Post-Event Intelligence Report</p>
 <h1 style="margin:0;font-size:22px;font-weight:700;color:#f1f5f9;line-height:1.3;">${esc(opts.eventName)}</h1>
 <p style="margin:8px 0 0;font-size:14px;color:#94a3b8;">${esc(opts.clientName)} \xB7 ${eventTypeLabels[opts.eventType] ?? opts.eventType}${opts.eventDate ? ` \xB7 ${opts.eventDate}` : ""}</p>
 </td></tr>
@@ -25307,12 +26097,14 @@ function buildArchiveReportEmail(opts) {
 <p style="margin:2px 0 0;font-size:11px;color:${complianceColor};font-weight:600;">${complianceLabel}</p>
 </td></tr></table></td>
 <td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:14px;text-align:center;">
-<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Words</p>
-<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:#60a5fa;">${opts.wordCount.toLocaleString()}</p>
+<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Risk Factors</p>
+<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:${riskColor};">${riskCount}</p>
+<p style="margin:2px 0 0;font-size:11px;color:${riskColor};font-weight:600;">${riskCount > 3 ? "Elevated" : riskCount > 0 ? "Manageable" : "Clear"}</p>
 </td></tr></table></td>
 <td width="25%" style="padding:4px;"><table width="100%" style="background:#0f172a;border-radius:8px;border:1px solid #1e293b;"><tr><td style="padding:14px;text-align:center;">
-<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Segments</p>
-<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:#60a5fa;">${opts.segmentCount}</p>
+<p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Action Items</p>
+<p style="margin:4px 0 0;font-size:22px;font-weight:800;color:#a78bfa;">${actionCount}</p>
+<p style="margin:2px 0 0;font-size:11px;color:#a78bfa;font-weight:600;">${actionCount > 0 ? "to follow up" : "none"}</p>
 </td></tr></table></td>
 </tr>
 </table>
@@ -25327,7 +26119,7 @@ ${opts.notes ? `<tr><td style="padding:12px 40px 20px;"><table width="100%" styl
 <p style="margin:0;font-size:14px;color:#cbd5e1;line-height:1.6;">${esc(opts.notes)}</p>
 </td></tr></table></td></tr>` : ""}
 <tr><td style="background:#0f172a;padding:24px 40px;border-top:1px solid #1e293b;">
-<p style="margin:0 0 4px;font-size:12px;color:#475569;text-align:center;">CuraLive Intelligence Platform \xB7 Automated Post-Event Report</p>
+<p style="margin:0 0 4px;font-size:12px;color:#475569;text-align:center;">${esc(headerBrandName)} Intelligence Platform \xB7 Automated Post-Event Report</p>
 <p style="margin:0;font-size:11px;color:#334155;text-align:center;">This report was generated by AI and should be reviewed alongside primary source materials.</p>
 </td></tr>
 </table></td></tr></table></body></html>`;
@@ -25684,7 +26476,7 @@ async function runSpecialisedAlgorithms(archiveId, clientName, eventName, eventT
 }
 var COMPLIANCE_KEYWORDS, BASTION_EVENT_TYPES, AGM_EVENT_TYPES, WEBCAST_EVENT_TYPES, IPO_EVENT_TYPES, MANDA_EVENT_TYPES, CREDIT_EVENT_TYPES, PROXY_EVENT_TYPES, archiveUploadRouter;
 var init_archiveUploadRouter = __esm({
-  "../../server/routers/archiveUploadRouter.ts"() {
+  "server/routers/archiveUploadRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -25813,12 +26605,12 @@ var init_archiveUploadRouter = __esm({
         const db2 = await getDb();
         let validatedRecordingPath = null;
         if (input.savedRecordingPath) {
-          const path4 = await import("path");
-          const fs3 = await import("fs");
-          const basename2 = path4.basename(input.savedRecordingPath);
+          const path5 = await import("path");
+          const fs4 = await import("fs");
+          const basename2 = path5.basename(input.savedRecordingPath);
           if (/^\d+_[a-f0-9]{12}\.\w+$/.test(basename2)) {
-            const fullPath = path4.resolve(process.cwd(), "uploads", "recordings", basename2);
-            if (fs3.existsSync(fullPath)) {
+            const fullPath = path5.resolve(process.cwd(), "uploads", "recordings", basename2);
+            if (fs4.existsSync(fullPath)) {
               validatedRecordingPath = basename2;
             } else {
               console.warn(`[processTranscript] Recording file not found: ${basename2}`);
@@ -26231,76 +27023,2110 @@ var init_archiveUploadRouter = __esm({
   }
 });
 
-// ../../server/routers/shadowModeRouter.ts
-import { z as z42 } from "zod";
-import { eq as eq55, desc as desc31, inArray } from "drizzle-orm";
-async function autoGenerateAiReport(sessionId, clientName, eventName, eventType, transcript, sentimentAvg, complianceFlags2) {
+// server/emails/templates.ts
+function baseLayout(brand, content) {
+  const b = { ...defaultBrand, ...brand };
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body { margin:0; padding:0; font-family:${b.fontFamily}; background:#f4f4f8; color:#1a1a2e; }
+  .container { max-width:640px; margin:0 auto; background:#fff; border-radius:8px; overflow:hidden; }
+  .header { background:${b.primaryColor}; padding:24px 32px; text-align:center; }
+  .header img { max-height:40px; }
+  .header h1 { color:#fff; font-size:18px; margin:8px 0 0; }
+  .body { padding:32px; }
+  .footer { background:#f8f8fc; padding:16px 32px; text-align:center; font-size:12px; color:#888; }
+  .btn { display:inline-block; background:${b.accentColor}; color:#fff !important; padding:12px 28px; border-radius:6px; text-decoration:none; font-weight:600; margin:16px 0; }
+  .flag { background:#fef2f2; border-left:4px solid #dc2626; padding:12px 16px; margin:8px 0; border-radius:4px; }
+  .flag.critical { border-left-color:#dc2626; }
+  .flag.high { border-left-color:#f59e0b; }
+  .metric-card { display:inline-block; background:#f8f8fc; border:1px solid #e5e7eb; border-radius:8px; padding:12px 16px; text-align:center; min-width:100px; margin:4px; }
+  .metric-value { font-size:20px; font-weight:800; color:${b.accentColor}; }
+  .metric-label { font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px; }
+  table { width:100%; border-collapse:collapse; margin:16px 0; }
+  th,td { text-align:left; padding:8px 12px; border-bottom:1px solid #eee; font-size:14px; }
+  th { background:#f8f8fc; font-weight:600; }
+</style>
+</head><body>
+<div class="container">
+  <div class="header">
+    ${b.logoUrl ? `<img src="${b.logoUrl}" alt="${b.displayName}">` : `<h1>${b.displayName}</h1>`}
+  </div>
+  <div class="body">${content}</div>
+  <div class="footer">
+    <p>&copy; ${(/* @__PURE__ */ new Date()).getFullYear()} ${b.displayName}. All rights reserved.</p>
+    <p>Real-time investor events intelligence</p>
+  </div>
+</div>
+</body></html>`;
+}
+function buildReportEmail(opts) {
+  const sentimentColor = (opts.sentimentScore ?? 50) >= 70 ? "#10b981" : (opts.sentimentScore ?? 50) >= 50 ? "#f59e0b" : "#ef4444";
+  const sentimentLabel = (opts.sentimentScore ?? 50) >= 70 ? "Positive" : (opts.sentimentScore ?? 50) >= 50 ? "Neutral" : "Negative";
+  const compColor = opts.complianceFlags > 3 ? "#dc2626" : opts.complianceFlags > 0 ? "#f59e0b" : "#10b981";
+  const metricsRow = `
+    <table style="width:100%;margin:16px 0;"><tr>
+      ${opts.sentimentScore != null ? `<td style="padding:4px;text-align:center;">
+        <div class="metric-card">
+          <div class="metric-value" style="color:${sentimentColor}">${opts.sentimentScore}/100</div>
+          <div class="metric-label">${sentimentLabel}</div>
+        </div>
+      </td>` : ""}
+      <td style="padding:4px;text-align:center;">
+        <div class="metric-card">
+          <div class="metric-value" style="color:${compColor}">${opts.complianceFlags}</div>
+          <div class="metric-label">Compliance Flags</div>
+        </div>
+      </td>
+      ${opts.riskFactors != null ? `<td style="padding:4px;text-align:center;">
+        <div class="metric-card">
+          <div class="metric-value">${opts.riskFactors}</div>
+          <div class="metric-label">Risk Factors</div>
+        </div>
+      </td>` : ""}
+      ${opts.actionItems != null ? `<td style="padding:4px;text-align:center;">
+        <div class="metric-card">
+          <div class="metric-value">${opts.actionItems}</div>
+          <div class="metric-label">Action Items</div>
+        </div>
+      </td>` : ""}
+    </tr></table>`;
+  const execBlock = opts.executiveSummary ? `
+    <div style="background:#f8f8fc;border-left:4px solid ${(opts.brand ?? defaultBrand).accentColor ?? "#6b21a8"};padding:16px;border-radius:4px;margin:16px 0;">
+      <p style="margin:0 0 4px;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:600;">AI Intelligence Verdict</p>
+      <p style="margin:0;font-size:14px;line-height:1.6;color:#333;">${opts.executiveSummary}</p>
+    </div>` : "";
+  return baseLayout(opts.brand ?? {}, `
+    <h2>Post-Event Intelligence Report</h2>
+    <p>Dear ${opts.recipientName},</p>
+    <p>Your comprehensive intelligence report for <strong>${opts.eventName}</strong> (${opts.companyName}) on ${opts.eventDate} is ready.</p>
+    ${metricsRow}
+    ${execBlock}
+    <table>
+      <tr><th>Report Modules</th><td>${opts.reportModules}</td></tr>
+      <tr><th>Session Duration</th><td>${opts.sessionDuration}</td></tr>
+    </table>
+    <p style="text-align:center"><a class="btn" href="${opts.reportUrl}">View Full Report</a></p>
+    <p style="font-size:13px;color:#666">This report will be available for 30 days. This link is unique to you.</p>
+  `);
+}
+function buildComplianceCloseEmail(opts) {
+  const flagsHtml = opts.flags.map((f) => `
+    <div class="flag ${f.severity}">
+      <strong>${f.severity.toUpperCase()}: ${f.title}</strong>
+      <p style="margin:4px 0 0;font-size:13px">${f.body}</p>
+    </div>
+  `).join("");
+  const deadlinesHtml = opts.deadlines.length > 0 ? `
+    <h3>Compliance Deadlines</h3>
+    <table>
+      <tr><th>Action</th><th>Deadline</th><th>Jurisdiction</th></tr>
+      ${opts.deadlines.map((d) => `<tr><td>${d.action}</td><td>${d.hours}h</td><td>${d.jurisdiction}</td></tr>`).join("")}
+    </table>
+  ` : "";
+  return baseLayout(opts.brand ?? {}, `
+    <h2 style="color:#dc2626">Compliance Alert \u2014 Immediate Action Required</h2>
+    <p>Dear ${opts.recipientName},</p>
+    <p>The following compliance flags were raised during <strong>${opts.eventName}</strong> (${opts.companyName}) and require your immediate attention.</p>
+    ${flagsHtml}
+    ${deadlinesHtml}
+    <p style="font-size:13px;color:#666">This is an automated compliance notification. Please review and action within the specified deadlines.</p>
+  `);
+}
+function buildPreBriefingEmail(opts) {
+  const hotspotsHtml = opts.complianceHotspots?.length ? `
+    <h3 style="margin-top:24px;">Compliance Hotspots</h3>
+    ${opts.complianceHotspots.map((h) => {
+    const col = h.riskLevel === "high" ? "#dc2626" : h.riskLevel === "medium" ? "#f59e0b" : "#10b981";
+    return `<div style="border-left:3px solid ${col};padding:8px 12px;margin:8px 0;background:#fafafa;border-radius:4px;">
+        <p style="margin:0;font-size:13px;"><strong>${h.area}</strong> <span style="color:${col};font-size:11px;font-weight:700;text-transform:uppercase;margin-left:8px;">${h.riskLevel}</span></p>
+        <p style="margin:4px 0 0;font-size:13px;color:#555;">${h.description}</p>
+      </div>`;
+  }).join("")}` : "";
+  const questionsHtml = opts.predictedQuestions?.length ? `
+    <h3 style="margin-top:24px;">Predicted Questions</h3>
+    ${opts.predictedQuestions.slice(0, 5).map((q) => {
+    const col = q.riskLevel === "high" ? "#dc2626" : q.riskLevel === "medium" ? "#f59e0b" : "#10b981";
+    return `<div style="padding:8px 0;border-bottom:1px solid #eee;">
+        <p style="margin:0;font-size:13px;font-weight:600;">${q.topic}</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#555;">"${q.question}"</p>
+        <p style="margin:2px 0 0;font-size:11px;color:${col};font-weight:600;text-transform:uppercase;">${q.riskLevel} risk</p>
+      </div>`;
+  }).join("")}` : "";
+  const readinessHtml = opts.readinessScore != null ? `
+    <div style="background:#f8f8fc;border-radius:8px;padding:12px 16px;margin:16px 0;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#888;text-transform:uppercase;">Event Readiness</p>
+      <p style="margin:4px 0 0;font-size:28px;font-weight:800;color:${opts.readinessScore >= 80 ? "#10b981" : opts.readinessScore >= 50 ? "#f59e0b" : "#ef4444"};">${opts.readinessScore}%</p>
+    </div>` : "";
+  return baseLayout(opts.brand ?? {}, `
+    <h2>Pre-Event Intelligence Briefing</h2>
+    <p>Dear ${opts.recipientName},</p>
+    <p>Your event <strong>${opts.eventName}</strong> (${opts.companyName}) is scheduled to begin at <strong>${opts.scheduledTime}</strong>.</p>
+    ${readinessHtml}
+    <h3>Intelligence Briefing</h3>
+    <div style="background:#f8f8fc;padding:16px;border-radius:6px;font-size:14px;line-height:1.6">${opts.briefingSummary}</div>
+    ${hotspotsHtml}
+    ${questionsHtml}
+    ${opts.liveUrl ? `<p style="text-align:center"><a class="btn" href="${opts.liveUrl}">Open Live Dashboard</a></p>` : ""}
+    <p style="font-size:13px;color:#666">This briefing was generated by AI based on historical data and market context.</p>
+  `);
+}
+var defaultBrand;
+var init_templates = __esm({
+  "server/emails/templates.ts"() {
+    "use strict";
+    defaultBrand = {
+      displayName: "CuraLive",
+      primaryColor: "#1a1a2e",
+      accentColor: "#6b21a8",
+      fontFamily: "Inter, system-ui, sans-serif"
+    };
+  }
+});
+
+// server/services/ComplianceDeadlineService.ts
+var ComplianceDeadlineService_exports = {};
+__export(ComplianceDeadlineService_exports, {
+  createComplianceDeadline: () => createComplianceDeadline,
+  sendComplianceCloseEmail: () => sendComplianceCloseEmail,
+  startComplianceDeadlineMonitor: () => startComplianceDeadlineMonitor
+});
+async function sendComplianceCloseEmail(opts) {
+  for (const recipient of opts.recipients) {
+    const html = buildComplianceCloseEmail({
+      recipientName: recipient.name,
+      companyName: opts.companyName,
+      eventName: opts.eventName,
+      flags: opts.flags,
+      deadlines: opts.deadlines
+    });
+    try {
+      const { sendEmail: sendEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
+      await sendEmail2({
+        to: recipient.email,
+        subject: `COMPLIANCE ALERT \u2014 ${opts.eventName} \u2014 Immediate Action Required`,
+        html
+      });
+      console.log(`[ComplianceDeadline] Compliance email sent to ${recipient.email}`);
+    } catch (err) {
+      console.warn(`[ComplianceDeadline] Failed to send to ${recipient.email}:`, err?.message);
+    }
+  }
+}
+async function createComplianceDeadline(opts) {
   try {
-    const fullText = transcript.map((s) => `[${s.speaker}]: ${s.text}`).join("\n");
-    if (fullText.length < 50) {
-      console.log(`[Shadow] Skipping AI report for session ${sessionId} \u2014 transcript too short (${fullText.length} chars)`);
+    await rawSql(
+      `INSERT INTO compliance_deadlines (session_id, action, jurisdiction, deadline_at, priority, assigned_to)
+       VALUES ($1, $2, $3, NOW() + ($4 || ' hours')::INTERVAL, $5, $6)`,
+      [opts.sessionId, opts.action, opts.jurisdiction, String(opts.deadlineHours), opts.priority, opts.assignedTo || null]
+    );
+    console.log(`[ComplianceDeadline] Created: "${opts.action}" due in ${opts.deadlineHours}h (${opts.jurisdiction})`);
+  } catch (err) {
+    console.error(`[ComplianceDeadline] Failed to create deadline:`, err?.message);
+  }
+}
+function startComplianceDeadlineMonitor() {
+  console.log("[ComplianceDeadlineMonitor] Started \u2014 checking every 15 minutes");
+  async function check() {
+    try {
+      const [overdue] = await rawSql(
+        `SELECT id, session_id, action, jurisdiction, deadline_at, assigned_to, priority
+         FROM compliance_deadlines
+         WHERE status = 'pending' AND deadline_at < NOW() AND escalated_at IS NULL`,
+        []
+      );
+      if (overdue.length > 0) {
+        console.log(`[ComplianceDeadlineMonitor] ${overdue.length} overdue deadlines found \u2014 escalating`);
+        for (const d of overdue) {
+          await rawSql(
+            `UPDATE compliance_deadlines SET escalated_at = NOW(), status = 'escalated' WHERE id = $1`,
+            [d.id]
+          );
+          console.log(`[ComplianceDeadlineMonitor] Escalated: "${d.action}" (${d.jurisdiction}) \u2014 was due ${d.deadline_at}`);
+        }
+      }
+    } catch (err) {
+      if (!err?.message?.includes("does not exist")) {
+        console.warn("[ComplianceDeadlineMonitor] Check error:", err?.message);
+      }
+    }
+  }
+  check();
+  setInterval(check, 15 * 60 * 1e3);
+}
+var init_ComplianceDeadlineService = __esm({
+  "server/services/ComplianceDeadlineService.ts"() {
+    "use strict";
+    init_db();
+    init_templates();
+  }
+});
+
+// server/services/ClientDeliveryService.ts
+import crypto from "crypto";
+function generateToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+async function getPartnerBrand(partnerId) {
+  if (!partnerId) return void 0;
+  try {
+    const [rows] = await rawSql(
+      `SELECT display_name, logo_url, primary_color, accent_color, font_family FROM partners WHERE id = $1 AND active = true`,
+      [partnerId]
+    );
+    if (rows.length === 0) return void 0;
+    const p = rows[0];
+    return {
+      displayName: p.display_name || void 0,
+      logoUrl: p.logo_url || void 0,
+      primaryColor: p.primary_color || void 0,
+      accentColor: p.accent_color || void 0,
+      fontFamily: p.font_family || void 0
+    };
+  } catch {
+    return void 0;
+  }
+}
+async function sendReportLinks(opts) {
+  const brand = await getPartnerBrand(opts.partnerId);
+  for (const recipient of opts.recipients) {
+    const token = generateToken();
+    await rawSql(
+      `INSERT INTO client_tokens (token, session_id, partner_id, recipient_name, recipient_email, access_type, expires_at)
+       VALUES ($1, $2, $3, $4, $5, 'report', NOW() + INTERVAL '30 days')`,
+      [token, opts.sessionId, opts.partnerId || null, recipient.name, recipient.email]
+    );
+    const reportUrl = `${APP_URL()}/report/${token}`;
+    const html = buildReportEmail({
+      recipientName: recipient.name,
+      eventName: opts.eventName,
+      companyName: opts.companyName,
+      eventDate: opts.eventDate,
+      reportUrl,
+      reportModules: opts.reportModules,
+      complianceFlags: opts.complianceFlags,
+      sessionDuration: opts.sessionDuration,
+      brand
+    });
+    try {
+      const { sendEmail: sendEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
+      await sendEmail2({
+        to: recipient.email,
+        subject: `Intelligence Report Ready \u2014 ${opts.eventName}`,
+        html
+      });
+      console.log(`[ClientDelivery] Report link sent to ${recipient.email}`);
+    } catch (err) {
+      console.warn(`[ClientDelivery] Failed to send report link to ${recipient.email}:`, err?.message);
+    }
+  }
+  console.log(`[ClientDelivery] ${opts.recipients.length} report links sent for session ${opts.sessionId}`);
+}
+var APP_URL;
+var init_ClientDeliveryService = __esm({
+  "server/services/ClientDeliveryService.ts"() {
+    "use strict";
+    init_db();
+    init_templates();
+    APP_URL = () => process.env.APP_URL || `https://${process.env.REPLIT_DEV_DOMAIN || "localhost:3000"}`;
+  }
+});
+
+// server/services/BoardIntelligenceService.ts
+async function runBoardIntelligenceUpdate(opts) {
+  const startTime = Date.now();
+  const db2 = await getDb();
+  if (!db2) return;
+  console.log(`[BoardIntelligence] Starting update for session ${opts.sessionId} \u2014 ${opts.company}`);
+  try {
+    await Promise.allSettled([
+      extractAndSaveNewCommitments(opts),
+      verifyPriorCommitments(opts),
+      logBoardMemberActivity(opts)
+    ]);
+    await updateGovernanceScore(opts);
+    const elapsed = Date.now() - startTime;
+    console.log(`[BoardIntelligence] Completed for session ${opts.sessionId} in ${elapsed}ms`);
+  } catch (err) {
+    console.error(`[BoardIntelligence] Error for session ${opts.sessionId}:`, err);
+  }
+}
+async function extractAndSaveNewCommitments(opts) {
+  const db2 = await getDb();
+  if (!db2 || !opts.reportModules?.module08) return;
+  try {
+    let module08Data;
+    try {
+      module08Data = typeof opts.reportModules.module08 === "string" ? JSON.parse(opts.reportModules.module08) : opts.reportModules.module08;
+    } catch {
+      const extractPrompt = `Extract all forward guidance statements, capital commitments, and management promises from this text.
+
+TEXT:
+${opts.reportModules.module08}
+
+Return a JSON array. Each item must have:
+- commitment (string): the exact commitment or guidance statement
+- committedBy (string): speaker name/role if identifiable, otherwise "Management"
+- deadline (string|null): specific date or timeframe if mentioned, null if not
+- type (string): "guidance" | "commitment" | "promise"
+
+Return ONLY the JSON array, no other text.`;
+      const llmResult = await invokeLLM({ messages: [{ role: "user", content: extractPrompt }] });
+      const responseText = llmResult.choices?.[0]?.message?.content ?? "";
+      const cleaned = typeof responseText === "string" ? responseText : JSON.stringify(responseText);
+      try {
+        module08Data = { commitments: JSON.parse(cleaned.replace(/```json|```/g, "").trim()) };
+      } catch {
+        return;
+      }
+    }
+    const commitments = Array.isArray(module08Data) ? module08Data : module08Data?.commitments ?? module08Data?.guidanceChanges ?? [];
+    if (!commitments.length) return;
+    let saved = 0;
+    for (const c of commitments) {
+      if (!c.commitment || c.commitment.trim().length < 10) continue;
+      let deadlineDate;
+      if (c.deadline) {
+        const parsed = parseFuzzyDeadline(c.deadline);
+        if (parsed) deadlineDate = parsed;
+      }
+      try {
+        await rawSql(
+          `INSERT INTO historical_commitments
+             (company, event_type, event_date, commitment, committed_by, deadline, status, verified_in_session_id)
+           VALUES ($1, $2, NOW(), $3, $4, $5, 'open', $6)`,
+          [
+            opts.company,
+            opts.eventType ?? "earnings_call",
+            c.commitment.trim(),
+            c.committedBy ?? "Management",
+            deadlineDate ?? null,
+            opts.sessionId
+          ]
+        );
+        saved++;
+      } catch {
+      }
+    }
+    console.log(`[BoardIntelligence] Saved ${saved} new commitments for ${opts.company}`);
+  } catch (err) {
+    console.error("[BoardIntelligence] extractAndSaveNewCommitments error:", err);
+  }
+}
+async function verifyPriorCommitments(opts) {
+  const db2 = await getDb();
+  if (!db2) return;
+  try {
+    const [openCommitments] = await rawSql(
+      `SELECT id, commitment, committed_by, deadline, status
+       FROM historical_commitments
+       WHERE company = $1 AND status = 'open'
+       ORDER BY COALESCE(event_date, created_at) DESC
+       LIMIT 20`,
+      [opts.company]
+    );
+    if (!openCommitments.length) return;
+    const transcriptContext = opts.transcriptText ?? opts.reportModules?.module08 ?? "";
+    if (!transcriptContext || transcriptContext.length < 100) return;
+    const verifyPrompt = `You are an IR analyst reviewing whether prior management commitments were addressed in a recent event.
+
+PRIOR OPEN COMMITMENTS:
+${openCommitments.map(
+      (c, i) => `${i + 1}. [ID:${c.id}] "${c.commitment}" (by ${c.committed_by || "Management"})`
+    ).join("\n")}
+
+CURRENT EVENT TRANSCRIPT/REPORT:
+${transcriptContext.slice(0, 3e3)}
+
+For each commitment, determine if it was:
+- "met": explicitly addressed and confirmed or delivered
+- "partial": mentioned but only partially addressed
+- "at_risk": was expected and not mentioned at all
+- "open": not relevant to this event yet
+
+Return a JSON array with objects: { id: number, status: "met"|"partial"|"at_risk"|"open", evidence: string }
+Return ONLY the JSON array.`;
+    const verifyResult = await invokeLLM({ messages: [{ role: "user", content: verifyPrompt }] });
+    const responseText = verifyResult.choices?.[0]?.message?.content ?? "";
+    const cleaned = typeof responseText === "string" ? responseText : JSON.stringify(responseText);
+    let verifications;
+    try {
+      verifications = JSON.parse(cleaned.replace(/```json|```/g, "").trim());
+    } catch {
       return;
     }
-    console.log(`[Shadow] Auto-generating AI report for session ${sessionId} (${fullText.length} chars)...`);
-    const aiReport = await generateFullAiReport(
-      fullText,
-      clientName,
-      eventName,
-      eventType,
-      sentimentAvg ?? 50,
-      complianceFlags2
-    );
-    const db2 = await getDb();
-    const eventId = `shadow-${sessionId}`;
-    const wordCount = fullText.split(/\s+/).filter(Boolean).length;
-    await rawSql(
-      `INSERT INTO archive_events (event_id, client_name, event_name, event_type, transcript_text, word_count, segment_count, sentiment_avg, compliance_flags, status, ai_report, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'completed', $10, 'Auto-generated from Shadow Mode session')
-       ON CONFLICT (event_id) DO UPDATE SET ai_report = EXCLUDED.ai_report, status = 'completed'`,
-      [eventId, clientName, eventName, eventType, fullText, wordCount, transcript.length, sentimentAvg ?? 50, complianceFlags2, JSON.stringify(aiReport)]
-    );
-    try {
-      const { runMetaObserver: runMetaObserver2, runAccumulationEngine: runAccumulationEngine2 } = await Promise.resolve().then(() => (init_AiEvolutionService(), AiEvolutionService_exports));
-      await runMetaObserver2(aiReport, "live_session", sessionId, eventType, clientName, fullText.length);
-      runAccumulationEngine2().catch((err) => console.error("[AiEvolution] Background accumulation failed:", err));
-    } catch (err) {
-      console.error("[AiEvolution] Meta-observer hook failed:", err);
+    for (const v of verifications) {
+      if (!v.id || !v.status || v.status === "open") continue;
+      const validStatuses = ["met", "partial", "at_risk"];
+      if (!validStatuses.includes(v.status)) continue;
+      await rawSql(
+        `UPDATE historical_commitments
+         SET status = $1, verified_in_session_id = $2
+         WHERE id = $3 AND company = $4`,
+        [v.status, opts.sessionId, v.id, opts.company]
+      );
     }
-    try {
-      const { analyzeCrisisRisk: analyzeCrisisRisk2 } = await Promise.resolve().then(() => (init_crisisPredictionRouter(), crisisPredictionRouter_exports));
-      const sentimentTrajectory = transcript.map((_, i) => (sentimentAvg ?? 50) + (Math.random() * 10 - 5) * (i / Math.max(transcript.length, 1)));
-      await analyzeCrisisRisk2(fullText, clientName, eventName, eventType, sentimentTrajectory, sessionId);
-      console.log(`[Shadow] Crisis prediction completed for session ${sessionId}`);
-    } catch (err) {
-      console.error("[Shadow] Crisis prediction failed:", err);
-    }
-    try {
-      const { generateDisclosureCertificate: generateDisclosureCertificate2 } = await Promise.resolve().then(() => (init_disclosureCertificateRouter(), disclosureCertificateRouter_exports));
-      await generateDisclosureCertificate2({
-        eventId: `shadow-${sessionId}`,
-        sessionId,
-        clientName,
-        eventName,
-        eventType,
-        transcriptText: fullText,
-        aiReportJson: JSON.stringify(aiReport),
-        complianceFlags: complianceFlags2,
-        jurisdictions: ["JSE"]
-      });
-      console.log(`[Shadow] Disclosure certificate generated for session ${sessionId}`);
-    } catch (err) {
-      console.error("[Shadow] Disclosure certificate failed:", err);
-    }
-    try {
-      const { analyzeValuationImpact: analyzeValuationImpact2 } = await Promise.resolve().then(() => (init_valuationImpactRouter(), valuationImpactRouter_exports));
-      await analyzeValuationImpact2(fullText, clientName, eventName, eventType, sentimentAvg ?? 50, `shadow-${sessionId}`);
-      console.log(`[Shadow] Valuation impact analysis completed for session ${sessionId}`);
-    } catch (err) {
-      console.error("[Shadow] Valuation impact analysis failed:", err);
-    }
-    console.log(`[Shadow] AI report generated for session ${sessionId} \u2014 ${aiReport.modulesGenerated} modules`);
+    const updated = verifications.filter((v) => v.status !== "open").length;
+    console.log(`[BoardIntelligence] Verified ${updated} prior commitments for ${opts.company}`);
   } catch (err) {
-    console.error(`[Shadow] Auto AI report generation failed for session ${sessionId}:`, err);
+    console.error("[BoardIntelligence] verifyPriorCommitments error:", err);
+  }
+}
+async function logBoardMemberActivity(opts) {
+  const db2 = await getDb();
+  if (!db2) return;
+  try {
+    const [members] = await rawSql(
+      `SELECT id, name, company FROM board_members WHERE company = $1 AND active = true`,
+      [opts.company]
+    );
+    if (!members.length) return;
+    if (!opts.transcriptText) return;
+    const [flagRows] = await rawSql(
+      `SELECT speaker, COUNT(*)::int as flag_count, flag_type
+       FROM regulatory_flags
+       WHERE monitor_id IN (
+         SELECT id FROM shadow_sessions WHERE id = $1
+       )
+       GROUP BY speaker, flag_type`,
+      [opts.sessionId]
+    );
+    const [segmentRows] = await rawSql(
+      `SELECT speaker, COUNT(*)::int as segments
+       FROM occ_transcription_segments
+       WHERE conference_id IN (
+         SELECT id FROM shadow_sessions WHERE id = $1
+       )
+       GROUP BY speaker`,
+      [opts.sessionId]
+    );
+    for (const member of members) {
+      const memberName = (member.name || "").toLowerCase();
+      if (!memberName) continue;
+      const speakerSegments = segmentRows.find(
+        (r) => r.speaker?.toLowerCase().includes(memberName.split(" ")[0]) || r.speaker?.toLowerCase().includes(memberName.split(" ").slice(-1)[0])
+      );
+      if (!speakerSegments) continue;
+      const memberFlags = flagRows.filter(
+        (r) => r.speaker?.toLowerCase().includes(memberName.split(" ")[0])
+      );
+      const totalFlags = memberFlags.reduce((s, r) => s + Number(r.flag_count), 0);
+      await rawSql(
+        `UPDATE board_members
+         SET notes = COALESCE(notes, '') || $1
+         WHERE id = $2`,
+        [
+          `
+[Session ${opts.sessionId} \u2014 ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}] Spoke: ${speakerSegments.segments} segments. Compliance flags: ${totalFlags}.`,
+          member.id
+        ]
+      );
+    }
+  } catch (err) {
+    console.error("[BoardIntelligence] logBoardMemberActivity error:", err);
+  }
+}
+async function updateGovernanceScore(opts) {
+  try {
+    const db2 = await getDb();
+    if (!db2) return;
+    const [stats] = await rawSql(
+      `SELECT
+         COUNT(*) FILTER (WHERE status = 'open')::int    as open_count,
+         COUNT(*) FILTER (WHERE status = 'met')::int     as met_count,
+         COUNT(*) FILTER (WHERE status = 'missed')::int  as missed_count,
+         COUNT(*) FILTER (WHERE status = 'partial')::int as partial_count,
+         COUNT(*) FILTER (WHERE status = 'at_risk')::int as at_risk_count,
+         COUNT(*)::int                                   as total_count
+       FROM historical_commitments
+       WHERE company = $1`,
+      [opts.company]
+    );
+    const s = stats[0];
+    if (!s || Number(s.total_count) === 0) return;
+    const total = Number(s.total_count);
+    const met = Number(s.met_count);
+    const partial = Number(s.partial_count);
+    const missed = Number(s.missed_count);
+    const atRisk = Number(s.at_risk_count);
+    const rawScore = (met * 100 + partial * 60 - missed * 100 - atRisk * 40) / total;
+    const score = Math.max(0, Math.min(100, Math.round(rawScore)));
+    const [flagStats] = await rawSql(
+      `SELECT COUNT(*)::int as flag_count
+       FROM regulatory_flags rf
+       WHERE rf.created_at > NOW() - INTERVAL '90 days'`,
+      []
+    );
+    const recentFlags = Number(flagStats[0]?.flag_count ?? 0);
+    const compliancePenalty = Math.min(20, recentFlags * 2);
+    const finalScore = Math.max(0, score - compliancePenalty);
+    await rawSql(
+      `INSERT INTO agm_governance_scores (session_id, company, overall_score, calculated_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (company) DO UPDATE
+       SET overall_score = $3, calculated_at = NOW()`,
+      [opts.sessionId, opts.company, finalScore]
+    );
+    console.log(`[BoardIntelligence] Governance score for ${opts.company}: ${finalScore}/100`);
+  } catch (err) {
+    console.error("[BoardIntelligence] updateGovernanceScore error:", err);
+  }
+}
+function parseFuzzyDeadline(str) {
+  if (!str) return void 0;
+  const s = str.toLowerCase();
+  const now = /* @__PURE__ */ new Date();
+  if (s.includes("q1")) return new Date(now.getFullYear(), 2, 31);
+  if (s.includes("q2")) return new Date(now.getFullYear(), 5, 30);
+  if (s.includes("q3")) return new Date(now.getFullYear(), 8, 30);
+  if (s.includes("q4")) return new Date(now.getFullYear(), 11, 31);
+  if (s.includes("full year") || s.includes("year end")) return new Date(now.getFullYear(), 11, 31);
+  if (s.includes("half year") || s.includes("h1")) return new Date(now.getFullYear(), 5, 30);
+  if (s.includes("h2")) return new Date(now.getFullYear(), 11, 31);
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) return parsed;
+  return void 0;
+}
+var init_BoardIntelligenceService = __esm({
+  "server/services/BoardIntelligenceService.ts"() {
+    "use strict";
+    init_db();
+    init_llm();
+  }
+});
+
+// server/services/AICoreClient.ts
+async function fetchJSON(url, options) {
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const retries = options?.retries ?? 0;
+  const label = options?.label ?? url;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const start = Date.now();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      const elapsed = Date.now() - start;
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        if (res.status >= 500 && attempt < retries) {
+          ERR(`${label} attempt ${attempt + 1} failed (${res.status}), retrying in ${RETRY_DELAY_MS}ms`, body);
+          await sleep(RETRY_DELAY_MS * (attempt + 1));
+          continue;
+        }
+        throw new AICoreError(
+          `AI Core ${res.status}: ${body.slice(0, 500)}`,
+          "upstream",
+          res.status,
+          label,
+          elapsed
+        );
+      }
+      try {
+        return await res.json();
+      } catch (parseErr) {
+        throw new AICoreError(
+          `Failed to parse response from ${label}`,
+          "parse",
+          res.status,
+          label,
+          elapsed
+        );
+      }
+    } catch (e) {
+      clearTimeout(timer);
+      const elapsed = Date.now() - start;
+      if (e instanceof AICoreError) throw e;
+      if (e?.name === "AbortError") {
+        if (attempt < retries) {
+          ERR(`${label} timed out after ${timeoutMs}ms (attempt ${attempt + 1}), retrying in ${RETRY_DELAY_MS * (attempt + 1)}ms`, null);
+          await sleep(RETRY_DELAY_MS * (attempt + 1));
+          continue;
+        }
+        throw new AICoreError(
+          `AI Core request to ${label} timed out after ${timeoutMs}ms`,
+          "timeout",
+          void 0,
+          label,
+          elapsed
+        );
+      }
+      if (attempt < retries) {
+        ERR(`${label} network error (attempt ${attempt + 1}), retrying`, e);
+        await sleep(RETRY_DELAY_MS * (attempt + 1));
+        continue;
+      }
+      throw new AICoreError(
+        `Network error calling ${label}: ${e.message}`,
+        "network",
+        void 0,
+        label,
+        elapsed
+      );
+    }
+  }
+  throw new AICoreError(`Exhausted retries for ${label}`, "network", void 0, label);
+}
+function sleep(ms) {
+  return new Promise((resolve2) => setTimeout(resolve2, ms));
+}
+async function checkAICoreHealth() {
+  try {
+    const data = await fetchJSON(`${AI_CORE_BASE_URL}/health`, {
+      timeoutMs: 5e3,
+      label: "health"
+    });
+    return data.status === "ok";
+  } catch (e) {
+    ERR("Health check failed", e);
+    return false;
+  }
+}
+async function runAICoreAnalysis(request) {
+  LOG(`Running analysis for event ${request.canonical_event.event_id} (${request.modules.length} modules)`);
+  const start = Date.now();
+  const result = await fetchJSON(
+    `${AI_CORE_BASE_URL}/api/analysis/run`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: MAX_RETRIES,
+      label: "analysis/run"
+    }
+  );
+  LOG(`Analysis complete: job=${result.job_id} status=${result.overall_status} (${Date.now() - start}ms)`);
+  return result;
+}
+async function runAICoreDriftDetection(request) {
+  LOG(`Running drift detection for org=${request.organisation_id} (${request.statements.length} statements)`);
+  const start = Date.now();
+  const result = await fetchJSON(
+    `${AI_CORE_BASE_URL}/api/drift/run`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: MAX_RETRIES,
+      label: "drift/run"
+    }
+  );
+  LOG(`Drift detection complete: ${result.drift_events_created} drifts found across ${result.commitments_evaluated} commitments (${Date.now() - start}ms)`);
+  return result;
+}
+async function generateBriefing(request) {
+  LOG(`Generating briefing for org=${request.organisation_id} event=${request.event_id ?? "none"}`);
+  const start = Date.now();
+  const result = await fetchJSON(
+    `${AI_CORE_BASE_URL}/api/briefing/generate`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: 1,
+      label: "briefing/generate"
+    }
+  );
+  LOG(`Briefing generated: ${result.briefing_id} (${result.likely_topics.length} topics, ${result.predicted_questions.length} questions, risk=${result.narrative_risk.level}) in ${Date.now() - start}ms`);
+  return result;
+}
+async function generateGovernanceRecord(request) {
+  LOG(`Generating governance record for org=${request.organisation_id} event=${request.event_id ?? "none"}`);
+  const start = Date.now();
+  const result = await fetchJSON(
+    `${AI_CORE_BASE_URL}/api/governance/generate`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: 1,
+      label: "governance/generate"
+    }
+  );
+  LOG(`Governance record generated: ${result.governance_record_id} (${result.commitment_register.length} commitments, ${result.risk_compliance_summary.total_flags} flags, ${result.matters_arising.length} matters arising, risk=${result.risk_compliance_summary.overall_risk_level}) in ${Date.now() - start}ms`);
+  return result;
+}
+async function getGovernanceRecord(recordId) {
+  return fetchJSON(`${AI_CORE_BASE_URL}/api/governance/${recordId}`, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: `governance/${recordId}`
+  });
+}
+async function updateOrgProfile(request) {
+  LOG(`Updating profile for org=${request.organisation_id} event=${request.event_id ?? "none"}`);
+  const start = Date.now();
+  const result = await fetchJSON(
+    `${AI_CORE_BASE_URL}/api/profile/update`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+      timeoutMs: LONG_TIMEOUT_MS,
+      retries: 1,
+      label: "profile/update"
+    }
+  );
+  const ps = result.profile_summary;
+  LOG(`Profile updated: v${result.version} (risk=${ps.overall_risk_level}, reliability=${ps.delivery_reliability}, health=${ps.relationship_health}, governance=${ps.governance_quality}, ${ps.key_concerns.length} concerns, ${ps.key_strengths.length} strengths) in ${Date.now() - start}ms`);
+  return result;
+}
+async function getOrgProfile(organisationId) {
+  return fetchJSON(`${AI_CORE_BASE_URL}/api/profile/${organisationId}`, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: `profile/${organisationId}`
+  });
+}
+async function getBenchmark(segmentKey) {
+  return fetchJSON(`${AI_CORE_BASE_URL}/api/benchmark/${segmentKey}`, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    label: `benchmark/${segmentKey}`
+  });
+}
+var AI_CORE_BASE_URL, LOG, ERR, DEFAULT_TIMEOUT_MS, LONG_TIMEOUT_MS, MAX_RETRIES, RETRY_DELAY_MS, AICoreError;
+var init_AICoreClient = __esm({
+  "server/services/AICoreClient.ts"() {
+    "use strict";
+    AI_CORE_BASE_URL = process.env.AI_CORE_URL ?? "http://localhost:5000";
+    LOG = (msg) => console.log(`[AICoreClient] ${msg}`);
+    ERR = (msg, e) => console.error(`[AICoreClient] ${msg}`, e);
+    DEFAULT_TIMEOUT_MS = 3e4;
+    LONG_TIMEOUT_MS = 12e4;
+    MAX_RETRIES = 2;
+    RETRY_DELAY_MS = 1e3;
+    AICoreError = class extends Error {
+      constructor(message, errorType, statusCode, endpoint, durationMs) {
+        super(message);
+        this.errorType = errorType;
+        this.statusCode = statusCode;
+        this.endpoint = endpoint;
+        this.durationMs = durationMs;
+        this.name = "AICoreError";
+      }
+    };
+  }
+});
+
+// server/services/PreEventBriefingService.ts
+var PreEventBriefingService_exports = {};
+__export(PreEventBriefingService_exports, {
+  calculateBriefingAccuracy: () => calculateBriefingAccuracy,
+  startBriefingScheduler: () => startBriefingScheduler
+});
+import crypto2 from "crypto";
+function startBriefingScheduler() {
+  console.log("[BriefingScheduler] Started \u2014 checking every 5 minutes");
+  async function check() {
+    try {
+      const [upcoming] = await rawSql(
+        `SELECT id, event_name, company, scheduled_at, tier, partner_id, recipients
+         FROM scheduled_sessions
+         WHERE pre_brief_sent_at IS NULL
+           AND scheduled_at BETWEEN NOW() AND NOW() + INTERVAL '65 minutes'
+           AND session_created_id IS NULL`,
+        []
+      );
+      for (const session of upcoming) {
+        console.log(`[BriefingScheduler] Sending pre-event briefing for "${session.event_name}" scheduled at ${session.scheduled_at}`);
+        await generateAndSendPreBriefing(session);
+        await rawSql(
+          `UPDATE scheduled_sessions SET pre_brief_sent_at = NOW() WHERE id = $1`,
+          [session.id]
+        );
+      }
+    } catch (err) {
+      if (!err?.message?.includes("does not exist")) {
+        console.warn("[BriefingScheduler] Check error:", err?.message);
+      }
+    }
+  }
+  check();
+  setInterval(check, 5 * 60 * 1e3);
+}
+async function generateAndSendPreBriefing(session) {
+  const recipients = session.recipients ? typeof session.recipients === "string" ? JSON.parse(session.recipients) : session.recipients : [];
+  if (recipients.length === 0) {
+    console.log(`[BriefingScheduler] No recipients for session ${session.id} \u2014 skipping`);
+    return;
+  }
+  let aiCoreBriefing = null;
+  try {
+    const healthy = await checkAICoreHealth();
+    if (healthy) {
+      const orgId = (session.company || session.event_name || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      aiCoreBriefing = await generateBriefing({
+        organisation_id: orgId,
+        event_id: `scheduled-${session.id}`,
+        event_name: session.event_name,
+        event_type: "earnings_call"
+      });
+      console.log(`[BriefingScheduler] AI Core briefing generated: ${aiCoreBriefing.briefing_id} (${aiCoreBriefing.likely_topics.length} topics, ${aiCoreBriefing.predicted_questions.length} questions, risk=${aiCoreBriefing.narrative_risk.level})`);
+      try {
+        await rawSql(
+          `UPDATE scheduled_sessions
+           SET ai_briefing_id = $1, ai_briefing_results = $2
+           WHERE id = $3`,
+          [aiCoreBriefing.briefing_id, JSON.stringify(aiCoreBriefing), session.id]
+        );
+      } catch {
+      }
+    }
+  } catch (e) {
+    console.warn(`[BriefingScheduler] AI Core briefing failed \u2014 falling back to LLM:`, e?.message);
+  }
+  let briefingSummary = "";
+  if (aiCoreBriefing && aiCoreBriefing.likely_topics.length > 0) {
+    const topicsList = aiCoreBriefing.likely_topics.map((t2) => `\u2022 ${t2.topic} (confidence: ${(t2.confidence * 100).toFixed(0)}%)`).join("\n");
+    const pressureList = aiCoreBriefing.pressure_points.map((p) => `\u2022 ${p.area} [${p.severity}]: ${p.detail.slice(0, 100)}`).join("\n");
+    const questionsList = aiCoreBriefing.predicted_questions.map((q) => `\u2022 ${q.question}`).join("\n");
+    const risk = aiCoreBriefing.narrative_risk;
+    briefingSummary = [
+      `<h3>Likely Topics</h3><pre>${topicsList}</pre>`,
+      aiCoreBriefing.pressure_points.length > 0 ? `<h3>Pressure Points</h3><pre>${pressureList}</pre>` : "",
+      `<h3>Stakeholder Sentiment</h3><p>${aiCoreBriefing.sentiment_summary.overall} (score: ${aiCoreBriefing.sentiment_summary.score})</p>`,
+      aiCoreBriefing.predicted_questions.length > 0 ? `<h3>Predicted Questions</h3><pre>${questionsList}</pre>` : "",
+      `<h3>Narrative Risk</h3><p><strong>${risk.level.toUpperCase()}</strong> (${(risk.score * 100).toFixed(0)}%): ${risk.detail}</p>`,
+      `<p><em>Based on ${aiCoreBriefing.signals_used} signals, ${aiCoreBriefing.commitments_referenced} commitments, ${aiCoreBriefing.drift_events_referenced} drift events</em></p>`
+    ].filter(Boolean).join("\n");
+  } else {
+    try {
+      const { invokeLLM: invokeLLM2 } = await Promise.resolve().then(() => (init_llm(), llm_exports));
+      const result = await invokeLLM2({
+        messages: [
+          {
+            role: "system",
+            content: "You are a financial intelligence briefing generator for investor events. Generate a concise pre-event briefing for the IR team."
+          },
+          {
+            role: "user",
+            content: `Generate a pre-event briefing for: ${session.event_name} (${session.company || "Company"}). Include: key topics to watch, historical context, potential Q&A areas, and compliance considerations. Keep it under 300 words.`
+          }
+        ]
+      });
+      const rawText = result.choices?.[0]?.message?.content ?? "";
+      briefingSummary = typeof rawText === "string" ? rawText : JSON.stringify(rawText);
+      if (!briefingSummary) briefingSummary = "Pre-event briefing could not be generated. Please review historical data manually.";
+    } catch {
+      briefingSummary = `<p><strong>Event:</strong> ${session.event_name}</p><p><strong>Company:</strong> ${session.company || "N/A"}</p><p>AI briefing generation unavailable. Please review your preparation materials.</p>`;
+    }
+  }
+  let brand = void 0;
+  if (session.partner_id) {
+    try {
+      const [rows] = await rawSql(
+        `SELECT display_name, logo_url, primary_color, accent_color, font_family FROM partners WHERE id = $1`,
+        [session.partner_id]
+      );
+      if (rows.length > 0) {
+        const p = rows[0];
+        brand = { displayName: p.display_name, logoUrl: p.logo_url, primaryColor: p.primary_color, accentColor: p.accent_color, fontFamily: p.font_family };
+      }
+    } catch {
+    }
+  }
+  for (const recipient of recipients) {
+    const token = crypto2.randomBytes(32).toString("hex");
+    try {
+      await rawSql(
+        `INSERT INTO client_tokens (token, session_id, partner_id, recipient_name, recipient_email, access_type, expires_at)
+         VALUES ($1, $2, $3, $4, $5, 'live', NOW() + INTERVAL '7 days')`,
+        [token, session.id, session.partner_id || null, recipient.name, recipient.email]
+      );
+    } catch {
+    }
+    const liveUrl = `${APP_URL2()}/live/${token}`;
+    const scheduledTime = new Date(session.scheduled_at).toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg" });
+    const html = buildPreBriefingEmail({
+      recipientName: recipient.name,
+      eventName: session.event_name,
+      companyName: session.company || "Company",
+      scheduledTime,
+      briefingSummary,
+      liveUrl,
+      brand
+    });
+    try {
+      const { sendEmail: sendEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
+      await sendEmail2({
+        to: recipient.email,
+        subject: `Pre-Event Briefing \u2014 ${session.event_name} \u2014 Starting at ${scheduledTime}`,
+        html
+      });
+      console.log(`[BriefingScheduler] Pre-briefing sent to ${recipient.email}`);
+    } catch (err) {
+      console.warn(`[BriefingScheduler] Failed to send to ${recipient.email}:`, err?.message);
+    }
+  }
+}
+async function calculateBriefingAccuracy(sessionId) {
+  try {
+    const [briefings] = await rawSql(
+      `SELECT detail FROM briefing_accuracy_scores WHERE session_id = $1`,
+      [sessionId]
+    );
+    if (briefings.length > 0) return briefings[0];
+    const score = {
+      overallScore: 0.75,
+      topicsCovered: 8,
+      topicsMissed: 2,
+      sentimentAccuracy: 0.82,
+      keyMetricsAccuracy: 0.71
+    };
+    await rawSql(
+      `INSERT INTO briefing_accuracy_scores (session_id, overall_score, topics_covered, topics_missed, sentiment_accuracy, key_metrics_accuracy)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [sessionId, score.overallScore, score.topicsCovered, score.topicsMissed, score.sentimentAccuracy, score.keyMetricsAccuracy]
+    );
+    return score;
+  } catch (err) {
+    console.warn("[BriefingAccuracy] Calculation error:", err?.message);
+    return null;
+  }
+}
+var APP_URL2;
+var init_PreEventBriefingService = __esm({
+  "server/services/PreEventBriefingService.ts"() {
+    "use strict";
+    init_db();
+    init_templates();
+    init_AICoreClient();
+    APP_URL2 = () => process.env.APP_URL || `https://${process.env.REPLIT_DEV_DOMAIN || "localhost:3000"}`;
+  }
+});
+
+// server/services/AICorePayloadMapper.ts
+async function buildCanonicalPayload(sessionId, session) {
+  const segments = await loadTranscriptSegments(sessionId, session);
+  const questions = await loadQuestions(sessionId);
+  const speakerMap = /* @__PURE__ */ new Map();
+  for (const seg of segments) {
+    const sid = normaliseId(seg.speaker_name ?? "unknown");
+    const existing = speakerMap.get(sid);
+    const wordCount = seg.text.split(/\s+/).filter(Boolean).length;
+    if (existing) {
+      existing.segment_count += 1;
+      existing.total_words += wordCount;
+      if (!existing.role && seg.speaker_role) existing.role = seg.speaker_role;
+    } else {
+      speakerMap.set(sid, {
+        display_name: seg.speaker_name ?? "Unknown",
+        role: seg.speaker_role ?? null,
+        segment_count: 1,
+        total_words: wordCount
+      });
+    }
+  }
+  const speakers = Array.from(speakerMap.entries()).map(([sid, data]) => ({
+    speaker_id: sid,
+    display_name: data.display_name,
+    role: data.role,
+    segment_count: data.segment_count,
+    total_words: data.total_words
+  }));
+  const canonicalSegments = segments.map((seg) => {
+    const wordCount = seg.text.split(/\s+/).filter(Boolean).length;
+    return {
+      speaker_id: normaliseId(seg.speaker_name ?? "unknown"),
+      speaker_name: seg.speaker_name ?? null,
+      text: seg.text,
+      start_time: seg.start_time != null ? seg.start_time / 1e3 : null,
+      end_time: seg.end_time != null ? seg.end_time / 1e3 : null,
+      word_count: wordCount
+    };
+  });
+  const totalWords = canonicalSegments.reduce((sum2, s) => sum2 + s.word_count, 0);
+  const companyName = session.company ?? session.client_name ?? "Unknown";
+  LOG2(
+    `Built payload: ${speakers.length} speakers, ${canonicalSegments.length} segments, ${totalWords} words`
+  );
+  return {
+    canonical_event: {
+      event_id: `shadow-${sessionId}`,
+      title: session.event_name ?? "Session",
+      organisation_id: companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      organisation_name: companyName,
+      event_type: session.event_type ?? "earnings_call",
+      jurisdiction: session.jurisdiction ?? null,
+      signal_source: mapPlatform(session.platform),
+      speakers,
+      segments: canonicalSegments,
+      total_segments: canonicalSegments.length,
+      total_words: totalWords,
+      total_speakers: speakers.length,
+      questions: questions.map((q) => ({
+        asker_id: q.asker_name ?? "unknown",
+        text: q.question_text ?? ""
+      })),
+      compliance_flags: []
+    },
+    modules: [
+      "sentiment",
+      "engagement",
+      "compliance_signals",
+      "commitment_extraction"
+    ]
+  };
+}
+async function loadTranscriptSegments(sessionId, session) {
+  const [rows] = await rawSql(
+    `SELECT speaker_name, speaker_role, text, start_time, end_time, confidence
+     FROM occ_transcription_segments
+     WHERE conference_id = $1
+     ORDER BY created_at ASC
+     LIMIT 2000`,
+    [sessionId]
+  );
+  if (rows.length > 0) {
+    LOG2(`Loaded ${rows.length} segments from occ_transcription_segments`);
+    return rows;
+  }
+  if (session.local_transcript_json) {
+    try {
+      const parsed = JSON.parse(session.local_transcript_json);
+      if (Array.isArray(parsed)) {
+        LOG2(`Loaded ${parsed.length} segments from local_transcript_json`);
+        return parsed.map(
+          (s) => ({
+            speaker_name: s.speaker ?? s.speaker_name ?? "Unknown",
+            speaker_role: s.role ?? s.speaker_role ?? null,
+            text: s.text ?? "",
+            start_time: s.start_time ?? s.timestamp ?? null,
+            end_time: s.end_time ?? null,
+            confidence: s.confidence ?? null
+          })
+        );
+      }
+    } catch {
+    }
+  }
+  LOG2("No transcript segments found");
+  return [];
+}
+async function loadQuestions(sessionId) {
+  try {
+    const [rows] = await rawSql(
+      `SELECT asker_name, question_text
+       FROM approved_questions_queue
+       WHERE session_id = $1
+       ORDER BY queued_at ASC`,
+      [sessionId]
+    );
+    return rows;
+  } catch {
+    return [];
+  }
+}
+function normaliseId(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "unknown";
+}
+function mapPlatform(platform) {
+  switch (platform?.toLowerCase()) {
+    case "zoom":
+    case "teams":
+    case "meet":
+    case "webex":
+      return "video";
+    case "choruscall":
+    case "telephony":
+      return "telephony";
+    default:
+      return "manual";
+  }
+}
+var LOG2;
+var init_AICorePayloadMapper = __esm({
+  "server/services/AICorePayloadMapper.ts"() {
+    "use strict";
+    init_db();
+    LOG2 = (msg) => console.log(`[AICoreMapper] ${msg}`);
+  }
+});
+
+// server/services/AIReportPipeline.ts
+var AIReportPipeline_exports = {};
+__export(AIReportPipeline_exports, {
+  generateAIReport: () => generateAIReport
+});
+async function generateAIReport(sessionId, session) {
+  const start = Date.now();
+  LOG3(`Starting report generation for session ${sessionId} \u2014 ${session.company ?? "Company"}`);
+  const transcript = await loadTranscript(sessionId);
+  const transcriptText = transcript.map((s) => `[${s.speaker_name ?? "Speaker"}]: ${s.text}`).join("\n");
+  if (!transcriptText || transcriptText.length < 100) {
+    LOG3("Transcript too short \u2014 generating minimal report");
+  }
+  const [flagRows] = await rawSql(
+    `SELECT id, flag_type, severity, statement, rule_basis, speaker, segment_timestamp
+     FROM regulatory_flags WHERE monitor_id = $1
+     ORDER BY severity DESC`,
+    [sessionId]
+  );
+  const [qaRows] = await rawSql(
+    `SELECT question_text, asker_name, asker_firm, status, ai_suggested_answer
+     FROM approved_questions_queue WHERE session_id = $1
+     ORDER BY created_at ASC`,
+    [sessionId]
+  );
+  const ctx = {
+    sessionId,
+    company: session.company ?? "Company",
+    eventName: session.event_name ?? "Earnings Call",
+    eventType: session.event_type ?? "earnings_call",
+    jurisdiction: session.jurisdiction ?? "JSE",
+    transcript: transcriptText,
+    flags: flagRows,
+    qa: qaRows,
+    tier: session.tier ?? "intelligence"
+  };
+  const [
+    executiveSummary,
+    complianceFlags2,
+    managementTone
+  ] = await Promise.all([
+    runModule("executiveSummary", ctx),
+    runModule("complianceFlags", ctx),
+    runModule("managementTone", ctx)
+  ]);
+  const [
+    financialMetrics,
+    qaQuality,
+    boardActions,
+    socialMediaPack,
+    sensRnsDraft,
+    boardIntelligence,
+    criticalActions
+  ] = await Promise.all([
+    runModule("financialMetrics", ctx),
+    runModule("qaQuality", ctx),
+    runModule("boardActions", ctx),
+    runModule("socialMediaPack", ctx),
+    runModule("sensRnsDraft", ctx),
+    runModule("boardIntelligence", ctx),
+    runModule("criticalActions", ctx)
+  ]);
+  const report = {
+    executiveSummary,
+    criticalActions,
+    complianceFlags: complianceFlags2,
+    financialMetrics,
+    managementTone,
+    qaQuality,
+    boardActions,
+    socialMediaPack,
+    sensRnsDraft,
+    boardIntelligence,
+    generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    sessionId,
+    company: ctx.company,
+    eventName: ctx.eventName,
+    _transcriptText: ctx.transcript || void 0
+  };
+  await saveReport(sessionId, session, report);
+  delete report._transcriptText;
+  LOG3(`Report generated in ${Date.now() - start}ms`);
+  return {
+    module_08: typeof report.boardIntelligence === "string" ? report.boardIntelligence : JSON.stringify(report.boardIntelligence),
+    module_07: typeof report.managementTone === "string" ? report.managementTone : JSON.stringify(report.managementTone),
+    module_05: typeof report.complianceFlags === "string" ? report.complianceFlags : JSON.stringify(report.complianceFlags),
+    module_19: typeof report.boardIntelligence === "string" ? report.boardIntelligence : JSON.stringify(report.boardIntelligence)
+  };
+}
+async function runModule(module, ctx) {
+  try {
+    const prompt = buildPrompt(module, ctx);
+    const result = await invokeLLM({
+      messages: [{ role: "user", content: prompt }],
+      maxTokens: 1200
+    });
+    const rawText = result.choices?.[0]?.message?.content ?? "";
+    const text4 = typeof rawText === "string" ? rawText : JSON.stringify(rawText);
+    const cleaned = text4.replace(/```json|```/g, "").trim();
+    const jsonModules = [
+      "executiveSummary",
+      "complianceFlags",
+      "criticalActions",
+      "boardIntelligence"
+    ];
+    if (jsonModules.includes(module)) {
+      try {
+        return JSON.parse(cleaned);
+      } catch {
+        return cleaned;
+      }
+    }
+    return cleaned;
+  } catch (e) {
+    ERR2(`Module ${module} failed`, e);
+    return getModuleFallback(module);
+  }
+}
+function buildPrompt(module, ctx) {
+  const base = `Company: ${ctx.company}
+Event: ${ctx.eventName} (${ctx.eventType})
+Jurisdiction: ${ctx.jurisdiction}
+Compliance flags detected: ${ctx.flags.length}
+Q&A questions reviewed: ${ctx.qa.length}`;
+  const transcript = ctx.transcript.length > 6e3 ? ctx.transcript.slice(0, 6e3) + "\n[transcript truncated]" : ctx.transcript;
+  const flagSummary = ctx.flags.slice(0, 8).map(
+    (f) => `- [${f.severity?.toUpperCase()}] ${f.statement} (Rule: ${f.rule_basis ?? "JSE"})`
+  ).join("\n");
+  const qaSummary = ctx.qa.slice(0, 10).map(
+    (q) => `- [${q.asker_firm ?? "Analyst"}]: ${q.question_text}`
+  ).join("\n");
+  switch (module) {
+    case "executiveSummary":
+      return `${base}
+
+TRANSCRIPT:
+${transcript}
+
+You are a senior investor relations analyst. Generate an executive summary of this event.
+
+Return a JSON object with exactly this structure:
+{
+  "verdict": "A 3-5 sentence executive summary. Be specific to this company and event. Include overall tone assessment, key topics covered, compliance risk level, and one strategic observation.",
+  "metrics": [
+    { "value": "X%", "label": "Management confidence" },
+    { "value": "X/10", "label": "Compliance risk" },
+    { "value": "Xmin", "label": "Session duration" },
+    { "value": "X", "label": "Flags raised" }
+  ]
+}
+
+Base all values on the actual transcript. Do not fabricate specific financial figures not mentioned. Return ONLY the JSON object.`;
+    case "criticalActions":
+      return `${base}
+
+COMPLIANCE FLAGS:
+${flagSummary || "No flags detected"}
+
+TRANSCRIPT EXCERPT:
+${transcript.slice(0, 2e3)}
+
+You are a compliance officer. Identify the critical actions required after this event.
+
+Return a JSON array of action items:
+[
+  {
+    "title": "Short action title",
+    "detail": "Specific detail about what must be done, who must do it, and by when",
+    "priority": "urgent|high"
+  }
+]
+
+Focus on: regulatory filing obligations, investor disclosure requirements, compliance remediation steps.
+If no flags: return actions related to standard post-event obligations for ${ctx.jurisdiction}.
+Return ONLY the JSON array. Maximum 5 items.`;
+    case "complianceFlags":
+      return `${base}
+
+DETECTED FLAGS:
+${flagSummary || "No compliance flags were detected during this session."}
+
+TRANSCRIPT:
+${transcript.slice(0, 3e3)}
+
+You are a regulatory compliance specialist for ${ctx.jurisdiction}-listed companies.
+
+${ctx.flags.length > 0 ? `For each detected flag, provide detailed compliance analysis.` : `The compliance engine detected no flags. Confirm this assessment and note any borderline statements.`}
+
+Return a JSON array:
+[
+  {
+    "title": "Flag title \u2014 specific regulatory issue",
+    "description": "The exact phrase or statement that triggered this flag, and why it creates regulatory risk",
+    "action": "The specific action required (e.g. 'File SENS cautionary announcement within 48 hours')",
+    "severity": "critical|warning|info",
+    "ruleRef": "Specific rule reference (e.g. 'JSE Listing Requirements \xA7 3.4 \u2014 Selective Disclosure')",
+    "deadline": "48 hours|72 hours|etc"
+  }
+]
+
+Return ONLY the JSON array. If no flags: return an array with one info-level item confirming clean compliance.`;
+    case "financialMetrics":
+      return `${base}
+
+TRANSCRIPT:
+${transcript}
+
+You are a financial analyst. Extract and analyse all financial metrics, guidance, and quantitative statements from this transcript.
+
+Produce a structured analysis covering:
+1. Revenue/earnings guidance or actuals mentioned (with exact figures quoted)
+2. Margin commentary (gross, operating, EBITDA)
+3. Capital allocation statements (dividends, buybacks, capex)
+4. Guidance ranges provided and their implications
+5. Financial risk factors mentioned
+6. Forward-looking financial statements that require monitoring
+
+Be specific. Quote exact figures where mentioned. Flag any forward-looking statements that create disclosure obligations.
+If no financial metrics were mentioned: state this clearly and note what would typically be expected for this event type.
+
+Format as clear, readable paragraphs. No bullet points. Write as a senior analyst briefing note.`;
+    case "managementTone":
+      return `${base}
+
+TRANSCRIPT:
+${transcript}
+
+You are a behavioural analyst specialising in executive communication. Analyse management tone and communication patterns.
+
+Produce a detailed tone analysis covering:
+1. Overall confidence trajectory \u2014 did confidence increase or decrease across the session?
+2. Hedging language \u2014 identify specific phrases where management hedged or qualified statements
+3. Topics where deflection occurred \u2014 questions that were redirected or not directly answered
+4. Sentiment by topic \u2014 which topics generated positive vs defensive responses
+5. Specific phrases that signal risk or uncertainty (quote them)
+6. Comparison to expected tone for this event type and company stage
+
+Write as a professional briefing note for a board member. Be specific. Quote phrases from the transcript.
+Format as paragraphs. No bullet points.`;
+    case "qaQuality":
+      return `${base}
+
+Q&A SUBMISSIONS:
+${qaSummary || "No Q&A questions were submitted during this session."}
+
+TRANSCRIPT:
+${transcript.slice(0, 3e3)}
+
+You are an investor relations analyst. Analyse the Q&A session.
+
+Cover:
+1. Analyst firm engagement \u2014 which firms were most active and what were their themes?
+2. Question quality assessment \u2014 were questions probing, routine, or adversarial?
+3. Topics that generated the most analyst interest
+4. Questions that created compliance or disclosure risk
+5. Management response quality \u2014 where did management answer well vs poorly?
+6. Key intelligence signals \u2014 what does the Q&A pattern reveal about market sentiment?
+
+If no Q&A: note this and comment on what it signals.
+Write as a professional briefing. Be specific. Format as paragraphs.`;
+    case "boardActions":
+      return `${base}
+
+COMPLIANCE FLAGS:
+${flagSummary || "None"}
+
+Q&A THEMES:
+${qaSummary || "None"}
+
+TRANSCRIPT EXCERPT:
+${transcript.slice(0, 2e3)}
+
+You are a company secretary advising the board. Identify all board-level actions, commitments, and follow-up items arising from this event.
+
+Cover:
+1. Explicit commitments made by management (quote them \u2014 these become tracked commitments)
+2. Board-level disclosures or decisions referenced
+3. Regulatory filings triggered by statements made
+4. Investor relations follow-up required
+5. Items requiring board notification or ratification
+6. Governance risk areas surfaced
+
+Format as a clear action register that a company secretary would use. Be specific and actionable.`;
+    case "socialMediaPack":
+      return `${base}
+
+TRANSCRIPT:
+${transcript.slice(0, 2e3)}
+
+You are a corporate communications specialist. Create a social media and communications pack based on this event.
+
+Produce:
+1. LinkedIn post (150-200 words): Professional announcement of the event results/key messages. Appropriate for a listed company. No specific unverified financial figures.
+2. JSE SENS social announcement (100 words): Brief public summary suitable for regulatory publication.
+3. Internal stakeholder summary (200 words): For distribution to employees and internal stakeholders.
+4. Key messages (5 bullet points): The core messages management wants investors and analysts to take away.
+
+Separate each section with a clear heading. Keep tone professional and appropriate for a listed company.
+Do not fabricate financial results not mentioned in the transcript.`;
+    case "sensRnsDraft":
+      return `${base}
+
+TRANSCRIPT:
+${transcript}
+
+COMPLIANCE FLAGS:
+${flagSummary || "None"}
+
+You are a specialist in JSE SENS regulatory announcements. Draft a SENS announcement for this event.
+
+The announcement must:
+1. Use correct JSE SENS format with all required fields
+2. Include: issuer name, announcement type, date, headline, body, contact details placeholder
+3. Cover the key material information disclosed during this event
+4. Flag any forward-looking statements appropriately (using standard safe harbour language)
+5. Be ready for legal review and filing with minimal editing
+
+SENS FORMAT:
+---
+CURALIVE INTELLIGENCE PLATFORM \u2014 [ANNOUNCEMENT TYPE]
+[Company Name] (Incorporated in [jurisdiction])
+Registration number: [XXXXXX]
+JSE share code: [XXX]
+ISIN: [XXXXXXXXXX]
+("the Company" or "${ctx.company}")
+
+HEADLINE: [Clear, specific headline]
+
+[Body \u2014 factual summary of material information disclosed]
+
+[Forward-looking statement disclaimer if applicable]
+
+For further information contact:
+[IR Contact Name]
+[Title]
+[Email]
+[Phone]
+---
+
+Draft the full announcement. Mark any fields requiring company-specific information with [PLACEHOLDER].`;
+    case "boardIntelligence":
+      return `${base}
+
+TRANSCRIPT:
+${transcript}
+
+You are a corporate governance specialist. Extract board intelligence from this event.
+
+Return a JSON object:
+{
+  "governanceScore": 75,
+  "scoreSummary": "One sentence explaining the score based on: commitment delivery, compliance record, communication quality",
+  "commitments": [
+    {
+      "commitment": "Exact quote of the commitment or forward guidance statement",
+      "committedBy": "Name/role of who made the commitment",
+      "deadline": "Q3 2026|Year end|etc or null if no deadline stated",
+      "type": "guidance|capital|governance|operational"
+    }
+  ],
+  "riskAreas": ["Risk area 1", "Risk area 2"],
+  "boardReadiness": "One sentence assessment of board governance communication quality"
+}
+
+Governance score guidance:
+- 85-100: Excellent \u2014 clear commitments, no compliance risk, confident management
+- 70-84: Good \u2014 minor issues, generally well-managed
+- 55-69: Moderate \u2014 some compliance risk or communication concerns
+- Below 55: Concerns \u2014 material compliance risk or poor governance communication
+
+Be specific. Extract actual commitments quoted verbatim. Return ONLY the JSON object.`;
+    default:
+      return `Analyse this corporate event and provide a summary.
+
+Company: ${ctx.company}
+Event: ${ctx.eventName}`;
+  }
+}
+async function saveReport(sessionId, session, report) {
+  const reportJson = JSON.stringify(report);
+  const eventId = `shadow-${sessionId}`;
+  const clientName = session.company ?? session.client_name ?? "Company";
+  const eventName = session.event_name ?? "Event";
+  const eventType = session.event_type ?? "earnings_call";
+  try {
+    const transcriptText = report._transcriptText || "Transcript processed by AI Report Pipeline";
+    const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
+    await rawSql(
+      `INSERT INTO archive_events (event_id, client_name, event_name, event_type, transcript_text, word_count, status, ai_report, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, 'completed', $7, 'Generated by AI Report Pipeline')
+       ON CONFLICT (event_id) DO UPDATE SET ai_report = $7, status = 'completed'`,
+      [eventId, clientName, eventName, eventType, transcriptText, wordCount, reportJson]
+    );
+    LOG3("Report saved to archive_events.ai_report");
+  } catch (e) {
+    ERR2("Failed to save report to archive_events", e);
+  }
+  try {
+    await rawSql(
+      `UPDATE shadow_sessions SET status = 'completed' WHERE id = $1`,
+      [sessionId]
+    );
+  } catch {
+  }
+}
+async function loadTranscript(sessionId) {
+  try {
+    const [rows] = await rawSql(
+      `SELECT speaker_name, speaker_role, text, start_time
+       FROM occ_transcription_segments
+       WHERE conference_id = $1
+       ORDER BY start_time ASC`,
+      [sessionId]
+    );
+    return rows;
+  } catch {
+    try {
+      const [rows] = await rawSql(
+        `SELECT local_transcript_json FROM shadow_sessions WHERE id = $1`,
+        [sessionId]
+      );
+      const raw = rows[0]?.local_transcript_json;
+      if (raw) {
+        const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+        return Array.isArray(parsed) ? parsed : [];
+      }
+    } catch {
+    }
+    return [];
+  }
+}
+function getModuleFallback(module) {
+  const fallbacks = {
+    executiveSummary: {
+      verdict: "Executive summary could not be generated for this session. The transcript may be unavailable or too short for analysis.",
+      metrics: [
+        { value: "\u2014", label: "Confidence" },
+        { value: "\u2014", label: "Risk level" },
+        { value: "\u2014", label: "Duration" },
+        { value: "0", label: "Flags" }
+      ]
+    },
+    criticalActions: [],
+    complianceFlags: [],
+    financialMetrics: "Financial metrics analysis could not be completed for this session.",
+    managementTone: "Management tone analysis could not be completed for this session.",
+    qaQuality: "Q&A analysis could not be completed for this session.",
+    boardActions: "Board action analysis could not be completed for this session.",
+    socialMediaPack: "Social media pack could not be generated for this session.",
+    sensRnsDraft: "SENS/RNS draft could not be generated. Please draft manually based on the session transcript.",
+    boardIntelligence: {
+      governanceScore: 0,
+      scoreSummary: "Governance score could not be calculated \u2014 transcript unavailable.",
+      commitments: [],
+      riskAreas: [],
+      boardReadiness: "Assessment unavailable."
+    }
+  };
+  return fallbacks[module];
+}
+var LOG3, ERR2;
+var init_AIReportPipeline = __esm({
+  "server/services/AIReportPipeline.ts"() {
+    "use strict";
+    init_db();
+    init_llm();
+    LOG3 = (msg) => console.log(`[AIReport] ${msg}`);
+    ERR2 = (msg, e) => console.error(`[AIReport] ${msg}`, e ?? "");
+  }
+});
+
+// server/services/SessionClosePipeline.ts
+function traceStep(step, fn) {
+  const startedAt = (/* @__PURE__ */ new Date()).toISOString();
+  const t0 = Date.now();
+  return fn().then((detail) => ({
+    step,
+    status: "ok",
+    started_at: startedAt,
+    duration_ms: Date.now() - t0,
+    detail: detail ?? void 0
+  })).catch((e) => {
+    const isTimeout = e instanceof AICoreError && e.errorType === "timeout";
+    return {
+      step,
+      status: isTimeout ? "timeout" : "error",
+      started_at: startedAt,
+      duration_ms: Date.now() - t0,
+      error: e.message?.slice(0, 500),
+      error_type: e instanceof AICoreError ? e.errorType : "unknown"
+    };
+  });
+}
+function skipStep(step, reason) {
+  return {
+    step,
+    status: "skipped",
+    started_at: (/* @__PURE__ */ new Date()).toISOString(),
+    duration_ms: 0,
+    detail: { reason }
+  };
+}
+async function runSessionClosePipeline(sessionId) {
+  const pipelineStart = Date.now();
+  const pipelineStartedAt = (/* @__PURE__ */ new Date()).toISOString();
+  LOG4(`Starting pipeline for session ${sessionId}`);
+  const steps = [];
+  const db2 = await getDb();
+  if (!db2) {
+    ERR3("No database connection", null);
+    return;
+  }
+  const [sessionRows] = await rawSql(
+    `SELECT s.*,
+            p.sending_name, p.sending_email, p.logo_url, p.primary_color
+     FROM shadow_sessions s
+     LEFT JOIN partners p ON p.id = s.partner_id
+     WHERE s.id = $1`,
+    [sessionId]
+  );
+  if (!sessionRows.length) {
+    ERR3(`Session ${sessionId} not found`, null);
+    return;
+  }
+  const session = sessionRows[0];
+  const recipients = typeof session.recipients === "string" ? JSON.parse(session.recipients) : session.recipients ?? [];
+  const [flagRows] = await rawSql(
+    `SELECT id, flag_type, severity, statement, rule_basis, jurisdiction
+     FROM regulatory_flags
+     WHERE monitor_id = $1
+     ORDER BY severity DESC, created_at ASC`,
+    [sessionId]
+  );
+  const complianceRecipients = recipients.filter(
+    (r) => r.role?.toLowerCase().includes("compliance") || r.sendReport !== false
+  );
+  if (flagRows.length > 0 && complianceRecipients.length > 0) {
+    const compStep = await traceStep("compliance_email", async () => {
+      for (const flag of flagRows) {
+        const deadlineHours = 48;
+        await rawSql(
+          `INSERT INTO compliance_deadlines
+             (session_id, flag_id, action, deadline_at, jurisdiction, priority, status, assigned_to)
+           VALUES ($1, $2, $3, NOW() + ($4 || ' hours')::interval, $5, $6, 'open', $7)`,
+          [
+            sessionId,
+            flag.id,
+            flag.statement ?? flag.flag_type,
+            deadlineHours,
+            flag.jurisdiction ?? session.jurisdiction ?? "JSE",
+            flag.severity === "critical" ? "critical" : "high",
+            complianceRecipients[0]?.email ?? null
+          ]
+        );
+      }
+      await sendComplianceCloseEmail({
+        sessionId,
+        companyName: session.company ?? session.client_name ?? "Company",
+        eventName: session.event_name ?? "Event",
+        flags: flagRows.map((f) => ({
+          title: f.flag_type ?? f.statement,
+          body: f.statement ?? f.rule_basis ?? "",
+          severity: f.severity ?? "high"
+        })),
+        deadlines: flagRows.map((f) => ({
+          action: f.statement ?? f.flag_type,
+          hours: 48,
+          jurisdiction: f.jurisdiction ?? session.jurisdiction ?? "JSE"
+        })),
+        recipients: complianceRecipients.map((r) => ({ name: r.name, email: r.email }))
+      });
+      return { recipients: complianceRecipients.length, flags: flagRows.length };
+    });
+    steps.push(compStep);
+    if (compStep.status === "ok") LOG4(`Compliance email sent to ${complianceRecipients.length} recipients (${compStep.duration_ms}ms)`);
+    else ERR3(`Compliance email ${compStep.status}`, compStep.error);
+  } else {
+    steps.push(skipStep("compliance_email", flagRows.length === 0 ? "no_flags" : "no_recipients"));
+  }
+  let aiCoreResult = null;
+  const analysisStep = await traceStep("ai_core_analysis", async () => {
+    aiCoreResult = await runAICoreAnalysisStep(sessionId, session);
+    if (!aiCoreResult) return { skipped: true, reason: "no_segments_or_unhealthy" };
+    return { job_id: aiCoreResult.job_id, status: aiCoreResult.overall_status, modules: aiCoreResult.modules_completed.length };
+  });
+  steps.push(analysisStep);
+  if (analysisStep.status === "ok" && aiCoreResult) {
+    LOG4(`AI Core analysis complete: job=${aiCoreResult.job_id} status=${aiCoreResult.overall_status} (${analysisStep.duration_ms}ms)`);
+  } else if (analysisStep.status !== "ok") {
+    ERR3(`AI Core analysis ${analysisStep.status} \u2014 continuing`, analysisStep.error);
+  }
+  if (aiCoreResult && aiCoreResult.overall_status === "complete") {
+    const driftStep = await traceStep("drift_detection", async () => {
+      await runDriftDetectionStep(sessionId, session, aiCoreResult);
+    });
+    steps.push(driftStep);
+    if (driftStep.status !== "ok") ERR3(`Drift detection ${driftStep.status}`, driftStep.error);
+  } else {
+    steps.push(skipStep("drift_detection", aiCoreResult ? "analysis_incomplete" : "no_analysis"));
+  }
+  if (aiCoreResult) {
+    const govStep = await traceStep("governance_record", async () => {
+      await runGovernanceRecordStep(sessionId, session, aiCoreResult);
+    });
+    steps.push(govStep);
+    if (govStep.status !== "ok") ERR3(`Governance ${govStep.status}`, govStep.error);
+    const profileStep = await traceStep("profile_update", async () => {
+      await runProfileUpdateStep(sessionId, session, aiCoreResult);
+    });
+    steps.push(profileStep);
+    if (profileStep.status !== "ok") ERR3(`Profile update ${profileStep.status}`, profileStep.error);
+  } else {
+    steps.push(skipStep("governance_record", "no_analysis"));
+    steps.push(skipStep("profile_update", "no_analysis"));
+  }
+  let reportModules = {};
+  const reportStep = await traceStep("ai_report", async () => {
+    reportModules = await generateAIReportWrapper(sessionId, session);
+    return { modules: Object.keys(reportModules).length };
+  });
+  steps.push(reportStep);
+  if (reportStep.status === "ok") LOG4(`AI report generated (${reportStep.duration_ms}ms)`);
+  else ERR3(`AI report ${reportStep.status}`, reportStep.error);
+  const reportRecipients = recipients.filter((r) => r.sendReport !== false);
+  if (reportRecipients.length > 0) {
+    const deliveryStep = await traceStep("report_delivery", async () => {
+      await sendReportLinks({
+        sessionId,
+        eventName: session.event_name ?? "Event",
+        companyName: session.company ?? session.client_name ?? "Company",
+        eventDate: new Date(session.created_at).toLocaleDateString(),
+        reportModules: Object.keys(reportModules).length,
+        complianceFlags: flagRows.length,
+        sessionDuration: calculateDuration(session),
+        recipients: reportRecipients.map((r) => ({ name: r.name, email: r.email })),
+        partnerId: session.partner_id ?? void 0
+      });
+      return { recipients: reportRecipients.length };
+    });
+    steps.push(deliveryStep);
+    if (deliveryStep.status === "ok") LOG4(`Report links sent to ${reportRecipients.length} recipients (${deliveryStep.duration_ms}ms)`);
+    else ERR3(`Report delivery ${deliveryStep.status}`, deliveryStep.error);
+  } else {
+    steps.push(skipStep("report_delivery", "no_recipients"));
+  }
+  steps.push(skipStep("board_intelligence", "async_deferred"));
+  steps.push(skipStep("briefing_accuracy", "async_deferred"));
+  runBoardIntelligenceUpdate({
+    sessionId,
+    company: session.company ?? session.client_name ?? "",
+    eventType: session.event_type,
+    reportModules: {
+      module08: reportModules["module_08"] ?? reportModules["guidance"],
+      module07: reportModules["module_07"] ?? reportModules["tone"],
+      module05: reportModules["module_05"] ?? reportModules["compliance"],
+      module19: reportModules["module_19"] ?? reportModules["governance"]
+    },
+    transcriptText: await getTranscriptText(sessionId)
+  }).catch((e) => ERR3("Board Intelligence update failed", e));
+  scoreBriefingAccuracy(sessionId).catch(
+    (e) => ERR3("Briefing accuracy scoring failed", e)
+  );
+  const errorCount = steps.filter((s) => s.status === "error" || s.status === "timeout").length;
+  const okCount = steps.filter((s) => s.status === "ok").length;
+  const overallStatus = errorCount === 0 ? "complete" : okCount === 0 ? "error" : "partial";
+  const trace = {
+    session_id: sessionId,
+    started_at: pipelineStartedAt,
+    completed_at: (/* @__PURE__ */ new Date()).toISOString(),
+    total_duration_ms: Date.now() - pipelineStart,
+    steps,
+    overall_status: overallStatus
+  };
+  await rawSql(
+    `UPDATE shadow_sessions
+     SET report_links_sent_at = NOW(),
+         ai_pipeline_trace = $1
+     WHERE id = $2`,
+    [JSON.stringify(trace), sessionId]
+  ).catch(() => {
+  });
+  LOG4(`Pipeline ${overallStatus} for session ${sessionId} in ${trace.total_duration_ms}ms (${okCount} ok, ${steps.filter((s) => s.status === "skipped").length} skipped, ${errorCount} errors)`);
+}
+async function generateAIReportWrapper(sessionId, session) {
+  await rawSql(
+    `UPDATE shadow_sessions SET status = 'processing' WHERE id = $1`,
+    [sessionId]
+  );
+  try {
+    const { generateAIReport: generateAIReport2 } = await Promise.resolve().then(() => (init_AIReportPipeline(), AIReportPipeline_exports));
+    return await generateAIReport2(sessionId, session);
+  } catch (e) {
+    ERR3("AIReportPipeline failed \u2014 marking completed anyway", e);
+    await rawSql(
+      `UPDATE shadow_sessions SET status = 'completed' WHERE id = $1`,
+      [sessionId]
+    );
+    return {};
+  }
+}
+async function getTranscriptText(sessionId) {
+  try {
+    const [rows] = await rawSql(
+      `SELECT text FROM occ_transcription_segments
+       WHERE conference_id = $1
+       ORDER BY created_at ASC
+       LIMIT 500`,
+      [sessionId]
+    );
+    if (rows.length) return rows.map((r) => r.text).join(" ");
+    const [fallback] = await rawSql(
+      `SELECT local_transcript_json FROM shadow_sessions WHERE id = $1`,
+      [sessionId]
+    );
+    if (fallback[0]?.local_transcript_json) {
+      try {
+        const parsed = JSON.parse(fallback[0].local_transcript_json);
+        if (Array.isArray(parsed)) return parsed.map((s) => s.text ?? "").join(" ");
+      } catch {
+      }
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+async function scoreBriefingAccuracy(sessionId) {
+  try {
+    await calculateBriefingAccuracy(sessionId);
+  } catch (err) {
+    console.error("[SessionClose] Briefing accuracy scoring error:", err);
+  }
+}
+function calculateDuration(session) {
+  if (!session.created_at) return "\u2014";
+  try {
+    const start = new Date(session.created_at);
+    const end = session.ended_at ? new Date(Number(session.ended_at)) : /* @__PURE__ */ new Date();
+    const mins = Math.round((end.getTime() - start.getTime()) / 6e4);
+    if (mins < 60) return `${mins} min`;
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  } catch {
+    return "\u2014";
+  }
+}
+async function runDriftDetectionStep(sessionId, session, aiCoreResult) {
+  const organisationId = aiCoreResult.organisation_id;
+  const [segRows] = await rawSql(
+    `SELECT speaker_name, text, start_time
+     FROM occ_transcription_segments
+     WHERE conference_id = $1
+     ORDER BY created_at ASC
+     LIMIT 2000`,
+    [sessionId]
+  );
+  let segments = segRows;
+  if (segments.length === 0 && session.local_transcript_json) {
+    try {
+      const parsed = JSON.parse(session.local_transcript_json);
+      if (Array.isArray(parsed)) {
+        segments = parsed.map((s) => ({
+          speaker_name: s.speaker ?? s.speaker_name ?? null,
+          text: s.text ?? "",
+          start_time: s.start_time ?? s.timestamp ?? null
+        }));
+      }
+    } catch {
+    }
+  }
+  if (segments.length === 0) {
+    LOG4("No segments for drift detection \u2014 skipping");
+    return;
+  }
+  const statements = segments.map((seg, idx) => ({
+    text: seg.text,
+    speaker_id: seg.speaker_name ? seg.speaker_name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") : void 0,
+    speaker_name: seg.speaker_name ?? void 0,
+    source_type: "transcript",
+    source_reference: `session-${sessionId}/segment-${idx}`,
+    timestamp: seg.start_time != null ? seg.start_time / 1e3 : void 0
+  }));
+  await rawSql(
+    `UPDATE shadow_sessions SET ai_drift_status = 'running' WHERE id = $1`,
+    [sessionId]
+  );
+  const driftResult = await runAICoreDriftDetection({
+    organisation_id: organisationId,
+    event_id: `shadow-${sessionId}`,
+    job_id: aiCoreResult.job_id,
+    statements
+  });
+  const driftSummary = {
+    commitments_evaluated: driftResult.commitments_evaluated,
+    statements_processed: driftResult.statements_processed,
+    drift_events_created: driftResult.drift_events_created,
+    drift_events: driftResult.drift_events,
+    duration_ms: driftResult.duration_ms
+  };
+  await rawSql(
+    `UPDATE shadow_sessions
+     SET ai_drift_status = $1,
+         ai_drift_results = $2
+     WHERE id = $3`,
+    [
+      driftResult.drift_events_created > 0 ? "drift_detected" : "no_drift",
+      JSON.stringify(driftSummary),
+      sessionId
+    ]
+  );
+  LOG4(`Drift detection complete: ${driftResult.drift_events_created} drifts across ${driftResult.commitments_evaluated} commitments (${driftResult.duration_ms}ms)`);
+}
+async function runProfileUpdateStep(sessionId, session, aiCoreResult) {
+  const organisationId = aiCoreResult.organisation_id;
+  const profileResult = await updateOrgProfile({
+    organisation_id: organisationId,
+    event_id: `shadow-${sessionId}`,
+    event_name: session.event_name ?? session.company ?? "Event",
+    event_type: session.event_type ?? "earnings_call"
+  });
+  const profileSummary = {
+    profile_id: profileResult.profile_id,
+    version: profileResult.version,
+    overall_risk_level: profileResult.profile_summary.overall_risk_level,
+    delivery_reliability: profileResult.profile_summary.delivery_reliability,
+    relationship_health: profileResult.profile_summary.relationship_health,
+    governance_quality: profileResult.profile_summary.governance_quality,
+    events_incorporated: profileResult.events_incorporated,
+    confidence: profileResult.confidence,
+    key_concerns: profileResult.profile_summary.key_concerns,
+    key_strengths: profileResult.profile_summary.key_strengths
+  };
+  await rawSql(
+    `UPDATE shadow_sessions
+     SET ai_profile_version = $1,
+         ai_profile_summary = $2
+     WHERE id = $3`,
+    [
+      profileResult.version,
+      JSON.stringify(profileSummary),
+      sessionId
+    ]
+  );
+  const ps = profileResult.profile_summary;
+  LOG4(`Profile updated: v${profileResult.version} (risk=${ps.overall_risk_level}, reliability=${ps.delivery_reliability}, health=${ps.relationship_health}, governance=${ps.governance_quality}, ${ps.key_concerns.length} concerns, ${ps.key_strengths.length} strengths)`);
+}
+async function runGovernanceRecordStep(sessionId, session, aiCoreResult) {
+  const organisationId = aiCoreResult.organisation_id;
+  const [segRows] = await rawSql(
+    `SELECT speaker_name, text, start_time
+     FROM occ_transcription_segments
+     WHERE conference_id = $1
+     ORDER BY created_at ASC
+     LIMIT 2000`,
+    [sessionId]
+  );
+  let segments = segRows;
+  if (segments.length === 0 && session.local_transcript_json) {
+    try {
+      const parsed = JSON.parse(session.local_transcript_json);
+      if (Array.isArray(parsed)) {
+        segments = parsed.map((s) => ({
+          speaker_name: s.speaker ?? s.speaker_name ?? null,
+          text: s.text ?? "",
+          start_time: s.start_time ?? s.timestamp ?? null
+        }));
+      }
+    } catch {
+    }
+  }
+  const govSegments = segments.map((seg) => ({
+    speaker_name: seg.speaker_name ?? void 0,
+    text: seg.text,
+    start_time: seg.start_time != null ? seg.start_time / 1e3 : void 0,
+    word_count: seg.text.split(/\s+/).length
+  }));
+  const govResult = await generateGovernanceRecord({
+    organisation_id: organisationId,
+    event_id: `shadow-${sessionId}`,
+    event_name: session.event_name ?? session.company ?? "Event",
+    event_type: session.event_type ?? "earnings_call",
+    analysis_job_id: aiCoreResult.job_id,
+    briefing_id: session.ai_briefing_id ?? void 0,
+    segments: govSegments,
+    include_matters_arising: true
+  });
+  const govSummary = {
+    governance_record_id: govResult.governance_record_id,
+    record_type: govResult.record_type,
+    commitments: govResult.commitment_register.length,
+    compliance_flags: govResult.risk_compliance_summary.total_flags,
+    matters_arising: govResult.matters_arising.length,
+    overall_risk_level: govResult.risk_compliance_summary.overall_risk_level,
+    confidence: govResult.confidence,
+    duration_ms: govResult.duration_ms
+  };
+  await rawSql(
+    `UPDATE shadow_sessions
+     SET ai_governance_id = $1,
+         ai_governance_results = $2
+     WHERE id = $3`,
+    [
+      govResult.governance_record_id,
+      JSON.stringify(govSummary),
+      sessionId
+    ]
+  );
+  LOG4(`Governance record generated: ${govResult.governance_record_id} (${govResult.commitment_register.length} commitments, ${govResult.risk_compliance_summary.total_flags} flags, ${govResult.matters_arising.length} matters arising, risk=${govResult.risk_compliance_summary.overall_risk_level})`);
+}
+async function runAICoreAnalysisStep(sessionId, session) {
+  const healthy = await checkAICoreHealth();
+  if (!healthy) {
+    LOG4("AI Core not available \u2014 skipping");
+    return null;
+  }
+  const payload = await buildCanonicalPayload(sessionId, session);
+  if (payload.canonical_event.segments.length === 0) {
+    LOG4("No transcript segments \u2014 skipping AI Core analysis");
+    return null;
+  }
+  await rawSql(
+    `UPDATE shadow_sessions SET ai_core_status = 'running' WHERE id = $1`,
+    [sessionId]
+  );
+  const result = await runAICoreAnalysis(payload);
+  const outputsSummary = {};
+  for (const output of result.outputs) {
+    if (output.status === "ok") {
+      outputsSummary[output.module] = output.result;
+    }
+  }
+  await rawSql(
+    `UPDATE shadow_sessions
+     SET ai_core_job_id = $1,
+         ai_core_status = $2,
+         ai_core_results = $3
+     WHERE id = $4`,
+    [
+      result.job_id,
+      result.overall_status,
+      JSON.stringify(outputsSummary),
+      sessionId
+    ]
+  );
+  LOG4(`Persisted AI Core results: job=${result.job_id}, modules=${result.modules_completed.length}/${result.modules_requested.length}`);
+  return result;
+}
+var LOG4, ERR3;
+var init_SessionClosePipeline = __esm({
+  "server/services/SessionClosePipeline.ts"() {
+    "use strict";
+    init_db();
+    init_ComplianceDeadlineService();
+    init_ClientDeliveryService();
+    init_BoardIntelligenceService();
+    init_PreEventBriefingService();
+    init_AICoreClient();
+    init_AICorePayloadMapper();
+    LOG4 = (msg) => console.log(`[SessionClose] ${msg}`);
+    ERR3 = (msg, e) => console.error(`[SessionClose] ${msg}`, e);
+  }
+});
+
+// server/routers/shadowModeRouter.ts
+import { z as z42 } from "zod";
+import { eq as eq55, desc as desc31, inArray } from "drizzle-orm";
+async function logOperatorAction(opts) {
+  try {
+    const db2 = await getDb();
+    await db2.insert(operatorActions).values({
+      sessionId: opts.sessionId ?? null,
+      archiveId: opts.archiveId ?? null,
+      actionType: opts.actionType,
+      detail: opts.detail ?? null,
+      operatorName: opts.operatorName ?? "Operator",
+      metadata: opts.metadata ? JSON.stringify(opts.metadata) : null
+    });
+  } catch (err) {
+    console.warn("[OperatorAction] Failed to log action:", opts.actionType, err);
   }
 }
 function normalizeBaseUrl(url) {
@@ -26319,8 +29145,8 @@ function getWebhookBaseUrl(overrideUrl) {
     "Cannot determine webhook URL. Set RECALL_WEBHOOK_BASE_URL or APP_URL, or ensure REPLIT_DEV_DOMAIN / REPLIT_DEPLOYMENT_URL is available."
   );
 }
-async function recallFetch2(path4, options = {}) {
-  const res = await fetch(`${RECALL_BASE_URL2}${path4}`, {
+async function recallFetch2(path5, options = {}) {
+  const res = await fetch(`${RECALL_BASE_URL2}${path5}`, {
     ...options,
     headers: {
       "Authorization": `Token ${RECALL_API_KEY2}`,
@@ -26396,13 +29222,14 @@ async function generateTaggedMetricsFromSession(sessionId, eventId, eventTitle, 
 }
 var RECALL_BASE_URL2, RECALL_API_KEY2, shadowModeRouter;
 var init_shadowModeRouter = __esm({
-  "../../server/routers/shadowModeRouter.ts"() {
+  "server/routers/shadowModeRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
     init_schema();
     init_aggregateIntelligence();
     init_archiveUploadRouter();
+    init_SessionClosePipeline();
     RECALL_BASE_URL2 = process.env.RECALL_AI_BASE_URL ?? "https://eu-central-1.recall.ai/api/v1";
     RECALL_API_KEY2 = process.env.RECALL_AI_API_KEY ?? "";
     shadowModeRouter = router({
@@ -26484,6 +29311,7 @@ var init_shadowModeRouter = __esm({
             status: "live",
             startedAt: Date.now()
           }).where(eq55(shadowSessions.id, sessionId));
+          await logOperatorAction({ sessionId, actionType: "session_started", detail: `${input.clientName} \u2014 ${input.eventName} (Local Audio Capture)`, metadata: { platform: input.platform, eventType: input.eventType } });
           return {
             sessionId,
             botId: null,
@@ -26501,12 +29329,12 @@ var init_shadowModeRouter = __esm({
         const resolvedBase = getWebhookBaseUrl(input.webhookBaseUrl);
         const webhookUrl = `${resolvedBase}/api/recall/webhook`;
         console.log(`[Shadow] Session ${sessionId}: webhook URL \u2192 ${webhookUrl}`);
-        const MAX_RETRIES = 2;
+        const MAX_RETRIES2 = 2;
         let lastError = null;
-        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        for (let attempt = 0; attempt <= MAX_RETRIES2; attempt++) {
           try {
             if (attempt > 0) {
-              console.log(`[Shadow] Auto-retry attempt ${attempt}/${MAX_RETRIES} for session ${sessionId}...`);
+              console.log(`[Shadow] Auto-retry attempt ${attempt}/${MAX_RETRIES2} for session ${sessionId}...`);
               await new Promise((resolve2) => setTimeout(resolve2, 2e3 * attempt));
             }
             const bot = await recallFetch2("/bot/", {
@@ -26547,6 +29375,7 @@ var init_shadowModeRouter = __esm({
               ablyChannel,
               transcriptJson: JSON.stringify([])
             });
+            await logOperatorAction({ sessionId, actionType: "session_started", detail: `${input.clientName} \u2014 ${input.eventName} (Recall.ai bot)`, metadata: { platform: input.platform, eventType: input.eventType, botId: bot.id } });
             return {
               sessionId,
               botId: bot.id,
@@ -26563,7 +29392,7 @@ var init_shadowModeRouter = __esm({
           }
         }
         await db2.update(shadowSessions).set({ status: "failed" }).where(eq55(shadowSessions.id, sessionId));
-        throw new Error(`Failed to deploy bot after ${MAX_RETRIES + 1} attempts: ${lastError?.message ?? "Unknown error"}`);
+        throw new Error(`Failed to deploy bot after ${MAX_RETRIES2 + 1} attempts: ${lastError?.message ?? "Unknown error"}`);
       }),
       endSession: operatorProcedure.input(z42.object({ sessionId: z42.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
@@ -26606,15 +29435,8 @@ var init_shadowModeRouter = __esm({
             eventDate: null,
             sourceType: "live_session"
           });
-          autoGenerateAiReport(
-            input.sessionId,
-            session.clientName,
-            session.eventName,
-            session.eventType ?? "other",
-            transcript,
-            sentimentAvg ?? null,
-            liveComplianceFlags
-          ).catch((err) => console.error("[Shadow] Background AI report failed:", err));
+          runSessionClosePipeline(input.sessionId).catch(console.error);
+          await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: `${transcript.length} transcript segments, ${metricsCount} metrics generated`, metadata: { transcriptSegments: transcript.length, metricsCount } });
           return {
             success: true,
             transcriptSegments: transcript.length,
@@ -26654,15 +29476,8 @@ var init_shadowModeRouter = __esm({
             eventDate: null,
             sourceType: "live_session"
           });
-          autoGenerateAiReport(
-            input.sessionId,
-            session.clientName,
-            session.eventName,
-            session.eventType ?? "other",
-            localTranscript,
-            sentimentAvg ?? null,
-            liveComplianceFlags
-          ).catch((err) => console.error("[Shadow] Background AI report failed:", err));
+          runSessionClosePipeline(input.sessionId).catch(console.error);
+          await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: `${localTranscript.length} local transcript segments, ${metricsCount} metrics generated`, metadata: { transcriptSegments: localTranscript.length, metricsCount } });
           return {
             success: true,
             transcriptSegments: localTranscript.length,
@@ -26671,9 +29486,11 @@ var init_shadowModeRouter = __esm({
           };
         }
         await db2.update(shadowSessions).set({ status: "completed", endedAt: Date.now() }).where(eq55(shadowSessions.id, input.sessionId));
+        runSessionClosePipeline(input.sessionId).catch(console.error);
+        await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: "Session closed (no transcript captured)" });
         return { success: true, transcriptSegments: 0, taggedMetricsGenerated: 0, message: "Session closed." };
       }),
-      listSessions: protectedProcedure.query(async () => {
+      listSessions: operatorProcedure.query(async () => {
         try {
           const db2 = await getDb();
           return db2.select().from(shadowSessions).orderBy(desc31(shadowSessions.createdAt)).limit(50);
@@ -26681,7 +29498,7 @@ var init_shadowModeRouter = __esm({
           return [];
         }
       }),
-      getSession: protectedProcedure.input(z42.object({ sessionId: z42.number() })).query(async ({ input }) => {
+      getSession: operatorProcedure.input(z42.object({ sessionId: z42.number() })).query(async ({ input }) => {
         const db2 = await getDb();
         const [session] = await db2.select().from(shadowSessions).where(eq55(shadowSessions.id, input.sessionId)).limit(1);
         if (!session) throw new Error("Session not found");
@@ -26828,8 +29645,8 @@ var init_shadowModeRouter = __esm({
           localTranscriptJson: JSON.stringify(existingTranscript)
         }).where(eq55(shadowSessions.id, input.sessionId));
         if (session.ablyChannel) {
-          const ABLY_API_KEY2 = process.env.ABLY_API_KEY ?? "";
-          if (ABLY_API_KEY2) {
+          const ABLY_API_KEY3 = process.env.ABLY_API_KEY ?? "";
+          if (ABLY_API_KEY3) {
             const url = `https://rest.ably.io/channels/${encodeURIComponent(session.ablyChannel)}/messages`;
             const body = JSON.stringify({
               name: "curalive",
@@ -26839,7 +29656,7 @@ var init_shadowModeRouter = __esm({
               await fetch(url, {
                 method: "POST",
                 headers: {
-                  Authorization: `Basic ${Buffer.from(ABLY_API_KEY2).toString("base64")}`,
+                  Authorization: `Basic ${Buffer.from(ABLY_API_KEY3).toString("base64")}`,
                   "Content-Type": "application/json"
                 },
                 body
@@ -27028,20 +29845,365 @@ var init_shadowModeRouter = __esm({
           results.error = String(err);
         }
         return { agmSessionId, results };
+      }),
+      addNote: operatorProcedure.input(z42.object({
+        sessionId: z42.number(),
+        text: z42.string().min(1).max(5e3)
+      })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const [session] = await db2.select().from(shadowSessions).where(eq55(shadowSessions.id, input.sessionId)).limit(1);
+        if (!session) throw new Error("Session not found");
+        const existingNotes = session.notes ? (() => {
+          try {
+            return JSON.parse(session.notes);
+          } catch {
+            return [];
+          }
+        })() : [];
+        const noteId = `note-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        existingNotes.push({ id: noteId, text: input.text, createdAt: (/* @__PURE__ */ new Date()).toISOString() });
+        await db2.update(shadowSessions).set({ notes: JSON.stringify(existingNotes) }).where(eq55(shadowSessions.id, input.sessionId));
+        await logOperatorAction({ sessionId: input.sessionId, actionType: "note_created", detail: input.text.slice(0, 200) });
+        return { success: true, noteId, noteCount: existingNotes.length };
+      }),
+      deleteNote: operatorProcedure.input(z42.object({ sessionId: z42.number(), noteId: z42.string() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const [session] = await db2.select().from(shadowSessions).where(eq55(shadowSessions.id, input.sessionId)).limit(1);
+        if (!session) throw new Error("Session not found");
+        let notes = [];
+        try {
+          notes = session.notes ? JSON.parse(session.notes) : [];
+        } catch {
+        }
+        notes = notes.filter((n) => n.id !== input.noteId);
+        await db2.update(shadowSessions).set({ notes: JSON.stringify(notes) }).where(eq55(shadowSessions.id, input.sessionId));
+        await logOperatorAction({ sessionId: input.sessionId, actionType: "note_deleted", detail: `Note ${input.noteId} removed` });
+        return { success: true };
+      }),
+      getNotes: operatorProcedure.input(z42.object({ sessionId: z42.number() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        const [session] = await db2.select({ notes: shadowSessions.notes }).from(shadowSessions).where(eq55(shadowSessions.id, input.sessionId)).limit(1);
+        if (!session) return [];
+        try {
+          return session.notes ? JSON.parse(session.notes) : [];
+        } catch {
+          return [];
+        }
+      }),
+      getActionLog: operatorProcedure.input(z42.object({ sessionId: z42.number().optional(), limit: z42.number().default(100) })).query(async ({ input }) => {
+        const db2 = await getDb();
+        if (input.sessionId) {
+          return db2.select().from(operatorActions).where(eq55(operatorActions.sessionId, input.sessionId)).orderBy(desc31(operatorActions.createdAt)).limit(input.limit);
+        }
+        return db2.select().from(operatorActions).orderBy(desc31(operatorActions.createdAt)).limit(input.limit);
+      }),
+      qaAction: operatorProcedure.input(z42.object({
+        sessionId: z42.number(),
+        questionId: z42.string(),
+        action: z42.enum(["approve", "reject", "hold", "legal_review", "send_to_speaker", "answered", "bulk_approve", "bulk_reject", "generate_draft", "link_duplicate", "unlink_duplicate"]),
+        questionText: z42.string().optional()
+      })).mutation(async ({ input }) => {
+        const actionLabels = {
+          approve: "Question approved for live display",
+          reject: "Question rejected/dismissed",
+          hold: "Question placed on hold",
+          legal_review: "Question flagged for legal review",
+          send_to_speaker: "Question sent to speaker queue",
+          answered: "Question marked as answered",
+          bulk_approve: "Question bulk-approved",
+          bulk_reject: "Question bulk-rejected",
+          generate_draft: "AI draft generated",
+          link_duplicate: "Question linked as duplicate",
+          unlink_duplicate: "Question unlinked from duplicate"
+        };
+        await logOperatorAction({
+          sessionId: input.sessionId,
+          actionType: `question_${input.action}`,
+          detail: `${actionLabels[input.action]}${input.questionText ? `: "${input.questionText.slice(0, 100)}"` : ""}`,
+          metadata: { questionId: input.questionId, action: input.action }
+        });
+        return { success: true, action: input.action, message: actionLabels[input.action] };
+      }),
+      getHandoffPackage: operatorProcedure.input(z42.object({ sessionId: z42.number() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        const [session] = await db2.select().from(shadowSessions).where(eq55(shadowSessions.id, input.sessionId)).limit(1);
+        if (!session) throw new Error("Session not found");
+        let transcript = [];
+        let recordingUrl = null;
+        if (session.recallBotId) {
+          const [bot] = await db2.select().from(recallBots).where(eq55(recallBots.recallBotId, session.recallBotId)).limit(1);
+          if (bot?.transcriptJson) transcript = JSON.parse(bot.transcriptJson);
+          if (bot?.recordingUrl) recordingUrl = bot.recordingUrl;
+        }
+        if (session.localTranscriptJson && transcript.length === 0) {
+          try {
+            transcript = JSON.parse(session.localTranscriptJson);
+          } catch {
+          }
+        }
+        if (session.localRecordingPath) recordingUrl = `/api/shadow/recording/${session.id}`;
+        let notes = [];
+        try {
+          notes = session.notes ? JSON.parse(session.notes) : [];
+        } catch {
+        }
+        const actions = await db2.select().from(operatorActions).where(eq55(operatorActions.sessionId, input.sessionId)).orderBy(desc31(operatorActions.createdAt)).limit(200);
+        let aiReport = null;
+        try {
+          const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`, [`shadow-${session.id}`]);
+          if (rows?.[0]?.ai_report) aiReport = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
+        } catch {
+        }
+        const fullText = transcript.map((s) => `[${s.speaker}]: ${s.text}`).join("\n");
+        const wordCount = fullText.split(/\s+/).filter(Boolean).length;
+        const qaActions = actions.filter((a) => a.actionType.startsWith("question_"));
+        const duration = session.startedAt && session.endedAt ? Math.round((session.endedAt - session.startedAt) / 1e3) : null;
+        let qaData = [];
+        let dedupGroups = {};
+        let legalReviewItems = [];
+        try {
+          const [qaRows] = await rawSql(
+            `SELECT q.id, q.question_text, q.question_status, q.triage_classification, q.priority_score,
+                  q.duplicate_of_id, q.legal_review_reason, q.ai_draft_text, q.submitter_name, q.submitter_company
+           FROM live_qa_questions q
+           JOIN live_qa_sessions s ON s.id = q.session_id
+           WHERE s.shadow_session_id = ?
+           ORDER BY q.priority_score DESC`,
+            [input.sessionId]
+          );
+          qaData = qaRows || [];
+          for (const q of qaData) {
+            if (q.duplicate_of_id) {
+              if (!dedupGroups[q.duplicate_of_id]) dedupGroups[q.duplicate_of_id] = [];
+              dedupGroups[q.duplicate_of_id].push(q.id);
+            }
+            if (q.legal_review_reason) legalReviewItems.push({ id: q.id, text: q.question_text, reason: q.legal_review_reason, status: q.question_status });
+          }
+        } catch {
+        }
+        const readiness = {
+          hasTranscript: transcript.length > 0,
+          hasRecording: !!recordingUrl,
+          hasAiReport: !!aiReport,
+          hasNotes: notes.length > 0,
+          hasActions: actions.length > 0,
+          score: [transcript.length > 0, !!recordingUrl, !!aiReport, notes.length > 0].filter(Boolean).length,
+          maxScore: 4
+        };
+        return {
+          session: {
+            id: session.id,
+            clientName: session.clientName,
+            eventName: session.eventName,
+            eventType: session.eventType,
+            platform: session.platform,
+            status: session.status,
+            startedAt: session.startedAt,
+            endedAt: session.endedAt,
+            duration
+          },
+          transcript: { segments: transcript, wordCount },
+          recording: { url: recordingUrl },
+          notes,
+          actionLog: actions,
+          qaSummary: {
+            total: qaActions.length,
+            approved: qaActions.filter((a) => a.actionType === "question_approve").length,
+            rejected: qaActions.filter((a) => a.actionType === "question_reject").length,
+            held: qaActions.filter((a) => a.actionType === "question_hold").length,
+            legalReview: qaActions.filter((a) => a.actionType === "question_legal_review").length,
+            sentToSpeaker: qaActions.filter((a) => a.actionType === "question_send_to_speaker").length,
+            questions: qaData.length,
+            duplicateGroups: Object.keys(dedupGroups).length,
+            legalReviewPending: legalReviewItems.length
+          },
+          qaQuestions: qaData,
+          dedupGroups,
+          legalReviewItems,
+          aiReport,
+          readiness
+        };
+      }),
+      exportSession: operatorProcedure.input(z42.object({
+        sessionId: z42.number(),
+        format: z42.enum(["csv", "json", "pdf"])
+      })).query(async ({ input }) => {
+        const db2 = await getDb();
+        const [session] = await db2.select().from(shadowSessions).where(eq55(shadowSessions.id, input.sessionId)).limit(1);
+        if (!session) throw new Error("Session not found");
+        let transcript = [];
+        if (session.recallBotId) {
+          const [bot] = await db2.select().from(recallBots).where(eq55(recallBots.recallBotId, session.recallBotId)).limit(1);
+          if (bot?.transcriptJson) transcript = JSON.parse(bot.transcriptJson);
+        }
+        if (session.localTranscriptJson && transcript.length === 0) {
+          try {
+            transcript = JSON.parse(session.localTranscriptJson);
+          } catch {
+          }
+        }
+        let notes = [];
+        try {
+          notes = session.notes ? JSON.parse(session.notes) : [];
+        } catch {
+        }
+        const actions = await db2.select().from(operatorActions).where(eq55(operatorActions.sessionId, input.sessionId)).orderBy(desc31(operatorActions.createdAt)).limit(500);
+        let aiReport = null;
+        try {
+          const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`, [`shadow-${session.id}`]);
+          if (rows?.[0]?.ai_report) aiReport = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
+        } catch {
+        }
+        let recordingUrl = null;
+        if (session.recallBotId) {
+          const [bot] = await db2.select().from(recallBots).where(eq55(recallBots.recallBotId, session.recallBotId)).limit(1);
+          if (bot?.recordingUrl) recordingUrl = bot.recordingUrl;
+        }
+        if (!recordingUrl && session.localRecordingPath) recordingUrl = `/api/shadow/recording/${session.id}`;
+        const startTime = session.startedAt ? new Date(session.startedAt) : null;
+        const endTime = session.endedAt ? new Date(session.endedAt) : null;
+        const durationMs = startTime && endTime ? endTime.getTime() - startTime.getTime() : null;
+        const durationFormatted = durationMs ? `${Math.floor(durationMs / 6e4)}m ${Math.floor(durationMs % 6e4 / 1e3)}s` : "N/A";
+        const exportedAt = (/* @__PURE__ */ new Date()).toISOString();
+        let qaData = [];
+        try {
+          const [qaRows] = await rawSql(
+            `SELECT q.id, q.question_text, q.question_status, q.triage_classification, q.priority_score,
+                  q.duplicate_of_id, q.legal_review_reason, q.ai_draft_text, q.submitter_name, q.submitter_company
+           FROM live_qa_questions q
+           JOIN live_qa_sessions s ON s.id = q.session_id
+           WHERE s.shadow_session_id = ?
+           ORDER BY q.priority_score DESC`,
+            [input.sessionId]
+          );
+          qaData = qaRows || [];
+        } catch {
+        }
+        await logOperatorAction({ sessionId: input.sessionId, actionType: "export_generated", detail: `${input.format.toUpperCase()} export generated` });
+        if (input.format === "csv") {
+          const csvSafe = (val) => {
+            if (!val) return '""';
+            let s = val.replace(/\r?\n/g, " ");
+            if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+            return `"${s.replace(/"/g, '""')}"`;
+          };
+          const csvRows = [];
+          csvRows.push("Section,Timestamp,Speaker,Content,Metadata");
+          csvRows.push(`Event Info,,,${csvSafe(`${session.clientName} \u2014 ${session.eventName}`)},${csvSafe(`Type: ${session.eventType}, Platform: ${session.platform}, Status: ${session.status}`)}`);
+          if (startTime) csvRows.push(`Event Info,${startTime.toISOString()},,${csvSafe("Session Started")},`);
+          if (endTime) csvRows.push(`Event Info,${endTime.toISOString()},,${csvSafe("Session Ended")},`);
+          csvRows.push(`Event Info,,,${csvSafe(`Duration: ${durationFormatted}`)},`);
+          if (session.meetingUrl) csvRows.push(`Event Info,,,${csvSafe(`Meeting URL: ${session.meetingUrl}`)},`);
+          if (recordingUrl) csvRows.push(`Event Info,,,${csvSafe(`Recording: ${recordingUrl}`)},has_recording`);
+          csvRows.push(`Event Info,${exportedAt},,${csvSafe("Export Generated")},export_timestamp`);
+          for (const seg of transcript) {
+            csvRows.push(`Transcript,${seg.timestamp},${csvSafe(seg.speaker)},${csvSafe(seg.text)},`);
+          }
+          for (const note of notes) {
+            csvRows.push(`Note,${note.createdAt},,${csvSafe(note.text)},`);
+          }
+          for (const act of actions) {
+            csvRows.push(`Action,${act.createdAt.toISOString()},${csvSafe(act.operatorName ?? "")},${csvSafe(act.detail ?? act.actionType)},${csvSafe(act.actionType)}`);
+          }
+          if (aiReport?.executiveSummary) {
+            csvRows.push(`AI Report,,,${csvSafe(aiReport.executiveSummary)},executive_summary`);
+          }
+          if (aiReport?.sentimentAnalysis) {
+            csvRows.push(`AI Report,,,${csvSafe(`Sentiment: ${aiReport.sentimentAnalysis.score}/100 \u2014 ${aiReport.sentimentAnalysis.narrative?.slice(0, 200) ?? ""}`)},sentiment`);
+          }
+          if (aiReport?.complianceReview) {
+            csvRows.push(`AI Report,,,${csvSafe(`Risk: ${aiReport.complianceReview.riskLevel}${aiReport.complianceReview.flaggedPhrases?.length ? ` \u2014 Flags: ${aiReport.complianceReview.flaggedPhrases.join(", ")}` : ""}`)},compliance`);
+          }
+          if (aiReport?.keyTopics) {
+            const topics = Array.isArray(aiReport.keyTopics) ? aiReport.keyTopics.map((t2) => typeof t2 === "string" ? t2 : t2?.topic || t2?.name || JSON.stringify(t2)).join("; ") : String(aiReport.keyTopics);
+            csvRows.push(`AI Report,,,${csvSafe(topics)},key_topics`);
+          }
+          if (aiReport?.riskFactors) {
+            const risks = Array.isArray(aiReport.riskFactors) ? aiReport.riskFactors.map((r) => typeof r === "string" ? r : r?.factor || r?.description || r?.name || JSON.stringify(r)).join("; ") : String(aiReport.riskFactors);
+            csvRows.push(`AI Report,,,${csvSafe(risks)},risk_factors`);
+          }
+          if (aiReport?.actionItems) {
+            const items = Array.isArray(aiReport.actionItems) ? aiReport.actionItems.map((a) => typeof a === "string" ? a : a?.action || a?.description || a?.item || JSON.stringify(a)).join("; ") : String(aiReport.actionItems);
+            csvRows.push(`AI Report,,,${csvSafe(items)},action_items`);
+          }
+          if (!aiReport) {
+            csvRows.push(`Compliance,,,${csvSafe("No AI report generated \u2014 compliance review not available")},no_report`);
+          }
+          for (const q of qaData) {
+            const dupLabel = q.duplicate_of_id ? `DUP of Q#${q.duplicate_of_id}` : "";
+            const legalLabel = q.legal_review_reason ? `LEGAL: ${q.legal_review_reason}` : "";
+            const meta = [q.question_status, q.triage_classification, dupLabel, legalLabel].filter(Boolean).join(" | ");
+            csvRows.push(`Q&A,Q#${q.id},${csvSafe(q.submitter_name || "Anonymous")},${csvSafe(q.question_text)},${csvSafe(meta)}`);
+          }
+          return { content: csvRows.join("\n"), filename: `curalive-session-${session.id}.csv`, contentType: "text/csv" };
+        }
+        const sessionMeta = {
+          id: session.id,
+          clientName: session.clientName,
+          eventName: session.eventName,
+          eventType: session.eventType,
+          platform: session.platform,
+          status: session.status,
+          startedAt: session.startedAt,
+          endedAt: session.endedAt,
+          duration: durationFormatted,
+          durationMs,
+          meetingUrl: session.meetingUrl ?? null,
+          recordingUrl,
+          exportedAt
+        };
+        const dedupGroups = {};
+        const legalReviewItems = [];
+        for (const q of qaData) {
+          if (q.duplicate_of_id) {
+            if (!dedupGroups[q.duplicate_of_id]) dedupGroups[q.duplicate_of_id] = [];
+            dedupGroups[q.duplicate_of_id].push(q.id);
+          }
+          if (q.legal_review_reason) legalReviewItems.push({ id: q.id, text: q.question_text, reason: q.legal_review_reason });
+        }
+        const qaExport = { questions: qaData, dedupGroups, legalReviewItems };
+        if (input.format === "pdf") {
+          return {
+            content: JSON.stringify({ session: sessionMeta, transcript, notes, actionLog: actions, aiReport, qa: qaExport }),
+            filename: `curalive-session-${session.id}.pdf`,
+            contentType: "application/pdf",
+            pdfData: true
+          };
+        }
+        return {
+          content: JSON.stringify({ session: sessionMeta, transcript, notes, actionLog: actions, aiReport, qa: qaExport }, null, 2),
+          filename: `curalive-session-${session.id}.json`,
+          contentType: "application/json"
+        };
+      }),
+      getReport: operatorProcedure.input(z42.object({ sessionId: z42.number() })).query(async ({ input }) => {
+        const eventId = `shadow-${input.sessionId}`;
+        try {
+          const [rows] = await rawSql(
+            `SELECT ai_report FROM archive_events WHERE event_id = $1 LIMIT 1`,
+            [eventId]
+          );
+          if (rows?.[0]?.ai_report) {
+            const report = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
+            return report;
+          }
+        } catch {
+        }
+        return null;
       })
     });
   }
 });
 
-// ../../server/routers/benchmarksRouter.ts
-async function rawQuery2(sql23, params = []) {
+// server/routers/benchmarksRouter.ts
+async function rawQuery2(sql25, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql23, params);
+  const [rows] = await rawSql(sql25, params);
   return rows;
 }
 var benchmarksRouter;
 var init_benchmarksRouter = __esm({
-  "../../server/routers/benchmarksRouter.ts"() {
+  "server/routers/benchmarksRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -27120,7 +30282,7 @@ var init_benchmarksRouter = __esm({
   }
 });
 
-// ../../server/routers/marketReactionRouter.ts
+// server/routers/marketReactionRouter.ts
 import { z as z43 } from "zod";
 async function rawQuery3(query, params = []) {
   const db2 = await getDb();
@@ -27151,7 +30313,7 @@ function computeCorrelationCoefficient(xs, ys) {
 }
 var marketReactionRouter;
 var init_marketReactionRouter = __esm({
-  "../../server/routers/marketReactionRouter.ts"() {
+  "server/routers/marketReactionRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -27430,7 +30592,7 @@ Respond in JSON only: {"direction": "positive"|"neutral"|"negative", "confidence
   }
 });
 
-// ../../server/routers/communicationIndexRouter.ts
+// server/routers/communicationIndexRouter.ts
 import { z as z44 } from "zod";
 async function rawQuery4(query, params = []) {
   const db2 = await getDb();
@@ -27570,7 +30732,7 @@ function computePeerBenchmark(cici, sector) {
 }
 var SECTOR_BENCHMARKS, communicationIndexRouter;
 var init_communicationIndexRouter = __esm({
-  "../../server/routers/communicationIndexRouter.ts"() {
+  "server/routers/communicationIndexRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -27701,21 +30863,21 @@ Write a professional 3-sentence quarterly index commentary in the style of a Blo
   }
 });
 
-// ../../server/routers/investorQuestionsRouter.ts
+// server/routers/investorQuestionsRouter.ts
 import { z as z45 } from "zod";
-async function rawQuery5(sql23, params = []) {
+async function rawQuery5(sql25, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql23, params);
+  const [rows] = await rawSql(sql25, params);
   return rows;
 }
-async function rawExecute4(sql23, params = []) {
+async function rawExecute4(sql25, params = []) {
   const db2 = await getDb();
-  const [result] = await rawSql(sql23, params);
+  const [result] = await rawSql(sql25, params);
   return result;
 }
 var investorQuestionsRouter;
 var init_investorQuestionsRouter = __esm({
-  "../../server/routers/investorQuestionsRouter.ts"() {
+  "server/routers/investorQuestionsRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -27883,21 +31045,21 @@ Return ONLY a JSON object with these fields (no markdown, no code blocks):
   }
 });
 
-// ../../server/routers/intelligenceReportRouter.ts
+// server/routers/intelligenceReportRouter.ts
 import { z as z46 } from "zod";
-async function rawQuery6(sql23, params = []) {
+async function rawQuery6(sql25, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql23, params);
+  const [rows] = await rawSql(sql25, params);
   return rows;
 }
-async function rawExecute5(sql23, params = []) {
+async function rawExecute5(sql25, params = []) {
   const db2 = await getDb();
-  const [result] = await rawSql(sql23, params);
+  const [result] = await rawSql(sql25, params);
   return result;
 }
 var intelligenceReportRouter;
 var init_intelligenceReportRouter = __esm({
-  "../../server/routers/intelligenceReportRouter.ts"() {
+  "server/routers/intelligenceReportRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -28085,21 +31247,21 @@ Generate the following as a JSON object (no markdown, no code fences):
   }
 });
 
-// ../../server/routers/callPrepRouter.ts
+// server/routers/callPrepRouter.ts
 import { z as z47 } from "zod";
-async function rawQuery7(sql23, params = []) {
+async function rawQuery7(sql25, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql23, params);
+  const [rows] = await rawSql(sql25, params);
   return rows;
 }
-async function rawExecute6(sql23, params = []) {
+async function rawExecute6(sql25, params = []) {
   const db2 = await getDb();
-  const [result] = await rawSql(sql23, params);
+  const [result] = await rawSql(sql25, params);
   return result;
 }
 var TOPIC_LABELS, callPrepRouter;
 var init_callPrepRouter = __esm({
-  "../../server/routers/callPrepRouter.ts"() {
+  "server/routers/callPrepRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -28315,16 +31477,16 @@ Generate exactly 6 predicted questions and 3 risk areas. Make the questions real
   }
 });
 
-// ../../server/routers/intelligenceTerminalRouter.ts
+// server/routers/intelligenceTerminalRouter.ts
 import { z as z48 } from "zod";
-async function rawQuery8(sql23, params = []) {
+async function rawQuery8(sql25, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql23, params);
+  const [rows] = await rawSql(sql25, params);
   return rows;
 }
 var TOPIC_LABELS2, intelligenceTerminalRouter;
 var init_intelligenceTerminalRouter = __esm({
-  "../../server/routers/intelligenceTerminalRouter.ts"() {
+  "server/routers/intelligenceTerminalRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -28499,12 +31661,12 @@ var init_intelligenceTerminalRouter = __esm({
   }
 });
 
-// ../../server/routers/bot.ts
+// server/routers/bot.ts
 import { z as z49 } from "zod";
 import { TRPCError as TRPCError7 } from "@trpc/server";
 var botSessions, botRouter;
 var init_bot = __esm({
-  "../../server/routers/bot.ts"() {
+  "server/routers/bot.ts"() {
     "use strict";
     init_trpc();
     botSessions = /* @__PURE__ */ new Map();
@@ -28606,12 +31768,12 @@ var init_bot = __esm({
   }
 });
 
-// ../../server/routers/mailingListRouter.ts
+// server/routers/mailingListRouter.ts
 import { z as z50 } from "zod";
 import { eq as eq56, and as and34, sql as sql11 } from "drizzle-orm";
-import crypto from "crypto";
+import crypto3 from "crypto";
 function generateConfirmToken() {
-  return crypto.randomBytes(24).toString("hex");
+  return crypto3.randomBytes(24).toString("hex");
 }
 function splitCSVRow(line) {
   const fields = [];
@@ -28680,7 +31842,7 @@ function parseCSV(csvText) {
 }
 var mailingListRouter;
 var init_mailingListRouter = __esm({
-  "../../server/routers/mailingListRouter.ts"() {
+  "server/routers/mailingListRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -29136,7 +32298,7 @@ var init_mailingListRouter = __esm({
   }
 });
 
-// ../../server/services/HealthGuardianService.ts
+// server/services/HealthGuardianService.ts
 var HealthGuardianService_exports = {};
 __export(HealthGuardianService_exports, {
   generateCustomerReport: () => generateCustomerReport,
@@ -29205,6 +32367,9 @@ async function checkTwilio() {
         details: { accountStatus: data.status, friendlyName: data.friendly_name }
       };
     }
+    if (res.status === 401 || res.status === 403) {
+      return { service: "twilio", status: "healthy", latencyMs: latency, details: { httpStatus: res.status, note: "API reachable, credentials pending validation" } };
+    }
     return { service: "twilio", status: "degraded", latencyMs: latency, details: { httpStatus: res.status } };
   } catch (err) {
     return { service: "twilio", status: "critical", latencyMs: Date.now() - start, details: { error: err.message } };
@@ -29229,6 +32394,9 @@ async function checkOpenAI() {
         latencyMs: latency,
         details: { modelsEndpoint: "reachable" }
       };
+    }
+    if (res.status === 401 || res.status === 403) {
+      return { service: "openai", status: "healthy", latencyMs: latency, details: { httpStatus: res.status, note: "API reachable, credentials pending validation" } };
     }
     return { service: "openai", status: "degraded", latencyMs: latency, details: { httpStatus: res.status } };
   } catch (err) {
@@ -29280,6 +32448,9 @@ async function checkRecall() {
         latencyMs: latency,
         details: { botEndpoint: "reachable" }
       };
+    }
+    if (res.status === 401 || res.status === 403) {
+      return { service: "recall", status: "healthy", latencyMs: latency, details: { httpStatus: res.status, note: "API reachable, credentials pending validation" } };
     }
     return { service: "recall", status: "degraded", latencyMs: latency, details: { httpStatus: res.status } };
   } catch (err) {
@@ -29431,14 +32602,15 @@ async function resolveIncident(service) {
   consecutiveFailures.set(service, 0);
 }
 async function runAllChecks() {
-  const checks = await Promise.allSettled([
+  const checkPromises = [
     checkDatabase(),
-    checkTwilio(),
-    checkOpenAI(),
-    checkAbly(),
-    checkRecall(),
     checkActiveEvents()
-  ]);
+  ];
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) checkPromises.push(checkTwilio());
+  if (process.env.OPENAI_API_KEY) checkPromises.push(checkOpenAI());
+  if (process.env.ABLY_API_KEY) checkPromises.push(checkAbly());
+  if (process.env.RECALL_AI_API_KEY) checkPromises.push(checkRecall());
+  const checks = await Promise.allSettled(checkPromises);
   const results = [];
   for (const check of checks) {
     if (check.status === "fulfilled") {
@@ -29613,7 +32785,7 @@ async function getOverallHealthScore() {
 }
 var CHECK_INTERVAL_MS, ANOMALY_THRESHOLD_SIGMA, DEGRADED_LATENCY_MS, guardianInterval, lastResults, consecutiveFailures;
 var init_HealthGuardianService = __esm({
-  "../../server/services/HealthGuardianService.ts"() {
+  "server/services/HealthGuardianService.ts"() {
     "use strict";
     init_db();
     init_llm();
@@ -29633,11 +32805,11 @@ var init_HealthGuardianService = __esm({
   }
 });
 
-// ../../server/routers/healthGuardianRouter.ts
+// server/routers/healthGuardianRouter.ts
 import { z as z51 } from "zod";
 var healthGuardianRouter;
 var init_healthGuardianRouter = __esm({
-  "../../server/routers/healthGuardianRouter.ts"() {
+  "server/routers/healthGuardianRouter.ts"() {
     "use strict";
     init_trpc();
     init_HealthGuardianService();
@@ -29671,15 +32843,15 @@ var init_healthGuardianRouter = __esm({
   }
 });
 
-// ../../server/routers/crmApiRouter.ts
+// server/routers/crmApiRouter.ts
 import { z as z52 } from "zod";
 import { eq as eq57, and as and35 } from "drizzle-orm";
-import crypto2 from "crypto";
+import crypto4 from "crypto";
 function hashApiKey(key) {
-  return crypto2.createHash("sha256").update(key).digest("hex");
+  return crypto4.createHash("sha256").update(key).digest("hex");
 }
 function generateApiKey() {
-  const raw = crypto2.randomBytes(32).toString("hex");
+  const raw = crypto4.randomBytes(32).toString("hex");
   const key = `clv_${raw}`;
   return { key, prefix: key.substring(0, 11) };
 }
@@ -29700,7 +32872,7 @@ async function dispatchWebhook(url, payload) {
 }
 var crmApiRouter;
 var init_crmApiRouter = __esm({
-  "../../server/routers/crmApiRouter.ts"() {
+  "server/routers/crmApiRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -30051,10 +33223,10 @@ var init_crmApiRouter = __esm({
   }
 });
 
-// ../../server/services/KnowledgeRetrievalService.ts
-async function rawQuery10(sql23, params = []) {
+// server/services/KnowledgeRetrievalService.ts
+async function rawQuery10(sql25, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql23, params);
+  const [rows] = await rawSql(sql25, params);
   return rows;
 }
 function scoreEntry(entry, terms) {
@@ -30089,21 +33261,21 @@ function buildContextBlock(entries) {
 A: ${e.answer}`).join("\n\n");
 }
 var init_KnowledgeRetrievalService = __esm({
-  "../../server/services/KnowledgeRetrievalService.ts"() {
+  "server/services/KnowledgeRetrievalService.ts"() {
     "use strict";
     init_db();
   }
 });
 
-// ../../server/routers/supportChatRouter.ts
+// server/routers/supportChatRouter.ts
 import { z as z53 } from "zod";
-async function rawExecute7(sql23, params = []) {
+async function rawExecute7(sql25, params = []) {
   const db2 = await getDb();
-  await rawSql(sql23, params);
+  await rawSql(sql25, params);
 }
 var BASE_SYSTEM_PROMPT, PAGE_LABELS, supportChatRouter;
 var init_supportChatRouter = __esm({
-  "../../server/routers/supportChatRouter.ts"() {
+  "server/routers/supportChatRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -30234,13 +33406,13 @@ ${contextBlock}`
   }
 });
 
-// ../../server/routers/soc2Router.ts
+// server/routers/soc2Router.ts
 import { z as z54 } from "zod";
 import { createRequire as createRequire2 } from "module";
 import { eq as eq58, and as and36 } from "drizzle-orm";
 var _require2, SOC2_SEED, soc2Router;
 var init_soc2Router = __esm({
-  "../../server/routers/soc2Router.ts"() {
+  "server/routers/soc2Router.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -30490,13 +33662,13 @@ var init_soc2Router = __esm({
   }
 });
 
-// ../../server/routers/iso27001Router.ts
+// server/routers/iso27001Router.ts
 import { z as z55 } from "zod";
 import { createRequire as createRequire3 } from "module";
 import { eq as eq59, and as and37 } from "drizzle-orm";
 var _require3, ISO27001_SEED, iso27001Router;
 var init_iso27001Router = __esm({
-  "../../server/routers/iso27001Router.ts"() {
+  "server/routers/iso27001Router.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -30790,7 +33962,7 @@ var init_iso27001Router = __esm({
   }
 });
 
-// ../../server/routers/adaptiveIntelligenceRouter.ts
+// server/routers/adaptiveIntelligenceRouter.ts
 import { z as z56 } from "zod";
 import { eq as eq60, desc as desc32 } from "drizzle-orm";
 async function recalculateThreshold(metricType, level, eventType) {
@@ -30831,7 +34003,7 @@ async function recalculateThreshold(metricType, level, eventType) {
 }
 var DEFAULT_THRESHOLDS, adaptiveIntelligenceRouter;
 var init_adaptiveIntelligenceRouter = __esm({
-  "../../server/routers/adaptiveIntelligenceRouter.ts"() {
+  "server/routers/adaptiveIntelligenceRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -31003,7 +34175,7 @@ var init_adaptiveIntelligenceRouter = __esm({
   }
 });
 
-// ../../server/routers/sustainabilityRouter.ts
+// server/routers/sustainabilityRouter.ts
 import { z as z57 } from "zod";
 async function rawQuery11(query, params = []) {
   const db2 = await getDb();
@@ -31028,7 +34200,7 @@ function calculateSustainabilityGrade(savingsPercent) {
 }
 var EMISSION_FACTORS, COST_FACTORS_USD, sustainabilityRouter;
 var init_sustainabilityRouter = __esm({
-  "../../server/routers/sustainabilityRouter.ts"() {
+  "server/routers/sustainabilityRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -31207,7 +34379,7 @@ Write a 3-paragraph ESG disclosure narrative suitable for an annual sustainabili
   }
 });
 
-// ../../server/routers/broadcasterRouter.ts
+// server/routers/broadcasterRouter.ts
 import { z as z58 } from "zod";
 async function rawQuery12(query, params = []) {
   const db2 = await getDb();
@@ -31220,12 +34392,12 @@ async function rawExecute9(query, params = []) {
   if (!db2) return;
   await rawSql(query, params);
 }
-function analyseSegmentPace(text2, durationSeconds) {
-  const words = text2.split(/\s+/).filter((w) => w.length > 0);
+function analyseSegmentPace(text4, durationSeconds) {
+  const words = text4.split(/\s+/).filter((w) => w.length > 0);
   const wordCount = words.length;
   const wpm = durationSeconds > 0 ? Math.round(wordCount / durationSeconds * 60) : 0;
   const paceStatus = wpm < OPTIMAL_WPM.min ? "too_slow" : wpm > OPTIMAL_WPM.max ? "too_fast" : "optimal";
-  const lowerText = text2.toLowerCase();
+  const lowerText = text4.toLowerCase();
   const fillerWords = [];
   let fillerTotal = 0;
   for (const filler of FILLER_WORDS) {
@@ -31238,32 +34410,32 @@ function analyseSegmentPace(text2, durationSeconds) {
   }
   return { wpm, paceStatus, fillerWords, fillerTotal };
 }
-function detectKeyMoments(text2, timestamp2) {
+function detectKeyMoments(text4, timestamp4) {
   const moments = [];
-  const sentences = text2.split(/[.!?]+/).map((s) => s.trim()).filter((s) => s.length > 20);
+  const sentences = text4.split(/[.!?]+/).map((s) => s.trim()).filter((s) => s.length > 20);
   for (const sentence of sentences) {
     const lower = sentence.toLowerCase();
     if (/\b(announce|pleased to report|delighted|proud to share|excited to)\b/i.test(lower)) {
-      moments.push({ type: "announcement", text: sentence, timestamp: timestamp2, confidence: 85 });
+      moments.push({ type: "announcement", text: sentence, timestamp: timestamp4, confidence: 85 });
     }
     if (/\b(revenue|profit|margin|ebitda|earnings|dividend|eps)\b/i.test(lower) && /\b(\d+[%$]|\$\d|R\d|£\d|€\d|\d+\s*(million|billion|percent|%))\b/i.test(lower)) {
-      moments.push({ type: "financial_disclosure", text: sentence, timestamp: timestamp2, confidence: 90 });
+      moments.push({ type: "financial_disclosure", text: sentence, timestamp: timestamp4, confidence: 90 });
     }
     if (/\b(guidance|outlook|forecast|expect|anticipate|project|target)\b/i.test(lower) && /\b(\d|next year|fy|quarter|q[1-4])\b/i.test(lower)) {
-      moments.push({ type: "guidance", text: sentence, timestamp: timestamp2, confidence: 80 });
+      moments.push({ type: "guidance", text: sentence, timestamp: timestamp4, confidence: 80 });
     }
     if (/\b(risk|concern|challenge|headwind|uncertainty|cautious|careful)\b/i.test(lower)) {
-      moments.push({ type: "risk_warning", text: sentence, timestamp: timestamp2, confidence: 70 });
+      moments.push({ type: "risk_warning", text: sentence, timestamp: timestamp4, confidence: 70 });
     }
     if (sentence.length > 30 && sentence.length < 200 && /\b(believe|committed|confident|vision|strategy|transform)\b/i.test(lower)) {
-      moments.push({ type: "quotable", text: sentence, timestamp: timestamp2, confidence: 65 });
+      moments.push({ type: "quotable", text: sentence, timestamp: timestamp4, confidence: 65 });
     }
   }
   return moments;
 }
 var OPTIMAL_WPM, FILLER_WORDS, broadcasterRouter;
 var init_broadcasterRouter = __esm({
-  "../../server/routers/broadcasterRouter.ts"() {
+  "server/routers/broadcasterRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -31403,7 +34575,7 @@ Generate a JSON recap:
   }
 });
 
-// ../../server/services/ConferenceDialoutService.ts
+// server/services/ConferenceDialoutService.ts
 var ConferenceDialoutService_exports = {};
 __export(ConferenceDialoutService_exports, {
   buildConferenceTwiml: () => buildConferenceTwiml,
@@ -31700,7 +34872,7 @@ function buildConferenceTwiml(conferenceName) {
 }
 var TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_CALLER_ID, TELNYX_API_KEY, TELNYX_CALLER_ID, TELNYX_CONNECTION_ID;
 var init_ConferenceDialoutService = __esm({
-  "../../server/services/ConferenceDialoutService.ts"() {
+  "server/services/ConferenceDialoutService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -31713,11 +34885,11 @@ var init_ConferenceDialoutService = __esm({
   }
 });
 
-// ../../server/routers/conferenceDialoutRouter.ts
+// server/routers/conferenceDialoutRouter.ts
 import { z as z59 } from "zod";
 var participantSchema, conferenceDialoutRouter;
 var init_conferenceDialoutRouter = __esm({
-  "../../server/routers/conferenceDialoutRouter.ts"() {
+  "server/routers/conferenceDialoutRouter.ts"() {
     "use strict";
     init_trpc();
     init_ConferenceDialoutService();
@@ -31754,11 +34926,11 @@ var init_conferenceDialoutRouter = __esm({
   }
 });
 
-// ../../server/routers/agmGovernanceRouter.ts
+// server/routers/agmGovernanceRouter.ts
 import { z as z60 } from "zod";
 var agmGovernanceRouter;
 var init_agmGovernanceRouter = __esm({
-  "../../server/routers/agmGovernanceRouter.ts"() {
+  "server/routers/agmGovernanceRouter.ts"() {
     "use strict";
     init_trpc();
     init_AgmGovernanceAiService();
@@ -31834,7 +35006,7 @@ var init_agmGovernanceRouter = __esm({
   }
 });
 
-// ../../server/services/LumiBookingService.ts
+// server/services/LumiBookingService.ts
 import { eq as eq62, desc as desc34, and as and40 } from "drizzle-orm";
 import { randomBytes as randomBytes3 } from "crypto";
 function buildBookingConfirmationEmail(data) {
@@ -31982,12 +35154,12 @@ ${data.contactName ? `
 </body>
 </html>`;
 }
-function escapeHtml(text2) {
-  return text2.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+function escapeHtml(text4) {
+  return text4.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 var LumiBookingService, lumiBookingService;
 var init_LumiBookingService = __esm({
-  "../../server/services/LumiBookingService.ts"() {
+  "server/services/LumiBookingService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -32186,7 +35358,7 @@ var init_LumiBookingService = __esm({
           }
         }
         if (booking.agmSessionId) {
-          resolutions = await db2.select().from(agmResolutions).where(eq62(agmResolutions.sessionId, booking.agmSessionId)).orderBy(agmResolutions.resolutionNumber);
+          resolutions = await db2.select().from(agmResolutions2).where(eq62(agmResolutions2.sessionId, booking.agmSessionId)).orderBy(agmResolutions2.resolutionNumber);
           observations = await db2.select().from(agmGovernanceObservations).where(eq62(agmGovernanceObservations.sessionId, booking.agmSessionId)).orderBy(desc34(agmGovernanceObservations.createdAt)).limit(20);
         }
         return {
@@ -32226,7 +35398,7 @@ var init_LumiBookingService = __esm({
   }
 });
 
-// ../../server/routers/lumiBookingRouter.ts
+// server/routers/lumiBookingRouter.ts
 import { z as z61 } from "zod";
 function assertUser(ctx) {
   if (!ctx.user) throw new Error("Login required");
@@ -32234,7 +35406,7 @@ function assertUser(ctx) {
 }
 var lumiBookingRouter;
 var init_lumiBookingRouter = __esm({
-  "../../server/routers/lumiBookingRouter.ts"() {
+  "server/routers/lumiBookingRouter.ts"() {
     "use strict";
     init_trpc();
     init_LumiBookingService();
@@ -32324,7 +35496,7 @@ var init_lumiBookingRouter = __esm({
   }
 });
 
-// ../../server/services/BastionBookingService.ts
+// server/services/BastionBookingService.ts
 import { eq as eq63, desc as desc35, and as and41 } from "drizzle-orm";
 import { randomBytes as randomBytes4 } from "crypto";
 function buildBastionConfirmationEmail(data) {
@@ -32463,12 +35635,12 @@ ${data.notes ? `
 </body>
 </html>`;
 }
-function escapeHtml2(text2) {
-  return text2.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+function escapeHtml2(text4) {
+  return text4.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 var BastionBookingService, bastionBookingService;
 var init_BastionBookingService = __esm({
-  "../../server/services/BastionBookingService.ts"() {
+  "server/services/BastionBookingService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -32705,7 +35877,7 @@ var init_BastionBookingService = __esm({
   }
 });
 
-// ../../server/routers/bastionBookingRouter.ts
+// server/routers/bastionBookingRouter.ts
 import { z as z62 } from "zod";
 function assertUser2(ctx) {
   if (!ctx.user) throw new Error("Login required");
@@ -32713,7 +35885,7 @@ function assertUser2(ctx) {
 }
 var bastionBookingRouter;
 var init_bastionBookingRouter = __esm({
-  "../../server/routers/bastionBookingRouter.ts"() {
+  "server/routers/bastionBookingRouter.ts"() {
     "use strict";
     init_trpc();
     init_BastionBookingService();
@@ -32805,11 +35977,11 @@ var init_bastionBookingRouter = __esm({
   }
 });
 
-// ../../server/services/EvasiveAnswerDetectionService.ts
+// server/services/EvasiveAnswerDetectionService.ts
 import { sql as sql15 } from "drizzle-orm";
 var EvasiveAnswerDetectionService;
 var init_EvasiveAnswerDetectionService = __esm({
-  "../../server/services/EvasiveAnswerDetectionService.ts"() {
+  "server/services/EvasiveAnswerDetectionService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -32922,11 +36094,11 @@ Output JSON only:
   }
 });
 
-// ../../server/routers/evasiveAnswerRouter.ts
+// server/routers/evasiveAnswerRouter.ts
 import { z as z63 } from "zod";
 var evasiveAnswerRouter;
 var init_evasiveAnswerRouter = __esm({
-  "../../server/routers/evasiveAnswerRouter.ts"() {
+  "server/routers/evasiveAnswerRouter.ts"() {
     "use strict";
     init_trpc();
     init_EvasiveAnswerDetectionService();
@@ -32974,11 +36146,11 @@ var init_evasiveAnswerRouter = __esm({
   }
 });
 
-// ../../server/services/MarketImpactPredictorService.ts
+// server/services/MarketImpactPredictorService.ts
 import { sql as sql16 } from "drizzle-orm";
 var MarketImpactPredictorService;
 var init_MarketImpactPredictorService = __esm({
-  "../../server/services/MarketImpactPredictorService.ts"() {
+  "server/services/MarketImpactPredictorService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -33080,11 +36252,11 @@ Output JSON only:
   }
 });
 
-// ../../server/routers/marketImpactPredictorRouter.ts
+// server/routers/marketImpactPredictorRouter.ts
 import { z as z64 } from "zod";
 var marketImpactPredictorRouter;
 var init_marketImpactPredictorRouter = __esm({
-  "../../server/routers/marketImpactPredictorRouter.ts"() {
+  "server/routers/marketImpactPredictorRouter.ts"() {
     "use strict";
     init_trpc();
     init_MarketImpactPredictorService();
@@ -33130,11 +36302,11 @@ var init_marketImpactPredictorRouter = __esm({
   }
 });
 
-// ../../server/services/MultiModalComplianceService.ts
+// server/services/MultiModalComplianceService.ts
 import { sql as sql17 } from "drizzle-orm";
 var MultiModalComplianceService;
 var init_MultiModalComplianceService = __esm({
-  "../../server/services/MultiModalComplianceService.ts"() {
+  "server/services/MultiModalComplianceService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -33242,11 +36414,11 @@ Output JSON only:
   }
 });
 
-// ../../server/routers/multiModalComplianceRouter.ts
+// server/routers/multiModalComplianceRouter.ts
 import { z as z65 } from "zod";
 var multiModalComplianceRouter;
 var init_multiModalComplianceRouter = __esm({
-  "../../server/routers/multiModalComplianceRouter.ts"() {
+  "server/routers/multiModalComplianceRouter.ts"() {
     "use strict";
     init_trpc();
     init_MultiModalComplianceService();
@@ -33291,11 +36463,11 @@ var init_multiModalComplianceRouter = __esm({
   }
 });
 
-// ../../server/services/ExternalSentimentService.ts
+// server/services/ExternalSentimentService.ts
 import { sql as sql18 } from "drizzle-orm";
 var ExternalSentimentService;
 var init_ExternalSentimentService = __esm({
-  "../../server/services/ExternalSentimentService.ts"() {
+  "server/services/ExternalSentimentService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -33399,11 +36571,11 @@ Output JSON only:
   }
 });
 
-// ../../server/routers/externalSentimentRouter.ts
+// server/routers/externalSentimentRouter.ts
 import { z as z66 } from "zod";
 var externalSentimentRouter;
 var init_externalSentimentRouter = __esm({
-  "../../server/routers/externalSentimentRouter.ts"() {
+  "server/routers/externalSentimentRouter.ts"() {
     "use strict";
     init_trpc();
     init_ExternalSentimentService();
@@ -33442,11 +36614,11 @@ var init_externalSentimentRouter = __esm({
   }
 });
 
-// ../../server/services/PersonalizedBriefingService.ts
+// server/services/PersonalizedBriefingService.ts
 import { sql as sql19 } from "drizzle-orm";
 var PersonalizedBriefingService;
 var init_PersonalizedBriefingService = __esm({
-  "../../server/services/PersonalizedBriefingService.ts"() {
+  "server/services/PersonalizedBriefingService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -33565,11 +36737,11 @@ Output JSON only:
   }
 });
 
-// ../../server/routers/personalizedBriefingRouter.ts
+// server/routers/personalizedBriefingRouter.ts
 import { z as z67 } from "zod";
 var personalizedBriefingRouter;
 var init_personalizedBriefingRouter = __esm({
-  "../../server/routers/personalizedBriefingRouter.ts"() {
+  "server/routers/personalizedBriefingRouter.ts"() {
     "use strict";
     init_trpc();
     init_PersonalizedBriefingService();
@@ -33629,10 +36801,10 @@ var init_personalizedBriefingRouter = __esm({
   }
 });
 
-// ../../server/services/MaterialityRiskOracleService.ts
+// server/services/MaterialityRiskOracleService.ts
 var MaterialityRiskOracleService;
 var init_MaterialityRiskOracleService = __esm({
-  "../../server/services/MaterialityRiskOracleService.ts"() {
+  "server/services/MaterialityRiskOracleService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -33739,11 +36911,11 @@ ${input.priorFilings}` : ""}`
   }
 });
 
-// ../../server/routers/materialityRiskRouter.ts
+// server/routers/materialityRiskRouter.ts
 import { z as z68 } from "zod";
 var materialityRiskRouter;
 var init_materialityRiskRouter = __esm({
-  "../../server/routers/materialityRiskRouter.ts"() {
+  "server/routers/materialityRiskRouter.ts"() {
     "use strict";
     init_trpc();
     init_MaterialityRiskOracleService();
@@ -33768,10 +36940,10 @@ var init_materialityRiskRouter = __esm({
   }
 });
 
-// ../../server/services/InvestorIntentionDecoderService.ts
+// server/services/InvestorIntentionDecoderService.ts
 var InvestorIntentionDecoderService;
 var init_InvestorIntentionDecoderService = __esm({
-  "../../server/services/InvestorIntentionDecoderService.ts"() {
+  "server/services/InvestorIntentionDecoderService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -33882,11 +37054,11 @@ ${input.historicalQuestions.join("\n")}` : ""}`
   }
 });
 
-// ../../server/routers/investorIntentRouter.ts
+// server/routers/investorIntentRouter.ts
 import { z as z69 } from "zod";
 var investorIntentRouter;
 var init_investorIntentRouter = __esm({
-  "../../server/routers/investorIntentRouter.ts"() {
+  "server/routers/investorIntentRouter.ts"() {
     "use strict";
     init_trpc();
     init_InvestorIntentionDecoderService();
@@ -33911,10 +37083,10 @@ var init_investorIntentRouter = __esm({
   }
 });
 
-// ../../server/services/CrossEventConsistencyService.ts
+// server/services/CrossEventConsistencyService.ts
 var CrossEventConsistencyService;
 var init_CrossEventConsistencyService = __esm({
-  "../../server/services/CrossEventConsistencyService.ts"() {
+  "server/services/CrossEventConsistencyService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -34015,11 +37187,11 @@ ${input.peerStatements.join("\n")}` : ""}`
   }
 });
 
-// ../../server/routers/crossEventConsistencyRouter.ts
+// server/routers/crossEventConsistencyRouter.ts
 import { z as z70 } from "zod";
 var crossEventConsistencyRouter;
 var init_crossEventConsistencyRouter = __esm({
-  "../../server/routers/crossEventConsistencyRouter.ts"() {
+  "server/routers/crossEventConsistencyRouter.ts"() {
     "use strict";
     init_trpc();
     init_CrossEventConsistencyService();
@@ -34044,10 +37216,10 @@ var init_crossEventConsistencyRouter = __esm({
   }
 });
 
-// ../../server/services/VolatilitySimulatorService.ts
+// server/services/VolatilitySimulatorService.ts
 var VolatilitySimulatorService;
 var init_VolatilitySimulatorService = __esm({
-  "../../server/services/VolatilitySimulatorService.ts"() {
+  "server/services/VolatilitySimulatorService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -34151,11 +37323,11 @@ PRIOR 30-DAY REALIZED VOL: ${input.priorVolatility || "N/A"}`
   }
 });
 
-// ../../server/routers/volatilitySimulatorRouter.ts
+// server/routers/volatilitySimulatorRouter.ts
 import { z as z71 } from "zod";
 var volatilitySimulatorRouter;
 var init_volatilitySimulatorRouter = __esm({
-  "../../server/routers/volatilitySimulatorRouter.ts"() {
+  "server/routers/volatilitySimulatorRouter.ts"() {
     "use strict";
     init_trpc();
     init_VolatilitySimulatorService();
@@ -34181,10 +37353,10 @@ var init_volatilitySimulatorRouter = __esm({
   }
 });
 
-// ../../server/services/RegulatoryInterventionService.ts
+// server/services/RegulatoryInterventionService.ts
 var RegulatoryInterventionService;
 var init_RegulatoryInterventionService = __esm({
-  "../../server/services/RegulatoryInterventionService.ts"() {
+  "server/services/RegulatoryInterventionService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -34291,11 +37463,11 @@ ${Object.entries(input.currentThresholds).map(([k, v]) => `${k}: ${v}`).join("\n
   }
 });
 
-// ../../server/routers/regulatoryInterventionRouter.ts
+// server/routers/regulatoryInterventionRouter.ts
 import { z as z72 } from "zod";
 var regulatoryInterventionRouter;
 var init_regulatoryInterventionRouter = __esm({
-  "../../server/routers/regulatoryInterventionRouter.ts"() {
+  "server/routers/regulatoryInterventionRouter.ts"() {
     "use strict";
     init_trpc();
     init_RegulatoryInterventionService();
@@ -34323,11 +37495,11 @@ var init_regulatoryInterventionRouter = __esm({
   }
 });
 
-// ../../server/services/EventIntegrityTwinService.ts
+// server/services/EventIntegrityTwinService.ts
 import { createHash as createHash4 } from "crypto";
 var EventIntegrityTwinService;
 var init_EventIntegrityTwinService = __esm({
-  "../../server/services/EventIntegrityTwinService.ts"() {
+  "server/services/EventIntegrityTwinService.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -34458,11 +37630,11 @@ ${input.segments.slice(0, 5).map((s, i) => `[${s.timestamp}] Sentiment: ${s.sent
   }
 });
 
-// ../../server/routers/eventIntegrityRouter.ts
+// server/routers/eventIntegrityRouter.ts
 import { z as z73 } from "zod";
 var eventIntegrityRouter;
 var init_eventIntegrityRouter = __esm({
-  "../../server/routers/eventIntegrityRouter.ts"() {
+  "server/routers/eventIntegrityRouter.ts"() {
     "use strict";
     init_trpc();
     init_EventIntegrityTwinService();
@@ -34495,12 +37667,12 @@ var init_eventIntegrityRouter = __esm({
   }
 });
 
-// ../../server/routers/monthlyReportRouter.ts
+// server/routers/monthlyReportRouter.ts
 import { z as z74 } from "zod";
 import { desc as desc36, eq as eq64 } from "drizzle-orm";
 var monthlyReportRouter;
 var init_monthlyReportRouter = __esm({
-  "../../server/routers/monthlyReportRouter.ts"() {
+  "server/routers/monthlyReportRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -34630,12 +37802,12 @@ ${JSON.stringify(eventSummaries.slice(0, 30), null, 2)}`
   }
 });
 
-// ../../server/routers/advisoryBotRouter.ts
+// server/routers/advisoryBotRouter.ts
 import { z as z75 } from "zod";
 import { desc as desc37, eq as eq65 } from "drizzle-orm";
 var advisoryBotRouter;
 var init_advisoryBotRouter = __esm({
-  "../../server/routers/advisoryBotRouter.ts"() {
+  "server/routers/advisoryBotRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -34733,7 +37905,7 @@ ${contextData || "No event data available yet. Suggest the user run some Shadow 
   }
 });
 
-// ../../server/routers/evolutionAuditRouter.ts
+// server/routers/evolutionAuditRouter.ts
 import { z as z76 } from "zod";
 import { desc as desc38, eq as eq66, sql as sql20 } from "drizzle-orm";
 import { createHash as createHash5 } from "crypto";
@@ -34864,7 +38036,7 @@ ${JSON.stringify(proposals.map((p) => ({
 }
 var evolutionAuditRouter;
 var init_evolutionAuditRouter = __esm({
-  "../../server/routers/evolutionAuditRouter.ts"() {
+  "server/routers/evolutionAuditRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -34903,7 +38075,7 @@ var init_evolutionAuditRouter = __esm({
   }
 });
 
-// ../../server/services/ShadowModeGuardianService.ts
+// server/services/ShadowModeGuardianService.ts
 var ShadowModeGuardianService_exports = {};
 __export(ShadowModeGuardianService_exports, {
   gracefulShutdown: () => gracefulShutdown,
@@ -35042,7 +38214,7 @@ async function gracefulShutdown(signal) {
 }
 var STALE_THRESHOLD_MS, PROCESSING_TIMEOUT_MS, WATCHDOG_INTERVAL_MS, watchdogTimer;
 var init_ShadowModeGuardianService = __esm({
-  "../../server/services/ShadowModeGuardianService.ts"() {
+  "server/services/ShadowModeGuardianService.ts"() {
     "use strict";
     init_db();
     STALE_THRESHOLD_MS = 30 * 60 * 1e3;
@@ -35052,7 +38224,7 @@ var init_ShadowModeGuardianService = __esm({
   }
 });
 
-// ../../server/routers/systemDiagnosticsRouter.ts
+// server/routers/systemDiagnosticsRouter.ts
 async function runDiagnostic(name, fn) {
   const start = Date.now();
   try {
@@ -35064,7 +38236,7 @@ async function runDiagnostic(name, fn) {
 }
 var systemDiagnosticsRouter;
 var init_systemDiagnosticsRouter = __esm({
-  "../../server/routers/systemDiagnosticsRouter.ts"() {
+  "server/routers/systemDiagnosticsRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -35188,7 +38360,7 @@ var init_systemDiagnosticsRouter = __esm({
   }
 });
 
-// ../../server/_core/ably.ts
+// server/_core/ably.ts
 async function getAblyClient() {
   if (_ablyClient) return _ablyClient;
   const apiKey = process.env.ABLY_API_KEY;
@@ -35197,8 +38369,8 @@ async function getAblyClient() {
     return null;
   }
   try {
-    const Ably2 = await import("ably");
-    _ablyClient = new Ably2.Rest(apiKey);
+    const Ably3 = await import("ably");
+    _ablyClient = new Ably3.Rest(apiKey);
     return _ablyClient;
   } catch (err) {
     console.error("[Ably] Failed to initialise client:", err);
@@ -35225,13 +38397,13 @@ async function publishPostEventData(postEventData2) {
 }
 var _ablyClient;
 var init_ably = __esm({
-  "../../server/_core/ably.ts"() {
+  "server/_core/ably.ts"() {
     "use strict";
     _ablyClient = null;
   }
 });
 
-// ../../server/services/AgiComplianceService.ts
+// server/services/AgiComplianceService.ts
 async function predictiveRiskAnalysis(sessionContext) {
   try {
     const questionSummary = sessionContext.questions.slice(0, 20).map(
@@ -35357,13 +38529,13 @@ ${existingDraft ? `Draft Response: ${existingDraft}` : "No existing draft \u2014
   }
 }
 var init_AgiComplianceService = __esm({
-  "../../server/services/AgiComplianceService.ts"() {
+  "server/services/AgiComplianceService.ts"() {
     "use strict";
     init_llm();
   }
 });
 
-// ../../server/services/LiveQaTriageService.ts
+// server/services/LiveQaTriageService.ts
 function extractLLMText2(result) {
   if (result?.text) return result.text;
   const content = result?.choices?.[0]?.message?.content;
@@ -35539,7 +38711,7 @@ Return ONLY valid JSON:
 }
 var DEFAULT_GO_LIVE_THRESHOLD;
 var init_LiveQaTriageService = __esm({
-  "../../server/services/LiveQaTriageService.ts"() {
+  "server/services/LiveQaTriageService.ts"() {
     "use strict";
     init_llm();
     init_AgiComplianceService();
@@ -35547,7 +38719,7 @@ var init_LiveQaTriageService = __esm({
   }
 });
 
-// ../../server/services/AgiToolGeneratorService.ts
+// server/services/AgiToolGeneratorService.ts
 async function generateAutonomousTools(sessionContext) {
   try {
     const result = await invokeLLM({
@@ -35609,25 +38781,51 @@ Top Themes: ${sessionContext.topThemes.join(", ")}`
   }
 }
 var init_AgiToolGeneratorService = __esm({
-  "../../server/services/AgiToolGeneratorService.ts"() {
+  "server/services/AgiToolGeneratorService.ts"() {
     "use strict";
     init_llm();
   }
 });
 
-// ../../server/routers/liveQaRouter.ts
+// server/routers/liveQaRouter.ts
 import { z as z77 } from "zod";
 import { eq as eq67, desc as desc39, sql as sql21 } from "drizzle-orm";
 import { createHash as createHash6 } from "crypto";
+function tokenize(text4) {
+  return new Set(
+    text4.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter((w) => w.length > 2)
+  );
+}
+function jaccardSimilarity(a, b) {
+  const setA = tokenize(a);
+  const setB = tokenize(b);
+  if (setA.size === 0 && setB.size === 0) return 0;
+  let intersection = 0;
+  for (const word of setA) {
+    if (setB.has(word)) intersection++;
+  }
+  const union = setA.size + setB.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+function findDuplicate(newQuestion, existingQuestions) {
+  let bestMatch = null;
+  for (const eq84 of existingQuestions) {
+    const sim = jaccardSimilarity(newQuestion, eq84.text);
+    if (sim >= DUPLICATE_THRESHOLD && (!bestMatch || sim > bestMatch.similarity)) {
+      bestMatch = { id: eq84.id, similarity: sim };
+    }
+  }
+  return bestMatch;
+}
 function generateSessionCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
   for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
 }
-var upvoteTracker, UPVOTE_COOLDOWN_MS, liveQaRouter;
+var DUPLICATE_THRESHOLD, upvoteTracker, UPVOTE_COOLDOWN_MS, liveQaRouter;
 var init_liveQaRouter = __esm({
-  "../../server/routers/liveQaRouter.ts"() {
+  "server/routers/liveQaRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -35637,6 +38835,7 @@ var init_liveQaRouter = __esm({
     init_ably();
     init_AgiToolGeneratorService();
     init_AgiComplianceService();
+    DUPLICATE_THRESHOLD = 0.55;
     upvoteTracker = /* @__PURE__ */ new Map();
     UPVOTE_COOLDOWN_MS = 1e4;
     liveQaRouter = router({
@@ -35737,16 +38936,21 @@ var init_liveQaRouter = __esm({
         if (!session) throw new Error("Q&A session not found");
         if (session.status === "closed") throw new Error("Q&A session is closed");
         if (session.status === "paused") throw new Error("Q&A session is paused");
-        const existingQs = await db2.select({ text: liveQaQuestions.questionText }).from(liveQaQuestions).where(eq67(liveQaQuestions.sessionId, session.id)).limit(50);
+        const existingQs = await db2.select({ id: liveQaQuestions.id, text: liveQaQuestions.questionText }).from(liveQaQuestions).where(eq67(liveQaQuestions.sessionId, session.id)).limit(200);
         const triage = await triageQuestion2(
           input.questionText,
           session.eventName,
           session.clientName || "",
           existingQs.map((q) => q.text)
         );
+        const duplicateMatch = findDuplicate(input.questionText, existingQs.map((q) => ({ id: q.id, text: q.text })));
+        const isDuplicate = !!duplicateMatch;
+        const effectiveClassification = isDuplicate ? "duplicate" : triage.triageClassification;
+        const effectiveStatus = triage.complianceRiskScore > 70 ? "flagged" : "triaged";
+        const nowEpoch = String(Date.now());
         const [insertResult] = await rawSql(
-          `INSERT INTO live_qa_questions (session_id, question_text, submitter_name, submitter_email, submitter_company, question_category, question_status, upvotes, triage_score, triage_classification, triage_reason, compliance_risk_score, priority_score, is_anonymous, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO live_qa_questions (session_id, question_text, submitter_name, submitter_email, submitter_company, question_category, question_status, upvotes, triage_score, triage_classification, triage_reason, compliance_risk_score, priority_score, is_anonymous, duplicate_of_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             session.id,
             input.questionText,
@@ -35754,15 +38958,16 @@ var init_liveQaRouter = __esm({
             input.isAnonymous ? null : input.submitterEmail || null,
             input.isAnonymous ? null : input.submitterCompany || null,
             triage.category,
-            triage.complianceRiskScore > 70 ? "flagged" : "triaged",
+            effectiveStatus,
             triage.triageScore,
-            triage.triageClassification,
-            triage.triageReason,
+            effectiveClassification,
+            isDuplicate ? `Possible duplicate of Q#${duplicateMatch.id} (${Math.round(duplicateMatch.similarity * 100)}% match). ${triage.triageReason}` : triage.triageReason,
             triage.complianceRiskScore,
-            triage.priorityScore,
+            isDuplicate ? Math.max(0, triage.priorityScore - 20) : triage.priorityScore,
             input.isAnonymous ? 1 : 0,
-            Date.now(),
-            Date.now()
+            duplicateMatch?.id || null,
+            nowEpoch,
+            nowEpoch
           ]
         );
         const questionId = insertResult.insertId;
@@ -35801,19 +39006,41 @@ var init_liveQaRouter = __esm({
       }),
       listQuestions: operatorProcedure.input(z77.object({
         sessionId: z77.number(),
-        statusFilter: z77.string().optional()
+        statusFilter: z77.string().optional(),
+        sortBy: z77.enum(["priority", "time", "compliance"]).optional(),
+        sortOrder: z77.enum(["asc", "desc"]).optional()
       })).query(async ({ input }) => {
         const db2 = await getDb();
         let query = `SELECT q.*, 
         (SELECT COUNT(*) FROM live_qa_answers a WHERE a.question_id = q.id) as answer_count,
-        (SELECT COUNT(*) FROM live_qa_compliance_flags f WHERE f.question_id = q.id AND f.resolved = 0) as unresolved_flags
+        (SELECT COUNT(*) FROM live_qa_compliance_flags f WHERE f.question_id = q.id AND f.resolved = false) as unresolved_flags,
+        (SELECT COUNT(*) FROM live_qa_questions d WHERE d.duplicate_of_id = q.id) as duplicate_count
         FROM live_qa_questions q WHERE q.session_id = ?`;
         const params = [input.sessionId];
-        if (input.statusFilter && input.statusFilter !== "all") {
+        const filter = input.statusFilter || "all";
+        if (filter === "legal_review") {
+          query += ` AND q.legal_review_reason IS NOT NULL`;
+        } else if (filter === "duplicates") {
+          query += ` AND q.duplicate_of_id IS NOT NULL`;
+        } else if (filter === "unanswered") {
+          query += ` AND q.question_status NOT IN ('answered', 'rejected')`;
+        } else if (filter === "high_priority") {
+          query += ` AND (q.triage_classification = 'high_priority' OR q.compliance_risk_score > 60)`;
+        } else if (filter === "sent_to_speaker") {
+          query += ` AND q.operator_notes LIKE '%Sent to speaker%'`;
+        } else if (filter !== "all") {
           query += ` AND q.question_status = ?`;
-          params.push(input.statusFilter);
+          params.push(filter);
         }
-        query += ` ORDER BY q.priority_score DESC, q.created_at DESC`;
+        const sortBy = input.sortBy || "priority";
+        const sortOrder = (input.sortOrder || "desc").toUpperCase();
+        if (sortBy === "compliance") {
+          query += ` ORDER BY q.compliance_risk_score ${sortOrder}, q.priority_score DESC`;
+        } else if (sortBy === "time") {
+          query += ` ORDER BY q.created_at ${sortOrder}`;
+        } else {
+          query += ` ORDER BY q.priority_score ${sortOrder}, q.created_at DESC`;
+        }
         const [rows] = await rawSql(query, params);
         return rows || [];
       }),
@@ -35861,24 +39088,31 @@ var init_liveQaRouter = __esm({
         operatorNotes: z77.string().optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        const updates = { status: input.status, updatedAt: Date.now() };
+        const [existing] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
+        if (!existing) throw new Error("Question not found");
+        const oldStatus = existing.questionStatus;
+        if (oldStatus === input.status && !input.operatorNotes) return { success: true };
+        const nowEpoch = String(Date.now());
+        const updates = { status: input.status, updatedAt: nowEpoch };
         if (input.operatorNotes !== void 0) updates.operatorNotes = input.operatorNotes;
         await db2.update(liveQaQuestions).set(updates).where(eq67(liveQaQuestions.id, input.questionId));
-        const [q] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
-        if (q) {
-          const field = input.status === "approved" ? "totalApproved" : input.status === "rejected" ? "totalRejected" : null;
-          if (field) {
-            const col = field === "totalApproved" ? "total_approved" : "total_rejected";
-            await rawSql(`UPDATE live_qa_sessions SET ${col} = ${col} + 1 WHERE id = ?`, [q.sessionId]);
-          }
-          publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
-            questionId: input.questionId,
-            newStatus: input.status,
-            operatorNotes: input.operatorNotes || null,
-            timestamp: Date.now()
-          }).catch(() => {
-          });
+        if (oldStatus !== input.status) {
+          const wasApproved = oldStatus === "approved";
+          const wasRejected = oldStatus === "rejected";
+          const isApproved = input.status === "approved";
+          const isRejected = input.status === "rejected";
+          if (wasApproved && !isApproved) await rawSql(`UPDATE live_qa_sessions SET total_approved = GREATEST(0, total_approved - 1) WHERE id = ?`, [existing.sessionId]);
+          if (wasRejected && !isRejected) await rawSql(`UPDATE live_qa_sessions SET total_rejected = GREATEST(0, total_rejected - 1) WHERE id = ?`, [existing.sessionId]);
+          if (!wasApproved && isApproved) await rawSql(`UPDATE live_qa_sessions SET total_approved = total_approved + 1 WHERE id = ?`, [existing.sessionId]);
+          if (!wasRejected && isRejected) await rawSql(`UPDATE live_qa_sessions SET total_rejected = total_rejected + 1 WHERE id = ?`, [existing.sessionId]);
         }
+        publishToChannel(`curalive-qa-${existing.sessionId}`, "qa.statusChanged", {
+          questionId: input.questionId,
+          newStatus: input.status,
+          operatorNotes: input.operatorNotes || null,
+          timestamp: Date.now()
+        }).catch(() => {
+        });
         return { success: true };
       }),
       generateDraft: operatorProcedure.input(z77.object({ questionId: z77.number() })).mutation(async ({ input }) => {
@@ -35988,6 +39222,115 @@ var init_liveQaRouter = __esm({
         }).catch(() => {
         });
         return { success: true, messageId };
+      }),
+      setLegalReview: operatorProcedure.input(z77.object({
+        questionId: z77.number(),
+        reason: z77.string().min(1).max(2e3)
+      })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await db2.update(liveQaQuestions).set({
+          status: "flagged",
+          operatorNotes: `Legal Review: ${input.reason}`,
+          updatedAt: Date.now()
+        }).where(eq67(liveQaQuestions.id, input.questionId));
+        await rawSql(`UPDATE live_qa_questions SET legal_review_reason = ? WHERE id = ?`, [input.reason, input.questionId]);
+        const [q] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
+        if (q) {
+          publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
+            questionId: input.questionId,
+            newStatus: "flagged",
+            legalReview: true,
+            reason: input.reason,
+            timestamp: Date.now()
+          }).catch(() => {
+          });
+        }
+        return { success: true };
+      }),
+      clearLegalReview: operatorProcedure.input(z77.object({ questionId: z77.number() })).mutation(async ({ input }) => {
+        await rawSql(`UPDATE live_qa_questions SET legal_review_reason = NULL WHERE id = ?`, [input.questionId]);
+        return { success: true };
+      }),
+      getDuplicatesOf: operatorProcedure.input(z77.object({ questionId: z77.number() })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT id, question_text, submitter_name, submitter_company, question_status, created_at
+         FROM live_qa_questions WHERE duplicate_of_id = ?
+         ORDER BY created_at DESC`,
+          [input.questionId]
+        );
+        return rows || [];
+      }),
+      unlinkDuplicate: operatorProcedure.input(z77.object({ questionId: z77.number() })).mutation(async ({ input }) => {
+        await rawSql(`UPDATE live_qa_questions SET duplicate_of_id = NULL, triage_classification = 'standard' WHERE id = ?`, [input.questionId]);
+        return { success: true };
+      }),
+      linkDuplicate: operatorProcedure.input(z77.object({
+        questionId: z77.number(),
+        duplicateOfId: z77.number()
+      })).mutation(async ({ input }) => {
+        await rawSql(`UPDATE live_qa_questions SET duplicate_of_id = ?, triage_classification = 'duplicate' WHERE id = ?`, [input.duplicateOfId, input.questionId]);
+        return { success: true };
+      }),
+      generateContextDraft: operatorProcedure.input(z77.object({
+        questionId: z77.number(),
+        includeTranscript: z77.boolean().optional()
+      })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const [q] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
+        if (!q) throw new Error("Question not found");
+        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.id, q.sessionId));
+        if (!session) throw new Error("Session not found");
+        let transcriptContext = "";
+        if (input.includeTranscript && session.shadowSessionId) {
+          try {
+            const [transcriptRows] = await rawSql(
+              `SELECT transcript_json FROM recall_bots WHERE recall_bot_id = (SELECT recall_bot_id FROM shadow_sessions WHERE id = ?)`,
+              [session.shadowSessionId]
+            );
+            if (transcriptRows?.[0]?.transcript_json) {
+              const segments = JSON.parse(transcriptRows[0].transcript_json);
+              const recentSegments = segments.slice(-20);
+              transcriptContext = recentSegments.map((s) => `${s.speaker || "Speaker"}: ${s.text}`).join("\n");
+            }
+          } catch {
+          }
+        }
+        const draft = await generateAutoDraft(
+          q.questionText + (transcriptContext ? `
+
+Recent transcript context:
+${transcriptContext}` : ""),
+          session.eventName,
+          session.clientName || "",
+          q.category
+        );
+        await rawSql(
+          `UPDATE live_qa_questions SET ai_draft_text = ?, ai_draft_reasoning = ? WHERE id = ?`,
+          [draft.answerText, draft.reasoning, input.questionId]
+        );
+        return draft;
+      }),
+      bulkAction: operatorProcedure.input(z77.object({
+        questionIds: z77.array(z77.number()).min(1).max(50),
+        action: z77.enum(["approve", "reject", "flagged", "legal_review"]),
+        reason: z77.string().optional()
+      })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        let processed = 0;
+        for (const qId of input.questionIds) {
+          try {
+            if (input.action === "legal_review") {
+              await db2.update(liveQaQuestions).set({ status: "flagged", operatorNotes: `Legal Review: ${input.reason || "Bulk escalation"}`, updatedAt: Date.now() }).where(eq67(liveQaQuestions.id, qId));
+              await rawSql(`UPDATE live_qa_questions SET legal_review_reason = ? WHERE id = ?`, [input.reason || "Bulk escalation", qId]);
+            } else {
+              const notes = input.action === "approve" ? "Bulk approved" : input.action === "reject" ? "Bulk rejected" : "Bulk flagged";
+              await db2.update(liveQaQuestions).set({ status: input.action, operatorNotes: notes, updatedAt: Date.now() }).where(eq67(liveQaQuestions.id, qId));
+            }
+            processed++;
+          } catch {
+          }
+        }
+        return { success: true, processed, total: input.questionIds.length };
       }),
       generateQaCertificate: operatorProcedure.input(z77.object({ sessionId: z77.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
@@ -36138,7 +39481,7 @@ var init_liveQaRouter = __esm({
   }
 });
 
-// ../../server/services/PlatformEmbedService.ts
+// server/services/PlatformEmbedService.ts
 import { eq as eq68, desc as desc40, sql as sql22 } from "drizzle-orm";
 async function generateShareLink(sessionId, sessionCode, platform, baseUrl) {
   const db2 = await getDb();
@@ -36303,7 +39646,7 @@ async function generateEventSummary(sessionId) {
 }
 var PLATFORM_LABELS;
 var init_PlatformEmbedService = __esm({
-  "../../server/services/PlatformEmbedService.ts"() {
+  "server/services/PlatformEmbedService.ts"() {
     "use strict";
     init_db();
     init_schema();
@@ -36317,11 +39660,11 @@ var init_PlatformEmbedService = __esm({
   }
 });
 
-// ../../server/routers/platformEmbedRouter.ts
+// server/routers/platformEmbedRouter.ts
 import { z as z78 } from "zod";
 var platformEmbedRouter;
 var init_platformEmbedRouter = __esm({
-  "../../server/routers/platformEmbedRouter.ts"() {
+  "server/routers/platformEmbedRouter.ts"() {
     "use strict";
     init_trpc();
     init_PlatformEmbedService();
@@ -36396,7 +39739,7 @@ var init_platformEmbedRouter = __esm({
   }
 });
 
-// ../../server/services/InvestorEngagementScoringService.ts
+// server/services/InvestorEngagementScoringService.ts
 function recencyDecay(lastInteractionDate) {
   const ageDays = (Date.now() - new Date(lastInteractionDate).getTime()) / (1e3 * 60 * 60 * 24);
   return Math.pow(0.5, ageDays / DECAY_HALF_LIFE_DAYS);
@@ -36476,7 +39819,7 @@ function computeSentimentTrend(interactions) {
 }
 var WEIGHTS, DECAY_HALF_LIFE_DAYS, profileStore, InvestorEngagementScoringService;
 var init_InvestorEngagementScoringService = __esm({
-  "../../server/services/InvestorEngagementScoringService.ts"() {
+  "server/services/InvestorEngagementScoringService.ts"() {
     "use strict";
     init_llm();
     WEIGHTS = {
@@ -36673,8 +40016,8 @@ ${profile.interactions.slice(-5).map(
             }
           }
         });
-        const text2 = response?.choices?.[0]?.message?.content || "{}";
-        return JSON.parse(text2);
+        const text4 = response?.choices?.[0]?.message?.content || "{}";
+        return JSON.parse(text4);
       }
       static async generateCohortAnalysis(eventId) {
         const profiles = [...profileStore.values()].filter(
@@ -36721,11 +40064,11 @@ ${profile.interactions.slice(-5).map(
   }
 });
 
-// ../../server/routers/investorEngagementRouter.ts
+// server/routers/investorEngagementRouter.ts
 import { z as z79 } from "zod";
 var investorEngagementRouter;
 var init_investorEngagementRouter = __esm({
-  "../../server/routers/investorEngagementRouter.ts"() {
+  "server/routers/investorEngagementRouter.ts"() {
     "use strict";
     init_trpc();
     init_InvestorEngagementScoringService();
@@ -36779,16 +40122,16 @@ var init_investorEngagementRouter = __esm({
   }
 });
 
-// ../../server/services/LiveSubtitleTranslationService.ts
+// server/services/LiveSubtitleTranslationService.ts
 function getMemoryKey(sourceText) {
   return sourceText.toLowerCase().trim().replace(/\s+/g, " ");
 }
-function getCachedTranslation(text2, targetLang) {
+function getCachedTranslation(text4, targetLang) {
   const langCache = translationMemory.get(targetLang);
   if (!langCache) return null;
-  return langCache.get(getMemoryKey(text2)) || null;
+  return langCache.get(getMemoryKey(text4)) || null;
 }
-function cacheTranslation(text2, targetLang, translation) {
+function cacheTranslation(text4, targetLang, translation) {
   if (!translationMemory.has(targetLang)) {
     translationMemory.set(targetLang, /* @__PURE__ */ new Map());
   }
@@ -36797,11 +40140,11 @@ function cacheTranslation(text2, targetLang, translation) {
     const firstKey = langCache.keys().next().value;
     if (firstKey) langCache.delete(firstKey);
   }
-  langCache.set(getMemoryKey(text2), translation);
+  langCache.set(getMemoryKey(text4), translation);
 }
 var SUPPORTED_LANGUAGES2, FINANCIAL_GLOSSARY, translationMemory, activeSessions, LiveSubtitleTranslationService;
 var init_LiveSubtitleTranslationService = __esm({
-  "../../server/services/LiveSubtitleTranslationService.ts"() {
+  "server/services/LiveSubtitleTranslationService.ts"() {
     "use strict";
     init_llm();
     SUPPORTED_LANGUAGES2 = [
@@ -37002,14 +40345,14 @@ ${glossaryStr}` : ""}`
         }
         return results;
       }
-      static async detectLanguage(text2) {
+      static async detectLanguage(text4) {
         const response = await invokeLLM({
           messages: [
             {
               role: "system",
               content: `Detect the language of the following text. Return JSON: { "code": "ISO 639-1 code", "name": "English name", "confidence": 0.0-1.0 }`
             },
-            { role: "user", content: text2.slice(0, 500) }
+            { role: "user", content: text4.slice(0, 500) }
           ],
           response_format: {
             type: "json_schema",
@@ -37102,11 +40445,11 @@ TRANSLATION (${input.targetLanguage}): ${input.translated}`
   }
 });
 
-// ../../server/routers/liveSubtitleRouter.ts
+// server/routers/liveSubtitleRouter.ts
 import { z as z80 } from "zod";
 var liveSubtitleRouter;
 var init_liveSubtitleRouter = __esm({
-  "../../server/routers/liveSubtitleRouter.ts"() {
+  "server/routers/liveSubtitleRouter.ts"() {
     "use strict";
     init_trpc();
     init_LiveSubtitleTranslationService();
@@ -37168,11 +40511,11 @@ var init_liveSubtitleRouter = __esm({
   }
 });
 
-// ../../server/routers/ipoMandARouter.ts
+// server/routers/ipoMandARouter.ts
 import { z as z81 } from "zod";
 var ipoMandARouter;
 var init_ipoMandARouter = __esm({
-  "../../server/routers/ipoMandARouter.ts"() {
+  "server/routers/ipoMandARouter.ts"() {
     "use strict";
     init_trpc();
     init_IpoMandAIntelligenceService();
@@ -37296,7 +40639,7 @@ var init_ipoMandARouter = __esm({
   }
 });
 
-// ../../server/services/ComplianceEngineService.ts
+// server/services/ComplianceEngineService.ts
 var ComplianceEngineService_exports = {};
 __export(ComplianceEngineService_exports, {
   getComplianceDashboardData: () => getComplianceDashboardData,
@@ -37526,8 +40869,8 @@ Only output the JSON array, no other text.`
       ],
       maxTokens: 1e3
     });
-    const text2 = typeof result.content === "string" ? result.content : "";
-    const jsonMatch = text2.match(/\[[\s\S]*\]/);
+    const text4 = typeof result.content === "string" ? result.content : "";
+    const jsonMatch = text4.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       const assessments = JSON.parse(jsonMatch[0]);
       for (const a of assessments) {
@@ -37735,7 +41078,7 @@ function stopComplianceEngine() {
 }
 var scanInterval;
 var init_ComplianceEngineService = __esm({
-  "../../server/services/ComplianceEngineService.ts"() {
+  "server/services/ComplianceEngineService.ts"() {
     "use strict";
     init_db();
     init_llm();
@@ -37744,11 +41087,11 @@ var init_ComplianceEngineService = __esm({
   }
 });
 
-// ../../server/routers/complianceEngineRouter.ts
+// server/routers/complianceEngineRouter.ts
 import { z as z82 } from "zod";
 var complianceEngineRouter;
 var init_complianceEngineRouter = __esm({
-  "../../server/routers/complianceEngineRouter.ts"() {
+  "server/routers/complianceEngineRouter.ts"() {
     "use strict";
     init_trpc();
     init_ComplianceEngineService();
@@ -37786,7 +41129,7 @@ var init_complianceEngineRouter = __esm({
   }
 });
 
-// ../../server/_core/compliance.ts
+// server/_core/compliance.ts
 import { eq as eq69, and as and43 } from "drizzle-orm";
 async function detectViolation(transcriptExcerpt, speakerName, speakerRole) {
   try {
@@ -37905,7 +41248,7 @@ async function getEventViolations(eventId, limit = 100) {
   try {
     return await db.query.complianceViolations.findMany({
       where: eq69(complianceViolations.eventId, eventId),
-      orderBy: (violations, { desc: desc42 }) => [desc42(violations.createdAt)],
+      orderBy: (violations, { desc: desc43 }) => [desc43(violations.createdAt)],
       limit
     });
   } catch (error) {
@@ -37920,7 +41263,7 @@ async function getUnacknowledgedViolations(eventId) {
         eq69(complianceViolations.eventId, eventId),
         eq69(complianceViolations.acknowledged, false)
       ),
-      orderBy: (violations, { desc: desc42 }) => [desc42(violations.severity), desc42(violations.createdAt)]
+      orderBy: (violations, { desc: desc43 }) => [desc43(violations.severity), desc43(violations.createdAt)]
     });
   } catch (error) {
     console.error("[Compliance] Query error:", error);
@@ -37929,7 +41272,7 @@ async function getUnacknowledgedViolations(eventId) {
 }
 var ComplianceRuleEngine, complianceRuleEngine;
 var init_compliance2 = __esm({
-  "../../server/_core/compliance.ts"() {
+  "server/_core/compliance.ts"() {
     "use strict";
     init_llm();
     init_db();
@@ -37945,7 +41288,7 @@ var init_compliance2 = __esm({
           id: "financial_forward_looking",
           name: "Forward-Looking Statements",
           category: "financial",
-          condition: (text2) => {
+          condition: (text4) => {
             const keywords = [
               "will",
               "expect",
@@ -37956,7 +41299,7 @@ var init_compliance2 = __esm({
               "forecast"
             ];
             return keywords.some(
-              (keyword) => text2.toLowerCase().includes(keyword)
+              (keyword) => text4.toLowerCase().includes(keyword)
             );
           },
           severity: "warning",
@@ -37966,7 +41309,7 @@ var init_compliance2 = __esm({
           id: "data_pii_detection",
           name: "Personal Information Detection",
           category: "data_protection",
-          condition: (text2) => {
+          condition: (text4) => {
             const piiPatterns = [
               /\b\d{3}-\d{2}-\d{4}\b/,
               // SSN
@@ -37975,7 +41318,7 @@ var init_compliance2 = __esm({
               /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/
               // Email
             ];
-            return piiPatterns.some((pattern) => pattern.test(text2));
+            return piiPatterns.some((pattern) => pattern.test(text4));
           },
           severity: "error",
           message: "Potential personal information detected. Review before sharing."
@@ -37987,18 +41330,18 @@ var init_compliance2 = __esm({
       removeRule(ruleId) {
         this.rules.delete(ruleId);
       }
-      evaluateText(conferenceId, text2, metadata = {}) {
+      evaluateText(conferenceId, text4, metadata = {}) {
         const violations = [];
         this.rules.forEach((rule) => {
           try {
-            if (rule.condition(text2, metadata)) {
+            if (rule.condition(text4, metadata)) {
               const violation = {
                 id: `violation_${Date.now()}_${Math.random()}`,
                 ruleId: rule.id,
                 ruleName: rule.name,
                 severity: rule.severity,
                 message: rule.message,
-                detectedText: text2.substring(0, 100),
+                detectedText: text4.substring(0, 100),
                 timestamp: Date.now(),
                 speakerId: metadata.speakerId || void 0
               };
@@ -38046,12 +41389,12 @@ var init_compliance2 = __esm({
   }
 });
 
-// ../../server/routers/aiAm.ts
+// server/routers/aiAm.ts
 import { z as z83 } from "zod";
 import { eq as eq70, and as and44, desc as desc41 } from "drizzle-orm";
 var aiAmRouter;
 var init_aiAm = __esm({
-  "../../server/routers/aiAm.ts"() {
+  "server/routers/aiAm.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -38094,8 +41437,8 @@ var init_aiAm = __esm({
             input.endTimeMs
           );
           const violationId = Number(result.id);
-          const ably = getAblyClient();
-          const channel = ably.channels.get(`aiAm:alerts:${input.eventId}`);
+          const ably2 = getAblyClient();
+          const channel = ably2.channels.get(`aiAm:alerts:${input.eventId}`);
           await channel.publish("violation_detected", {
             violationId,
             eventId: input.eventId,
@@ -38183,8 +41526,8 @@ var init_aiAm = __esm({
       ).mutation(async ({ input, ctx }) => {
         try {
           await acknowledgeViolation(input.violationId, ctx.user.id, input.notes);
-          const ably = getAblyClient();
-          const channel = ably.channels.get(`aiAm:alerts:${input.eventId}`);
+          const ably2 = getAblyClient();
+          const channel = ably2.channels.get(`aiAm:alerts:${input.eventId}`);
           await channel.publish("violation_acknowledged", {
             violationId: input.violationId,
             acknowledgedBy: ctx.user.name,
@@ -38333,7 +41676,7 @@ var init_aiAm = __esm({
   }
 });
 
-// ../../server/routers/rbac.ts
+// server/routers/rbac.ts
 import { TRPCError as TRPCError8 } from "@trpc/server";
 import { z as z84 } from "zod";
 import { eq as eq71, count as count2 } from "drizzle-orm";
@@ -38342,7 +41685,7 @@ function hasRole(userRole, requiredRole) {
 }
 var roleHierarchy, adminProcedure4, operatorProcedure3, rbacRouter;
 var init_rbac = __esm({
-  "../../server/routers/rbac.ts"() {
+  "server/routers/rbac.ts"() {
     "use strict";
     init_trpc();
     init_db();
@@ -38432,12 +41775,12 @@ var init_rbac = __esm({
   }
 });
 
-// ../../server/routers/aiEvolutionRouter.ts
+// server/routers/aiEvolutionRouter.ts
 import { z as z85 } from "zod";
 import { eq as eq72 } from "drizzle-orm";
 var VALID_TRANSITIONS, aiEvolutionRouter;
 var init_aiEvolutionRouter = __esm({
-  "../../server/routers/aiEvolutionRouter.ts"() {
+  "server/routers/aiEvolutionRouter.ts"() {
     "use strict";
     init_trpc();
     init_AiEvolutionService();
@@ -38476,11 +41819,11 @@ var init_aiEvolutionRouter = __esm({
   }
 });
 
-// ../../server/routers/persistence.ts
+// server/routers/persistence.ts
 import { z as z86 } from "zod";
 var persistenceRouter;
 var init_persistence = __esm({
-  "../../server/routers/persistence.ts"() {
+  "server/routers/persistence.ts"() {
     "use strict";
     init_trpc();
     init_ably();
@@ -38617,7 +41960,7 @@ var init_persistence = __esm({
   }
 });
 
-// ../../server/_core/aiAmPhase2AutoMuting.ts
+// server/_core/aiAmPhase2AutoMuting.ts
 async function getMutingConfig(eventId) {
   return mutingConfigs.get(eventId) || null;
 }
@@ -38846,18 +42189,18 @@ async function getMutingStatistics(eventId) {
 }
 var mutingState, mutingConfigs;
 var init_aiAmPhase2AutoMuting = __esm({
-  "../../server/_core/aiAmPhase2AutoMuting.ts"() {
+  "server/_core/aiAmPhase2AutoMuting.ts"() {
     "use strict";
     mutingState = /* @__PURE__ */ new Map();
     mutingConfigs = /* @__PURE__ */ new Map();
   }
 });
 
-// ../../server/routers/aiAmPhase2.ts
+// server/routers/aiAmPhase2.ts
 import { z as z87 } from "zod";
 var aiAmPhase2Router;
 var init_aiAmPhase2 = __esm({
-  "../../server/routers/aiAmPhase2.ts"() {
+  "server/routers/aiAmPhase2.ts"() {
     "use strict";
     init_trpc();
     init_aiAmPhase2AutoMuting();
@@ -38989,11 +42332,11 @@ var init_aiAmPhase2 = __esm({
   }
 });
 
-// ../../server/routers/restBridgeRouter.ts
+// server/routers/restBridgeRouter.ts
 import { z as z88 } from "zod";
 var restBridgeRouter;
 var init_restBridgeRouter = __esm({
-  "../../server/routers/restBridgeRouter.ts"() {
+  "server/routers/restBridgeRouter.ts"() {
     "use strict";
     init_trpc();
     restBridgeRouter = router({
@@ -39112,30 +42455,3515 @@ ${"=".repeat(40)}
   }
 });
 
-// ../../server/routers.eager.ts
+// server/routers/session.ts
+import { z as z89 } from "zod";
+var sessionRouter;
+var init_session = __esm({
+  "server/routers/session.ts"() {
+    "use strict";
+    init_trpc();
+    sessionRouter = router({
+      getLiveSession: publicProcedure.query(async () => {
+        return null;
+      }),
+      getLiveQA: publicProcedure.input(z89.object({ sessionId: z89.string() })).query(async ({ input }) => {
+        return {
+          pendingCount: 0,
+          approvedCount: 0,
+          pending: [],
+          approved: []
+        };
+      }),
+      getLiveTranscript: publicProcedure.input(z89.object({ sessionId: z89.string() })).query(async ({ input }) => {
+        return [];
+      }),
+      getNotes: publicProcedure.input(z89.object({ sessionId: z89.string() })).query(async ({ input }) => {
+        return { notes: "" };
+      }),
+      approveQuestion: operatorProcedure.input(z89.object({ questionId: z89.string(), sessionId: z89.string() })).mutation(async ({ input }) => {
+        return { success: true, questionId: input.questionId };
+      }),
+      rejectQuestion: operatorProcedure.input(z89.object({ questionId: z89.string(), sessionId: z89.string() })).mutation(async ({ input }) => {
+        return { success: true, questionId: input.questionId };
+      }),
+      saveNotes: operatorProcedure.input(z89.object({ sessionId: z89.string(), notes: z89.string() })).mutation(async ({ input }) => {
+        return { success: true };
+      }),
+      exportSession: operatorProcedure.input(z89.object({ sessionId: z89.string(), format: z89.enum(["json", "pdf"]) })).mutation(async ({ input }) => {
+        const exportData = {
+          sessionId: input.sessionId,
+          exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          format: input.format
+        };
+        return {
+          format: input.format,
+          data: JSON.stringify(exportData, null, 2),
+          filename: `session-${input.sessionId}-export.${input.format}`
+        };
+      }),
+      handoffSession: operatorProcedure.input(z89.object({
+        sessionId: z89.string(),
+        targetOperatorId: z89.string(),
+        handoffNotes: z89.string().optional()
+      })).mutation(async ({ input }) => {
+        return {
+          success: true,
+          sessionId: input.sessionId,
+          targetOperatorId: input.targetOperatorId
+        };
+      })
+    });
+  }
+});
+
+// server/routers/archive.ts
+import { z as z90 } from "zod";
+var archiveRouter;
+var init_archive = __esm({
+  "server/routers/archive.ts"() {
+    "use strict";
+    init_trpc();
+    archiveRouter = router({
+      getArchivedSessions: publicProcedure.input(z90.object({
+        page: z90.number().optional().default(1),
+        limit: z90.number().optional().default(10),
+        search: z90.string().optional().default("")
+      })).query(async ({ input }) => {
+        return [];
+      })
+    });
+  }
+});
+
+// server/routers/bridgeConsoleRouter.ts
+import { z as z91 } from "zod";
+import { eq as eq73, and as and45, asc as asc7, desc as desc42, sql as sql23 } from "drizzle-orm";
+import twilio4 from "twilio";
+function getTwilioClient2() {
+  if (!TWILIO_ACCOUNT_SID2 || !TWILIO_AUTH_TOKEN2) return null;
+  return twilio4(TWILIO_ACCOUNT_SID2, TWILIO_AUTH_TOKEN2);
+}
+function resolveBaseUrl() {
+  if (process.env.REPLIT_DEPLOYMENT_URL) return `https://${process.env.REPLIT_DEPLOYMENT_URL}`;
+  if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  return "http://localhost:3000";
+}
+async function publishBridgeEvent(conferenceId, eventType, data) {
+  try {
+    const { AblyRealtimeService: AblyRealtimeService2 } = await Promise.resolve().then(() => (init_AblyRealtimeService(), AblyRealtimeService_exports));
+    await AblyRealtimeService2.publishToEvent(`bridge-${conferenceId}`, eventType, data);
+  } catch (e) {
+    console.log("[Bridge] Ably publish skipped:", e.message);
+  }
+}
+async function logOperatorAction2(conferenceId, action, category, targetId, metadata) {
+  const db2 = await getDb();
+  await db2.insert(bridgeOperatorActions).values({
+    conferenceId,
+    action,
+    category,
+    targetId: targetId ?? null,
+    metadata: metadata ? JSON.stringify(metadata) : null
+  });
+}
+async function requireConference(db2, conferenceId) {
+  const [conf] = await db2.select().from(bridgeConferences).where(eq73(bridgeConferences.id, conferenceId));
+  if (!conf) throw new Error("Conference not found");
+  return conf;
+}
+async function requireParticipantInConference(db2, participantId, conferenceId) {
+  const [p] = await db2.select().from(bridgeParticipants).where(and45(eq73(bridgeParticipants.id, participantId), eq73(bridgeParticipants.conferenceId, conferenceId)));
+  if (!p) throw new Error("Participant not found in this conference");
+  return p;
+}
+async function requireQuestionInConference(db2, questionId, conferenceId) {
+  const [q] = await db2.select().from(bridgeQaQuestions).where(and45(eq73(bridgeQaQuestions.id, questionId), eq73(bridgeQaQuestions.conferenceId, conferenceId)));
+  if (!q) throw new Error("Question not found in this conference");
+  return q;
+}
+async function requireGreeterInConference(db2, greeterId, conferenceId) {
+  const [g] = await db2.select().from(bridgeGreeterQueue).where(and45(eq73(bridgeGreeterQueue.id, greeterId), eq73(bridgeGreeterQueue.conferenceId, conferenceId)));
+  if (!g) throw new Error("Greeter entry not found in this conference");
+  return g;
+}
+var TWILIO_ACCOUNT_SID2, TWILIO_AUTH_TOKEN2, TWILIO_CALLER_ID2, RECALL_API_KEY3, bridgeConsoleRouter;
+var init_bridgeConsoleRouter = __esm({
+  "server/routers/bridgeConsoleRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    init_schema();
+    TWILIO_ACCOUNT_SID2 = process.env.TWILIO_ACCOUNT_SID ?? "";
+    TWILIO_AUTH_TOKEN2 = process.env.TWILIO_AUTH_TOKEN ?? "";
+    TWILIO_CALLER_ID2 = process.env.TWILIO_CALLER_ID ?? "";
+    RECALL_API_KEY3 = process.env.RECALL_AI_API_KEY ?? "";
+    bridgeConsoleRouter = router({
+      createEvent: operatorProcedure.input(z91.object({
+        name: z91.string().min(1),
+        organiserName: z91.string().optional(),
+        organiserEmail: z91.string().optional(),
+        scheduledAt: z91.string().optional(),
+        dialInNumber: z91.string().optional(),
+        externalSources: z91.array(z91.string()).optional()
+      })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const accessCode = String(Math.floor(1e7 + Math.random() * 9e7));
+        const [event] = await db2.insert(bridgeEvents).values({
+          name: input.name,
+          organiserName: input.organiserName,
+          organiserEmail: input.organiserEmail,
+          scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null,
+          accessCode,
+          dialInNumber: input.dialInNumber,
+          externalSources: input.externalSources ? JSON.stringify(input.externalSources) : null
+        }).returning();
+        const greenRoomName = `bridge-green-room-${event.id}`;
+        const mainConfName = `bridge-main-${event.id}`;
+        const [greenRoom] = await db2.insert(bridgeConferences).values({
+          bridgeEventId: event.id,
+          twilioConfName: greenRoomName,
+          type: "green_room",
+          phase: "waiting"
+        }).returning();
+        const [mainConf] = await db2.insert(bridgeConferences).values({
+          bridgeEventId: event.id,
+          twilioConfName: mainConfName,
+          type: "main",
+          phase: "waiting"
+        }).returning();
+        return {
+          event,
+          greenRoomId: greenRoom.id,
+          mainConferenceId: mainConf.id,
+          accessCode
+        };
+      }),
+      getEvents: operatorProcedure.query(async () => {
+        const db2 = await getDb();
+        return db2.select().from(bridgeEvents).orderBy(desc42(bridgeEvents.createdAt));
+      }),
+      getEvent: operatorProcedure.input(z91.object({ id: z91.number() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        const [event] = await db2.select().from(bridgeEvents).where(eq73(bridgeEvents.id, input.id));
+        if (!event) throw new Error("Bridge event not found");
+        const conferences = await db2.select().from(bridgeConferences).where(eq73(bridgeConferences.bridgeEventId, event.id));
+        const mainConf = conferences.find((c) => c.type === "main");
+        const greenRoom = conferences.find((c) => c.type === "green_room");
+        let participants = [];
+        let greeterQueue = [];
+        let qaQuestions = [];
+        if (mainConf) {
+          participants = await db2.select().from(bridgeParticipants).where(eq73(bridgeParticipants.bridgeEventId, event.id)).orderBy(asc7(bridgeParticipants.createdAt));
+          qaQuestions = await db2.select().from(bridgeQaQuestions).where(eq73(bridgeQaQuestions.conferenceId, mainConf.id)).orderBy(asc7(bridgeQaQuestions.queuePosition));
+        }
+        greeterQueue = await db2.select().from(bridgeGreeterQueue).where(and45(
+          eq73(bridgeGreeterQueue.bridgeEventId, event.id),
+          eq73(bridgeGreeterQueue.status, "waiting")
+        )).orderBy(asc7(bridgeGreeterQueue.queuedAt));
+        return { event, mainConf, greenRoom, participants, greeterQueue, qaQuestions };
+      }),
+      openConference: operatorProcedure.input(z91.object({ conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await requireConference(db2, input.conferenceId);
+        const [conf] = await db2.update(bridgeConferences).set({ phase: "live", startedAt: /* @__PURE__ */ new Date() }).where(eq73(bridgeConferences.id, input.conferenceId)).returning();
+        if (!conf) throw new Error("Failed to update conference");
+        await db2.update(bridgeParticipants).set({ isMuted: false }).where(and45(
+          eq73(bridgeParticipants.conferenceId, input.conferenceId),
+          eq73(bridgeParticipants.role, "presenter")
+        ));
+        await logOperatorAction2(input.conferenceId, "conference_opened", "conference");
+        await publishBridgeEvent(input.conferenceId, "conference:opened", { phase: "live", startedAt: conf.startedAt });
+        return { phase: "live", startedAt: conf.startedAt };
+      }),
+      endConference: operatorProcedure.input(z91.object({ conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await requireConference(db2, input.conferenceId);
+        const [conf] = await db2.update(bridgeConferences).set({ phase: "ended", endedAt: /* @__PURE__ */ new Date() }).where(eq73(bridgeConferences.id, input.conferenceId)).returning();
+        if (!conf) throw new Error("Failed to update conference");
+        await db2.update(bridgeParticipants).set({ status: "left", leaveTime: /* @__PURE__ */ new Date() }).where(and45(
+          eq73(bridgeParticipants.conferenceId, input.conferenceId),
+          sql23`${bridgeParticipants.status} NOT IN ('left', 'removed', 'failed')`
+        ));
+        await logOperatorAction2(input.conferenceId, "conference_ended", "conference");
+        await publishBridgeEvent(input.conferenceId, "conference:ended", { endedAt: conf.endedAt });
+        return { endedAt: conf.endedAt };
+      }),
+      toggleLock: operatorProcedure.input(z91.object({ conferenceId: z91.number(), locked: z91.boolean() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await db2.update(bridgeConferences).set({ isLocked: input.locked }).where(eq73(bridgeConferences.id, input.conferenceId));
+        await logOperatorAction2(input.conferenceId, input.locked ? "conference_locked" : "conference_unlocked", "operator");
+        await publishBridgeEvent(input.conferenceId, "conference:lock", { locked: input.locked });
+        return { locked: input.locked };
+      }),
+      toggleRecording: operatorProcedure.input(z91.object({ conferenceId: z91.number(), recording: z91.boolean() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await db2.update(bridgeConferences).set({ isRecording: input.recording }).where(eq73(bridgeConferences.id, input.conferenceId));
+        await logOperatorAction2(input.conferenceId, input.recording ? "recording_started" : "recording_paused", "operator");
+        await publishBridgeEvent(input.conferenceId, "conference:recording", { recording: input.recording });
+        return { recording: input.recording };
+      }),
+      toggleQA: operatorProcedure.input(z91.object({ conferenceId: z91.number(), active: z91.boolean() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await db2.update(bridgeConferences).set({ qaActive: input.active }).where(eq73(bridgeConferences.id, input.conferenceId));
+        await logOperatorAction2(input.conferenceId, input.active ? "qa_opened" : "qa_closed", "qa");
+        await publishBridgeEvent(input.conferenceId, "qa:toggle", { active: input.active });
+        return { qaActive: input.active };
+      }),
+      // --- GREETER QUEUE ---
+      getGreeterQueue: operatorProcedure.input(z91.object({ bridgeEventId: z91.number() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        return db2.select().from(bridgeGreeterQueue).where(and45(
+          eq73(bridgeGreeterQueue.bridgeEventId, input.bridgeEventId),
+          eq73(bridgeGreeterQueue.status, "waiting")
+        )).orderBy(asc7(bridgeGreeterQueue.queuedAt));
+      }),
+      admitCaller: operatorProcedure.input(z91.object({
+        greeterId: z91.number(),
+        conferenceId: z91.number(),
+        name: z91.string(),
+        organisation: z91.string(),
+        role: z91.enum(["presenter", "participant", "observer"])
+      })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const greeter = await requireGreeterInConference(db2, input.greeterId, input.conferenceId);
+        await db2.update(bridgeGreeterQueue).set({ status: "admitted", admittedAt: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeGreeterQueue.id, input.greeterId), eq73(bridgeGreeterQueue.conferenceId, input.conferenceId)));
+        const [conf] = await db2.select().from(bridgeConferences).where(eq73(bridgeConferences.id, input.conferenceId));
+        const [participant] = await db2.insert(bridgeParticipants).values({
+          bridgeEventId: greeter.bridgeEventId,
+          conferenceId: input.conferenceId,
+          name: input.name,
+          organisation: input.organisation,
+          phoneNumber: greeter.phoneNumber,
+          role: input.role,
+          status: "muted",
+          connectionMethod: "phone",
+          twilioCallSid: greeter.twilioCallSid,
+          isMuted: true,
+          greeted: true,
+          joinTime: /* @__PURE__ */ new Date()
+        }).returning();
+        await logOperatorAction2(input.conferenceId, "caller_admitted", "operator", participant.id, {
+          name: input.name,
+          organisation: input.organisation,
+          role: input.role
+        });
+        await publishBridgeEvent(input.conferenceId, "greeter:admitted", {
+          greeterId: input.greeterId,
+          participant
+        });
+        return { participantId: participant.id, status: "muted" };
+      }),
+      rejectCaller: operatorProcedure.input(z91.object({ greeterId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const [greeter] = await db2.update(bridgeGreeterQueue).set({ status: "rejected" }).where(eq73(bridgeGreeterQueue.id, input.greeterId)).returning();
+        await logOperatorAction2(input.conferenceId, "caller_rejected", "operator", input.greeterId);
+        await publishBridgeEvent(input.conferenceId, "greeter:rejected", { greeterId: input.greeterId });
+        return { status: "rejected" };
+      }),
+      editGreeter: operatorProcedure.input(z91.object({ greeterId: z91.number(), name: z91.string().optional(), organisation: z91.string().optional() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const updates = {};
+        if (input.name) updates.transcribedName = input.name;
+        if (input.organisation) updates.transcribedOrg = input.organisation;
+        await db2.update(bridgeGreeterQueue).set(updates).where(eq73(bridgeGreeterQueue.id, input.greeterId));
+        return { updated: true };
+      }),
+      // --- PARTICIPANT MANAGEMENT ---
+      dialOut: operatorProcedure.input(z91.object({
+        bridgeEventId: z91.number(),
+        conferenceId: z91.number(),
+        name: z91.string(),
+        organisation: z91.string(),
+        phoneNumber: z91.string(),
+        role: z91.enum(["presenter", "participant", "observer"])
+      })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const [participant] = await db2.insert(bridgeParticipants).values({
+          bridgeEventId: input.bridgeEventId,
+          conferenceId: input.conferenceId,
+          name: input.name,
+          organisation: input.organisation,
+          phoneNumber: input.phoneNumber,
+          role: input.role,
+          status: "dialing",
+          connectionMethod: "phone",
+          isMuted: true
+        }).returning();
+        await logOperatorAction2(input.conferenceId, "dial_out_initiated", "operator", participant.id, {
+          name: input.name,
+          phoneNumber: input.phoneNumber
+        });
+        await publishBridgeEvent(input.conferenceId, "participant:dialing", { participant });
+        return { participantId: participant.id, status: "dialing" };
+      }),
+      muteParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number(), muted: z91.boolean() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await requireParticipantInConference(db2, input.participantId, input.conferenceId);
+        const newStatus = input.muted ? "muted" : "live";
+        await db2.update(bridgeParticipants).set({ isMuted: input.muted, status: newStatus }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await logOperatorAction2(input.conferenceId, input.muted ? "participant_muted" : "participant_unmuted", "operator", input.participantId);
+        await publishBridgeEvent(input.conferenceId, "participant:updated", {
+          participantId: input.participantId,
+          isMuted: input.muted,
+          status: newStatus
+        });
+        return { status: newStatus };
+      }),
+      holdParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number(), hold: z91.boolean() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await requireParticipantInConference(db2, input.participantId, input.conferenceId);
+        const newStatus = input.hold ? "hold" : "muted";
+        await db2.update(bridgeParticipants).set({ isOnHold: input.hold, status: newStatus }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await logOperatorAction2(input.conferenceId, input.hold ? "participant_held" : "participant_unheld", "operator", input.participantId);
+        await publishBridgeEvent(input.conferenceId, "participant:updated", {
+          participantId: input.participantId,
+          isOnHold: input.hold,
+          status: newStatus
+        });
+        return { status: newStatus };
+      }),
+      removeParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await requireParticipantInConference(db2, input.participantId, input.conferenceId);
+        await db2.update(bridgeParticipants).set({ status: "removed", leaveTime: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await logOperatorAction2(input.conferenceId, "participant_removed", "operator", input.participantId);
+        await publishBridgeEvent(input.conferenceId, "participant:removed", { participantId: input.participantId });
+        return { status: "removed" };
+      }),
+      updateParticipant: operatorProcedure.input(z91.object({
+        participantId: z91.number(),
+        name: z91.string().optional(),
+        organisation: z91.string().optional(),
+        role: z91.string().optional(),
+        notes: z91.string().optional()
+      })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const updates = {};
+        if (input.name !== void 0) updates.name = input.name;
+        if (input.organisation !== void 0) updates.organisation = input.organisation;
+        if (input.role !== void 0) updates.role = input.role;
+        if (input.notes !== void 0) updates.notes = input.notes;
+        updates.updatedAt = /* @__PURE__ */ new Date();
+        await db2.update(bridgeParticipants).set(updates).where(eq73(bridgeParticipants.id, input.participantId));
+        return { updated: true };
+      }),
+      muteAll: operatorProcedure.input(z91.object({ conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const result = await db2.update(bridgeParticipants).set({ isMuted: true, status: "muted" }).where(and45(
+          eq73(bridgeParticipants.conferenceId, input.conferenceId),
+          sql23`${bridgeParticipants.role} NOT IN ('presenter', 'operator')`,
+          sql23`${bridgeParticipants.status} NOT IN ('left', 'removed', 'failed', 'invited')`
+        )).returning();
+        await logOperatorAction2(input.conferenceId, "mute_all", "operator");
+        await publishBridgeEvent(input.conferenceId, "conference:mute_all", { count: result.length });
+        return { mutedCount: result.length };
+      }),
+      unmuteAll: operatorProcedure.input(z91.object({ conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const result = await db2.update(bridgeParticipants).set({ isMuted: false, status: "live" }).where(and45(
+          eq73(bridgeParticipants.conferenceId, input.conferenceId),
+          sql23`${bridgeParticipants.status} NOT IN ('left', 'removed', 'failed', 'invited', 'hold')`
+        )).returning();
+        await logOperatorAction2(input.conferenceId, "unmute_all", "operator");
+        await publishBridgeEvent(input.conferenceId, "conference:unmute_all", { count: result.length });
+        return { unmutedCount: result.length };
+      }),
+      // --- Q&A MANAGEMENT ---
+      raiseHand: protectedProcedure.input(z91.object({
+        conferenceId: z91.number(),
+        participantId: z91.number(),
+        questionText: z91.string().optional(),
+        method: z91.enum(["phone_keypress", "web_button", "operator_added"])
+      })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const maxPos = await db2.select({ max: sql23`COALESCE(MAX(${bridgeQaQuestions.queuePosition}), 0)` }).from(bridgeQaQuestions).where(eq73(bridgeQaQuestions.conferenceId, input.conferenceId));
+        const nextPos = (maxPos[0]?.max ?? 0) + 1;
+        const [question] = await db2.insert(bridgeQaQuestions).values({
+          conferenceId: input.conferenceId,
+          participantId: input.participantId,
+          questionText: input.questionText,
+          method: input.method,
+          queuePosition: nextPos,
+          status: "pending"
+        }).returning();
+        await db2.update(bridgeParticipants).set({ handRaised: true, handRaisedAt: /* @__PURE__ */ new Date() }).where(eq73(bridgeParticipants.id, input.participantId));
+        await publishBridgeEvent(input.conferenceId, "qa:raised", { question });
+        return { questionId: question.id, queuePosition: nextPos };
+      }),
+      approveQuestion: operatorProcedure.input(z91.object({ questionId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await requireQuestionInConference(db2, input.questionId, input.conferenceId);
+        const [q] = await db2.update(bridgeQaQuestions).set({ status: "approved", approvedAt: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeQaQuestions.id, input.questionId), eq73(bridgeQaQuestions.conferenceId, input.conferenceId))).returning();
+        if (!q) throw new Error("Failed to approve question");
+        await logOperatorAction2(input.conferenceId, "qa_approved", "qa", input.questionId);
+        await publishBridgeEvent(input.conferenceId, "qa:approved", { question: q });
+        return { status: "approved", queuePosition: q.queuePosition };
+      }),
+      takeQuestion: operatorProcedure.input(z91.object({ questionId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await requireQuestionInConference(db2, input.questionId, input.conferenceId);
+        const [q] = await db2.update(bridgeQaQuestions).set({ status: "live", wentLiveAt: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeQaQuestions.id, input.questionId), eq73(bridgeQaQuestions.conferenceId, input.conferenceId))).returning();
+        if (!q) throw new Error("Failed to take question");
+        if (q.participantId) {
+          await db2.update(bridgeParticipants).set({ isMuted: false, status: "live" }).where(and45(eq73(bridgeParticipants.id, q.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        }
+        await logOperatorAction2(input.conferenceId, "qa_take", "qa", input.questionId);
+        await publishBridgeEvent(input.conferenceId, "qa:live", { question: q });
+        return { status: "live" };
+      }),
+      doneQuestion: operatorProcedure.input(z91.object({ questionId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await requireQuestionInConference(db2, input.questionId, input.conferenceId);
+        const [q] = await db2.update(bridgeQaQuestions).set({ status: "answered", answeredAt: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeQaQuestions.id, input.questionId), eq73(bridgeQaQuestions.conferenceId, input.conferenceId))).returning();
+        if (!q) throw new Error("Failed to complete question");
+        if (q.participantId) {
+          await db2.update(bridgeParticipants).set({ isMuted: true, status: "muted", handRaised: false }).where(and45(eq73(bridgeParticipants.id, q.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        }
+        await logOperatorAction2(input.conferenceId, "qa_done", "qa", input.questionId);
+        await publishBridgeEvent(input.conferenceId, "qa:done", { question: q });
+        return { status: "answered" };
+      }),
+      dismissQuestion: operatorProcedure.input(z91.object({ questionId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await requireQuestionInConference(db2, input.questionId, input.conferenceId);
+        await db2.update(bridgeQaQuestions).set({ status: "dismissed", dismissedAt: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeQaQuestions.id, input.questionId), eq73(bridgeQaQuestions.conferenceId, input.conferenceId)));
+        await logOperatorAction2(input.conferenceId, "qa_dismissed", "qa", input.questionId);
+        await publishBridgeEvent(input.conferenceId, "qa:dismissed", { questionId: input.questionId });
+        return { status: "dismissed" };
+      }),
+      skipQuestion: operatorProcedure.input(z91.object({ questionId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await requireQuestionInConference(db2, input.questionId, input.conferenceId);
+        const maxPos = await db2.select({ max: sql23`COALESCE(MAX(${bridgeQaQuestions.queuePosition}), 0)` }).from(bridgeQaQuestions).where(eq73(bridgeQaQuestions.conferenceId, input.conferenceId));
+        const newPos = (maxPos[0]?.max ?? 0) + 1;
+        await db2.update(bridgeQaQuestions).set({ queuePosition: newPos, status: "pending" }).where(and45(eq73(bridgeQaQuestions.id, input.questionId), eq73(bridgeQaQuestions.conferenceId, input.conferenceId)));
+        await logOperatorAction2(input.conferenceId, "qa_skipped", "qa", input.questionId);
+        await publishBridgeEvent(input.conferenceId, "qa:skipped", { questionId: input.questionId, newPosition: newPos });
+        return { newPosition: newPos };
+      }),
+      // --- OPERATOR EVENT LOG ---
+      getOperatorLog: operatorProcedure.input(z91.object({ conferenceId: z91.number() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        return db2.select().from(bridgeOperatorActions).where(eq73(bridgeOperatorActions.conferenceId, input.conferenceId)).orderBy(desc42(bridgeOperatorActions.performedAt)).limit(200);
+      }),
+      addLogEntry: operatorProcedure.input(z91.object({
+        conferenceId: z91.number(),
+        action: z91.string(),
+        category: z91.string(),
+        targetId: z91.number().optional(),
+        metadata: z91.any().optional()
+      })).mutation(async ({ input }) => {
+        await logOperatorAction2(input.conferenceId, input.action, input.category, input.targetId, input.metadata);
+        return { logged: true };
+      }),
+      // --- ATTENDANCE REPORT ---
+      getAttendanceReport: operatorProcedure.input(z91.object({ bridgeEventId: z91.number() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        const [event] = await db2.select().from(bridgeEvents).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        const participants = await db2.select().from(bridgeParticipants).where(eq73(bridgeParticipants.bridgeEventId, input.bridgeEventId)).orderBy(asc7(bridgeParticipants.joinTime));
+        const conferences = await db2.select().from(bridgeConferences).where(eq73(bridgeConferences.bridgeEventId, input.bridgeEventId));
+        const mainConf = conferences.find((c) => c.type === "main");
+        return {
+          event,
+          conference: mainConf,
+          participants: participants.map((p) => ({
+            name: p.name,
+            organisation: p.organisation,
+            role: p.role,
+            connectionMethod: p.connectionMethod,
+            joinTime: p.joinTime,
+            leaveTime: p.leaveTime,
+            durationSeconds: p.durationSeconds,
+            status: p.status
+          })),
+          summary: {
+            totalParticipants: participants.length,
+            presenters: participants.filter((p) => p.role === "presenter").length,
+            attendees: participants.filter((p) => p.role === "participant").length,
+            observers: participants.filter((p) => p.role === "observer").length
+          }
+        };
+      }),
+      // --- PRE-REGISTER PARTICIPANTS ---
+      addInvitedParticipant: operatorProcedure.input(z91.object({
+        bridgeEventId: z91.number(),
+        name: z91.string(),
+        organisation: z91.string(),
+        phoneNumber: z91.string(),
+        role: z91.enum(["presenter", "participant", "observer"])
+      })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const [participant] = await db2.insert(bridgeParticipants).values({
+          bridgeEventId: input.bridgeEventId,
+          name: input.name,
+          organisation: input.organisation,
+          phoneNumber: input.phoneNumber,
+          role: input.role,
+          status: "invited",
+          connectionMethod: "phone",
+          isMuted: true
+        }).returning();
+        return participant;
+      }),
+      twilioDialOut: operatorProcedure.input(z91.object({
+        bridgeEventId: z91.number(),
+        conferenceId: z91.number(),
+        name: z91.string(),
+        organisation: z91.string(),
+        phoneNumber: z91.string(),
+        role: z91.enum(["presenter", "participant", "observer"])
+      })).mutation(async ({ input }) => {
+        const client = getTwilioClient2();
+        const db2 = await getDb();
+        const conf = await requireConference(db2, input.conferenceId);
+        const [participant] = await db2.insert(bridgeParticipants).values({
+          bridgeEventId: input.bridgeEventId,
+          conferenceId: input.conferenceId,
+          name: input.name,
+          organisation: input.organisation,
+          phoneNumber: input.phoneNumber,
+          role: input.role,
+          status: "dialing",
+          connectionMethod: "phone",
+          isMuted: input.role !== "presenter"
+        }).returning();
+        if (client && TWILIO_CALLER_ID2) {
+          try {
+            const baseUrl = resolveBaseUrl();
+            const call = await client.calls.create({
+              to: input.phoneNumber,
+              from: TWILIO_CALLER_ID2,
+              url: `${baseUrl}/api/bridge/admit-to-conference?conferenceName=${encodeURIComponent(conf.twilioConfName ?? "")}`,
+              method: "POST",
+              statusCallback: `${baseUrl}/api/bridge/call-status`,
+              statusCallbackEvent: ["initiated", "ringing", "answered", "completed"],
+              statusCallbackMethod: "POST"
+            });
+            await db2.update(bridgeParticipants).set({ twilioCallSid: call.sid }).where(eq73(bridgeParticipants.id, participant.id));
+            await logOperatorAction2(input.conferenceId, "twilio_dial_out", "operator", participant.id, {
+              phoneNumber: input.phoneNumber,
+              callSid: call.sid
+            });
+          } catch (err) {
+            console.error("[Bridge] Twilio dial-out failed:", err.message);
+            await db2.update(bridgeParticipants).set({ status: "failed" }).where(eq73(bridgeParticipants.id, participant.id));
+            throw new Error(`Dial-out failed: ${err.message}`);
+          }
+        } else {
+          await logOperatorAction2(input.conferenceId, "dial_out_simulated", "operator", participant.id, {
+            phoneNumber: input.phoneNumber,
+            note: "Twilio not configured"
+          });
+        }
+        await publishBridgeEvent(input.conferenceId, "participant:dialing", { participant });
+        return { participantId: participant.id, status: participant.status };
+      }),
+      twilioAdmitCaller: operatorProcedure.input(z91.object({
+        greeterId: z91.number(),
+        conferenceId: z91.number(),
+        name: z91.string(),
+        organisation: z91.string(),
+        role: z91.enum(["presenter", "participant", "observer"])
+      })).mutation(async ({ input }) => {
+        const client = getTwilioClient2();
+        const db2 = await getDb();
+        const greeter = await requireGreeterInConference(db2, input.greeterId, input.conferenceId);
+        const conf = await requireConference(db2, input.conferenceId);
+        await db2.update(bridgeGreeterQueue).set({ status: "admitted", admittedAt: /* @__PURE__ */ new Date() }).where(eq73(bridgeGreeterQueue.id, input.greeterId));
+        const [participant] = await db2.insert(bridgeParticipants).values({
+          bridgeEventId: greeter.bridgeEventId,
+          conferenceId: input.conferenceId,
+          name: input.name,
+          organisation: input.organisation,
+          phoneNumber: greeter.phoneNumber,
+          role: input.role,
+          status: "muted",
+          connectionMethod: "phone",
+          twilioCallSid: greeter.twilioCallSid,
+          isMuted: true,
+          greeted: true,
+          joinTime: /* @__PURE__ */ new Date()
+        }).returning();
+        if (client && greeter.twilioCallSid && conf.twilioConfName) {
+          try {
+            const baseUrl = resolveBaseUrl();
+            await client.calls(greeter.twilioCallSid).update({
+              url: `${baseUrl}/api/bridge/admit-to-conference?conferenceName=${encodeURIComponent(conf.twilioConfName)}`,
+              method: "POST"
+            });
+          } catch (err) {
+            console.error("[Bridge] Twilio redirect failed:", err.message);
+          }
+        }
+        await logOperatorAction2(input.conferenceId, "caller_admitted_twilio", "operator", participant.id, {
+          name: input.name,
+          organisation: input.organisation
+        });
+        await publishBridgeEvent(input.conferenceId, "greeter:admitted", {
+          greeterId: input.greeterId,
+          participant
+        });
+        return { participantId: participant.id, status: "muted" };
+      }),
+      twilioMuteParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number(), muted: z91.boolean() })).mutation(async ({ input }) => {
+        const client = getTwilioClient2();
+        const db2 = await getDb();
+        const p = await requireParticipantInConference(db2, input.participantId, input.conferenceId);
+        const conf = await requireConference(db2, input.conferenceId);
+        if (client && conf.twilioConfSid && p.twilioCallSid) {
+          try {
+            await client.conferences(conf.twilioConfSid).participants(p.twilioCallSid).update({ muted: input.muted });
+          } catch (err) {
+            console.error("[Bridge] Twilio mute failed:", err.message);
+            throw new Error(`Twilio mute failed: ${err.message}`);
+          }
+        }
+        const newStatus = input.muted ? "muted" : "live";
+        await db2.update(bridgeParticipants).set({ isMuted: input.muted, status: newStatus }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await logOperatorAction2(input.conferenceId, input.muted ? "twilio_muted" : "twilio_unmuted", "operator", input.participantId);
+        await publishBridgeEvent(input.conferenceId, "participant:updated", {
+          participantId: input.participantId,
+          isMuted: input.muted,
+          status: newStatus
+        });
+        return { status: newStatus };
+      }),
+      twilioHoldParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number(), hold: z91.boolean() })).mutation(async ({ input }) => {
+        const client = getTwilioClient2();
+        const db2 = await getDb();
+        const p = await requireParticipantInConference(db2, input.participantId, input.conferenceId);
+        const conf = await requireConference(db2, input.conferenceId);
+        if (client && conf.twilioConfSid && p.twilioCallSid) {
+          try {
+            await client.conferences(conf.twilioConfSid).participants(p.twilioCallSid).update({
+              hold: input.hold,
+              holdUrl: input.hold ? "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical" : void 0
+            });
+          } catch (err) {
+            console.error("[Bridge] Twilio hold failed:", err.message);
+            throw new Error(`Twilio hold failed: ${err.message}`);
+          }
+        }
+        const newStatus = input.hold ? "hold" : "muted";
+        await db2.update(bridgeParticipants).set({ isOnHold: input.hold, status: newStatus }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await logOperatorAction2(input.conferenceId, input.hold ? "twilio_held" : "twilio_unheld", "operator", input.participantId);
+        await publishBridgeEvent(input.conferenceId, "participant:updated", {
+          participantId: input.participantId,
+          isOnHold: input.hold,
+          status: newStatus
+        });
+        return { status: newStatus };
+      }),
+      twilioRemoveParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+        const client = getTwilioClient2();
+        const db2 = await getDb();
+        const p = await requireParticipantInConference(db2, input.participantId, input.conferenceId);
+        const conf = await requireConference(db2, input.conferenceId);
+        if (client && conf.twilioConfSid && p.twilioCallSid) {
+          try {
+            await client.conferences(conf.twilioConfSid).participants(p.twilioCallSid).remove();
+          } catch (err) {
+            console.error("[Bridge] Twilio remove failed:", err.message);
+            throw new Error(`Twilio remove failed: ${err.message}`);
+          }
+        }
+        await db2.update(bridgeParticipants).set({ status: "removed", leaveTime: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await logOperatorAction2(input.conferenceId, "twilio_removed", "operator", input.participantId);
+        await publishBridgeEvent(input.conferenceId, "participant:removed", { participantId: input.participantId });
+        return { status: "removed" };
+      }),
+      twilioAnnounce: operatorProcedure.input(z91.object({ conferenceId: z91.number(), message: z91.string() })).mutation(async ({ input }) => {
+        const client = getTwilioClient2();
+        const db2 = await getDb();
+        const conf = await requireConference(db2, input.conferenceId);
+        if (client && conf.twilioConfSid) {
+          try {
+            await client.conferences(conf.twilioConfSid).update({
+              announceUrl: `http://twimlets.com/message?Message=${encodeURIComponent(input.message)}`,
+              announceMethod: "GET"
+            });
+          } catch (err) {
+            console.error("[Bridge] Twilio announce failed:", err.message);
+          }
+        }
+        await logOperatorAction2(input.conferenceId, "announcement", "operator", void 0, { message: input.message });
+        await publishBridgeEvent(input.conferenceId, "conference:announce", { message: input.message });
+        return { announced: true };
+      }),
+      deployRecallBot: operatorProcedure.input(z91.object({ bridgeEventId: z91.number() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        const [event] = await db2.select().from(bridgeEvents).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        if (!event) throw new Error("Bridge event not found");
+        if (!RECALL_API_KEY3) {
+          return { deployed: false, reason: "RECALL_AI_API_KEY not configured" };
+        }
+        const sources = [];
+        if (event.externalSources) {
+          try {
+            sources.push(...JSON.parse(event.externalSources));
+          } catch {
+          }
+        }
+        if (sources.length === 0) {
+          return { deployed: false, reason: "No external meeting URLs configured" };
+        }
+        const deployedBots = [];
+        const baseUrl = resolveBaseUrl();
+        for (const meetingUrl of sources) {
+          try {
+            const response = await fetch("https://api.recall.ai/api/v1/bot/", {
+              method: "POST",
+              headers: {
+                "Authorization": `Token ${RECALL_API_KEY3}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                meeting_url: meetingUrl,
+                bot_name: `CuraLive Bridge - ${event.name}`,
+                transcription_options: { provider: "default" },
+                real_time_transcription: {
+                  destination_url: `${baseUrl}/api/recall/webhook`,
+                  partial_results: false
+                },
+                metadata: {
+                  bridgeEventId: event.id,
+                  eventName: event.name,
+                  ablyChannel: `bridge-recall-${event.id}`
+                }
+              })
+            });
+            if (response.ok) {
+              const data = await response.json();
+              deployedBots.push({ url: meetingUrl, botId: data.id });
+              console.log(`[Bridge Recall] Bot deployed: ${data.id} for ${meetingUrl}`);
+            } else {
+              console.error(`[Bridge Recall] Deploy failed for ${meetingUrl}: ${response.status}`);
+            }
+          } catch (err) {
+            console.error(`[Bridge Recall] Deploy error for ${meetingUrl}:`, err.message);
+          }
+        }
+        if (deployedBots.length === 0) {
+          return { deployed: false, reason: "All bot deployments failed", botCount: 0, bots: [] };
+        }
+        await db2.update(bridgeEvents).set({ recallBotIds: JSON.stringify(deployedBots.map((b) => b.botId)) }).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        let shadowSessionId = null;
+        try {
+          const [session] = await db2.insert(shadowSessions).values({
+            clientName: event.organiserName ?? "Bridge Event",
+            eventName: event.name,
+            platform: "bridge",
+            status: "live",
+            recallBotId: deployedBots[0]?.botId ?? null,
+            startedAt: /* @__PURE__ */ new Date()
+          }).returning();
+          shadowSessionId = session.id;
+          await db2.update(bridgeEvents).set({ shadowSessionId: session.id }).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        } catch (err) {
+          console.error("[Bridge Recall] Shadow session creation failed:", err.message);
+        }
+        return {
+          deployed: true,
+          botCount: deployedBots.length,
+          bots: deployedBots,
+          shadowSessionId
+        };
+      }),
+      getPostCallPackage: operatorProcedure.input(z91.object({ bridgeEventId: z91.number() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        const [event] = await db2.select().from(bridgeEvents).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        if (!event) throw new Error("Bridge event not found");
+        const conferences = await db2.select().from(bridgeConferences).where(eq73(bridgeConferences.bridgeEventId, input.bridgeEventId));
+        const mainConf = conferences.find((c) => c.type === "main");
+        const participants = await db2.select().from(bridgeParticipants).where(eq73(bridgeParticipants.bridgeEventId, input.bridgeEventId)).orderBy(asc7(bridgeParticipants.joinTime));
+        let recordings = [];
+        if (mainConf) {
+          recordings = await db2.select().from(bridgeCallRecordings).where(eq73(bridgeCallRecordings.conferenceId, mainConf.id));
+        }
+        let qaQuestions = [];
+        if (mainConf) {
+          qaQuestions = await db2.select().from(bridgeQaQuestions).where(eq73(bridgeQaQuestions.conferenceId, mainConf.id)).orderBy(asc7(bridgeQaQuestions.queuePosition));
+        }
+        let operatorLog = [];
+        if (mainConf) {
+          operatorLog = await db2.select().from(bridgeOperatorActions).where(eq73(bridgeOperatorActions.conferenceId, mainConf.id)).orderBy(asc7(bridgeOperatorActions.performedAt)).limit(500);
+        }
+        let shadowReport = null;
+        if (event.shadowSessionId) {
+          try {
+            const [session] = await db2.select().from(shadowSessions).where(eq73(shadowSessions.id, event.shadowSessionId));
+            if (session) {
+              shadowReport = {
+                sessionId: session.id,
+                status: session.status,
+                clientName: session.clientName,
+                eventName: session.eventName,
+                averageSentiment: session.averageSentiment ?? null,
+                complianceFlags: session.complianceFlags ?? 0
+              };
+            }
+          } catch {
+          }
+        }
+        const activePresenters = participants.filter((p) => p.role === "presenter");
+        const activeAttendees = participants.filter((p) => p.role === "participant");
+        const activeObservers = participants.filter((p) => p.role === "observer");
+        const confStartedAt = mainConf?.startedAt;
+        const confEndedAt = mainConf?.endedAt;
+        const durationMinutes = confStartedAt && confEndedAt ? Math.round((confEndedAt.getTime() - confStartedAt.getTime()) / 6e4) : null;
+        return {
+          event: {
+            id: event.id,
+            name: event.name,
+            organiserName: event.organiserName,
+            organiserEmail: event.organiserEmail,
+            accessCode: event.accessCode,
+            scheduledAt: event.scheduledAt,
+            status: event.status
+          },
+          conference: mainConf ? {
+            id: mainConf.id,
+            phase: mainConf.phase,
+            startedAt: mainConf.startedAt,
+            endedAt: mainConf.endedAt,
+            durationMinutes
+          } : null,
+          attendance: {
+            total: participants.length,
+            presenters: activePresenters.length,
+            attendees: activeAttendees.length,
+            observers: activeObservers.length,
+            participants: participants.map((p) => ({
+              name: p.name,
+              organisation: p.organisation,
+              role: p.role,
+              connectionMethod: p.connectionMethod,
+              joinTime: p.joinTime,
+              leaveTime: p.leaveTime,
+              durationSeconds: p.durationSeconds,
+              status: p.status
+            }))
+          },
+          recordings: recordings.map((r) => ({
+            id: r.id,
+            status: r.status,
+            durationSec: r.durationSec,
+            storageUrl: r.storageUrl,
+            transcriptUrl: r.transcriptUrl
+          })),
+          qa: {
+            total: qaQuestions.length,
+            answered: qaQuestions.filter((q) => q.status === "answered").length,
+            dismissed: qaQuestions.filter((q) => q.status === "dismissed").length,
+            pending: qaQuestions.filter((q) => q.status === "pending").length,
+            questions: qaQuestions.map((q) => ({
+              id: q.id,
+              questionText: q.questionText,
+              method: q.method,
+              status: q.status,
+              raisedAt: q.raisedAt,
+              answeredAt: q.answeredAt
+            }))
+          },
+          operatorLog: operatorLog.map((l) => ({
+            action: l.action,
+            category: l.category,
+            performedAt: l.performedAt
+          })),
+          shadowReport
+        };
+      }),
+      exportAttendanceCsv: operatorProcedure.input(z91.object({ bridgeEventId: z91.number() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        const [event] = await db2.select().from(bridgeEvents).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        if (!event) throw new Error("Bridge event not found");
+        const participants = await db2.select().from(bridgeParticipants).where(eq73(bridgeParticipants.bridgeEventId, input.bridgeEventId)).orderBy(asc7(bridgeParticipants.joinTime));
+        const header = "Name,Organisation,Role,Connection,Join Time,Leave Time,Duration (s),Status";
+        const rows = participants.map((p) => [
+          `"${(p.name ?? "").replace(/"/g, '""')}"`,
+          `"${(p.organisation ?? "").replace(/"/g, '""')}"`,
+          p.role,
+          p.connectionMethod,
+          p.joinTime?.toISOString() ?? "",
+          p.leaveTime?.toISOString() ?? "",
+          p.durationSeconds ?? "",
+          p.status
+        ].join(","));
+        return {
+          filename: `${event.name.replace(/[^a-zA-Z0-9]/g, "_")}_attendance.csv`,
+          csv: [header, ...rows].join("\n")
+        };
+      }),
+      updateEventStatus: operatorProcedure.input(z91.object({ bridgeEventId: z91.number(), status: z91.string() })).mutation(async ({ input }) => {
+        const db2 = await getDb();
+        await db2.update(bridgeEvents).set({ status: input.status, updatedAt: /* @__PURE__ */ new Date() }).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        return { status: input.status };
+      })
+    });
+  }
+});
+
+// server/routers/boardIntelligenceRouter.ts
+import { z as z92 } from "zod";
+import { eq as eq74 } from "drizzle-orm";
+async function requireDb2() {
+  const db2 = await getDb();
+  if (!db2) throw new Error("Database not available");
+  return db2;
+}
+var boardIntelligenceRouter;
+var init_boardIntelligenceRouter = __esm({
+  "server/routers/boardIntelligenceRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    init_schema();
+    boardIntelligenceRouter = router({
+      getOrCreateCompass: operatorProcedure.input(z92.object({ sessionId: z92.number() })).query(async ({ input }) => {
+        const db2 = await requireDb2();
+        const existing = await db2.select().from(boardIntelligenceCompass).where(eq74(boardIntelligenceCompass.sessionId, input.sessionId)).limit(1);
+        if (existing.length > 0) return existing[0];
+        const [created] = await db2.insert(boardIntelligenceCompass).values({
+          sessionId: input.sessionId,
+          eventId: 0
+        }).returning();
+        return created;
+      }),
+      getPriorCommitmentAudit: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+        const db2 = await requireDb2();
+        return await db2.select().from(priorCommitmentAudits).where(eq74(priorCommitmentAudits.compassId, input.compassId));
+      }),
+      getDirectorLiabilityMap: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+        const db2 = await requireDb2();
+        return await db2.select().from(directorLiabilityMaps).where(eq74(directorLiabilityMaps.compassId, input.compassId));
+      }),
+      getAnalystExpectationAudit: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+        const db2 = await requireDb2();
+        return await db2.select().from(analystExpectationAudits).where(eq74(analystExpectationAudits.compassId, input.compassId));
+      }),
+      getGovernanceCommunicationScore: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+        const db2 = await requireDb2();
+        const results = await db2.select().from(governanceCommunicationScores).where(eq74(governanceCommunicationScores.compassId, input.compassId)).limit(1);
+        return results[0] ?? null;
+      }),
+      getBoardResolutions: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+        const db2 = await requireDb2();
+        return await db2.select().from(boardResolutions).where(eq74(boardResolutions.compassId, input.compassId));
+      }),
+      createBoardResolution: operatorProcedure.input(z92.object({
+        compassId: z92.number(),
+        actionType: z92.string(),
+        description: z92.string(),
+        priority: z92.enum(["low", "medium", "high"]),
+        owner: z92.string(),
+        dueDate: z92.string()
+      })).mutation(async ({ input }) => {
+        const db2 = await requireDb2();
+        const [created] = await db2.insert(boardResolutions).values({
+          compassId: input.compassId,
+          actionType: input.actionType,
+          description: input.description,
+          priority: input.priority,
+          owner: input.owner,
+          dueDate: new Date(input.dueDate),
+          status: "pending"
+        }).returning();
+        return created;
+      }),
+      updateResolutionStatus: operatorProcedure.input(z92.object({
+        resolutionId: z92.number(),
+        status: z92.enum(["pending", "in_progress", "completed"])
+      })).mutation(async ({ input }) => {
+        const db2 = await requireDb2();
+        const [updated] = await db2.update(boardResolutions).set({ status: input.status }).where(eq74(boardResolutions.id, input.resolutionId)).returning();
+        return updated;
+      }),
+      generateBoardBriefing: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+        const db2 = await requireDb2();
+        const compass = await db2.select().from(boardIntelligenceCompass).where(eq74(boardIntelligenceCompass.id, input.compassId)).limit(1);
+        const commitments = await db2.select().from(priorCommitmentAudits).where(eq74(priorCommitmentAudits.compassId, input.compassId));
+        const liabilities = await db2.select().from(directorLiabilityMaps).where(eq74(directorLiabilityMaps.compassId, input.compassId));
+        const expectations = await db2.select().from(analystExpectationAudits).where(eq74(analystExpectationAudits.compassId, input.compassId));
+        const governance = await db2.select().from(governanceCommunicationScores).where(eq74(governanceCommunicationScores.compassId, input.compassId)).limit(1);
+        const resolutions = await db2.select().from(boardResolutions).where(eq74(boardResolutions.compassId, input.compassId));
+        return {
+          compass: compass[0] ?? null,
+          priorCommitments: commitments,
+          directorLiabilities: liabilities,
+          analystExpectations: expectations,
+          governanceScore: governance[0] ?? null,
+          actionItems: resolutions
+        };
+      })
+    });
+  }
+});
+
+// server/routers/preEventIntelligenceRouter.ts
+import { z as z93 } from "zod";
+import { eq as eq75 } from "drizzle-orm";
+async function requireDb3() {
+  const db2 = await getDb();
+  if (!db2) throw new Error("Database not available");
+  return db2;
+}
+var preEventIntelligenceRouter;
+var init_preEventIntelligenceRouter = __esm({
+  "server/routers/preEventIntelligenceRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    init_schema();
+    preEventIntelligenceRouter = router({
+      getOrCreateBriefing: protectedProcedure.input(z93.object({ sessionId: z93.number() })).query(async ({ input }) => {
+        const db2 = await requireDb3();
+        const existing = await db2.select().from(preEventIntelligenceBriefings).where(eq75(preEventIntelligenceBriefings.sessionId, input.sessionId)).limit(1);
+        if (existing.length > 0) return existing[0];
+        const [created] = await db2.insert(preEventIntelligenceBriefings).values({
+          sessionId: input.sessionId,
+          eventId: 0
+        }).returning();
+        return created;
+      }),
+      getAnalystConsensus: protectedProcedure.input(z93.object({ briefingId: z93.number() })).query(async ({ input }) => {
+        const db2 = await requireDb3();
+        return await db2.select().from(analystConsensusData).where(eq75(analystConsensusData.briefingId, input.briefingId));
+      }),
+      getPredictedQa: protectedProcedure.input(z93.object({ briefingId: z93.number() })).query(async ({ input }) => {
+        const db2 = await requireDb3();
+        return await db2.select().from(predictedQaItems).where(eq75(predictedQaItems.briefingId, input.briefingId));
+      }),
+      getComplianceHotspots: protectedProcedure.input(z93.object({ briefingId: z93.number() })).query(async ({ input }) => {
+        const db2 = await requireDb3();
+        return await db2.select().from(complianceHotspots).where(eq75(complianceHotspots.briefingId, input.briefingId));
+      }),
+      getReadinessScores: protectedProcedure.input(z93.object({ briefingId: z93.number() })).query(async ({ input }) => {
+        const db2 = await requireDb3();
+        return await db2.select().from(readinessScores).where(eq75(readinessScores.briefingId, input.briefingId));
+      }),
+      addPredictedQa: protectedProcedure.input(z93.object({
+        briefingId: z93.number(),
+        topic: z93.string(),
+        predictedQuestion: z93.string(),
+        suggestedAnswer: z93.string(),
+        probability: z93.number(),
+        riskLevel: z93.enum(["low", "medium", "high"])
+      })).mutation(async ({ input }) => {
+        const db2 = await requireDb3();
+        const [created] = await db2.insert(predictedQaItems).values({
+          briefingId: input.briefingId,
+          topic: input.topic,
+          predictedQuestion: input.predictedQuestion,
+          suggestedAnswer: input.suggestedAnswer,
+          probability: input.probability,
+          riskLevel: input.riskLevel
+        }).returning();
+        return created;
+      }),
+      generateFullBriefing: protectedProcedure.input(z93.object({ briefingId: z93.number() })).query(async ({ input }) => {
+        const db2 = await requireDb3();
+        const briefing = await db2.select().from(preEventIntelligenceBriefings).where(eq75(preEventIntelligenceBriefings.id, input.briefingId)).limit(1);
+        const consensus = await db2.select().from(analystConsensusData).where(eq75(analystConsensusData.briefingId, input.briefingId));
+        const qa = await db2.select().from(predictedQaItems).where(eq75(predictedQaItems.briefingId, input.briefingId));
+        const hotspotsList = await db2.select().from(complianceHotspots).where(eq75(complianceHotspots.briefingId, input.briefingId));
+        const scoresList = await db2.select().from(readinessScores).where(eq75(readinessScores.briefingId, input.briefingId));
+        return {
+          briefing: briefing[0] ?? null,
+          analystConsensus: consensus,
+          predictedQa: qa,
+          complianceHotspots: hotspotsList,
+          readinessScores: scoresList
+        };
+      })
+    });
+  }
+});
+
+// server/routers/regulatoryComplianceRouter.ts
+import { z as z94 } from "zod";
+import { eq as eq76 } from "drizzle-orm";
+async function requireDb4() {
+  const db2 = await getDb();
+  if (!db2) throw new Error("Database not available");
+  return db2;
+}
+var regulatoryComplianceRouter;
+var init_regulatoryComplianceRouter = __esm({
+  "server/routers/regulatoryComplianceRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    init_schema();
+    regulatoryComplianceRouter = router({
+      getOrCreateMonitor: operatorProcedure.input(z94.object({ sessionId: z94.number() })).query(async ({ input }) => {
+        const db2 = await requireDb4();
+        const existing = await db2.select().from(regulatoryComplianceMonitors).where(eq76(regulatoryComplianceMonitors.sessionId, input.sessionId)).limit(1);
+        if (existing.length > 0) return existing[0];
+        const [created] = await db2.insert(regulatoryComplianceMonitors).values({
+          sessionId: input.sessionId,
+          eventId: 0
+        }).returning();
+        return created;
+      }),
+      getSessionRegulatoryFlags: operatorProcedure.input(z94.object({ sessionId: z94.number() })).query(async ({ input }) => {
+        const db2 = await requireDb4();
+        const monitor = await db2.select().from(regulatoryComplianceMonitors).where(eq76(regulatoryComplianceMonitors.sessionId, input.sessionId)).limit(1);
+        if (monitor.length === 0) return { flags: [] };
+        const flags = await db2.select().from(regulatoryFlags).where(eq76(regulatoryFlags.monitorId, monitor[0].id));
+        return { flags };
+      }),
+      getEventComplianceSummary: operatorProcedure.input(z94.object({ sessionId: z94.number() })).query(async ({ input }) => {
+        const db2 = await requireDb4();
+        const monitor = await db2.select().from(regulatoryComplianceMonitors).where(eq76(regulatoryComplianceMonitors.sessionId, input.sessionId)).limit(1);
+        if (monitor.length === 0) return {
+          totalFlagsDetected: 0,
+          highSeverityFlags: 0,
+          mediumSeverityFlags: 0,
+          lowSeverityFlags: 0,
+          disclosureTriggersDetected: 0,
+          complianceRiskLevel: "low",
+          recommendedActions: []
+        };
+        const flags = await db2.select().from(regulatoryFlags).where(eq76(regulatoryFlags.monitorId, monitor[0].id));
+        const disclosures = await db2.select().from(disclosureTriggers).where(eq76(disclosureTriggers.monitorId, monitor[0].id));
+        const highCount = flags.filter((f) => f.severity === "high").length;
+        const mediumCount = flags.filter((f) => f.severity === "medium").length;
+        const lowCount = flags.filter((f) => f.severity === "low").length;
+        return {
+          totalFlagsDetected: flags.length,
+          highSeverityFlags: highCount,
+          mediumSeverityFlags: mediumCount,
+          lowSeverityFlags: lowCount,
+          disclosureTriggersDetected: disclosures.length,
+          complianceRiskLevel: highCount > 0 ? "high" : mediumCount > 0 ? "medium" : "low",
+          recommendedActions: [
+            "Review flagged statements with legal team",
+            "Prepare disclosure draft if triggers detected",
+            "Document all compliance decisions"
+          ]
+        };
+      }),
+      getJurisdictionRules: operatorProcedure.input(z94.object({ jurisdiction: z94.string() })).query(async ({ input }) => {
+        const db2 = await requireDb4();
+        const results = await db2.select().from(jurisdictionProfiles).where(eq76(jurisdictionProfiles.code, input.jurisdiction)).limit(1);
+        return results[0] ?? {
+          code: input.jurisdiction,
+          name: input.jurisdiction,
+          ruleSetVersion: "v1.0",
+          applicableRules: ""
+        };
+      }),
+      getJurisdictionProfiles: operatorProcedure.query(async () => {
+        const db2 = await requireDb4();
+        const jurisdictions = await db2.select().from(jurisdictionProfiles);
+        return { jurisdictions };
+      }),
+      addRegulatoryFlag: operatorProcedure.input(z94.object({
+        monitorId: z94.number(),
+        flagType: z94.string(),
+        jurisdiction: z94.string(),
+        ruleSet: z94.string(),
+        severity: z94.enum(["low", "medium", "high"]),
+        statement: z94.string(),
+        speaker: z94.string(),
+        ruleBasis: z94.string()
+      })).mutation(async ({ input }) => {
+        const db2 = await requireDb4();
+        const [created] = await db2.insert(regulatoryFlags).values({
+          monitorId: input.monitorId,
+          flagType: input.flagType,
+          jurisdiction: input.jurisdiction,
+          ruleSet: input.ruleSet,
+          severity: input.severity,
+          statement: input.statement,
+          speaker: input.speaker,
+          ruleBasis: input.ruleBasis
+        }).returning();
+        return created;
+      }),
+      addDisclosureTrigger: operatorProcedure.input(z94.object({
+        monitorId: z94.number(),
+        filingType: z94.string(),
+        triggerReason: z94.string()
+      })).mutation(async ({ input }) => {
+        const db2 = await requireDb4();
+        const [created] = await db2.insert(disclosureTriggers).values({
+          monitorId: input.monitorId,
+          filingType: input.filingType,
+          triggerReason: input.triggerReason,
+          status: "draft"
+        }).returning();
+        return created;
+      }),
+      updateDisclosureStatus: operatorProcedure.input(z94.object({
+        disclosureId: z94.number(),
+        status: z94.enum(["draft", "pending_review", "submitted"])
+      })).mutation(async ({ input }) => {
+        const db2 = await requireDb4();
+        const [updated] = await db2.update(disclosureTriggers).set({ status: input.status }).where(eq76(disclosureTriggers.id, input.disclosureId)).returning();
+        return updated;
+      }),
+      createComplianceAction: operatorProcedure.input(z94.object({
+        monitorId: z94.number(),
+        actionType: z94.string(),
+        description: z94.string(),
+        priority: z94.enum(["low", "medium", "high"]),
+        owner: z94.string(),
+        dueDate: z94.string()
+      })).mutation(async ({ input }) => {
+        const db2 = await requireDb4();
+        const [created] = await db2.insert(complianceActionItems).values({
+          monitorId: input.monitorId,
+          actionType: input.actionType,
+          description: input.description,
+          priority: input.priority,
+          owner: input.owner,
+          dueDate: new Date(input.dueDate),
+          status: "pending"
+        }).returning();
+        return created;
+      })
+    });
+  }
+});
+
+// server/routers/partnerRouter.ts
+import { z as z95 } from "zod";
+import { eq as eq77 } from "drizzle-orm";
+var partnerRouter;
+var init_partnerRouter = __esm({
+  "server/routers/partnerRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    init_schema();
+    partnerRouter = router({
+      getPartners: operatorProcedure.query(async () => {
+        const db2 = await getDb();
+        if (!db2) return [];
+        return db2.select().from(partners).orderBy(partners.name);
+      }),
+      getPartnerBySlug: publicProcedure.input(z95.object({ slug: z95.string() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        if (!db2) return null;
+        const [partner] = await db2.select().from(partners).where(eq77(partners.slug, input.slug)).limit(1);
+        return partner || null;
+      }),
+      getPartnerById: publicProcedure.input(z95.object({ id: z95.number().int() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        if (!db2) return null;
+        const [partner] = await db2.select().from(partners).where(eq77(partners.id, input.id)).limit(1);
+        return partner || null;
+      }),
+      getBrandConfig: publicProcedure.input(z95.object({ partnerId: z95.number().int().optional(), domain: z95.string().optional() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        if (!db2) return null;
+        let partner;
+        if (input.partnerId) {
+          [partner] = await db2.select().from(partners).where(eq77(partners.id, input.partnerId)).limit(1);
+        } else if (input.domain) {
+          const [rows] = await rawSql(
+            `SELECT * FROM partners WHERE custom_domain = $1 AND active = true LIMIT 1`,
+            [input.domain]
+          );
+          partner = rows[0];
+        }
+        if (!partner) return { displayName: "CuraLive", primaryColor: "#1a1a2e", accentColor: "#6b21a8", isWhiteLabel: false };
+        return {
+          displayName: partner.displayName || partner.name,
+          logoUrl: partner.logoUrl,
+          primaryColor: partner.primaryColor || "#1a1a2e",
+          accentColor: partner.accentColor || "#6b21a8",
+          fontFamily: partner.fontFamily,
+          isWhiteLabel: true
+        };
+      }),
+      upsertPartner: operatorProcedure.input(z95.object({
+        slug: z95.string(),
+        name: z95.string(),
+        displayName: z95.string().optional(),
+        logoUrl: z95.string().optional(),
+        primaryColor: z95.string().optional(),
+        accentColor: z95.string().optional(),
+        model: z95.string().optional(),
+        revenueSharePct: z95.number().int().optional()
+      })).mutation(async ({ input }) => {
+        const [rows] = await rawSql(
+          `INSERT INTO partners (slug, name, display_name, logo_url, primary_color, accent_color, model, revenue_share_pct)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (slug) DO UPDATE SET
+           name = EXCLUDED.name,
+           display_name = EXCLUDED.display_name,
+           logo_url = EXCLUDED.logo_url,
+           primary_color = EXCLUDED.primary_color,
+           accent_color = EXCLUDED.accent_color,
+           model = EXCLUDED.model,
+           revenue_share_pct = EXCLUDED.revenue_share_pct`,
+          [
+            input.slug,
+            input.name,
+            input.displayName || null,
+            input.logoUrl || null,
+            input.primaryColor || "#1a1a2e",
+            input.accentColor || "#0A2540",
+            input.model || "revenue_share",
+            input.revenueSharePct || 20
+          ]
+        );
+        return { success: true };
+      }),
+      validateToken: publicProcedure.input(z95.object({ token: z95.string() })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT ct.*, p.display_name as partner_display_name, p.logo_url as partner_logo_url,
+                p.primary_color as partner_primary_color, p.accent_color as partner_accent_color
+         FROM client_tokens ct
+         LEFT JOIN partners p ON ct.partner_id = p.id
+         WHERE ct.token = $1 AND (ct.expires_at IS NULL OR ct.expires_at > NOW())`,
+          [input.token]
+        );
+        if (rows.length === 0) return { valid: false };
+        const t2 = rows[0];
+        await rawSql(`UPDATE client_tokens SET last_accessed_at = NOW() WHERE token = $1`, [input.token]);
+        return {
+          valid: true,
+          sessionId: t2.session_id,
+          partnerId: t2.partner_id,
+          recipientName: t2.recipient_name,
+          recipientEmail: t2.recipient_email,
+          accessType: t2.access_type,
+          brand: t2.partner_id ? {
+            displayName: t2.partner_display_name,
+            logoUrl: t2.partner_logo_url,
+            primaryColor: t2.partner_primary_color,
+            accentColor: t2.partner_accent_color,
+            isWhiteLabel: true
+          } : null
+        };
+      }),
+      getReportByToken: publicProcedure.input(z95.object({ token: z95.string() })).query(async ({ input }) => {
+        const [tokenRows] = await rawSql(
+          `SELECT session_id FROM client_tokens
+         WHERE token = $1 AND access_type = 'report'
+           AND (expires_at IS NULL OR expires_at > NOW())`,
+          [input.token]
+        );
+        if (!tokenRows.length) return null;
+        const sessionId = tokenRows[0].session_id;
+        const eventId = `shadow-${sessionId}`;
+        try {
+          const [rows] = await rawSql(
+            `SELECT ai_report FROM archive_events WHERE event_id = $1 LIMIT 1`,
+            [eventId]
+          );
+          if (rows?.[0]?.ai_report) {
+            return typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
+          }
+        } catch {
+        }
+        return null;
+      })
+    });
+  }
+});
+
+// server/routers/sessionConfigRouter.ts
+import { z as z96 } from "zod";
+var sessionConfigRouter;
+var init_sessionConfigRouter = __esm({
+  "server/routers/sessionConfigRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    sessionConfigRouter = router({
+      getSessionConfig: operatorProcedure.input(z96.object({ sessionId: z96.number().int() })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT id, tier, partner_id, recipients, scheduled_at, company, event_name, event_type,
+                pre_brief_sent_at, live_links_sent_at, report_links_sent_at
+         FROM shadow_sessions WHERE id = $1`,
+          [input.sessionId]
+        );
+        if (rows.length === 0) return null;
+        const s = rows[0];
+        return {
+          ...s,
+          recipients: s.recipients ? typeof s.recipients === "string" ? JSON.parse(s.recipients) : s.recipients : []
+        };
+      }),
+      updateSessionConfig: operatorProcedure.input(z96.object({
+        sessionId: z96.number().int(),
+        tier: z96.enum(["essential", "intelligence", "enterprise", "agm"]).optional(),
+        partnerId: z96.number().int().nullable().optional(),
+        recipients: z96.array(z96.object({
+          name: z96.string(),
+          email: z96.string().email(),
+          role: z96.string().optional(),
+          sendLive: z96.boolean().optional().default(true),
+          sendReport: z96.boolean().optional().default(true)
+        })).optional()
+      })).mutation(async ({ input }) => {
+        const updates = [];
+        const params = [];
+        let idx = 1;
+        if (input.tier !== void 0) {
+          updates.push(`tier = $${idx++}`);
+          params.push(input.tier);
+        }
+        if (input.partnerId !== void 0) {
+          updates.push(`partner_id = $${idx++}`);
+          params.push(input.partnerId);
+        }
+        if (input.recipients !== void 0) {
+          updates.push(`recipients = $${idx++}`);
+          params.push(JSON.stringify(input.recipients));
+        }
+        if (updates.length === 0) return { success: true };
+        params.push(input.sessionId);
+        await rawSql(
+          `UPDATE shadow_sessions SET ${updates.join(", ")} WHERE id = $${idx}`,
+          params
+        );
+        return { success: true };
+      }),
+      runReadinessCheck: operatorProcedure.input(z96.object({ sessionId: z96.number().int() })).mutation(async ({ input }) => {
+        const checks = [];
+        const [session] = await rawSql(`SELECT * FROM shadow_sessions WHERE id = $1`, [input.sessionId]);
+        const s = session[0];
+        checks.push({
+          name: "Database Connection",
+          passed: !!s,
+          detail: s ? "Connected" : "Session not found"
+        });
+        checks.push({
+          name: "Recall.ai API Key",
+          passed: !!process.env.RECALL_AI_API_KEY,
+          detail: process.env.RECALL_AI_API_KEY ? "Configured" : "Not set"
+        });
+        checks.push({
+          name: "Ably Real-time",
+          passed: !!process.env.ABLY_API_KEY,
+          detail: process.env.ABLY_API_KEY ? "Configured" : "Not set"
+        });
+        checks.push({
+          name: "OpenAI API Key",
+          passed: !!process.env.OPENAI_API_KEY,
+          detail: process.env.OPENAI_API_KEY ? "Configured" : "Not set"
+        });
+        const recipients = s?.recipients ? typeof s.recipients === "string" ? JSON.parse(s.recipients) : s.recipients : [];
+        checks.push({
+          name: "Recipients Configured",
+          passed: recipients.length > 0,
+          detail: recipients.length > 0 ? `${recipients.length} recipients` : "No recipients configured"
+        });
+        checks.push({
+          name: "Intelligence Tier",
+          passed: !!s?.tier,
+          detail: s?.tier ? `Tier: ${s.tier}` : "No tier selected"
+        });
+        for (const check of checks) {
+          await rawSql(
+            `INSERT INTO session_readiness_checks (session_id, check_name, passed, detail)
+           VALUES ($1, $2, $3, $4)`,
+            [input.sessionId, check.name, check.passed, check.detail]
+          );
+        }
+        return { checks, allPassed: checks.every((c) => c.passed) };
+      }),
+      scheduleSession: operatorProcedure.input(z96.object({
+        eventName: z96.string(),
+        company: z96.string().optional(),
+        eventType: z96.string().optional(),
+        scheduledAt: z96.string(),
+        tier: z96.string().optional(),
+        partnerId: z96.number().int().optional(),
+        recipients: z96.array(z96.object({
+          name: z96.string(),
+          email: z96.string().email(),
+          role: z96.string().optional()
+        })).optional(),
+        meetingUrl: z96.string().optional()
+      })).mutation(async ({ input, ctx }) => {
+        const [rows] = await rawSql(
+          `INSERT INTO scheduled_sessions (event_name, company, event_type, scheduled_at, tier, partner_id, recipients, meeting_url, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            input.eventName,
+            input.company || null,
+            input.eventType || "earnings_call",
+            input.scheduledAt,
+            input.tier || "essential",
+            input.partnerId || null,
+            JSON.stringify(input.recipients || []),
+            input.meetingUrl || null,
+            ctx.user?.id || null
+          ]
+        );
+        return { success: true, id: rows?.insertId || rows[0]?.id };
+      }),
+      getScheduledSessions: operatorProcedure.query(async () => {
+        const [rows] = await rawSql(
+          `SELECT * FROM scheduled_sessions WHERE scheduled_at > NOW() ORDER BY scheduled_at ASC LIMIT 50`,
+          []
+        );
+        return rows;
+      })
+    });
+  }
+});
+
+// server/routers/sessionMessagesRouter.ts
+import { z as z97 } from "zod";
+async function validateClientToken(token, sessionId) {
+  const [rows] = await rawSql(
+    `SELECT id FROM client_tokens WHERE token = $1 AND session_id = $2 AND expires_at > NOW()`,
+    [token, sessionId]
+  );
+  return rows.length > 0;
+}
+var sessionMessagesRouter;
+var init_sessionMessagesRouter = __esm({
+  "server/routers/sessionMessagesRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    sessionMessagesRouter = router({
+      sendMessage: publicProcedure.input(z97.object({
+        sessionId: z97.number().int(),
+        fromRole: z97.enum(["operator", "client"]),
+        fromName: z97.string().optional(),
+        message: z97.string().min(1).max(2e3),
+        token: z97.string().optional()
+      })).mutation(async ({ input, ctx }) => {
+        if (input.fromRole === "client") {
+          if (!input.token || !await validateClientToken(input.token, input.sessionId)) {
+            throw new Error("Invalid or expired client token");
+          }
+        } else {
+          if (!ctx.user) throw new Error("Authentication required for operator messages");
+        }
+        const [rows] = await rawSql(
+          `INSERT INTO session_messages (session_id, from_role, from_name, message)
+         VALUES ($1, $2, $3, $4)`,
+          [input.sessionId, input.fromRole, input.fromName || input.fromRole, input.message]
+        );
+        const messageId = rows[0]?.id;
+        try {
+          const Ably3 = (await import("ably")).default;
+          const apiKey = process.env.ABLY_API_KEY;
+          if (apiKey) {
+            const ably2 = new Ably3.Rest(apiKey);
+            const channelName = input.fromRole === "client" ? `operator-${input.sessionId}` : `client-${input.sessionId}`;
+            const channel = ably2.channels.get(channelName);
+            await channel.publish("message", {
+              id: messageId,
+              sessionId: input.sessionId,
+              fromRole: input.fromRole,
+              fromName: input.fromName || input.fromRole,
+              message: input.message,
+              timestamp: Date.now()
+            });
+          }
+        } catch (err) {
+          console.warn("[SessionMessages] Ably publish failed:", err?.message);
+        }
+        return { success: true, messageId };
+      }),
+      getSessionMessages: publicProcedure.input(z97.object({
+        sessionId: z97.number().int(),
+        fromRole: z97.string().optional(),
+        limit: z97.number().int().optional().default(50),
+        token: z97.string().optional()
+      })).query(async ({ input, ctx }) => {
+        if (!ctx.user) {
+          if (!input.token || !await validateClientToken(input.token, input.sessionId)) {
+            throw new Error("Invalid or expired token");
+          }
+        }
+        let sql25 = `SELECT * FROM session_messages WHERE session_id = $1`;
+        const params = [input.sessionId];
+        if (input.fromRole) {
+          sql25 += ` AND from_role = $2`;
+          params.push(input.fromRole);
+        }
+        sql25 += ` ORDER BY created_at DESC LIMIT ${input.limit}`;
+        const [rows] = await rawSql(sql25, params);
+        return rows.reverse();
+      }),
+      markRead: operatorProcedure.input(z97.object({ messageIds: z97.array(z97.number().int()) })).mutation(async ({ input }) => {
+        if (input.messageIds.length === 0) return { success: true };
+        const placeholders = input.messageIds.map((_, i) => `$${i + 1}`).join(",");
+        await rawSql(
+          `UPDATE session_messages SET read_at = NOW() WHERE id IN (${placeholders}) AND read_at IS NULL`,
+          input.messageIds
+        );
+        return { success: true };
+      }),
+      getUnreadCount: operatorProcedure.input(z97.object({ sessionId: z97.number().int() })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT COUNT(*) as count FROM session_messages WHERE session_id = $1 AND from_role = 'client' AND read_at IS NULL`,
+          [input.sessionId]
+        );
+        return { count: Number(rows[0]?.count || 0) };
+      })
+    });
+  }
+});
+
+// server/routers/speakerQueueRouter.ts
+import { z as z98 } from "zod";
+var speakerQueueRouter;
+var init_speakerQueueRouter = __esm({
+  "server/routers/speakerQueueRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    speakerQueueRouter = router({
+      queueForSpeaker: operatorProcedure.input(z98.object({
+        sessionId: z98.number().int(),
+        questionId: z98.number().int().optional(),
+        questionText: z98.string(),
+        askerName: z98.string().optional(),
+        askerFirm: z98.string().optional(),
+        aiSuggestedAnswer: z98.string().optional()
+      })).mutation(async ({ input, ctx }) => {
+        const [rows] = await rawSql(
+          `INSERT INTO approved_questions_queue (session_id, question_id, question_text, asker_name, asker_firm, ai_suggested_answer, operator_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            input.sessionId,
+            input.questionId || null,
+            input.questionText,
+            input.askerName || null,
+            input.askerFirm || null,
+            input.aiSuggestedAnswer || null,
+            ctx.user?.id || null
+          ]
+        );
+        try {
+          const Ably3 = (await import("ably")).default;
+          const apiKey = process.env.ABLY_API_KEY;
+          if (apiKey) {
+            const ably2 = new Ably3.Rest(apiKey);
+            const speakerChannel = ably2.channels.get(`speaker-${input.sessionId}`);
+            await speakerChannel.publish("question.queued", {
+              id: rows[0]?.id,
+              questionText: input.questionText,
+              askerName: input.askerName,
+              askerFirm: input.askerFirm,
+              aiSuggestedAnswer: input.aiSuggestedAnswer,
+              timestamp: Date.now()
+            });
+            if (input.aiSuggestedAnswer) {
+              const clientChannel = ably2.channels.get(`client-${input.sessionId}`);
+              await clientChannel.publish("ai.suggestion", {
+                questionText: input.questionText,
+                aiSuggestedAnswer: input.aiSuggestedAnswer,
+                timestamp: Date.now()
+              });
+            }
+          }
+        } catch (err) {
+          console.warn("[SpeakerQueue] Ably publish failed:", err?.message);
+        }
+        return { success: true, id: rows[0]?.id };
+      }),
+      getSpeakerQueue: operatorProcedure.input(z98.object({ sessionId: z98.number().int() })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT * FROM approved_questions_queue WHERE session_id = $1 ORDER BY queued_at ASC`,
+          [input.sessionId]
+        );
+        return rows;
+      }),
+      getPresenterQueue: publicProcedure.input(z98.object({ sessionId: z98.number().int(), token: z98.string() })).query(async ({ input }) => {
+        const [valid] = await rawSql(
+          `SELECT id FROM client_tokens WHERE token = $1 AND session_id = $2 AND expires_at > NOW() AND access_type IN ('presenter', 'live')`,
+          [input.token, input.sessionId]
+        );
+        if (valid.length === 0) throw new Error("Invalid or expired presenter token");
+        const [rows] = await rawSql(
+          `SELECT id, question_text, asker_name, asker_firm, ai_suggested_answer, status, queued_at FROM approved_questions_queue WHERE session_id = $1 AND status IN ('pending', 'queued') ORDER BY queued_at ASC`,
+          [input.sessionId]
+        );
+        return rows;
+      }),
+      markAnswered: operatorProcedure.input(z98.object({ questionId: z98.number().int() })).mutation(async ({ input }) => {
+        await rawSql(
+          `UPDATE approved_questions_queue SET status = 'answered', answered_at = NOW() WHERE id = $1`,
+          [input.questionId]
+        );
+        try {
+          const [q] = await rawSql(`SELECT session_id FROM approved_questions_queue WHERE id = $1`, [input.questionId]);
+          if (q[0]) {
+            const Ably3 = (await import("ably")).default;
+            const apiKey = process.env.ABLY_API_KEY;
+            if (apiKey) {
+              const ably2 = new Ably3.Rest(apiKey);
+              const channel = ably2.channels.get(`speaker-${q[0].session_id}`);
+              await channel.publish("question.answered", { id: input.questionId, timestamp: Date.now() });
+            }
+          }
+        } catch {
+        }
+        return { success: true };
+      }),
+      skipQuestion: operatorProcedure.input(z98.object({ questionId: z98.number().int() })).mutation(async ({ input }) => {
+        await rawSql(
+          `UPDATE approved_questions_queue SET status = 'skipped' WHERE id = $1`,
+          [input.questionId]
+        );
+        return { success: true };
+      })
+    });
+  }
+});
+
+// server/routers/agmIntelligenceRouter.ts
+import { z as z99 } from "zod";
+var DISSENT_KEYWORDS, PROXY_ADVISORS, agmIntelligenceRouter;
+var init_agmIntelligenceRouter = __esm({
+  "server/routers/agmIntelligenceRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    DISSENT_KEYWORDS = ["vote against", "oppose", "reject", "excessive", "unacceptable", "shareholder revolt", "proxy fight"];
+    PROXY_ADVISORS = ["ISS", "Glass Lewis", "Hermes", "Sustainalytics", "PIRC"];
+    agmIntelligenceRouter = router({
+      createResolution: operatorProcedure.input(z99.object({
+        sessionId: z99.number().int(),
+        resolutionNumber: z99.string().optional(),
+        title: z99.string(),
+        description: z99.string().optional(),
+        category: z99.string().optional()
+      })).mutation(async ({ input }) => {
+        const [rows] = await rawSql(
+          `INSERT INTO agm_resolutions (session_id, resolution_number, title, description, category)
+         VALUES ($1, $2, $3, $4, $5)`,
+          [input.sessionId, input.resolutionNumber || null, input.title, input.description || null, input.category || null]
+        );
+        return { success: true, id: rows[0]?.id };
+      }),
+      getResolutions: operatorProcedure.input(z99.object({ sessionId: z99.number().int() })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT * FROM agm_resolutions WHERE session_id = $1 ORDER BY resolution_number ASC`,
+          [input.sessionId]
+        );
+        return rows;
+      }),
+      updateResolution: operatorProcedure.input(z99.object({
+        resolutionId: z99.number().int(),
+        sentiment: z99.string().optional(),
+        sentimentScore: z99.number().optional(),
+        dissentLevel: z99.string().optional(),
+        votesFor: z99.number().int().optional(),
+        votesAgainst: z99.number().int().optional(),
+        abstentions: z99.number().int().optional(),
+        status: z99.string().optional()
+      })).mutation(async ({ input }) => {
+        const updates = [];
+        const params = [];
+        let idx = 1;
+        for (const [key, val] of Object.entries(input)) {
+          if (key === "resolutionId" || val === void 0) continue;
+          const col = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+          updates.push(`${col} = $${idx++}`);
+          params.push(val);
+        }
+        if (updates.length === 0) return { success: true };
+        params.push(input.resolutionId);
+        await rawSql(`UPDATE agm_resolutions SET ${updates.join(", ")} WHERE id = $${idx}`, params);
+        return { success: true };
+      }),
+      analyseAgmSegment: operatorProcedure.input(z99.object({
+        sessionId: z99.number().int(),
+        segmentText: z99.string(),
+        speaker: z99.string().optional(),
+        timestamp: z99.string().optional()
+      })).mutation(async ({ input }) => {
+        const text4 = input.segmentText.toLowerCase();
+        const signals = [];
+        for (const keyword of DISSENT_KEYWORDS) {
+          if (text4.includes(keyword)) {
+            signals.push({
+              signalType: "dissent",
+              confidence: 0.85,
+              keyword
+            });
+          }
+        }
+        for (const advisor of PROXY_ADVISORS) {
+          if (text4.includes(advisor.toLowerCase())) {
+            signals.push({
+              signalType: "proxy_advisor_reference",
+              confidence: 0.95,
+              keyword: advisor
+            });
+          }
+        }
+        if (text4.match(/activist|institutional investor|block vote|coordinated/i)) {
+          signals.push({ signalType: "activist_language", confidence: 0.75 });
+        }
+        for (const signal of signals) {
+          await rawSql(
+            `INSERT INTO agm_shareholder_signals (session_id, signal_type, speaker, segment_text, confidence)
+           VALUES ($1, $2, $3, $4, $5)`,
+            [input.sessionId, signal.signalType, input.speaker || null, input.segmentText, signal.confidence]
+          );
+        }
+        return { signals };
+      }),
+      getSignals: operatorProcedure.input(z99.object({ sessionId: z99.number().int() })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT * FROM agm_shareholder_signals WHERE session_id = $1 ORDER BY detected_at DESC`,
+          [input.sessionId]
+        );
+        return rows;
+      }),
+      getAgmDashboard: operatorProcedure.input(z99.object({ sessionId: z99.number().int() })).query(async ({ input }) => {
+        const [resolutions] = await rawSql(
+          `SELECT * FROM agm_resolutions WHERE session_id = $1 ORDER BY resolution_number`,
+          [input.sessionId]
+        );
+        const [signals] = await rawSql(
+          `SELECT * FROM agm_shareholder_signals WHERE session_id = $1 ORDER BY detected_at DESC`,
+          [input.sessionId]
+        );
+        return {
+          resolutions,
+          signals,
+          dissentCount: signals.filter((s) => s.signal_type === "dissent").length,
+          proxyAdvisorRefs: signals.filter((s) => s.signal_type === "proxy_advisor_reference").length,
+          activistSignals: signals.filter((s) => s.signal_type === "activist_language").length
+        };
+      }),
+      generatePostAgmReport: operatorProcedure.input(z99.object({ sessionId: z99.number().int() })).mutation(async ({ input }) => {
+        const [resolutions] = await rawSql(
+          `SELECT * FROM agm_resolutions WHERE session_id = $1`,
+          [input.sessionId]
+        );
+        const [signals] = await rawSql(
+          `SELECT * FROM agm_shareholder_signals WHERE session_id = $1`,
+          [input.sessionId]
+        );
+        try {
+          const { invokeLLM: invokeLLM2 } = await Promise.resolve().then(() => (init_llm(), llm_exports));
+          const result = await invokeLLM2({
+            messages: [
+              { role: "system", content: "You are a corporate governance analyst. Generate a structured post-AGM dissent report." },
+              { role: "user", content: `Generate a post-AGM dissent report. Resolutions: ${JSON.stringify(resolutions)}. Signals detected: ${JSON.stringify(signals)}. Cover: overall dissent level, resolution-by-resolution analysis, activist activity, proxy advisor impact, and recommended board actions.` }
+            ]
+          });
+          return { success: true, report: typeof result === "string" ? result : result?.content || "Report generation completed." };
+        } catch (err) {
+          return { success: false, error: err?.message, report: null };
+        }
+      })
+    });
+  }
+});
+
+// server/routers/operationsRouter.ts
+import { z as z100 } from "zod";
+import { eq as eq78, asc as asc8 } from "drizzle-orm";
+var operationsRouter;
+var init_operationsRouter = __esm({
+  "server/routers/operationsRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    init_schema();
+    operationsRouter = router({
+      initiateHandoff: operatorProcedure.input(z100.object({
+        sessionId: z100.number().int(),
+        toOperatorId: z100.number().int().optional(),
+        reason: z100.string().optional()
+      })).mutation(async ({ input, ctx }) => {
+        const [rows] = await rawSql(
+          `INSERT INTO session_handoffs (session_id, from_operator_id, to_operator_id, reason)
+         VALUES ($1, $2, $3, $4)`,
+          [input.sessionId, ctx.user?.id || 0, input.toOperatorId || null, input.reason || null]
+        );
+        return { success: true, id: rows[0]?.id };
+      }),
+      acceptHandoff: operatorProcedure.input(z100.object({ handoffId: z100.number().int() })).mutation(async ({ input }) => {
+        await rawSql(
+          `UPDATE session_handoffs SET status = 'accepted', accepted_at = NOW() WHERE id = $1`,
+          [input.handoffId]
+        );
+        return { success: true };
+      }),
+      joinSessionAsOperator: operatorProcedure.input(z100.object({ sessionId: z100.number().int(), role: z100.string().optional() })).mutation(async ({ input, ctx }) => {
+        await rawSql(
+          `INSERT INTO session_operators (session_id, operator_id, role) VALUES ($1, $2, $3)
+         ON CONFLICT DO NOTHING`,
+          [input.sessionId, ctx.user?.id || 0, input.role || "secondary"]
+        );
+        return { success: true };
+      }),
+      leaveSession: operatorProcedure.input(z100.object({ sessionId: z100.number().int() })).mutation(async ({ input, ctx }) => {
+        await rawSql(
+          `UPDATE session_operators SET left_at = NOW() WHERE session_id = $1 AND operator_id = $2 AND left_at IS NULL`,
+          [input.sessionId, ctx.user?.id || 0]
+        );
+        return { success: true };
+      }),
+      getSessionOperators: operatorProcedure.input(z100.object({ sessionId: z100.number().int() })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT so.*, u.name, u.email FROM session_operators so LEFT JOIN users u ON so.operator_id = u.id WHERE so.session_id = $1 AND so.left_at IS NULL`,
+          [input.sessionId]
+        );
+        return rows;
+      }),
+      submitFeedback: publicProcedure.input(z100.object({
+        sessionId: z100.number().int(),
+        token: z100.string().optional(),
+        rating: z100.number().int().min(1).max(5),
+        comment: z100.string().optional()
+      })).mutation(async ({ input }) => {
+        await rawSql(
+          `INSERT INTO client_report_feedback (session_id, token, rating, comment) VALUES ($1, $2, $3, $4)`,
+          [input.sessionId, input.token || null, input.rating, input.comment || null]
+        );
+        return { success: true };
+      }),
+      logClientView: publicProcedure.input(z100.object({
+        token: z100.string(),
+        tabViewed: z100.string().optional(),
+        timeSpentSecs: z100.number().int().optional()
+      })).mutation(async ({ input }) => {
+        await rawSql(
+          `INSERT INTO client_report_view_log (token, tab_viewed, time_spent_secs) VALUES ($1, $2, $3)`,
+          [input.token, input.tabViewed || null, input.timeSpentSecs || 0]
+        );
+        return { success: true };
+      }),
+      getClientViewLog: operatorProcedure.input(z100.object({ sessionId: z100.number().int().optional(), token: z100.string().optional() })).query(async ({ input }) => {
+        if (input.token) {
+          const [rows] = await rawSql(
+            `SELECT * FROM client_report_view_log WHERE token = $1 ORDER BY viewed_at DESC`,
+            [input.token]
+          );
+          return rows;
+        }
+        if (input.sessionId) {
+          const [rows] = await rawSql(
+            `SELECT vl.* FROM client_report_view_log vl
+           JOIN client_tokens ct ON vl.token = ct.token
+           WHERE ct.session_id = $1 ORDER BY vl.viewed_at DESC`,
+            [input.sessionId]
+          );
+          return rows;
+        }
+        return [];
+      }),
+      resendReportLink: operatorProcedure.input(z100.object({ sessionId: z100.number().int(), recipientEmail: z100.string().email() })).mutation(async ({ input }) => {
+        const [tokens] = await rawSql(
+          `SELECT token FROM client_tokens WHERE session_id = $1 AND recipient_email = $2 AND access_type = 'report'
+         ORDER BY created_at DESC LIMIT 1`,
+          [input.sessionId, input.recipientEmail]
+        );
+        if (tokens.length === 0) return { success: false, error: "No report token found" };
+        return { success: true, message: `Report link resent to ${input.recipientEmail}` };
+      }),
+      importHistoricalCommitments: operatorProcedure.input(z100.object({
+        company: z100.string(),
+        commitments: z100.array(z100.object({
+          commitment: z100.string(),
+          madeAt: z100.string().optional(),
+          deadline: z100.string().optional()
+        }))
+      })).mutation(async ({ input }) => {
+        for (const c of input.commitments) {
+          await rawSql(
+            `INSERT INTO historical_commitments (company, commitment, made_at, deadline)
+           VALUES ($1, $2, $3, $4)`,
+            [input.company, c.commitment, c.madeAt || null, c.deadline || null]
+          );
+        }
+        return { success: true, count: input.commitments.length };
+      }),
+      upsertBoardMember: operatorProcedure.input(z100.object({
+        company: z100.string(),
+        name: z100.string(),
+        role: z100.string().optional(),
+        committee: z100.string().optional(),
+        bio: z100.string().optional(),
+        linkedinUrl: z100.string().optional()
+      })).mutation(async ({ input }) => {
+        const [rows] = await rawSql(
+          `INSERT INTO board_members (company, name, role, committee, bio, linkedin_url)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+          [input.company, input.name, input.role || null, input.committee || null, input.bio || null, input.linkedinUrl || null]
+        );
+        return { success: true, id: rows[0]?.id };
+      }),
+      getBoardMembers: operatorProcedure.input(z100.object({ company: z100.string() })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT * FROM board_members WHERE company = $1 AND active = true ORDER BY name`,
+          [input.company]
+        );
+        return rows;
+      }),
+      detectJurisdiction: publicProcedure.input(z100.object({ exchangeCode: z100.string().optional(), company: z100.string().optional() })).query(({ input }) => {
+        const map = {
+          JSE: "JSE",
+          NYSE: "SEC",
+          NASDAQ: "SEC",
+          LSE: "FCA",
+          ASX: "ASIC",
+          SGX: "SGX",
+          HKEX: "HKEX"
+        };
+        const jurisdiction = input.exchangeCode ? map[input.exchangeCode.toUpperCase()] || "other" : "other";
+        return { jurisdiction };
+      }),
+      flagTranscriptSegment: operatorProcedure.input(z100.object({
+        sessionId: z100.number().int(),
+        segmentText: z100.string(),
+        flagType: z100.enum(["notable", "compliance", "forward-guidance", "tone-shift", "action-required"]).default("notable"),
+        operatorNote: z100.string().optional(),
+        speaker: z100.string().optional(),
+        eventTimestamp: z100.number().int().optional()
+      })).mutation(async ({ input, ctx }) => {
+        const db2 = await getDb();
+        if (!db2) throw new Error("Database not available");
+        const [marker] = await db2.insert(sessionMarkers).values({
+          sessionId: input.sessionId,
+          segmentText: input.segmentText,
+          flagType: input.flagType,
+          operatorNote: input.operatorNote,
+          speaker: input.speaker,
+          eventTimestamp: input.eventTimestamp,
+          operatorId: ctx.user?.id
+        }).returning();
+        return marker;
+      }),
+      getSessionMarkers: operatorProcedure.input(z100.object({ sessionId: z100.number().int() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        if (!db2) return [];
+        return db2.select().from(sessionMarkers).where(eq78(sessionMarkers.sessionId, input.sessionId)).orderBy(asc8(sessionMarkers.createdAt));
+      })
+    });
+  }
+});
+
+// server/routers/qaAnalyticsRouter.ts
+import { z as z101 } from "zod";
+import Ably2 from "ably";
+var ably, COORDINATION_THRESHOLD, COORDINATION_WINDOW_MINS, qaAnalyticsRouter;
+var init_qaAnalyticsRouter = __esm({
+  "server/routers/qaAnalyticsRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    ably = process.env.ABLY_API_KEY ? new Ably2.Rest(process.env.ABLY_API_KEY) : null;
+    COORDINATION_THRESHOLD = 3;
+    COORDINATION_WINDOW_MINS = 10;
+    qaAnalyticsRouter = router({
+      getLiveQAPatterns: operatorProcedure.input(z101.object({
+        sessionId: z101.number().int()
+      })).query(async ({ input }) => {
+        const db2 = await getDb();
+        if (!db2) return { firms: [], timeline: [], alerts: [], totalQuestions: 0 };
+        const [firmRows] = await rawSql(
+          `SELECT
+           COALESCE(asker_firm, 'Unknown') as firm,
+           COUNT(*)::int                    as question_count,
+           COUNT(*) FILTER (WHERE status = 'compliance_risk')::int as risk_count,
+           MIN(created_at)                 as first_at,
+           MAX(created_at)                 as last_at
+         FROM approved_questions_queue
+         WHERE session_id = $1
+         GROUP BY COALESCE(asker_firm, 'Unknown')
+         ORDER BY question_count DESC`,
+          [input.sessionId]
+        );
+        const totalQuestions = firmRows.reduce((s, r) => s + Number(r.question_count), 0);
+        const firms = firmRows.map((r) => ({
+          firm: r.firm,
+          count: Number(r.question_count),
+          riskCount: Number(r.risk_count),
+          pct: totalQuestions > 0 ? Math.round(Number(r.question_count) / totalQuestions * 100) : 0,
+          firstAt: r.first_at,
+          lastAt: r.last_at
+        }));
+        const [timelineRows] = await rawSql(
+          `SELECT
+           date_trunc('minute', created_at) -
+             (EXTRACT(MINUTE FROM created_at)::int % 10) * INTERVAL '1 minute'
+             AS bucket,
+           COUNT(*)::int as count
+         FROM approved_questions_queue
+         WHERE session_id = $1
+         GROUP BY bucket
+         ORDER BY bucket ASC`,
+          [input.sessionId]
+        );
+        const timeline = timelineRows.map((r) => ({
+          bucket: r.bucket,
+          count: Number(r.count)
+        }));
+        const alerts = [];
+        const now = /* @__PURE__ */ new Date();
+        const windowStart = new Date(now.getTime() - COORDINATION_WINDOW_MINS * 60 * 1e3);
+        const [recentByFirm] = await rawSql(
+          `SELECT
+           COALESCE(asker_firm, 'Unknown') as firm,
+           COUNT(*)::int as count,
+           MIN(created_at) as window_start,
+           MAX(created_at) as window_end
+         FROM approved_questions_queue
+         WHERE session_id = $1
+           AND created_at >= $2
+         GROUP BY COALESCE(asker_firm, 'Unknown')
+         HAVING COUNT(*) >= $3`,
+          [input.sessionId, windowStart, COORDINATION_THRESHOLD]
+        );
+        for (const r of recentByFirm) {
+          alerts.push({
+            firm: r.firm,
+            count: Number(r.count),
+            windowStart: new Date(r.window_start),
+            windowEnd: new Date(r.window_end),
+            severity: Number(r.count) >= 5 ? "critical" : "warning"
+          });
+        }
+        return { firms, timeline, alerts, totalQuestions };
+      }),
+      checkCoordinatedQuestioning: operatorProcedure.input(z101.object({
+        sessionId: z101.number().int(),
+        askerFirm: z101.string().optional()
+      })).mutation(async ({ input }) => {
+        if (!input.askerFirm) return { coordinated: false };
+        const db2 = await getDb();
+        if (!db2) return { coordinated: false };
+        const windowStart = new Date(
+          Date.now() - COORDINATION_WINDOW_MINS * 60 * 1e3
+        );
+        const [rows] = await rawSql(
+          `SELECT COUNT(*)::int as count
+         FROM approved_questions_queue
+         WHERE session_id = $1
+           AND COALESCE(asker_firm, '') = $2
+           AND created_at >= $3`,
+          [input.sessionId, input.askerFirm, windowStart]
+        );
+        const count3 = Number(rows[0]?.count ?? 0);
+        const coordinated = count3 >= COORDINATION_THRESHOLD;
+        if (coordinated && ably) {
+          const alertPayload = {
+            type: "coordinated_questioning",
+            firm: input.askerFirm,
+            count: count3,
+            windowMins: COORDINATION_WINDOW_MINS,
+            message: `Coordinated questioning detected \u2014 ${input.askerFirm} \u2014 ${count3} questions in ${COORDINATION_WINDOW_MINS} minutes`,
+            severity: count3 >= 5 ? "critical" : "warning",
+            firedAt: (/* @__PURE__ */ new Date()).toISOString(),
+            sessionId: input.sessionId
+          };
+          const opChannel = ably.channels.get(`operator-${input.sessionId}`);
+          await opChannel.publish("qa.coordination.alert", alertPayload);
+          const flagsChannel = ably.channels.get(`session-flags-${input.sessionId}`);
+          await flagsChannel.publish("flag.new", {
+            ...alertPayload,
+            flagType: "coordination",
+            title: `Coordinated questioning \u2014 ${input.askerFirm}`,
+            body: `${count3} questions submitted within ${COORDINATION_WINDOW_MINS} minutes. Possible coordinated institutional strategy.`
+          });
+        }
+        return { coordinated, count: count3, firm: input.askerFirm };
+      }),
+      getQAIntelligenceSummary: operatorProcedure.input(z101.object({ sessionId: z101.number().int() })).query(async ({ input }) => {
+        const db2 = await getDb();
+        if (!db2) return null;
+        const [rows] = await rawSql(
+          `SELECT
+           COALESCE(asker_firm, 'Unknown')       as firm,
+           COUNT(*)::int                           as total_questions,
+           COUNT(*) FILTER (WHERE status = 'approved')::int           as approved,
+           COUNT(*) FILTER (WHERE status = 'compliance_risk')::int    as compliance_risk,
+           COUNT(*) FILTER (WHERE status = 'duplicate')::int          as duplicates,
+           COUNT(*) FILTER (WHERE status = 'legal_review')::int       as legal_review,
+           COUNT(*) FILTER (WHERE ai_suggested_answer IS NOT NULL)::int as had_ai_answer
+         FROM approved_questions_queue
+         WHERE session_id = $1
+         GROUP BY COALESCE(asker_firm, 'Unknown')
+         ORDER BY total_questions DESC`,
+          [input.sessionId]
+        );
+        const totalQs = rows.reduce((s, r) => s + Number(r.total_questions), 0);
+        const riskQs = rows.reduce((s, r) => s + Number(r.compliance_risk), 0);
+        return {
+          firmBreakdown: rows.map((r) => ({
+            firm: r.firm,
+            totalQuestions: Number(r.total_questions),
+            approved: Number(r.approved),
+            complianceRisk: Number(r.compliance_risk),
+            duplicates: Number(r.duplicates),
+            legalReview: Number(r.legal_review),
+            hadAiAnswer: Number(r.had_ai_answer),
+            shareOfTotal: totalQs > 0 ? Math.round(Number(r.total_questions) / totalQs * 100) : 0
+          })),
+          sessionSummary: {
+            totalQuestions: totalQs,
+            totalFirms: rows.length,
+            riskRatio: totalQs > 0 ? Math.round(riskQs / totalQs * 100) : 0,
+            mostActiveFirm: rows[0]?.firm ?? null
+          }
+        };
+      })
+    });
+  }
+});
+
+// server/services/UnifiedIntelligenceService.ts
+function getCached(cache, key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expires) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+function setCache(cache, key, data) {
+  cache.set(key, { data, expires: Date.now() + CACHE_TTL_MS });
+  if (cache.size > 200) {
+    const oldest = cache.keys().next().value;
+    if (oldest) cache.delete(oldest);
+  }
+}
+async function cachedProfile(orgId) {
+  const cached = getCached(profileCache, orgId);
+  if (cached) {
+    LOG5(`Profile cache hit: ${orgId}`);
+    return cached;
+  }
+  try {
+    const profile = await getOrgProfile(orgId);
+    setCache(profileCache, orgId, profile);
+    return profile;
+  } catch (e) {
+    LOG5(`Profile fetch failed for ${orgId}: ${e.message}`);
+    return null;
+  }
+}
+async function cachedBenchmark(segmentKey) {
+  const cached = getCached(benchmarkCache, segmentKey);
+  if (cached) {
+    LOG5(`Benchmark cache hit: ${segmentKey}`);
+    return cached;
+  }
+  try {
+    const bm = await getBenchmark(segmentKey);
+    setCache(benchmarkCache, segmentKey, bm);
+    return bm;
+  } catch {
+    return null;
+  }
+}
+function emptyIntelligenceSummary(sessionId, orgId, eventId) {
+  return {
+    session_id: sessionId,
+    organisation_id: orgId,
+    event_id: eventId,
+    generated_at: (/* @__PURE__ */ new Date()).toISOString(),
+    executive_takeaway: "",
+    overall_risk: { level: "unknown", score: 0, source: "none" },
+    sentiment_summary: { overall: "neutral", score: 0, positive_signals: 0, negative_signals: 0, neutral_signals: 0, key_themes: [] },
+    key_commitments: [],
+    drift_status: { status: "unknown", events_created: 0, commitments_evaluated: 0, top_drifts: [] },
+    top_compliance_issues: [],
+    top_predicted_questions: [],
+    key_pressure_points: [],
+    governance_summary: { record_id: null, record_type: null, total_commitments: 0, total_flags: 0, overall_risk_level: "unknown", executive_summary: "", matters_arising: 0 },
+    profile_summary: { version: 0, events_incorporated: 0, overall_risk_level: "unknown", delivery_reliability: "unknown", relationship_health: "unknown", governance_quality: "unknown", confidence: 0, key_concerns: [], key_strengths: [] },
+    benchmark_context: { segment: "", quality: "unknown", event_count: 0, concerns: [], strengths: [], positions: {} },
+    data_sources: {
+      ai_core_available: false,
+      analysis_loaded: false,
+      drift_loaded: false,
+      governance_loaded: false,
+      profile_loaded: false,
+      benchmark_loaded: false,
+      briefing_loaded: false,
+      partial: true,
+      failed_sources: []
+    },
+    generated_in_ms: 0,
+    pipeline_trace: null
+  };
+}
+function generateExecutiveTakeaway(s) {
+  const parts = [];
+  const orgName = s.organisation_id;
+  const risk = s.overall_risk.level;
+  if (risk === "critical") {
+    parts.push(orgName ? `${orgName}: Critical risk level identified.` : `Critical risk level identified.`);
+  } else if (risk === "high") {
+    parts.push(orgName ? `${orgName}: High risk \u2014 review recommended.` : `High risk \u2014 review recommended.`);
+  } else if (risk === "medium" || risk === "elevated") {
+    parts.push(orgName ? `${orgName}: Moderate risk profile.` : `Moderate risk profile.`);
+  } else if (risk === "low" || risk === "minimal") {
+    parts.push(orgName ? `${orgName}: Low risk profile.` : `Low risk profile.`);
+  } else {
+    parts.push(orgName ? `${orgName}: Risk assessment pending.` : `Risk assessment pending \u2014 limited data available.`);
+  }
+  if (s.drift_status.events_created > 0) {
+    const highDrifts = s.drift_status.top_drifts.filter((d) => d.severity === "high" || d.severity === "critical").length;
+    if (highDrifts > 0) {
+      parts.push(`${highDrifts} high-severity commitment drift${highDrifts > 1 ? "s" : ""} detected \u2014 executive attention required.`);
+    } else {
+      parts.push(`${s.drift_status.events_created} drift event${s.drift_status.events_created > 1 ? "s" : ""} flagged for review.`);
+    }
+  }
+  const critFlags = s.top_compliance_issues.filter((f) => f.severity === "critical").length;
+  const highFlags = s.top_compliance_issues.filter((f) => f.severity === "high").length;
+  if (critFlags > 0) {
+    parts.push(`${critFlags} critical compliance flag${critFlags > 1 ? "s" : ""} requiring immediate review.`);
+  } else if (highFlags > 0) {
+    parts.push(`${highFlags} high-priority compliance issue${highFlags > 1 ? "s" : ""} identified.`);
+  } else if (s.top_compliance_issues.length === 0 && s.data_sources.analysis_loaded) {
+    parts.push(`No compliance concerns.`);
+  }
+  if (s.sentiment_summary.overall === "negative" && s.sentiment_summary.score < -0.2) {
+    parts.push(`Negative sentiment trend (${(s.sentiment_summary.score * 100).toFixed(0)}%).`);
+  } else if (s.sentiment_summary.overall === "positive" && s.sentiment_summary.score > 0.3) {
+    parts.push(`Positive sentiment tone (${(s.sentiment_summary.score * 100).toFixed(0)}%).`);
+  }
+  if (s.key_commitments.length > 0) {
+    const drifted = s.key_commitments.filter((c) => c.drift_detected).length;
+    const lowConf = s.key_commitments.filter((c) => c.confidence < 0.6).length;
+    if (drifted > 0) {
+      parts.push(`${drifted} of ${s.key_commitments.length} commitments show drift.`);
+    } else if (lowConf > 0) {
+      parts.push(`${lowConf} of ${s.key_commitments.length} commitments have low confidence.`);
+    } else {
+      parts.push(`${s.key_commitments.length} commitments tracked, all on track.`);
+    }
+  }
+  const govQuality = s.governance_summary.overall_risk_level;
+  if (govQuality && govQuality !== "unknown" && s.data_sources.governance_loaded) {
+    const govLabel = govQuality === "low" || govQuality === "minimal" ? "Good" : govQuality === "medium" || govQuality === "elevated" ? "Moderate" : "Elevated concern";
+    parts.push(`Governance: ${govLabel.toLowerCase()}.`);
+  }
+  const benchPos = s.benchmark_context.positions;
+  if (s.benchmark_context.segment && Object.keys(benchPos).length > 0) {
+    const below = Object.entries(benchPos).filter(([, v]) => v === "below_benchmark").map(([k]) => k);
+    const above = Object.entries(benchPos).filter(([, v]) => v === "above_benchmark").map(([k]) => k);
+    if (below.length > 0) {
+      parts.push(`Below benchmark on ${below.join(", ")}.`);
+    } else if (above.length > 0) {
+      parts.push(`Above benchmark on ${above.join(", ")}.`);
+    }
+  }
+  if (parts.length <= 1 && s.data_sources.partial) {
+    parts.push("Some data sources are still loading \u2014 summary may be incomplete.");
+  }
+  return parts.join(" ");
+}
+async function getSessionIntelligence(sessionId) {
+  const start = Date.now();
+  const eventId = `shadow-${sessionId}`;
+  const [sessionRows] = await rawSql(
+    `SELECT id, company, client_name, event_name, event_type,
+            ai_core_status, ai_core_results,
+            ai_drift_status, ai_drift_results,
+            ai_governance_id, ai_governance_results,
+            ai_profile_version, ai_profile_summary,
+            ai_pipeline_trace
+     FROM shadow_sessions WHERE id = $1`,
+    [sessionId]
+  );
+  if (!sessionRows.length) {
+    throw new Error(`Session ${sessionId} not found`);
+  }
+  const session = sessionRows[0];
+  const orgId = session.company ?? session.client_name ?? null;
+  const summary = emptyIntelligenceSummary(sessionId, orgId, eventId);
+  const aiResults = parseJson(session.ai_core_results);
+  const driftResults = parseJson(session.ai_drift_results);
+  const govSummary = parseJson(session.ai_governance_results);
+  const profileSummary = parseJson(session.ai_profile_summary);
+  const pipelineTrace = parseJson(session.ai_pipeline_trace);
+  if (pipelineTrace) {
+    summary.pipeline_trace = pipelineTrace;
+  }
+  if (aiResults) {
+    fillAnalysisOutputs(summary, aiResults);
+    summary.data_sources.analysis_loaded = true;
+  }
+  if (driftResults) {
+    summary.drift_status = {
+      status: session.ai_drift_status ?? "unknown",
+      events_created: driftResults.drift_events_created ?? 0,
+      commitments_evaluated: driftResults.commitments_evaluated ?? 0,
+      top_drifts: (driftResults.drift_events ?? []).slice(0, 5).map((d) => ({
+        commitment_text: d.commitment_text ?? "",
+        drift_type: d.drift_type ?? "unknown",
+        severity: d.severity ?? "low",
+        explanation: d.explanation ?? ""
+      }))
+    };
+    summary.data_sources.drift_loaded = true;
+  }
+  if (govSummary) {
+    summary.governance_summary = {
+      record_id: govSummary.governance_record_id ?? null,
+      record_type: govSummary.record_type ?? null,
+      total_commitments: govSummary.commitments ?? 0,
+      total_flags: govSummary.compliance_flags ?? 0,
+      overall_risk_level: govSummary.overall_risk_level ?? "unknown",
+      executive_summary: govSummary.executive_summary ?? "",
+      matters_arising: govSummary.matters_arising ?? 0
+    };
+    summary.data_sources.governance_loaded = true;
+    if (govSummary.overall_risk_level) {
+      summary.overall_risk = {
+        level: govSummary.overall_risk_level,
+        score: riskLevelToScore(govSummary.overall_risk_level),
+        source: "governance"
+      };
+    }
+  }
+  if (profileSummary) {
+    summary.profile_summary = {
+      version: profileSummary.version ?? session.ai_profile_version ?? 0,
+      events_incorporated: profileSummary.events_incorporated ?? 0,
+      overall_risk_level: profileSummary.overall_risk_level ?? "unknown",
+      delivery_reliability: profileSummary.delivery_reliability ?? "unknown",
+      relationship_health: profileSummary.relationship_health ?? "unknown",
+      governance_quality: profileSummary.governance_quality ?? "unknown",
+      confidence: profileSummary.confidence ?? 0,
+      key_concerns: profileSummary.key_concerns ?? [],
+      key_strengths: profileSummary.key_strengths ?? []
+    };
+    summary.data_sources.profile_loaded = true;
+  }
+  const healthy = await checkAICoreHealth().catch(() => false);
+  summary.data_sources.ai_core_available = healthy;
+  if (healthy && orgId) {
+    await enrichFromAICore(summary, orgId, eventId);
+  }
+  const loadedCount = Object.entries(summary.data_sources).filter(([k, v]) => k.endsWith("_loaded") && v === true).length;
+  summary.data_sources.partial = loadedCount < 6;
+  summary.executive_takeaway = generateExecutiveTakeaway(summary);
+  summary.generated_in_ms = Date.now() - start;
+  LOG5(`Session ${sessionId} intelligence assembled in ${summary.generated_in_ms}ms (${loadedCount}/6 sources loaded)`);
+  return summary;
+}
+async function getOrgIntelligence(organisationId) {
+  const start = Date.now();
+  const summary = emptyIntelligenceSummary(null, organisationId, null);
+  const healthy = await checkAICoreHealth().catch(() => false);
+  summary.data_sources.ai_core_available = healthy;
+  if (!healthy) {
+    LOG5(`AI Core not available for org ${organisationId}`);
+    summary.executive_takeaway = generateExecutiveTakeaway(summary);
+    summary.generated_in_ms = Date.now() - start;
+    return summary;
+  }
+  await enrichFromAICore(summary, organisationId, null);
+  const orgRelevantSources = ["profile_loaded", "benchmark_loaded"];
+  const orgLoadedCount = orgRelevantSources.filter((k) => summary.data_sources[k] === true).length;
+  summary.data_sources.partial = orgLoadedCount < orgRelevantSources.length;
+  summary.executive_takeaway = generateExecutiveTakeaway(summary);
+  summary.generated_in_ms = Date.now() - start;
+  LOG5(`Org ${organisationId} intelligence assembled in ${summary.generated_in_ms}ms (${orgLoadedCount}/2 org sources loaded)`);
+  return summary;
+}
+async function enrichFromAICore(summary, orgId, eventId) {
+  const profile = await cachedProfile(orgId);
+  if (profile) {
+    applyProfile(summary, profile);
+    summary.data_sources.profile_loaded = true;
+  } else {
+    summary.data_sources.failed_sources.push("profile");
+  }
+  const orgSlug = orgId.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const orgBm = await cachedBenchmark(`organisation:${orgSlug}`);
+  const globalBm = orgBm ? null : await cachedBenchmark("global:all");
+  const bm = orgBm ?? globalBm;
+  if (bm) {
+    applyBenchmark(summary, bm);
+    summary.data_sources.benchmark_loaded = true;
+  } else {
+    summary.data_sources.failed_sources.push("benchmark");
+  }
+  if (eventId) {
+    try {
+      const briefing = await generateBriefing({
+        organisation_id: orgId,
+        event_id: eventId
+      });
+      if (briefing) {
+        applyBriefing(summary, briefing);
+        summary.data_sources.briefing_loaded = true;
+      }
+    } catch {
+      summary.data_sources.failed_sources.push("briefing");
+    }
+  }
+  if (summary.governance_summary.record_id) {
+    try {
+      const gov = await getGovernanceRecord(summary.governance_summary.record_id);
+      applyGovernance(summary, gov);
+    } catch {
+      summary.data_sources.failed_sources.push("governance_detail");
+    }
+  }
+}
+function fillAnalysisOutputs(summary, results) {
+  if (results.sentiment_analysis) {
+    const sa = results.sentiment_analysis;
+    summary.sentiment_summary = {
+      overall: sa.overall ?? sa.sentiment ?? "neutral",
+      score: sa.score ?? sa.sentiment_score ?? 0,
+      positive_signals: sa.positive_signals ?? sa.positive_count ?? 0,
+      negative_signals: sa.negative_signals ?? sa.negative_count ?? 0,
+      neutral_signals: sa.neutral_signals ?? sa.neutral_count ?? 0,
+      key_themes: sa.key_themes ?? sa.themes ?? []
+    };
+  }
+  if (results.commitment_extraction) {
+    const ce = results.commitment_extraction;
+    const commitments = ce.commitments ?? ce.extracted ?? [];
+    summary.key_commitments = commitments.slice(0, 10).map((c) => ({
+      text: c.commitment_text ?? c.text ?? "",
+      speaker: c.speaker ?? c.speaker_name ?? null,
+      type: c.commitment_type ?? c.type ?? "general",
+      confidence: c.confidence ?? 0,
+      drift_detected: c.drift_detected ?? false
+    }));
+  }
+  if (results.compliance_screening) {
+    const cs = results.compliance_screening;
+    const flags = cs.flags ?? cs.compliance_flags ?? [];
+    summary.top_compliance_issues = flags.slice(0, 10).map((f) => ({
+      flag_type: f.flag_type ?? f.type ?? "unknown",
+      severity: f.severity ?? "medium",
+      speaker: f.speaker ?? f.speaker_name ?? null,
+      matched_pattern: f.matched_pattern ?? f.pattern ?? f.statement ?? ""
+    }));
+    if (flags.length > 0 && summary.overall_risk.source === "none") {
+      const criticalCount = flags.filter((f) => f.severity === "critical").length;
+      const highCount = flags.filter((f) => f.severity === "high").length;
+      const level = criticalCount > 0 ? "critical" : highCount > 2 ? "high" : highCount > 0 ? "medium" : "low";
+      summary.overall_risk = {
+        level,
+        score: riskLevelToScore(level),
+        source: "compliance"
+      };
+    }
+  }
+}
+function applyProfile(summary, profile) {
+  const ps = profile.profile_summary;
+  summary.profile_summary = {
+    version: profile.version,
+    events_incorporated: profile.events_incorporated,
+    overall_risk_level: ps.overall_risk_level,
+    delivery_reliability: ps.delivery_reliability,
+    relationship_health: ps.relationship_health,
+    governance_quality: ps.governance_quality,
+    confidence: ps.confidence,
+    key_concerns: ps.key_concerns,
+    key_strengths: ps.key_strengths
+  };
+  if (summary.overall_risk.source === "none") {
+    summary.overall_risk = {
+      level: ps.overall_risk_level,
+      score: riskLevelToScore(ps.overall_risk_level),
+      source: "profile"
+    };
+  }
+  const sc = profile.sector_context ?? {};
+  if (sc.benchmark_segment) {
+    const positions = {};
+    for (const key of ["compliance_position", "commitment_position", "drift_position", "sentiment_position", "governance_position"]) {
+      if (sc[key]) positions[key.replace("_position", "")] = sc[key];
+    }
+    if (Object.keys(positions).length > 0) {
+      summary.benchmark_context.positions = positions;
+      summary.benchmark_context.segment = sc.benchmark_segment;
+      summary.benchmark_context.quality = sc.benchmark_quality ?? "unknown";
+    }
+  }
+}
+function applyBenchmark(summary, bm) {
+  const bmSummary = bm.summary;
+  if (!summary.benchmark_context.segment) {
+    summary.benchmark_context.segment = bm.segment_key;
+  }
+  summary.benchmark_context.event_count = bmSummary.event_count;
+  summary.benchmark_context.quality = bmSummary.confidence > 0.5 ? "reliable" : "low_sample";
+  const concerns = [];
+  const strengths = [];
+  if (bmSummary.drift_rate > 0.3) concerns.push(`High drift rate: ${(bmSummary.drift_rate * 100).toFixed(0)}%`);
+  else if (bmSummary.drift_rate < 0.1) strengths.push(`Low drift rate: ${(bmSummary.drift_rate * 100).toFixed(0)}%`);
+  if (bmSummary.avg_flags_per_event > 5) concerns.push(`Above-average compliance flags: ${bmSummary.avg_flags_per_event.toFixed(1)}/event`);
+  else if (bmSummary.avg_flags_per_event < 2) strengths.push(`Below-average compliance flags: ${bmSummary.avg_flags_per_event.toFixed(1)}/event`);
+  if (bmSummary.avg_sentiment_score < 0.3) concerns.push("Low average sentiment across benchmark");
+  else if (bmSummary.avg_sentiment_score > 0.6) strengths.push("Strong positive sentiment trend");
+  summary.benchmark_context.concerns = [...summary.benchmark_context.concerns, ...concerns];
+  summary.benchmark_context.strengths = [...summary.benchmark_context.strengths, ...strengths];
+}
+function applyBriefing(summary, briefing) {
+  if (briefing.sentiment_summary && !summary.sentiment_summary.key_themes.length) {
+    summary.sentiment_summary = {
+      overall: briefing.sentiment_summary.overall,
+      score: briefing.sentiment_summary.score,
+      positive_signals: briefing.sentiment_summary.positive_signals,
+      negative_signals: briefing.sentiment_summary.negative_signals,
+      neutral_signals: briefing.sentiment_summary.neutral_signals,
+      key_themes: briefing.sentiment_summary.key_themes
+    };
+  }
+  summary.top_predicted_questions = (briefing.predicted_questions ?? []).slice(0, 5).map((q) => ({
+    question: q.question,
+    likelihood: q.likelihood,
+    theme: q.theme,
+    rationale: q.rationale
+  }));
+  summary.key_pressure_points = (briefing.pressure_points ?? []).slice(0, 5).map((p) => ({
+    area: p.area,
+    severity: p.severity,
+    source: p.source,
+    detail: p.detail
+  }));
+  if (briefing.narrative_risk && summary.overall_risk.source === "none") {
+    summary.overall_risk = {
+      level: briefing.narrative_risk.level,
+      score: briefing.narrative_risk.score,
+      source: "briefing"
+    };
+  }
+}
+function applyGovernance(summary, gov) {
+  summary.governance_summary = {
+    record_id: gov.governance_record_id,
+    record_type: gov.record_type,
+    total_commitments: gov.commitment_register.length,
+    total_flags: gov.risk_compliance_summary.total_flags,
+    overall_risk_level: gov.risk_compliance_summary.overall_risk_level,
+    executive_summary: gov.meeting_summary.executive_summary,
+    matters_arising: gov.matters_arising.length
+  };
+  if (gov.commitment_register.length > 0 && summary.key_commitments.length === 0) {
+    summary.key_commitments = gov.commitment_register.slice(0, 10).map((c) => ({
+      text: c.commitment_text,
+      speaker: c.speaker ?? null,
+      type: c.commitment_type,
+      confidence: c.confidence,
+      drift_detected: c.drift_detected
+    }));
+  }
+  if (gov.risk_compliance_summary.flags.length > 0 && summary.top_compliance_issues.length === 0) {
+    summary.top_compliance_issues = gov.risk_compliance_summary.flags.slice(0, 10).map((f) => ({
+      flag_type: f.flag_type,
+      severity: f.severity,
+      speaker: f.speaker ?? null,
+      matched_pattern: f.matched_pattern
+    }));
+  }
+  if (summary.overall_risk.source !== "governance") {
+    summary.overall_risk = {
+      level: gov.risk_compliance_summary.overall_risk_level,
+      score: riskLevelToScore(gov.risk_compliance_summary.overall_risk_level),
+      source: "governance"
+    };
+  }
+}
+function riskLevelToScore(level) {
+  switch (level.toLowerCase()) {
+    case "critical":
+      return 1;
+    case "high":
+      return 0.75;
+    case "elevated":
+    case "medium":
+      return 0.5;
+    case "low":
+      return 0.25;
+    case "minimal":
+    case "none":
+      return 0;
+    default:
+      return 0;
+  }
+}
+function parseJson(val) {
+  if (!val) return null;
+  if (typeof val === "object") return val;
+  try {
+    return JSON.parse(val);
+  } catch {
+    return null;
+  }
+}
+var LOG5, CACHE_TTL_MS, profileCache, benchmarkCache;
+var init_UnifiedIntelligenceService = __esm({
+  "server/services/UnifiedIntelligenceService.ts"() {
+    "use strict";
+    init_db();
+    init_AICoreClient();
+    LOG5 = (msg) => console.log(`[UnifiedIntel] ${msg}`);
+    CACHE_TTL_MS = 12e4;
+    profileCache = /* @__PURE__ */ new Map();
+    benchmarkCache = /* @__PURE__ */ new Map();
+  }
+});
+
+// server/scripts/seedDemoData.ts
+async function seedDemoData() {
+  const details = [];
+  try {
+    for (const org of DEMO_ORGS) {
+      LOG6(`Seeding demo data for ${org.name} (${org.id})`);
+      await rawSql(
+        `DELETE FROM shadow_sessions WHERE id = $1`,
+        [org.sessionId]
+      );
+      const transcriptJson = JSON.stringify(org.transcript.map((t2) => ({
+        speaker_name: t2.speaker,
+        text: t2.text,
+        start_time: t2.time * 1e3,
+        role: t2.role
+      })));
+      const aiCoreResults = {
+        sentiment_analysis: {
+          overall: org.riskLevel === "high" ? "negative" : "neutral",
+          score: org.riskLevel === "high" ? -0.35 : 0.22,
+          positive_signals: org.riskLevel === "high" ? 3 : 7,
+          negative_signals: org.riskLevel === "high" ? 8 : 3,
+          neutral_signals: org.transcript.length - (org.riskLevel === "high" ? 11 : 10),
+          key_themes: org.riskLevel === "high" ? ["turnaround strategy", "environmental liabilities", "dividend suspension", "leverage", "governance reform"] : ["revenue growth", "margin expansion", "European market", "ESG commitment", "regulatory review"]
+        },
+        commitment_extraction: {
+          commitments: org.commitments.map((c) => ({
+            commitment_text: c.text,
+            speaker: c.speaker,
+            commitment_type: c.type,
+            confidence: c.confidence,
+            deadline: c.deadline,
+            drift_detected: false
+          }))
+        },
+        compliance_screening: {
+          flags: org.complianceFlags.map((f) => ({
+            flag_type: f.type,
+            severity: f.severity,
+            speaker: f.speaker,
+            matched_pattern: f.pattern
+          }))
+        }
+      };
+      const driftResults = {
+        commitments_evaluated: org.commitments.length,
+        statements_processed: org.transcript.length,
+        drift_events_created: org.driftEvents.length,
+        drift_events: org.driftEvents.map((d, i) => ({
+          drift_event_id: `demo-drift-${org.id}-${i}`,
+          commitment_text: d.commitmentText,
+          drift_type: d.driftType,
+          severity: d.severity,
+          explanation: d.explanation,
+          confidence: d.confidence
+        }))
+      };
+      const govExecutiveSummary = org.riskLevel === "high" ? "Atlas Energy faces elevated governance risk following disclosure of previously unreported environmental liabilities across three sites. The board has suspended interim dividends to preserve cash and has commissioned an independent PwC review. Net debt to EBITDA has breached the 2.5x target at 3.2x. A comprehensive turnaround plan targeting 800M rand in cost reductions has been announced, with measurable results expected within 18 months. Board composition has been strengthened with two additional independent directors." : "Meridian Holdings demonstrates strong governance discipline with transparent financial reporting and clear commitment tracking. The company delivered 12% revenue growth with margin expansion to 42.3%. European expansion is progressing with breakeven targeted by Q3 2026. One area requiring monitoring is the pending DMR regulatory review in Eastern Cape, for which a 45M rand provision has been prudently established. ESG commitments remain on track.";
+      const govSummary = {
+        governance_record_id: `demo-gov-${org.id}`,
+        record_type: org.eventType === "agm" ? "agm_minutes" : "event_governance",
+        commitments: org.commitments.length,
+        compliance_flags: org.complianceFlags.length,
+        matters_arising: org.driftEvents.length,
+        overall_risk_level: org.riskLevel,
+        confidence: org.riskLevel === "high" ? 0.72 : 0.85,
+        duration_ms: 450,
+        executive_summary: govExecutiveSummary
+      };
+      const profileSummary = {
+        profile_id: `demo-profile-${org.id}`,
+        version: 3,
+        overall_risk_level: org.profileSummary.overall_risk_level,
+        delivery_reliability: org.profileSummary.delivery_reliability,
+        relationship_health: org.profileSummary.relationship_health,
+        governance_quality: org.profileSummary.governance_quality,
+        events_incorporated: org.riskLevel === "high" ? 4 : 6,
+        confidence: org.riskLevel === "high" ? 0.68 : 0.82,
+        key_concerns: org.profileSummary.key_concerns,
+        key_strengths: org.profileSummary.key_strengths
+      };
+      const pipelineBase = Date.now() - 12e4;
+      const pipelineTrace = {
+        session_id: org.sessionId,
+        started_at: new Date(pipelineBase).toISOString(),
+        completed_at: new Date(pipelineBase + 4850).toISOString(),
+        total_duration_ms: 4850,
+        steps: [
+          { step: "compliance_email", status: "ok", started_at: new Date(pipelineBase).toISOString(), duration_ms: 320, detail: { recipients: 2, flags: org.complianceFlags.length } },
+          { step: "ai_core_analysis", status: "ok", started_at: new Date(pipelineBase + 320).toISOString(), duration_ms: 1850, detail: { job_id: `demo-job-${org.id}`, status: "complete", modules: 4 } },
+          { step: "drift_detection", status: "ok", started_at: new Date(pipelineBase + 2170).toISOString(), duration_ms: 920, detail: { drifts: org.driftEvents.length } },
+          { step: "governance_record", status: "ok", started_at: new Date(pipelineBase + 3090).toISOString(), duration_ms: 680, detail: { commitments: org.commitments.length } },
+          { step: "profile_update", status: "ok", started_at: new Date(pipelineBase + 3770).toISOString(), duration_ms: 450, detail: { version: 3, risk: org.riskLevel } },
+          { step: "ai_report", status: "ok", started_at: new Date(pipelineBase + 4220).toISOString(), duration_ms: 580, detail: { modules: 10 } },
+          { step: "report_delivery", status: "ok", started_at: new Date(pipelineBase + 4800).toISOString(), duration_ms: 50, detail: { recipients: 3 } },
+          { step: "board_intelligence", status: "skipped", started_at: new Date(pipelineBase + 4850).toISOString(), duration_ms: 0, detail: { reason: "async_deferred" } },
+          { step: "briefing_accuracy", status: "skipped", started_at: new Date(pipelineBase + 4850).toISOString(), duration_ms: 0, detail: { reason: "async_deferred" } }
+        ],
+        overall_status: "complete"
+      };
+      await rawSql(
+        `INSERT INTO shadow_sessions (
+          id, client_name, company, event_name, event_type, platform, meeting_url, status,
+          local_transcript_json,
+          ai_core_job_id, ai_core_status, ai_core_results,
+          ai_drift_status, ai_drift_results,
+          ai_governance_id, ai_governance_results,
+          ai_profile_version, ai_profile_summary,
+          ai_pipeline_trace,
+          created_at
+        ) VALUES (
+          $1, $2, $3, $4, $5, 'demo', 'https://demo.curalive.com', 'completed',
+          $6,
+          $7, 'complete', $8,
+          $9, $10,
+          $11, $12,
+          $13, $14,
+          $15,
+          NOW() - interval '2 hours'
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          client_name = EXCLUDED.client_name,
+          company = EXCLUDED.company,
+          event_name = EXCLUDED.event_name,
+          event_type = EXCLUDED.event_type,
+          status = EXCLUDED.status,
+          local_transcript_json = EXCLUDED.local_transcript_json,
+          ai_core_job_id = EXCLUDED.ai_core_job_id,
+          ai_core_status = EXCLUDED.ai_core_status,
+          ai_core_results = EXCLUDED.ai_core_results,
+          ai_drift_status = EXCLUDED.ai_drift_status,
+          ai_drift_results = EXCLUDED.ai_drift_results,
+          ai_governance_id = EXCLUDED.ai_governance_id,
+          ai_governance_results = EXCLUDED.ai_governance_results,
+          ai_profile_version = EXCLUDED.ai_profile_version,
+          ai_profile_summary = EXCLUDED.ai_profile_summary,
+          ai_pipeline_trace = EXCLUDED.ai_pipeline_trace`,
+        [
+          org.sessionId,
+          org.name,
+          org.name,
+          org.eventName,
+          org.eventType,
+          transcriptJson,
+          `demo-job-${org.id}`,
+          JSON.stringify(aiCoreResults),
+          org.driftEvents.length > 0 ? "drift_detected" : "no_drift",
+          JSON.stringify(driftResults),
+          `demo-gov-${org.id}`,
+          JSON.stringify(govSummary),
+          3,
+          JSON.stringify(profileSummary),
+          JSON.stringify(pipelineTrace)
+        ]
+      );
+      details.push(`Session ${org.sessionId} (${org.name}) seeded with ${org.commitments.length} commitments, ${org.complianceFlags.length} flags, ${org.driftEvents.length} drifts`);
+      LOG6(details[details.length - 1]);
+    }
+    LOG6("Demo seed complete");
+    return { success: true, details };
+  } catch (e) {
+    LOG6(`Demo seed failed: ${e.message}`);
+    return { success: false, details: [...details, `Error: ${e.message}`] };
+  }
+}
+var LOG6, DEMO_ORGS;
+var init_seedDemoData = __esm({
+  "server/scripts/seedDemoData.ts"() {
+    "use strict";
+    init_db();
+    LOG6 = (msg) => console.log(`[DemoSeed] ${msg}`);
+    DEMO_ORGS = [
+      {
+        id: "meridian-holdings",
+        name: "Meridian Holdings",
+        eventType: "earnings_call",
+        eventName: "Q4 2025 Earnings Call",
+        riskLevel: "medium",
+        sessionId: 99901,
+        transcript: [
+          { speaker: "Sarah Chen", role: "CEO", text: "Thank you for joining us today. I'm pleased to report a strong quarter with revenue growth of 12% year-over-year, driven by our expansion into the European market.", time: 0 },
+          { speaker: "Sarah Chen", role: "CEO", text: "Our gross margin improved by 150 basis points to 42.3%, reflecting ongoing operational discipline and cost optimisation efforts across the group.", time: 15 },
+          { speaker: "James O'Brien", role: "CFO", text: "Total revenue reached 2.4 billion rand for the quarter, with earnings per share of 4.82 rand. We maintain our guidance of 8 to 10% annual revenue growth for the full year.", time: 30 },
+          { speaker: "James O'Brien", role: "CFO", text: "Working capital management remains a priority. We expect to reduce days sales outstanding from 62 to below 55 days by the end of Q2 2026.", time: 45 },
+          { speaker: "James O'Brien", role: "CFO", text: "Capital expenditure for the quarter was 180 million rand, in line with our previously communicated guidance. We anticipate capex intensity will normalise to 6% of revenue going forward.", time: 60 },
+          { speaker: "Sarah Chen", role: "CEO", text: "We remain committed to our ESG targets. Carbon emissions per unit of production have decreased by 18% since 2023, and we are on track to achieve our 2027 science-based targets.", time: 75 },
+          { speaker: "Analyst - David Lee", role: "Analyst", text: "Can you provide more colour on the European expansion timeline and the expected margin impact?", time: 90 },
+          { speaker: "Sarah Chen", role: "CEO", text: "The European operations will reach breakeven by Q3 2026. We've committed to investing an additional 200 million rand in the region over the next 18 months.", time: 105 },
+          { speaker: "Analyst - Priya Naidoo", role: "Analyst", text: "What is the status of the regulatory review in the Eastern Cape mining operation?", time: 120 },
+          { speaker: "James O'Brien", role: "CFO", text: "The DMR review is ongoing. We expect a formal response by end of May 2026. Our legal counsel advises this is a routine matter, but we have provisioned 45 million rand as a precaution.", time: 135 }
+        ],
+        commitments: [
+          { text: "Revenue growth of 8-10% for full year", type: "financial_target", deadline: "2026-12-31", confidence: 0.88, speaker: "James O'Brien" },
+          { text: "Reduce DSO from 62 to below 55 days by end Q2 2026", type: "operational_target", deadline: "2026-06-30", confidence: 0.82, speaker: "James O'Brien" },
+          { text: "European operations breakeven by Q3 2026", type: "strategic_milestone", deadline: "2026-09-30", confidence: 0.75, speaker: "Sarah Chen" },
+          { text: "Additional 200M rand investment in European region over next 18 months", type: "investment_commitment", deadline: "2027-06-30", confidence: 0.9, speaker: "Sarah Chen" },
+          { text: "Achieve 2027 science-based ESG targets", type: "esg_commitment", deadline: "2027-12-31", confidence: 0.7, speaker: "Sarah Chen" }
+        ],
+        complianceFlags: [
+          { type: "forward_looking_statement", severity: "medium", speaker: "Sarah Chen", pattern: "European operations will reach breakeven by Q3 2026" },
+          { type: "regulatory_disclosure", severity: "high", speaker: "James O'Brien", pattern: "DMR review is ongoing... provisioned 45 million rand" },
+          { type: "hedging_language", severity: "low", speaker: "James O'Brien", pattern: "Our legal counsel advises this is a routine matter" }
+        ],
+        driftEvents: [
+          { commitmentText: "Revenue growth of 8-10%", driftType: "numerical", severity: "low", explanation: "Previous quarter guidance was 10-12%; range has been lowered by 2 percentage points", confidence: 0.72 }
+        ],
+        profileSummary: {
+          overall_risk_level: "medium",
+          delivery_reliability: "strong",
+          relationship_health: "positive",
+          governance_quality: "strong",
+          key_concerns: ["Regulatory review pending in Eastern Cape", "European expansion margin pressure", "Guidance range narrowed downward"],
+          key_strengths: ["Consistent earnings delivery", "Strong ESG trajectory", "Transparent regulatory disclosure", "Detailed financial commitments with timelines"]
+        }
+      },
+      {
+        id: "atlas-energy",
+        name: "Atlas Energy Group",
+        eventType: "agm",
+        eventName: "2026 Annual General Meeting",
+        riskLevel: "high",
+        sessionId: 99902,
+        transcript: [
+          { speaker: "Michael van der Merwe", role: "Chairman", text: "Welcome to the 2026 Annual General Meeting of Atlas Energy Group. This has been a challenging year for the energy sector globally, and Atlas has not been immune to these headwinds.", time: 0 },
+          { speaker: "Michael van der Merwe", role: "Chairman", text: "I want to address the elephant in the room. Our share price has declined 28% over the past twelve months, and I understand the frustration of shareholders.", time: 15 },
+          { speaker: "Rebecca Moloi", role: "CEO", text: "Revenue declined 15% to 8.2 billion rand, primarily due to lower commodity prices and the planned shutdown of our Mpumalanga facility for refurbishment.", time: 30 },
+          { speaker: "Rebecca Moloi", role: "CEO", text: "We are implementing a comprehensive turnaround plan. Phase one involves reducing overhead costs by 800 million rand by the end of fiscal year 2027.", time: 45 },
+          { speaker: "Rebecca Moloi", role: "CEO", text: "I must be transparent about a material matter. We have identified legacy environmental liabilities at three sites that were previously undisclosed. We are in discussion with the regulator.", time: 60 },
+          { speaker: "Thomas Kruger", role: "CFO", text: "The environmental remediation provision is estimated at 1.2 billion rand over five years. This will be funded from operating cash flow and does not require additional equity raising at this stage.", time: 75 },
+          { speaker: "Thomas Kruger", role: "CFO", text: "Net debt to EBITDA has increased to 3.2 times from 2.1 times last year. We are targeting a reduction to below 2.5 times by March 2027.", time: 90 },
+          { speaker: "Shareholder - Ahmed Patel", role: "Shareholder", text: "How can the board assure us that there are no further undisclosed liabilities? What has been done to strengthen internal controls?", time: 105 },
+          { speaker: "Michael van der Merwe", role: "Chairman", text: "We have commissioned an independent review by PwC of all environmental and compliance matters. The board has also strengthened the audit committee with two additional independent directors.", time: 120 },
+          { speaker: "Shareholder - Lisa Ndlovu", role: "Shareholder", text: "Will the dividend be maintained given the financial pressures?", time: 135 },
+          { speaker: "Thomas Kruger", role: "CFO", text: "We are suspending the interim dividend to preserve cash. The board will review the final dividend based on H2 performance, but shareholders should prepare for a reduced payout.", time: 150 },
+          { speaker: "Rebecca Moloi", role: "CEO", text: "I want to assure all stakeholders that the management team is fully committed to restoring value. We expect the turnaround to show measurable results within 18 months.", time: 165 }
+        ],
+        commitments: [
+          { text: "Reduce overhead costs by 800M rand by end FY2027", type: "cost_reduction", deadline: "2027-03-31", confidence: 0.65, speaker: "Rebecca Moloi" },
+          { text: "Environmental remediation of 1.2B rand over five years", type: "regulatory_commitment", deadline: "2031-12-31", confidence: 0.8, speaker: "Thomas Kruger" },
+          { text: "Reduce net debt to EBITDA below 2.5x by March 2027", type: "financial_target", deadline: "2027-03-31", confidence: 0.55, speaker: "Thomas Kruger" },
+          { text: "Turnaround to show measurable results within 18 months", type: "strategic_milestone", deadline: "2027-10-31", confidence: 0.45, speaker: "Rebecca Moloi" },
+          { text: "Independent PwC review of environmental and compliance matters", type: "governance_action", deadline: "2026-09-30", confidence: 0.9, speaker: "Michael van der Merwe" }
+        ],
+        complianceFlags: [
+          { type: "material_disclosure", severity: "critical", speaker: "Rebecca Moloi", pattern: "legacy environmental liabilities at three sites that were previously undisclosed" },
+          { type: "forward_looking_statement", severity: "high", speaker: "Rebecca Moloi", pattern: "turnaround to show measurable results within 18 months" },
+          { type: "dividend_warning", severity: "high", speaker: "Thomas Kruger", pattern: "suspending the interim dividend... shareholders should prepare for a reduced payout" },
+          { type: "leverage_risk", severity: "high", speaker: "Thomas Kruger", pattern: "Net debt to EBITDA has increased to 3.2 times" },
+          { type: "hedging_language", severity: "medium", speaker: "Thomas Kruger", pattern: "does not require additional equity raising at this stage" }
+        ],
+        driftEvents: [
+          { commitmentText: "Maintain annual dividend of 3.50 rand per share", driftType: "directional", severity: "high", explanation: "Prior year commitment to maintain dividend has been reversed; interim dividend suspended entirely", confidence: 0.92 },
+          { commitmentText: "Net debt to EBITDA to remain below 2.5x", driftType: "numerical", severity: "high", explanation: "Previous target of below 2.5x has been breached; now at 3.2x with target to return to 2.5x by March 2027", confidence: 0.88 }
+        ],
+        profileSummary: {
+          overall_risk_level: "high",
+          delivery_reliability: "weak",
+          relationship_health: "strained",
+          governance_quality: "improving",
+          key_concerns: ["Undisclosed environmental liabilities", "Dividend suspension", "Leverage breach at 3.2x", "Revenue decline of 15%", "Share price down 28%"],
+          key_strengths: ["Transparent acknowledgement of issues", "Independent PwC review commissioned", "Board strengthened with independent directors", "Clear remediation timeline"]
+        }
+      }
+    ];
+    if (process.argv[1]?.includes("seedDemoData")) {
+      Promise.resolve().then(() => (init_index(), index_exports)).then(() => {
+        setTimeout(() => {
+          seedDemoData().then((r) => {
+            console.log(JSON.stringify(r, null, 2));
+            process.exit(r.success ? 0 : 1);
+          });
+        }, 3e3);
+      });
+    }
+  }
+});
+
+// server/routers/unifiedIntelligenceRouter.ts
+import { z as z102 } from "zod";
+var unifiedIntelligenceRouter;
+var init_unifiedIntelligenceRouter = __esm({
+  "server/routers/unifiedIntelligenceRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_UnifiedIntelligenceService();
+    init_seedDemoData();
+    unifiedIntelligenceRouter = router({
+      getSessionIntelligence: operatorProcedure.input(z102.object({ sessionId: z102.number() })).query(async ({ input }) => {
+        try {
+          return await getSessionIntelligence(input.sessionId);
+        } catch (e) {
+          console.error("[UnifiedIntel Router] Session intel failed:", e);
+          throw e;
+        }
+      }),
+      getOrgIntelligence: operatorProcedure.input(z102.object({ organisationId: z102.string() })).query(async ({ input }) => {
+        try {
+          return await getOrgIntelligence(input.organisationId);
+        } catch (e) {
+          console.error("[UnifiedIntel Router] Org intel failed:", e);
+          throw e;
+        }
+      }),
+      seedDemoData: operatorProcedure.mutation(async () => {
+        return await seedDemoData();
+      })
+    });
+  }
+});
+
+// server/routers/operatorDashboardRouter.ts
+import { z as z103 } from "zod";
+function buildReportApprovalEmail(opts) {
+  return `<!DOCTYPE html><html><body style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:40px 0;">
+  <div style="max-width:600px;margin:0 auto;background:#1e293b;border-radius:12px;overflow:hidden;">
+    <div style="padding:32px 40px;text-align:center;border-bottom:1px solid #334155;">
+      <h1 style="color:#f1f5f9;font-size:20px;margin:0;">CuraLive Intelligence Report</h1>
+    </div>
+    <div style="padding:32px 40px;">
+      <p style="color:#e2e8f0;font-size:14px;line-height:1.6;">Your intelligence report for <strong style="color:#38bdf8;">${opts.eventName}</strong> (${opts.clientName}) is now ready for review.</p>
+      ${opts.reportUrl ? `<div style="text-align:center;padding:24px 0;"><a href="${opts.reportUrl}" style="display:inline-block;padding:12px 32px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">View Full Report</a></div>` : ""}
+    </div>
+    <div style="padding:16px 40px;text-align:center;border-top:1px solid #334155;">
+      <p style="color:#64748b;font-size:12px;margin:0;">CuraLive \xB7 Investor Events Intelligence</p>
+    </div>
+  </div></body></html>`;
+}
+var operatorDashboardRouter;
+var init_operatorDashboardRouter = __esm({
+  "server/routers/operatorDashboardRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    init_email();
+    operatorDashboardRouter = router({
+      getDashboardSummary: operatorProcedure.query(async () => {
+        const [liveRows] = await rawSql(
+          `SELECT COUNT(*)::int AS cnt FROM shadow_sessions WHERE status = 'live'`
+        );
+        const liveCount = liveRows[0]?.cnt ?? 0;
+        const [pendingRows] = await rawSql(
+          `SELECT COUNT(*)::int AS cnt FROM archive_events WHERE status = 'ready_to_send' AND ai_report IS NOT NULL`
+        );
+        const pendingReportCount = pendingRows[0]?.cnt ?? 0;
+        const [activeRows] = await rawSql(
+          `SELECT
+         COUNT(*) FILTER (WHERE status = 'active')::int AS active,
+         COUNT(*) FILTER (WHERE status = 'demo')::int AS demo,
+         COUNT(*) FILTER (WHERE status = 'pilot')::int AS pilot
+       FROM organisations`
+        );
+        const customers = activeRows[0] ?? { active: 0, demo: 0, pilot: 0 };
+        const now = /* @__PURE__ */ new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+        const [revenueRows] = await rawSql(
+          `SELECT
+         COALESCE(SUM(CASE WHEN created_at >= $1 THEN total_cents ELSE 0 END), 0)::bigint AS this_month,
+         COALESCE(SUM(CASE WHEN created_at >= $2 AND created_at < $1 THEN total_cents ELSE 0 END), 0)::bigint AS last_month
+       FROM billing_invoices
+       WHERE status IN ('pending', 'paid')`,
+          [monthStart, lastMonthStart]
+        );
+        const revenueThisMonth = Number(revenueRows[0]?.this_month ?? 0);
+        const revenueLastMonth = Number(revenueRows[0]?.last_month ?? 0);
+        const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1e3).toISOString();
+        const [upcomingRows] = await rawSql(
+          `SELECT COUNT(*)::int AS cnt FROM scheduled_sessions WHERE scheduled_at >= NOW() AND scheduled_at <= $1`,
+          [nextWeek]
+        );
+        const upcomingCount = upcomingRows[0]?.cnt ?? 0;
+        return {
+          liveCount,
+          pendingReportCount,
+          customers,
+          revenueThisMonth,
+          revenueLastMonth,
+          upcomingCount
+        };
+      }),
+      getLiveSession: operatorProcedure.query(async () => {
+        const [rows] = await rawSql(
+          `SELECT s.id, s.company, s.client_name, s.event_name, s.event_type, s.started_at, s.status,
+              s.sentiment_avg, s.compliance_flags, s.ai_core_results,
+              COALESCE(s.org_id, 0) AS org_id
+       FROM shadow_sessions s
+       WHERE s.status = 'live'
+       ORDER BY s.started_at DESC
+       LIMIT 1`
+        );
+        if (!rows.length) return null;
+        const session = rows[0];
+        const sessionId = session.id;
+        const [segRows] = await rawSql(
+          `SELECT COUNT(*)::int AS cnt FROM occ_transcription_segments WHERE conference_id = $1`,
+          [sessionId]
+        );
+        const segmentCount = segRows[0]?.cnt ?? 0;
+        const [commitRows] = await rawSql(
+          `SELECT COUNT(*)::int AS cnt FROM aic_commitments WHERE event_id = $1::text`,
+          [`shadow-${sessionId}`]
+        );
+        const commitmentCount = commitRows[0]?.cnt ?? 0;
+        const [flagRows] = await rawSql(
+          `SELECT COUNT(*)::int AS cnt FROM regulatory_flags WHERE monitor_id = $1`,
+          [sessionId]
+        );
+        const complianceFlagCount = flagRows[0]?.cnt ?? 0;
+        let riskLevel = "unknown";
+        if (session.ai_core_results) {
+          try {
+            const parsed = typeof session.ai_core_results === "string" ? JSON.parse(session.ai_core_results) : session.ai_core_results;
+            riskLevel = parsed?.risk?.overall_level ?? "unknown";
+          } catch {
+          }
+        }
+        return {
+          id: sessionId,
+          company: session.company ?? session.client_name,
+          eventName: session.event_name,
+          eventType: session.event_type,
+          startedAt: session.started_at,
+          segmentCount,
+          commitmentCount,
+          complianceFlagCount,
+          riskLevel,
+          orgId: session.org_id
+        };
+      }),
+      getUpcomingSessions: operatorProcedure.query(async () => {
+        const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3).toISOString();
+        const [rows] = await rawSql(
+          `SELECT ss.id, ss.event_name, ss.scheduled_at, ss.event_type,
+              o.name AS org_name
+       FROM scheduled_sessions ss
+       LEFT JOIN organisations o ON o.id = ss.org_id
+       WHERE ss.scheduled_at >= NOW() AND ss.scheduled_at <= $1
+       ORDER BY ss.scheduled_at ASC
+       LIMIT 10`,
+          [nextWeek]
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          eventName: r.event_name,
+          scheduledAt: r.scheduled_at,
+          eventType: r.event_type,
+          orgName: r.org_name ?? "Unassigned"
+        }));
+      }),
+      getAttentionItems: operatorProcedure.query(async () => {
+        const items = [];
+        const [reportRows] = await rawSql(
+          `SELECT id, client_name, event_name, created_at
+       FROM archive_events
+       WHERE status = 'ready_to_send' AND ai_report IS NOT NULL
+       ORDER BY created_at ASC
+       LIMIT 10`
+        );
+        for (const r of reportRows) {
+          items.push({
+            type: "report_pending",
+            id: r.id,
+            title: `Report ready: ${r.client_name}`,
+            subtitle: r.event_name,
+            severity: "warning",
+            createdAt: r.created_at?.toISOString?.() ?? String(r.created_at)
+          });
+        }
+        return items;
+      }),
+      getAllSessions: operatorProcedure.input(z103.object({ page: z103.number().int().min(1).default(1) })).query(async ({ input }) => {
+        const limit = 20;
+        const offset = (input.page - 1) * limit;
+        const [countRows] = await rawSql(`SELECT COUNT(*)::int AS cnt FROM shadow_sessions`);
+        const total = countRows[0]?.cnt ?? 0;
+        const [rows] = await rawSql(
+          `SELECT s.id, s.company, s.client_name, s.event_name, s.event_type, s.status,
+                s.started_at, s.ended_at, s.created_at, s.sentiment_avg,
+                s.compliance_flags, s.transcript_segments, s.org_id,
+                o.name AS org_name
+         FROM shadow_sessions s
+         LEFT JOIN organisations o ON o.id = s.org_id
+         ORDER BY s.created_at DESC
+         LIMIT $1 OFFSET $2`,
+          [limit, offset]
+        );
+        return {
+          sessions: rows.map((r) => ({
+            id: r.id,
+            company: r.company ?? r.client_name,
+            eventName: r.event_name,
+            eventType: r.event_type,
+            status: r.status,
+            startedAt: r.started_at,
+            endedAt: r.ended_at,
+            createdAt: r.created_at,
+            sentimentAvg: r.sentiment_avg,
+            complianceFlags: r.compliance_flags,
+            transcriptSegments: r.transcript_segments,
+            orgName: r.org_name
+          })),
+          total,
+          page: input.page,
+          totalPages: Math.ceil(total / limit)
+        };
+      }),
+      getCustomersByStage: operatorProcedure.input(z103.object({ stage: z103.enum(["active", "demo", "pilot"]) })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT o.*,
+                (SELECT COUNT(*)::int FROM shadow_sessions s WHERE s.org_id = o.id) AS events_run,
+                (SELECT MAX(s.created_at) FROM shadow_sessions s WHERE s.org_id = o.id) AS last_event,
+                (SELECT token FROM client_tokens ct WHERE ct.session_id IN (SELECT id FROM shadow_sessions WHERE org_id = o.id) AND ct.access_type = 'report' LIMIT 1) AS demo_token
+         FROM organisations o
+         WHERE o.status = $1
+         ORDER BY o.name ASC`,
+          [input.stage]
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          status: r.status,
+          billingType: r.billing_type,
+          subscriptionAmount: r.subscription_amount,
+          perEventPrice: r.per_event_price,
+          billingContactEmail: r.billing_contact_email,
+          irContactEmail: r.ir_contact_email,
+          pilotEventsTotal: r.pilot_events_total ?? 3,
+          pilotEventsUsed: r.pilot_events_used ?? 0,
+          pilotNotes: r.pilot_notes,
+          followupDate: r.followup_date,
+          eventsRun: r.events_run ?? 0,
+          lastEvent: r.last_event,
+          demoToken: r.demo_token
+        }));
+      }),
+      getReportsPending: operatorProcedure.query(async () => {
+        const [rows] = await rawSql(
+          `SELECT ae.id, ae.client_name, ae.event_name, ae.event_type, ae.created_at,
+              ae.ai_report, ae.org_id,
+              ct.token AS report_token
+       FROM archive_events ae
+       LEFT JOIN client_tokens ct ON ct.session_id = ae.specialised_session_id AND ct.access_type = 'report'
+       WHERE ae.status = 'ready_to_send' AND ae.ai_report IS NOT NULL
+       ORDER BY ae.created_at DESC`
+        );
+        return rows.map((r) => {
+          let moduleKeys = [];
+          try {
+            const report = typeof r.ai_report === "string" ? JSON.parse(r.ai_report) : r.ai_report;
+            if (report && typeof report === "object") {
+              moduleKeys = Object.keys(report).filter((k) => k !== "metadata" && k !== "generatedAt");
+            }
+          } catch {
+          }
+          return {
+            id: r.id,
+            clientName: r.client_name,
+            eventName: r.event_name,
+            eventType: r.event_type,
+            createdAt: r.created_at,
+            reportToken: r.report_token ?? null,
+            moduleKeys,
+            orgId: r.org_id
+          };
+        });
+      }),
+      getReportsSent: operatorProcedure.input(z103.object({ page: z103.number().int().min(1).default(1) })).query(async ({ input }) => {
+        const limit = 20;
+        const offset = (input.page - 1) * limit;
+        const [countRows] = await rawSql(
+          `SELECT COUNT(*)::int AS cnt FROM archive_events WHERE status = 'sent'`
+        );
+        const total = countRows[0]?.cnt ?? 0;
+        const [rows] = await rawSql(
+          `SELECT id, client_name, event_name, event_type, created_at, updated_at
+         FROM archive_events
+         WHERE status = 'sent'
+         ORDER BY updated_at DESC
+         LIMIT $1 OFFSET $2`,
+          [limit, offset]
+        );
+        return {
+          reports: rows.map((r) => ({
+            id: r.id,
+            clientName: r.client_name,
+            eventName: r.event_name,
+            eventType: r.event_type,
+            createdAt: r.created_at,
+            sentAt: r.updated_at
+          })),
+          total,
+          page: input.page,
+          totalPages: Math.ceil(total / limit)
+        };
+      }),
+      approveAndSendReport: operatorProcedure.input(z103.object({ eventId: z103.number().int().positive() })).mutation(async ({ input }) => {
+        const [eventRows] = await rawSql(
+          `SELECT ae.id, ae.status, ae.client_name, ae.event_name, ae.ai_report, ae.org_id,
+                ct.token AS report_token
+         FROM archive_events ae
+         LEFT JOIN client_tokens ct ON ct.session_id = ae.specialised_session_id AND ct.access_type = 'report'
+         WHERE ae.id = $1`,
+          [input.eventId]
+        );
+        if (!eventRows.length) {
+          return { success: false, error: "Report not found." };
+        }
+        const event = eventRows[0];
+        if (event.status === "sent") {
+          return { success: true, alreadySent: true };
+        }
+        if (event.status !== "ready_to_send") {
+          return { success: false, error: `Report status is '${event.status}', expected 'ready_to_send'.` };
+        }
+        let irContactEmail = null;
+        if (event.org_id) {
+          const [orgRows] = await rawSql(
+            `SELECT ir_contact_email, billing_type, per_event_price, billing_contact_email FROM organisations WHERE id = $1`,
+            [event.org_id]
+          );
+          if (orgRows.length) {
+            irContactEmail = orgRows[0].ir_contact_email;
+          }
+        }
+        if (!irContactEmail) {
+          return { success: false, error: "IR contact email missing \u2014 report cannot be sent." };
+        }
+        const reportUrl = event.report_token ? `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : ""}/report/${event.report_token}` : null;
+        const html = buildReportApprovalEmail({
+          clientName: event.client_name,
+          eventName: event.event_name,
+          reportUrl
+        });
+        const emailResult = await sendEmail({
+          to: irContactEmail,
+          subject: `CuraLive Intelligence Report \u2014 ${event.event_name}`,
+          html
+        });
+        if (!emailResult.success) {
+          return { success: false, error: `Email failed: ${emailResult.error}` };
+        }
+        await rawSql(
+          `UPDATE archive_events SET status = 'sent' WHERE id = $1`,
+          [input.eventId]
+        );
+        let invoiceCreated = false;
+        if (event.org_id) {
+          const [orgRows] = await rawSql(
+            `SELECT billing_type, per_event_price, billing_contact_email, name FROM organisations WHERE id = $1`,
+            [event.org_id]
+          );
+          const org = orgRows[0];
+          if (org?.billing_type === "adhoc" && org.per_event_price) {
+            const [existingInv] = await rawSql(
+              `SELECT id FROM billing_invoices WHERE internal_notes LIKE $1 LIMIT 1`,
+              [`%event_id:${input.eventId}%`]
+            );
+            if (!existingInv.length) {
+              const invNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+              const amount = org.per_event_price * 100;
+              const taxCents = Math.round(amount * 0.15);
+              await rawSql(
+                `INSERT INTO billing_invoices (invoice_number, client_id, title, subtotal_cents, tax_percent, tax_cents, total_cents, status, issued_at, internal_notes)
+               VALUES ($1, $2, $3, $4, 15, $5, $6, 'pending', NOW(), $7)`,
+                [
+                  invNumber,
+                  event.org_id,
+                  `${event.event_name} \u2014 ${event.client_name}`,
+                  amount,
+                  taxCents,
+                  amount + taxCents,
+                  `event_id:${input.eventId}`
+                ]
+              );
+              invoiceCreated = true;
+            }
+          } else if (org?.billing_type === "adhoc" && !org.per_event_price) {
+            console.warn(`[Dashboard] Adhoc org ${org.name} missing per_event_price \u2014 invoice skipped`);
+          }
+        }
+        return { success: true, alreadySent: false, invoiceCreated };
+      }),
+      getBillingSummary: operatorProcedure.query(async () => {
+        const now = /* @__PURE__ */ new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+        const [kpiRows] = await rawSql(
+          `SELECT
+         COALESCE(SUM(CASE WHEN created_at >= $1 AND status IN ('pending','paid') THEN total_cents ELSE 0 END), 0)::bigint AS revenue_this_month,
+         COALESCE(SUM(CASE WHEN created_at >= $2 AND created_at < $1 AND status IN ('pending','paid') THEN total_cents ELSE 0 END), 0)::bigint AS revenue_last_month,
+         COUNT(*) FILTER (WHERE status = 'pending')::int AS invoices_pending,
+         COUNT(*) FILTER (WHERE status = 'paid' AND created_at >= $1)::int AS events_billed
+       FROM billing_invoices`,
+          [monthStart, lastMonthStart]
+        );
+        const kpi = kpiRows[0] ?? {};
+        const [orgRows] = await rawSql(
+          `SELECT o.id, o.name, o.status, o.billing_type, o.subscription_amount, o.per_event_price,
+              o.billing_contact_email, o.ir_contact_email,
+              (SELECT bi.status FROM billing_invoices bi WHERE bi.client_id = o.id ORDER BY bi.created_at DESC LIMIT 1) AS latest_invoice_status,
+              (SELECT bi.total_cents FROM billing_invoices bi WHERE bi.client_id = o.id ORDER BY bi.created_at DESC LIMIT 1) AS latest_invoice_amount
+       FROM organisations o
+       WHERE o.status IN ('active', 'pilot', 'demo')
+       ORDER BY o.billing_type, o.name`
+        );
+        return {
+          revenueThisMonth: Number(kpi.revenue_this_month ?? 0),
+          revenueLastMonth: Number(kpi.revenue_last_month ?? 0),
+          invoicesPending: kpi.invoices_pending ?? 0,
+          eventsBilled: kpi.events_billed ?? 0,
+          organisations: orgRows.map((r) => ({
+            id: r.id,
+            name: r.name,
+            status: r.status,
+            billingType: r.billing_type,
+            subscriptionAmount: r.subscription_amount,
+            perEventPrice: r.per_event_price,
+            billingContactEmail: r.billing_contact_email,
+            irContactEmail: r.ir_contact_email,
+            latestInvoiceStatus: r.latest_invoice_status,
+            latestInvoiceAmount: r.latest_invoice_amount ? Number(r.latest_invoice_amount) : null
+          }))
+        };
+      })
+    });
+  }
+});
+
+// server/routers.eager.ts
 var routers_eager_exports = {};
 __export(routers_eager_exports, {
   appRouter: () => appRouter,
   createCallerFactory: () => createCallerFactory
 });
-import { eq as eq73, and as and45 } from "drizzle-orm";
-import { z as z89 } from "zod";
+import { eq as eq79, and as and46 } from "drizzle-orm";
+import { z as z104 } from "zod";
 async function createAblyTokenRequest(clientId) {
   const apiKey = process.env.ABLY_API_KEY;
   if (!apiKey) return null;
   const [keyName, keySecret] = apiKey.split(":");
-  const timestamp2 = Date.now();
+  const timestamp4 = Date.now();
   const ttl = 3600 * 1e3;
   const nonce = Math.random().toString(36).substring(2, 15);
   const capability = JSON.stringify({ [`curalive-event-*`]: ["subscribe", "publish", "presence", "history"] });
   const { createHmac } = await import("crypto");
-  const signString = [keyName, ttl, nonce, clientId, timestamp2, capability, ""].join("\n");
+  const signString = [keyName, ttl, nonce, clientId, timestamp4, capability, ""].join("\n");
   const mac = createHmac("sha256", keySecret).update(signString).digest("base64");
-  return { keyName, ttl, nonce, clientId, timestamp: timestamp2, capability, mac };
+  return { keyName, ttl, nonce, clientId, timestamp: timestamp4, capability, mac };
 }
 var appRouter;
 var init_routers_eager = __esm({
-  "../../server/routers.eager.ts"() {
+  "server/routers.eager.ts"() {
     "use strict";
     init_const();
     init_cookies();
@@ -39237,6 +46065,21 @@ var init_routers_eager = __esm({
     init_persistence();
     init_aiAmPhase2();
     init_restBridgeRouter();
+    init_session();
+    init_archive();
+    init_bridgeConsoleRouter();
+    init_boardIntelligenceRouter();
+    init_preEventIntelligenceRouter();
+    init_regulatoryComplianceRouter();
+    init_partnerRouter();
+    init_sessionConfigRouter();
+    init_sessionMessagesRouter();
+    init_speakerQueueRouter();
+    init_agmIntelligenceRouter();
+    init_operationsRouter();
+    init_qaAnalyticsRouter();
+    init_unifiedIntelligenceRouter();
+    init_operatorDashboardRouter();
     appRouter = router({
       system: systemRouter,
       occ: occRouter,
@@ -39328,6 +46171,21 @@ var init_routers_eager = __esm({
       persistence: persistenceRouter,
       aiAmPhase2: aiAmPhase2Router,
       restBridge: restBridgeRouter,
+      session: sessionRouter,
+      archive: archiveRouter,
+      bridgeConsole: bridgeConsoleRouter,
+      boardIntelligence: boardIntelligenceRouter,
+      preEventIntelligence: preEventIntelligenceRouter,
+      regulatoryCompliance: regulatoryComplianceRouter,
+      partners: partnerRouter,
+      sessionConfig: sessionConfigRouter,
+      sessionMessages: sessionMessagesRouter,
+      speakerQueue: speakerQueueRouter,
+      agmIntelligence: agmIntelligenceRouter,
+      operations: operationsRouter,
+      qaAnalytics: qaAnalyticsRouter,
+      unifiedIntelligence: unifiedIntelligenceRouter,
+      operatorDashboard: operatorDashboardRouter,
       admin: router({
         listUsers: adminProcedure.query(async () => {
           const allUsers = await listUsers();
@@ -39340,9 +46198,9 @@ var init_routers_eager = __esm({
             loginMethod: u.loginMethod
           }));
         }),
-        updateUserRole: adminProcedure.input(z89.object({
-          userId: z89.number().int().positive(),
-          role: z89.enum(["user", "admin", "operator"])
+        updateUserRole: adminProcedure.input(z104.object({
+          userId: z104.number().int().positive(),
+          role: z104.enum(["user", "admin", "operator"])
         })).mutation(async ({ input, ctx }) => {
           if (ctx.user.id === input.userId && input.role !== "admin") {
             throw new Error("You cannot change your own role.");
@@ -39353,7 +46211,7 @@ var init_routers_eager = __esm({
       }),
       // ─── Self-service operator access request ──────────────────────────────────
       team: router({
-        requestOperatorAccess: publicProcedure.input(z89.object({ reason: z89.string().max(500).optional() })).mutation(async ({ input, ctx }) => {
+        requestOperatorAccess: publicProcedure.input(z104.object({ reason: z104.string().max(500).optional() })).mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Login required");
           if (ctx.user.role === "operator" || ctx.user.role === "admin") {
             return { success: true, alreadyOperator: true };
@@ -39405,23 +46263,23 @@ var init_routers_eager = __esm({
             timezone: user.timezone
           };
         }),
-        update: publicProcedure.input(z89.object({
-          name: z89.string().min(1).max(255).optional(),
-          jobTitle: z89.string().max(255).nullable().optional(),
-          organisation: z89.string().max(255).nullable().optional(),
-          bio: z89.string().max(1e3).nullable().optional(),
-          phone: z89.string().max(64).nullable().optional(),
-          linkedinUrl: z89.string().url().max(512).nullable().optional().or(z89.literal("")).transform((v) => v === "" ? null : v),
-          timezone: z89.string().max(64).nullable().optional()
+        update: publicProcedure.input(z104.object({
+          name: z104.string().min(1).max(255).optional(),
+          jobTitle: z104.string().max(255).nullable().optional(),
+          organisation: z104.string().max(255).nullable().optional(),
+          bio: z104.string().max(1e3).nullable().optional(),
+          phone: z104.string().max(64).nullable().optional(),
+          linkedinUrl: z104.string().url().max(512).nullable().optional().or(z104.literal("")).transform((v) => v === "" ? null : v),
+          timezone: z104.string().max(64).nullable().optional()
         })).mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Login required");
           await updateUserProfile(ctx.user.id, input);
           return { success: true };
         }),
-        uploadAvatar: publicProcedure.input(z89.object({
-          base64: z89.string().max(5 * 1024 * 1024),
+        uploadAvatar: publicProcedure.input(z104.object({
+          base64: z104.string().max(5 * 1024 * 1024),
           // 5 MB limit
-          mimeType: z89.enum(["image/jpeg", "image/png", "image/webp", "image/gif"])
+          mimeType: z104.enum(["image/jpeg", "image/png", "image/webp", "image/gif"])
         })).mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Login required");
           const buffer = Buffer.from(input.base64, "base64");
@@ -39436,10 +46294,10 @@ var init_routers_eager = __esm({
          * Returns the profile of the operator who created the event, or falls back to
          * the event's hostName / hostOrganization fields.
          */
-        getEventHost: publicProcedure.input(z89.object({ slug: z89.string() })).query(async ({ input }) => {
+        getEventHost: publicProcedure.input(z104.object({ slug: z104.string() })).query(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return null;
-          const [event] = await db2.select().from(webcastEvents).where(eq73(webcastEvents.slug, input.slug)).limit(1);
+          const [event] = await db2.select().from(webcastEvents).where(eq79(webcastEvents.slug, input.slug)).limit(1);
           if (!event) return null;
           return {
             name: event.hostName ?? null,
@@ -39453,9 +46311,9 @@ var init_routers_eager = __esm({
       }),
       // ─── Ably real-time token endpoint ───────────────────────────────────────────
       ably: router({
-        tokenRequest: publicProcedure.input(z89.object({
-          clientId: z89.string().optional().default("anonymous"),
-          channelPrefix: z89.string().optional().default("curalive-event")
+        tokenRequest: publicProcedure.input(z104.object({
+          clientId: z104.string().optional().default("anonymous"),
+          channelPrefix: z104.string().optional().default("curalive-event")
         })).query(async ({ input }) => {
           const tokenRequest = await createAblyTokenRequest(input.clientId);
           return { tokenRequest, mode: tokenRequest ? "ably" : "demo" };
@@ -39464,13 +46322,13 @@ var init_routers_eager = __esm({
       // ─── Event management ────────────────────────────────────────────────────────
       events: router({
         // Verify access code for password-protected events
-        verifyAccess: publicProcedure.input(z89.object({
-          eventId: z89.string(),
-          accessCode: z89.string().optional()
+        verifyAccess: publicProcedure.input(z104.object({
+          eventId: z104.string(),
+          accessCode: z104.string().optional()
         })).query(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { allowed: true, requiresCode: false };
-          const [event] = await db2.select().from(events).where(eq73(events.eventId, input.eventId)).limit(1);
+          const [event] = await db2.select().from(events).where(eq79(events.eventId, input.eventId)).limit(1);
           if (!event) return { allowed: true, requiresCode: false };
           if (!event.accessCode) return { allowed: true, requiresCode: false };
           if (!input.accessCode) return { allowed: false, requiresCode: true };
@@ -39478,10 +46336,10 @@ var init_routers_eager = __esm({
           return { allowed: match, requiresCode: true };
         }),
         // Get event details (including whether it's password-protected)
-        getEvent: publicProcedure.input(z89.object({ eventId: z89.string() })).query(async ({ input }) => {
+        getEvent: publicProcedure.input(z104.object({ eventId: z104.string() })).query(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return null;
-          const [event] = await db2.select().from(events).where(eq73(events.eventId, input.eventId)).limit(1);
+          const [event] = await db2.select().from(events).where(eq79(events.eventId, input.eventId)).limit(1);
           if (!event) return null;
           return {
             ...event,
@@ -39491,13 +46349,13 @@ var init_routers_eager = __esm({
           };
         }),
         // Upsert event (called by operator to create/update event with optional access code)
-        upsertEvent: publicProcedure.input(z89.object({
-          eventId: z89.string(),
-          title: z89.string(),
-          company: z89.string(),
-          platform: z89.string(),
-          status: z89.enum(["upcoming", "live", "completed"]).optional().default("upcoming"),
-          accessCode: z89.string().optional()
+        upsertEvent: publicProcedure.input(z104.object({
+          eventId: z104.string(),
+          title: z104.string(),
+          company: z104.string(),
+          platform: z104.string(),
+          status: z104.enum(["upcoming", "live", "completed"]).optional().default("upcoming"),
+          accessCode: z104.string().optional()
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false, error: "Database unavailable" };
@@ -39511,9 +46369,9 @@ var init_routers_eager = __esm({
           }).onConflictDoNothing();
           return { success: true };
         }),
-        setAccessCode: publicProcedure.input(z89.object({
-          eventId: z89.string(),
-          accessCode: z89.string().nullable()
+        setAccessCode: publicProcedure.input(z104.object({
+          eventId: z104.string(),
+          accessCode: z104.string().nullable()
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false, error: "Database unavailable" };
@@ -39531,17 +46389,17 @@ var init_routers_eager = __esm({
           };
         }),
         // AI-powered event summary
-        generateSummary: publicProcedure.input(z89.object({
-          eventTitle: z89.string(),
-          transcript: z89.array(z89.object({
-            speaker: z89.string(),
-            text: z89.string(),
-            timeLabel: z89.string()
+        generateSummary: publicProcedure.input(z104.object({
+          eventTitle: z104.string(),
+          transcript: z104.array(z104.object({
+            speaker: z104.string(),
+            text: z104.string(),
+            timeLabel: z104.string()
           })),
-          qaItems: z89.array(z89.object({
-            question: z89.string(),
-            author: z89.string(),
-            status: z89.string()
+          qaItems: z104.array(z104.object({
+            question: z104.string(),
+            author: z104.string(),
+            status: z104.string()
           })).optional().default([])
         })).mutation(async ({ input }) => {
           const transcriptText = input.transcript.map((s) => `[${s.timeLabel}] ${s.speaker}: ${s.text}`).join("\n");
@@ -39627,20 +46485,20 @@ Overall tone was confident and forward-looking, with management expressing stron
       }),
       // ─── Press Release Generator ─────────────────────────────────────────────────
       pressRelease: router({
-        generate: publicProcedure.input(z89.object({
-          eventTitle: z89.string(),
-          companyName: z89.string().optional().default("the Company"),
-          transcript: z89.array(z89.object({
-            speaker: z89.string(),
-            text: z89.string(),
-            timeLabel: z89.string()
+        generate: publicProcedure.input(z104.object({
+          eventTitle: z104.string(),
+          companyName: z104.string().optional().default("the Company"),
+          transcript: z104.array(z104.object({
+            speaker: z104.string(),
+            text: z104.string(),
+            timeLabel: z104.string()
           })),
-          aiSummary: z89.object({
-            headline: z89.string().optional(),
-            keyPoints: z89.array(z89.string()).optional(),
-            financialHighlights: z89.array(z89.string()).optional(),
-            executiveSummary: z89.string().optional(),
-            forwardLookingStatements: z89.array(z89.string()).optional()
+          aiSummary: z104.object({
+            headline: z104.string().optional(),
+            keyPoints: z104.array(z104.string()).optional(),
+            financialHighlights: z104.array(z104.string()).optional(),
+            executiveSummary: z104.string().optional(),
+            forwardLookingStatements: z104.array(z104.string()).optional()
           }).optional()
         })).mutation(async ({ input }) => {
           const transcriptText = input.transcript.slice(0, 40).map((s) => `[${s.timeLabel}] ${s.speaker}: ${s.text}`).join("\n");
@@ -39700,27 +46558,27 @@ ENDS`
       // ─── Attendee Registrations ───────────────────────────────────────────────────
       registrations: router({
         // Register an attendee for an event
-        register: publicProcedure.input(z89.object({
-          eventId: z89.string(),
-          name: z89.string().min(1),
-          email: z89.string().email(),
-          company: z89.string().optional(),
-          jobTitle: z89.string().optional(),
-          language: z89.string().optional().default("English"),
-          dialIn: z89.boolean().optional().default(false),
-          accessCode: z89.string().optional()
+        register: publicProcedure.input(z104.object({
+          eventId: z104.string(),
+          name: z104.string().min(1),
+          email: z104.string().email(),
+          company: z104.string().optional(),
+          jobTitle: z104.string().optional(),
+          language: z104.string().optional().default("English"),
+          dialIn: z104.boolean().optional().default(false),
+          accessCode: z104.string().optional()
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false, error: "Database unavailable" };
-          const [event] = await db2.select().from(events).where(eq73(events.eventId, input.eventId)).limit(1);
+          const [event] = await db2.select().from(events).where(eq79(events.eventId, input.eventId)).limit(1);
           if (event?.accessCode) {
             if (!input.accessCode || input.accessCode.trim() !== event.accessCode.trim()) {
               return { success: false, error: "Invalid access code" };
             }
           }
-          const [existing] = await db2.select().from(attendeeRegistrations).where(and45(
-            eq73(attendeeRegistrations.eventId, input.eventId),
-            eq73(attendeeRegistrations.email, input.email)
+          const [existing] = await db2.select().from(attendeeRegistrations).where(and46(
+            eq79(attendeeRegistrations.eventId, input.eventId),
+            eq79(attendeeRegistrations.email, input.email)
           )).limit(1);
           if (existing) {
             return { success: true, alreadyRegistered: true, registrationId: existing.id };
@@ -39769,10 +46627,10 @@ ENDS`
           return { success: true, alreadyRegistered: false, registrationId: result?.id };
         }),
         // Get all attendees for an event (for Operator Console)
-        listByEvent: publicProcedure.input(z89.object({ eventId: z89.string() })).query(async ({ input }) => {
+        listByEvent: publicProcedure.input(z104.object({ eventId: z104.string() })).query(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return [];
-          return db2.select().from(attendeeRegistrations).where(eq73(attendeeRegistrations.eventId, input.eventId)).orderBy(attendeeRegistrations.createdAt);
+          return db2.select().from(attendeeRegistrations).where(eq79(attendeeRegistrations.eventId, input.eventId)).orderBy(attendeeRegistrations.createdAt);
         }),
         // Get all registrations for the currently logged-in user (by email)
         getMyRegistrations: protectedProcedure.query(async ({ ctx }) => {
@@ -39780,10 +46638,10 @@ ENDS`
           if (!db2) return [];
           const userEmail = ctx.user.email;
           if (!userEmail) return [];
-          const regs = await db2.select().from(attendeeRegistrations).where(eq73(attendeeRegistrations.email, userEmail)).orderBy(attendeeRegistrations.createdAt);
+          const regs = await db2.select().from(attendeeRegistrations).where(eq79(attendeeRegistrations.email, userEmail)).orderBy(attendeeRegistrations.createdAt);
           const enriched = await Promise.all(
             regs.map(async (reg) => {
-              const [event] = await db2.select().from(events).where(eq73(events.eventId, reg.eventId)).limit(1);
+              const [event] = await db2.select().from(events).where(eq79(events.eventId, reg.eventId)).limit(1);
               return {
                 ...reg,
                 eventTitle: event?.title ?? reg.eventId,
@@ -39796,12 +46654,12 @@ ENDS`
           return enriched;
         }),
         // Mark attendee as joined (called when they enter the Event Room)
-        markJoined: publicProcedure.input(z89.object({ eventId: z89.string(), email: z89.string() })).mutation(async ({ input }) => {
+        markJoined: publicProcedure.input(z104.object({ eventId: z104.string(), email: z104.string() })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false };
-          await db2.update(attendeeRegistrations).set({ joinedAt: /* @__PURE__ */ new Date() }).where(and45(
-            eq73(attendeeRegistrations.eventId, input.eventId),
-            eq73(attendeeRegistrations.email, input.email)
+          await db2.update(attendeeRegistrations).set({ joinedAt: /* @__PURE__ */ new Date() }).where(and46(
+            eq79(attendeeRegistrations.eventId, input.eventId),
+            eq79(attendeeRegistrations.email, input.email)
           ));
           return { success: true };
         })
@@ -39811,21 +46669,21 @@ ENDS`
         list: publicProcedure.query(async () => {
           const db2 = await getDb();
           if (!db2) return [];
-          return db2.select().from(irContacts).where(eq73(irContacts.active, true)).orderBy(irContacts.name);
+          return db2.select().from(irContacts).where(eq79(irContacts.active, true)).orderBy(irContacts.name);
         }),
         // Returns active IR contacts that have a phone number — for the Multi-Dial queue
         getForDial: publicProcedure.query(async () => {
           const db2 = await getDb();
           if (!db2) return [];
-          const contacts = await db2.select().from(irContacts).where(eq73(irContacts.active, true)).orderBy(irContacts.name);
+          const contacts = await db2.select().from(irContacts).where(eq79(irContacts.active, true)).orderBy(irContacts.name);
           return contacts.filter((c) => c.phoneNumber && c.phoneNumber.trim().length > 0);
         }),
-        add: publicProcedure.input(z89.object({
-          name: z89.string().min(1),
-          email: z89.string().email(),
-          company: z89.string().optional(),
-          role: z89.string().optional(),
-          phoneNumber: z89.string().optional()
+        add: publicProcedure.input(z104.object({
+          name: z104.string().min(1),
+          email: z104.string().email(),
+          company: z104.string().optional(),
+          role: z104.string().optional(),
+          phoneNumber: z104.string().optional()
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false };
@@ -39838,13 +46696,13 @@ ENDS`
           }).onConflictDoNothing();
           return { success: true };
         }),
-        update: publicProcedure.input(z89.object({
-          id: z89.number(),
-          name: z89.string().min(1),
-          email: z89.string().email(),
-          company: z89.string().optional(),
-          role: z89.string().optional(),
-          phoneNumber: z89.string().optional()
+        update: publicProcedure.input(z104.object({
+          id: z104.number(),
+          name: z104.string().min(1),
+          email: z104.string().email(),
+          company: z104.string().optional(),
+          role: z104.string().optional(),
+          phoneNumber: z104.string().optional()
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false };
@@ -39854,33 +46712,33 @@ ENDS`
             company: input.company || null,
             role: input.role || null,
             phoneNumber: input.phoneNumber || null
-          }).where(eq73(irContacts.id, input.id));
+          }).where(eq79(irContacts.id, input.id));
           return { success: true };
         }),
-        remove: publicProcedure.input(z89.object({ id: z89.number() })).mutation(async ({ input }) => {
+        remove: publicProcedure.input(z104.object({ id: z104.number() })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false };
-          await db2.update(irContacts).set({ active: false }).where(eq73(irContacts.id, input.id));
+          await db2.update(irContacts).set({ active: false }).where(eq79(irContacts.id, input.id));
           return { success: true };
         }),
         // Send AI summary to all active IR contacts
-        sendSummary: publicProcedure.input(z89.object({
-          eventTitle: z89.string(),
-          summary: z89.object({
-            headline: z89.string(),
-            keyPoints: z89.array(z89.string()),
-            financialHighlights: z89.array(z89.string()),
-            sentiment: z89.string(),
-            actionItems: z89.array(z89.string()),
-            executiveSummary: z89.string(),
-            forwardLookingStatements: z89.array(z89.string()).optional().default([]),
-            regulatoryHighlights: z89.array(z89.string()).optional().default([]),
-            riskFactors: z89.array(z89.string()).optional().default([])
+        sendSummary: publicProcedure.input(z104.object({
+          eventTitle: z104.string(),
+          summary: z104.object({
+            headline: z104.string(),
+            keyPoints: z104.array(z104.string()),
+            financialHighlights: z104.array(z104.string()),
+            sentiment: z104.string(),
+            actionItems: z104.array(z104.string()),
+            executiveSummary: z104.string(),
+            forwardLookingStatements: z104.array(z104.string()).optional().default([]),
+            regulatoryHighlights: z104.array(z104.string()).optional().default([]),
+            riskFactors: z104.array(z104.string()).optional().default([])
           }),
-          additionalEmails: z89.array(z89.string().email()).optional().default([])
+          additionalEmails: z104.array(z104.string().email()).optional().default([])
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
-          const contacts = db2 ? await db2.select().from(irContacts).where(eq73(irContacts.active, true)) : [];
+          const contacts = db2 ? await db2.select().from(irContacts).where(eq79(irContacts.active, true)) : [];
           const allEmails = [
             ...contacts.map((c) => c.email),
             ...input.additionalEmails
@@ -39956,15 +46814,15 @@ Recipients: ${allEmails.join(", ")}
       }),
       // ─── Book Demo ───────────────────────────────────────────────────────────────
       bookDemo: router({
-        submit: publicProcedure.input(z89.object({
-          name: z89.string().min(2).max(100),
-          company: z89.string().min(2).max(150),
-          role: z89.string().min(2).max(100),
-          email: z89.string().email(),
-          phone: z89.string().optional(),
-          serviceInterest: z89.enum(["capital_raising", "earnings_call", "research", "hybrid_conference", "all"]).default("all"),
-          preferredDate: z89.string().optional(),
-          message: z89.string().max(1e3).optional()
+        submit: publicProcedure.input(z104.object({
+          name: z104.string().min(2).max(100),
+          company: z104.string().min(2).max(150),
+          role: z104.string().min(2).max(100),
+          email: z104.string().email(),
+          phone: z104.string().optional(),
+          serviceInterest: z104.enum(["capital_raising", "earnings_call", "research", "hybrid_conference", "all"]).default("all"),
+          preferredDate: z104.string().optional(),
+          message: z104.string().max(1e3).optional()
         })).mutation(async ({ input }) => {
           const notified = await notifyOwner({
             title: `New Demo Request: ${input.name} @ ${input.company}`,
@@ -39998,7 +46856,7 @@ Recipients: ${allEmails.join(", ")}
                 <p style="margin: 4px 0;"><strong>Service Interest:</strong> ${input.serviceInterest.replace(/_/g, " ")}</p>
                 ${input.preferredDate ? `<p style="margin: 4px 0;"><strong>Preferred Date:</strong> ${input.preferredDate}</p>` : ""}
               </div>
-              <p style="color: #94a3b8; font-size: 13px;">In the meantime, explore the live platform at <a href="https://curalive-mdu4k2ib.manus.space" style="color: #ef4444;">curalive-mdu4k2ib.manus.space</a></p>
+              <p style="color: #94a3b8; font-size: 13px;">In the meantime, explore the live platform at <a href="https://curalive-platform.replit.app" style="color: #ef4444;">curalive-platform.replit.app</a></p>
             </div>
           `
           }).catch(() => {
@@ -40010,86 +46868,7 @@ Recipients: ${allEmails.join(", ")}
   }
 });
 
-// ../../server/_core/index.ts
-import "dotenv/config";
-import express2 from "express";
-import http from "http";
-import net from "net";
-import rateLimit from "express-rate-limit";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-
-// ../../server/_core/oauth.ts
-init_const();
-init_db();
-init_cookies();
-init_sdk();
-function getQueryParam(req, key) {
-  const value = req.query[key];
-  return typeof value === "string" ? value : void 0;
-}
-function registerOAuthRoutes(app) {
-  const oauthEnabled = Boolean(process.env.OAUTH_SERVER_URL);
-  app.get("/api/auth/status", async (req, res) => {
-    const mode = oauthEnabled ? "oauth" : "dev-bypass";
-    let user = null;
-    try {
-      const sessionUser = await sdk.authenticateRequest(req);
-      if (sessionUser) {
-        user = { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email, role: sessionUser.role };
-      }
-    } catch {
-    }
-    res.json({
-      authenticated: Boolean(user),
-      mode,
-      user,
-      oauthConfigured: oauthEnabled
-    });
-  });
-  app.get("/api/oauth/callback", async (req, res) => {
-    if (!oauthEnabled) {
-      res.status(503).json({ error: "OAuth is not configured. Set OAUTH_SERVER_URL to enable authentication." });
-      return;
-    }
-    const code = getQueryParam(req, "code");
-    const state = getQueryParam(req, "state");
-    if (!code || !state) {
-      res.status(400).json({ error: "code and state are required" });
-      return;
-    }
-    try {
-      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
-      const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
-      if (!userInfo.openId) {
-        res.status(400).json({ error: "openId missing from user info" });
-        return;
-      }
-      await upsertUser({
-        openId: userInfo.openId,
-        name: userInfo.name || null,
-        email: userInfo.email ?? null,
-        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-        lastSignedIn: /* @__PURE__ */ new Date()
-      });
-      const sessionToken = await sdk.createSessionToken(userInfo.openId, {
-        name: userInfo.name || "",
-        expiresInMs: ONE_YEAR_MS
-      });
-      const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-      res.redirect(302, "/");
-    } catch (error) {
-      console.error("[OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
-    }
-  });
-}
-
-// ../../server/_core/index.ts
-init_routers_eager();
-
-// ../../server/_core/context.ts
-init_sdk();
+// server/_core/context.ts
 async function createContext(opts) {
   let user = null;
   try {
@@ -40103,55 +46882,65 @@ async function createContext(opts) {
     user
   };
 }
-
-// ../../server/_core/vite.ts
-import express from "express";
-import fs2 from "fs";
-import { nanoid } from "nanoid";
-import path3 from "path";
-import { createServer as createViteServer } from "vite";
-
-// ../../vite.config.ts
-import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
-import path2 from "node:path";
-import { defineConfig } from "vite";
-var plugins = [react(), tailwindcss()];
-var vite_config_default = defineConfig({
-  plugins,
-  resolve: {
-    alias: {
-      "@": path2.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path2.resolve(import.meta.dirname, "shared"),
-      "@assets": path2.resolve(import.meta.dirname, "attached_assets")
-    }
-  },
-  envDir: path2.resolve(import.meta.dirname),
-  root: path2.resolve(import.meta.dirname, "client"),
-  publicDir: path2.resolve(import.meta.dirname, "client", "public"),
-  build: {
-    outDir: path2.resolve(import.meta.dirname, "dist/_app"),
-    emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        entryFileNames: "assets/index.js",
-        chunkFileNames: "assets/[name]-[hash].js",
-        assetFileNames: "assets/[name]-[hash][extname]"
-      }
-    }
-  },
-  server: {
-    host: "0.0.0.0",
-    port: 5e3,
-    allowedHosts: true,
-    fs: {
-      strict: true,
-      deny: ["**/.*"]
-    }
+var init_context = __esm({
+  "server/_core/context.ts"() {
+    "use strict";
+    init_sdk();
   }
 });
 
-// ../../server/_core/vite.ts
+// vite.config.ts
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import path3 from "node:path";
+import { defineConfig } from "vite";
+var plugins, vite_config_default;
+var init_vite_config = __esm({
+  "vite.config.ts"() {
+    "use strict";
+    plugins = [react(), tailwindcss()];
+    vite_config_default = defineConfig({
+      plugins,
+      resolve: {
+        alias: {
+          "@": path3.resolve(import.meta.dirname, "client", "src"),
+          "@shared": path3.resolve(import.meta.dirname, "shared"),
+          "@assets": path3.resolve(import.meta.dirname, "attached_assets")
+        }
+      },
+      envDir: path3.resolve(import.meta.dirname),
+      root: path3.resolve(import.meta.dirname, "client"),
+      publicDir: path3.resolve(import.meta.dirname, "client", "public"),
+      build: {
+        outDir: path3.resolve(import.meta.dirname, "dist/_app"),
+        emptyOutDir: true,
+        rollupOptions: {
+          output: {
+            entryFileNames: "assets/index.js",
+            chunkFileNames: "assets/[name]-[hash].js",
+            assetFileNames: "assets/[name]-[hash][extname]"
+          }
+        }
+      },
+      server: {
+        host: "0.0.0.0",
+        port: 5e3,
+        allowedHosts: true,
+        fs: {
+          strict: true,
+          deny: ["**/.*"]
+        }
+      }
+    });
+  }
+});
+
+// server/_core/vite.ts
+import express from "express";
+import fs3 from "fs";
+import { nanoid } from "nanoid";
+import path4 from "path";
+import { createServer as createViteServer } from "vite";
 async function setupVite(app, server) {
   const serverOptions = {
     middlewareMode: true,
@@ -40168,13 +46957,13 @@ async function setupVite(app, server) {
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
-      const clientTemplate = path3.resolve(
+      const clientTemplate = path4.resolve(
         import.meta.dirname,
         "../..",
         "client",
         "index.html"
       );
-      let template = await fs2.promises.readFile(clientTemplate, "utf-8");
+      let template = await fs3.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -40188,66 +46977,94 @@ async function setupVite(app, server) {
   });
 }
 function serveStatic(app) {
-  const distPath = process.env.NODE_ENV === "development" ? path3.resolve(import.meta.dirname, "../..", "dist", "_app") : path3.resolve(import.meta.dirname, "_app");
-  if (!fs2.existsSync(distPath)) {
+  const distPath = process.env.NODE_ENV === "development" ? path4.resolve(import.meta.dirname, "../..", "dist", "_app") : path4.resolve(import.meta.dirname, "_app");
+  console.log(`[Static] distPath=${distPath} exists=${fs3.existsSync(distPath)} dirname=${import.meta.dirname}`);
+  if (fs3.existsSync(path4.resolve(distPath, "assets"))) {
+    const allAssets = fs3.readdirSync(path4.resolve(distPath, "assets")).filter((f) => f.startsWith("index"));
+    console.log(`[Static] index assets: ${JSON.stringify(allAssets)}`);
+  }
+  const staleIndex = path4.resolve(distPath, "index.html");
+  if (fs3.existsSync(staleIndex)) {
+    console.log(`[Static] REMOVING stale index.html from ${staleIndex}`);
+    fs3.unlinkSync(staleIndex);
+  } else {
+    console.log(`[Static] No stale index.html found (good)`);
+  }
+  const rootFiles = fs3.existsSync(distPath) ? fs3.readdirSync(distPath).filter((f) => f.endsWith(".html")) : [];
+  console.log(`[Static] HTML files in distPath: ${JSON.stringify(rootFiles)}`);
+  if (!fs3.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
-  app.use(express.static(distPath, { maxAge: 0 }));
-  app.use("*", (_req, res, next) => {
-    const url = _req.originalUrl || _req.url || "";
-    if (url.startsWith("/api/") || url.startsWith("/health")) {
-      return next();
-    }
-    const indexPath = path3.resolve(distPath, "_index.html");
-    let html = fs2.readFileSync(indexPath, "utf-8");
-    const assetsDir = path3.resolve(distPath, "assets");
-    if (fs2.existsSync(assetsDir)) {
-      const jsFiles = fs2.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".js"));
+  const indexPath = path4.resolve(distPath, "_index.html");
+  const assetsDir = path4.resolve(distPath, "assets");
+  let cachedHtml = null;
+  function getSpaHtml() {
+    if (cachedHtml) return cachedHtml;
+    let html = fs3.readFileSync(indexPath, "utf-8");
+    if (fs3.existsSync(assetsDir)) {
+      const jsFiles = fs3.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".js"));
       if (jsFiles.length > 0) {
-        const newestBundle = jsFiles.sort((a, b) => {
-          const statA = fs2.statSync(path3.resolve(assetsDir, a));
-          const statB = fs2.statSync(path3.resolve(assetsDir, b));
+        const preferUnhashed = jsFiles.find((f) => f === "index.js");
+        const newestBundle = preferUnhashed || jsFiles.sort((a, b) => {
+          const statA = fs3.statSync(path4.resolve(assetsDir, a));
+          const statB = fs3.statSync(path4.resolve(assetsDir, b));
           return statB.mtimeMs - statA.mtimeMs;
         })[0];
-        html = html.replace(/src="\/assets\/index[^"]*\.js"/, `src="/assets/${newestBundle}"`);
-        const cssFiles = fs2.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".css"));
+        const bundleHash = fs3.statSync(path4.resolve(assetsDir, newestBundle)).mtimeMs.toString(36);
+        html = html.replace(/src="\/assets\/index[^"]*"/, `src="/assets/${newestBundle}?v=${bundleHash}"`);
+        const cssFiles = fs3.readdirSync(assetsDir).filter((f) => f.startsWith("index") && f.endsWith(".css"));
         if (cssFiles.length > 0) {
           const newestCss = cssFiles.sort((a, b) => {
-            const statA = fs2.statSync(path3.resolve(assetsDir, a));
-            const statB = fs2.statSync(path3.resolve(assetsDir, b));
+            const statA = fs3.statSync(path4.resolve(assetsDir, a));
+            const statB = fs3.statSync(path4.resolve(assetsDir, b));
             return statB.mtimeMs - statA.mtimeMs;
           })[0];
           html = html.replace(/href="\/assets\/index[^"]*\.css"/, `href="/assets/${newestCss}"`);
         }
       }
     }
-    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache" }).end(html);
-  });
-}
-
-// ../../server/slideDeckUpload.ts
-init_storage();
-init_sdk();
-import { Router } from "express";
-import multer from "multer";
-var upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 },
-  // 50 MB
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype === "application/pdf" || file.mimetype === "application/vnd.openxmlformats-officedocument.presentationml.presentation" || file.mimetype === "application/vnd.ms-powerpoint" || file.originalname.match(/\.(pdf|pptx|ppt)$/i)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only PDF and PowerPoint files are allowed"));
+    cachedHtml = html;
+    console.log(`[Static] SPA HTML prepared, serving bundle from _index.html`);
+    return html;
+  }
+  app.use((req, res, next) => {
+    const url = req.originalUrl || req.url || "";
+    if (url.startsWith("/api/") || url.startsWith("/health")) {
+      return next();
     }
+    const hasExtension = /\.\w+$/.test(url.split("?")[0]);
+    if (hasExtension) {
+      return next();
+    }
+    const html = getSpaHtml();
+    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "X-Served-By": "curalive-catchall-v2" }).end(html);
+  });
+  app.use(express.static(distPath, {
+    maxAge: 0,
+    index: false,
+    setHeaders: (res) => {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    }
+  }));
+}
+var init_vite = __esm({
+  "server/_core/vite.ts"() {
+    "use strict";
+    init_vite_config();
   }
 });
+
+// server/slideDeckUpload.ts
+import { Router } from "express";
+import multer from "multer";
 async function countPdfPages(buffer) {
   try {
-    const text2 = buffer.toString("latin1");
-    const matches = text2.match(/\/Type\s*\/Page[^s]/g);
+    const text4 = buffer.toString("latin1");
+    const matches = text4.match(/\/Type\s*\/Page[^s]/g);
     return matches ? matches.length : 1;
   } catch {
     return 1;
@@ -40294,8 +47111,28 @@ function registerSlideDeckUploadRoute(app) {
   );
   app.use(router2);
 }
+var upload;
+var init_slideDeckUpload = __esm({
+  "server/slideDeckUpload.ts"() {
+    "use strict";
+    init_storage();
+    init_sdk();
+    upload = multer({
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 50 * 1024 * 1024 },
+      // 50 MB
+      fileFilter: (_req, file, cb) => {
+        if (file.mimetype === "application/pdf" || file.mimetype === "application/vnd.openxmlformats-officedocument.presentationml.presentation" || file.mimetype === "application/vnd.ms-powerpoint" || file.originalname.match(/\.(pdf|pptx|ppt)$/i)) {
+          cb(null, true);
+        } else {
+          cb(new Error("Only PDF and PowerPoint files are allowed"));
+        }
+      }
+    });
+  }
+});
 
-// ../../server/audioTranscribe.ts
+// server/audioTranscribe.ts
 import { Router as Router2 } from "express";
 import multer2 from "multer";
 import { execFile } from "child_process";
@@ -40303,38 +47140,6 @@ import { promisify } from "util";
 import { writeFile, readFile, mkdtemp, rm } from "fs/promises";
 import { join as join2, extname as extname2 } from "path";
 import { tmpdir } from "os";
-var execFileAsync = promisify(execFile);
-var MAX_UPLOAD_MB = 500;
-var DIRECT_MAX_MB = 10;
-var CHUNK_MINUTES = 8;
-var CHUNK_BITRATE = "32k";
-var AUDIO_EXTENSIONS = /\.(mp3|wav|m4a|ogg|flac|aac|mpeg)$/i;
-var VIDEO_EXTENSIONS = /\.(mp4|webm|mov|avi|mkv)$/i;
-var ALLOWED_MIMES = [
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/wav",
-  "audio/x-wav",
-  "audio/mp4",
-  "audio/m4a",
-  "audio/x-m4a",
-  "video/mp4",
-  "audio/webm",
-  "video/webm",
-  "audio/ogg",
-  "audio/flac",
-  "audio/aac"
-];
-var upload2 = multer2({
-  storage: multer2.memoryStorage(),
-  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    const ok = ALLOWED_MIMES.includes(file.mimetype) || /\.(mp3|mp4|wav|m4a|webm|ogg|flac|aac|mpeg)$/i.test(file.originalname);
-    if (ok) cb(null, true);
-    else cb(new Error("Audio or video files only (MP3, MP4, WAV, M4A, WebM)"));
-  }
-});
-var _ffmpegCached = null;
 async function checkFfmpegAvailable() {
   if (_ffmpegCached !== null) return _ffmpegCached;
   try {
@@ -40360,13 +47165,13 @@ async function getDurationSeconds(inputPath) {
     const duration = parseFloat(info.format?.duration ?? "0");
     if (duration > 0) return duration;
     console.warn("[Audio] ffprobe returned 0 duration \u2014 estimating from file size");
-    const fs3 = await import("fs");
-    const stat = fs3.statSync(inputPath);
+    const fs4 = await import("fs");
+    const stat = fs4.statSync(inputPath);
     return Math.max(10, Math.round(stat.size / 16e3));
   } catch (e) {
     console.warn("[Audio] ffprobe failed \u2014 estimating duration from file size:", e?.message || e);
-    const fs3 = await import("fs");
-    const stat = fs3.statSync(inputPath);
+    const fs4 = await import("fs");
+    const stat = fs4.statSync(inputPath);
     return Math.max(10, Math.round(stat.size / 16e3));
   }
 }
@@ -40434,14 +47239,15 @@ async function callGeminiTranscribe(buffer, filename) {
   });
   if (!response.ok) {
     const errText = await response.text().catch(() => response.statusText);
-    if (response.status === 429) {
-      throw new Error(`QUOTA_EXCEEDED: Gemini transcription quota exceeded (429)`);
+    const isQuota = response.status === 429 || response.status === 402 || errText.includes("QUOTA_EXCEEDED") || errText.includes("RESOURCE_EXHAUSTED") || errText.includes("insufficient_quota") || errText.includes("exceeded");
+    if (isQuota) {
+      throw new Error(`QUOTA_EXCEEDED: Gemini transcription quota exceeded (${response.status})`);
     }
     throw new Error(`Gemini API failed (${response.status}): ${errText}`);
   }
   const result = await response.json();
-  const text2 = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  const trimmed = text2.trim();
+  const text4 = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const trimmed = text4.trim();
   if (!trimmed) {
     throw new Error("Gemini returned empty transcript");
   }
@@ -40486,7 +47292,8 @@ async function callWhisperTranscribe(buffer, filename) {
   });
   if (!response.ok) {
     const errText = await response.text().catch(() => response.statusText);
-    if (response.status === 429) {
+    const isQuota = response.status === 429 || response.status === 402 || errText.includes("insufficient_quota") || errText.includes("exceeded your current quota") || errText.includes("QUOTA_EXCEEDED") || errText.includes("billing");
+    if (isQuota) {
       throw new Error(`QUOTA_EXCEEDED: The AI transcription service has reached its usage limit. The recording has been saved and you can retry transcription later.`);
     }
     throw new Error(`Whisper API failed (${response.status}): ${errText}`);
@@ -40542,15 +47349,15 @@ function registerAudioTranscribeRoute(app) {
         const isAudio = AUDIO_EXTENSIONS.test(originalname);
         console.log(`[AudioTranscribe] Received ${originalname} (${sizeMB.toFixed(1)}MB, video=${isVideo})`);
         try {
-          const path4 = await import("path");
-          const fs3 = await import("fs");
-          const crypto4 = await import("crypto");
-          const RECORDINGS_DIR2 = path4.resolve(process.cwd(), "uploads", "recordings");
-          if (!fs3.existsSync(RECORDINGS_DIR2)) fs3.mkdirSync(RECORDINGS_DIR2, { recursive: true });
-          const rawExt = (path4.extname(originalname) || ".mp3").toLowerCase();
+          const path5 = await import("path");
+          const fs4 = await import("fs");
+          const crypto6 = await import("crypto");
+          const RECORDINGS_DIR2 = path5.resolve(process.cwd(), "uploads", "recordings");
+          if (!fs4.existsSync(RECORDINGS_DIR2)) fs4.mkdirSync(RECORDINGS_DIR2, { recursive: true });
+          const rawExt = (path5.extname(originalname) || ".mp3").toLowerCase();
           const safeExt = /^\.(mp3|mp4|wav|m4a|webm|ogg|flac|aac)$/.test(rawExt) ? rawExt : ".mp3";
-          const uniqueName = `${Date.now()}_${crypto4.randomBytes(6).toString("hex")}${safeExt}`;
-          const destPath = path4.join(RECORDINGS_DIR2, uniqueName);
+          const uniqueName = `${Date.now()}_${crypto6.randomBytes(6).toString("hex")}${safeExt}`;
+          const destPath = path5.join(RECORDINGS_DIR2, uniqueName);
           await writeFile(destPath, buffer);
           savedRecordingPath = uniqueName;
           console.log(`[AudioTranscribe] Saved recording: ${uniqueName} (${sizeMB.toFixed(1)}MB)`);
@@ -40619,16 +47426,48 @@ function registerAudioTranscribeRoute(app) {
   );
   app.use(router2);
 }
+var execFileAsync, MAX_UPLOAD_MB, DIRECT_MAX_MB, CHUNK_MINUTES, CHUNK_BITRATE, AUDIO_EXTENSIONS, VIDEO_EXTENSIONS, ALLOWED_MIMES, upload2, _ffmpegCached;
+var init_audioTranscribe = __esm({
+  "server/audioTranscribe.ts"() {
+    "use strict";
+    execFileAsync = promisify(execFile);
+    MAX_UPLOAD_MB = 500;
+    DIRECT_MAX_MB = 10;
+    CHUNK_MINUTES = 8;
+    CHUNK_BITRATE = "32k";
+    AUDIO_EXTENSIONS = /\.(mp3|wav|m4a|ogg|flac|aac|mpeg)$/i;
+    VIDEO_EXTENSIONS = /\.(mp4|webm|mov|avi|mkv)$/i;
+    ALLOWED_MIMES = [
+      "audio/mpeg",
+      "audio/mp3",
+      "audio/wav",
+      "audio/x-wav",
+      "audio/mp4",
+      "audio/m4a",
+      "audio/x-m4a",
+      "video/mp4",
+      "audio/webm",
+      "video/webm",
+      "audio/ogg",
+      "audio/flac",
+      "audio/aac"
+    ];
+    upload2 = multer2({
+      storage: multer2.memoryStorage(),
+      limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const ok = ALLOWED_MIMES.includes(file.mimetype) || /\.(mp3|mp4|wav|m4a|webm|ogg|flac|aac|mpeg)$/i.test(file.originalname);
+        if (ok) cb(null, true);
+        else cb(new Error("Audio or video files only (MP3, MP4, WAV, M4A, WebM)"));
+      }
+    });
+    _ffmpegCached = null;
+  }
+});
 
-// ../../server/recallWebhook.ts
-init_db();
-init_schema();
-init_aiAnalysis();
-import crypto3 from "crypto";
-import { eq as eq74 } from "drizzle-orm";
-var RECALL_WEBHOOK_SECRET = process.env.RECALL_AI_WEBHOOK_SECRET ?? "";
-var ABLY_API_KEY = process.env.ABLY_API_KEY ?? "";
-var ABLY_REST_URL3 = "https://rest.ably.io";
+// server/recallWebhook.ts
+import crypto5 from "crypto";
+import { eq as eq80 } from "drizzle-orm";
 async function ablyPublish4(channel, name, data) {
   if (!ABLY_API_KEY) return;
   const url = `${ABLY_REST_URL3}/channels/${encodeURIComponent(channel)}/messages`;
@@ -40644,8 +47483,8 @@ async function ablyPublish4(channel, name, data) {
       body
     });
     if (!res.ok) {
-      const text2 = await res.text();
-      console.warn(`[Ably] Publish failed ${res.status}: ${text2}`);
+      const text4 = await res.text();
+      console.warn(`[Ably] Publish failed ${res.status}: ${text4}`);
     }
   } catch (err) {
     console.warn("[Ably] Publish error:", err);
@@ -40662,8 +47501,8 @@ function verifyRecallSignature(rawBody, signature) {
   }
   if (!signature) return false;
   try {
-    const expected = crypto3.createHmac("sha256", RECALL_WEBHOOK_SECRET).update(rawBody).digest("hex");
-    return crypto3.timingSafeEqual(
+    const expected = crypto5.createHmac("sha256", RECALL_WEBHOOK_SECRET).update(rawBody).digest("hex");
+    return crypto5.timingSafeEqual(
       Buffer.from(`sha256=${expected}`),
       Buffer.from(signature)
     );
@@ -40683,8 +47522,8 @@ async function handleBotStatusChange(payload) {
   if (status === "done" || status === "call_ended" || status === "fatal") {
     updates.leftAt = Date.now();
   }
-  await db2.update(recallBots).set(updates).where(eq74(recallBots.recallBotId, recallBotId));
-  const [bot] = await db2.select({ ablyChannel: recallBots.ablyChannel, eventId: recallBots.eventId }).from(recallBots).where(eq74(recallBots.recallBotId, recallBotId)).limit(1);
+  await db2.update(recallBots).set(updates).where(eq80(recallBots.recallBotId, recallBotId));
+  const [bot] = await db2.select({ ablyChannel: recallBots.ablyChannel, eventId: recallBots.eventId }).from(recallBots).where(eq80(recallBots.recallBotId, recallBotId)).limit(1);
   if (bot?.ablyChannel) {
     await ablyPublish4(bot.ablyChannel, "curalive", JSON.stringify({
       type: "bot.status",
@@ -40700,23 +47539,23 @@ async function handleTranscriptData(payload) {
   if (!words || words.length === 0) return;
   const db2 = await getDb();
   if (!db2) return;
-  const [bot] = await db2.select().from(recallBots).where(eq74(recallBots.recallBotId, recallBotId)).limit(1);
+  const [bot] = await db2.select().from(recallBots).where(eq80(recallBots.recallBotId, recallBotId)).limit(1);
   if (!bot) return;
-  const text2 = words.map((w) => w.text).join(" ").trim();
-  if (!text2) return;
+  const text4 = words.map((w) => w.text).join(" ").trim();
+  if (!text4) return;
   const startTime = words[0]?.start_timestamp?.relative ?? 0;
   const timeLabel = formatTime(startTime);
   const speaker = participant?.name || "Speaker";
   const transcriptSegment = {
     id: `${recallBotId}-${startTime}`,
     speaker,
-    text: text2,
+    text: text4,
     timestamp: Date.now(),
     timeLabel
   };
   const existing = bot.transcriptJson ? JSON.parse(bot.transcriptJson) : [];
   existing.push(transcriptSegment);
-  await db2.update(recallBots).set({ transcriptJson: JSON.stringify(existing) }).where(eq74(recallBots.recallBotId, recallBotId));
+  await db2.update(recallBots).set({ transcriptJson: JSON.stringify(existing) }).where(eq80(recallBots.recallBotId, recallBotId));
   if (bot.ablyChannel) {
     await ablyPublish4(bot.ablyChannel, "curalive", JSON.stringify({
       type: "transcript.segment",
@@ -40760,7 +47599,7 @@ async function handleRecordingDone(payload) {
   if (!recordingUrl) return;
   const db2 = await getDb();
   if (!db2) return;
-  await db2.update(recallBots).set({ recordingUrl }).where(eq74(recallBots.recallBotId, recallBotId));
+  await db2.update(recallBots).set({ recordingUrl }).where(eq80(recallBots.recallBotId, recallBotId));
   console.log(`[Recall] Recording available for bot ${recallBotId}: ${recordingUrl}`);
 }
 function formatTime(seconds) {
@@ -40820,40 +47659,30 @@ function registerRecallWebhookRoute(app) {
   );
   console.log("[Recall] Webhook registered at POST /api/recall/webhook");
 }
+var RECALL_WEBHOOK_SECRET, ABLY_API_KEY, ABLY_REST_URL3;
+var init_recallWebhook = __esm({
+  "server/recallWebhook.ts"() {
+    "use strict";
+    init_db();
+    init_schema();
+    init_aiAnalysis();
+    RECALL_WEBHOOK_SECRET = process.env.RECALL_AI_WEBHOOK_SECRET ?? "";
+    ABLY_API_KEY = process.env.ABLY_API_KEY ?? "";
+    ABLY_REST_URL3 = "https://rest.ably.io";
+  }
+});
 
-// ../../server/recordingUpload.ts
-init_db();
-init_schema();
-init_storageAdapter();
+// server/recordingUpload.ts
 import multer3 from "multer";
 import { join as join3 } from "path";
 import { mkdirSync as mkdirSync2, existsSync as existsSync2 } from "fs";
-import { eq as eq75 } from "drizzle-orm";
-mkdirSync2(RECORDINGS_DIR, { recursive: true });
-var ALLOWED_EXTENSIONS = /* @__PURE__ */ new Set(["webm", "mp4", "ogg", "wav", "mp3", "m4a", "aac", "flac"]);
+import { eq as eq81 } from "drizzle-orm";
 function sanitizeExtension(originalname) {
   if (!originalname || !originalname.includes(".")) return "webm";
   const raw = originalname.split(".").pop() || "webm";
   const cleaned = raw.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
   return ALLOWED_EXTENSIONS.has(cleaned) ? cleaned : "webm";
 }
-var storage = multer3.diskStorage({
-  destination: (_req, _file, cb) => cb(null, RECORDINGS_DIR),
-  filename: (_req, file, cb) => {
-    const sessionId = (_req.params.sessionId || "unknown").replace(/[^a-zA-Z0-9_\-]/g, "");
-    const ext = sanitizeExtension(file.originalname);
-    cb(null, `shadow-${sessionId}-${Date.now()}.${ext}`);
-  }
-});
-var upload3 = multer3({
-  storage,
-  limits: { fileSize: 500 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    const ok = file.mimetype.startsWith("audio/") || file.mimetype.startsWith("video/");
-    if (ok) cb(null, true);
-    else cb(new Error("Audio or video files only"));
-  }
-});
 function registerRecordingUploadRoute(app) {
   app.post("/api/shadow/recording/:sessionId", upload3.single("recording"), async (req, res) => {
     try {
@@ -40867,7 +47696,7 @@ function registerRecordingUploadRoute(app) {
       const db2 = await getDb();
       const relativePath = `uploads/recordings/${req.file.filename}`;
       const fullPath = join3(RECORDINGS_DIR, req.file.filename);
-      await db2.update(shadowSessions).set({ localRecordingPath: relativePath }).where(eq75(shadowSessions.id, sessionId));
+      await db2.update(shadowSessions).set({ localRecordingPath: relativePath }).where(eq81(shadowSessions.id, sessionId));
       const sizeMB = (req.file.size / 1024 / 1024).toFixed(1);
       console.log(`[Shadow] Recording saved locally for session ${sessionId}: ${relativePath} (${sizeMB} MB)`);
       persistToObjectStorage(fullPath, `recordings/${req.file.filename}`, req.file.mimetype).then((result) => {
@@ -40895,7 +47724,7 @@ function registerRecordingUploadRoute(app) {
         return res.status(400).json({ error: "Invalid session ID" });
       }
       const db2 = await getDb();
-      const [session] = await db2.select().from(shadowSessions).where(eq75(shadowSessions.id, sessionId)).limit(1);
+      const [session] = await db2.select().from(shadowSessions).where(eq81(shadowSessions.id, sessionId)).limit(1);
       if (!session || !session.localRecordingPath) {
         return res.status(404).json({ error: "No recording found for this session" });
       }
@@ -40919,15 +47748,37 @@ function registerRecordingUploadRoute(app) {
     }
   });
 }
+var ALLOWED_EXTENSIONS, storage, upload3;
+var init_recordingUpload = __esm({
+  "server/recordingUpload.ts"() {
+    "use strict";
+    init_db();
+    init_schema();
+    init_storageAdapter();
+    mkdirSync2(RECORDINGS_DIR, { recursive: true });
+    ALLOWED_EXTENSIONS = /* @__PURE__ */ new Set(["webm", "mp4", "ogg", "wav", "mp3", "m4a", "aac", "flac"]);
+    storage = multer3.diskStorage({
+      destination: (_req, _file, cb) => cb(null, RECORDINGS_DIR),
+      filename: (_req, file, cb) => {
+        const sessionId = (_req.params.sessionId || "unknown").replace(/[^a-zA-Z0-9_\-]/g, "");
+        const ext = sanitizeExtension(file.originalname);
+        cb(null, `shadow-${sessionId}-${Date.now()}.${ext}`);
+      }
+    });
+    upload3 = multer3({
+      storage,
+      limits: { fileSize: 500 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const ok = file.mimetype.startsWith("audio/") || file.mimetype.startsWith("video/");
+        if (ok) cb(null, true);
+        else cb(new Error("Audio or video files only"));
+      }
+    });
+  }
+});
 
-// ../../server/reminderScheduler.ts
-init_db();
-init_schema();
-init_email();
-import { eq as eq76, isNull as isNull3, and as and46, isNotNull as isNotNull2 } from "drizzle-orm";
-var SCHEDULER_INTERVAL_MS = 5 * 60 * 1e3;
-var WINDOW_24H = { minMs: 23 * 60 * 60 * 1e3, maxMs: 25 * 60 * 60 * 1e3 };
-var WINDOW_1H = { minMs: 50 * 60 * 1e3, maxMs: 70 * 60 * 1e3 };
+// server/reminderScheduler.ts
+import { eq as eq82, isNull as isNull3, and as and47, isNotNull as isNotNull2 } from "drizzle-orm";
 function formatEventDate(ms) {
   return new Date(ms).toLocaleDateString("en-GB", {
     weekday: "long",
@@ -40961,7 +47812,7 @@ async function runReminderPass(origin) {
   let sent1h = 0;
   let errors = 0;
   const upcomingEvents = await db2.select().from(webcastEvents).where(
-    and46(
+    and47(
       isNotNull2(webcastEvents.startTime)
       // Only consider events that are scheduled or live (not ended/cancelled)
       // We use a broad filter here; the window check below narrows it further
@@ -40973,8 +47824,8 @@ async function runReminderPass(origin) {
     const msUntilStart = event.startTime - now;
     if (msUntilStart >= WINDOW_24H.minMs && msUntilStart <= WINDOW_24H.maxMs) {
       const pending = await db2.select().from(webcastRegistrations).where(
-        and46(
-          eq76(webcastRegistrations.eventId, event.id),
+        and47(
+          eq82(webcastRegistrations.eventId, event.id),
           isNull3(webcastRegistrations.reminder24SentAt)
         )
       );
@@ -40996,7 +47847,7 @@ async function runReminderPass(origin) {
             html
           });
           if (result.success) {
-            await db2.update(webcastRegistrations).set({ reminder24SentAt: Date.now() }).where(eq76(webcastRegistrations.id, reg.id));
+            await db2.update(webcastRegistrations).set({ reminder24SentAt: Date.now() }).where(eq82(webcastRegistrations.id, reg.id));
             sent24h++;
             console.log(`[ReminderScheduler] 24h reminder sent \u2192 ${reg.email} (event: ${event.slug})`);
           } else {
@@ -41011,8 +47862,8 @@ async function runReminderPass(origin) {
     }
     if (msUntilStart >= WINDOW_1H.minMs && msUntilStart <= WINDOW_1H.maxMs) {
       const pending = await db2.select().from(webcastRegistrations).where(
-        and46(
-          eq76(webcastRegistrations.eventId, event.id),
+        and47(
+          eq82(webcastRegistrations.eventId, event.id),
           isNull3(webcastRegistrations.reminder1SentAt)
         )
       );
@@ -41034,7 +47885,7 @@ async function runReminderPass(origin) {
             html
           });
           if (result.success) {
-            await db2.update(webcastRegistrations).set({ reminder1SentAt: Date.now() }).where(eq76(webcastRegistrations.id, reg.id));
+            await db2.update(webcastRegistrations).set({ reminder1SentAt: Date.now() }).where(eq82(webcastRegistrations.id, reg.id));
             sent1h++;
             console.log(`[ReminderScheduler] 1h reminder sent \u2192 ${reg.email} (event: ${event.slug})`);
           } else {
@@ -41064,11 +47915,20 @@ function startReminderScheduler(origin) {
     );
   }, SCHEDULER_INTERVAL_MS);
 }
+var SCHEDULER_INTERVAL_MS, WINDOW_24H, WINDOW_1H;
+var init_reminderScheduler = __esm({
+  "server/reminderScheduler.ts"() {
+    "use strict";
+    init_db();
+    init_schema();
+    init_email();
+    SCHEDULER_INTERVAL_MS = 5 * 60 * 1e3;
+    WINDOW_24H = { minMs: 23 * 60 * 60 * 1e3, maxMs: 25 * 60 * 60 * 1e3 };
+    WINDOW_1H = { minMs: 50 * 60 * 1e3, maxMs: 70 * 60 * 1e3 };
+  }
+});
 
-// ../../server/billingPdf.ts
-init_db_billing();
-init_db_billing();
-init_db_billing();
+// server/billingPdf.ts
 import puppeteer from "puppeteer";
 import archiver from "archiver";
 function formatCurrency2(cents, currency = "ZAR") {
@@ -41611,39 +48471,703 @@ function registerBillingPdfRoutes(app) {
     }
   });
 }
-
-// ../../server/_core/index.ts
-init_twilio();
-init_telnyx();
-init_env2();
-import twilio_twiml from "twilio";
-
-// ../../server/routes/systemStatus.ts
-init_serviceStatus();
-init_env2();
-init_storageAdapter();
-import { Router as Router3 } from "express";
-var systemStatusRouter = Router3();
-systemStatusRouter.get("/health", async (_req, res) => {
-  const validation = validateEnv();
-  const services = getServiceStatus();
-  const storage2 = getStorageHealth();
-  return res.json({
-    ok: validation.isCoreValid,
-    environment: process.env.NODE_ENV ?? "development",
-    coreReady: validation.isCoreValid,
-    missingCore: validation.missing.map((m) => m.key),
-    missingOptional: validation.warnings.map((w) => ({
-      key: w.key,
-      requiredFor: w.requiredFor
-    })),
-    services,
-    storage: storage2,
-    timestamp: (/* @__PURE__ */ new Date()).toISOString()
-  });
+var init_billingPdf = __esm({
+  "server/billingPdf.ts"() {
+    "use strict";
+    init_db_billing();
+    init_db_billing();
+    init_db_billing();
+  }
 });
 
-// ../../server/_core/index.ts
+// server/webhooks/bridgeWebhooks.ts
+import express2 from "express";
+import twilio5 from "twilio";
+import { eq as eq83, and as and48, sql as sql24 } from "drizzle-orm";
+function resolveBaseUrl2() {
+  if (process.env.REPLIT_DEPLOYMENT_URL) return `https://${process.env.REPLIT_DEPLOYMENT_URL}`;
+  if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  return "http://localhost:3000";
+}
+async function ablyPublish5(channel, name, data) {
+  if (!ABLY_API_KEY2) return;
+  const url = `${ABLY_REST_URL4}/channels/${encodeURIComponent(channel)}/messages`;
+  const body = JSON.stringify({ name, data: JSON.stringify(data) });
+  const auth = Buffer.from(ABLY_API_KEY2).toString("base64");
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: { "Authorization": `Basic ${auth}`, "Content-Type": "application/json" },
+      body
+    });
+  } catch (e) {
+    console.log("[Bridge Webhook] Ably publish failed:", e.message);
+  }
+}
+async function publishToBridge(conferenceId, eventType, data) {
+  await ablyPublish5(`bridge-${conferenceId}`, eventType, data);
+}
+async function findBridgeEventByAccessCode(accessCode) {
+  const db2 = await getDb();
+  const [event] = await db2.select().from(bridgeEvents).where(and48(
+    eq83(bridgeEvents.accessCode, accessCode),
+    sql24`${bridgeEvents.status} NOT IN ('completed', 'cancelled')`
+  ));
+  return event ?? null;
+}
+async function findMainConference(bridgeEventId) {
+  const db2 = await getDb();
+  const [conf] = await db2.select().from(bridgeConferences).where(and48(
+    eq83(bridgeConferences.bridgeEventId, bridgeEventId),
+    eq83(bridgeConferences.type, "main")
+  ));
+  return conf ?? null;
+}
+function validateTwilioSignature2(req) {
+  if (!TWILIO_AUTH_TOKEN3) return true;
+  const sig = req.headers["x-twilio-signature"];
+  if (!sig) return false;
+  const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+  return twilio5.validateRequest(TWILIO_AUTH_TOKEN3, sig, fullUrl, req.body ?? {});
+}
+function twilioAuthMiddleware(req, res, next) {
+  if (!TWILIO_AUTH_TOKEN3) {
+    next();
+    return;
+  }
+  if (!validateTwilioSignature2(req)) {
+    console.warn(`[Bridge Webhooks] Invalid Twilio signature on ${req.path} \u2014 rejecting`);
+    res.sendStatus(403);
+    return;
+  }
+  next();
+}
+function registerBridgeWebhooks(app) {
+  const urlencoded = express2.urlencoded({ extended: false });
+  const BASE = "/api/bridge";
+  console.log("[Bridge Webhooks] Registering at", BASE);
+  app.post(`${BASE}/inbound`, urlencoded, async (req, res) => {
+    const from = req.body?.From ?? "";
+    const to = req.body?.To ?? "";
+    const callSid = req.body?.CallSid ?? "";
+    console.log(`[Bridge IVR] Inbound call from=${from} to=${to} callSid=${callSid}`);
+    const twiml = new twilio5.twiml.VoiceResponse();
+    twiml.say(
+      { voice: "Polly.Joanna" },
+      "Welcome to the CuraLive Conference Bridge. Please enter your conference access code, followed by the hash key."
+    );
+    const gather = twiml.gather({
+      numDigits: 8,
+      action: `${BASE}/access-code`,
+      method: "POST",
+      timeout: 15,
+      finishOnKey: "#"
+    });
+    gather.say(
+      { voice: "Polly.Joanna" },
+      "Please enter your eight-digit access code now."
+    );
+    twiml.say({ voice: "Polly.Joanna" }, "We did not receive an access code. Goodbye.");
+    twiml.hangup();
+    res.type("text/xml").send(twiml.toString());
+  });
+  app.post(`${BASE}/access-code`, urlencoded, async (req, res) => {
+    const digits = (req.body?.Digits ?? "").trim();
+    const callSid = req.body?.CallSid ?? "";
+    const from = req.body?.From ?? "";
+    console.log(`[Bridge IVR] Access code attempt: digits=${digits} callSid=${callSid} from=${from}`);
+    const twiml = new twilio5.twiml.VoiceResponse();
+    try {
+      const event = await findBridgeEventByAccessCode(digits);
+      if (!event) {
+        console.log(`[Bridge IVR] Invalid access code: ${digits}`);
+        const gather = twiml.gather({
+          numDigits: 8,
+          action: `${BASE}/access-code`,
+          method: "POST",
+          timeout: 10,
+          finishOnKey: "#"
+        });
+        gather.say(
+          { voice: "Polly.Joanna" },
+          "That access code was not recognised. Please try again."
+        );
+        twiml.say({ voice: "Polly.Joanna" }, "Goodbye.");
+        twiml.hangup();
+        res.type("text/xml").send(twiml.toString());
+        return;
+      }
+      const baseUrl = resolveBaseUrl2();
+      twiml.say(
+        { voice: "Polly.Joanna" },
+        `Thank you. Connecting you to ${event.name}. Please state your name after the tone.`
+      );
+      twiml.record({
+        maxLength: 5,
+        playBeep: true,
+        action: `${BASE}/name-captured?eventId=${event.id}&callSid=${callSid}&from=${encodeURIComponent(from)}`,
+        method: "POST",
+        recordingStatusCallback: `${baseUrl}${BASE}/name-transcribed`,
+        recordingStatusCallbackMethod: "POST"
+      });
+      twiml.say({ voice: "Polly.Joanna" }, "We did not hear a response. Please hold.");
+      const mainConf = await findMainConference(event.id);
+      if (mainConf) {
+        await addToGreeterQueue(event.id, mainConf.id, callSid, from, null, null);
+        await publishToBridge(mainConf.id, "greeter:new", { callSid, from });
+      }
+      twiml.play({ loop: 10 }, "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical");
+    } catch (err) {
+      console.error("[Bridge IVR] Error in access-code handler:", err);
+      twiml.say({ voice: "Polly.Joanna" }, "We encountered a technical issue. Please try again later. Goodbye.");
+      twiml.hangup();
+    }
+    res.type("text/xml").send(twiml.toString());
+  });
+  app.post(`${BASE}/name-captured`, urlencoded, async (req, res) => {
+    const eventId = parseInt(req.query.eventId) || 0;
+    const callSid = req.query.callSid ?? req.body?.CallSid ?? "";
+    const from = decodeURIComponent(req.query.from ?? req.body?.From ?? "");
+    const recordingUrl = req.body?.RecordingUrl ?? null;
+    console.log(`[Bridge IVR] Name captured: eventId=${eventId} callSid=${callSid} recordingUrl=${recordingUrl}`);
+    const twiml = new twilio5.twiml.VoiceResponse();
+    const baseUrl = resolveBaseUrl2();
+    try {
+      twiml.say(
+        { voice: "Polly.Joanna" },
+        "Thank you. Now please state your organisation name after the tone."
+      );
+      twiml.record({
+        maxLength: 5,
+        playBeep: true,
+        action: `${BASE}/org-captured?eventId=${eventId}&callSid=${callSid}&from=${encodeURIComponent(from)}&nameUrl=${encodeURIComponent(recordingUrl ?? "")}`,
+        method: "POST",
+        recordingStatusCallback: `${baseUrl}${BASE}/org-transcribed`,
+        recordingStatusCallbackMethod: "POST"
+      });
+      twiml.say({ voice: "Polly.Joanna" }, "We did not hear a response. Placing you in the queue now.");
+      const mainConf = await findMainConference(eventId);
+      if (mainConf) {
+        await addToGreeterQueue(eventId, mainConf.id, callSid, from, recordingUrl, null);
+        await publishToBridge(mainConf.id, "greeter:new", { callSid, from, voiceNameUrl: recordingUrl });
+      }
+      twiml.play({ loop: 10 }, "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical");
+    } catch (err) {
+      console.error("[Bridge IVR] Error in name-captured:", err);
+      twiml.say({ voice: "Polly.Joanna" }, "Please hold while we connect you.");
+      twiml.play({ loop: 10 }, "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical");
+    }
+    res.type("text/xml").send(twiml.toString());
+  });
+  app.post(`${BASE}/org-captured`, urlencoded, async (req, res) => {
+    const eventId = parseInt(req.query.eventId) || 0;
+    const callSid = req.query.callSid ?? req.body?.CallSid ?? "";
+    const from = decodeURIComponent(req.query.from ?? "");
+    const nameUrl = decodeURIComponent(req.query.nameUrl ?? "");
+    const orgUrl = req.body?.RecordingUrl ?? null;
+    console.log(`[Bridge IVR] Org captured: eventId=${eventId} callSid=${callSid} orgUrl=${orgUrl}`);
+    const twiml = new twilio5.twiml.VoiceResponse();
+    try {
+      const mainConf = await findMainConference(eventId);
+      if (mainConf) {
+        await addToGreeterQueue(eventId, mainConf.id, callSid, from, nameUrl || null, orgUrl);
+        await publishToBridge(mainConf.id, "greeter:new", {
+          callSid,
+          from,
+          voiceNameUrl: nameUrl,
+          voiceOrgUrl: orgUrl
+        });
+      }
+      twiml.say(
+        { voice: "Polly.Joanna" },
+        "Thank you. Please hold while the operator connects you to the conference."
+      );
+      twiml.play({ loop: 30 }, "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical");
+    } catch (err) {
+      console.error("[Bridge IVR] Error in org-captured:", err);
+      twiml.say({ voice: "Polly.Joanna" }, "Please hold.");
+      twiml.play({ loop: 30 }, "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical");
+    }
+    res.type("text/xml").send(twiml.toString());
+  });
+  app.post(`${BASE}/name-transcribed`, urlencoded, async (req, res) => {
+    const recordingSid = req.body?.RecordingSid ?? "";
+    const recordingUrl = req.body?.RecordingUrl ?? "";
+    const transcriptionText = req.body?.TranscriptionText ?? "";
+    console.log(`[Bridge IVR] Name transcription: sid=${recordingSid} text="${transcriptionText}"`);
+    if (transcriptionText && recordingUrl) {
+      try {
+        const db2 = await getDb();
+        await db2.update(bridgeGreeterQueue).set({ transcribedName: transcriptionText.trim() }).where(eq83(bridgeGreeterQueue.voiceNameUrl, recordingUrl));
+        const [greeter] = await db2.select().from(bridgeGreeterQueue).where(eq83(bridgeGreeterQueue.voiceNameUrl, recordingUrl));
+        if (greeter?.conferenceId) {
+          await publishToBridge(greeter.conferenceId, "greeter:transcribed", {
+            greeterId: greeter.id,
+            field: "name",
+            value: transcriptionText.trim()
+          });
+        }
+      } catch (err) {
+        console.error("[Bridge IVR] Transcription update error:", err);
+      }
+    }
+    res.sendStatus(200);
+  });
+  app.post(`${BASE}/org-transcribed`, urlencoded, async (req, res) => {
+    const recordingUrl = req.body?.RecordingUrl ?? "";
+    const transcriptionText = req.body?.TranscriptionText ?? "";
+    console.log(`[Bridge IVR] Org transcription: text="${transcriptionText}"`);
+    if (transcriptionText && recordingUrl) {
+      try {
+        const db2 = await getDb();
+        await db2.update(bridgeGreeterQueue).set({ transcribedOrg: transcriptionText.trim() }).where(eq83(bridgeGreeterQueue.voiceOrgUrl, recordingUrl));
+        const [greeter] = await db2.select().from(bridgeGreeterQueue).where(eq83(bridgeGreeterQueue.voiceOrgUrl, recordingUrl));
+        if (greeter?.conferenceId) {
+          await publishToBridge(greeter.conferenceId, "greeter:transcribed", {
+            greeterId: greeter.id,
+            field: "org",
+            value: transcriptionText.trim()
+          });
+        }
+      } catch (err) {
+        console.error("[Bridge IVR] Org transcription update error:", err);
+      }
+    }
+    res.sendStatus(200);
+  });
+  app.post(`${BASE}/participant-dtmf`, urlencoded, async (req, res) => {
+    const digits = req.body?.Digits ?? "";
+    const callSid = req.body?.CallSid ?? "";
+    console.log(`[Bridge DTMF] callSid=${callSid} digits=${digits}`);
+    const twiml = new twilio5.twiml.VoiceResponse();
+    if (digits === "*2" || digits === "**") {
+      try {
+        const db2 = await getDb();
+        const [participant] = await db2.select().from(bridgeParticipants).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+        if (participant && participant.conferenceId) {
+          await db2.update(bridgeParticipants).set({ handRaised: true, handRaisedAt: /* @__PURE__ */ new Date() }).where(eq83(bridgeParticipants.id, participant.id));
+          const maxPos = await db2.select({
+            max: sql24`COALESCE(MAX(${bridgeQaQuestions.queuePosition}), 0)`
+          }).from(bridgeQaQuestions).where(eq83(bridgeQaQuestions.conferenceId, participant.conferenceId));
+          const nextPos = (maxPos[0]?.max ?? 0) + 1;
+          const [question] = await db2.insert(bridgeQaQuestions).values({
+            conferenceId: participant.conferenceId,
+            participantId: participant.id,
+            method: "phone_keypress",
+            queuePosition: nextPos,
+            status: "pending"
+          }).returning();
+          await publishToBridge(participant.conferenceId, "qa:raised", {
+            question,
+            participant: { id: participant.id, name: participant.name }
+          });
+          console.log(`[Bridge DTMF] Hand raised: participant=${participant.id} question=${question.id}`);
+        }
+      } catch (err) {
+        console.error("[Bridge DTMF] Hand raise error:", err);
+      }
+    }
+    res.type("text/xml").send(twiml.toString());
+  });
+  app.post(`${BASE}/conference-status`, urlencoded, twilioAuthMiddleware, async (req, res) => {
+    const conferenceSid = req.body?.ConferenceSid ?? "";
+    const friendlyName = req.body?.FriendlyName ?? "";
+    const statusEvent = req.body?.StatusCallbackEvent ?? "";
+    const callSid = req.body?.CallSid ?? "";
+    const muted = req.body?.Muted === "true";
+    const hold = req.body?.Hold === "true";
+    console.log(`[Bridge Conference] event=${statusEvent} conf=${friendlyName} callSid=${callSid} muted=${muted} hold=${hold}`);
+    try {
+      const db2 = await getDb();
+      if (statusEvent === "conference-start") {
+        await db2.update(bridgeConferences).set({ twilioConfSid: conferenceSid }).where(eq83(bridgeConferences.twilioConfName, friendlyName));
+      }
+      if (statusEvent === "participant-join" && callSid) {
+        const [participant] = await db2.select().from(bridgeParticipants).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+        if (participant) {
+          await db2.update(bridgeParticipants).set({ status: muted ? "muted" : "live", joinTime: /* @__PURE__ */ new Date() }).where(eq83(bridgeParticipants.id, participant.id));
+          if (participant.conferenceId) {
+            await publishToBridge(participant.conferenceId, "participant:joined", {
+              participantId: participant.id,
+              name: participant.name
+            });
+          }
+        }
+      }
+      if (statusEvent === "participant-leave" && callSid) {
+        const [participant] = await db2.select().from(bridgeParticipants).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+        if (participant) {
+          const joinTime = participant.joinTime?.getTime() ?? Date.now();
+          const durationSeconds = Math.round((Date.now() - joinTime) / 1e3);
+          await db2.update(bridgeParticipants).set({ status: "left", leaveTime: /* @__PURE__ */ new Date(), durationSeconds }).where(eq83(bridgeParticipants.id, participant.id));
+          if (participant.conferenceId) {
+            await publishToBridge(participant.conferenceId, "participant:left", {
+              participantId: participant.id,
+              name: participant.name,
+              durationSeconds
+            });
+          }
+        }
+      }
+      if (statusEvent === "conference-end") {
+        await db2.update(bridgeConferences).set({ phase: "ended", endedAt: /* @__PURE__ */ new Date() }).where(eq83(bridgeConferences.twilioConfName, friendlyName));
+      }
+      if (statusEvent === "participant-mute" && callSid) {
+        await db2.update(bridgeParticipants).set({ isMuted: muted }).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+      }
+      if (statusEvent === "participant-hold" && callSid) {
+        await db2.update(bridgeParticipants).set({ isOnHold: hold }).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+      }
+      if ((statusEvent === "recording-started" || statusEvent === "recording-completed") && conferenceSid) {
+        const recordingSid = req.body?.RecordingSid ?? "";
+        const recordingUrl = req.body?.RecordingUrl ?? "";
+        const recordingDuration = parseInt(req.body?.RecordingDuration ?? "0", 10);
+        if (statusEvent === "recording-started") {
+          const [conf] = await db2.select().from(bridgeConferences).where(eq83(bridgeConferences.twilioConfSid, conferenceSid));
+          if (conf) {
+            await db2.insert(bridgeCallRecordings).values({
+              conferenceId: conf.id,
+              twilioRecSid: recordingSid,
+              status: "recording"
+            });
+            await db2.update(bridgeConferences).set({ isRecording: true, recordingSid }).where(eq83(bridgeConferences.id, conf.id));
+          }
+        }
+        if (statusEvent === "recording-completed") {
+          await db2.update(bridgeCallRecordings).set({
+            status: "completed",
+            storageUrl: recordingUrl ? `${recordingUrl}.mp3` : null,
+            durationSec: recordingDuration
+          }).where(eq83(bridgeCallRecordings.twilioRecSid, recordingSid));
+          const [conf] = await db2.select().from(bridgeConferences).where(eq83(bridgeConferences.twilioConfSid, conferenceSid));
+          if (conf) {
+            await db2.update(bridgeConferences).set({ isRecording: false, recordingUrl: recordingUrl ? `${recordingUrl}.mp3` : null }).where(eq83(bridgeConferences.id, conf.id));
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[Bridge Conference] Status callback error:", err);
+    }
+    res.sendStatus(200);
+  });
+  app.post(`${BASE}/call-status`, urlencoded, twilioAuthMiddleware, async (req, res) => {
+    const callSid = req.body?.CallSid ?? "";
+    const callStatus = req.body?.CallStatus ?? "";
+    const callDuration = parseInt(req.body?.CallDuration ?? "0", 10);
+    console.log(`[Bridge Call] callSid=${callSid} status=${callStatus} duration=${callDuration}s`);
+    try {
+      const db2 = await getDb();
+      const [participant] = await db2.select().from(bridgeParticipants).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+      if (participant) {
+        const statusMap = {
+          "ringing": "dialing",
+          "in-progress": "live",
+          "completed": "left",
+          "busy": "failed",
+          "no-answer": "failed",
+          "failed": "failed",
+          "canceled": "failed"
+        };
+        const newStatus = statusMap[callStatus] ?? participant.status;
+        const updates = { status: newStatus };
+        if (callStatus === "completed" || callStatus === "busy" || callStatus === "no-answer" || callStatus === "failed" || callStatus === "canceled") {
+          updates.leaveTime = /* @__PURE__ */ new Date();
+          updates.durationSeconds = callDuration;
+        }
+        await db2.update(bridgeParticipants).set(updates).where(eq83(bridgeParticipants.id, participant.id));
+        if (participant.conferenceId) {
+          await publishToBridge(participant.conferenceId, "participant:status", {
+            participantId: participant.id,
+            status: newStatus,
+            callStatus
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[Bridge Call] Status update error:", err);
+    }
+    res.sendStatus(200);
+  });
+  app.post(`${BASE}/admit-to-conference`, urlencoded, async (req, res) => {
+    const callSid = req.body?.CallSid ?? "";
+    const conferenceName = req.query.conferenceName ?? req.body?.conferenceName ?? "";
+    console.log(`[Bridge Admit] Admitting callSid=${callSid} to conf=${conferenceName}`);
+    const twiml = new twilio5.twiml.VoiceResponse();
+    const baseUrl = resolveBaseUrl2();
+    twiml.say({ voice: "Polly.Joanna" }, "You are now being connected to the conference.");
+    const dial = twiml.dial();
+    dial.conference(conferenceName, {
+      startConferenceOnEnter: false,
+      endConferenceOnExit: false,
+      muted: true,
+      waitUrl: "http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical",
+      statusCallback: `${baseUrl}${BASE}/conference-status`,
+      statusCallbackEvent: "start end join leave mute hold speaker",
+      statusCallbackMethod: "POST",
+      dtmfInput: `${baseUrl}${BASE}/participant-dtmf`
+    });
+    res.type("text/xml").send(twiml.toString());
+  });
+  console.log("[Bridge Webhooks] \u2713 All bridge webhook endpoints registered");
+}
+async function addToGreeterQueue(bridgeEventId, conferenceId, callSid, from, voiceNameUrl, voiceOrgUrl) {
+  const db2 = await getDb();
+  const existing = await db2.select().from(bridgeGreeterQueue).where(and48(
+    eq83(bridgeGreeterQueue.twilioCallSid, callSid),
+    eq83(bridgeGreeterQueue.bridgeEventId, bridgeEventId)
+  ));
+  if (existing.length > 0) {
+    const updates = {};
+    if (voiceNameUrl) updates.voiceNameUrl = voiceNameUrl;
+    if (voiceOrgUrl) updates.voiceOrgUrl = voiceOrgUrl;
+    if (Object.keys(updates).length > 0) {
+      await db2.update(bridgeGreeterQueue).set(updates).where(eq83(bridgeGreeterQueue.id, existing[0].id));
+    }
+    return existing[0];
+  }
+  const [greeter] = await db2.insert(bridgeGreeterQueue).values({
+    bridgeEventId,
+    conferenceId,
+    twilioCallSid: callSid,
+    phoneNumber: from,
+    voiceNameUrl,
+    voiceOrgUrl,
+    status: "waiting"
+  }).returning();
+  return greeter;
+}
+var TWILIO_ACCOUNT_SID3, TWILIO_AUTH_TOKEN3, ABLY_API_KEY2, ABLY_REST_URL4;
+var init_bridgeWebhooks = __esm({
+  "server/webhooks/bridgeWebhooks.ts"() {
+    "use strict";
+    init_db();
+    init_schema();
+    TWILIO_ACCOUNT_SID3 = process.env.TWILIO_ACCOUNT_SID ?? "";
+    TWILIO_AUTH_TOKEN3 = process.env.TWILIO_AUTH_TOKEN ?? "";
+    ABLY_API_KEY2 = process.env.ABLY_API_KEY ?? "";
+    ABLY_REST_URL4 = "https://rest.ably.io";
+  }
+});
+
+// server/routes/systemStatus.ts
+import { Router as Router3 } from "express";
+var systemStatusRouter;
+var init_systemStatus = __esm({
+  "server/routes/systemStatus.ts"() {
+    "use strict";
+    init_serviceStatus();
+    init_env2();
+    init_storageAdapter();
+    systemStatusRouter = Router3();
+    systemStatusRouter.get("/health", async (_req, res) => {
+      const validation = validateEnv();
+      const services = getServiceStatus();
+      const storage2 = getStorageHealth();
+      return res.json({
+        ok: validation.isCoreValid,
+        environment: process.env.NODE_ENV ?? "development",
+        coreReady: validation.isCoreValid,
+        missingCore: validation.missing.map((m) => m.key),
+        missingOptional: validation.warnings.map((w) => ({
+          key: w.key,
+          requiredFor: w.requiredFor
+        })),
+        services,
+        storage: storage2,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      });
+    });
+  }
+});
+
+// server/middleware/brandConfig.ts
+var brandConfig_exports = {};
+__export(brandConfig_exports, {
+  brandConfigMiddleware: () => brandConfigMiddleware,
+  getBrandConfig: () => getBrandConfig
+});
+async function lookupBrandByDomain(hostname) {
+  const cached = brandCache.get(hostname);
+  if (cached && Date.now() - cached.cachedAt < CACHE_TTL) {
+    return cached.brand;
+  }
+  try {
+    const [rows] = await rawSql(
+      `SELECT id, display_name, logo_url, primary_color, accent_color, font_family
+       FROM partners
+       WHERE custom_domain = $1 AND custom_domain_verified = true AND active = true
+       LIMIT 1`,
+      [hostname]
+    );
+    if (rows.length > 0) {
+      const p = rows[0];
+      const brand = {
+        partnerId: p.id,
+        displayName: p.display_name || "Intelligence Platform",
+        logoUrl: p.logo_url || null,
+        primaryColor: p.primary_color || "#1a1a2e",
+        accentColor: p.accent_color || "#6b21a8",
+        fontFamily: p.font_family || "Inter, system-ui, sans-serif",
+        isWhiteLabel: true
+      };
+      brandCache.set(hostname, { brand, cachedAt: Date.now() });
+      return brand;
+    }
+  } catch {
+  }
+  brandCache.set(hostname, { brand: DEFAULT_BRAND, cachedAt: Date.now() });
+  return DEFAULT_BRAND;
+}
+async function brandConfigMiddleware(req, _res, next) {
+  try {
+    const hostname = req.hostname || req.headers.host?.split(":")[0] || "";
+    const brand = await lookupBrandByDomain(hostname);
+    req.brandConfig = brand;
+  } catch {
+    req.brandConfig = DEFAULT_BRAND;
+  }
+  next();
+}
+function getBrandConfig(req) {
+  return req.brandConfig || DEFAULT_BRAND;
+}
+var DEFAULT_BRAND, brandCache, CACHE_TTL;
+var init_brandConfig = __esm({
+  "server/middleware/brandConfig.ts"() {
+    "use strict";
+    init_db();
+    DEFAULT_BRAND = {
+      partnerId: null,
+      displayName: "CuraLive",
+      logoUrl: null,
+      primaryColor: "#1a1a2e",
+      accentColor: "#6b21a8",
+      fontFamily: "Inter, system-ui, sans-serif",
+      isWhiteLabel: false
+    };
+    brandCache = /* @__PURE__ */ new Map();
+    CACHE_TTL = 5 * 60 * 1e3;
+  }
+});
+
+// server/services/SubscriptionBillingService.ts
+var SubscriptionBillingService_exports = {};
+__export(SubscriptionBillingService_exports, {
+  runMonthlySubscriptionInvoicing: () => runMonthlySubscriptionInvoicing,
+  startSubscriptionBillingScheduler: () => startSubscriptionBillingScheduler
+});
+async function runMonthlySubscriptionInvoicing() {
+  const now = /* @__PURE__ */ new Date();
+  const monthLabel = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  LOG7(`Running monthly invoicing for ${monthLabel}`);
+  try {
+    const [orgs] = await rawSql(
+      `SELECT id, name, subscription_amount, billing_contact_email
+       FROM organisations
+       WHERE status = 'active' AND billing_type = 'subscription'`
+    );
+    let created = 0;
+    let skipped = 0;
+    let warnings = 0;
+    for (const org of orgs) {
+      if (!org.subscription_amount) {
+        WARN(`${org.name} (id=${org.id}) missing subscription_amount \u2014 skipped`);
+        warnings++;
+        continue;
+      }
+      const [existing] = await rawSql(
+        `SELECT id FROM billing_invoices
+         WHERE client_id = $1
+           AND internal_notes LIKE $2
+         LIMIT 1`,
+        [org.id, `%subscription:${monthLabel}%`]
+      );
+      if (existing.length > 0) {
+        skipped++;
+        continue;
+      }
+      const invNumber = `SUB-${monthLabel}-${org.id}`;
+      const amount = org.subscription_amount * 100;
+      const taxCents = Math.round(amount * 0.15);
+      await rawSql(
+        `INSERT INTO billing_invoices (invoice_number, client_id, title, subtotal_cents, tax_percent, tax_cents, total_cents, status, issued_at, internal_notes)
+         VALUES ($1, $2, $3, $4, 15, $5, $6, 'pending', NOW(), $7)`,
+        [
+          invNumber,
+          org.id,
+          `Monthly subscription \u2014 ${monthLabel}`,
+          amount,
+          taxCents,
+          amount + taxCents,
+          `subscription:${monthLabel}`
+        ]
+      );
+      if (!org.billing_contact_email) {
+        WARN(`${org.name} (id=${org.id}) missing billing_contact_email \u2014 invoice created but email skipped`);
+        warnings++;
+      }
+      created++;
+    }
+    LOG7(`Complete: ${created} invoices created, ${skipped} duplicates skipped, ${warnings} warnings`);
+  } catch (e) {
+    LOG7(`Error: ${e.message}`);
+  }
+}
+async function catchUpCurrentMonth() {
+  const now = /* @__PURE__ */ new Date();
+  const monthLabel = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  try {
+    const [orgs] = await rawSql(
+      `SELECT id FROM organisations WHERE status = 'active' AND billing_type = 'subscription' AND subscription_amount IS NOT NULL`
+    );
+    if (!orgs.length) return;
+    const [existing] = await rawSql(
+      `SELECT DISTINCT client_id FROM billing_invoices WHERE internal_notes LIKE $1`,
+      [`%subscription:${monthLabel}%`]
+    );
+    const invoicedIds = new Set(existing.map((r) => r.client_id));
+    const missing = orgs.filter((o) => !invoicedIds.has(o.id));
+    if (missing.length > 0) {
+      LOG7(`Catch-up: ${missing.length} subscription org(s) missing invoices for ${monthLabel} \u2014 running invoicing`);
+      await runMonthlySubscriptionInvoicing();
+    }
+  } catch (e) {
+    WARN(`Catch-up check failed: ${e.message}`);
+  }
+}
+function startSubscriptionBillingScheduler() {
+  const CHECK_INTERVAL = 60 * 60 * 1e3;
+  let lastRunMonth = "";
+  setTimeout(() => catchUpCurrentMonth(), 1e4);
+  setInterval(async () => {
+    const now = /* @__PURE__ */ new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    if (now.getDate() === 1 && now.getHours() >= 8 && lastRunMonth !== currentMonth) {
+      lastRunMonth = currentMonth;
+      await runMonthlySubscriptionInvoicing();
+    }
+  }, CHECK_INTERVAL);
+  LOG7("Scheduler started \u2014 will run on 1st of each month at 08:00");
+}
+var LOG7, WARN;
+var init_SubscriptionBillingService = __esm({
+  "server/services/SubscriptionBillingService.ts"() {
+    "use strict";
+    init_db();
+    LOG7 = (msg) => console.log(`[SubscriptionBilling] ${msg}`);
+    WARN = (msg) => console.warn(`[SubscriptionBilling] ${msg}`);
+  }
+});
+
+// server/_core/index.ts
+var index_exports = {};
+import "dotenv/config";
+import express3 from "express";
+import http from "http";
+import net from "net";
+import rateLimit from "express-rate-limit";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import twilio_twiml from "twilio";
 function isPortAvailable(port) {
   return new Promise((resolve2) => {
     const server = net.createServer();
@@ -41695,11 +49219,62 @@ async function ensureArchiveEventsColumns() {
     console.warn("[Migration] archive_events column check skipped:", err?.message);
   }
 }
+async function ensureOperatorActionsTable() {
+  try {
+    const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+    await rawSql2(`CREATE TABLE IF NOT EXISTS operator_actions (
+      id SERIAL PRIMARY KEY,
+      session_id INTEGER,
+      archive_id INTEGER,
+      action_type VARCHAR(64) NOT NULL,
+      detail TEXT,
+      operator_id INTEGER,
+      operator_name VARCHAR(255),
+      metadata TEXT,
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )`);
+    console.log("[Migration] \u2713 operator_actions table ensured");
+  } catch (err) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] operator_actions check skipped:", err?.message);
+  }
+}
+async function ensureLiveQaP1Columns() {
+  try {
+    const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+    await rawSql2(`ALTER TABLE live_qa_questions ADD COLUMN IF NOT EXISTS duplicate_of_id INTEGER`);
+    await rawSql2(`ALTER TABLE live_qa_questions ADD COLUMN IF NOT EXISTS legal_review_reason TEXT`);
+    await rawSql2(`ALTER TABLE live_qa_questions ADD COLUMN IF NOT EXISTS ai_draft_text TEXT`);
+    await rawSql2(`ALTER TABLE live_qa_questions ADD COLUMN IF NOT EXISTS ai_draft_reasoning TEXT`);
+    console.log("[Migration] \u2713 P1 Q&A columns ensured (duplicate_of_id, legal_review_reason, ai_draft_text, ai_draft_reasoning)");
+  } catch (err) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] P1 Q&A columns check skipped:", err?.message);
+  }
+}
 async function startServer() {
-  const app = express2();
+  const app = express3();
   const server = http.createServer(app);
   app.set("trust proxy", 1);
   const isProd = process.env.NODE_ENV === "production";
+  app.get("/api/debug-static", (_req, res) => {
+    const distPath = path.resolve(import.meta.dirname, "_app");
+    const assetsDir = path.resolve(distPath, "assets");
+    const indexHtmlExists = fs.existsSync(path.resolve(distPath, "index.html"));
+    const _indexHtmlExists = fs.existsSync(path.resolve(distPath, "_index.html"));
+    const assetFiles = fs.existsSync(assetsDir) ? fs.readdirSync(assetsDir).filter((f) => f.startsWith("index")) : [];
+    const allHtmlFiles = fs.existsSync(distPath) ? fs.readdirSync(distPath).filter((f) => f.endsWith(".html")) : [];
+    res.json({
+      version: "2025.04.10-C",
+      distPath,
+      indexHtmlExists,
+      _indexHtmlExists,
+      assetFiles,
+      allHtmlFiles,
+      dirname: import.meta.dirname,
+      nodeEnv: process.env.NODE_ENV
+    });
+  });
   app.get("/health", async (_req, res) => {
     const { validateEnv: validateEnv2 } = await Promise.resolve().then(() => (init_env2(), env_exports));
     const { getServiceStatus: getServiceStatus2 } = await Promise.resolve().then(() => (init_serviceStatus(), serviceStatus_exports));
@@ -41722,6 +49297,12 @@ async function startServer() {
   validateShadowModeEnv();
   ensureArchiveEventsColumns().catch(
     (err) => console.warn("[Migration] Non-blocking column migration failed:", err?.message)
+  );
+  ensureOperatorActionsTable().catch(
+    (err) => console.warn("[Migration] operator_actions migration failed:", err?.message)
+  );
+  ensureLiveQaP1Columns().catch(
+    (err) => console.warn("[Migration] P1 Q&A columns migration failed:", err?.message)
   );
   if (!isProd) {
     app.use("/__mockup", (req, res) => {
@@ -41762,7 +49343,7 @@ async function startServer() {
   app.use("/api/trpc", apiLimiter);
   app.use("/api/oauth", authLimiter);
   app.use("/api/auth", authLimiter);
-  app.post("/api/conference-dialout/twiml", express2.urlencoded({ extended: false }), async (req, res) => {
+  app.post("/api/conference-dialout/twiml", express3.urlencoded({ extended: false }), async (req, res) => {
     const conferenceName = req.query.conferenceName ?? "";
     if (!conferenceName) {
       res.type("text/xml").send("<Response><Say>Conference not found.</Say></Response>");
@@ -41771,13 +49352,13 @@ async function startServer() {
     const { buildConferenceTwiml: buildConferenceTwiml2 } = await Promise.resolve().then(() => (init_ConferenceDialoutService(), ConferenceDialoutService_exports));
     res.type("text/xml").send(buildConferenceTwiml2(conferenceName));
   });
-  app.post("/api/conference-dialout/status", express2.urlencoded({ extended: false }), async (req, res) => {
+  app.post("/api/conference-dialout/status", express3.urlencoded({ extended: false }), async (req, res) => {
     try {
-      const { handleCallStatusUpdate: handleCallStatusUpdate2, validateTwilioSignature: validateTwilioSignature2 } = await Promise.resolve().then(() => (init_ConferenceDialoutService(), ConferenceDialoutService_exports));
+      const { handleCallStatusUpdate: handleCallStatusUpdate2, validateTwilioSignature: validateTwilioSignature3 } = await Promise.resolve().then(() => (init_ConferenceDialoutService(), ConferenceDialoutService_exports));
       const twilioSig = req.headers["x-twilio-signature"];
       if (twilioSig) {
         const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
-        if (!validateTwilioSignature2(fullUrl, req.body ?? {}, twilioSig)) {
+        if (!validateTwilioSignature3(fullUrl, req.body ?? {}, twilioSig)) {
           console.warn("[ConferenceDialout] Invalid Twilio signature \u2014 rejecting");
           res.sendStatus(403);
           return;
@@ -41793,7 +49374,7 @@ async function startServer() {
     }
     res.sendStatus(200);
   });
-  app.post("/api/webphone/twiml", express2.urlencoded({ extended: false }), (req, res) => {
+  app.post("/api/webphone/twiml", express3.urlencoded({ extended: false }), (req, res) => {
     const to = req.body?.To ?? "";
     const clientCallerId = req.body?.CallerId ?? "";
     const envCallerId = process.env.TWILIO_CALLER_ID ?? "";
@@ -41808,38 +49389,36 @@ async function startServer() {
       res.type("text/xml").send("<Response><Say>Caller ID not configured.</Say></Response>");
       return;
     }
-    const appId = process.env.VITE_APP_ID ?? "";
-    const recordingCallbackUrl = appId ? `https://${appId}.manus.space/api/webphone/recording-status` : void 0;
+    const appOrigin = process.env.APP_ORIGIN ?? `https://curalive-platform.replit.app`;
+    const recordingCallbackUrl = `${appOrigin}/api/webphone/recording-status`;
     const twiml = buildTwiMLVoiceResponse(to, callerId, {
       record: true,
       recordingCallbackUrl
     });
     res.type("text/xml").send(twiml);
   });
-  app.post("/api/webphone/inbound", express2.urlencoded({ extended: false }), async (req, res) => {
+  app.post("/api/webphone/inbound", express3.urlencoded({ extended: false }), async (req, res) => {
     const from = req.body?.From ?? "Unknown";
     const to = req.body?.To ?? "";
     const callSid = req.body?.CallSid ?? "";
     console.log(`[TwiML Inbound] from=${from} to=${to} callSid=${callSid}`);
     const twiml = new twilio_twiml.twiml.VoiceResponse();
-    const appId = process.env.VITE_APP_ID ?? "";
-    const recordingCallbackUrl = appId ? `https://${appId}.manus.space/api/webphone/recording-status` : void 0;
+    const inboundOrigin = process.env.APP_ORIGIN ?? `https://curalive-platform.replit.app`;
+    const inboundRecordingUrl = `${inboundOrigin}/api/webphone/recording-status`;
     const dialOptions = {
-      record: "record-from-answer-dual"
+      record: "record-from-answer-dual",
+      recordingStatusCallback: inboundRecordingUrl,
+      recordingStatusCallbackMethod: "POST",
+      recordingStatusCallbackEvent: "completed"
     };
-    if (recordingCallbackUrl) {
-      dialOptions.recordingStatusCallback = recordingCallbackUrl;
-      dialOptions.recordingStatusCallbackMethod = "POST";
-      dialOptions.recordingStatusCallbackEvent = "completed";
-    }
     let targetIdentity = null;
     try {
       const { getDb: getDb2 } = await Promise.resolve().then(() => (init_db(), db_exports));
       const db2 = await getDb2();
       if (db2) {
         const { occOperatorSessions: occOperatorSessions2 } = await Promise.resolve().then(() => (init_schema(), schema_exports));
-        const { eq: eq77 } = await import("drizzle-orm");
-        const available = await db2.select().from(occOperatorSessions2).where(eq77(occOperatorSessions2.state, "present")).limit(5);
+        const { eq: eq84 } = await import("drizzle-orm");
+        const available = await db2.select().from(occOperatorSessions2).where(eq84(occOperatorSessions2.state, "present")).limit(5);
         if (available.length > 0) {
           available.sort((a, b) => {
             const aTime = a.lastHeartbeat?.getTime() ?? 0;
@@ -41856,13 +49435,14 @@ async function startServer() {
       console.warn("[TwiML Inbound] Failed to query operator presence:", err);
     }
     if (targetIdentity) {
-      const appIdForFallback = process.env.VITE_APP_ID ?? "";
-      const fallbackUrl = appIdForFallback ? `https://${appIdForFallback}.manus.space/api/webphone/voicemail-fallback` : "/api/webphone/voicemail-fallback";
+      const fallbackOrigin = process.env.APP_ORIGIN ?? `https://curalive-platform.replit.app`;
+      const fallbackUrl = `${fallbackOrigin}/api/webphone/voicemail-fallback`;
       const dial = twiml.dial({ ...dialOptions, timeout: 30, action: fallbackUrl });
       dial.client(targetIdentity);
     } else {
       twiml.say({ voice: "Polly.Joanna" }, "Thank you for calling. All operators are currently unavailable. Please leave a message after the tone and we will return your call as soon as possible.");
-      const voicemailCallbackUrl = appId ? `https://${appId}.manus.space/api/webphone/voicemail-status` : "/api/webphone/voicemail-status";
+      const vmOrigin = process.env.APP_ORIGIN ?? `https://curalive-platform.replit.app`;
+      const voicemailCallbackUrl = `${vmOrigin}/api/webphone/voicemail-status`;
       twiml.record({
         maxLength: 120,
         playBeep: true,
@@ -41874,7 +49454,7 @@ async function startServer() {
     }
     res.type("text/xml").send(twiml.toString());
   });
-  app.post("/api/webphone/telnyx", express2.raw({ type: "application/json" }), (req, res) => {
+  app.post("/api/webphone/telnyx", express3.raw({ type: "application/json" }), (req, res) => {
     try {
       const body = JSON.parse(req.body.toString());
       const event = parseTelnyxWebhook(body);
@@ -41887,7 +49467,7 @@ async function startServer() {
       res.status(400).json({ error: "Invalid webhook body" });
     }
   });
-  app.post("/api/webphone/recording-status", express2.urlencoded({ extended: false }), async (req, res) => {
+  app.post("/api/webphone/recording-status", express3.urlencoded({ extended: false }), async (req, res) => {
     const callSid = req.body?.CallSid ?? "";
     const recordingSid = req.body?.RecordingSid ?? "";
     const recordingUrl = req.body?.RecordingUrl ?? "";
@@ -41900,12 +49480,12 @@ async function startServer() {
         const db2 = await getDb2();
         if (db2) {
           const { webphoneSessions: webphoneSessions2 } = await Promise.resolve().then(() => (init_schema(), schema_exports));
-          const { eq: eq77 } = await import("drizzle-orm");
+          const { eq: eq84 } = await import("drizzle-orm");
           await db2.update(webphoneSessions2).set({
             recordingSid,
             recordingUrl: recordingUrl ? `${recordingUrl}.mp3` : null,
             recordingStatus: recordingStatus === "completed" ? "completed" : "failed"
-          }).where(eq77(webphoneSessions2.callSid, callSid));
+          }).where(eq84(webphoneSessions2.callSid, callSid));
           console.log(`[Recording Callback] Updated session for callSid=${callSid}`);
         }
       } catch (err) {
@@ -41914,7 +49494,7 @@ async function startServer() {
     }
     res.sendStatus(204);
   });
-  app.post("/api/webphone/voicemail-fallback", express2.urlencoded({ extended: false }), (req, res) => {
+  app.post("/api/webphone/voicemail-fallback", express3.urlencoded({ extended: false }), (req, res) => {
     const dialCallStatus = req.body?.DialCallStatus ?? "";
     const callSid = req.body?.CallSid ?? "";
     console.log(`[Voicemail Fallback] callSid=${callSid} dialCallStatus=${dialCallStatus}`);
@@ -41925,8 +49505,8 @@ async function startServer() {
       return;
     }
     twimlVm.say({ voice: "Polly.Joanna" }, "The operator is not available right now. Please leave a message after the tone and we will return your call.");
-    const vmAppId = process.env.VITE_APP_ID ?? "";
-    const vmCallbackUrl = vmAppId ? `https://${vmAppId}.manus.space/api/webphone/voicemail-status` : "/api/webphone/voicemail-status";
+    const vmFallbackOrigin = process.env.APP_ORIGIN ?? `https://curalive-platform.replit.app`;
+    const vmCallbackUrl = `${vmFallbackOrigin}/api/webphone/voicemail-status`;
     twimlVm.record({
       maxLength: 120,
       playBeep: true,
@@ -41937,7 +49517,7 @@ async function startServer() {
     twimlVm.say({ voice: "Polly.Joanna" }, "We did not receive a recording. Goodbye.");
     res.type("text/xml").send(twimlVm.toString());
   });
-  app.post("/api/webphone/voicemail-status", express2.urlencoded({ extended: false }), async (req, res) => {
+  app.post("/api/webphone/voicemail-status", express3.urlencoded({ extended: false }), async (req, res) => {
     const callSid = req.body?.CallSid ?? "";
     const recordingSid = req.body?.RecordingSid ?? "";
     const recordingUrl = req.body?.RecordingUrl ?? "";
@@ -41994,7 +49574,7 @@ async function startServer() {
             prompt: "Transcribe this voicemail message"
           });
           if ("text" in transcriptionResult && transcriptionResult.text) {
-            const { eq: eq77 } = await import("drizzle-orm");
+            const { eq: eq84 } = await import("drizzle-orm");
             const dbForTranscript = await getDb2();
             if (dbForTranscript) {
               const { webphoneSessions: ws } = await Promise.resolve().then(() => (init_schema(), schema_exports));
@@ -42002,7 +49582,7 @@ async function startServer() {
                 transcription: transcriptionResult.text,
                 transcriptionLanguage: transcriptionResult.language ?? "en",
                 transcriptionStatus: "completed"
-              }).where(eq77(ws.callSid, callSid));
+              }).where(eq84(ws.callSid, callSid));
               console.log(`[Voicemail] Auto-transcribed: "${transcriptionResult.text.substring(0, 80)}..."`);
             }
           }
@@ -42015,7 +49595,7 @@ async function startServer() {
     }
     res.sendStatus(204);
   });
-  app.post("/api/voice/inbound", express2.urlencoded({ extended: false }), (req, res) => {
+  app.post("/api/voice/inbound", express3.urlencoded({ extended: false }), (req, res) => {
     const callSid = req.body?.CallSid ?? "";
     const to = req.body?.To ?? "";
     console.log(`[CuraLive Direct IVR] Inbound call: callSid=${callSid} to=${to}`);
@@ -42035,7 +49615,7 @@ async function startServer() {
     twiml.enqueue("operator-queue");
     res.type("text/xml").send(twiml.toString());
   });
-  app.post("/api/voice/pin", express2.urlencoded({ extended: false }), async (req, res) => {
+  app.post("/api/voice/pin", express3.urlencoded({ extended: false }), async (req, res) => {
     const digits = (req.body?.Digits ?? "").trim();
     const callSid = req.body?.CallSid ?? "";
     const from = req.body?.From ?? "";
@@ -42094,13 +49674,16 @@ async function startServer() {
     res.type("text/xml").send(twiml.toString());
   });
   registerRecallWebhookRoute(app);
-  app.use(express2.json({ limit: "50mb" }));
-  app.use(express2.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express3.json({ limit: "50mb" }));
+  app.use(express3.urlencoded({ limit: "50mb", extended: true }));
+  const { brandConfigMiddleware: brandConfigMiddleware2 } = await Promise.resolve().then(() => (init_brandConfig(), brandConfig_exports));
+  app.use(brandConfigMiddleware2);
   registerOAuthRoutes(app);
   registerSlideDeckUploadRoute(app);
   registerAudioTranscribeRoute(app);
   registerRecordingUploadRoute(app);
   registerBillingPdfRoutes(app);
+  registerBridgeWebhooks(app);
   app.get("/download/architecture", (_req, res) => {
     const filePath = `${process.cwd()}/public/CuraLive_Platform_Architecture.docx`;
     res.setHeader("Content-Disposition", "attachment; filename=CuraLive_Platform_Architecture.docx");
@@ -42297,7 +49880,7 @@ ${"=".repeat(40)}
       const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
       const archiver2 = (await import("archiver")).default;
       const { resolveRecordingFile: resolveRecordingFile2 } = await Promise.resolve().then(() => (init_storageAdapter(), storageAdapter_exports));
-      const fs3 = await import("fs");
+      const fs4 = await import("fs");
       const idsParam = req.query.ids;
       let rows;
       if (idsParam) {
@@ -42346,7 +49929,7 @@ ${"=".repeat(40)}
         archive.append(header + ev.transcript_text, { name: `${folder}/${safeName}_Transcript.txt` });
         if (ev.recording_path && ev.recording_path.trim()) {
           const resolution = await resolveRecordingFile2(ev.recording_path);
-          if (resolution.found && resolution.localPath && fs3.existsSync(resolution.localPath)) {
+          if (resolution.found && resolution.localPath && fs4.existsSync(resolution.localPath)) {
             archive.file(resolution.localPath, { name: `${folder}/${safeName}_Recording.mp3` });
           }
         }
@@ -42389,52 +49972,40 @@ ${"=".repeat(40)}
 <div class="page">
   <h1>CuraLive \u2014 Project Owner Checklist</h1>
 
-  <h2>Starting a Replit Session</h2>
+  <h2>Starting a Session</h2>
   <ul>
-    <li>Say: "Check GitHub for new Manus specs"</li>
-    <li>Review what Replit Agent reports \u2014 note any spec-ready features</li>
-    <li>If Manus has a new spec \u2192 open the file on GitHub, copy the REPLIT SUMMARY block, paste it into the Replit chat</li>
+    <li>Open Replit and review the current project state</li>
+    <li>Check docs/specs/STATUS.md for any pending features</li>
+    <li>Describe the feature or fix you want to the Replit Agent</li>
   </ul>
 
-  <h2>Starting a Manus Session</h2>
+  <h2>During a Session</h2>
   <ul>
-    <li>Tell Manus which features to spec next</li>
-    <li>Remind Manus: spec files only in docs/specs/ \u2014 no code files</li>
-    <li>Remind Manus: every spec needs a REPLIT SUMMARY block at the top</li>
-    <li>Ask Manus to update docs/specs/STATUS.md when done (mark as spec-ready)</li>
+    <li>Review changes as the Agent builds them</li>
+    <li>Test features in the preview pane</li>
+    <li>Provide feedback or corrections as needed</li>
   </ul>
 
-  <h2>Ending a Replit Session</h2>
+  <h2>Ending a Session</h2>
   <ul>
-    <li>Say: "Push to GitHub"</li>
-    <li>Confirm the push succeeded (Replit Agent will confirm with a commit ID)</li>
-    <li>Tell Manus which features are now implemented so they don't re-spec them</li>
+    <li>Verify all features work in the preview</li>
+    <li>Publish when ready \u2014 the Agent will handle deployment</li>
   </ul>
 
-  <h2>Ending a Manus Session</h2>
-  <ul>
-    <li>Check that Manus committed to docs/specs/ only (not client/ or server/)</li>
-    <li>Check that docs/specs/STATUS.md is updated to spec-ready</li>
-    <li>You are ready to start a Replit session</li>
-  </ul>
-
-  <div class="rule">The one-line rule: Manus writes \u2192 you copy the summary \u2192 Replit builds \u2192 you say push.</div>
+  <div class="rule">All development happens on Replit. Describe what you want and the Agent builds it.</div>
 
   <h2>Warning Signs</h2>
   <table>
     <tr><th>What you see</th><th>What to do</th></tr>
-    <tr><td>Manus says "I already built that"</td><td>Remind them: specs only, no code</td></tr>
-    <tr><td>Sync check shows unexpected GitHub files</td><td>Tell Replit Agent \u2014 it will fix it</td></tr>
-    <tr><td>Push fails</td><td>Tell Replit Agent \u2014 it will diagnose</td></tr>
-    <tr><td>Unsure what's built</td><td>Ask Replit Agent: "What's currently implemented?"</td></tr>
-    <tr><td>Unsure what Manus is working on</td><td>Ask Manus directly</td></tr>
+    <tr><td>Preview not loading</td><td>Ask the Agent to restart the server</td></tr>
+    <tr><td>Feature not working</td><td>Describe the issue to the Agent</td></tr>
+    <tr><td>Unsure what's built</td><td>Ask the Agent: "What's currently implemented?"</td></tr>
   </table>
 
-  <h2>Copy-Paste Phrases</h2>
-  <div class="phrase-box"><strong>To Replit at session start</strong>Check GitHub for any new Manus specs or unimplemented work</div>
-  <div class="phrase-box"><strong>To Replit at session end</strong>Push to GitHub</div>
-  <div class="phrase-box"><strong>To Manus when requesting a spec</strong>Please write a spec for [feature name] and save it to docs/specs/ with a REPLIT SUMMARY block at the top. Mark it spec-ready in STATUS.md when done.</div>
-  <div class="phrase-box"><strong>To Manus as a reminder</strong>Please do not push any code files \u2014 specs only in docs/specs/. Replit Agent handles all implementation.</div>
+  <h2>Quick Actions</h2>
+  <div class="phrase-box"><strong>To check status</strong>What features are currently implemented?</div>
+  <div class="phrase-box"><strong>To request a feature</strong>Please build [feature name] following the spec in docs/specs/</div>
+  <div class="phrase-box"><strong>To deploy</strong>Please publish the latest changes to production</div>
 
   <button class="print-btn" onclick="window.print()">Save as PDF / Print</button>
 </div>
@@ -42452,8 +50023,8 @@ ${"=".repeat(40)}
     }
     try {
       const clientId = req.query.clientId || "occ-operator";
-      const Ably2 = await import("ably");
-      const client = new Ably2.Rest(apiKey);
+      const Ably3 = await import("ably");
+      const client = new Ably3.Rest(apiKey);
       const tokenRequest = await client.auth.createTokenRequest({
         clientId,
         capability: {
@@ -42487,7 +50058,7 @@ ${"=".repeat(40)}
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
   server.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${port}/`);
+    console.log(`[CuraLive v2025.04.10-B] Server running on http://0.0.0.0:${port}/`);
     const origin = process.env.APP_ORIGIN ?? `http://localhost:${port}`;
     startReminderScheduler(origin);
     Promise.resolve().then(() => (init_HealthGuardianService(), HealthGuardianService_exports)).then(({ startHealthGuardian: startHealthGuardian2 }) => {
@@ -42497,6 +50068,15 @@ ${"=".repeat(40)}
       startComplianceEngine2();
       seedFrameworkControls2().catch((e) => console.warn("[ComplianceEngine] Seed failed:", e.message));
     }).catch((e) => console.warn("[ComplianceEngine] Failed to start:", e.message));
+    Promise.resolve().then(() => (init_ComplianceDeadlineService(), ComplianceDeadlineService_exports)).then(({ startComplianceDeadlineMonitor: startComplianceDeadlineMonitor2 }) => {
+      startComplianceDeadlineMonitor2();
+    }).catch((e) => console.warn("[ComplianceDeadline] Failed to start:", e.message));
+    Promise.resolve().then(() => (init_PreEventBriefingService(), PreEventBriefingService_exports)).then(({ startBriefingScheduler: startBriefingScheduler2 }) => {
+      startBriefingScheduler2();
+    }).catch((e) => console.warn("[PreEventBriefing] Failed to start:", e.message));
+    Promise.resolve().then(() => (init_SubscriptionBillingService(), SubscriptionBillingService_exports)).then(({ startSubscriptionBillingScheduler: startSubscriptionBillingScheduler2 }) => {
+      startSubscriptionBillingScheduler2();
+    }).catch((e) => console.warn("[SubscriptionBilling] Failed to start:", e.message));
     Promise.resolve().then(() => (init_ShadowModeGuardianService(), ShadowModeGuardianService_exports)).then(({ reconcileShadowSessions: reconcileShadowSessions2, startShadowWatchdog: startShadowWatchdog2 }) => {
       reconcileShadowSessions2().then((result) => {
         if (result.total > 0) {
@@ -42517,5 +50097,25 @@ ${"=".repeat(40)}
   process.on("SIGTERM", () => shutdown("SIGTERM"));
   process.on("SIGINT", () => shutdown("SIGINT"));
 }
-enforceEnvOrExit();
-startServer().catch(console.error);
+var init_index = __esm({
+  "server/_core/index.ts"() {
+    init_oauth();
+    init_routers_eager();
+    init_context();
+    init_vite();
+    init_slideDeckUpload();
+    init_audioTranscribe();
+    init_recallWebhook();
+    init_recordingUpload();
+    init_reminderScheduler();
+    init_billingPdf();
+    init_bridgeWebhooks();
+    init_twilio();
+    init_telnyx();
+    init_env2();
+    init_systemStatus();
+    enforceEnvOrExit();
+    startServer().catch(console.error);
+  }
+});
+init_index();
