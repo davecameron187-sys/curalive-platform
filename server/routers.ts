@@ -114,6 +114,7 @@ import { agmIntelligenceRouter } from "./routers/agmIntelligenceRouter";
 import { operationsRouter } from "./routers/operationsRouter";
 import { qaAnalyticsRouter } from "./routers/qaAnalyticsRouter";
 import { unifiedIntelligenceRouter } from "./routers/unifiedIntelligenceRouter";
+import { operatorDashboardRouter } from "./routers/operatorDashboardRouter";
 
 // ─── Ably Token Request ───────────────────────────────────────────────────────
 async function createAblyTokenRequest(clientId: string) {
@@ -238,6 +239,7 @@ export const appRouter = router({
   operations: operationsRouter,
   qaAnalytics: qaAnalyticsRouter,
   unifiedIntelligence: unifiedIntelligenceRouter,
+  operatorDashboard: operatorDashboardRouter,
   admin: router({
     listUsers: adminProcedure.query(async () => {
       const allUsers = await listUsers();

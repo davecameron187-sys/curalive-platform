@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, varchar, timestamp, boolean, json, real } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, varchar, timestamp, boolean, json, real, date } from "drizzle-orm/pg-core";
 
 export const sessionReadinessChecks = pgTable("session_readiness_checks", {
   id: serial("id").primaryKey(),
@@ -167,6 +167,23 @@ export const briefingAccuracyScores = pgTable("briefing_accuracy_scores", {
   keyMetricsAccuracy: real("key_metrics_accuracy"),
   scoredAt: timestamp("scored_at").defaultNow(),
   detail: json("detail"),
+});
+
+export const organisations = pgTable("organisations", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: varchar("status", { length: 20 }).default("demo").notNull(),
+  billingType: varchar("billing_type", { length: 20 }).default("demo").notNull(),
+  subscriptionAmount: integer("subscription_amount"),
+  perEventPrice: integer("per_event_price"),
+  billingContactEmail: varchar("billing_contact_email", { length: 255 }),
+  irContactEmail: varchar("ir_contact_email", { length: 255 }),
+  pilotEventsTotal: integer("pilot_events_total").default(3),
+  pilotEventsUsed: integer("pilot_events_used").default(0),
+  pilotNotes: text("pilot_notes"),
+  followupDate: date("followup_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const sessionMarkers = pgTable("session_markers", {

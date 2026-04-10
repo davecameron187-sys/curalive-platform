@@ -1068,6 +1068,10 @@ async function startServer() {
       startBriefingScheduler();
     }).catch(e => console.warn("[PreEventBriefing] Failed to start:", e.message));
 
+    import("../services/SubscriptionBillingService").then(({ startSubscriptionBillingScheduler }) => {
+      startSubscriptionBillingScheduler();
+    }).catch(e => console.warn("[SubscriptionBilling] Failed to start:", e.message));
+
     import("../services/ShadowModeGuardianService").then(({ reconcileShadowSessions, startShadowWatchdog }) => {
       reconcileShadowSessions().then(result => {
         if (result.total > 0) {

@@ -561,6 +561,11 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
               <>
+                <a href="/operator/dashboard"
+                  className="flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/20 transition-colors">
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  Dashboard
+                </a>
                 <span className="text-xs text-slate-500 hidden lg:block">{user?.name}</span>
                 <button onClick={() => logout()}
                   className="flex items-center gap-1.5 text-xs text-slate-400 bg-white/[0.03] border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] transition-colors">

@@ -54,6 +54,16 @@ The CuraLive platform is a pnpm monorepo built with TypeScript, featuring a Reac
 - **Integration**: Node.js backend communicates with the AI Core via `AICoreClient.ts` and `AICorePayloadMapper.ts`, with results persisted in `shadow_sessions` table.
 - **Pipeline Observability**: Tracks every step of the AI pipeline with timing, status, and error details, stored in `ai_pipeline_trace`.
 
+### Operator Dashboard
+- **Route**: `/operator/dashboard` — operator-only dashboard for internal testing.
+- **Router**: `server/routers/operatorDashboardRouter.ts` — 10 tRPC procedures (all `operatorProcedure`).
+- **Frontend**: `client/src/pages/OperatorDashboard.tsx` — 5 panels: Command, Sessions, Customers, Reports, Billing.
+- **Canonical session table**: `shadow_sessions` (not `sessions` or `shadow_mode_sessions`).
+- **Canonical report source**: `archive_events.ai_report`.
+- **Organisations table**: `organisations` with status/billing_type/subscription_amount/per_event_price/ir_contact_email/billing_contact_email/pilot_notes.
+- **Billing automation**: `server/services/SubscriptionBillingService.ts` — monthly subscription invoicing on 1st of each month.
+- **approveAndSendReport**: Idempotent mutation — checks status, validates IR contact, sends email via `sendEmail()`, creates adhoc invoice if applicable.
+
 ## External Dependencies
 
 - **PostgreSQL**: Primary relational database.

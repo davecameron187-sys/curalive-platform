@@ -139,6 +139,7 @@ function Router() {
       <Route path="/moderator/:id" component={Moderator} />
       <Route path="/presenter/:id" component={Presenter} />
       <Route path="/operator/analytics">{() => <RequireAuth requiredRole="operator"><OperatorAnalytics /></RequireAuth>}</Route>
+      <Route path="/operator/dashboard">{() => <RequireAuth requiredRole="operator"><OperatorDashboard /></RequireAuth>}</Route>
       <Route path="/operator/:id">{(params: any) => <RequireAuth requiredRole="operator"><OperatorConsole {...params} /></RequireAuth>}</Route>
       <Route path="/register/:id" component={Registration} />
       <Route path="/demo-registration" component={DemoRegistration} />

@@ -1,476 +1,642 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import {
-  Monitor, Phone, Video, Radio, Eye, CreditCard, Shield, Brain,
-  Calendar, Users, Clock, ChevronRight, Activity, Mic, Settings,
-  Bell, Search, LayoutDashboard, PlayCircle, CheckCircle2, AlertTriangle,
-  Headphones, Zap, TrendingUp, FileText, ExternalLink, ArrowUpRight,
-  Sparkles, MoreHorizontal, ChevronLeft, Mail, BarChart3, Globe,
-  GraduationCap, Package
+  LayoutDashboard, Calendar, Users, FileText, CreditCard,
+  Activity, Clock, TrendingUp, AlertTriangle, CheckCircle2,
+  ChevronRight, ChevronLeft, ExternalLink, Eye, Send,
+  Sun, Moon, Plus, Radio, RefreshCw, AlertCircle, Info
 } from "lucide-react";
 
-type NavItem = { id: string; label: string; icon: any; color: string; route: string | null; badge?: string };
-type NavSection = { label: string; items: NavItem[] };
+type Panel = "command" | "sessions" | "customers" | "reports" | "billing";
 
-const NAV_SECTIONS: NavSection[] = [
-  {
-    label: "Events",
-    items: [
-      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "from-blue-500 to-cyan-500", route: null },
-      { id: "operator", label: "Operator Console", icon: Settings, color: "from-gray-500 to-slate-500", route: "/operator-links" },
-      { id: "webcasts", label: "Webcasting", icon: Video, color: "from-purple-500 to-pink-500", route: "/live-video/webcasting" },
-      { id: "occ", label: "Video Conferences", icon: Radio, color: "from-amber-500 to-orange-500", badge: "LIVE", route: "/occ" },
-      { id: "bookings", label: "Bookings", icon: Calendar, color: "from-blue-500 to-cyan-500", route: "/events/calendar" },
-      { id: "registrations", label: "Registrations", icon: Mail, color: "from-emerald-500 to-teal-500", route: "/mailing-lists" },
-    ],
-  },
-  {
-    label: "Intelligence",
-    items: [
-      { id: "ai", label: "Agentic Brain", icon: Brain, color: "from-rose-500 to-pink-500", route: "/agentic-brain" },
-      { id: "metrics", label: "Tagged Metrics", icon: BarChart3, color: "from-violet-500 to-purple-500", route: "/tagged-metrics" },
-      { id: "terminal", label: "Terminal", icon: Globe, color: "from-cyan-500 to-blue-500", route: "/intelligence-terminal" },
-      { id: "shadow", label: "Shadow Mode", icon: Eye, color: "from-indigo-500 to-violet-500", route: "/shadow-mode" },
-      { id: "guardian", label: "Health Guardian", icon: Shield, color: "from-cyan-500 to-blue-500", route: "/health-guardian" },
-      { id: "reports", label: "AI Reports", icon: FileText, color: "from-orange-500 to-amber-500", route: "/ai-reports" },
-    ],
-  },
-  {
-    label: "Platform",
-    items: [
-      { id: "integrations", label: "Integrations", icon: Zap, color: "from-blue-500 to-indigo-500", route: "/integrations" },
-      { id: "billing", label: "Billing", icon: CreditCard, color: "from-slate-500 to-gray-500", route: "/billing" },
-      { id: "admin", label: "Admin", icon: Users, color: "from-gray-500 to-slate-500", route: "/admin/users" },
-    ],
-  },
+const PANELS: { id: Panel; label: string; icon: any }[] = [
+  { id: "command", label: "Command", icon: LayoutDashboard },
+  { id: "sessions", label: "Sessions", icon: Activity },
+  { id: "customers", label: "Customers", icon: Users },
+  { id: "reports", label: "Reports", icon: FileText },
+  { id: "billing", label: "Billing", icon: CreditCard },
 ];
 
-const ALL_NAV_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
-
-function StatusDot({ status }: { status: "live" | "ready" | "idle" }) {
-  const colors = { live: "bg-green-400 animate-pulse", ready: "bg-amber-400", idle: "bg-gray-500" };
-  return <span className={`w-2 h-2 rounded-full ${colors[status]}`} />;
+function formatCurrency(cents: number): string {
+  return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
-const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+function formatDate(d: any): string {
+  if (!d) return "—";
+  const date = typeof d === "string" ? new Date(d) : d instanceof Date ? d : new Date(Number(d));
+  if (isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+}
 
-const EVENT_DATES: Record<string, { count: number; hasLive: boolean }> = {
-  "2026-03-10": { count: 2, hasLive: false },
-  "2026-03-11": { count: 1, hasLive: false },
-  "2026-03-13": { count: 4, hasLive: true },
-  "2026-03-14": { count: 3, hasLive: false },
-  "2026-03-17": { count: 1, hasLive: false },
-  "2026-03-18": { count: 5, hasLive: false },
-  "2026-03-19": { count: 2, hasLive: false },
-  "2026-03-20": { count: 1, hasLive: false },
-  "2026-03-24": { count: 3, hasLive: false },
-  "2026-03-25": { count: 2, hasLive: false },
-  "2026-03-27": { count: 1, hasLive: false },
-};
+function formatTime(d: any): string {
+  if (!d) return "";
+  const date = typeof d === "string" ? new Date(d) : d instanceof Date ? d : new Date(Number(d));
+  if (isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+}
 
-function MiniCalendar({ selectedDate, onSelectDate }: { selectedDate: Date; onSelectDate: (d: Date) => void }) {
-  const [viewMonth, setViewMonth] = useState(selectedDate.getMonth());
-  const [viewYear, setViewYear] = useState(selectedDate.getFullYear());
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
 
-  const calendarDays = useMemo(() => {
-    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
-    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
-
-    const days: { date: number; month: "prev" | "current" | "next"; fullDate: string }[] = [];
-
-    for (let i = firstDay - 1; i >= 0; i--) {
-      const d = daysInPrevMonth - i;
-      const m = viewMonth === 0 ? 11 : viewMonth - 1;
-      const y = viewMonth === 0 ? viewYear - 1 : viewYear;
-      days.push({ date: d, month: "prev", fullDate: `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}` });
-    }
-
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push({ date: i, month: "current", fullDate: `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}` });
-    }
-
-    const remaining = 42 - days.length;
-    for (let i = 1; i <= remaining; i++) {
-      const m = viewMonth === 11 ? 0 : viewMonth + 1;
-      const y = viewMonth === 11 ? viewYear + 1 : viewYear;
-      days.push({ date: i, month: "next", fullDate: `${y}-${String(m + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}` });
-    }
-
-    return days;
-  }, [viewMonth, viewYear]);
-
-  const todayStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
-
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; bg: string; fg: string }> = {
+    live: { label: "Live", bg: "bg-green-100 dark:bg-green-900/30", fg: "text-green-700 dark:text-green-400" },
+    scheduled: { label: "Scheduled", bg: "bg-blue-100 dark:bg-blue-900/30", fg: "text-blue-700 dark:text-blue-400" },
+    closed: { label: "Processing", bg: "bg-amber-100 dark:bg-amber-900/30", fg: "text-amber-700 dark:text-amber-400" },
+    completed: { label: "Complete", bg: "bg-gray-100 dark:bg-gray-800", fg: "text-gray-600 dark:text-gray-400" },
+    complete: { label: "Complete", bg: "bg-gray-100 dark:bg-gray-800", fg: "text-gray-600 dark:text-gray-400" },
+    report_pending: { label: "Report pending", bg: "bg-purple-100 dark:bg-purple-900/30", fg: "text-purple-700 dark:text-purple-400" },
+    pending: { label: "Pending", bg: "bg-amber-100 dark:bg-amber-900/30", fg: "text-amber-700 dark:text-amber-400" },
+    processing: { label: "Processing", bg: "bg-amber-100 dark:bg-amber-900/30", fg: "text-amber-700 dark:text-amber-400" },
+    ready_to_send: { label: "Ready", bg: "bg-green-100 dark:bg-green-900/30", fg: "text-green-700 dark:text-green-400" },
+    sent: { label: "Sent", bg: "bg-blue-100 dark:bg-blue-900/30", fg: "text-blue-700 dark:text-blue-400" },
+    paid: { label: "Paid", bg: "bg-green-100 dark:bg-green-900/30", fg: "text-green-700 dark:text-green-400" },
+    subscription: { label: "Subscription", bg: "bg-indigo-100 dark:bg-indigo-900/30", fg: "text-indigo-700 dark:text-indigo-400" },
+    adhoc: { label: "Ad-hoc", bg: "bg-amber-100 dark:bg-amber-900/30", fg: "text-amber-700 dark:text-amber-400" },
+    pilot: { label: "Pilot", bg: "bg-cyan-100 dark:bg-cyan-900/30", fg: "text-cyan-700 dark:text-cyan-400" },
+    demo: { label: "Demo", bg: "bg-purple-100 dark:bg-purple-900/30", fg: "text-purple-700 dark:text-purple-400" },
+  };
+  const m = map[status] ?? { label: status, bg: "bg-gray-100 dark:bg-gray-800", fg: "text-gray-600 dark:text-gray-400" };
   return (
-    <div className="bg-[#161b28] rounded-xl border border-white/[0.06] p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-white text-sm font-semibold flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-blue-400" />
-          {MONTHS[viewMonth]} {viewYear}
-        </h4>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else setViewMonth(viewMonth - 1); }}
-            className="p-1 text-gray-500 hover:text-white rounded transition-colors hover:bg-white/5"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => { setViewMonth(selectedDate.getMonth()); setViewYear(selectedDate.getFullYear()); }}
-            className="px-2 py-0.5 text-[10px] text-gray-500 hover:text-blue-400 rounded transition-colors hover:bg-white/5"
-          >
-            Today
-          </button>
-          <button
-            onClick={() => { if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); } else setViewMonth(viewMonth + 1); }}
-            className="p-1 text-gray-500 hover:text-white rounded transition-colors hover:bg-white/5"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${m.bg} ${m.fg}`}>
+      {m.label}
+    </span>
+  );
+}
+
+function DataIncomplete({ field }: { field: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs" title={`Setup required — ${field} missing`}>
+      <AlertTriangle className="w-3 h-3" />
+      <span className="hidden sm:inline">Setup required</span>
+    </span>
+  );
+}
+
+function KpiCard({ label, value, sub, icon: Icon }: { label: string; value: string | number; sub?: string; icon: any }) {
+  return (
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+          {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{sub}</p>}
         </div>
-      </div>
-
-      <div className="grid grid-cols-7 gap-0">
-        {DAYS.map((d) => (
-          <div key={d} className="text-center text-[10px] text-gray-600 font-medium py-1">{d}</div>
-        ))}
-        {calendarDays.map((day, i) => {
-          const eventData = EVENT_DATES[day.fullDate];
-          const isToday = day.fullDate === todayStr;
-          const isSelected = day.fullDate === todayStr;
-          const isOtherMonth = day.month !== "current";
-
-          return (
-            <button
-              key={i}
-              onClick={() => {
-                if (day.month === "current") {
-                  onSelectDate(new Date(viewYear, viewMonth, day.date));
-                }
-              }}
-              className={`relative h-8 flex items-center justify-center text-xs rounded-lg transition-all
-                ${isOtherMonth ? "text-gray-700" : "text-gray-400 hover:bg-white/5 hover:text-white"}
-                ${isToday ? "bg-blue-500/20 text-blue-400 font-bold ring-1 ring-blue-500/30" : ""}
-                ${isSelected && !isToday ? "bg-white/10 text-white" : ""}
-              `}
-            >
-              {day.date}
-              {eventData && (
-                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
-                  {eventData.hasLive ? (
-                    <span className="w-1 h-1 rounded-full bg-green-400 animate-pulse" />
-                  ) : (
-                    <span className="w-1 h-1 rounded-full bg-blue-400" />
-                  )}
-                  {eventData.count > 1 && <span className="w-1 h-1 rounded-full bg-blue-400/50" />}
-                  {eventData.count > 3 && <span className="w-1 h-1 rounded-full bg-blue-400/30" />}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-3 pt-3 border-t border-white/[0.06]">
-        <button className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-semibold transition-colors mb-2">
-          <Zap className="w-3.5 h-3.5" />
-          Upload Today's Calls to OCC
-        </button>
-        <button className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-gray-400 hover:text-white rounded-lg text-xs font-medium transition-colors border border-white/[0.06]">
-          <Calendar className="w-3.5 h-3.5" />
-          Sync Week to OCC
-        </button>
-      </div>
-
-      <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[10px] text-gray-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            <span>Live events</span>
-          </div>
-          <div className="flex items-center gap-2 text-[10px] text-gray-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-            <span>Scheduled</span>
-          </div>
-          <div className="flex items-center gap-2 text-[10px] text-gray-500">
-            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
-            <span>Synced</span>
-          </div>
-        </div>
-        <div className="mt-2 p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/10">
-          <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium">
-            <CheckCircle2 className="w-3 h-3" />
-            4 of 4 events synced to OCC
-          </div>
-          <div className="text-[10px] text-gray-500 mt-0.5">Last sync: 08:15 AM</div>
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          <span className="text-white font-medium">This week:</span> 11 events across 6 days
+        <div className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
+          <Icon className="w-5 h-5 text-gray-400" />
         </div>
       </div>
     </div>
   );
 }
 
-function DashboardView({ onNavigate }: { onNavigate: (tabId: string) => void }) {
-  const [selectedDate] = useState(new Date(2026, 2, 13));
+function elapsedStr(startedAt: any): string {
+  if (!startedAt) return "—";
+  const start = typeof startedAt === "number" ? startedAt : Number(startedAt);
+  if (isNaN(start)) return "—";
+  const diff = Date.now() - start;
+  const mins = Math.floor(diff / 60000);
+  const hrs = Math.floor(mins / 60);
+  if (hrs > 0) return `${hrs}h ${mins % 60}m`;
+  return `${mins}m`;
+}
 
-  const events = [
-    { time: "09:00", title: "Q1 2026 Earnings Call — Naspers", platform: "OCC Audio", platformTab: "occ", participants: 1247, status: "live" as const, sentiment: 82 },
-    { time: "11:30", title: "Annual Investor Day — Sasol", platform: "Webcast", platformTab: "webcasts", participants: 3500, status: "ready" as const, sentiment: null },
-    { time: "14:00", title: "Results Presentation — FirstRand", platform: "Video Webcast", platformTab: "video", participants: 890, status: "ready" as const, sentiment: null },
-    { time: "16:00", title: "Board Strategy Call — Bastion Capital", platform: "Shadow Bridge", platformTab: "shadow", participants: 12, status: "idle" as const, sentiment: null },
-  ];
+function CommandPanel() {
+  const summary = trpc.operatorDashboard.getDashboardSummary.useQuery(undefined, { refetchInterval: 60000 });
+  const live = trpc.operatorDashboard.getLiveSession.useQuery(undefined, { refetchInterval: 60000 });
+  const upcoming = trpc.operatorDashboard.getUpcomingSessions.useQuery(undefined, { refetchInterval: 60000 });
+  const attention = trpc.operatorDashboard.getAttentionItems.useQuery(undefined, { refetchInterval: 60000 });
+
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  useEffect(() => {
+    if (summary.dataUpdatedAt) setLastUpdated(new Date(summary.dataUpdatedAt));
+  }, [summary.dataUpdatedAt]);
+
+  const s = summary.data;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: "Today's Events", value: "4", sub: "2 remaining", icon: Calendar, gradient: "from-blue-500/20 to-cyan-500/20", iconColor: "text-blue-400", border: "border-blue-500/10" },
-          { label: "Active Participants", value: "1,247", sub: "23 joining", icon: Users, gradient: "from-emerald-500/20 to-green-500/20", iconColor: "text-emerald-400", border: "border-emerald-500/10" },
-          { label: "Platform Health", value: "98%", sub: "All nominal", icon: Activity, gradient: "from-green-500/20 to-emerald-500/20", iconColor: "text-green-400", border: "border-green-500/10", clickTab: "guardian" },
-          { label: "AI Insights", value: "156", sub: "12 flagged", icon: Sparkles, gradient: "from-purple-500/20 to-pink-500/20", iconColor: "text-purple-400", border: "border-purple-500/10", clickTab: "ai" },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            onClick={() => stat.clickTab && onNavigate(stat.clickTab)}
-            className={`bg-gradient-to-br ${stat.gradient} rounded-xl p-4 border ${stat.border} ${stat.clickTab ? "cursor-pointer hover:brightness-110 transition-all" : ""}`}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <stat.icon className={`w-4 h-4 ${stat.iconColor}`} />
-              <span className="text-xs text-gray-400">{stat.label}</span>
-            </div>
-            <div className="text-2xl font-bold text-white">{stat.value}</div>
-            <div className="text-[11px] text-gray-500 mt-1">{stat.sub}</div>
-          </div>
-        ))}
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{getGreeting()}, Dave</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          {dateStr} · {s?.liveCount ?? 0} live · {s?.pendingReportCount ?? 0} reports pending
+        </p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          Last updated {lastUpdated.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+        </p>
       </div>
 
-      <div className="grid grid-cols-[1fr_280px] gap-4">
-        <div className="bg-[#161b28] rounded-xl border border-white/[0.06] overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-blue-400" />
-              <h3 className="text-white font-semibold text-sm">Daily Schedule</h3>
-              <span className="text-xs text-gray-500 ml-1">March 13, 2026</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard label="Live right now" value={s?.liveCount ?? 0} icon={Activity} />
+        <KpiCard label="Active customers" value={s?.customers?.active ?? 0} sub={`${s?.customers?.pilot ?? 0} pilot · ${s?.customers?.demo ?? 0} demo`} icon={Users} />
+        <KpiCard label="Reports to send" value={s?.pendingReportCount ?? 0} icon={FileText} />
+        <KpiCard label="Revenue this month" value={s ? formatCurrency(s.revenueThisMonth) : "—"} sub={s ? `Last month: ${formatCurrency(s.revenueLastMonth)}` : ""} icon={TrendingUp} />
+      </div>
+
+      {live.data && (
+        <div className="bg-white dark:bg-gray-900 border-l-4 border-green-500 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="font-semibold text-green-700 dark:text-green-400 text-sm">LIVE SESSION</span>
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{live.data.company}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{live.data.eventName}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+            <div>
+              <p className="text-xs text-gray-400">Elapsed</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{elapsedStr(live.data.startedAt)}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
-                <Zap className="w-3 h-3" /> Sync from Booking
-              </button>
+            <div>
+              <p className="text-xs text-gray-400">Segments</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{live.data.segmentCount} captured</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Commitments</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{live.data.commitmentCount}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Compliance flags</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{live.data.complianceFlagCount}</p>
             </div>
           </div>
+        </div>
+      )}
 
-          {events.map((event, i) => (
-            <div key={event.title} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors ${i < events.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
-              <div className="w-14 flex-shrink-0">
-                <span className="text-sm font-mono text-gray-500">{event.time}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <Calendar className="w-4 h-4" /> Upcoming this week
+          </h3>
+          {upcoming.data?.length === 0 && (
+            <p className="text-sm text-gray-400">No events scheduled this week.</p>
+          )}
+          {upcoming.data?.map((u: any) => (
+            <div key={u.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{u.eventName}</p>
+                <p className="text-xs text-gray-400">{u.orgName}</p>
               </div>
-
-              <div className={`w-1 h-10 rounded-full flex-shrink-0 ${
-                event.status === "live" ? "bg-green-500" : event.status === "ready" ? "bg-amber-500/50" : "bg-gray-700"
-              }`} />
-
-              <div className="flex-1 min-w-0">
-                <div className="text-white text-sm font-medium truncate">{event.title}</div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <button
-                    onClick={() => onNavigate(event.platformTab)}
-                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-0.5 transition-colors"
-                  >
-                    {event.platform} <ExternalLink className="w-2.5 h-2.5" />
-                  </button>
-                  <span className="text-gray-700">·</span>
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    <Users className="w-3 h-3" /> {event.participants.toLocaleString()}
-                  </span>
-                  {event.sentiment && (
-                    <>
-                      <span className="text-gray-700">·</span>
-                      <span className="text-xs text-emerald-400 flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3" /> {event.sentiment}%
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {event.status === "live" ? (
-                  <span className="px-2.5 py-1 bg-green-500/15 text-green-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-green-500/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> LIVE
-                  </span>
-                ) : event.status === "ready" ? (
-                  <span className="px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded-lg text-xs font-medium border border-amber-500/10">
-                    <CheckCircle2 className="w-3 h-3 inline mr-1" />SYNCED
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-1 bg-gray-500/10 text-gray-500 rounded-lg text-xs font-medium border border-gray-500/10">
-                    <Clock className="w-3 h-3 inline mr-1" />PENDING
-                  </span>
-                )}
-                <button
-                  onClick={() => onNavigate(event.platformTab)}
-                  className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 text-white rounded-lg text-xs font-medium transition-colors border border-white/[0.06]"
-                >
-                  {event.status === "live" ? "Open Console" : "Launch"}
-                </button>
-                <button className="p-1.5 text-gray-500 hover:text-gray-300 transition-colors">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
+              <div className="text-right">
+                <p className="text-sm text-gray-600 dark:text-gray-300">{formatDate(u.scheduledAt)}</p>
+                <p className="text-xs text-gray-400">{formatTime(u.scheduledAt)}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <MiniCalendar selectedDate={selectedDate} onSelectDate={() => {}} />
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[#161b28] rounded-xl p-4 border border-white/[0.06]">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-white text-sm font-semibold flex items-center gap-2">
-              <Brain className="w-4 h-4 text-purple-400" /> AI Alerts
-            </h4>
-            <button onClick={() => onNavigate("ai")} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-0.5">
-              View all <ArrowUpRight className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="space-y-2">
-            <div className="p-2.5 bg-emerald-500/10 rounded-lg text-xs border border-emerald-500/10">
-              <div className="text-emerald-400 font-medium">Positive Sentiment Spike</div>
-              <div className="text-gray-500 mt-0.5">EBITDA beat — audience response +12%</div>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" /> Needs attention
+          </h3>
+          {attention.data?.length === 0 && (
+            <div className="border-l-4 border-green-400 bg-green-50 dark:bg-green-900/20 rounded-r-lg p-4">
+              <p className="text-sm text-green-700 dark:text-green-400 font-medium">Nothing needs attention right now.</p>
             </div>
-            <div className="p-2.5 bg-amber-500/10 rounded-lg text-xs border border-amber-500/10">
-              <div className="text-amber-400 font-medium">Q&A Queue Alert</div>
-              <div className="text-gray-500 mt-0.5">7 questions queued, 12 min remaining</div>
+          )}
+          {attention.data?.map((item: any) => (
+            <div key={`${item.type}-${item.id}`} className="border-l-4 border-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-r-lg p-3 mb-2 last:mb-0">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{item.title}</p>
+              <p className="text-xs text-gray-500">{item.subtitle}</p>
             </div>
-          </div>
-        </div>
-
-        <div className="bg-[#161b28] rounded-xl p-4 border border-white/[0.06]">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-white text-sm font-semibold flex items-center gap-2">
-              <Shield className="w-4 h-4 text-cyan-400" /> System Status
-            </h4>
-            <button onClick={() => onNavigate("guardian")} className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-0.5">
-              Details <ArrowUpRight className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="space-y-1.5">
-            {[
-              { name: "Database", ms: "382ms", ok: true },
-              { name: "Twilio", ms: "152ms", ok: true },
-              { name: "OpenAI", ms: "507ms", ok: true },
-              { name: "Recall.ai", ms: "156ms", ok: false },
-              { name: "Ably", ms: "79ms", ok: true },
-            ].map((s) => (
-              <div key={s.name} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${s.ok ? "bg-green-400" : "bg-amber-400 animate-pulse"}`} />
-                  <span className="text-gray-400">{s.name}</span>
-                </div>
-                <span className={`font-mono ${s.ok ? "text-gray-600" : "text-amber-500"}`}>{s.ms}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-[#161b28] rounded-xl p-4 border border-white/[0.06]">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-white text-sm font-semibold flex items-center gap-2">
-              <Zap className="w-4 h-4 text-blue-400" /> Quick Launch
-            </h4>
-          </div>
-          <div className="space-y-2">
-            {[
-              { label: "New Audio Event", icon: Phone, color: "text-amber-400", tab: "occ" },
-              { label: "New Webcast", icon: Radio, color: "text-purple-400", tab: "webcasts" },
-              { label: "Shadow Mode", icon: Eye, color: "text-indigo-400", tab: "shadow" },
-              { label: "View Reports", icon: TrendingUp, color: "text-emerald-400", tab: "ai" },
-            ].map((a) => (
-              <button
-                key={a.label}
-                onClick={() => onNavigate(a.tab)}
-                className="w-full flex items-center gap-2.5 px-3 py-2 bg-white/[0.03] hover:bg-white/[0.06] rounded-lg text-xs text-gray-400 hover:text-white transition-all border border-white/[0.04]"
-              >
-                <a.icon className={`w-3.5 h-3.5 ${a.color}`} />
-                <span className="flex-1 text-left">{a.label}</span>
-                <ArrowUpRight className="w-3 h-3 text-gray-600" />
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-function PlatformEmbed({ item }: { item: NavItem }) {
+function SessionsPanel() {
+  const [, navigate] = useLocation();
+  const [page, setPage] = useState(1);
+  const live = trpc.operatorDashboard.getLiveSession.useQuery();
+  const sessions = trpc.operatorDashboard.getAllSessions.useQuery({ page });
+
+  const endSessionMutation = trpc.shadowMode.endSession.useMutation({
+    onSuccess: () => {
+      toast.success("Session closed successfully");
+      live.refetch();
+      sessions.refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="bg-[#161b28] rounded-xl border border-white/[0.06] p-5 mb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center`}>
-              <item.icon className="w-5 h-5 text-white" />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Sessions</h2>
+          {sessions.dataUpdatedAt && (
+            <p className="text-xs text-gray-400 mt-0.5">
+              Last updated {new Date(sessions.dataUpdatedAt).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={() => navigate("/shadow-mode")}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:opacity-90"
+        >
+          <Plus className="w-4 h-4" /> New session
+        </button>
+      </div>
+
+      {live.data && (
+        <div className="bg-white dark:bg-gray-900 border-l-4 border-green-500 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="font-semibold text-green-700 dark:text-green-400 text-sm">LIVE</span>
             </div>
-            <div>
-              <h2 className="text-white font-semibold">{item.label}</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Navigates to <span className="text-blue-400 font-mono">{item.route}</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {item.badge && (
-              <span className="px-2.5 py-1 bg-green-500/15 text-green-400 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-green-500/20">
-                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" /> {item.badge}
-              </span>
-            )}
-            <a
-              href={item.route!}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
+            <button
+              onClick={() => endSessionMutation.mutate({ sessionId: live.data!.id })}
+              disabled={endSessionMutation.isPending}
+              className="px-3 py-1 text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 disabled:opacity-50"
             >
-              Open Full Page <ExternalLink className="w-3 h-3" />
-            </a>
+              Close session
+            </button>
           </div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{live.data.company}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{live.data.eventName}</p>
+          <div className="grid grid-cols-4 gap-3 mt-3">
+            <div><p className="text-xs text-gray-400">Elapsed</p><p className="text-sm font-semibold dark:text-white">{elapsedStr(live.data.startedAt)}</p></div>
+            <div><p className="text-xs text-gray-400">Segments</p><p className="text-sm font-semibold dark:text-white">{live.data.segmentCount}</p></div>
+            <div><p className="text-xs text-gray-400">Commitments</p><p className="text-sm font-semibold dark:text-white">{live.data.commitmentCount}</p></div>
+            <div><p className="text-xs text-gray-400">Flags</p><p className="text-sm font-semibold dark:text-white">{live.data.complianceFlagCount}</p></div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+        <div className="divide-y divide-gray-100 dark:divide-gray-800">
+          {sessions.data?.sessions.map((s: any) => (
+            <button
+              key={s.id}
+              onClick={() => navigate(`/?tab=shadow-mode&session=${s.id}`)}
+              className="w-full flex items-center gap-4 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors"
+            >
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s.status === "live" ? "bg-green-400 animate-pulse" : s.status === "completed" || s.status === "complete" ? "bg-gray-400" : "bg-amber-400"}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{s.company ?? s.orgName ?? "—"}</p>
+                <p className="text-xs text-gray-400 truncate">{s.eventName}</p>
+              </div>
+              <div className="hidden sm:block text-right">
+                <p className="text-xs text-gray-500">{formatDate(s.createdAt)}</p>
+              </div>
+              <StatusBadge status={s.status} />
+              <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+            </button>
+          ))}
+          {sessions.data?.sessions.length === 0 && (
+            <div className="px-5 py-8 text-center text-gray-400 text-sm">No sessions yet.</div>
+          )}
+        </div>
+
+        {sessions.data && sessions.data.totalPages > 1 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-gray-800">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs text-gray-400">
+              Page {page} of {sessions.data.totalPages} · {sessions.data.total} total
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(sessions.data!.totalPages, p + 1))}
+              disabled={page === sessions.data.totalPages}
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CustomersPanel() {
+  const [tab, setTab] = useState<"active" | "demo" | "pilot">("active");
+  const active = trpc.operatorDashboard.getCustomersByStage.useQuery({ stage: "active" });
+  const demo = trpc.operatorDashboard.getCustomersByStage.useQuery({ stage: "demo" });
+  const pilot = trpc.operatorDashboard.getCustomersByStage.useQuery({ stage: "pilot" });
+
+  const dataMap = { active, demo, pilot };
+  const data = dataMap[tab].data ?? [];
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Customers</h2>
+
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+        {(["active", "demo", "pilot"] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${tab === t ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            {t === "active" ? "Active" : t === "demo" ? "Demo" : "Pilot"}
+            <span className="ml-1.5 text-xs text-gray-400">({dataMap[t].data?.length ?? 0})</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {data.map((c: any) => (
+          <div key={c.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                  {c.name?.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{c.name}</h4>
+                  <StatusBadge status={c.billingType} />
+                </div>
+              </div>
+            </div>
+
+            {tab === "active" && (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Events run</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{c.eventsRun}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Last event</span>
+                  <span className="text-gray-600 dark:text-gray-300">{formatDate(c.lastEvent)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Billing</span>
+                  {c.billingType === "subscription" ? (
+                    c.subscriptionAmount ? (
+                      <span className="text-gray-600 dark:text-gray-300">R{c.subscriptionAmount?.toLocaleString()}/mo</span>
+                    ) : (
+                      <DataIncomplete field="subscription amount" />
+                    )
+                  ) : c.billingType === "adhoc" ? (
+                    c.perEventPrice ? (
+                      <span className="text-gray-600 dark:text-gray-300">R{c.perEventPrice?.toLocaleString()}/event</span>
+                    ) : (
+                      <DataIncomplete field="per-event price" />
+                    )
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </div>
+                {!c.irContactEmail && <DataIncomplete field="IR contact email" />}
+                {!c.billingContactEmail && c.billingType !== "demo" && c.billingType !== "pilot" && (
+                  <DataIncomplete field="billing contact email" />
+                )}
+              </div>
+            )}
+
+            {tab === "demo" && (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">IR contact</span>
+                  <span className="text-gray-600 dark:text-gray-300">{c.irContactEmail ?? <DataIncomplete field="IR contact email" />}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Demo token</span>
+                  {c.demoToken ? (
+                    <span className="text-green-600 dark:text-green-400 text-xs font-medium">Ready</span>
+                  ) : (
+                    <span className="text-gray-400 text-xs flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-amber-500" /> Not set</span>
+                  )}
+                </div>
+                {c.followupDate && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Follow-up</span>
+                    <span className="text-gray-600 dark:text-gray-300">{formatDate(c.followupDate)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {tab === "pilot" && (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Events used</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{c.pilotEventsUsed} of {c.pilotEventsTotal}</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
+                  <div
+                    className="bg-cyan-500 h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.min(100, (c.pilotEventsUsed / c.pilotEventsTotal) * 100)}%` }}
+                  />
+                </div>
+                {c.pilotNotes && (
+                  <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{c.pilotNotes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        {data.length === 0 && (
+          <div className="col-span-2 text-center py-8 text-gray-400 text-sm">No {tab} customers.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReportsPanel() {
+  const pending = trpc.operatorDashboard.getReportsPending.useQuery();
+  const [sentPage, setSentPage] = useState(1);
+  const sent = trpc.operatorDashboard.getReportsSent.useQuery({ page: sentPage });
+
+  const approveMutation = trpc.operatorDashboard.approveAndSendReport.useMutation({
+    onSuccess: (data) => {
+      if (data.alreadySent) {
+        toast.info("Report was already sent.");
+      } else if (data.success) {
+        toast.success("Report approved and sent!");
+      } else {
+        toast.error(data.error ?? "Failed to send report.");
+      }
+      pending.refetch();
+      sent.refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Reports</h2>
+
+      <div>
+        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Awaiting approval</h3>
+        {pending.data?.length === 0 && (
+          <p className="text-sm text-gray-400 py-4">No reports pending approval.</p>
+        )}
+        <div className="space-y-3">
+          {pending.data?.map((r: any) => (
+            <div key={r.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{r.clientName}</h4>
+                  <p className="text-xs text-gray-500">{r.eventName} · {formatDate(r.createdAt)}</p>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    <span className="text-[10px] px-1.5 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded font-medium">All modules complete</span>
+                    {r.moduleKeys.slice(0, 3).map((k: string) => (
+                      <span key={k} className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded">{k}</span>
+                    ))}
+                    {r.moduleKeys.length > 3 && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded">+{r.moduleKeys.length - 3} more</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {r.reportToken ? (
+                    <a
+                      href={`/report/${r.reportToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100"
+                    >
+                      <Eye className="w-3 h-3" /> Preview
+                    </a>
+                  ) : (
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> Token missing — cannot preview
+                    </span>
+                  )}
+                  <button
+                    onClick={() => approveMutation.mutate({ eventId: r.id })}
+                    disabled={approveMutation.isPending}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  >
+                    <Send className="w-3 h-3" /> Approve + Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex-1 bg-[#161b28] rounded-xl border border-white/[0.06] overflow-hidden">
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mx-auto mb-4 opacity-20`}>
-              <item.icon className="w-10 h-10 text-white" />
+      <div>
+        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Sent</h3>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            {sent.data?.reports.map((r: any) => (
+              <div key={r.id} className="flex items-center justify-between px-5 py-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{r.clientName}</p>
+                  <p className="text-xs text-gray-400">{r.eventName}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-400">{formatDate(r.sentAt)}</span>
+                  <StatusBadge status="sent" />
+                </div>
+              </div>
+            ))}
+            {sent.data?.reports.length === 0 && (
+              <div className="px-5 py-8 text-center text-gray-400 text-sm">No sent reports yet.</div>
+            )}
+          </div>
+          {sent.data && sent.data.totalPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-gray-800">
+              <button onClick={() => setSentPage(p => Math.max(1, p - 1))} disabled={sentPage === 1} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+              <span className="text-xs text-gray-400">Page {sentPage} of {sent.data.totalPages}</span>
+              <button onClick={() => setSentPage(p => Math.min(sent.data!.totalPages, p + 1))} disabled={sentPage === sent.data.totalPages} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
             </div>
-            <h3 className="text-gray-400 text-lg font-semibold mb-2">{item.label}</h3>
-            <p className="text-gray-600 text-sm mb-4 max-w-md">
-              {item.id === "bookings" && "Event calendar — manage investor event bookings, schedule earnings calls and presentations"}
-              {item.id === "registrations" && "Mailing lists — import contacts, send registration emails, CRM API management, zero-click registration"}
-              {item.id === "occ" && "Live call management — participants, transcript, AI insights, Q&A triage"}
-              {item.id === "webcasts" && "Audio & video webcast management — schedule, configure, and launch webcasts"}
-              {item.id === "shadow" && "Shadow mode — silently connect to external conference calls for AI intelligence capture"}
-              {item.id === "ai" && "Agentic brain — AI intelligence dashboard, sentiment analysis, compliance, insights"}
-              {item.id === "metrics" && "Tagged metrics — real-time metric tagging, audience engagement tracking"}
-              {item.id === "terminal" && "Intelligence terminal — deep search across event transcripts and AI-generated insights"}
-              {item.id === "guardian" && "Health guardian — infrastructure monitoring, real-time health checks, incident tracking"}
-              {item.id === "reports" && "AI reports — access post-event transcripts, sentiment summaries, compliance reports, and AI-generated insights"}
-              {item.id === "operator" && "Operator console — manage operator links, event controls, and quick access tools"}
-              {item.id === "training" && "Training hub — operator onboarding, certifications, and documentation"}
-              {item.id === "shop" && "AI shop — browse and activate AI modules for enhanced event intelligence"}
-              {item.id === "integrations" && "Integrations — connect CRM, calendar, and third-party services"}
-              {item.id === "billing" && "Client billing — invoices, usage tracking, payment management"}
-              {item.id === "admin" && "Admin panel — user management, roles, permissions, and system settings"}
-            </p>
-            <div className="text-xs text-gray-700 flex items-center justify-center gap-1">
-              <span>In the live app, this loads the full</span>
-              <span className="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">{item.route}</span>
-              <span>page inside this frame</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BillingPanel() {
+  const billing = trpc.operatorDashboard.getBillingSummary.useQuery();
+  const b = billing.data;
+
+  const subscriptionOrgs = b?.organisations.filter((o: any) => o.billingType === "subscription") ?? [];
+  const otherOrgs = b?.organisations.filter((o: any) => o.billingType !== "subscription") ?? [];
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Billing</h2>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard label="Revenue this month" value={b ? formatCurrency(b.revenueThisMonth) : "—"} icon={TrendingUp} />
+        <KpiCard label="Last month" value={b ? formatCurrency(b.revenueLastMonth) : "—"} icon={CreditCard} />
+        <KpiCard label="Invoices pending" value={b?.invoicesPending ?? 0} icon={Clock} />
+        <KpiCard label="Events billed" value={b?.eventsBilled ?? 0} icon={FileText} />
+      </div>
+
+      {subscriptionOrgs.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Subscription</h3>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {subscriptionOrgs.map((o: any) => (
+                <div key={o.id} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{o.name}</p>
+                    <StatusBadge status="subscription" />
+                  </div>
+                  <div className="flex items-center gap-4 text-sm">
+                    {o.subscriptionAmount ? (
+                      <span className="text-gray-600 dark:text-gray-300">R{o.subscriptionAmount.toLocaleString()}/mo</span>
+                    ) : (
+                      <DataIncomplete field="subscription amount" />
+                    )}
+                    {!o.billingContactEmail && <DataIncomplete field="billing contact email" />}
+                    {o.latestInvoiceStatus && <StatusBadge status={o.latestInvoiceStatus} />}
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      <div>
+        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Ad-hoc, Pilot & Demo</h3>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            {otherOrgs.map((o: any) => (
+              <div key={o.id} className="flex items-center justify-between px-5 py-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{o.name}</p>
+                  <StatusBadge status={o.billingType} />
+                </div>
+                <div className="flex items-center gap-4 text-sm">
+                  {o.billingType === "adhoc" ? (
+                    <>
+                      {o.perEventPrice ? (
+                        <span className="text-gray-600 dark:text-gray-300">R{o.perEventPrice.toLocaleString()}/event</span>
+                      ) : (
+                        <DataIncomplete field="per-event price" />
+                      )}
+                      {o.latestInvoiceStatus && <StatusBadge status={o.latestInvoiceStatus} />}
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-gray-400">R0</span>
+                      <StatusBadge status={o.billingType} />
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+            {otherOrgs.length === 0 && (
+              <div className="px-5 py-6 text-center text-gray-400 text-sm">No organisations.</div>
+            )}
           </div>
         </div>
       </div>
@@ -479,123 +645,100 @@ function PlatformEmbed({ item }: { item: NavItem }) {
 }
 
 export default function OperatorDashboard() {
-  return <SidebarLayout />;
-}
+  const [panel, setPanel] = useState<Panel>("command");
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [, navigate] = useLocation();
 
-export function SidebarLayout() {
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [collapsed, setCollapsed] = useState(false);
+  const toggleDark = useCallback(() => {
+    setDark(d => {
+      const next = !d;
+      document.documentElement.classList.toggle("dark", next);
+      return next;
+    });
+  }, []);
 
-  const activeItem = ALL_NAV_ITEMS.find((n) => n.id === activeTab)!;
-
-  const handleNavigate = (tabId: string) => {
-    setActiveTab(tabId);
-  };
+  useEffect(() => {
+    document.title = `CuraLive — ${PANELS.find(p => p.id === panel)?.label ?? "Command"}`;
+  }, [panel]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex">
-      <aside className={`${collapsed ? "w-[72px]" : "w-[220px]"} bg-[#141824] border-r border-white/[0.06] flex flex-col transition-all duration-300`}>
-        <div className="p-4 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
-              <Monitor className="w-4 h-4 text-white" />
-            </div>
-            {!collapsed && (
-              <div>
-                <span className="text-white font-bold text-sm block leading-tight">CuraLive</span>
-                <span className="text-gray-600 text-[10px]">Operator Console</span>
-              </div>
-            )}
-          </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
+      <header className="h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 flex items-center justify-between sticky top-0 z-30">
+        <div className="flex items-center gap-4">
+          <span className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">CuraLive</span>
         </div>
 
-        <nav className="flex-1 p-2 space-y-3 overflow-y-auto">
-          {NAV_SECTIONS.map((section) => (
-            <div key={section.label}>
-              {!collapsed && (
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-                  {section.label}
-                </div>
-              )}
-              <div className="space-y-0.5">
-                {section.items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                      activeTab === item.id
-                        ? "bg-white/10 text-white"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    <item.icon className={`w-[18px] h-[18px] flex-shrink-0 ${activeTab === item.id ? "text-white" : ""}`} />
-                    {!collapsed && (
-                      <>
-                        <span className="flex-1 text-left text-[13px]">{item.label}</span>
-                        {item.badge && (
-                          <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-bold">
-                            {item.badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+        <nav className="hidden md:flex items-center gap-1">
+          {PANELS.map(p => {
+            const Icon = p.icon;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setPanel(p.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  panel === p.id
+                    ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                }`}
+              >
+                <Icon className="w-4 h-4" /> {p.label}
+              </button>
+            );
+          })}
         </nav>
 
-        <div className="p-2 border-t border-white/[0.06] space-y-0.5">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 hover:text-gray-300 text-sm transition-colors"
+            onClick={() => navigate("/shadow-mode")}
+            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            <ChevronRight className={`w-4 h-4 transition-transform ${collapsed ? "" : "rotate-180"}`} />
-            {!collapsed && <span className="text-[13px]">Collapse</span>}
+            <Plus className="w-3.5 h-3.5" /> New session
           </button>
-          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 hover:text-gray-300 text-sm transition-colors">
-            <Settings className="w-4 h-4" />
-            {!collapsed && <span className="text-[13px]">Settings</span>}
+          <button
+            onClick={() => navigate("/?tab=shadow-mode")}
+            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <Radio className="w-3.5 h-3.5" /> Open OCC
           </button>
+          <button
+            onClick={toggleDark}
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400"
+            title="Toggle dark mode"
+          >
+            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+            D
+          </div>
         </div>
-      </aside>
+      </header>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 bg-[#141824] border-b border-white/[0.06] flex items-center justify-between px-6 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <h1 className="text-white font-semibold text-[15px]">{activeItem.label}</h1>
-            {activeItem.route && (
-              <span className="text-xs text-gray-600 font-mono bg-white/[0.03] px-2 py-0.5 rounded">{activeItem.route}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-gray-600 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search events, participants..."
-                className="bg-white/[0.04] border border-white/[0.06] rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-300 placeholder:text-gray-600 w-56 focus:outline-none focus:border-blue-500/30"
-              />
-            </div>
-            <button className="relative p-1.5 text-gray-500 hover:text-white transition-colors">
-              <Bell className="w-4 h-4" />
-              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center font-bold">3</span>
+      <div className="md:hidden flex items-center gap-1 p-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 overflow-x-auto">
+        {PANELS.map(p => {
+          const Icon = p.icon;
+          return (
+            <button
+              key={p.id}
+              onClick={() => setPanel(p.id)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                panel === p.id
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                  : "text-gray-500"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" /> {p.label}
             </button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-[10px] font-bold">
-              DC
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 p-5 overflow-auto">
-          {activeTab === "dashboard" ? (
-            <DashboardView onNavigate={handleNavigate} />
-          ) : (
-            <PlatformEmbed item={activeItem} />
-          )}
-        </main>
+          );
+        })}
       </div>
+
+      <main className="max-w-6xl mx-auto px-4 py-6">
+        {panel === "command" && <CommandPanel />}
+        {panel === "sessions" && <SessionsPanel />}
+        {panel === "customers" && <CustomersPanel />}
+        {panel === "reports" && <ReportsPanel />}
+        {panel === "billing" && <BillingPanel />}
+      </main>
     </div>
   );
 }
