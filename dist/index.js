@@ -46918,7 +46918,7 @@ var init_vite_config = __esm({
       root: path3.resolve(import.meta.dirname, "client"),
       publicDir: path3.resolve(import.meta.dirname, "client", "public"),
       build: {
-        outDir: path3.resolve(import.meta.dirname, "dist/_app"),
+        outDir: path3.resolve(import.meta.dirname, "_build/_app"),
         emptyOutDir: true,
         rollupOptions: {
           output: {
@@ -46983,7 +46983,7 @@ async function setupVite(app, server) {
   });
 }
 function serveStatic(app) {
-  const distPath = process.env.NODE_ENV === "development" ? path4.resolve(import.meta.dirname, "../..", "dist", "_app") : path4.resolve(import.meta.dirname, "_app");
+  const distPath = process.env.NODE_ENV === "development" ? path4.resolve(import.meta.dirname, "../..", "_build", "_app") : path4.resolve(import.meta.dirname, "_app");
   if (!fs3.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
