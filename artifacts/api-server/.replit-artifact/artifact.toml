@@ -3,6 +3,7 @@ previewPath = "/"
 title = "CuraLive Platform"
 version = "1.0.0"
 id = "artifacts/api-server"
+router = "path"
 
 [[services]]
 localPort = 3000
@@ -13,7 +14,7 @@ paths = ["/"]
 run = "pnpm --filter @workspace/api-server run dev"
 
 [services.production]
-build = "cd /home/runner/workspace && rm -rf dist node_modules/.vite && NODE_OPTIONS='--max-old-space-size=4096' vite build --logLevel warn && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && cp -r _build/_app dist/_app"
+build = "cd /home/runner/workspace && rm -rf dist node_modules/.vite && NODE_OPTIONS='--max-old-space-size=4096' vite build --logLevel warn && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist"
 run = "cd /home/runner/workspace && NODE_ENV=production node dist/index.js"
 
 [services.env]
