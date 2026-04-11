@@ -1,0 +1,140 @@
+CuraLive Render Migration — Fresh Technical Audit Request
+
+Please produce a current, accurate technical deployment brief for the CuraLive platform as it exists right now.
+
+Goal
+
+We need one clean, up-to-date deployment brief for migrating CuraLive from Replit to Render.
+
+The previous migration process became confused because code paths, environment variables, credentials, service settings, and deployment assumptions drifted over time. This audit must reflect the actual current codebase, not old assumptions.
+
+Scope
+
+Please inspect the current project and produce a brief covering the following.
+
+1) Repository truth
+
+Identify:
+
+the canonical branch currently intended for Render deployment
+the correct root directory for the Node app
+the correct root directory for the Python AI Core
+whether main or RenderMigration is the real current deployment branch
+whether there are any stale/deprecated deployment files or configs that should be ignored
+2) Node service
+
+Confirm the exact current:
+
+build command
+start command
+output directory (dist, _build, or other)
+health endpoint
+environment variables required for first successful boot
+environment variable used for Node → Python communication
+whether any in-process schedulers start automatically with the Node server
+whether any external cron jobs are actually needed on Render
+3) Python AI Core service
+
+Confirm the exact current:
+
+root directory
+build command
+start command
+health endpoint
+Python version required
+requirements/dependency file path
+environment variables required for first successful boot
+database connection model:
+does it use DATABASE_URL
+or explicit PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
+whether it requires OPENAI_API_KEY, LLM_API_KEY, or both
+whether startup touches the database immediately
+4) Database
+
+Confirm:
+
+database type
+whether both Node and Python share the same PostgreSQL database
+expected schema/tables
+whether startup requires pre-existing tables/data
+whether the repo contains a database backup file
+the exact recommended import method for Render Postgres
+key validation queries after import
+5) Render deployment truth
+
+Based on the current codebase, provide the exact recommended Render setup:
+
+web services to create
+database to create
+service names
+branch
+root directories
+build commands
+start commands
+health check paths
+minimum required environment variables for Python
+minimum required environment variables for Node
+which env vars are Replit-only and must NOT be used on Render
+6) External integrations
+
+List all integrations that will need env vars and/or webhook URL updates:
+
+OpenAI
+Recall.ai
+Mux
+Twilio
+Telnyx
+Resend
+Stripe
+any others actually used in code
+7) Known conflicts or stale assumptions
+
+Please explicitly call out any outdated assumptions, including:
+
+old Replit-only variables
+stale Blueprint/render.yaml configs
+old DB connection methods
+old branch assumptions
+old cron/scheduler assumptions
+any deployment notes that are no longer valid
+Output format
+
+Please return the answer in this exact structure:
+
+A. Current architecture
+B. Canonical deployment branch
+C. Node service deployment settings
+D. Python service deployment settings
+E. Database deployment/import settings
+F. Minimum required environment variables
+G. Replit-only variables to ignore
+H. External webhook/services to update
+I. Known outdated assumptions to discard
+J. Recommended deployment order on Render
+Important instructions
+Base this only on the current actual codebase
+Do not rely on old notes unless verified in code
+Be explicit when something is confirmed vs assumed
+If there is ambiguity, state it clearly
+Do not simplify away technical details
+What to do after Replit gives the brief
+
+Paste the full brief here and I’ll turn it into:
+
+a clean deployment plan
+the exact Render setup
+the minimum env var checklist
+the safest next steps without the noise
+About starting fresh on GitHub
+
+You do not need a new GitHub account.
+
+You might eventually want a clean repo branch or even a clean repo copy if the current repo has too much clutter, but that is very different from creating a new GitHub account.
+
+The right reset is:
+
+fresh technical brief
+maybe a clean deployment branch
+maybe a clean service recreation on Render
+
+Not a new GitHub identity.

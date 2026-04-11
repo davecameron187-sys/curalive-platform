@@ -46949,7 +46949,7 @@ var init_vite_config = __esm({
       root: path3.resolve(import.meta.dirname, "client"),
       publicDir: path3.resolve(import.meta.dirname, "client", "public"),
       build: {
-        outDir: path3.resolve(import.meta.dirname, "dist/public"),
+        outDir: path3.resolve(import.meta.dirname, "_build/public"),
         emptyOutDir: true,
         rollupOptions: {
           output: {
