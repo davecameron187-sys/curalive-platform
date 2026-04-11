@@ -85,4 +85,5 @@ services:
 
 databases:
   - name: curalive-postgres
-    plan: starter
+    plan: basic-256mb
+    diskSizeGB: 15
