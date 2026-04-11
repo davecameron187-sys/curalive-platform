@@ -810,3 +810,9 @@ id = "k0R5rg3rrUPGoI_xvXqgb"
 uri = "file://exports/CuraLive_Replit_Update_Phase8A_2026_04_09.md"
 type = "text"
 title = "CuraLive Phase 8A Update Brief — Internal Benchmarking Foundation / Sector Context Enrichment"
+
+[[outputs]]
+id = "aFCMv0N-0COIRKIGDHNrS"
+uri = "file://RENDER_MIGRATION_REPORT.md"
+type = "text"
+title = "CuraLive Render Migration Report"
