@@ -27,6 +27,9 @@ function getPool(): pg.Pool | null {
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000,
       });
+      _pool.on("error", (err) => {
+        console.error("[Database] Pool error (non-fatal):", err.message);
+      });
     }
   }
   return _pool;

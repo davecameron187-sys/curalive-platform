@@ -3813,6 +3813,9 @@ function getPool() {
         idleTimeoutMillis: 3e4,
         connectionTimeoutMillis: 1e4
       });
+      _pool.on("error", (err) => {
+        console.error("[Database] Pool error (non-fatal):", err.message);
+      });
     }
   }
   return _pool;
@@ -50142,6 +50145,12 @@ var init_index = __esm({
     init_telnyx();
     init_env2();
     init_systemStatus();
+    process.on("unhandledRejection", (reason) => {
+      console.error("[Process] Unhandled rejection (non-fatal):", reason);
+    });
+    process.on("uncaughtException", (err) => {
+      console.error("[Process] Uncaught exception (non-fatal):", err.message);
+    });
     enforceEnvOrExit();
     startServer().catch(console.error);
   }

@@ -1,4 +1,12 @@
 import "dotenv/config";
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[Process] Unhandled rejection (non-fatal):", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[Process] Uncaught exception (non-fatal):", err.message);
+});
+
 import express from "express";
 import http from "http";
 import net from "net";
