@@ -135,7 +135,36 @@ async function createAblyTokenRequest(clientId: string) {
   return { keyName, ttl, nonce, clientId, timestamp, capability, mac };
 }
 
+const deployDiag = publicProcedure.query(async () => {
+  const fs = await import("fs");
+  const p = await import("path");
+  const dirname = import.meta.dirname;
+  const distPath = p.resolve(dirname, "_app");
+  const indexPath = p.resolve(distPath, "index.html");
+  const indexExists = fs.existsSync(indexPath);
+  const indexSize = indexExists ? fs.statSync(indexPath).size : -1;
+  const indexMtime = indexExists ? fs.statSync(indexPath).mtime.toISOString() : "n/a";
+  const indexHead = indexExists ? fs.readFileSync(indexPath, "utf-8").substring(0, 300) : "n/a";
+  const distFiles = fs.existsSync(distPath) ? fs.readdirSync(distPath) : [];
+  const assetsPath = p.resolve(distPath, "assets");
+  const assetFiles = fs.existsSync(assetsPath) ? fs.readdirSync(assetsPath).filter((f: string) => f.startsWith("index")) : [];
+  return {
+    buildId: "20260411-A",
+    dirname,
+    distPath,
+    indexExists,
+    indexSize,
+    indexMtime,
+    indexHead,
+    distFiles,
+    assetFiles,
+    cwd: process.cwd(),
+    nodeEnv: process.env.NODE_ENV,
+  };
+});
+
 export const appRouter = router({
+  deployDiag,
   system: systemRouter,
   occ: occRouter,
   liveVideo: liveVideoRouter,

@@ -85,5 +85,3 @@ export function LoginDialog({
     </Dialog>
   );
 }
-
-export { LoginDialog as ManusDialog };
