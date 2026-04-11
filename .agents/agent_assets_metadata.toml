@@ -816,3 +816,9 @@ id = "aFCMv0N-0COIRKIGDHNrS"
 uri = "file://RENDER_MIGRATION_REPORT.md"
 type = "text"
 title = "CuraLive Render Migration Report"
+
+[[outputs]]
+id = "tW7_f2EXniCHiTXVBSWQg"
+uri = "file://CURALIVE_RENDER_DEPLOYMENT_BRIEF.md"
+type = "text"
+title = "CuraLive Render Deployment Technical Brief"
