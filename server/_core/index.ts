@@ -150,6 +150,16 @@ async function startServer() {
     });
   });
 
+  app.get("/download/curalive_db_backup.sql", async (_req, res) => {
+    const fsM = await import("fs");
+    const pathM = await import("path");
+    const filePath = pathM.resolve(process.cwd(), "curalive_db_backup.sql");
+    if (!fsM.existsSync(filePath)) return res.status(404).send("Backup file not found");
+    res.setHeader("Content-Disposition", "attachment; filename=curalive_db_backup.sql");
+    res.setHeader("Content-Type", "application/sql");
+    fsM.createReadStream(filePath).pipe(res);
+  });
+
   app.get("/health", async (_req, res) => {
     const { validateEnv } = await import("./config/env");
     const { getServiceStatus } = await import("./config/serviceStatus");
