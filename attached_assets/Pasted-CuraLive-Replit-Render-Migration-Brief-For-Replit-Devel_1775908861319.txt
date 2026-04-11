@@ -1,0 +1,649 @@
+CuraLive Replit → Render Migration Brief
+
+For Replit Development Team
+
+April 2026 — Confidential
+
+
+
+
+Mission
+
+Fix critical deployment blockers in the CuraLive codebase to enable successful migration from Replit to Render. This is a hosting migration only — no architecture changes, no refactoring, no scope expansion. Keep the app behavior intact unless a minimal deployment fix is required.
+
+Critical rule: Stick to this brief. Do not deviate. Do not add features. Do not refactor. Fix only what is specified.
+
+
+
+
+Current Status
+
+What's Working ✅
+
+•
+Node.js application architecture (Express + tRPC + React 19 + Vite)
+
+•
+Node service start/build configuration
+
+•
+Frontend build pipeline
+
+•
+Database schema (Drizzle ORM)
+
+•
+All 110 tRPC routers
+
+•
+All 208 database tables
+
+•
+All client-facing pages (/live/:token, /report/:token, /presenter/:token)
+
+•
+White-label partner configuration (Lumi Global, Bastion Group)
+
+•
+Session close pipeline code
+
+•
+AI report generation pipeline
+
+What's Broken ❌
+
+1.
+Python AI Core deployment — Missing dependencies in requirements.txt
+
+2.
+Node → Python service communication — Configuration method unclear
+
+3.
+Environment variable mapping — Replit-specific vars need Render equivalents
+
+4.
+Database migration path — Not yet defined
+
+
+
+
+Phase 1: Fix Python AI Core Deployment
+
+The Problem
+
+The Python AI Core service (curalive_ai_core/app/main.py) failed to deploy on Render with:
+
+Plain Text
+
+
+ModuleNotFoundError: No module named 'sqlalchemy'
+
+
+
+This indicates that curalive_ai_core/requirements.txt is incomplete and missing production dependencies.
+
+What You Must Do
+
+Task 1.1: Audit All Python Imports
+
+Scan every Python file under curalive_ai_core/ and identify all imported modules. Document each one.
+
+Bash
+
+
+# Run this in Replit to find all imports
+find curalive_ai_core -name "*.py" -type f -exec grep -h "^import\|^from" {} \; | sort | uniq
+
+
+
+Expected output format:
+
+Plain Text
+
+
+import fastapi
+import uvicorn
+import pydantic
+import sqlalchemy
+import psycopg2
+# ... etc
+
+
+
+Task 1.2: Complete requirements.txt
+
+Update curalive_ai_core/requirements.txt with ALL production dependencies. Do not guess. Do not assume. Audit the code.
+
+Minimum known dependencies (already in requirements.txt):
+
+Plain Text
+
+
+fastapi==0.115.0
+uvicorn==0.30.6
+pydantic==2.9.2
+
+
+
+Likely missing dependencies (based on the error and common patterns):
+
+•
+sqlalchemy — Database ORM (CRITICAL — this is what failed)
+
+•
+psycopg2-binary or psycopg2 — PostgreSQL driver
+
+•
+alembic — Database migrations (if used)
+
+•
+Any HTTP client library (requests, httpx, etc. )
+
+•
+Any AI/LLM SDK imports
+
+•
+Any validation or serialization libs
+
+Exact instructions:
+
+1.
+Open curalive_ai_core/requirements.txt
+
+2.
+Add every dependency you find in the audit above
+
+3.
+Pin versions to match what's currently working in Replit
+
+4.
+Test locally: pip install -r curalive_ai_core/requirements.txt should complete without errors
+
+5.
+Commit and push to RenderMigration branch
+
+Task 1.3: Verify Python Start Command
+
+Confirm that this command works in Replit:
+
+Bash
+
+
+cd curalive_ai_core
+uvicorn app.main:app --host 0.0.0.0 --port 10000
+
+
+
+The app should start and respond to:
+
+Plain Text
+
+
+GET http://localhost:10000/health
+
+
+
+Expected response:
+
+JSON
+
+
+{"status": "ok"}
+
+
+
+If the health endpoint does not exist, create it:
+
+Python
+
+
+# In curalive_ai_core/app/main.py
+@app.get("/health" )
+async def health():
+    return {"status": "ok"}
+
+
+
+
+
+
+Phase 2: Identify Node → Python Service Communication
+
+The Problem
+
+On Replit, Node and Python run in the same process/environment. On Render, they are separate services with different URLs. The Node app must know how to reach the Python service.
+
+What You Must Do
+
+Task 2.1: Find Where Node Calls Python
+
+Search the Node codebase for any HTTP calls to the Python service:
+
+Bash
+
+
+# Search for Python service calls
+grep -r "localhost:8000\|localhost:5000\|python\|ai_core\|AI_CORE" server/ --include="*.ts" | head -50
+
+
+
+Also search for environment variables that might configure this:
+
+Bash
+
+
+grep -r "PYTHON\|AI_CORE\|AI_SERVICE" server/ --include="*.ts" | head -50
+
+
+
+Task 2.2: Document the Configuration
+
+Find the exact code that calls the Python service and answer these questions:
+
+1.
+What is the current Python service URL? (e.g., http://localhost:8000 )
+
+2.
+Is it hardcoded or configurable via environment variable?
+
+3.
+What environment variable name is used? (e.g., PYTHON_AI_CORE_URL, AI_SERVICE_URL, etc.)
+
+4.
+What endpoints does Node call on the Python service? (e.g., /analyze, /report, etc.)
+
+Example output format:
+
+Plain Text
+
+
+File: server/services/AIReportPipeline.ts
+Line 45: const pythonUrl = process.env.PYTHON_AI_CORE_URL || "http://localhost:8000"
+Endpoint called: POST /api/generate-report
+
+
+
+Task 2.3: Confirm or Create Environment Variable
+
+If Node calls the Python service, ensure there is an environment variable to configure it:
+
+TypeScript
+
+
+// Example pattern (find the actual code )
+const PYTHON_AI_CORE_URL = process.env.PYTHON_AI_CORE_URL || "http://localhost:8000";
+
+
+
+For Render, this will be set to the internal Python service URL (e.g., http://curalive-ai-core:10000 ).
+
+
+
+
+Phase 3: Environment Variable Audit
+
+What You Must Do
+
+Task 3.1: Verify All Environment Variables Are Documented
+
+The following environment variables are known to be used. Verify each one is set correctly in Replit:
+
+Critical for Render migration:
+
+•
+DATABASE_URL — PostgreSQL connection string
+
+•
+NODE_ENV — Set to production for Render
+
+•
+PORT — Node service port (will be 10000 on Render)
+
+•
+OPENAI_API_KEY — LLM API key (use this, not Replit proxy vars)
+
+•
+ABLY_API_KEY — Real-time messaging
+
+•
+RECALL_AI_API_KEY — Transcript bot
+
+•
+RECALL_AI_WEBHOOK_SECRET — Webhook security
+
+•
+RESEND_API_KEY — Email delivery
+
+•
+JWT_SECRET — Session signing
+
+•
+TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN — Voice calls
+
+•
+TELNYX_API_KEY — Voice failover
+
+•
+MUX_TOKEN_ID, MUX_TOKEN_SECRET — Video platform
+
+•
+STRIPE_SECRET_KEY — Billing (if enabled)
+
+Replit-specific (replace on Render):
+
+•
+REPLIT_DEPLOYMENT_URL → Replace with APP_ORIGIN (e.g., https://curalive.render.com )
+
+•
+REPLIT_DEV_DOMAIN → Replace with APP_ORIGIN
+
+Task 3.2: Add Python Service URL Variable
+
+Add this new environment variable to support Render deployment:
+
+Plain Text
+
+
+PYTHON_AI_CORE_URL=http://localhost:8000  # For Replit
+# On Render, this will be: http://curalive-ai-core:10000
+
+
+
+Update the Node code to use this variable:
+
+TypeScript
+
+
+// In server/_core/index.ts or wherever Python is called
+const PYTHON_AI_CORE_URL = process.env.PYTHON_AI_CORE_URL || "http://localhost:8000";
+
+
+
+
+
+
+Phase 4: Database Schema Verification
+
+What You Must Do
+
+Task 4.1: Confirm Key Tables Exist
+
+Run these queries in Replit's database to confirm all key tables exist and have correct columns:
+
+SQL
+
+
+-- Verify shadow_sessions table
+SELECT column_name, data_type FROM information_schema.columns 
+WHERE table_name = 'shadow_sessions' 
+ORDER BY ordinal_position;
+
+-- Verify occ_transcription_segments table
+SELECT column_name, data_type FROM information_schema.columns 
+WHERE table_name = 'occ_transcription_segments' 
+ORDER BY ordinal_position;
+
+-- Verify regulatory_flags table
+SELECT column_name, data_type FROM information_schema.columns 
+WHERE table_name = 'regulatory_flags' 
+ORDER BY ordinal_position;
+
+-- Verify approved_questions_queue table
+SELECT column_name, data_type FROM information_schema.columns 
+WHERE table_name = 'approved_questions_queue' 
+ORDER BY ordinal_position;
+
+-- Verify historical_commitments table
+SELECT column_name, data_type FROM information_schema.columns 
+WHERE table_name = 'historical_commitments' 
+ORDER BY ordinal_position;
+
+-- Verify board_members table
+SELECT column_name, data_type FROM information_schema.columns 
+WHERE table_name = 'board_members' 
+ORDER BY ordinal_position;
+
+-- Verify client_tokens table
+SELECT column_name, data_type FROM information_schema.columns 
+WHERE table_name = 'client_tokens' 
+ORDER BY ordinal_position;
+
+-- Verify scheduled_sessions table
+SELECT column_name, data_type FROM information_schema.columns 
+WHERE table_name = 'scheduled_sessions' 
+ORDER BY ordinal_position;
+
+
+
+Task 4.2: Document Row Counts
+
+For each key table, run:
+
+SQL
+
+
+SELECT table_name, row_count 
+FROM (
+  SELECT 'shadow_sessions' as table_name, COUNT(* ) as row_count FROM shadow_sessions
+  UNION ALL
+  SELECT 'occ_transcription_segments', COUNT(*) FROM occ_transcription_segments
+  UNION ALL
+  SELECT 'regulatory_flags', COUNT(*) FROM regulatory_flags
+  UNION ALL
+  SELECT 'approved_questions_queue', COUNT(*) FROM approved_questions_queue
+  UNION ALL
+  SELECT 'historical_commitments', COUNT(*) FROM historical_commitments
+  UNION ALL
+  SELECT 'board_members', COUNT(*) FROM board_members
+  UNION ALL
+  SELECT 'client_tokens', COUNT(*) FROM client_tokens
+  UNION ALL
+  SELECT 'scheduled_sessions', COUNT(*) FROM scheduled_sessions
+  UNION ALL
+  SELECT 'partners', COUNT(*) FROM partners
+) counts;
+
+
+
+Document these counts. They will be used to verify the database migration to Render.
+
+
+
+
+Phase 5: Build Verification
+
+What You Must Do
+
+Task 5.1: Verify Node Build
+
+Run the build command in Replit:
+
+Bash
+
+
+npm run build
+
+
+
+This should:
+
+1.
+Run Vite to build the React frontend
+
+2.
+Run esbuild to bundle the Node server
+
+3.
+Output to _build/ and dist/
+
+4.
+Complete without errors
+
+If it fails, fix the errors. Do not proceed until npm run build succeeds.
+
+Task 5.2: Verify Node Start
+
+After a successful build, test the start command:
+
+Bash
+
+
+npm run start
+
+
+
+The server should:
+
+1.
+Start on port 3000 (or the PORT environment variable)
+
+2.
+Bind to 0.0.0.0
+
+3.
+Connect to the database
+
+4.
+Log no errors
+
+5.
+Respond to health checks
+
+If it fails, fix the errors. Do not proceed until npm run start succeeds.
+
+Task 5.3: Verify Python Build and Start
+
+Test the Python service independently:
+
+Bash
+
+
+cd curalive_ai_core
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+
+
+The service should:
+
+1.
+Start without ModuleNotFoundError
+
+2.
+Respond to GET /health with {"status": "ok"}
+
+3.
+Log no errors
+
+If it fails, return to Phase 1 and fix requirements.txt.
+
+
+
+
+Phase 6: Commit and Push
+
+What You Must Do
+
+Task 6.1: Commit All Changes
+
+Bash
+
+
+git add -A
+git commit -m "Render migration: Complete requirements.txt, add Python service URL config, verify builds"
+
+
+
+Task 6.2: Push to RenderMigration Branch
+
+Bash
+
+
+git push origin RenderMigration
+
+
+
+
+
+
+Deliverables for Manus
+
+When you complete this brief, provide Manus with:
+
+1.
+Updated requirements.txt — Complete with all Python dependencies
+
+2.
+Python service URL configuration — Environment variable name and usage location
+
+3.
+Environment variable mapping — All Replit vars mapped to Render equivalents
+
+4.
+Database row counts — From Phase 4, Task 4.2
+
+5.
+Build verification report — Confirmation that npm run build and npm run start both succeed
+
+6.
+Python service verification report — Confirmation that Python service starts and /health responds
+
+7.
+Git commit hash — The commit that contains all fixes
+
+
+
+
+Critical Rules (No Exceptions)
+
+✅ DO:
+
+•
+Fix only what is specified in this brief
+
+•
+Test every change locally in Replit
+
+•
+Document everything
+
+•
+Commit to RenderMigration branch
+
+•
+Use exact environment variable names specified
+
+❌ DO NOT:
+
+•
+Refactor code
+
+•
+Add new features
+
+•
+Change the architecture
+
+•
+Modify the database schema
+
+•
+Use different dependency versions without testing
+
+•
+Commit to main or any other branch
+
+•
+Skip any verification step
+
+
+
+
+Questions?
+
+If you encounter issues not covered in this brief, document them and report to Manus. Do not make assumptions or workarounds.
+
+Expected completion time: 2-4 hours
+
+Success criteria: All phases complete, all deliverables provided, no errors in build or start commands.
+
