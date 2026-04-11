@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     app_name: str = "CuraLive AI Core"
     environment: str = "development"
     api_v1_prefix: str = "/api/v1"
-    database_url: str = "postgresql://postgres:postgres@localhost:5432/curalive"
+    database_url: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/curalive")
     log_level: str = "INFO"
     llm_provider: str = "openai"
     llm_model: str = "gpt-4-turbo"
