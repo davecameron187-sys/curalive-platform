@@ -1,5 +1,6 @@
 import os
-from pydantic import BaseSettings, root_validator
+from pydantic import model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "CuraLive AI Core"
@@ -8,19 +9,17 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/curalive"
     log_level: str = "INFO"
     llm_provider: str = "openai"
-    llm_model: str = "gpt-4.1-mini"
-    llm_api_key: str = None
+    llm_model: str = "gpt-4-turbo"
+    llm_api_key: str | None = None
     embedding_model: str = "text-embedding-3-small"
+    
+    model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
-    class Config:
-        env_file = '.env'
-        extra = 'ignore'
-
-    @root_validator(pre=False)
-    def fix_database_url(cls, values):
-        url = values.get('database_url', '')
+    @model_validator(mode="after")
+    def fix_database_url(self) -> "Settings":
+        url = self.database_url
         if url.startswith("postgresql://"):
-            values['database_url'] = url.replace("postgresql://", "postgresql+psycopg://", 1)
-        return values
+            self.database_url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return self
 
 settings = Settings()
