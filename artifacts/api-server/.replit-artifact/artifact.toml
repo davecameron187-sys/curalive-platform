@@ -3,7 +3,6 @@ previewPath = "/"
 title = "CuraLive Platform"
 version = "1.0.0"
 id = "artifacts/api-server"
-router = "path"
 
 [[services]]
 localPort = 3000
