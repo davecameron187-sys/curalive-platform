@@ -1,0 +1,66 @@
+CuraLive Render Readiness — Final Replit Extraction Pack
+
+Paste these blocks into the Replit Shell one at a time and send me the output.
+
+IMPORTANT:
+- Do NOT paste secret values.
+- If a command prints an API key, password, token, or full DATABASE_URL, replace the value with [REDACTED].
+- Keep the rest exactly as-is.
+
+==================================================
+BLOCK 1 — Confirm the actual LLM endpoint
+==================================================
+
+sed -n '260,351p' server/_core/llm.ts
+
+What I need to see:
+- the literal URL or SDK call
+- the Authorization header format
+- whether it calls OpenAI / Google / Anthropic directly
+- whether any URL contains replit or a proxy host
+
+==================================================
+BLOCK 2 — Find environment variable names only
+==================================================
+
+grep -RhoE 'process\.env\.[A-Z0-9_]+' . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=_build | sort -u
+
+echo ""
+grep -RhoE 'os\.environ\[[\"'"'"'][A-Z0-9_]+[\"'"'"']\]|os\.getenv\([\"'"'"'][A-Z0-9_]+[\"'"'"']\)|environ\.get\([\"'"'"'][A-Z0-9_]+[\"'"'"']\)' curalive_ai_core --exclude-dir=__pycache__ | sort -u
+
+This gives us the variable NAMES only, not their values.
+
+==================================================
+BLOCK 3 — Confirm Node listens on PORT
+==================================================
+
+grep -RniE 'process\.env\.PORT|listen\(|app\.listen|server\.listen' server . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=_build | head -80
+
+==================================================
+BLOCK 4 — Confirm Python start target
+==================================================
+
+sed -n '1,220p' curalive_ai_core/app/main.py
+
+==================================================
+BLOCK 5 — Search deeper for scheduler / recurring job code
+==================================================
+
+grep -RniE 'invoice|monthly|billing|cron|scheduler|schedule|setInterval|setTimeout|BackgroundScheduler|APScheduler|node-cron|agenda|bull|queue|worker|subscription' . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=_build | head -300
+
+==================================================
+BLOCK 6 — Show top-level repo layout
+==================================================
+
+find . -maxdepth 2 -type d | sort
+
+==================================================
+WHAT I WILL DO AFTER YOU SEND THE OUTPUT
+==================================================
+
+I will give you:
+1. A yes/no ruling on the invokeLLM blocker
+2. The exact Render service definitions
+3. A complete environment variable checklist
+4. A ruling on whether you truly need 7 Render Cron Jobs
+5. The first draft of render.yaml
