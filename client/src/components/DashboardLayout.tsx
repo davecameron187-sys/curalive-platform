@@ -45,6 +45,7 @@ const menuSections: MenuSection[] = [
     items: [
       { icon: LayoutDashboard, label: "Dashboard", path: "/" },
       { icon: Settings, label: "Operator Console", path: "/operator-links" },
+      { icon: LayoutDashboard, label: "Operator Dashboard", path: "/operator/dashboard" },
       { icon: Video, label: "Webcasting", path: "/live-video/webcasting" },
       { icon: Radio, label: "Video Conferences", path: "/occ" },
       { icon: Calendar, label: "Bookings", path: "/events/calendar" },
