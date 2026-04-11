@@ -1,4 +1,4 @@
-  - type: web
+  -  - type: web
     name: curalive-ai-core
     runtime: python
     plan: starter
@@ -8,7 +8,5 @@
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.3
       - key: PORT
         value: 10000
