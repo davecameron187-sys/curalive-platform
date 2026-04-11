@@ -6,7 +6,7 @@ id = "artifacts/api-server"
 router = "path"
 
 [[services]]
-localPort = 3000
+localPort = 5001
 name = "CuraLive Server"
 paths = ["/"]
 
@@ -14,7 +14,7 @@ paths = ["/"]
 run = "pnpm --filter @workspace/api-server run dev"
 
 [services.production]
-run = "cd /home/runner/workspace && NODE_ENV=production node _build/index.js"
+run = "cd /home/runner/workspace && NODE_ENV=production PORT=5001 node _build/index.js"
 
 [services.env]
-PORT = "3000"
+PORT = "5001"
