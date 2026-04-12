@@ -18,6 +18,11 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
+  // Allow public token routes to bypass login redirect
+  const publicRoutes = ["/", "/live/", "/report/", "/presenter/"];
+  const isPublicRoute = publicRoutes.some(route => window.location.pathname.startsWith(route));
+  if (isPublicRoute) return;
+
   window.location.href = getLoginUrl();
 };
 
