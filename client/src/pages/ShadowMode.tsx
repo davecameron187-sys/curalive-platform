@@ -25,6 +25,12 @@ import AIDashboard from "@/components/AIDashboard";
 import SystemDiagnostics from "@/components/SystemDiagnostics";
 import LiveQaDashboard from "@/components/LiveQaDashboard";
 import BroadcastControl from "@/components/BroadcastControl";
+// WP1: Import the ShadowModeShell structural components
+import {
+  ShadowModeWorkstreamNav,
+  ShadowModePageHeader,
+} from "@/components/operator-shell/ShadowModeShell";
+import type { ShadowModeWorkstream } from "@/components/operator-shell/ShadowModeShell";
 
 const PLATFORM_LABELS: Record<string, string> = {
   zoom: "Zoom", teams: "Microsoft Teams", meet: "Google Meet", webex: "Cisco Webex", choruscall: "Chorus Call", other: "Other",
@@ -127,9 +133,10 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
     return () => window.removeEventListener("popstate", handlePopState, true);
   }, [embedded]);
 
-  // Tab state
+  // WP1: Workstream navigation state (Prepare | Capture | Understand | Deliver)
+  const [activeWorkstream, setActiveWorkstream] = useState<ShadowModeWorkstream>("capture");
+  // Tab state (internal — preserved, not removed)
   const [activeTab, setActiveTab] = useState<"live" | "archive" | "reports" | "ailearning" | "aidashboard" | "advisory" | "diagnostics" | "liveqa" | "broadcast">("live");
-
 
   // ── Live Intelligence state ────────────────────────────────────────────────
   const [showForm, setShowForm] = useState(false);
@@ -546,8 +553,20 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
   }
 
   return (
-    <div className={embedded ? "bg-[#0a0a0f] text-white" : "min-h-screen bg-[#0a0a0f] text-white"}>
-
+    <div className={embedded ? "bg-[#0a0a0f] text-white flex flex-col" : "min-h-screen bg-[#0a0a0f] text-white flex flex-col"}>
+      {/* WP1: Page header — only shown when not embedded in the operator shell */}
+      {!embedded && (
+        <div className="border-b border-white/10 bg-[#0d0d14]">
+          <ShadowModePageHeader />
+        </div>
+      )}
+      {/* WP1: Workstream navigation — Prepare | Capture | Understand | Deliver */}
+      <ShadowModeWorkstreamNav
+        activeWorkstream={activeWorkstream}
+        onWorkstreamChange={setActiveWorkstream}
+      />
+      {/* Existing internal header + tab bar — rendered as the Capture workstream body */}
+      <div className="bg-[#0a0a0f] text-white flex-1">
       {/* Header */}
       <div className="border-b border-white/10 bg-[#0d0d14]">
         {!embedded && (
@@ -2629,8 +2648,8 @@ export default function ShadowMode({ embedded }: { embedded?: boolean } = {}) {
         {activeTab === "diagnostics" && (
           <SystemDiagnostics />
         )}
-
       </div>
+      </div>{/* end WP1 inner wrapper */}
     </div>
   );
 }

@@ -14,27 +14,29 @@ import {
 } from "lucide-react";
 
 import ShadowMode from "./ShadowMode";
-
 import BastionPartner from "./BastionPartner";
 import LumiPartner from "./LumiPartner";
 import AdminBilling from "./AdminBilling";
+import ReportsShell from "./ReportsShell";
 import { lazy, Suspense } from "react";
+import { OperatorShell } from "@/components/operator-shell";
+import type { OperatorTab } from "@/components/operator-shell";
 
 const WebcastingHub = lazy(() => import("./WebcastingHub"));
 const EventCalendar = lazy(() => import("./EventCalendar"));
 const MailingListManager = lazy(() => import("./MailingListManager"));
 
-type DashboardTab = "overview" | "shadow-mode" | "events" | "partners" | "billing" | "settings";
+// WP1: DashboardTab now includes the approved operator nav tabs plus internal-only tabs.
+// The OperatorShell top nav renders exactly: Overview | Shadow Mode | Reports | Billing | Settings
+// Events and Partners remain accessible via internal navigation (Overview quick-actions, URL params)
+// but are not part of the approved top nav per the brief.
+type DashboardTab = "overview" | "shadow-mode" | "reports" | "billing" | "settings" | "events" | "partners";
 
-const TAB_CONFIG: { id: DashboardTab; label: string; icon: React.ElementType; color: string; activeColor: string }[] = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard, color: "text-slate-500 hover:text-slate-300", activeColor: "border-violet-400 text-violet-300" },
-  { id: "shadow-mode", label: "Shadow Mode", icon: Radio, color: "text-slate-500 hover:text-slate-300", activeColor: "border-emerald-400 text-emerald-300" },
+// Approved top-nav tab IDs (do not rename or reorder — per WP1 brief)
+const OPERATOR_TOP_NAV_IDS: OperatorTab[] = ["overview", "shadow-mode", "reports", "billing", "settings"];
 
-  { id: "events", label: "Events", icon: CalendarDays, color: "text-slate-500 hover:text-slate-300", activeColor: "border-orange-400 text-orange-300" },
-  { id: "partners", label: "Partners", icon: Handshake, color: "text-slate-500 hover:text-slate-300", activeColor: "border-amber-400 text-amber-300" },
-  { id: "billing", label: "Billing", icon: Receipt, color: "text-slate-500 hover:text-slate-300", activeColor: "border-green-400 text-green-300" },
-  { id: "settings", label: "Settings", icon: Settings, color: "text-slate-500 hover:text-slate-300", activeColor: "border-slate-400 text-slate-300" },
-];
+// All valid tab IDs (including internal-only events/partners)
+const ALL_VALID_TAB_IDS: DashboardTab[] = ["overview", "shadow-mode", "reports", "billing", "settings", "events", "partners"];
 
 const SERVICE_META: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   database: { label: "Database", icon: Database, color: "text-blue-400" },
@@ -517,7 +519,7 @@ export default function Dashboard() {
   const partnerFromUrl = params.get("partner") as "bastion" | "lumi" | null;
   const subFromUrl = params.get("sub") as EventsSubTab | null;
   const [activeTab, setActiveTab] = useState<DashboardTab>(
-    tabFromUrl && TAB_CONFIG.some(t => t.id === tabFromUrl) ? tabFromUrl : "overview"
+    tabFromUrl && ALL_VALID_TAB_IDS.includes(tabFromUrl as DashboardTab) ? tabFromUrl as DashboardTab : "overview"
   );
 
   useEffect(() => {
@@ -529,8 +531,8 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (tabFromUrl && TAB_CONFIG.some(t => t.id === tabFromUrl) && tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
+    if (tabFromUrl && ALL_VALID_TAB_IDS.includes(tabFromUrl as DashboardTab) && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl as DashboardTab);
     }
   }, [tabFromUrl]);
 
@@ -541,69 +543,32 @@ export default function Dashboard() {
     }
   }, [activeTab]);
 
+  // WP1: Resolve the active tab to the nearest OperatorTab for the shell nav highlight.
+  // Events and Partners are internal-only; they do not appear in the top nav.
+  const shellActiveTab: OperatorTab = OPERATOR_TOP_NAV_IDS.includes(activeTab as OperatorTab)
+    ? (activeTab as OperatorTab)
+    : "overview";
+
+  const handleShellTabChange = (tab: OperatorTab) => {
+    setActiveTab(tab as DashboardTab);
+  };
+
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <div className="border-b border-white/10 bg-[#0d0d14]">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-bold tracking-tight">Cura<span className="text-emerald-400">Live</span></span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400">
-                  Operator Console
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 uppercase tracking-widest mt-0.5">
-                Real-time investor event intelligence
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {isAuthenticated ? (
-              <>
-                <span className="text-xs text-slate-500 hidden lg:block">{user?.name}</span>
-                <button onClick={() => logout()}
-                  className="flex items-center gap-1.5 text-xs text-slate-400 bg-white/[0.03] border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] transition-colors">
-                  <LogOut className="w-3.5 h-3.5" />
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <a href={getLoginUrl()}
-                className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors">
-                <LogIn className="w-3.5 h-3.5" />
-                Login
-              </a>
-            )}
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-1 overflow-x-auto">
-            {TAB_CONFIG.map(({ id, label, icon: Icon, color, activeColor }) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === id ? activeColor : `border-transparent ${color}`
-                }`}>
-                <Icon className="w-4 h-4" />
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div>
-        {activeTab === "overview" && <OverviewTab />}
-        {activeTab === "shadow-mode" && <ShadowMode embedded />}
-
-        {activeTab === "events" && <EventsTab defaultSub={subFromUrl || undefined} />}
-        {activeTab === "partners" && <PartnersTab defaultPartner={partnerFromUrl || undefined} />}
-        {activeTab === "billing" && <AdminBilling />}
-        {activeTab === "settings" && <SettingsTab />}
-      </div>
-    </div>
+    <OperatorShell
+      activeTab={shellActiveTab}
+      onTabChange={handleShellTabChange}
+      userName={user?.name}
+      isAuthenticated={isAuthenticated}
+      onLogout={() => logout()}
+      onLogin={() => { window.location.href = getLoginUrl(); }}
+    >
+      {activeTab === "overview" && <OverviewTab />}
+      {activeTab === "shadow-mode" && <ShadowMode embedded />}
+      {activeTab === "reports" && <ReportsShell />}
+      {activeTab === "events" && <EventsTab defaultSub={subFromUrl || undefined} />}
+      {activeTab === "partners" && <PartnersTab defaultPartner={partnerFromUrl || undefined} />}
+      {activeTab === "billing" && <AdminBilling />}
+      {activeTab === "settings" && <SettingsTab />}
+    </OperatorShell>
   );
 }
