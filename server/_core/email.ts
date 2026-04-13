@@ -40,7 +40,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ success: bool
   try {
     const { data, error } = await resend.emails.send({
       from,
-      to: Array.isArray(opts.to) ? opts.to : [opts.to],
+      to: ENV.isStaging && ENV.stagingSafeEmailRecipient ? [ENV.stagingSafeEmailRecipient] : (Array.isArray(opts.to) ? opts.to : [opts.to]),
       subject: opts.subject,
       html: opts.html,
       replyTo: opts.replyTo,
