@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { ENV } from "../_core/env";
 import { getDb } from "../db";
 import { shadowSessions, taggedMetrics, recallBots, agmIntelligenceSessions } from "../../drizzle/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
@@ -219,6 +220,9 @@ export const shadowModeRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      if (ENV.isStaging) {
+        throw new Error("Live joins are disabled in staging environment.");
+      }
       const db = await getDb();
       const userId = ctx.user?.id ?? null;
 

@@ -10,7 +10,9 @@
  */
 
 const ABLY_REST_URL = "https://rest.ably.io";
-const WEBPHONE_CHANNEL = "webphone:activity";
+import { ENV } from "../_core/env";
+
+const WEBPHONE_CHANNEL = ENV.isStaging ? "staging_webphone:activity" : "webphone:activity";
 
 export type WebphoneEvent =
   | "call:started"

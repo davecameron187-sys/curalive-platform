@@ -1,4 +1,5 @@
 import twilio from "twilio";
+import { ENV } from "../_core/env";
 import { getDb } from "../db";
 import { conferenceDialouts, conferenceDialoutParticipants } from "../../drizzle/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
@@ -89,7 +90,7 @@ interface DialoutParticipant {
 
 async function assertOwnership(dialoutId: number, userId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+
 
   const [dialout] = await db.select().from(conferenceDialouts)
     .where(and(eq(conferenceDialouts.id, dialoutId), eq(conferenceDialouts.userId, userId)))
@@ -106,7 +107,7 @@ export async function createConferenceDialout(params: {
   participants: DialoutParticipant[];
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+
 
   const callerId = params.callerId || TWILIO_CALLER_ID;
   if (!callerId) throw new Error("No caller ID configured. Set TWILIO_CALLER_ID or provide one.");
@@ -144,9 +145,21 @@ export async function createConferenceDialout(params: {
   return { dialoutId, conferenceName };
 }
 
+const STAGING_WHITELIST_NUMBERS = ["+27821234567", "+27831234567"]; // Example staging whitelist numbers
+
 export async function startDialling(dialoutId: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  if (ENV.isStaging) {
+    const participants = await db.select().from(conferenceDialoutParticipants).where(eq(conferenceDialoutParticipants.dialoutId, dialoutId));
+    for (const p of participants) {
+      if (!STAGING_WHITELIST_NUMBERS.includes(p.phoneNumber)) {
+        throw new Error(`Dialout to ${p.phoneNumber} blocked in staging. Only whitelisted numbers are allowed.`);
+      }
+    }
+  }
+
 
   const dialout = await assertOwnership(dialoutId, userId);
   if (dialout.status !== "pending") throw new Error(`Cannot start dialling — status is ${dialout.status}`);
@@ -323,7 +336,7 @@ export async function getDialoutStatus(dialoutId: number, userId: number) {
   await assertOwnership(dialoutId, userId);
 
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+
 
   const [dialout] = await db.select().from(conferenceDialouts).where(eq(conferenceDialouts.id, dialoutId)).limit(1);
   if (!dialout) throw new Error("Dialout not found");
@@ -338,7 +351,7 @@ export async function cancelDialout(dialoutId: number, userId: number) {
   const dialout = await assertOwnership(dialoutId, userId);
 
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+
 
   const participants = await db.select().from(conferenceDialoutParticipants)
     .where(eq(conferenceDialoutParticipants.dialoutId, dialoutId));

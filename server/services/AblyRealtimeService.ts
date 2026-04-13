@@ -1,4 +1,5 @@
 import * as Ably from "ably";
+import { ENV } from "../_core/env";
 
 export interface AblyChannelMessage {
   type: "cursor_update" | "edit_created" | "edit_approved" | "version_published" | "user_joined" | "user_left" | "conflict_detected" | "redaction_applied";
@@ -51,7 +52,7 @@ export class AblyRealtimeService {
    * Get or create a channel for a conference
    */
   static getChannel(conferenceId: number): Ably.RealtimeChannel {
-    const channelName = `conference:${conferenceId}`;
+    const channelName = ENV.isStaging ? `staging_conference:${conferenceId}` : `conference:${conferenceId}`;
 
     if (!this.channels.has(channelName)) {
       if (!this.client) {
@@ -121,7 +122,7 @@ export class AblyRealtimeService {
       this.initialize(apiKey);
     }
     
-    const channelName = `curalive-event-${eventId}`;
+    const channelName = ENV.isStaging ? `staging_curalive-event-${eventId}` : `curalive-event-${eventId}`;
     const channel = this.client!.channels.get(channelName);
     
     try {
@@ -403,7 +404,7 @@ export class AblyRealtimeService {
    * Close channel
    */
   static closeChannel(conferenceId: number): void {
-    const channelName = `conference:${conferenceId}`;
+    const channelName = ENV.isStaging ? `staging_conference:${conferenceId}` : `conference:${conferenceId}`;
 
     if (this.channels.has(channelName)) {
       const channel = this.channels.get(channelName)!;
