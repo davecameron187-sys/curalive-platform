@@ -1,0 +1,59 @@
+Download Recording & Transcript Buttons — Pull and Deploy
+The source code has been updated on GitHub with the Download Recording and Download Transcript buttons. Here's exactly what to do:
+
+Step 1: Pull latest code
+git pull origin main
+This pulls commit 8097484 which adds:
+
+Download Recording button (green, bg-emerald-600) — links to GET /api/archives/:id/recording
+Download Transcript button (blue, bg-blue-600) — links to GET /api/archives/:id/transcript
+Both buttons appear in TWO locations within the Archives & Reports event detail:
+
+Header area (top-right, next to "Email Report")
+Bottom action bar (next to "Regenerate Report", "View Intelligence Database", "Email Report to Customer")
+Buttons show as greyed out (bg-slate-700 opacity-60) when no recording/transcript is available for that event.
+
+Also included in this pull:
+
+/health endpoint (required for Replit publish)
+Server binds to 0.0.0.0 (required for Replit proxy)
+Legacy localStorage write removed from useAuth
+Step 2: Clean build and restart
+rm -rf dist node_modules/.vite
+pnpm install
+Then restart the dev server.
+
+Step 3: Verify buttons exist in dev
+Open the app, go to Shadow Mode tab, click "Archives & Reports" sub-tab, select any archive event. You should see three buttons in the header: Email Report (cyan), Download Recording (green/grey), Download Transcript (blue/grey).
+
+Step 4: Publish with clean build
+The previous publish issue was a stale build cache. The production site was serving a JS bundle from March 25th. To fix this:
+
+Make sure the build command does a clean build. The build step MUST include rm -rf dist before building:
+
+rm -rf dist && NODE_OPTIONS='--max-old-space-size=4096' vite build --logLevel warn && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+Step 5: Verify production after publish
+After publishing, verify the new bundle is being served:
+
+curl -s "https://curalive-platform.replit.app/" | grep -o 'src="[^"]*index[^"]*"'
+Then check the bundle contains the buttons:
+
+curl -s "https://curalive-platform.replit.app/assets/index.js" | grep -c "Download Recording"
+Should return 3. If it returns 1 or 0, the old cached bundle is still being served — try clearing dist and rebuilding again, or try a fresh publish.
+
+What the buttons look like (expected layout)
+Header:
+
+[Event Name]                    [Email Report] [Download Recording] [Download Transcript]
+[Client · Type · Date]              cyan            green/grey           blue/grey
+Bottom action bar:
+
+[Regenerate Report] [View Intelligence Database] [Email Report] [Download Recording] [Download Transcript]
+Backend endpoints (already working)
+GET /api/archives/:id/transcript — returns .txt file
+GET /api/archives/:id/recording — returns .mp3 file (404 if no recording uploaded)
+Do NOT
+Change the /health endpoint or 0.0.0.0 binding
+Change pnpm version in any workflow file
+Run git reset --hard or force-push
+Set AUTH_BYPASS=true in production secrets

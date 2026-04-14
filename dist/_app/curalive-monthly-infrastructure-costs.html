@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CuraLive — Monthly Infrastructure Cost Report</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0a0e17; color: #e2e8f0; min-height: 100vh; padding: 40px 20px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; color: #f1f5f9; }
+  .subtitle { font-size: 14px; color: #64748b; margin-bottom: 32px; }
+  .date { font-size: 12px; color: #475569; margin-bottom: 40px; }
+  .section-title { font-size: 18px; font-weight: 600; color: #f1f5f9; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
+  .summary-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; text-align: center; }
+  .summary-card .value { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .summary-card .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .green { color: #34d399; }
+  .blue { color: #60a5fa; }
+  .amber { color: #fbbf24; }
+  .purple { color: #a78bfa; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  th { text-align: left; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .service-name { font-weight: 500; color: #f1f5f9; }
+  .tier { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+  .tier-free { background: rgba(52,211,153,0.1); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+  .tier-low { background: rgba(96,165,250,0.1); color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
+  .tier-mid { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+  .tier-high { background: rgba(248,113,113,0.1); color: #f87171; border: 1px solid rgba(248,113,113,0.2); }
+  .cost { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .note { font-size: 12px; color: #64748b; }
+  .total-row td { font-weight: 700; font-size: 16px; border-top: 2px solid rgba(255,255,255,0.1); color: #f1f5f9; }
+  .assumptions { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px; margin-top: 24px; }
+  .assumptions h3 { font-size: 14px; font-weight: 600; color: #94a3b8; margin-bottom: 12px; }
+  .assumptions ul { list-style: none; padding: 0; }
+  .assumptions li { font-size: 13px; color: #64748b; padding: 4px 0; padding-left: 16px; position: relative; }
+  .assumptions li::before { content: ""; position: absolute; left: 0; top: 11px; width: 6px; height: 6px; border-radius: 50%; background: #334155; }
+  .scale-table { margin-top: 16px; }
+  .scale-table td { font-size: 13px; }
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #475569; text-align: center; }
+  @media (max-width: 640px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>CuraLive Monthly Infrastructure Costs</h1>
+<p class="subtitle">Real-Time Investor Events Platform — Cost Analysis</p>
+<p class="date">Prepared: March 2026 | Based on current production configuration</p>
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="value green">$297</div>
+    <div class="label">Low Volume (20 events/mo)</div>
+  </div>
+  <div class="summary-card">
+    <div class="value blue">$742</div>
+    <div class="label">Medium (50 events/mo)</div>
+  </div>
+  <div class="summary-card">
+    <div class="value amber">$1,617</div>
+    <div class="label">High (100 events/mo)</div>
+  </div>
+  <div class="summary-card">
+    <div class="value purple">$4,242</div>
+    <div class="label">Enterprise (250 events/mo)</div>
+  </div>
+</div>
+
+<div class="section-title">Fixed Monthly Costs (Always On)</div>
+<table>
+  <thead>
+    <tr><th>Service</th><th>Purpose</th><th>Plan / Tier</th><th style="text-align:right">Monthly Cost</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="service-name">Replit</td>
+      <td class="note">Application hosting, deployment, SSL, compute</td>
+      <td><span class="tier tier-mid">Pro / Teams</span></td>
+      <td style="text-align:right" class="cost">$25.00</td>
+    </tr>
+    <tr>
+      <td class="service-name">MySQL Database</td>
+      <td class="note">Drizzle ORM, all session/archive/metrics tables</td>
+      <td><span class="tier tier-low">Managed DB</span></td>
+      <td style="text-align:right" class="cost">$15.00</td>
+    </tr>
+    <tr>
+      <td class="service-name">Ably Realtime</td>
+      <td class="note">Live transcript streaming, OCC notifications</td>
+      <td><span class="tier tier-free">Free tier</span></td>
+      <td style="text-align:right" class="cost">$0.00</td>
+    </tr>
+    <tr>
+      <td class="service-name">Resend</td>
+      <td class="note">Transactional emails, intelligence report delivery</td>
+      <td><span class="tier tier-free">Free (100/day)</span></td>
+      <td style="text-align:right" class="cost">$0.00</td>
+    </tr>
+    <tr>
+      <td class="service-name">Twilio</td>
+      <td class="note">Webphone/PSTN, conference dial-out (base)</td>
+      <td><span class="tier tier-low">Pay-as-you-go</span></td>
+      <td style="text-align:right" class="cost">$1.00</td>
+    </tr>
+    <tr>
+      <td class="service-name">Telnyx</td>
+      <td class="note">Failover carrier for Africa/EMEA</td>
+      <td><span class="tier tier-free">Pay-as-you-go</span></td>
+      <td style="text-align:right" class="cost">$0.00</td>
+    </tr>
+    <tr>
+      <td class="service-name">Mux</td>
+      <td class="note">RTMP live streaming, HLS playback</td>
+      <td><span class="tier tier-free">Pay-as-you-go</span></td>
+      <td style="text-align:right" class="cost">$0.00</td>
+    </tr>
+    <tr class="total-row">
+      <td colspan="3">Fixed Monthly Total</td>
+      <td style="text-align:right">$41.00</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="section-title">Variable Costs Per Event (Usage-Based)</div>
+<table>
+  <thead>
+    <tr><th>Service</th><th>What It Does</th><th>Cost Per Event</th><th style="text-align:right">Calculation</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="service-name">OpenAI GPT-4o</td>
+      <td class="note">Full AI report (20 modules), crisis prediction, valuation impact, disclosure cert, monthly report</td>
+      <td class="note">~25 LLM calls/event @ ~4K tokens avg</td>
+      <td style="text-align:right" class="cost">$2.50</td>
+    </tr>
+    <tr>
+      <td class="service-name">OpenAI GPT-4o-mini</td>
+      <td class="note">Evolution engine, advisory bot, support chat, Bastion AI, quick analysis</td>
+      <td class="note">~15 calls/event @ ~2K tokens avg</td>
+      <td style="text-align:right" class="cost">$0.05</td>
+    </tr>
+    <tr>
+      <td class="service-name">OpenAI Whisper</td>
+      <td class="note">Audio/video transcription for archive uploads</td>
+      <td class="note">~30 min avg audio per event</td>
+      <td style="text-align:right" class="cost">$0.18</td>
+    </tr>
+    <tr>
+      <td class="service-name">Recall.ai Bot</td>
+      <td class="note">Meeting bot joins Zoom/Teams/Meet for live capture</td>
+      <td class="note">$0.10/min, ~60 min avg live session</td>
+      <td style="text-align:right" class="cost">$6.00</td>
+    </tr>
+    <tr>
+      <td class="service-name">Ably Messages</td>
+      <td class="note">Real-time transcript chunks during live sessions</td>
+      <td class="note">~200 messages/session (free tier: 6M/mo)</td>
+      <td style="text-align:right" class="cost">$0.00</td>
+    </tr>
+    <tr>
+      <td class="service-name">Mux Streaming</td>
+      <td class="note">Live RTMP ingest + HLS delivery (if webcast used)</td>
+      <td class="note">$0.025/min encode + $1/1000 views</td>
+      <td style="text-align:right" class="cost">$1.50</td>
+    </tr>
+    <tr>
+      <td class="service-name">Twilio Voice</td>
+      <td class="note">PSTN dial-out minutes (if conference used)</td>
+      <td class="note">$0.014/min, ~15 min avg</td>
+      <td style="text-align:right" class="cost">$0.21</td>
+    </tr>
+    <tr>
+      <td class="service-name">Resend Email</td>
+      <td class="note">Post-event intelligence reports, reminders</td>
+      <td class="note">~5 emails/event (free up to 100/day)</td>
+      <td style="text-align:right" class="cost">$0.00</td>
+    </tr>
+    <tr class="total-row">
+      <td colspan="2">Variable Cost Per Event</td>
+      <td colspan="2" style="text-align:right">~$10.44</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="section-title">Cost Breakdown by Event Type</div>
+<table>
+  <thead>
+    <tr><th>Event Type</th><th>Typical Services Used</th><th style="text-align:right">Est. Cost/Event</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="service-name">Live Shadow Mode (Zoom/Teams)</td>
+      <td class="note">Recall bot + full AI pipeline + crisis/valuation/disclosure + streaming</td>
+      <td style="text-align:right" class="cost">$10.44</td>
+    </tr>
+    <tr>
+      <td class="service-name">Archive Upload (audio/video)</td>
+      <td class="note">Whisper transcription + full AI pipeline + crisis/valuation/disclosure</td>
+      <td style="text-align:right" class="cost">$2.73</td>
+    </tr>
+    <tr>
+      <td class="service-name">Transcript Paste (text only)</td>
+      <td class="note">AI pipeline only (no transcription, no bot)</td>
+      <td style="text-align:right" class="cost">$2.55</td>
+    </tr>
+    <tr>
+      <td class="service-name">Advisory Bot Query</td>
+      <td class="note">Single GPT-4o call with context retrieval</td>
+      <td style="text-align:right" class="cost">$0.03</td>
+    </tr>
+    <tr>
+      <td class="service-name">Monthly Intelligence Report</td>
+      <td class="note">Aggregation + single GPT-4o analysis</td>
+      <td style="text-align:right" class="cost">$0.15</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="section-title">Scaled Monthly Projections</div>
+<table class="scale-table">
+  <thead>
+    <tr><th>Scenario</th><th>Live Events</th><th>Archives</th><th>Transcripts</th><th>Advisory Queries</th><th style="text-align:right">Total/Month</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="service-name">Startup</td>
+      <td>10</td><td>5</td><td>5</td><td>50</td>
+      <td style="text-align:right" class="cost green">$297</td>
+    </tr>
+    <tr>
+      <td class="service-name">Growth</td>
+      <td>25</td><td>15</td><td>10</td><td>200</td>
+      <td style="text-align:right" class="cost blue">$742</td>
+    </tr>
+    <tr>
+      <td class="service-name">Scale</td>
+      <td>50</td><td>30</td><td>20</td><td>500</td>
+      <td style="text-align:right" class="cost amber">$1,617</td>
+    </tr>
+    <tr>
+      <td class="service-name">Enterprise</td>
+      <td>120</td><td>80</td><td>50</td><td>2000</td>
+      <td style="text-align:right" class="cost purple">$4,242</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="section-title">OpenAI Token Cost Breakdown</div>
+<table>
+  <thead>
+    <tr><th>Model</th><th>Input $/1M tokens</th><th>Output $/1M tokens</th><th>Avg Tokens/Call</th><th>Calls/Event</th><th style="text-align:right">Cost/Event</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="service-name">GPT-4o</td>
+      <td>$2.50</td><td>$10.00</td>
+      <td class="note">~4,000 in / ~1,500 out</td>
+      <td>25</td>
+      <td style="text-align:right" class="cost">$2.50</td>
+    </tr>
+    <tr>
+      <td class="service-name">GPT-4o-mini</td>
+      <td>$0.15</td><td>$0.60</td>
+      <td class="note">~2,000 in / ~800 out</td>
+      <td>15</td>
+      <td style="text-align:right" class="cost">$0.05</td>
+    </tr>
+    <tr>
+      <td class="service-name">Whisper</td>
+      <td colspan="3">$0.006/minute of audio</td>
+      <td>1</td>
+      <td style="text-align:right" class="cost">$0.18</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="assumptions">
+  <h3>Assumptions & Notes</h3>
+  <ul>
+    <li>Prices based on OpenAI API pricing as of March 2026 (GPT-4o: $2.50/$10.00 per 1M tokens in/out)</li>
+    <li>Recall.ai pricing estimated at $0.10/minute for bot-in-meeting time (actual may vary by contract)</li>
+    <li>Average live event duration: 60 minutes; average archive audio: 30 minutes</li>
+    <li>Each full AI report runs 20 core modules + 3 strategic modules (crisis, valuation, disclosure) = ~25 GPT-4o calls</li>
+    <li>Evolution engine, advisory bot, and background services use GPT-4o-mini for cost efficiency</li>
+    <li>Ably free tier covers up to 6M messages/month (sufficient for ~30,000 live sessions)</li>
+    <li>Resend free tier covers 100 emails/day (3,000/month) — sufficient up to ~600 events/month</li>
+    <li>Mux costs only apply when live RTMP webcast streaming is used (not all events)</li>
+    <li>Twilio/Telnyx costs only apply when PSTN dial-out is used (Shadow Mode uses free bot join)</li>
+    <li>Database costs based on Replit managed MySQL; may increase with storage beyond 1GB</li>
+    <li>No costs for the Shadow Guardian, System Diagnostics, or Health Monitoring — these are internal services</li>
+    <li>Stripe processing fees (2.9% + $0.30) not included — those are pass-through charges on revenue</li>
+  </ul>
+</div>
+
+<div class="section-title">Cost Optimization Opportunities</div>
+<div class="assumptions">
+  <ul>
+    <li><strong>Biggest cost driver:</strong> Recall.ai bot minutes (~58% of per-event cost). Negotiate volume pricing or switch to local audio capture for shorter events</li>
+    <li><strong>AI model selection:</strong> Move lower-priority modules (social media, press release) to GPT-4o-mini to cut AI costs by ~40%</li>
+    <li><strong>Caching:</strong> Cache AI reports for repeated queries instead of regenerating; cache advisory bot context windows</li>
+    <li><strong>Batch processing:</strong> Monthly reports aggregate existing data — no additional AI cost if reports are already generated</li>
+    <li><strong>Whisper optimization:</strong> Only transcribe new audio; skip re-transcription of already-processed segments</li>
+  </ul>
+</div>
+
+<div class="footer">
+  CuraLive Platform | CIPC Patent App ID: 1773575338868 | Prepared for acquisition readiness review
+</div>
+
+</div>
+</body>
+</html>

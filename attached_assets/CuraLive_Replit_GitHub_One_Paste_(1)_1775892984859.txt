@@ -1,0 +1,52 @@
+CuraLive Replit → GitHub push script
+
+Paste this whole block into the Replit Shell.
+
+----------------------------------------
+#!/usr/bin/env bash
+set -e
+
+REPO_URL="https://github.com/davecameron187-sys/curalive-platform.git"
+BRANCH="RenderMigration"
+
+echo "== Current folder =="
+pwd
+
+echo "== Git status =="
+git status || true
+
+echo "== Existing remotes =="
+git remote -v || true
+
+echo "== Add or update GitHub remote =="
+if git remote get-url github >/dev/null 2>&1; then
+  git remote set-url github "$REPO_URL"
+else
+  git remote add github "$REPO_URL"
+fi
+
+echo "== Remotes after update =="
+git remote -v
+
+echo "== Create or switch to branch =="
+if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+  git checkout "$BRANCH"
+else
+  git checkout -b "$BRANCH"
+fi
+
+echo "== Stage all changes =="
+git add .
+
+echo "== Commit if needed =="
+git diff --cached --quiet && echo "No staged changes to commit." || git commit -m "Prepare latest CuraLive updates for Render migration"
+
+echo "== Push to GitHub =="
+git push -u github "$BRANCH"
+
+echo ""
+echo "Done."
+echo "If prompted by GitHub:"
+echo "Username: davecameron187-sys"
+echo "Password: use your GitHub Personal Access Token"
+----------------------------------------

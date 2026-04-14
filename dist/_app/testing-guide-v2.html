@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuraLive Testing Guide - Interactive Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 28px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .main-content {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .test-header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .test-header h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .test-header p {
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .current-step {
+            background: rgba(96, 165, 250, 0.1);
+            border: 2px solid #60a5fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .current-step h3 {
+            color: #60a5fa;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .step-content {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .step-content p {
+            margin-bottom: 15px;
+            color: #cbd5e1;
+        }
+
+        .platform-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .platform-btn {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid #60a5fa;
+            color: #60a5fa;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .platform-btn:hover {
+            background: rgba(96, 165, 250, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(96, 165, 250, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(148, 163, 184, 0.1);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(148, 163, 184, 0.2);
+        }
+
+        .progress-indicator {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(148, 163, 184, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.active {
+            background: #60a5fa;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .progress-dot.completed {
+            background: #22c55e;
+        }
+
+        /* AI Assistant Sidebar */
+        .ai-assistant {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .ai-assistant h3 {
+            color: #60a5fa;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .ai-messages {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            min-height: 150px;
+        }
+
+        .ai-message {
+            background: rgba(96, 165, 250, 0.1);
+            border-left: 3px solid #60a5fa;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        .ai-message.tip {
+            border-left-color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .ai-message.warning {
+            border-left-color: #f97316;
+            background: rgba(249, 115, 22, 0.1);
+        }
+
+        .ai-input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ai-input {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .ai-input::placeholder {
+            color: #64748b;
+        }
+
+        .ai-send {
+            background: #60a5fa;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .ai-send:hover {
+            background: #3b82f6;
+        }
+
+        .test-list {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .test-list h4 {
+            color: #cbd5e1;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .test-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 12px;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: all 0.2s ease;
+        }
+
+        .test-item:hover {
+            color: #60a5fa;
+            padding-left: 5px;
+        }
+
+        .test-item.active {
+            color: #60a5fa;
+            font-weight: 500;
+        }
+
+        @media (max-width: 1024px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .ai-assistant {
+                position: static;
+            }
+        }
+
+        .code-block {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 4px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            color: #a5f3fc;
+            overflow-x: auto;
+        }
+
+        .timer {
+            display: inline-block;
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎚️ CuraLive Testing Guide - Interactive Training</h1>
+        <p>Step-by-step testing with AI guidance | One instruction at a time</p>
+    </header>
+
+    <div class="layout">
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <div class="test-header">
+                <h2 id="testTitle">Test 1: Audio Bridge (PSTN Dial-In)</h2>
+                <p id="testDesc">Validate Twilio and Telnyx integration for phone dial-in functionality</p>
+            </div>
+
+            <div class="progress-indicator" id="progressIndicator"></div>
+
+            <div class="current-step">
+                <h3 id="stepNumber">Step 1 of 7</h3>
+                <div class="step-content">
+                    <p id="stepInstruction">Loading...</p>
+                    <div id="platformLinks" class="platform-links"></div>
+                    <div class="code-block" id="codeBlock" style="display: none;"></div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="prevBtn" onclick="previousStep()" style="display: none;">← Previous</button>
+                <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">Next Step →</button>
+                <button class="btn btn-secondary" id="skipBtn" onclick="skipTest()">Skip Test</button>
+            </div>
+        </div>
+
+        <!-- AI ASSISTANT SIDEBAR -->
+        <div class="ai-assistant">
+            <h3><div class="ai-avatar">🤖</div> AI Training Assistant</h3>
+            <div class="ai-messages" id="aiMessages">
+                <div class="ai-message">
+                    👋 Hi! I'm your AI training assistant. I'll help guide you through each test step by step. Ask me anything!
+                </div>
+            </div>
+            <div class="ai-input-group">
+                <input type="text" class="ai-input" id="aiInput" placeholder="Ask me for help..." onkeypress="handleAIInput(event)">
+                <button class="ai-send" onclick="sendAIMessage()">Send</button>
+            </div>
+
+            <div class="test-list">
+                <h4>📋 All Tests</h4>
+                <div class="test-item active" onclick="goToTest(0)">1. Audio Bridge</div>
+                <div class="test-item" onclick="goToTest(1)">2. Webcasts</div>
+                <div class="test-item" onclick="goToTest(2)">3. Video Platforms</div>
+                <div class="test-item" onclick="goToTest(3)">4. Shadow Page</div>
+                <div class="test-item" onclick="goToTest(4)">5. AI Services</div>
+                <div class="test-item" onclick="goToTest(5)">6. Reports</div>
+                <div class="test-item" onclick="goToTest(6)">7. AI Infrastructure</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tests = [
+            {
+                name: "Audio Bridge (PSTN Dial-In)",
+                desc: "Validate Twilio and Telnyx integration for phone dial-in functionality",
+                duration: "45 min",
+                steps: [
+                    {
+                        title: "Verify Twilio Configuration",
+                        instruction: "Check that your Twilio credentials are properly configured in the environment.",
+                        code: "echo $TWILIO_ACCOUNT_SID",
+                        platforms: [
+                            { name: "Twilio", url: "https://www.twilio.com/console" }
+                        ]
+                    },
+                    {
+                        title: "Create Test Event in OCC",
+                        instruction: "Navigate to the OCC (Operator Console) and create a new test event for audio bridge testing.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Start Event and Get Dial-In Number",
+                        instruction: "Start the event and retrieve the dial-in phone number that participants will use.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Test Dial-In from Phone 1",
+                        instruction: "Call the dial-in number from your first test phone. Enter the event PIN when prompted.",
+                        platforms: [
+                            { name: "Phone", url: "#" }
+                        ]
+                    },
+                    {
+                        title: "Verify Transcription",
+                        instruction: "Speak a few words and check that your speech appears in the OCC transcription panel in real-time.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Test Dial-In from Phone 2",
+                        instruction: "Call the same dial-in number from a second phone. Verify both participants can hear each other.",
+                        platforms: [
+                            { name: "Phone", url: "#" }
+                        ]
+                    },
+                    {
+                        title: "Test Disconnect and Reconnect",
+                        instruction: "Hang up from phone 1, then dial back in. Verify the participant is correctly removed and re-added in OCC.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "Webcasts (Mux Streaming)",
+                desc: "Validate live streaming and HLS playback for webcast audiences",
+                duration: "45 min",
+                steps: [
+                    {
+                        title: "Create Live Stream in Mux",
+                        instruction: "Create a new live stream in Mux and note the RTMP ingest URL and stream key.",
+                        platforms: [
+                            { name: "Mux", url: "https://dashboard.mux.com" }
+                        ]
+                    },
+                    {
+                        title: "Configure OBS Studio",
+                        instruction: "Set up OBS to stream to Mux using the RTMP URL and stream key you just obtained.",
+                        platforms: [
+                            { name: "OBS", url: "#" }
+                        ]
+                    },
+                    {
+                        title: "Start Streaming",
+                        instruction: "Click 'Start Streaming' in OBS and verify the stream shows as 'Live' in Mux dashboard.",
+                        platforms: [
+                            { name: "Mux", url: "https://dashboard.mux.com" }
+                        ]
+                    },
+                    {
+                        title: "View Stream in OCC",
+                        instruction: "Navigate to OCC webcast view and verify the video is playing with audio.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Test Public Playback",
+                        instruction: "Get the public playback URL from Mux and open it in a new browser window to verify viewers can watch.",
+                        platforms: [
+                            { name: "Mux", url: "https://dashboard.mux.com" }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "Video Platforms",
+                desc: "Validate integration with Zoom, Teams, Webex, and RTMP",
+                duration: "60 min",
+                steps: [
+                    {
+                        title: "Test Zoom Integration",
+                        instruction: "Create a Zoom meeting and add the CuraLive bot. Verify the bot joins and captures audio.",
+                        platforms: [
+                            { name: "Zoom", url: "https://zoom.us" },
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Test Teams Integration",
+                        instruction: "Create a Teams meeting and add the CuraLive bot. Verify the bot joins and captures audio.",
+                        platforms: [
+                            { name: "Teams", url: "https://teams.microsoft.com" },
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Test Webex Integration",
+                        instruction: "Create a Webex meeting and add the CuraLive bot. Verify the bot joins and captures audio.",
+                        platforms: [
+                            { name: "Webex", url: "https://webex.com" },
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Verify Transcription",
+                        instruction: "Have participants speak in each platform and verify transcription appears in OCC in real-time.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "Shadow Page",
+                desc: "Validate operator console monitoring interface",
+                duration: "30 min",
+                steps: [
+                    {
+                        title: "Access Shadow Page",
+                        instruction: "Navigate to the shadow page monitoring interface and select your test event.",
+                        platforms: [
+                            { name: "Shadow", url: "http://localhost:3000/shadow" }
+                        ]
+                    },
+                    {
+                        title: "Monitor Real-Time Metrics",
+                        instruction: "Verify that participant count, sentiment scores, and transcription are updating in real-time.",
+                        platforms: [
+                            { name: "Shadow", url: "http://localhost:3000/shadow" }
+                        ]
+                    },
+                    {
+                        title: "Test Operator Controls",
+                        instruction: "Test mute/unmute, recording, participant removal, and alert sending controls.",
+                        platforms: [
+                            { name: "Shadow", url: "http://localhost:3000/shadow" }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "AI Services",
+                desc: "Validate transcription, sentiment, and Q&A features",
+                duration: "60 min",
+                steps: [
+                    {
+                        title: "Test Real-Time Transcription",
+                        instruction: "Have a participant speak and verify transcription appears in OCC within 2 seconds.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Test Sentiment Analysis",
+                        instruction: "Have participants speak with different tones and verify sentiment scores are accurate.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Test Q&A Auto-Triage",
+                        instruction: "Submit various questions and verify they are auto-categorized and prioritized correctly.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "Reports",
+                desc: "Validate post-event analytics and data export",
+                duration: "45 min",
+                steps: [
+                    {
+                        title: "Generate Post-Event Report",
+                        instruction: "Navigate to a completed event and click 'Generate Report' to create comprehensive analytics.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Verify Report Contents",
+                        instruction: "Check that all report sections (summary, stats, sentiment, topics, Q&A) are populated correctly.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Export Transcript",
+                        instruction: "Export the transcript in TXT, PDF, and CSV formats and verify all exports contain correct data.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "AI Infrastructure",
+                desc: "Validate LLM, compliance, and automation features",
+                duration: "60 min",
+                steps: [
+                    {
+                        title: "Test LLM Integration",
+                        instruction: "Generate an AI summary of the event and verify it accurately captures key points.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Test Compliance Monitoring",
+                        instruction: "Review compliance flags in the transcript and verify accuracy of flagged items.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    },
+                    {
+                        title: "Test Automation Workflows",
+                        instruction: "Trigger automated workflows and verify actions execute correctly and notifications are sent.",
+                        platforms: [
+                            { name: "OCC", url: "http://localhost:3000/occ" }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        let currentTestIndex = 0;
+        let currentStepIndex = 0;
+
+        function loadStep() {
+            const test = tests[currentTestIndex];
+            const step = test.steps[currentStepIndex];
+            const totalSteps = test.steps.length;
+
+            document.getElementById('testTitle').textContent = `Test ${currentTestIndex + 1}: ${test.name}`;
+            document.getElementById('testDesc').textContent = test.desc;
+            document.getElementById('stepNumber').textContent = `Step ${currentStepIndex + 1} of ${totalSteps}`;
+            document.getElementById('stepInstruction').textContent = step.instruction;
+
+            // Update progress indicator
+            let progressHTML = '';
+            for (let i = 0; i < totalSteps; i++) {
+                const dotClass = i < currentStepIndex ? 'completed' : i === currentStepIndex ? 'active' : '';
+                progressHTML += `<div class="progress-dot ${dotClass}"></div>`;
+            }
+            document.getElementById('progressIndicator').innerHTML = progressHTML;
+
+            // Update platform links
+            let platformHTML = '';
+            step.platforms.forEach(p => {
+                if (p.url !== '#') {
+                    platformHTML += `<a href="${p.url}" target="_blank" class="platform-btn">${p.name}</a>`;
+                }
+            });
+            document.getElementById('platformLinks').innerHTML = platformHTML;
+
+            // Update code block
+            if (step.code) {
+                document.getElementById('codeBlock').textContent = step.code;
+                document.getElementById('codeBlock').style.display = 'block';
+            } else {
+                document.getElementById('codeBlock').style.display = 'none';
+            }
+
+            // Update buttons
+            document.getElementById('prevBtn').style.display = currentStepIndex > 0 ? 'block' : 'none';
+            document.getElementById('nextBtn').textContent = currentStepIndex === totalSteps - 1 ? 'Complete Test →' : 'Next Step →';
+
+            // Add AI tip
+            addAITip(step);
+        }
+
+        function nextStep() {
+            const test = tests[currentTestIndex];
+            if (currentStepIndex < test.steps.length - 1) {
+                currentStepIndex++;
+                loadStep();
+            } else {
+                completeTest();
+            }
+        }
+
+        function previousStep() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                loadStep();
+            }
+        }
+
+        function goToTest(index) {
+            currentTestIndex = index;
+            currentStepIndex = 0;
+            document.querySelectorAll('.test-item').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+            loadStep();
+        }
+
+        function skipTest() {
+            if (currentTestIndex < tests.length - 1) {
+                goToTest(currentTestIndex + 1);
+            } else {
+                alert('All tests completed!');
+            }
+        }
+
+        function completeTest() {
+            addAIMessage(`✅ Test ${currentTestIndex + 1} completed! Great job!`, 'tip');
+            if (currentTestIndex < tests.length - 1) {
+                setTimeout(() => {
+                    goToTest(currentTestIndex + 1);
+                }, 2000);
+            }
+        }
+
+        function addAITip(step) {
+            const tips = {
+                'Verify Twilio Configuration': '💡 Make sure your Twilio credentials are set in your environment variables.',
+                'Create Test Event in OCC': '💡 Use a descriptive event name for easy identification in logs.',
+                'Start Event and Get Dial-In Number': '💡 Copy the dial-in number and PIN to a notepad for quick reference.',
+                'Test Dial-In from Phone 1': '💡 Speak clearly and pause between sentences for better transcription.',
+                'Verify Transcription': '💡 Check the OCC console for real-time transcription updates.',
+                'Test Dial-In from Phone 2': '💡 Verify audio quality and latency between participants.',
+                'Test Disconnect and Reconnect': '💡 This validates participant lifecycle management in OCC.'
+            };
+
+            const tip = tips[step.title];
+            if (tip && !document.querySelector('.ai-message:last-child')?.textContent.includes(tip)) {
+                addAIMessage(tip, 'tip');
+            }
+        }
+
+        function addAIMessage(message, type = '') {
+            const messagesDiv = document.getElementById('aiMessages');
+            const msgEl = document.createElement('div');
+            msgEl.className = `ai-message ${type}`;
+            msgEl.textContent = message;
+            messagesDiv.appendChild(msgEl);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function sendAIMessage() {
+            const input = document.getElementById('aiInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addAIMessage(`You: ${message}`);
+            input.value = '';
+
+            // Simulate AI response
+            setTimeout(() => {
+                const responses = [
+                    "That's a great question! Let me help you with that.",
+                    "I'm here to help! Try the next step when you're ready.",
+                    "Good progress! Keep going with the current step.",
+                    "If you need help, just ask me anything about the current test.",
+                    "Remember to check the platform links for more information!"
+                ];
+                const response = responses[Math.floor(Math.random() * responses.length)];
+                addAIMessage(response);
+            }, 500);
+        }
+
+        function handleAIInput(event) {
+            if (event.key === 'Enter') {
+                sendAIMessage();
+            }
+        }
+
+        // Initialize
+        loadStep();
+    </script>
+</body>
+</html>

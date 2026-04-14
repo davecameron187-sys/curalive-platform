@@ -1,0 +1,185 @@
+1) Replace the front-page filing summary
+
+Replace this line:
+
+This Filing Adds
+7 New Autonomous Modules (14–20), 6 New Claims (26–31), 6 New Figures (13–18)
+
+With this:
+
+This Filing Adds
+7 New Autonomous Modules (14–20), 7 New Independent Claims (26–32), 7 New Figures (13–19)
+
+Also replace this sentence in Section 3:
+
+This CIP supplementary specification adds 7 entirely new autonomous modules (numbered 14–20), 6 new independent claims (Claims 26–31), and 6 new figures (FIG 13–18).
+
+With:
+
+This CIP supplementary specification adds 7 entirely new autonomous modules (numbered 14–20), 7 new independent claims (Claims 26–32), and 7 new figures (FIG 13–19).
+
+These count mismatches are visible in the current document.
+
+2) Add a new independent claim for Module 16
+
+Insert this between current Claim 27 and current Claim 28:
+
+Claim 28 (CIP): An autonomous investor relationship graph weaver comprising: (a) construction of a dynamic knowledge graph representing investors, companies, events, topics, and outcomes as nodes and relationships; (b) continuous updating of edge weights based on attendance frequency, question sentiment, engagement duration, follow-up meeting conversion, and capital allocation history; (c) graph embedding analysis to identify hidden influence clusters among investors who co-attend events, ask similar questions, or share investment theses; (d) capital raise probability scoring for individual investor nodes based on engagement patterns, sentiment trajectory, and peer behaviour; (e) proactive recommendation and scheduling of optimal next-touchpoints including one-on-ones, roadshow meetings, and targeted webcasts; and (f) relationship health monitoring to detect declining engagement, sentiment deterioration, or competitor-directed activity.
+
+This fixes the current gap where Module 16 is described in detail but has no standalone independent claim.
+
+3) Renumber the later claims
+
+After inserting the new claim above, renumber the existing claims as follows:
+
+current Claim 28 becomes Claim 29
+
+current Claim 29 becomes Claim 30
+
+current Claim 30 becomes Claim 31
+
+current Claim 31 becomes Claim 32
+
+So the claim section should run:
+
+Claim 26 — Module 14
+
+Claim 27 — Module 15
+
+Claim 28 — Module 16
+
+Claim 29 — Module 17
+
+Claim 30 — Module 18
+
+Claim 31 — Module 19
+
+Claim 32 — Module 20
+
+4) Add a standalone figure for Module 16
+
+Right now Module 16 only refers to FIG 13 and FIG 16, which makes it feel less anchored than the others.
+
+In Section 6.16, replace:
+Refer: FIG 13 (Campaign context), FIG 16 (Swarm integration)
+
+With:
+
+Refer: FIG 15
+Then insert this new figure block in Section 9, after Figure 14 and before the current Figure 15:
+Figure 15: Autonomous Investor Relationship Graph Weaver — Dynamic Influence Graph (Module 16)
+┌──────────────────────────────────────────┐
+│  MULTI-CHANNEL INVESTOR SIGNAL INGESTION       │
+│  • Event attendance                              │
+│  • Questions asked                              │
+│  • Sentiment trajectory                         │
+│  • Follow-up meetings                           │
+│  • Email / outreach interactions                │
+│  • Capital allocation outcomes                  │
+└────────────────────┬─────────────────────┘
+                     │
+                     ▼
+┌──────────────────────────────────────────┐
+│  INVESTOR RELATIONSHIP GRAPH ENGINE             │
+│  • Nodes: investors, companies, events, topics  │
+│  • Edges: influence, co-attendance, follow-up   │
+│  • Edge weights updated continuously            │
+│  • Graph embeddings + cluster detection         │
+└────────────────────┬─────────────────────┘
+                     │
+           ┌─────────┼─────────┐
+           ▼                   ▼
+┌────────────────────┐┌────────────────────┐
+│ CAPITAL RAISE      ││ RELATIONSHIP HEALTH │
+│ PROBABILITY SCORE  ││ MONITORING          │
+│ • Investor ranking ││ • Engagement decline│
+│ • Allocation odds  ││ • Sentiment drift   │
+│ • Peer behaviour   ││ • Competitor signals│
+└──────────┬─────────┘└──────────┬─────────┘
+           │                   │
+           └─────────┬─────────┘
+                     ▼
+┌──────────────────────────────────────────┐
+│  PROACTIVE TOUCHPOINT ORCHESTRATOR              │
+│  • One-on-one scheduling                         │
+│  • Roadshow targeting                            │
+│  • Targeted webcast invitations                  │
+│  • Next-best-action recommendations              │
+└──────────────────────────────────────────┘
+5) Renumber the figures after inserting the new Module 16 figure
+
+After adding that figure, renumber as follows:
+
+current Figure 15 becomes Figure 16
+
+current Figure 16 becomes Figure 17
+
+current Figure 17 becomes Figure 18
+
+current Figure 18 becomes Figure 19
+
+And change the intro line in Section 9 from:
+
+The following figures (FIG 13–18) supplement Figures 1–12 of the parent provisional specification.
+
+To:
+
+The following figures (FIG 13–19) supplement Figures 1–12 of the parent provisional specification.
+6) Update the claim summary table at the end
+
+Replace the CIP rows in the summary table with this:
+
+26
+CIP Method
+Autonomous Event Campaign Orchestrator (Module 14)
+This CIP (Second Submission)
+
+27
+CIP System
+Self-Healing Regulatory Oracle (Module 15)
+This CIP (Second Submission)
+
+28
+CIP System
+Autonomous Investor Relationship Graph Weaver (Module 16)
+This CIP (Second Submission)
+
+29
+CIP Method
+Self-Certifying Multi-Event Integrity Chain (Module 17)
+This CIP (Second Submission)
+
+30
+CIP System
+Autonomous AI Agent Swarm Commander (Module 18)
+This CIP (Second Submission)
+
+31
+CIP System
+Autonomous Valuation Impact Oracle (Module 19)
+This CIP (Second Submission)
+
+32
+CIP System
+Self-Auditing Investor Engagement ROI Engine (Module 20)
+This CIP (Second Submission)
+7) Optional cleanup I’d make
+
+I would remove these two lines from the filing version unless your patent attorney specifically wants them included:
+
+Production URL: https://curalive-platform.replit.app
+GitHub Repository: github.com/davecameron187-sys/curalive-platform
+
+They are currently in the document, but they do not strengthen the claims and may expose implementation detail unnecessarily.
+
+Bottom line
+
+If you apply the changes above, the document becomes much tighter because:
+
+Module 16 gets the claim coverage it currently lacks
+
+the figure count and claim count become internally consistent
+
+the summary table matches the actual module set
+
+If you want, I can also turn this into a single clean “paste-in amendment block” in one continuous format.

@@ -1,0 +1,75 @@
+1. Real-Time Materiality Risk Oracle (Disclosure Guardian)
+Description
+During a live earnings call, continuously scores every executive answer for “material non-public information” risk (Reg FD / JSE Listings Requirements), auto-generates a draft SENS/8-K filing if risk > threshold, and pushes a one-click approval button to the OCC operator.
+Why unique
+No tool does real-time materiality scoring + auto-drafting + live operator intervention during the call.
+Core technical innovation
+Parallel evasion NLP + materiality classifier (trained on historical enforcement cases) + RAG over issuer filings + Ably pub/sub alert to OCC.
+Suggested independent claim skeleton
+A computer-implemented method for real-time protection against selective disclosure during a live investor communication event, comprising:
+(a) continuous ingestion of an audio stream;
+(b) simultaneous execution of an evasion NLP model and a materiality classifier trained on historical enforcement actions;
+(c) generation of a draft regulatory filing using RAG when risk exceeds threshold;
+(d) publishing the risk score and draft via pub/sub to an operator console with one-click approval.
+2. Investor Intention Decoder (Hidden Agenda Detector)
+Description
+Analyzes investor questions for underlying intent (activist pressure, short-selling signal, retail confusion, analyst fishing) using linguistic patterns + historical investor behavior graph. Displays “Intent Profile” badges in the Q&A queue and predicts follow-up aggression.
+Why unique
+No live system decodes investor psychology/intent with persistent memory graph during calls.
+Core technical innovation
+Dynamic graph database of investor-question vectors + multi-agent LLM ensemble per investor archetype.
+Suggested independent claim skeleton
+A system for real-time investor intent classification during a live event, comprising:
+(a) a dynamic graph database storing vector embeddings of historical questions per investor;
+(b) a multi-agent LLM ensemble that classifies intent and predicts follow-up risk;
+(c) pub/sub delivery of an intent badge and aggression score to the operator Q&A queue.
+3. Cross-Event Consistency Guardian
+Description
+Tracks every executive statement across all prior events (this call + last quarter + peers) in real time. Flags contradictions that could trigger investigations and suggests corrective language before the answer is spoken.
+Why unique
+No live tool maintains cross-event messaging memory at scale with pre-emptive correction.
+Core technical innovation
+Persistent vector store of historical statements + real-time similarity/contradiction scoring + RAG corrective generation.
+Suggested independent claim skeleton
+A method of maintaining live semantic consistency of executive messaging, comprising:
+(a) maintaining a vector store of historical statements across events;
+(b) real-time contradiction scoring on new utterances;
+(c) generating corrective phrasing via RAG;
+(d) surfacing alerts and suggestions to the OCC console before response.
+4. Predictive Volatility Simulator (Live “What-If” Engine)
+Description
+While the call is live, runs 100+ micro-simulations: “If this tone on guidance continues, expected 5-day stock move is +3.2% / -4.8% with 78% confidence.” Updates in OCC and teleprompter.
+Why unique
+No system simulates forward market outcomes in real time using partial live transcript data.
+Core technical innovation
+Continuously updated LSTM/transformer time-series model + Monte-Carlo simulations refreshed every 30 seconds.
+Suggested independent claim skeleton
+A real-time simulation engine for investor events, comprising:
+(a) ingestion of partial transcript vectors and sentiment;
+(b) parallel Monte-Carlo forecasts using a live-updated time-series model;
+(c) publishing probability distributions of price impact to the OCC console.
+5. Autonomous Regulatory Intervention Engine (Self-Evolving Compliance Brain)
+Description
+Extends your Module M: Learns from every regulatory outcome (SEC comments, JSE queries, enforcement actions) and autonomously improves risk thresholds, classifiers, and suggested language before the next event — no human retraining.
+Why unique
+Self-evolving agents exist in research; none applied to live investor comms with regulatory feedback loops.
+Core technical innovation
+Closed-loop reinforcement learning with regulatory outcomes as training signals.
+Suggested independent claim skeleton
+A self-evolving compliance system, comprising:
+(a) a reinforcement learning loop ingesting post-event regulatory feedback;
+(b) automatic adjustment of detection thresholds and response templates;
+(c) autonomous deployment of updated models before the next issuer event.
+6. Event Integrity Digital Twin & Certificate
+Description
+Creates a live digital twin of the entire event (transcript + sentiment + compliance + reactions). At close, issues a blockchain-verified “Clean Disclosure Certificate” the company can publish to investors/exchanges.
+Why unique
+No live event platform issues real-time, immutable regulatory-grade integrity certificates.
+Core technical innovation
+Cryptographic hash chain of every segment + final blockchain publication.
+Suggested independent claim skeleton
+A method for certifying live event integrity, comprising:
+(a) maintaining a cryptographically linked digital twin of transcript, scores, and actions;
+(b) scoring overall integrity;
+(c) generating and publishing an immutable certificate to a public ledger upon conclusion.
+These are the exact six I created for you earlier — all focused on being novel, non-obvious, technically specific, and IR/regulatory-focused to maximize patent strength.

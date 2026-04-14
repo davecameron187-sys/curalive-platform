@@ -1,0 +1,232 @@
+CuraLive Operator Console — Outstanding Workflows Completion Brief
+Goal
+
+Complete all remaining Operator Console workflows so the console is genuinely production-testable and aligned with the roadmap.
+
+The roadmap is clear: the Operator Console is the primary product surface, built on Shadow Mode, with Live Q&A inside the same console, and it must be usable in production for real events before scope expands.
+
+Current repo status
+
+The ManusChatgpt branch has recent March 28 commits claiming:
+
+transcript streaming and AI insights,
+multiple “Phase 3 complete” checkpoints,
+deployment/readiness docs,
+Replit testing docs.
+
+The current OperatorConsole.tsx is already wired to backend queries for:
+
+session state,
+action history,
+Live Q&A questions,
+transcript segments,
+session insights.
+
+The roadmap requires the console to do all of this in one interface:
+
+live transcript,
+sentiment/compliance/risk/guidance/engagement,
+session controls,
+Q&A queue with approve/reject/hold/send-to-speaker,
+notes and action logging,
+post-session handoff with archive/transcript/report/downloads.
+What still needs to be completed
+
+Even though the core console is in place, the remaining workflows need to be finished and hardened.
+
+1. Real live transcript pipeline
+
+The roadmap requires near-real-time transcript in the console. The current console fetches transcript segments from backend queries and marks transcript unavailable if the session is running but no segments exist. That is good UI behavior, but the live pipeline still needs to be fully operational end-to-end in production.
+
+Required work
+Verify Recall.ai bot join flow
+Verify Recall webhook receipt
+Verify transcript segment persistence
+Verify Ably/live propagation into the console
+Verify “live”, “stale”, and “unavailable” states behave correctly
+Remove any remaining hidden mock/demo assumptions anywhere in the transcript path
+Done means
+real transcript appears in the console from live event input
+stale/unavailable states are honest and recover correctly
+no manual refresh required
+2. Archive upload + transcription resilience
+
+Archive uploads are currently failing when Whisper/OpenAI transcription hits 429 insufficient_quota. This must not break archive ingestion.
+
+Required work
+Decouple archive upload from transcription
+Store archive first
+Run transcription as a separate status-driven job
+Handle insufficient_quota explicitly
+Show clean transcription status in UI
+Allow retry later without re-uploading archive
+Required statuses
+uploaded
+transcription_pending
+transcription_processing
+transcription_complete
+transcription_failed_quota
+transcription_failed_provider
+Done means
+archive upload succeeds even if transcription fails
+raw provider JSON is never shown to users
+retry path exists
+3. Live Q&A workflow completion inside the console
+
+The roadmap says Q&A belongs inside the same operator console and must support real-time intake, queue management, AI triage, deduplication, compliance screening, and one-click actions. The current console already queries questions and exposes approve/reject mutations, so the next step is completing the full operator workflow depth.
+
+Required work
+Verify full question queue lifecycle
+Add or finish hold/legal-review/send-to-speaker actions if missing
+Verify compliance scoring is visible and meaningful
+Finish deduplication workflow
+Ensure all Q&A actions are logged in operator history
+Confirm this all works from the same console route
+Done means
+operator can handle full Q&A workflow without leaving the console
+action history reflects Q&A decisions
+compliance and triage states are visible and persistent
+4. Operator notes + action logging hardening
+
+The roadmap explicitly requires notes, annotations, and action logging. The current console already fetches action history and creates operator actions, so this now needs production hardening.
+
+Required work
+Verify notes persist correctly
+Verify action history ordering and timestamps
+Ensure all important operator actions are logged:
+session started
+session paused
+session resumed
+session ended
+note created
+question approved/rejected/held/sent
+archive generated
+export generated
+Ensure data reloads cleanly after refresh/reconnect
+Done means
+notes and actions are reliable, persistent, and auditable
+no action disappears on refresh
+handoff can use this data directly
+5. Session handoff / archive completion
+
+The roadmap requires post-session handoff with archive, transcript, AI report, and downloads. That means the end-session workflow has to produce a real usable output, not just a DB entry.
+
+Required work
+Verify end-session generates a handoff package from real data
+Include transcript summary / transcript reference
+Include notes and action history
+Include Q&A summary
+Include AI insights snapshot
+Include archive asset references/downloads
+Show handoff readiness and failure states in UI
+Done means
+ending a session produces a useful package for follow-up
+operators do not have to reconstruct the session manually
+6. Session recording / playback
+
+This is one of the biggest remaining workflow gaps after the core console. It is needed for review, audit, and post-event operations.
+
+Required work
+Store session recordings
+Link recordings to the relevant session/archive
+Provide playback access in review/archive flow
+Where possible, align recording timestamps to transcript segments
+Done means
+completed sessions can be reviewed after the event
+archive/handoff is more than just text metadata
+7. Export workflows
+
+Exports are still outstanding and are needed for compliance, reporting, and handoff.
+
+Required work
+PDF export
+CSV export
+include notes
+include Q&A decisions
+include compliance flags
+include timestamps and session metadata
+ensure exports are accessible from archive/handoff flow
+Done means
+operator can export usable session artifacts without manual copy/paste
+8. Honest operational states everywhere
+
+The roadmap explicitly calls for clear event status, lag indicators, and failure states. The current console already has loading/unavailable/stale handling in parts of the UI; now make this consistent across all panels.
+
+Required UI states everywhere relevant
+loading
+live
+stale
+reconnecting
+unavailable
+failed
+processing
+complete
+Done means
+no panel pretends to be live when it is not
+operators can tell what is working and what is degraded
+9. End-to-end testing and production verification
+
+The architecture doc describes the console as a unified operator surface and the roadmap says it must be usable in production for real events. That means the remaining work must be proven with workflow tests, not checkpoint language.
+
+Required tests
+session start/pause/resume/end
+transcript live ingestion and stale fallback
+archive upload with transcription success
+archive upload with transcription quota failure
+Q&A approve/reject/hold/send-to-speaker
+notes/action log persistence
+end-session handoff generation
+export generation
+reconnect/reload behavior
+Done means
+core workflows are tested end to end
+failures degrade gracefully
+branch can be honestly called ready for real testing
+Priority order
+P0 — must finish now
+live transcript pipeline end to end
+archive upload/transcription resilience
+handoff/archive completion
+operator notes/action logging hardening
+P1 — next
+session recording/playback
+export workflows
+Q&A workflow depth completion
+P2 — after core completion
+deduplication refinement
+AI draft responses
+legal review workflow
+public attendee Q&A link
+workflow shortcuts / alert prioritization / role-specific views
+
+This ordering matches the roadmap: finish the core console first, then deepen Q&A and operator workflow.
+
+Definition of done
+
+The console is complete only when:
+
+one console route is the real operator surface,
+transcript is live from the real ingestion path or honestly marked unavailable,
+Q&A is fully workable inside the same console,
+archive upload cannot be broken by transcription failure,
+notes/action log are persistent and auditable,
+handoff/archive is useful and complete,
+recording/review path exists,
+exports exist,
+failure/stale/reconnect states are explicit,
+workflow tests prove this end to end.
+What Replit should send back
+
+Please return:
+
+files changed
+which workflows are now complete
+what is still incomplete
+how live transcript is wired
+how archive/transcription fallback now works
+whether OpenAI/Whisper is primary or fallback
+test cases added
+known remaining blockers
+Final instruction
+
+Do not spend another cycle on checkpoint docs or setup docs. The branch already has many of those. The next deliverable must be real workflow completion for the console: live transcript, resilient archive ingestion, handoff, recording, exports, and honest operational states.

@@ -1,0 +1,109 @@
+The 5 Features That Create Platform Lock-In
+1️⃣ Earnings Call Preparation Intelligence
+(Pre-Event)
+This is the feature we discussed earlier.
+Before every call, CuraLive generates an AI Earnings Call Briefing.
+Example insights:
+•	predicted investor questions
+•	top investor concerns
+•	high-risk disclosure topics
+•	executive communication insights
+This becomes the preparation tool for executives and IR teams.
+Once teams start using this before every call, CuraLive becomes part of their standard preparation process.
+________________________________________
+2️⃣ Real-Time AI Earnings Call Co-Pilot
+(During Event)
+During the live call, CuraLive assists the moderator and IR team.
+Capabilities include:
+•	live transcript monitoring
+•	investor sentiment tracking
+•	disclosure risk alerts
+•	question prioritisation
+Example workflow:
+Live earnings call
+↓
+AI monitors transcript
+↓
+Signals detected
+↓
+Insights displayed to IR team
+This helps teams manage the event more effectively.
+________________________________________
+3️⃣ Post-Event Investor Intelligence Report
+(After Event)
+Immediately after the event CuraLive generates a communication intelligence report.
+Example insights:
+•	investor sentiment score
+•	key investor concerns
+•	engagement metrics
+•	communication effectiveness scores
+These reports are usually shared with:
+•	executive leadership
+•	the board
+•	investor relations teams
+Once boards start expecting this report every quarter, CuraLive becomes very difficult to remove.
+________________________________________
+4️⃣ Investor Question Intelligence Database
+(Historical Memory)
+CuraLive builds a historical database of investor questions.
+Example insights:
+Top recurring investor questions
+
+1. revenue guidance
+2. margin outlook
+3. supply chain risk
+Over time CuraLive becomes the institutional memory for investor communications.
+Companies can track:
+•	recurring investor concerns
+•	question difficulty trends
+•	changes in investor sentiment
+Replacing CuraLive would mean losing this history.
+________________________________________
+5️⃣ Investor Communication Benchmarking
+(Industry Intelligence)
+CuraLive benchmarks companies against peers.
+Example insights:
+Average Q&A duration (industry): 19 minutes
+Your company: 27 minutes
+
+Investor sentiment score (industry): 68
+Your company: 74
+Companies love benchmarking.
+It helps them understand:
+•	how they compare with peers
+•	whether communication is improving
+•	how investors perceive them
+This makes CuraLive valuable to boards and leadership teams, not just IR teams.
+________________________________________
+The Lock-In Loop
+When these five features exist together, CuraLive becomes part of the entire investor communication lifecycle.
+Preparation
+↓
+Live event intelligence
+↓
+Post-event analysis
+↓
+Historical database
+↓
+Industry benchmarking
+Removing CuraLive would break that workflow.
+________________________________________
+The Strategic Outcome
+CuraLive becomes:
+The operating system for investor communications.
+IR teams start asking:
+“Do we have the CuraLive briefing for this quarter?”
+and
+“Where is the CuraLive post-call report?”
+At that point the platform becomes mission-critical.
+________________________________________
+Founder Insight
+Most successful platforms win by owning the entire workflow, not just one feature.
+CuraLive can own:
+1.	preparation
+2.	event monitoring
+3.	post-event intelligence
+4.	historical investor data
+5.	industry benchmarking
+That combination creates extremely strong product stickiness.
+

@@ -1,0 +1,68 @@
+============================================================
+STOP. READ EVERYTHING BELOW BEFORE DOING ANYTHING.
+============================================================
+
+The Word documents and descriptions did NOT work. You keep
+deviating and building your own version instead of copying
+the original.
+
+THIS TIME: You are getting the ACTUAL SOURCE CODE FILES.
+Do not interpret. Do not redesign. Do not improvise.
+Just extract the files and run them.
+
+============================================================
+STEP 1: EXTRACT THE SOURCE CODE
+============================================================
+
+The file curalive-source.tar.gz contains the ENTIRE
+CuraLive application — every single source file.
+
+Extract it:
+  tar xzf curalive-source.tar.gz
+
+This gives you:
+  - package.json (dependencies)
+  - client/ (React frontend — ALL 208 pages, ALL components)
+  - server/ (Express + tRPC backend — ALL 90+ routers, 59 services)
+  - drizzle/ (database schema — 100+ tables)
+  - shared/ (shared types)
+  - scripts/ (database setup scripts)
+  - vite.config.ts, tsconfig.json, drizzle.config.ts
+
+============================================================
+STEP 2: INSTALL & RUN
+============================================================
+
+  pnpm install
+  pnpm run db:push
+  pnpm run dev
+
+That's it. The app will look EXACTLY like:
+  https://curalive-platform.replit.app
+
+============================================================
+DO NOT:
+============================================================
+
+- Do NOT rewrite any files
+- Do NOT "improve" the design
+- Do NOT create your own components
+- Do NOT add a sidebar (there is NO sidebar)
+- Do NOT change colors, layout, or typography
+- Do NOT skip files or simplify the code
+- Do NOT interpret the code and rebuild from scratch
+
+The source code IS the app. Extract it. Install it. Run it.
+============================================================
+
+ENVIRONMENT VARIABLES NEEDED:
+  DATABASE_URL=postgresql://...
+  JWT_SECRET=(any random string)
+  ABLY_API_KEY=(from ably.com, or leave empty)
+  RECALL_AI_API_KEY=(from recall.ai, or leave empty)
+  OPENAI_API_KEY=(from openai.com, or leave empty)
+
+Optional (can be left empty for initial deployment):
+  MUX_TOKEN_ID, MUX_TOKEN_SECRET
+  RESEND_API_KEY
+  TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN

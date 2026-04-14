@@ -1,0 +1,278 @@
+CuraLive Operator Console — Replit Verification Project Brief
+Purpose
+
+This brief is for the Replit project used to verify and complete the remaining Operator Console workflows.
+
+The goal is not to redesign the console. The goal is to verify that the implemented features are real, connected, secure, and production-testable.
+
+Current confirmed implementation claims
+
+Based on the latest change brief, the following features are reported as implemented:
+
+Persistent operator action audit trail
+Operator notes panel with create/delete support
+Action log panel with chronological operator activity
+Session handoff package for completed sessions
+CSV and JSON export workflow
+Q&A action logging integration
+Operator/admin-only access control for sensitive session data and exports
+Archive upload resilience with Gemini primary and Whisper fallback
+
+These claims must now be verified in code and in the running app.
+
+Verification objectives
+
+The Replit project should be used to verify all of the following:
+
+The console workflow is complete end to end
+All claimed features are present in the codebase
+All claimed features work in the running app
+Security restrictions are actually enforced
+Archive uploads survive transcription failures
+Export and handoff workflows produce usable outputs
+Failures degrade cleanly and visibly
+Files to inspect first
+
+Use these files as the primary verification targets:
+
+drizzle/schema.ts
+server/_core/index.ts
+server/routers/shadowModeRouter.ts
+client/src/pages/ShadowMode.tsx
+client/src/components/LiveQaDashboard.tsx
+replit.md
+Verification checklist
+A. Operator Actions Audit Trail
+Code verification
+Confirm operator_actions table exists in drizzle/schema.ts
+Confirm startup migration creates the table automatically
+Confirm action logging helper exists in shadowModeRouter.ts
+Confirm action types include:
+session_started
+session_ended
+note_created
+note_deleted
+question_approve
+question_reject
+question_hold
+question_legal_review
+question_send_to_speaker
+question_answered
+export_generated
+Runtime verification
+Start a session
+End a session
+Add a note
+Delete a note
+Approve/reject/hold a question
+Export a session
+Confirm all actions appear in the action log with correct timestamps and operator identity
+Pass criteria
+All major operator actions are stored and retrievable
+No action disappears after refresh
+Action log ordering is correct
+B. Operator Notes Panel
+Code verification
+Confirm add-note flow exists
+Confirm delete-note flow exists
+Confirm notes are stored in session data or structured persistence
+Confirm note create/delete actions are also logged
+Runtime verification
+Open a session
+Add multiple notes
+Refresh the page
+Confirm notes remain
+Delete one note
+Confirm the correct note is removed
+Confirm action log records both creation and deletion
+Pass criteria
+Notes persist correctly
+Notes can be deleted individually
+Notes count updates correctly
+Action log reflects note activity
+C. Action Log Panel
+Code verification
+Confirm action log panel component exists
+Confirm query/procedure exists to fetch action history
+Confirm refresh behavior exists
+Confirm icon/color mapping exists for action types
+Runtime verification
+Trigger multiple actions in one session
+Confirm action log updates
+Confirm timestamps are readable
+Confirm operator name is shown
+Confirm “Show more” expansion works if present
+Pass criteria
+Action log is readable, chronological, and stable
+New actions appear without manual data repair
+D. Session Handoff Package
+Code verification
+Confirm getHandoffPackage or equivalent procedure exists
+Confirm package includes:
+readiness score
+readiness indicators
+executive summary
+Q&A summary
+export buttons
+recording link if available
+Runtime verification
+Complete a session
+Open the session handoff package
+Confirm it displays meaningful real data
+Confirm readiness items match actual available artifacts
+Pass criteria
+Handoff package is useful and not placeholder-only
+It reflects the completed session accurately
+E. CSV and JSON Export
+Code verification
+Confirm export route/procedure exists
+Confirm CSV builder includes:
+event info
+transcript
+notes
+action log
+AI report highlights
+Confirm JSON export includes the same data structurally
+Confirm export action is logged
+Runtime verification
+Generate CSV export
+Generate JSON export
+Open both files
+Verify transcript, notes, actions, and AI report are present when expected
+Pass criteria
+Exports download successfully
+Exports contain real session data
+Filenames are descriptive
+Export action is logged
+F. Live Q&A Integration
+Code verification
+Confirm Q&A dashboard uses operator logging mutation
+Confirm approve/reject/hold/legal review/send-to-speaker/answer actions are wired
+Confirm question actions flow through operator audit trail
+Runtime verification
+Approve a question
+Reject a question
+Hold or legal-review a question
+Send one to speaker
+Mark one answered if available
+Confirm all actions appear in the action log and handoff summary where appropriate
+Pass criteria
+Q&A workflow is fully usable inside the console
+Q&A actions are persistent and auditable
+G. Security Hardening
+Code verification
+Confirm operator/admin checks exist on:
+notes read/write
+action log
+handoff package
+export endpoints
+Runtime verification
+Test with operator/admin user
+Test with non-operator user if available
+Confirm unauthorized users cannot access restricted session data or exports
+Pass criteria
+Sensitive routes are restricted correctly
+No data leakage to non-operator users
+H. Archive Upload Resilience
+Code verification
+Confirm Gemini primary / Whisper fallback exists
+Confirm quota-exceeded detection checks HTTP 402, 429, or provider error text
+Confirm archive save is separated from transcription success
+Confirm retry mechanism exists
+Runtime verification
+Upload archive in normal case
+Upload archive under forced transcription failure if possible
+Confirm archive still saves
+Confirm clean status badge appears
+Confirm retry transcription works
+Confirm raw provider JSON is not exposed in UI
+Expected statuses
+uploaded
+transcription_pending
+transcription_complete
+quota_exceeded
+Pass criteria
+Archive ingestion succeeds even when transcription fails
+User sees clean, actionable status messaging
+Manual test flows
+Flow 1 — Live Session Core Workflow
+Start session
+Add note
+Approve one question
+Reject one question
+End session
+Confirm action log contains all actions
+Confirm handoff package appears
+Flow 2 — Notes and Audit Verification
+Add three notes
+Refresh page
+Delete one note
+Confirm persistence and correct audit entries
+Flow 3 — Export Verification
+Generate CSV and JSON
+Open files
+Confirm session transcript, notes, action log, and AI content are included
+Flow 4 — Archive Failure Handling
+Upload archive
+Simulate transcription failure or quota issue if possible
+Confirm archive still saves
+Confirm retry is available
+Confirm user does not see raw provider error JSON
+Flow 5 — Authorization
+Attempt restricted routes/actions with proper operator role
+Attempt same routes/actions without proper role
+Confirm permissions are enforced correctly
+Required test evidence
+
+For each verified area, capture:
+
+screenshot or screen recording
+relevant log output if useful
+exported file sample if relevant
+pass/fail result
+notes on defects or missing behavior
+Bug reporting format
+
+If anything fails, log it in this format:
+
+Title
+
+Short description of failure
+
+Area
+
+Transcript / Q&A / Notes / Action Log / Handoff / Export / Archive / Security
+
+Expected
+
+What should happen
+
+Actual
+
+What actually happened
+
+Reproduction steps
+
+Numbered steps
+
+File(s) likely involved
+
+List likely file paths
+
+Priority
+
+Critical / High / Medium / Low
+
+Definition of completion
+
+This Replit verification pass is complete only when:
+
+all claimed console features are verified in code
+all major operator workflows pass in the running app
+archive upload resilience is confirmed
+exports and handoff are usable
+security restrictions are enforced
+all failures are captured as specific actionable bugs
+Final instruction
+
+Do not use this project to add more fluff or checkpoint docs. Use it to verify the Operator Console honestly and identify any remaining real blockers to completion.

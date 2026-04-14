@@ -184,27 +184,7 @@ async function startServer() {
     console.warn("[Migration] P1 Q&A columns migration failed:", err?.message)
   );
 
-  if (!isProd) {
-    app.use("/__mockup", (req, res) => {
-      const proxyReq = http.request(
-        {
-          hostname: "127.0.0.1",
-          port: 23636,
-          path: "/__mockup" + req.url,
-          method: req.method,
-          headers: req.headers,
-        },
-        (proxyRes) => {
-          res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers);
-          proxyRes.pipe(res, { end: true });
-        },
-      );
-      proxyReq.on("error", () => {
-        res.status(502).send("Mockup sandbox not available");
-      });
-      req.pipe(proxyReq, { end: true });
-    });
-  }
+  // Mockup sandbox proxy removed from production server path
 
   const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
