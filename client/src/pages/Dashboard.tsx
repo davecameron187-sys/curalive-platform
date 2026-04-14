@@ -515,7 +515,7 @@ export default function Dashboard() {
   const partnerFromUrl = params.get("partner") as "bastion" | "lumi" | null;
   const subFromUrl = params.get("sub") as EventsSubTab | null;
   const [activeTab, setActiveTab] = useState<DashboardTab>(
-    tabFromUrl && TAB_CONFIG.some(t => t.id === tabFromUrl) ? tabFromUrl : "overview"
+    tabFromUrl && TAB_CONFIG.some(t => t.id === tabFromUrl) ? tabFromUrl : "new-ui"
   );
 
   useEffect(() => {
