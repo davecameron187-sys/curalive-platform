@@ -828,3 +828,9 @@ id = "INOPEzktvPBkzh9QwD_6v"
 uri = "file://curalive_schema_columns.txt"
 type = "text"
 title = "CuraLive — Full DB Schema (all columns, 2730 rows)"
+
+[[outputs]]
+id = "Nwy1a9oYWi8e9YxNa8STt"
+uri = "file://curalive_system_audit.txt"
+type = "text"
+title = "CuraLive — Full System Audit Report (14 April 2026)"

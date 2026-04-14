@@ -1,0 +1,412 @@
+═══════════════════════════════════════════════════════════
+CURALIVE — FULL SYSTEM AUDIT REPORT
+Audit Date: 14 April 2026
+Auditor: Replit Agent (read-only, no changes made)
+═══════════════════════════════════════════════════════════
+
+SECTION 1 — PROJECT STRUCTURE
+───────────────────────────────
+
+Top-level directories:
+  client/             React 19 + Vite frontend (SPA)
+  server/             Express + tRPC backend
+  shared/             Types/constants shared between client and server
+  drizzle/            Drizzle ORM schemas and migrations
+  curalive_ai_core/   Python FastAPI AI processing service
+  artifacts/          Replit artifact configuration
+  dist/               Production build output (currently present)
+  _build/             Intermediate build directory (currently present)
+  public/             Static assets
+  scripts/            Utility/maintenance scripts
+  docs/               Documentation files
+  uploads/            Runtime file uploads
+  exports/            Exported reports/files
+  .local/             Replit agent workspace
+
+Key files at root:
+  package.json, pnpm-workspace.yaml, vite.config.ts,
+  drizzle.config.ts, tsconfig.json, tsconfig.node.json,
+  pyproject.toml, uv.lock, replit.nix, .replit,
+  curalive_db_backup.sql (6MB full backup)
+
+Notable: NO render.yaml exists. Render must be configured manually.
+
+Entry points:
+  Node (dev):   server/_core/index.ts  (via tsx watch)
+  Node (prod):  dist/index.js          (via node)
+  Python:       curalive_ai_core/app/main.py (via uvicorn)
+  Frontend:     client/src/main.tsx    (React root)
+
+Inside server/:
+  113 router files in server/routers/
+  68 service files in server/services/
+  Core infrastructure in server/_core/
+    (ably.ts, auth, cookies, email, env, index.ts, llm.ts,
+     oauth.ts, sdk.ts, trpc.ts, vite.ts, websocket.ts, etc.)
+
+Inside curalive_ai_core/app/:
+  api/, core/, db/, models/, schemas/, services/, utils/, workers/
+
+Inside client/src/:
+  212 page files
+  85 component files
+  Also: App.tsx, AppEnhanced.tsx (see Section 8 — Consistency)
+
+
+SECTION 2 — RUNTIME ARCHITECTURE
+───────────────────────────────────
+
+Backend framework: Express.js + tRPC (TypeScript)
+Frontend framework: React 19 + Vite
+
+API layer:
+  tRPC handles all typed API calls at /api/trpc
+  REST endpoints exist for webhooks and public-facing token routes
+  WebSocket support via ws (used for real-time transcription and metrics)
+
+Frontend serving (production):
+  Node server uses express.static to serve dist/public/
+  All unmatched routes fall through to the SPA's index.html
+  SPA routing handled client-side by wouter (not React Router)
+
+Frontend serving (development):
+  Vite dev server middleware is attached directly to Express
+  (server/_core/vite.ts registers Vite as middleware)
+
+Routing model: Single Page Application (SPA)
+  All navigation is client-side via wouter <Route> / <Switch>
+  Server only intercepts /api/*, /health, and webhook routes
+
+Real-time: Ably (pub/sub for live events), WebSocket for metrics
+
+
+SECTION 3 — DATABASE STATE
+────────────────────────────
+
+Database type: PostgreSQL (confirmed connected at audit time)
+ORM: Drizzle ORM
+Query layer: rawSql() wrapper for complex queries, drizzle() for typed
+
+Schema files:
+  drizzle/schema.ts          (primary schema)
+  drizzle/gaps.schema.ts     (supplemental — organisations table, etc.)
+  drizzle/partners.schema.ts (partner-specific tables)
+  drizzle/relations.ts       (Drizzle relation definitions)
+
+Migrations: 48 SQL migration files present (0000 through 0047)
+  Note: Two files share the 0030 and 0031 prefix (branching artifact)
+    0030_goofy_bastion.sql + 0030_light_bloodaxe.sql
+    0031_chilly_shinko_yamashiro.sql + 0031_silent_gauntlet.sql
+  This is a known migration numbering collision — does not prevent
+  runtime but is a consistency risk for future migrations.
+
+Confirmed live table counts: 221 tables
+Key data rows confirmed: 16 shadow_sessions, 5 organisations,
+  5 client_tokens, 26 archive_events, 2 billing_invoices
+
+archive_events: Does NOT have an updated_at column.
+
+Drizzle config: drizzle.config.ts at repo root
+
+
+SECTION 4 — AI SERVICE INTEGRATION
+─────────────────────────────────────
+
+Python AI service location: curalive_ai_core/
+  Structure: FastAPI app with api/, core/, db/, models/,
+             schemas/, services/, utils/, workers/
+  Database: Shares same PostgreSQL via DATABASE_URL
+  Driver: psycopg v3 (psycopg[binary]==3.3.3)
+  Driver string: postgresql+psycopg:// (auto-converted from postgresql://)
+  LLM key: Reads as LLM_API_KEY (NOT OPENAI_API_KEY)
+
+Connection from Node to Python:
+  File: server/services/AICoreClient.ts
+  Base URL: process.env.AI_CORE_URL ?? "http://localhost:5000"
+  Timeout: 30s default, 120s for long-running operations
+  Retries: 2 attempts with 1s delay
+  Error types: timeout, network, upstream, parse
+
+What Node sends to Python:
+  Canonical event objects with segments, speakers, transcript
+  Module list to execute (e.g. sentiment, compliance, summary)
+
+Also referenced in:
+  server/routers/socialMedia.ts (AI_CORE_URL for one endpoint)
+
+
+SECTION 5 — UI STATE
+──────────────────────
+
+Two App-level files exist in client/src/:
+  App.tsx         — 271 lines — PRIMARY active entry (imported by main.tsx)
+  AppEnhanced.tsx — 160 lines — EXISTS but NOT imported by main.tsx
+
+App.tsx imports: 80+ page components, uses wouter for routing
+AppEnhanced.tsx: Exists as a separate file — its purpose is unclear,
+  it is not wired into the live application.
+
+Total pages: 212 files in client/src/pages/
+  Many appear to be feature-specific (compliance, AI, billing, etc.)
+  Several appear to be admin/operator tools
+  Some appear to be legacy or experimental (DevelopmentDashboard,
+  TestGuide, TechHandover, SyncTest, etc.)
+
+Active dashboards identified in routing:
+  /dashboard             General dashboard
+  /operator/dashboard    Operator Command Dashboard (5-panel)
+  /occ                   Operator Control Console
+  /admin                 Admin panel
+  /ai-dashboard          AI features dashboard
+  /analytics             Analytics dashboard
+  /compliance            Compliance dashboard
+  /development-dashboard Development tools
+
+Mockup sandbox: Exists as a separate Replit artifact
+  (artifacts/mockup-sandbox/) — isolated Vite server, not part of
+  the main app's production bundle.
+
+Toast notifications: Uses sonner exclusively (not react-hot-toast,
+  not shadcn/ui toast). Components import from @/components/ui/sonner.
+
+
+SECTION 6 — BUILD & DEPLOYMENT LOGIC
+───────────────────────────────────────
+
+Dev command:
+  NODE_ENV=development tsx watch server/_core/index.ts
+
+Build command:
+  NODE_OPTIONS='--max-old-space-size=4096' \
+  vite build --logLevel warn && \
+  esbuild server/_core/index.ts \
+    --platform=node --packages=external --bundle --format=esm \
+    --outdir=_build && \
+  rm -rf dist && cp -r _build dist
+
+What the build produces:
+  _build/public/   -> React SPA (HTML, JS, CSS)
+  _build/index.js  -> Node server bundle
+  Then entire _build/ is copied to dist/
+
+Production start:
+  NODE_ENV=production node dist/index.js
+
+Port binding: Reads $PORT env var, binds 0.0.0.0
+  (defaults to 3000 if $PORT not set)
+
+Static file serving (production):
+  Express serves dist/public/ via express.static
+  SPA fallback: all unmatched routes -> dist/public/index.html
+
+Both dist/ and _build/ currently exist on disk (build has been run).
+
+Python production start:
+  uvicorn app.main:app --host 0.0.0.0 --port $PORT
+  Working directory: curalive_ai_core/
+
+
+SECTION 7 — ENVIRONMENT VARIABLES
+────────────────────────────────────
+
+REQUIRED (Node service will not start without):
+  DATABASE_URL          — PostgreSQL connection
+  JWT_SECRET            — Session authentication (also read as SESSION_SECRET)
+  NODE_ENV              — Runtime mode (development/production)
+
+REQUIRED for core features:
+  OPENAI_API_KEY        — LLM calls from Node (direct)
+  AI_CORE_URL           — URL of Python AI service
+  APP_ORIGIN            — Canonical public URL (defaults to curalive-platform.replit.app)
+  ABLY_API_KEY          — Real-time pub/sub
+  RECALL_AI_API_KEY     — Meeting bot integration
+  RECALL_AI_WEBHOOK_SECRET — Webhook verification
+  RESEND_API_KEY        — Email delivery
+  TWILIO_ACCOUNT_SID    — Telephony
+  TWILIO_AUTH_TOKEN     — Telephony
+  TWILIO_API_SECRET     — Telephony API
+  TWILIO_TWIML_APP_SID  — TwiML application
+
+OPTIONAL (features disabled if absent):
+  MUX_TOKEN_ID / MUX_TOKEN_SECRET  — Video streaming
+  MUX_WEBHOOK_SECRET               — Mux webhook verification
+  STRIPE_SECRET_KEY                — Payments
+  TELNYX_API_KEY                   — Telnyx telephony (alternative to Twilio)
+  DEFAULT_OBJECT_STORAGE_BUCKET_ID — Object/file storage
+  PRIVATE_OBJECT_DIR / PUBLIC_OBJECT_SEARCH_PATHS — Storage paths
+
+PYTHON SERVICE ONLY:
+  DATABASE_URL          — Same PostgreSQL (shared DB)
+  LLM_API_KEY           — OpenAI key (same value as OPENAI_API_KEY, different name)
+
+REPLIT-ONLY (must NOT be set on Render):
+  REPLIT_DEV_DOMAIN
+  REPLIT_DEPLOYMENT_URL
+  AI_INTEGRATIONS_OPENAI_BASE_URL / AI_INTEGRATIONS_OPENAI_API_KEY
+  BUILT_IN_FORGE_API_KEY / BUILT_IN_FORGE_API_URL
+  OAUTH_SERVER_URL
+  SESSION_SECRET (superseded by JWT_SECRET)
+  OWNER_OPEN_ID
+  APP_ID
+
+
+SECTION 8 — CONSISTENCY ISSUES
+─────────────────────────────────
+
+ISSUE 1 — Duplicate App component
+  App.tsx (active) and AppEnhanced.tsx (orphaned) both exist.
+  AppEnhanced.tsx is not imported anywhere in the live app.
+  Risk: Confusion about which is canonical. Low runtime risk, high
+  maintenance risk.
+
+ISSUE 2 — Migration numbering collision
+  0030 and 0031 each have two SQL files with different names.
+  Drizzle migration order depends on filename sort order.
+  Risk: Ambiguous migration history; future migrations may misfire.
+
+ISSUE 3 — REPLIT_DEV_DOMAIN still used in some routers
+  Files still directly reading REPLIT_DEV_DOMAIN:
+    server/routers/mailingListRouter.ts
+    server/routers/socialMedia.ts
+    server/routers/bridgeConsoleRouter.ts
+    server/routers/shadowModeRouter.ts
+    server/routers/operatorDashboardRouter.ts
+  These will return empty strings or fallback values on Render where
+  REPLIT_DEV_DOMAIN is not set. Mailing list unsubscribe links,
+  social OAuth callbacks, shadow mode webhooks, and operator report
+  URLs will be broken or malformed on Render.
+
+ISSUE 4 — LLM key name mismatch between services
+  Node reads: OPENAI_API_KEY
+  Python reads: LLM_API_KEY
+  Same key value, different variable name. Must set both on Render.
+  Not a code bug but an operational risk — easy to misconfigure.
+
+ISSUE 5 — AI_CORE_URL default points to localhost:5000
+  In server/services/AICoreClient.ts:
+    const AI_CORE_BASE_URL = process.env.AI_CORE_URL ?? "http://localhost:5000"
+  On Render, services cannot reach each other via localhost.
+  AI_CORE_URL must be set to the internal Render URL.
+  If not set, all AI analysis will silently fail.
+
+ISSUE 6 — 212 page files, many potentially unused
+  The pages/ directory has grown to 212 files. Some are clearly
+  legacy or experimental. No tree-shaking at the page level — all
+  are imported in App.tsx, increasing initial bundle analysis cost.
+
+
+SECTION 9 — RISK INDICATORS
+──────────────────────────────
+
+RISK: DEPLOYMENT FAILURE
+  [HIGH] AI_CORE_URL not set on Render -> Python service unreachable,
+    all AI analysis calls fail silently
+  [HIGH] LLM_API_KEY not set on Python service -> all LLM processing fails
+  [MEDIUM] REPLIT_DEV_DOMAIN used in 5 routers -> malformed URLs on Render
+
+RISK: RUNTIME ERRORS
+  [MEDIUM] operatorDashboardRouter.ts ~line 363: report URLs built with
+    REPLIT_DEV_DOMAIN — will produce empty/broken links on Render
+  [MEDIUM] socialMedia.ts: OAuth redirect URI hardcoded to
+    REPLIT_DEV_DOMAIN or localhost:5000 — social OAuth will fail on Render
+  [MEDIUM] shadowModeRouter.ts: webhook URL construction relies on
+    REPLIT_DEV_DOMAIN — Recall.ai webhooks will not register correctly
+
+RISK: ENVIRONMENT MISMATCH
+  [HIGH] Two env var names for the same OpenAI key (OPENAI_API_KEY vs
+    LLM_API_KEY) — one will almost certainly be missed at deploy time
+  [MEDIUM] APP_ORIGIN defaults to curalive-platform.replit.app —
+    if not set explicitly on Render, CORS and webhook return URLs
+    will point to wrong domain
+
+RISK: BROKEN ROUTING
+  [LOW] AppEnhanced.tsx exists but is unused — not a routing risk
+    today but could cause confusion if accidentally wired in
+  [LOW] Migration numbering collision — does not affect routing but
+    could cause issues if migrations need to be re-run cleanly
+
+CURRENT HEALTH STATUS (live at audit time):
+  Core:         HEALTHY
+  Database:     CONNECTED (221 tables)
+  Auth:         ENABLED (JWT)
+  OpenAI:       ENABLED (via Replit integration proxy)
+  Ably:         ENABLED
+  Resend:       ENABLED
+  Recall.ai:    ENABLED
+  Twilio:       ENABLED
+  Mux:          DISABLED (keys not set)
+  Stripe:       DISABLED (keys not set)
+  OAuth:        DISABLED (Replit-only, not needed on Render)
+
+
+SECTION 10 — DATABASE TABLE LIST (221 tables)
+───────────────────────────────────────────────
+
+adaptive_thresholds, advisory_chat_messages, agentic_analyses,
+aggregate_intelligence, agm_dissent_patterns, agm_governance_observations,
+agm_governance_scores, agm_intelligence_sessions, agm_resolutions,
+agm_shareholder_signals, ai_am_audit_log, ai_evolution_observations,
+ai_generated_content, ai_tool_proposals, aic_analysis_jobs,
+aic_analysis_results, aic_benchmarks, aic_briefings, aic_commitments,
+aic_compliance_flags, aic_drift_events, aic_events, aic_governance_records,
+aic_org_profiles, aic_stakeholder_signals, alert_history, alert_preferences,
+analyst_consensus_data, analyst_expectation_audits, approved_questions_queue,
+archive_events, attendee_registrations, autonomous_interventions,
+bastion_bookings, bastion_guidance_tracker, bastion_intelligence_sessions,
+bastion_investor_observations, billing_activity_log, billing_client_contacts,
+billing_clients, billing_credit_notes, billing_email_events, billing_fx_rates,
+billing_invoices, billing_line_item_templates, billing_line_items,
+billing_payments, billing_quote_versions, billing_quotes,
+billing_recurring_templates, board_intelligence_compass, board_members,
+board_resolutions, bridge_call_recordings, bridge_conferences, bridge_events,
+bridge_greeter_queue, bridge_operator_actions, bridge_participants,
+bridge_qa_questions, briefing_accuracy_scores, briefing_questions,
+briefings, call_analytics, call_recordings, client_tokens, commitment_tracking,
+compliance_digests, compliance_events, compliance_obligations,
+compliance_violations, conference_attendees, conference_events,
+conference_participants, conferences, content_triggers, corporate_actions,
+crm_contacts, crm_interactions, crm_pipeline_stages, custom_field_definitions,
+custom_field_values, deadlines, deal_room_participants, deal_rooms,
+deferred_shares, disclosure_obligations, email_events, email_queue,
+emotional_intelligence_scores, error_patterns, escalation_rules,
+event_access_tokens, event_briefs, event_follow_up_actions,
+event_intelligence_summaries, event_participants, event_reports,
+event_schedules, feature_flags, feedback_analytics, governance_observations,
+guardian_health_log, handoff_evidence, handoff_intelligence,
+impact_assessments, innovation_scouting_results, institutional_holdings,
+institutional_mandate_scores, intelligence_signals, intervention_library,
+investor_journeys, investor_portal_access, issue_tracking, jurisdiction_rules,
+knowledge_base_entries, language_detections, live_documents,
+live_question_queue, live_rolling_summaries, live_session_context,
+live_session_diagnostics, live_session_metrics, live_session_timeline,
+live_translations, mailing_list_subscribers, market_intelligence,
+market_movers, media_mentions, meeting_intelligence, ml_feedback_loops,
+module_outputs, multi_speaker_diarization, notification_queue, notifications,
+observation_queue, operator_notes, orchestration_tasks, organisations,
+ownership_changes, partners, pilot_intelligence, portfolio_analytics,
+post_event_actions, post_event_intelligence, post_event_reports,
+premium_features, prior_commitment_audits, push_subscriptions,
+qa_auto_triage_results, readiness_scores, recall_bots, recall_bot_sessions,
+recall_transcription_segments, redaction_requests, redaction_results,
+registration_events, report_comments, report_module_scores,
+resource_allocations, scheduled_sessions, sentiment_snapshots,
+session_handoffs, session_markers, session_messages, session_operators,
+session_readiness_checks, shadow_sessions, slide_thumbnails, soc2_controls,
+social_audit_log, social_media_accounts, social_metrics, social_post_platforms,
+social_posts, speaker_pace_results, speaking_pace_analysis, stripe_customers,
+stripe_payment_events, stripe_subscriptions, studio_interconnections,
+studio_sessions, sustainability_reports, tagged_metrics,
+toxicity_filter_results, training_call_logs, training_conferences,
+training_lounge, training_mode_sessions, training_participants,
+training_performance_metrics, transcript_edit_audit_log, transcript_edits,
+transcript_versions, transcription_jobs, user_feedback, users,
+valuation_impacts, virtual_studios, webcast_analytics_expanded,
+webcast_enhancements, webcast_events, webcast_polls, webcast_qa,
+webcast_registrations, webphone_carrier_status, webphone_sessions,
+white_label_clients
+
+Total: 221 tables
+
+═══════════════════════════════════════════════════════════
+END OF AUDIT — NO CODE WAS MODIFIED
+═══════════════════════════════════════════════════════════
