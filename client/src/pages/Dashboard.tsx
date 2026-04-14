@@ -11,6 +11,7 @@ import {
   Building2, LogIn, LogOut, User, Phone, Video,
   Mic, FileText, MessageSquare, Brain, Heart,
   Monitor, Wifi, Database, Receipt, CalendarDays, Mail, Tv,
+  ChevronRight, ChevronLeft,
 } from "lucide-react";
 
 import ShadowMode from "./ShadowMode";
@@ -456,6 +457,49 @@ function NewDashboardTab() {
               <p>Module {subTab} integrated into app shell.</p>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsTab() {
+  return (
+    <div className="max-w-4xl mx-auto p-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+            <Monitor className="w-4 h-4 text-blue-400" />
+            Display Settings
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-400">Dark Mode</span>
+              <div className="w-8 h-4 bg-emerald-500 rounded-full relative">
+                <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full" />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-400">High Contrast</span>
+              <div className="w-8 h-4 bg-slate-700 rounded-full relative">
+                <div className="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-purple-400" />
+            Security
+          </h3>
+          <div className="space-y-4">
+            <button className="w-full text-left px-3 py-2 bg-white/[0.05] rounded-lg text-xs text-slate-300 hover:bg-white/[0.1] transition-colors">
+              Change Password
+            </button>
+            <button className="w-full text-left px-3 py-2 bg-white/[0.05] rounded-lg text-xs text-slate-300 hover:bg-white/[0.1] transition-colors">
+              Two-Factor Authentication
+            </button>
+          </div>
         </div>
       </div>
     </div>
