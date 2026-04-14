@@ -1,1 +1,0 @@
-ALTER TABLE `occ_participants` ADD `registrationId` int;

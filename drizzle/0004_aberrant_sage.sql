@@ -1,1 +1,0 @@
-ALTER TABLE `ir_contacts` ADD `phoneNumber` varchar(32);

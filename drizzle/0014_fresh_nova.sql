@@ -1,1 +1,0 @@
-ALTER TABLE `webcast_registrations` ADD `attendee_token` varchar(64);
