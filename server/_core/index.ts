@@ -160,6 +160,16 @@ async function startServer() {
     fsM.createReadStream(filePath).pipe(res);
   });
 
+  app.get("/download/curalive_replit.dump", async (_req, res) => {
+    const fsM = await import("fs");
+    const pathM = await import("path");
+    const filePath = pathM.resolve(process.cwd(), "curalive_replit.dump");
+    if (!fsM.existsSync(filePath)) return res.status(404).send("Dump file not found");
+    res.setHeader("Content-Disposition", "attachment; filename=curalive_replit.dump");
+    res.setHeader("Content-Type", "application/octet-stream");
+    fsM.createReadStream(filePath).pipe(res);
+  });
+
   app.get("/health", async (_req, res) => {
     const { validateEnv } = await import("./config/env");
     const { getServiceStatus } = await import("./config/serviceStatus");
