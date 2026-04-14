@@ -1,0 +1,124 @@
+TASK: Perform a full system audit of the CuraLive project.
+
+CRITICAL RULES:
+
+* DO NOT modify any code
+* DO NOT install anything
+* DO NOT fix anything
+* DO NOT refactor anything
+* DO NOT suggest improvements unless explicitly asked later
+
+This is a READ-ONLY AUDIT.
+
+---
+
+OBJECTIVE:
+
+Provide a detailed, accurate, and context-aware audit of the current CuraLive system.
+
+---
+
+SECTION 1 — Project Structure
+
+List:
+
+* Top-level directories
+* Key folders (client, server, curalive_ai_core, shared, drizzle, etc.)
+* Entry points (server start file, frontend entry)
+
+---
+
+SECTION 2 — Runtime Architecture
+
+Identify:
+
+* Backend framework (Express, etc.)
+* Frontend framework (React, Vite, etc.)
+* How frontend is served in production
+* How routing works (SPA vs server routes)
+
+---
+
+SECTION 3 — Database State
+
+Identify:
+
+* Database type (PostgreSQL, MySQL, etc.)
+* ORM or query layer (Drizzle, etc.)
+* Whether migrations exist
+* Whether schema appears consistent
+
+---
+
+SECTION 4 — AI Service Integration
+
+Identify:
+
+* Presence of curalive_ai_core
+* How it is connected to the main app
+* Any API calls between Node and Python
+
+---
+
+SECTION 5 — UI State
+
+Identify:
+
+* How many UI systems exist
+* Which UI is currently active
+* Whether multiple dashboards/components coexist
+* Whether mockup/sandbox UI is integrated or separate
+
+---
+
+SECTION 6 — Build & Deployment Logic
+
+Identify:
+
+* Build commands (if present)
+* How the app is started
+* Whether a production build exists (_build, dist, etc.)
+* How static files are served
+
+---
+
+SECTION 7 — Environment Variables
+
+List:
+
+* Expected environment variables (names only)
+* Which services depend on them
+
+---
+
+SECTION 8 — Consistency Check
+
+Identify ANY inconsistencies such as:
+
+* multiple database approaches
+* multiple UI systems
+* unused or legacy code paths
+* duplicated logic
+* conflicting configurations
+
+---
+
+SECTION 9 — Risk Indicators
+
+Identify anything that could cause:
+
+* deployment failure
+* runtime errors
+* environment mismatch
+* broken routing
+
+---
+
+OUTPUT FORMAT:
+
+* Clear structured sections
+* No assumptions
+* No code changes
+* No fixes
+
+This is an audit report only.
