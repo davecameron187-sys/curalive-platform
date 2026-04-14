@@ -822,3 +822,9 @@ id = "tW7_f2EXniCHiTXVBSWQg"
 uri = "file://CURALIVE_RENDER_DEPLOYMENT_BRIEF.md"
 type = "text"
 title = "CuraLive Render Migration — Fresh Technical Audit"
+
+[[outputs]]
+id = "INOPEzktvPBkzh9QwD_6v"
+uri = "file://curalive_schema_columns.txt"
+type = "text"
+title = "CuraLive — Full DB Schema (all columns, 2730 rows)"
