@@ -1,4 +1,4 @@
-import { boolean, integer, real, smallint, json, text, timestamp, varchar, bigint, serial, pgTable, pgEnum } from "drizzle-orm/pg-core";
+import { boolean, integer, real, smallint, json, jsonb, text, timestamp, varchar, bigint, serial, pgTable, pgEnum, uniqueIndex, index } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["user", "admin", "operator"]);
 export const statusEnum = pgEnum("status", ["upcoming", "live", "completed"]);
@@ -2419,27 +2419,30 @@ export const taggedMetrics = pgTable("tagged_metrics", {
 export type TaggedMetric = typeof taggedMetrics.$inferSelect;
 export type InsertTaggedMetric = typeof taggedMetrics.$inferInsert;
 
-export const shadowSessions = pgTable("shadow_sessions", {
-  id: serial("id").primaryKey(),
-  clientName: varchar("client_name", { length: 255 }).notNull(),
-  eventName: varchar("event_name", { length: 255 }).notNull(),
-  eventType: varchar("event_type", { length: 64 }).notNull(),
-  platform: varchar("platform", { length: 64 }).default("zoom").notNull(),
-  meetingUrl: varchar("meeting_url", { length: 1000 }).notNull(),
-  recallBotId: varchar("recall_bot_id", { length: 255 }),
-  ablyChannel: varchar("ably_channel", { length: 255 }),
-  localTranscriptJson: text("local_transcript_json"),
-  localRecordingPath: varchar("local_recording_path", { length: 1000 }),
-  status: varchar("status", { length: 64 }).default("pending").notNull(),
-  transcriptSegments: integer("transcript_segments").default(0),
-  sentimentAvg: real("sentiment_avg"),
-  complianceFlags: integer("compliance_flags").default(0),
-  taggedMetricsGenerated: integer("tagged_metrics_generated").default(0),
-  notes: text("notes"),
-  startedAt: bigint("started_at", { mode: "number" }),
-  endedAt: bigint("ended_at", { mode: "number" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const shadowSessions = pgTable(
+  "shadow_sessions",
+  {
+    id: serial("id").primaryKey(),
+    sessionId: text("session_id").notNull(),
+    operatorId: integer("operator_id").notNull(),
+    status: text("status").notNull().default("active"),
+    metadata: jsonb("metadata").default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    sessionIdUnique: uniqueIndex("shadow_sessions_session_id_key").on(
+      table.sessionId
+    ),
+    operatorIdIdx: index("shadow_sessions_operator_id_idx").on(
+      table.operatorId
+    ),
+  })
+);
 
 export type ShadowSession = typeof shadowSessions.$inferSelect;
 export type InsertShadowSession = typeof shadowSessions.$inferInsert;
