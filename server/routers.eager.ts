@@ -322,8 +322,10 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(({ ctx }) => {
       if (ctx.user) return ctx.user;
-      const isDev = process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development');
-      if (isDev) return { id: 1, name: 'Dev Operator', email: 'dev@curalive.local', role: 'admin' as const };
+      const env = (process.env.NODE_ENV || "").trim();
+      const bypassEnabled = (process.env.AUTH_BYPASS || "").trim() === "true";
+      const DEV_BYPASS = bypassEnabled && env !== "production";
+      if (DEV_BYPASS) return { id: 1, name: 'Dev Operator', email: 'dev@curalive.local', role: 'admin' as const };
       return null;
     }),
     logout: publicProcedure.mutation(({ ctx }) => {

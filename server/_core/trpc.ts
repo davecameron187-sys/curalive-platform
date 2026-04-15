@@ -11,7 +11,9 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 export const createCallerFactory = t.createCallerFactory;
 
-const DEV_BYPASS = process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development');
+const env = (process.env.NODE_ENV || "").trim();
+const bypassEnabled = (process.env.AUTH_BYPASS || "").trim() === "true";
+const DEV_BYPASS = bypassEnabled && env !== "production";
 
 const DEV_USER = {
   id: 1,
