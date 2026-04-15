@@ -257,10 +257,26 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<User> {
+    const env = (process.env.NODE_ENV || "").trim();
+    const bypassEnabled = (process.env.AUTH_BYPASS || "").trim() === "true";
+    const DEV_BYPASS = bypassEnabled && env !== "production";
+
     // Regular authentication flow
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
-    const session = await this.verifySession(sessionCookie);
+    let session = await this.verifySession(sessionCookie);
+
+    if (!session && DEV_BYPASS) {
+      return {
+        id: 1,
+        openId: "dev-bypass-id",
+        name: "Dev Operator",
+        email: "dev@curalive.local",
+        role: "admin",
+        lastSignedIn: new Date(),
+        createdAt: new Date(),
+      } as User;
+    }
 
     if (!session) {
       throw ForbiddenError("Invalid session cookie");

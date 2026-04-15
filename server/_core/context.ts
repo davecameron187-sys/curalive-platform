@@ -20,8 +20,9 @@ export async function createContext(
     user = null;
   }
 
-  // DEBUG: Forcing bypass to true for staging verification
-  const DEV_BYPASS = true;
+  const env = (process.env.NODE_ENV || "").trim();
+  const bypassEnabled = (process.env.AUTH_BYPASS || "").trim() === "true";
+  const DEV_BYPASS = bypassEnabled && env !== "production";
 
   if (!user && DEV_BYPASS) {
     user = { id: 1, name: "Dev Operator", email: "dev@curalive.local", role: "admin" } as any;
