@@ -28,13 +28,13 @@ export function registerOAuthRoutes(app: Express) {
       const sessionUser = await sdk.authenticateRequest(req);
       if (sessionUser) {
         user = { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email, role: sessionUser.role };
-      } else if (DEV_BYPASS) {
-        user = DEV_USER;
       }
     } catch (e) {
-      if (DEV_BYPASS) {
-        user = DEV_USER;
-      }
+      console.error("[AuthStatus] Auth check failed", e);
+    }
+
+    if (!user && DEV_BYPASS) {
+      user = DEV_USER;
     }
 
     res.json({

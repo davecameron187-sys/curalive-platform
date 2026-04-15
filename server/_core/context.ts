@@ -20,6 +20,11 @@ export async function createContext(
     user = null;
   }
 
+  const DEV_BYPASS = process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development');
+  if (!user && DEV_BYPASS) {
+    user = { id: 1, name: "Dev Operator", email: "dev@curalive.local", role: "admin" } as any;
+  }
+
   return {
     req: opts.req,
     res: opts.res,
