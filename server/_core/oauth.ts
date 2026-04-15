@@ -14,9 +14,10 @@ export function registerOAuthRoutes(app: Express) {
 
   app.get("/api/auth/status", async (req: Request, res: Response) => {
     const mode = oauthEnabled ? "oauth" : "dev-bypass";
-    const isStaging = process.env.NODE_ENV?.trim() === 'staging' || process.env.NODE_ENV?.trim() === 'test';
-    const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
-    const bypassEnabled = process.env.AUTH_BYPASS === 'true';
+    const env = (process.env.NODE_ENV || "").trim();
+    const bypassEnabled = (process.env.AUTH_BYPASS || "").trim() === "true";
+    const isStaging = env === "staging" || env === "test";
+    const isDev = env === "development" || env === "";
     const DEV_BYPASS = (isStaging || isDev) && bypassEnabled;
 
     const DEV_USER = {

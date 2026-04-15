@@ -20,9 +20,10 @@ export async function createContext(
     user = null;
   }
 
-  const isStaging = process.env.NODE_ENV?.trim() === 'staging' || process.env.NODE_ENV?.trim() === 'test';
-  const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
-  const bypassEnabled = process.env.AUTH_BYPASS === 'true';
+  const env = (process.env.NODE_ENV || "").trim();
+  const bypassEnabled = (process.env.AUTH_BYPASS || "").trim() === "true";
+  const isStaging = env === "staging" || env === "test";
+  const isDev = env === "development" || env === "";
   const DEV_BYPASS = (isStaging || isDev) && bypassEnabled;
 
   if (!user && DEV_BYPASS) {
