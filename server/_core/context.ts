@@ -22,9 +22,9 @@ export async function createContext(
 
   const env = (process.env.NODE_ENV || "").trim();
   const bypassEnabled = (process.env.AUTH_BYPASS || "").trim() === "true";
-  const isStaging = env === "staging" || env === "test";
-  const isDev = env === "development" || env === "";
-  const DEV_BYPASS = (isStaging || isDev) && bypassEnabled;
+  // Activate bypass if explicitly enabled AND not in a production environment.
+  // We treat anything that isn't "production" as a potential dev/staging environment.
+  const DEV_BYPASS = bypassEnabled && env !== "production";
 
   if (!user && DEV_BYPASS) {
     user = { id: 1, name: "Dev Operator", email: "dev@curalive.local", role: "admin" } as any;
