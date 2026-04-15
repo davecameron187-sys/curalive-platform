@@ -13,7 +13,12 @@ export const createCallerFactory = t.createCallerFactory;
 
 const DEV_BYPASS = process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development');
 
-const DEV_USER = { id: 0, name: 'Dev Operator', email: 'dev@curalive.local', role: 'operator' as const };
+const DEV_USER = {
+  id: 1,
+  name: "Dev Operator",
+  email: "dev@curalive.local",
+  role: "admin" as const
+};
 
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;

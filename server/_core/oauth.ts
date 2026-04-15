@@ -14,14 +14,28 @@ export function registerOAuthRoutes(app: Express) {
 
   app.get("/api/auth/status", async (req: Request, res: Response) => {
     const mode = oauthEnabled ? "oauth" : "dev-bypass";
+    const DEV_BYPASS = process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development');
+    const DEV_USER = {
+      id: 1,
+      name: "Dev Operator",
+      email: "dev@curalive.local",
+      role: "admin"
+    };
+
     let user = null;
 
     try {
       const sessionUser = await sdk.authenticateRequest(req);
       if (sessionUser) {
         user = { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email, role: sessionUser.role };
+      } else if (DEV_BYPASS) {
+        user = DEV_USER;
       }
-    } catch {}
+    } catch (e) {
+      if (DEV_BYPASS) {
+        user = DEV_USER;
+      }
+    }
 
     res.json({
       authenticated: Boolean(user),
