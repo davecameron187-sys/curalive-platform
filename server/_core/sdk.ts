@@ -257,8 +257,8 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<User> {
-    const env = (process.env.NODE_ENV || "").trim();
-    const bypassEnabled = (process.env.AUTH_BYPASS || "").trim() === "true";
+    const env = (process.env.NODE_ENV || "").replace(/\s/g, "");
+    const bypassEnabled = (process.env.AUTH_BYPASS || "").replace(/\s/g, "") === "true";
     const DEV_BYPASS = bypassEnabled && env !== "production";
 
     // Regular authentication flow
