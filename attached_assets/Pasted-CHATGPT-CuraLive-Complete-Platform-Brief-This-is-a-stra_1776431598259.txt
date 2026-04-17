@@ -1,0 +1,120 @@
+CHATGPT — CuraLive Complete Platform Brief
+This is a strategic challenge, not a technical task. Read everything carefully before responding.
+
+What CuraLive Is
+CuraLive is a world-class AI-powered communication intelligence platform for regulated corporate communication events — earnings calls, AGMs, investor days, analyst briefings, regulatory disclosure sessions.
+It is built around a filed patent specification covering 9 invention families including:
+
+Cross-platform bridge capture via DTMF
+Non-disruptive AI monitoring
+Canonical signal normalisation
+Multi-dimensional communication analysis — 7 concurrent AI pipelines
+Embedded real-time operator intelligence interface
+Cross-event benchmarking
+Autonomous compliance intervention
+Predictive risk and answer-risk architecture
+Organisational memory graph
+Autonomous policy synthesis
+AEOS enterprise workflow state machine
+Deterministic governance gateway
+Identity-confidence fusion module
+
+The platform has two distinct user experiences:
+Shadow Mode — the operator platform. Used by CuraLive operators to run regulated events on behalf of client organisations. Dark theme. Operational precision.
+CuraLive Insight — the client portal. Used by CCOs, IR Directors, and Chief Compliance Officers at listed companies. Light theme. Strategic intelligence. Inspiring daily experience.
+
+What Has Already Been Designed
+The following features and flows have already been identified. Do NOT repeat these — your job is to find what's missing.
+Shadow Mode — already identified:
+
+Home dashboard — today's schedule, active events, operator overview
+Client management — client database, org profiles, subscriptions
+Event management — booking, scheduling, event setup
+Registration management — participant registrations, approvals, identity building
+Pre-event communication — confirmation emails, reminders, dial-in delivery
+Connection configuration — Recall.ai bot, webphone, local capture, hybrid detection
+Pre-event preparation — AI brief review, connection testing, participant intelligence loading
+Live console — heartbeat, 9 AI pipelines, intelligence feed, compliance alerts, answer-risk assessment
+Live Q&A management — AI-triaged queue, risk-scored questions, bump up/down, hold, block, release
+Participant intelligence layer — pre-event tagging of participants as Friendly/Neutral/Watch/Aggressive/Block, context notes, queue priority settings, real-time identity matching during the event, conduct history
+Post-event workflow — report generation, governance record, compliance log, recording delivery
+AEOS state machine — quotation through reconciliation
+Invoicing and billing
+Reports and archives
+Operator management and settings
+
+CuraLive Insight — already identified:
+
+Morning dashboard — communication health score, early warning signals, narrative watch
+Commitment ledger — every commitment tracked, status monitored, deadline alerts
+Pre-event preparation — AI briefing, predicted analyst questions, language guidance, preparation checklist
+Participant intelligence management — tagging participants before events, adding context notes, setting queue priorities
+Live event view — simplified client-facing view during events, key signals only
+Post-event intelligence report — what happened, themes, compliance summary, sentiment arc
+Event history and trend analysis
+Benchmarking — anonymised peer comparisons, sector data
+Team management — access and permissions
+Reports and exports
+
+Unique features already identified:
+
+Participant intelligence layer — pre-event tagging with real-time identity matching during the event
+Answer-risk assessment — pre-delivery compliance check on candidate responses
+Analyst sentiment tracking over time — building profiles on individual analysts across all events
+Conduct history — tracking participant behaviour across events
+Early warning signal — predictive intelligence based on communication pattern analysis
+Organisational memory graph — deepening institutional knowledge with every event
+Autonomous policy synthesis — AI-generated governance policy proposals from accumulated intelligence
+Narrative immune system — detecting out-of-character language vs institutional DNA
+Unspoken intelligence layer — tracking topics that never appeared but should have
+Communication risk score per person — per-executive risk profile
+Peer intelligence network — anonymised cross-client benchmarking
+
+
+Your Challenge
+This is where we need your best thinking.
+Task 1 — The Golden Egg Hunt
+Look at everything above. Now think about what's missing. Not obvious features. Not table stakes. Something genuinely unique and powerful that nobody has thought of yet.
+Think from the perspective of:
+
+A CCO who runs 20 regulated events a year and lives in fear of a compliance incident
+An IR Director preparing for an AGM with 500 registered participants and 12 activist investors on the list
+A Chief Compliance Officer who needs a defensible audit trail for every communication decision
+A company secretary managing board communications across multiple jurisdictions
+An acquirer like Lumi Global evaluating CuraLive for acquisition — what would make them pay a premium?
+
+What feature, capability, or intelligence output would make any of these people say "we cannot run a regulated event without this"?
+What is the equivalent of the participant intelligence layer — something so obvious in hindsight that it feels like it should have always existed?
+Push yourself. The obvious answers are already covered above. Go deeper.
+Task 2 — Complete Platform Flow Map
+Design the complete flow map for both platforms. Every screen. Every user action. Every data flow between operator and client. Every touchpoint in the event lifecycle from first client contact through to post-event reconciliation.
+Show:
+
+Every screen in Shadow Mode with its purpose
+Every screen in CuraLive Insight with its purpose
+How data flows between the two platforms in real time
+The complete event lifecycle — pre, during, post
+Where AI outputs feed which screens
+Where client-provided intelligence feeds operator screens
+
+Be exhaustive. If a screen exists, it must appear. If a data flow exists, it must be shown.
+Task 3 — The Live Q&A Vision
+The live Q&A management feature is one of the most critical and visible features in the entire platform. Both operators and clients need it. Both need to be able to bump questions up or down in real time.
+Design the world-class live Q&A experience. For both the operator console and the client portal version. What does it look like? How does it work? What AI intelligence surrounds each question? How do the operator and client interact with the same queue simultaneously without conflict?
+What would make this the best live Q&A management tool ever built for regulated events?
+
+The Standard
+Everything CuraLive builds must answer this question:
+"Does this tell the user something they couldn't know without CuraLive, before they needed to know it?"
+If the answer is no — it doesn't belong. If yes — it belongs and needs to be world class.
+Apply this standard to everything you propose.
+
+What We Want Back
+
+Your golden egg — the one thing we haven't thought of that would make an acquirer pay a premium
+The complete platform flow map for both Shadow Mode and CuraLive Insight
+The world-class live Q&A design for both operator and client
+Any other genuinely unique features you identified that meet the standard above
+
+Be bold. Be specific. Be honest if something is genuinely new versus incremental.
+End of ChatGPT Packet
