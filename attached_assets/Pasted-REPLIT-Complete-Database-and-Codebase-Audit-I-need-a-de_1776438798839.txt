@@ -1,0 +1,75 @@
+REPLIT — Complete Database and Codebase Audit
+I need a deep audit of the CuraLive platform codebase. This is read-only. Do not change anything.
+Context
+CuraLive is a world-class AI-powered communication intelligence platform for regulated corporate events. We are designing the complete production database schema. Before doing that we need a complete, honest picture of what exists, what works, what's broken, and what's missing.
+We have already received a schema audit from another tool. Your job is to go deeper — look at what they may have missed, find connections and problems they didn't see, and give us your honest independent assessment.
+
+Task 1 — Database Schema Reality Check
+The repository Drizzle schema appears to use mysql-core. But the live Render database is PostgreSQL.
+Confirm:
+
+Does drizzle/schema.ts use mysql-core or pg-core imports?
+Are there any other schema files in the project that use pg-core?
+What does drizzle.config.ts or equivalent say about the database driver?
+Is there evidence of a migration from MySQL to PostgreSQL — any migration files, any comments, any connection strings?
+What does server/db.ts or the database connection file actually connect to?
+
+This is the most important question. We need to know definitively whether the codebase is targeting MySQL or PostgreSQL before designing anything.
+
+Task 2 — The 150 Table Reality
+ChatGPT identified approximately 150 tables in drizzle/schema.ts. For the following specific table groups, tell us:
+
+Are these tables actually being called from active service files or routers?
+Or do they exist in the schema but have no active code paths calling them?
+
+Check these specifically:
+
+agm_intelligence_sessions, agm_resolutions, agm_dissent_patterns, agm_governance_observations
+bastion_intelligence_sessions, bastion_investor_observations, bastion_guidance_tracker, bastion_bookings
+lumi_bookings
+crisis_predictions, valuation_impacts
+ai_evolution_observations, ai_tool_proposals, capability_roadmap
+disclosure_certificates
+communication_genome — does this table exist at all?
+shadow_sessions, session_runtime — are these active?
+
+For each group return: Active and wired / Exists but orphaned / Not found in schema
+
+Task 3 — The Nine Missing Foundations
+ChatGPT identified these as missing from the schema. Confirm whether each exists in any form — even partially — or is completely absent:
+
+Canonical organisation master table
+Canonical participant identity graph with confidence scoring
+Unified AEOS event lifecycle state machine
+Disclosure corpus storage
+Communication Genome storage
+Canonical AI analysis run and result layer
+First-class commitment ledger
+Canonical benchmarking substrate
+Governance decision ledger
+
+For each: Exists fully / Exists partially — describe what's there / Completely absent
+
+Task 4 — The Golden Egg Infrastructure
+These four capabilities need dedicated database infrastructure. Tell us what currently exists that could support each one, and what is completely missing:
+Participant Intelligence Layer
+Needs: participant profiles, tagging, conduct history, activist flags, attack vectors, queue priority settings, identity confidence scores
+Disclosure Consistency Engine
+Needs: disclosure corpus storage, document indexing, statement-to-document matching records, delta audit trail
+Pre-Speak Intelligence Lock
+Needs: speak state history, decision records, contributing signal snapshots, operator override log
+Communication Genome
+Needs: executive language baselines, phrase frequency profiles, certainty level history, deviation detection records, ghost draft history
+
+Task 5 — Your Honest Assessment
+Having looked at everything — what is your overall honest assessment of this codebase?
+
+What is genuinely impressive and well-built?
+What is technically concerning or needs to be addressed before building further?
+What is the single most important thing we should fix or establish before adding anything new?
+Is there anything you found that ChatGPT's audit missed that we should know about?
+
+Be direct. We need the truth, not reassurance.
+
+Return everything. This audit shapes all decisions going forward.
+End of Replit Packet
