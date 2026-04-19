@@ -402,11 +402,11 @@ export default function ShadowMode() {
         {activeTab === "history" && (
           <div style={{ flex: 1 }}>
             <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px", marginBottom: "12px" }}>COMPLETED SESSIONS</div>
-            {sessions.filter((s) => s.status === "ended" || s.status === "archived").length === 0 && (
+            {sessions.filter((s) => s.status === "ended" || s.status === "archived" || s.status === "completed").length === 0 && (
               <div style={{ color: "#334155", fontSize: "12px" }}>No completed sessions yet</div>
             )}
             {sessions
-              .filter((s) => s.status === "ended" || s.status === "archived")
+              .filter((s) => s.status === "ended" || s.status === "archived" || s.status === "completed")
               .map((s) => (
                 <div key={s.id} style={{ padding: "10px 12px", marginBottom: "6px", background: "#111", border: "1px solid #1e293b", borderRadius: "4px", fontSize: "12px" }}>
                   <div style={{ color: "#e2e8f0" }}>{s.eventName}</div>
