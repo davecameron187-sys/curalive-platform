@@ -58,7 +58,7 @@ const PLATFORM_LABELS: Record<string, string> = {
   teams: "Teams",
   meet: "Google Meet",
   webex: "Webex",
-  choruscall: "Chorus Call",
+  choruscall: "Phone/Dial-in",
   other: "Other",
 };
 
