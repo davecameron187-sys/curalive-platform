@@ -260,15 +260,29 @@ export const shadowModeRouter = router({
       const RECALL_SUPPORTED = new Set(["zoom", "teams", "meet", "webex"]);
       const isRecallSupported = RECALL_SUPPORTED.has(input.platform);
 
-      const [inserted] = await db.insert(shadowSessions).values({
-        clientName: input.clientName,
-        eventName: input.eventName,
-        eventType: input.eventType,
-        platform: input.platform,
-        meetingUrl: input.meetingUrl,
-        status: "pending",
-        notes: input.notes ?? null,
-      }).returning();
+      let inserted: any;
+      try {
+        const rows = await db.insert(shadowSessions).values({
+          clientName: input.clientName,
+          eventName: input.eventName,
+          eventType: input.eventType,
+          platform: input.platform,
+          meetingUrl: input.meetingUrl,
+          status: "pending",
+          notes: input.notes ?? null,
+        }).returning();
+        inserted = rows[0];
+      } catch (insertErr: any) {
+        console.error("[Shadow] shadow_sessions INSERT failed:", insertErr?.message ?? insertErr);
+        console.error("[Shadow] INSERT error detail:", insertErr?.detail ?? "");
+        console.error("[Shadow] INSERT error code:", insertErr?.code ?? "");
+        throw new Error(`Session insert failed: ${insertErr?.message ?? "unknown database error"}`);
+      }
+
+      if (!inserted) {
+        console.error("[Shadow] shadow_sessions INSERT returned no rows");
+        throw new Error("Session insert returned no rows — check database table structure");
+      }
 
       const sessionId = inserted.id;
       const ablyChannel = `shadow-${sessionId}-${Date.now()}`;
