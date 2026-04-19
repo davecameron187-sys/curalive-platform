@@ -262,24 +262,18 @@ export const shadowModeRouter = router({
 
       let inserted: any;
       try {
-        const rows = await db.insert(shadowSessions).values({
-          clientName: input.clientName,
-          eventName: input.eventName,
-          eventType: input.eventType,
-          platform: input.platform,
-          meetingUrl: input.meetingUrl,
-          status: "pending",
-          notes: input.notes ?? null,
-        }).returning();
-        inserted = rows[0];
+        const [insertRows] = await rawSql(
+          `INSERT INTO shadow_sessions (client_name, event_name, event_type, platform, meeting_url, status, notes)
+           VALUES ($1, $2, $3, $4, $5, 'pending', $6)
+           RETURNING *`,
+          [input.clientName, input.eventName, input.eventType, input.platform, input.meetingUrl, input.notes ?? null]
+        );
+        inserted = insertRows[0];
       } catch (insertErr: any) {
-        const cause = insertErr?.cause ?? insertErr;
-        console.error("[Shadow] INSERT FAILED message:", insertErr?.message ?? "");
-        console.error("[Shadow] INSERT FAILED cause:", cause?.message ?? "");
-        console.error("[Shadow] INSERT FAILED code:", cause?.code ?? insertErr?.code ?? "none");
-        console.error("[Shadow] INSERT FAILED detail:", cause?.detail ?? insertErr?.detail ?? "none");
-        console.error("[Shadow] INSERT FAILED constraint:", cause?.constraint ?? insertErr?.constraint ?? "none");
-        throw new Error(`Session insert failed [${cause?.code ?? "no-code"}]: ${cause?.message ?? insertErr?.message ?? "unknown"}`);
+        console.error("[Shadow] rawSql INSERT failed:", insertErr?.message ?? insertErr);
+        console.error("[Shadow] rawSql error code:", insertErr?.code ?? "none");
+        console.error("[Shadow] rawSql error detail:", insertErr?.detail ?? "none");
+        throw new Error(`Session insert failed [${insertErr?.code ?? "no-code"}]: ${insertErr?.message ?? "unknown"}`);
       }
 
       if (!inserted) {
