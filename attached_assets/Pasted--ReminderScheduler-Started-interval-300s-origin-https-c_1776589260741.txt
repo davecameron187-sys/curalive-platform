@@ -1,0 +1,34 @@
+[ReminderScheduler] Started — interval: 300s, origin: https://curalive-node.onrender.com
+[HealthGuardian] Starting autonomous monitoring (30s interval)
+[ComplianceEngine] Started — scanning every 300s
+[ComplianceDeadlineMonitor] Started — checking every 15 minutes
+[BriefingScheduler] Started — checking every 5 minutes
+[SubscriptionBilling] Scheduler started — will run on 1st of each month at 08:00
+[ShadowWatchdog] Started — checking every 60s for zombie sessions
+[Migration] ✓ operator_actions table ensured
+[Migration] ✓ archive_events columns ensured (fingerprint + transcription status)
+[Migration] ✓ P1 Q&A columns ensured (duplicate_of_id, legal_review_reason, ai_draft_text, ai_draft_reasoning)
+[rawSql] Query failed: ALTER TABLE health_checks ALTER COLUMN checked_at TYPE TIMESTAMP USING to_timestamp(checked_at::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[Static] SPA HTML prepared from index.html
+[rawSql] Query failed: ALTER TABLE health_baselines ALTER COLUMN last_updated TYPE TIMESTAMP USING to_timestamp(last_updated::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[rawSql] Query failed: ALTER TABLE health_incidents ALTER COLUMN detected_at TYPE TIMESTAMP USING to_timestamp(detected_at::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[rawSql] Query failed: ALTER TABLE health_incidents ALTER COLUMN resolved_at TYPE TIMESTAMP USING to_timestamp(resolved_at::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[HealthGuardian] ✓ Health tables ensured
+[Migration] ✓ shadow_sessions columns ensured
+[HealthGuardian] INCIDENT: WARNING — Anomaly detected: database latency 88ms (expected baseline exceeded)
+[HealthGuardian] INCIDENT: WARNING — Anomaly detected: active_events latency 100ms (expected baseline exceeded)
+Menu
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://curalive-node.onrender.com
+==> 

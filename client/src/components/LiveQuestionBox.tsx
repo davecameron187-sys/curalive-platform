@@ -319,7 +319,7 @@ export default function LiveQuestionBox() {
                     The CuraLive support assistant is available to authenticated users only. Please sign in to continue.
                   </p>
                 </div>
-                <a href="/login"
+                <a href="/api/oauth/login"
                   className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-lg transition-colors">
                   Sign In
                 </a>

@@ -12,6 +12,40 @@ function getQueryParam(req: Request, key: string): string | undefined {
 export function registerOAuthRoutes(app: Express) {
   const oauthEnabled = Boolean(process.env.OAUTH_SERVER_URL);
 
+  app.get("/api/oauth/login", (req: Request, res: Response) => {
+    if (!oauthEnabled) {
+      res.status(503).send(
+        `<!DOCTYPE html><html><head><title>Login Unavailable</title>
+        <style>body{font-family:system-ui,sans-serif;max-width:480px;margin:80px auto;padding:0 24px;color:#111}
+        h1{color:#c00}code{background:#f4f4f4;padding:2px 6px;border-radius:4px;font-size:.9em}</style></head>
+        <body><h1>Authentication Not Configured</h1>
+        <p>The <code>OAUTH_SERVER_URL</code> environment variable is not set on this server.</p>
+        <p>Add <code>OAUTH_SERVER_URL</code>, <code>APP_ID</code>, and <code>OWNER_OPEN_ID</code>
+        to Render's environment settings to enable login.</p></body></html>`
+      );
+      return;
+    }
+
+    const appOrigin = process.env.APP_ORIGIN ?? `${req.protocol}://${req.get("host")}`;
+    const callbackUrl = `${appOrigin}/api/oauth/callback`;
+    const state = Buffer.from(callbackUrl).toString("base64");
+    const returnTo = getQueryParam(req, "returnTo");
+
+    try {
+      const oauthBase = process.env.OAUTH_SERVER_URL!;
+      const authUrl = new URL("/authorize", oauthBase);
+      authUrl.searchParams.set("client_id", process.env.APP_ID ?? "");
+      authUrl.searchParams.set("redirect_uri", callbackUrl);
+      authUrl.searchParams.set("response_type", "code");
+      authUrl.searchParams.set("state", state);
+      if (returnTo) authUrl.searchParams.set("returnTo", returnTo);
+      res.redirect(302, authUrl.toString());
+    } catch (err) {
+      console.error("[OAuth] Failed to build login URL:", err);
+      res.status(500).json({ error: "Failed to construct login URL" });
+    }
+  });
+
   app.get("/api/auth/status", async (req: Request, res: Response) => {
     const mode = oauthEnabled ? "oauth" : "dev-bypass";
     let user = null;
