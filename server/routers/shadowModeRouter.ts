@@ -273,10 +273,13 @@ export const shadowModeRouter = router({
         }).returning();
         inserted = rows[0];
       } catch (insertErr: any) {
-        console.error("[Shadow] shadow_sessions INSERT failed:", insertErr?.message ?? insertErr);
-        console.error("[Shadow] INSERT error detail:", insertErr?.detail ?? "");
-        console.error("[Shadow] INSERT error code:", insertErr?.code ?? "");
-        throw new Error(`Session insert failed: ${insertErr?.message ?? "unknown database error"}`);
+        const cause = insertErr?.cause ?? insertErr;
+        console.error("[Shadow] INSERT FAILED message:", insertErr?.message ?? "");
+        console.error("[Shadow] INSERT FAILED cause:", cause?.message ?? "");
+        console.error("[Shadow] INSERT FAILED code:", cause?.code ?? insertErr?.code ?? "none");
+        console.error("[Shadow] INSERT FAILED detail:", cause?.detail ?? insertErr?.detail ?? "none");
+        console.error("[Shadow] INSERT FAILED constraint:", cause?.constraint ?? insertErr?.constraint ?? "none");
+        throw new Error(`Session insert failed [${cause?.code ?? "no-code"}]: ${cause?.message ?? insertErr?.message ?? "unknown"}`);
       }
 
       if (!inserted) {
