@@ -1,0 +1,42 @@
+> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+[Migration] ✓ P1 Q&A columns ensured (duplicate_of_id, legal_review_reason, ai_draft_text, ai_draft_reasoning)
+[Migration] ✓ intelligence_feed table ensured
+[Migration] ✓ archive_events columns ensured (fingerprint + transcription status)
+[Migration] ✓ billing_invoices table ensured
+[Migration] ✓ scheduled_sessions table ensured
+[HealthGuardian] ✓ Health tables ensured
+[Static] SPA HTML prepared from index.html
+[Migration] ✓ shadow_sessions columns ensured
+[HealthGuardian] INCIDENT: WARNING — Anomaly detected: database latency 94ms (expected baseline exceeded)
+[HealthGuardian] INCIDENT: WARNING — Anomaly detected: active_events latency 198ms (expected baseline exceeded)
+[Auth] Missing session cookie
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://curalive-node.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+[Auth] Missing session cookie
+[ShadowGuardian] Received SIGTERM — starting graceful shutdown...
+[HealthGuardian] INCIDENT: WARNING — Anomaly detected: recall latency 327ms (expected baseline exceeded)
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+==> Detected service running on port 10000
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[HealthGuardian] INCIDENT: WARNING — Anomaly detected: recall latency 304ms (expected baseline exceeded)
+[Auth] Missing session cookie
+Menu
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[HealthGuardian] INCIDENT: WARNING — Anomaly detected: recall latency 317ms (expected baseline exceeded)
+[Auth] Missing session cookie
