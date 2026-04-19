@@ -124,6 +124,30 @@ async function ensureLiveQaP1Columns() {
 async function ensureShadowSessionsColumns() {
   try {
     const { rawSql } = await import("../db");
+    await rawSql(`CREATE TABLE IF NOT EXISTS shadow_sessions (
+      id SERIAL PRIMARY KEY,
+      client_name VARCHAR(255) NOT NULL DEFAULT '',
+      event_name VARCHAR(255) NOT NULL DEFAULT '',
+      event_type VARCHAR(64) NOT NULL DEFAULT '',
+      platform VARCHAR(64) NOT NULL DEFAULT 'zoom',
+      meeting_url VARCHAR(1000) NOT NULL DEFAULT '',
+      status VARCHAR(64) NOT NULL DEFAULT 'pending',
+      recall_bot_id VARCHAR(255),
+      ably_channel VARCHAR(255),
+      local_transcript_json TEXT,
+      local_recording_path VARCHAR(1000),
+      transcript_segments INTEGER DEFAULT 0,
+      sentiment_avg REAL,
+      compliance_flags INTEGER DEFAULT 0,
+      tagged_metrics_generated INTEGER DEFAULT 0,
+      notes TEXT,
+      started_at BIGINT,
+      ended_at BIGINT,
+      org_id INTEGER,
+      company VARCHAR(255),
+      ai_core_results TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )`);
     await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS client_name VARCHAR(255)`);
     await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS event_name VARCHAR(255)`);
     await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS event_type VARCHAR(64)`);
