@@ -1,0 +1,44 @@
+ownloading cache...
+==> Cloning from https://github.com/davecameron187-sys/curalive-platform
+==> Checking out commit 0fe262da75538470ba506f4765c8d3e5a920b71e in branch RenderMigration
+==> Downloaded 527MB in 4s. Extraction took 30s.
+==> Using Node.js version 22.22.0 (default)
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'pnpm install && pnpm run build'...
+Scope: all 3 workspace projects
+╭ Warning ─────────────────────────────────────────────────────────────────────╮│                                                                              ││   Ignored build scripts: sharp.                                              ││   Run "pnpm approve-builds" to pick which dependencies should be allowed     ││   to run scripts.                                                            ││                                                                              │╰──────────────────────────────────────────────────────────────────────────────╯
+Done in 2.2s using pnpm v10.4.1
+> curalive@1.0.0 build /opt/render/project/src
+> NODE_OPTIONS='--max-old-space-size=4096' vite build --logLevel warn && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=_build
+(!) %VITE_ANALYTICS_ENDPOINT% is not defined in env variables found in /index.html. Is the variable mistyped?
+(!) %VITE_ANALYTICS_WEBSITE_ID% is not defined in env variables found in /index.html. Is the variable mistyped?
+<script src="%VITE_ANALYTICS_ENDPOINT%/umami"> in "/index.html" can't be bundled without type="module" attribute
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✘ [ERROR] No matching export in "server/services/PlatformEmbedService.ts" for import "generateShareLink"
+    server/routers/platformEmbedRouter.ts:4:2:
+      4 │   generateShareLink,
+        ╵   ~~~~~~~~~~~~~~~~~
+✘ [ERROR] No matching export in "server/services/PlatformEmbedService.ts" for import "getEmbedCode"
+    server/routers/platformEmbedRouter.ts:5:2:
+      5 │   getEmbedCode,
+        ╵   ~~~~~~~~~~~~
+✘ [ERROR] No matching export in "server/services/PlatformEmbedService.ts" for import "trackEmbedShare"
+    server/routers/platformEmbedRouter.ts:6:2:
+      6 │   trackEmbedShare,
+        ╵   ~~~~~~~~~~~~~~~
+✘ [ERROR] No matching export in "server/services/PlatformEmbedService.ts" for import "getShareAnalytics"
+    server/routers/platformEmbedRouter.ts:7:2:
+      7 │   getShareAnalytics,
+        ╵   ~~~~~~~~~~~~~~~~~
+✘ [ERROR] No matching export in "server/services/PlatformEmbedService.ts" for import "generateEventSummary"
+    server/routers/platformEmbedRouter.ts:8:2:
+      8 │   generateEventSummary,
+Menu
+        ╵   ~~~~~~~~~~~~~~~~~~~~
+5 errors
+ ELIFECYCLE  Command failed with exit code 1.
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
