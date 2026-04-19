@@ -1,0 +1,173 @@
+Please update client/src/pages/ShadowMode.tsx — the current V3 file (344 lines). Add session creation functionality back into the Live Console tab.
+Make these exact changes:
+1. Add these constants near the top of the file, after the imports:
+tsxconst EVENT_TYPE_LABELS: Record<string, string> = {
+  earnings_call: "Earnings Call",
+  investor_day: "Investor Day",
+  agm: "AGM",
+  roadshow: "Roadshow",
+  board_meeting: "Board Meeting",
+  other: "Other",
+};
+
+const PLATFORM_LABELS: Record<string, string> = {
+  zoom: "Zoom",
+  teams: "Teams",
+  webex: "Webex",
+  google_meet: "Google Meet",
+  dialin: "Phone/Dial-in",
+  other: "Other",
+};
+
+const RECALL_SUPPORTED_PLATFORMS = new Set(["zoom", "teams", "webex", "google_meet"]);
+
+const detectPlatformFromUrl = (url: string): string | null => {
+  if (url.includes("zoom.us")) return "zoom";
+  if (url.includes("teams.microsoft")) return "teams";
+  if (url.includes("webex.com")) return "webex";
+  if (url.includes("meet.google")) return "google_meet";
+  return null;
+};
+2. Add these state variables inside the component, after the existing state declarations:
+tsxconst [showForm, setShowForm] = useState(false);
+const [form, setForm] = useState({
+  clientName: "",
+  eventName: "",
+  eventType: "earnings_call" as const,
+  platform: "zoom" as const,
+  meetingUrl: "",
+  notes: "",
+});
+
+const startSession = trpc.shadowMode.startSession.useMutation({
+  onSuccess: (data: any) => {
+    setShowForm(false);
+    setForm({ clientName: "", eventName: "", eventType: "earnings_call", platform: "zoom", meetingUrl: "", notes: "" });
+    sessionsQuery.refetch();
+  },
+  onError: (e: any) => console.error(e.message),
+});
+3. In the Live Console tab, replace the session list block with this — it adds the NEW SESSION button and form above the existing session list:
+tsx{activeTab === "console" && (
+  <>
+    {/* Session list */}
+    <div style={{ width: "260px", flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+        <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px" }}>SESSIONS</div>
+        <button
+          onClick={() => setShowForm(f => !f)}
+          style={{ background: "#166534", border: "none", color: "white", padding: "4px 10px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}
+        >
+          + NEW SESSION
+        </button>
+      </div>
+
+      {/* Session creation form */}
+      {showForm && (
+        <div style={{ background: "#111", border: "1px solid #1e293b", borderRadius: "6px", padding: "14px", marginBottom: "12px" }}>
+          <div style={{ color: "#60a5fa", fontSize: "11px", letterSpacing: "1px", marginBottom: "12px" }}>NEW SHADOW INTELLIGENCE SESSION</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div>
+              <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>CLIENT NAME *</div>
+              <input value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))}
+                placeholder="e.g. Anglo American plc"
+                style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>EVENT NAME *</div>
+              <input value={form.eventName} onChange={e => setForm(f => ({ ...f, eventName: e.target.value }))}
+                placeholder="e.g. Q2 2026 Earnings Call"
+                style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>EVENT TYPE *</div>
+              <select value={form.eventType} onChange={e => setForm(f => ({ ...f, eventType: e.target.value as any }))}
+                style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }}>
+                {Object.entries(EVENT_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{ color: "#475569", fontSize: "10px", marginBottom: "6px" }}>PLATFORM *</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {Object.entries(PLATFORM_LABELS).map(([v, l]) => (
+                  <button key={v} onClick={() => setForm(f => ({ ...f, platform: v as any }))}
+                    style={{ background: form.platform === v ? "#1e40af" : "#1e293b", border: `1px solid ${form.platform === v ? "#3b82f6" : "#334155"}`, color: form.platform === v ? "white" : "#475569", padding: "3px 8px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace" }}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>MEETING URL *</div>
+              <input value={form.meetingUrl}
+                onChange={e => {
+                  const url = e.target.value;
+                  const detected = detectPlatformFromUrl(url);
+                  setForm(f => ({ ...f, meetingUrl: url, ...(detected ? { platform: detected as any } : {}) }));
+                }}
+                placeholder="https://zoom.us/j/..."
+                style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>NOTES</div>
+              <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Special instructions..."
+                style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
+              <button
+                onClick={() => startSession.mutate({ ...form, webhookBaseUrl: window.location.origin })}
+                disabled={startSession.isPending || !form.clientName || !form.eventName || !form.meetingUrl}
+                style={{ background: form.clientName && form.eventName && form.meetingUrl ? "#166534" : "#1e293b", border: "none", color: form.clientName && form.eventName && form.meetingUrl ? "white" : "#475569", padding: "6px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}>
+                {startSession.isPending ? "STARTING..." : RECALL_SUPPORTED_PLATFORMS.has(form.platform) ? "START SHADOW INTELLIGENCE" : "START LOCAL CAPTURE"}
+              </button>
+              <button onClick={() => setShowForm(false)}
+                style={{ background: "none", border: "1px solid #1e293b", color: "#475569", padding: "6px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace" }}>
+                CANCEL
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Session list */}
+      {liveSessions.length === 0 && !showForm && (
+        <div style={{ color: "#334155", fontSize: "12px" }}>No live sessions</div>
+      )}
+      {liveSessions.map((s) => (
+        <div key={s.id} onClick={() => setSelectedSessionId(s.id)}
+          style={{ padding: "10px 12px", marginBottom: "6px", background: selectedSessionId === s.id ? "#1e293b" : "#111", border: `1px solid ${selectedSessionId === s.id ? "#3b82f6" : "#1e293b"}`, borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}>
+          <div style={{ color: "#e2e8f0" }}>{s.eventName}</div>
+          <div style={{ color: "#4ade80", fontSize: "10px", marginTop: "4px" }}>● {s.status.toUpperCase()}</div>
+        </div>
+      ))}
+    </div>
+
+    {/* Intelligence Feed */}
+    <div style={{ flex: 1 }}>
+      <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px", marginBottom: "12px" }}>INTELLIGENCE FEED</div>
+      <div ref={feedRef} style={{ height: "calc(100vh - 220px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
+        {feedItems.length === 0 && (
+          <div style={{ color: "#334155", fontSize: "12px" }}>
+            {selectedSessionId ? "Waiting for intelligence signals..." : "Select a session to begin monitoring"}
+          </div>
+        )}
+        {feedItems.map((item) => (
+          <div key={item.id} style={{ background: "#111", border: `1px solid ${SEVERITY_COLOURS[item.severity]}44`, borderLeft: `3px solid ${SEVERITY_COLOURS[item.severity]}`, borderRadius: "4px", padding: "10px 14px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ color: SEVERITY_COLOURS[item.severity], fontSize: "11px", letterSpacing: "1px" }}>{item.severity.toUpperCase()} · {item.pipeline.toUpperCase()}</span>
+              <span style={{ color: "#334155", fontSize: "10px" }}>{item.speaker}</span>
+            </div>
+            <div style={{ color: "#e2e8f0", fontSize: "12px", fontWeight: "bold", marginBottom: "4px" }}>{item.title}</div>
+            <div style={{ color: "#94a3b8", fontSize: "11px", lineHeight: "1.5" }}>{item.body}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </>
+)}
+After making the changes, run in Shell:
+git add client/src/pages/ShadowMode.tsx
+git commit -m "Restore: session creation form in Live Console tab"
+git push github RenderMigration
+Confirm commit hash when done.
