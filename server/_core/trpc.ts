@@ -11,7 +11,9 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 export const createCallerFactory = t.createCallerFactory;
 
-const DEV_BYPASS = process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development');
+const DEV_BYPASS =
+  !process.env.OAUTH_SERVER_URL ||
+  (process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development'));
 
 const DEV_USER = { id: 0, name: 'Dev Operator', email: 'dev@curalive.local', role: 'operator' as const };
 

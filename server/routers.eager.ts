@@ -322,7 +322,9 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(({ ctx }) => {
       if (ctx.user) return ctx.user;
-      const isDev = process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development');
+      const isDev =
+        !process.env.OAUTH_SERVER_URL ||
+        (process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development'));
       if (isDev) return { id: 0, name: 'Dev Operator', email: 'dev@curalive.local', role: 'operator' as const };
       return null;
     }),
