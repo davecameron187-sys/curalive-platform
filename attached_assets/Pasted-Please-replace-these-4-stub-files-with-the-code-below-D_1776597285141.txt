@@ -1,0 +1,344 @@
+Please replace these 4 stub files with the code below. Do them in order. Do NOT touch client/src/pages/ShadowMode.tsx or server/routers.ts.
+
+FILE 1 — server/routers/liveQaRouter.ts
+Replace entire file with:
+typescriptimport { z } from "zod";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { rawSql } from "../db";
+import Ably from "ably";
+
+const getAblyClient = () => {
+  const key = process.env.ABLY_API_KEY;
+  if (!key) throw new Error("ABLY_API_KEY not configured");
+  return new Ably.Rest(key);
+};
+
+export const liveQaRouter = router({
+
+  getAblyToken: publicProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      attendeeId: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await rawSql(
+        `SELECT id, status FROM shadow_sessions WHERE id = $1`,
+        [input.sessionId]
+      );
+      const session = result.rows?.[0];
+      if (!session || !["live", "bot_joining"].includes(session.status)) {
+        throw new Error("Session is not active");
+      }
+      const ably = getAblyClient();
+      const tokenRequest = await ably.auth.createTokenRequest({
+        clientId: input.attendeeId ?? `attendee-${Date.now()}`,
+        capability: {
+          [`session:${input.sessionId}:qa`]: ["publish", "subscribe", "presence"],
+          [`session:${input.sessionId}:transcript`]: ["subscribe"],
+        },
+      });
+      return tokenRequest;
+    }),
+
+  submitQuestion: publicProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      attendeeId: z.string(),
+      attendeeName: z.string().optional(),
+      questionText: z.string().min(1).max(1000),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await rawSql(
+        `INSERT INTO qa_questions
+          (session_id, attendee_id, attendee_name, question_text, status, submitted_at)
+         VALUES ($1, $2, $3, $4, 'pending', NOW())
+         RETURNING id`,
+        [input.sessionId, input.attendeeId, input.attendeeName ?? "Anonymous", input.questionText]
+      );
+      return { id: result.rows?.[0]?.id };
+    }),
+
+  listQuestions: protectedProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      status: z.enum(["pending", "approved", "answered", "dismissed", "all"]).optional(),
+    }))
+    .query(async ({ input }) => {
+      const statusFilter = input.status && input.status !== "all"
+        ? `AND status = '${input.status}'`
+        : "";
+      const result = await rawSql(
+        `SELECT id, session_id, attendee_id, attendee_name, question_text, status, upvotes, submitted_at, answered_at
+         FROM qa_questions
+         WHERE session_id = $1 ${statusFilter}
+         ORDER BY upvotes DESC, submitted_at ASC`,
+        [input.sessionId]
+      );
+      return result.rows ?? [];
+    }),
+
+  updateQuestionStatus: protectedProcedure
+    .input(z.object({
+      questionId: z.number(),
+      status: z.enum(["approved", "answered", "dismissed"]),
+    }))
+    .mutation(async ({ input }) => {
+      await rawSql(
+        `UPDATE qa_questions SET status = $1, answered_at = CASE WHEN $1 = 'answered' THEN NOW() ELSE answered_at END WHERE id = $2`,
+        [input.status, input.questionId]
+      );
+      return { success: true };
+    }),
+
+  upvoteQuestion: publicProcedure
+    .input(z.object({ questionId: z.number() }))
+    .mutation(async ({ input }) => {
+      await rawSql(
+        `UPDATE qa_questions SET upvotes = upvotes + 1 WHERE id = $1`,
+        [input.questionId]
+      );
+      return { success: true };
+    }),
+
+  getJoinLinks: publicProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ input }) => {
+      const result = await rawSql(
+        `SELECT webphone_url, dial_in_number, access_code FROM shadow_sessions WHERE id = $1`,
+        [input.sessionId]
+      );
+      return result.rows?.[0] ?? null;
+    }),
+});
+
+FILE 2 — server/services/PlatformEmbedService.ts
+Replace entire file with:
+typescriptimport { rawSql } from "../db";
+import crypto from "crypto";
+
+export class PlatformEmbedService {
+
+  static async getEmbedToken(sessionId: string, orgId: number): Promise<string> {
+    const token = crypto.randomBytes(32).toString("hex");
+    await rawSql(
+      `INSERT INTO platform_embed_tokens (session_id, org_id, token, created_at, expires_at)
+       VALUES ($1, $2, $3, NOW(), NOW() + INTERVAL '24 hours')
+       ON CONFLICT (session_id, org_id) DO UPDATE SET token = $3, expires_at = NOW() + INTERVAL '24 hours'`,
+      [sessionId, orgId, token]
+    );
+    return token;
+  }
+
+  static async validateToken(token: string): Promise<{ sessionId: string; orgId: number } | null> {
+    const result = await rawSql(
+      `SELECT session_id, org_id FROM platform_embed_tokens
+       WHERE token = $1 AND expires_at > NOW()`,
+      [token]
+    );
+    const row = result.rows?.[0];
+    if (!row) return null;
+    return { sessionId: row.session_id, orgId: row.org_id };
+  }
+
+  static async revokeToken(sessionId: string, orgId: number): Promise<void> {
+    await rawSql(
+      `DELETE FROM platform_embed_tokens WHERE session_id = $1 AND org_id = $2`,
+      [sessionId, orgId]
+    );
+  }
+}
+
+FILE 3 — client/src/components/LiveQaDashboard.tsx
+Replace entire file with:
+tsximport { useState } from "react";
+import { trpc } from "@/lib/trpc";
+
+type Question = {
+  id: number;
+  attendeeName: string;
+  questionText: string;
+  status: string;
+  upvotes: number;
+  submittedAt: string;
+};
+
+type Props = {
+  sessionId: string;
+};
+
+const STATUS_COLOURS: Record<string, string> = {
+  pending: "#facc15",
+  approved: "#60a5fa",
+  answered: "#4ade80",
+  dismissed: "#475569",
+};
+
+export default function LiveQaDashboard({ sessionId }: Props) {
+  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "answered" | "dismissed">("pending");
+
+  const questionsQuery = trpc.liveQa.listQuestions.useQuery(
+    { sessionId, status: filter },
+    { refetchInterval: 5000 }
+  );
+
+  const updateStatus = trpc.liveQa.updateQuestionStatus.useMutation({
+    onSuccess: () => questionsQuery.refetch(),
+  });
+
+  const questions: Question[] = questionsQuery.data ?? [];
+  const filters: typeof filter[] = ["pending", "approved", "answered", "dismissed", "all"];
+
+  return (
+    <div style={{ fontFamily: "monospace", color: "#e2e8f0" }}>
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+        {filters.map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            style={{
+              background: filter === f ? "#1e293b" : "none",
+              border: `1px solid ${filter === f ? "#3b82f6" : "#1e293b"}`,
+              color: filter === f ? "#60a5fa" : "#475569",
+              padding: "4px 12px",
+              fontSize: "11px",
+              letterSpacing: "1px",
+              borderRadius: "3px",
+              cursor: "pointer",
+              fontFamily: "monospace",
+            }}
+          >
+            {f.toUpperCase()}
+          </button>
+        ))}
+        <span style={{ marginLeft: "auto", color: "#475569", fontSize: "11px", alignSelf: "center" }}>
+          {questions.length} question{questions.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {questions.length === 0 && (
+          <div style={{ color: "#334155", fontSize: "12px" }}>No {filter === "all" ? "" : filter} questions</div>
+        )}
+        {questions.map((q) => (
+          <div
+            key={q.id}
+            style={{
+              background: "#111",
+              border: `1px solid #1e293b`,
+              borderLeft: `3px solid ${STATUS_COLOURS[q.status] ?? "#334155"}`,
+              borderRadius: "4px",
+              padding: "12px 14px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+              <span style={{ color: "#94a3b8", fontSize: "11px" }}>{q.attendeeName}</span>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <span style={{ color: "#475569", fontSize: "10px" }}>▲ {q.upvotes}</span>
+                <span style={{ color: STATUS_COLOURS[q.status], fontSize: "10px", letterSpacing: "1px" }}>{q.status.toUpperCase()}</span>
+              </div>
+            </div>
+            <div style={{ color: "#e2e8f0", fontSize: "12px", lineHeight: "1.5", marginBottom: "10px" }}>{q.questionText}</div>
+            {q.status === "pending" && (
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button onClick={() => updateStatus.mutate({ questionId: q.id, status: "approved" })}
+                  style={{ background: "#1e40af", border: "none", color: "white", padding: "4px 10px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace" }}>
+                  APPROVE
+                </button>
+                <button onClick={() => updateStatus.mutate({ questionId: q.id, status: "dismissed" })}
+                  style={{ background: "#1e293b", border: "none", color: "#475569", padding: "4px 10px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace" }}>
+                  DISMISS
+                </button>
+              </div>
+            )}
+            {q.status === "approved" && (
+              <button onClick={() => updateStatus.mutate({ questionId: q.id, status: "answered" })}
+                style={{ background: "#166534", border: "none", color: "white", padding: "4px 10px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace" }}>
+                MARK ANSWERED
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+FILE 4 — client/src/pages/AttendeeQA.tsx
+Replace entire file with:
+tsximport { useState } from "react";
+import { trpc } from "@/lib/trpc";
+
+export default function AttendeeQA() {
+  const params = new URLSearchParams(window.location.search);
+  const sessionId = params.get("session") ?? "";
+  const [name, setName] = useState("");
+  const [question, setQuestion] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+
+  const submitQuestion = trpc.liveQa.submitQuestion.useMutation({
+    onSuccess: () => { setSubmitted(true); setQuestion(""); },
+    onError: (e) => setError(e.message),
+  });
+
+  const joinLinks = trpc.liveQa.getJoinLinks.useQuery(
+    { sessionId },
+    { enabled: !!sessionId }
+  );
+
+  if (!sessionId) {
+    return (
+      <div style={{ fontFamily: "monospace", background: "#0a0a0a", minHeight: "100vh", color: "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: "#f87171", fontSize: "13px" }}>Invalid session link.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ fontFamily: "monospace", background: "#0a0a0a", minHeight: "100vh", color: "#e2e8f0", padding: "32px 24px", maxWidth: "560px", margin: "0 auto" }}>
+      <div style={{ color: "#60a5fa", fontSize: "14px", letterSpacing: "2px", marginBottom: "4px" }}>CURALIVE</div>
+      <div style={{ color: "#334155", fontSize: "11px", marginBottom: "32px" }}>LIVE Q&A</div>
+
+      {joinLinks.data?.webphone_url && (
+        <div style={{ background: "#111", border: "1px solid #1e293b", borderRadius: "6px", padding: "16px", marginBottom: "24px" }}>
+          <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px", marginBottom: "8px" }}>JOIN THE CALL</div>
+          <a href={joinLinks.data.webphone_url} target="_blank" rel="noreferrer"
+            style={{ color: "#60a5fa", fontSize: "12px", textDecoration: "none" }}>
+            Join via webphone →
+          </a>
+        </div>
+      )}
+
+      {!submitted ? (
+        <div style={{ background: "#111", border: "1px solid #1e293b", borderRadius: "6px", padding: "20px" }}>
+          <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px", marginBottom: "16px" }}>SUBMIT A QUESTION</div>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name (optional)"
+            style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "4px", padding: "10px 12px", color: "#e2e8f0", fontSize: "12px", fontFamily: "monospace", outline: "none", marginBottom: "12px", boxSizing: "border-box" }} />
+          <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Type your question..." rows={4}
+            style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "4px", padding: "10px 12px", color: "#e2e8f0", fontSize: "12px", fontFamily: "monospace", outline: "none", marginBottom: "12px", resize: "vertical", boxSizing: "border-box" }} />
+          {error && <div style={{ color: "#f87171", fontSize: "11px", marginBottom: "8px" }}>{error}</div>}
+          <button
+            onClick={() => { if (!question.trim()) return; submitQuestion.mutate({ sessionId, attendeeId: `attendee-${Date.now()}`, attendeeName: name.trim() || "Anonymous", questionText: question.trim() }); }}
+            disabled={submitQuestion.isPending || !question.trim()}
+            style={{ background: question.trim() ? "#1e40af" : "#1e293b", border: "none", color: question.trim() ? "white" : "#475569", padding: "10px 20px", fontSize: "11px", letterSpacing: "1px", borderRadius: "4px", cursor: question.trim() ? "pointer" : "default", fontFamily: "monospace" }}>
+            {submitQuestion.isPending ? "SUBMITTING..." : "SUBMIT QUESTION"}
+          </button>
+        </div>
+      ) : (
+        <div style={{ background: "#111", border: "1px solid #166534", borderRadius: "6px", padding: "20px", textAlign: "center" }}>
+          <div style={{ color: "#4ade80", fontSize: "13px", marginBottom: "8px" }}>✓ Question submitted</div>
+          <div style={{ color: "#475569", fontSize: "11px", marginBottom: "16px" }}>Your question is pending review.</div>
+          <button onClick={() => setSubmitted(false)}
+            style={{ background: "none", border: "1px solid #1e293b", color: "#475569", padding: "6px 14px", fontSize: "11px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace" }}>
+            SUBMIT ANOTHER
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+AFTER ALL FOUR FILES ARE REPLACED — run in Shell:
+git add server/routers/liveQaRouter.ts server/services/PlatformEmbedService.ts client/src/components/LiveQaDashboard.tsx client/src/pages/AttendeeQA.tsx
+git commit -m "Rebuild: Live Q&A router, PlatformEmbedService, LiveQaDashboard, AttendeeQA"
+git push github RenderMigration
