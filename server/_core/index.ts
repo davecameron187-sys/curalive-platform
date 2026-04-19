@@ -121,6 +121,31 @@ async function ensureLiveQaP1Columns() {
   }
 }
 
+async function ensureShadowSessionsColumns() {
+  try {
+    const { rawSql } = await import("../db");
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS client_name VARCHAR(255)`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS event_name VARCHAR(255)`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS event_type VARCHAR(64)`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS platform VARCHAR(64) DEFAULT 'zoom'`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS meeting_url VARCHAR(1000)`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS recall_bot_id VARCHAR(255)`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS ably_channel VARCHAR(255)`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS local_transcript_json TEXT`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS local_recording_path VARCHAR(1000)`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS transcript_segments INTEGER DEFAULT 0`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS sentiment_avg REAL`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS compliance_flags INTEGER DEFAULT 0`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS tagged_metrics_generated INTEGER DEFAULT 0`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS notes TEXT`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS started_at BIGINT`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS ended_at BIGINT`);
+    console.log("[Migration] ✓ shadow_sessions columns ensured");
+  } catch (err: any) {
+    console.warn("[Migration] shadow_sessions column check skipped:", err?.message);
+  }
+}
+
 async function startServer() {
   const app = express();
   const server = http.createServer(app);
@@ -202,6 +227,9 @@ async function startServer() {
   );
   ensureLiveQaP1Columns().catch(err =>
     console.warn("[Migration] P1 Q&A columns migration failed:", err?.message)
+  );
+  ensureShadowSessionsColumns().catch(err =>
+    console.warn("[Migration] shadow_sessions column migration failed:", err?.message)
   );
 
   if (!isProd) {
