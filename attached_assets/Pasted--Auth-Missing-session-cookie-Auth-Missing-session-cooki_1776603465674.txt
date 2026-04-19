@@ -1,0 +1,34 @@
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[rawSql] Query failed: INSERT INTO shadow_sessions (client_name, event_name, event_type, platform, meeting_url, status, notes)
+           VALUES ($1, $2, $3, $4, $5, 'pending', $6)
+           RETURNING * 
+Params: 6 
+Error: null value in column "session_id" of relation "shadow_sessions" violates not-null constraint
+[Shadow] rawSql INSERT failed: null value in column "session_id" of relation "shadow_sessions" violates not-null constraint
+[Shadow] rawSql error code: 23502
+[Shadow] rawSql error detail: Failing row contains (23, pending, 2026-04-19 12:56:40.617049, null, null, {}, 2026-04-19 12:56:40.617049+00, Test , Test , earnings_call, zoom, https://zoom.us/j/123456789, null, null, null, null, 0, null, 0, 0, Test, null, null, null, null, null).
+[Auth] Missing session cookie
+[rawSql] Query failed: INSERT INTO shadow_sessions (client_name, event_name, event_type, platform, meeting_url, status, notes)
+           VALUES ($1, $2, $3, $4, $5, 'pending', $6)
+           RETURNING * 
+Params: 6 
+Error: null value in column "session_id" of relation "shadow_sessions" violates not-null constraint
+[Shadow] rawSql INSERT failed: null value in column "session_id" of relation "shadow_sessions" violates not-null constraint
+[Shadow] rawSql error code: 23502
+[Shadow] rawSql error detail: Failing row contains (24, pending, 2026-04-19 12:56:42.606206, null, null, {}, 2026-04-19 12:56:42.606206+00, Test , Test , earnings_call, zoom, https://zoom.us/j/123456789, null, null, null, null, 0, null, 0, 0, Test, null, null, null, null, null).
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+Menu
+[ShadowGuardian] Received SIGTERM — starting graceful shutdown...
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[rawSql] Query failed: INSERT INTO shadow_sessions (client_name, event_name, event_type, platform, meeting_url, status, notes)
+           VALUES ($1, $2, $3, $4, $5, 'pending', $6)
+           RETURNING * 
+Params: 6 
+Error: null value in column "session_id" of relation "shadow_sessions" violates not-null constraint
+[Shadow] rawSql INSERT failed: null value in column "session_id" of relation "shadow_sessions" violates not-null constraint
+[Shadow] rawSql error code: 23502
+[Shadow] rawSql error detail: Failing row contains (25, pending, 2026-04-19 12:57:12.197615, null, null, {}, 2026-04-19 12:57:12.197615+00, Test , Test, earnings_call, zoom, https://zoom.us/j/123456789, null, null, null, null, 0, null, 0, 0, test, null, null, null, null, null).
+[Auth] Missing session cookie

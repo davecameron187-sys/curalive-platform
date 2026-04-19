@@ -169,6 +169,7 @@ async function ensureShadowSessionsColumns() {
     await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS ai_core_results TEXT`);
     await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS status VARCHAR(64) NOT NULL DEFAULT 'pending'`);
     await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW()`);
+    await rawSql(`ALTER TABLE shadow_sessions ALTER COLUMN session_id DROP NOT NULL`);
     console.log("[Migration] ✓ shadow_sessions columns ensured");
   } catch (err: any) {
     console.warn("[Migration] shadow_sessions column check skipped:", err?.message);
