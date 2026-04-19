@@ -108,6 +108,10 @@ export default function ShadowMode() {
     onError: (e: any) => console.error(e.message),
   });
 
+  const endSession = trpc.shadowMode.endSession.useMutation({
+    onSuccess: () => sessionsQuery.refetch(),
+  });
+
   const rawSessions = sessionsQuery.data ?? [];
   const sessions: Session[] = rawSessions.map((s: any) => ({
     id: String(s.id),
@@ -342,6 +346,12 @@ export default function ShadowMode() {
                   style={{ padding: "10px 12px", marginBottom: "6px", background: selectedSessionId === s.id ? "#1e293b" : "#111", border: `1px solid ${selectedSessionId === s.id ? "#3b82f6" : "#1e293b"}`, borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}>
                   <div style={{ color: "#e2e8f0" }}>{s.eventName}</div>
                   <div style={{ color: "#4ade80", fontSize: "10px", marginTop: "4px" }}>● {s.status.toUpperCase()}</div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); endSession.mutate({ sessionId: Number(s.id) }); }}
+                    style={{ background: "#7f1d1d", border: "none", color: "#fca5a5", padding: "3px 8px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", marginTop: "6px", letterSpacing: "1px" }}
+                  >
+                    END SESSION
+                  </button>
                 </div>
               ))}
             </div>
