@@ -1,0 +1,36 @@
+Error: relation "health_checks" does not exist
+[rawSql] Query failed: SELECT avg_value, std_dev, sample_count FROM health_baselines WHERE service = $1 AND metric = 'latency' 
+Params: 1 
+Error: relation "health_baselines" does not exist
+[rawSql] Query failed: SELECT id FROM health_incidents WHERE service = $1 AND status = 'active' LIMIT 1 
+Params: 1 
+Error: relation "health_incidents" does not exist
+[rawSql] Query failed: SELECT avg_value, std_dev, sample_count FROM health_baselines WHERE service = $1 AND metric = 'latency' 
+Params: 1 
+Error: relation "health_baselines" does not exist
+[rawSql] Query failed: INSERT INTO health_checks (service, status, latency_ms, details, checked_at) VALUES ($1, $2, $3, $4, $5) RETURNING id 
+Params: 5 
+Error: relation "health_checks" does not exist
+[rawSql] Query failed: SELECT avg_value, std_dev, sample_count FROM health_baselines WHERE service = $1 AND metric = 'latency' 
+Params: 1 
+Error: relation "health_baselines" does not exist
+[rawSql] Query failed: SELECT id FROM health_incidents WHERE service = $1 AND status = 'active' LIMIT 1 
+Params: 1 
+Error: relation "health_incidents" does not exist
+[rawSql] Query failed: SELECT avg_value, std_dev, sample_count FROM health_baselines WHERE service = $1 AND metric = 'latency' 
+Params: 1 
+Error: relation "health_baselines" does not exist
+[rawSql] Query failed: INSERT INTO health_checks (service, status, latency_ms, details, checked_at) VALUES ($1, $2, $3, $4, $5) RETURNING id 
+Params: 5 
+Error: relation "health_checks" does not exist
+[rawSql] Query failed: SELECT avg_value, std_dev, sample_count FROM health_baselines WHERE service = $1 AND metric = 'latency' 
+Params: 1 
+Error: relation "health_baselines" does not exist
+[rawSql] Query failed: SELECT id FROM health_incidents WHERE service = $1 AND status = 'active' LIMIT 1 
+Params: 1 
+Error: relation "health_incidents" does not exist
+[rawSql] Query failed: SELECT avg_value, std_dev, sample_count FROM health_baselines WHERE service = $1 AND metric = 'latency' 
+Menu
+Params: 1 
+Error: relation "health_baselines" does not exist
+Need better ways to work with logs? Try theRender CLI, Rende

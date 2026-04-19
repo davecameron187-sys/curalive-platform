@@ -402,13 +402,74 @@ export async function runAllChecks(): Promise<CheckResult[]> {
   return results;
 }
 
+async function ensureHealthTables() {
+  try {
+    await rawSql(`CREATE TABLE IF NOT EXISTS health_checks (
+      id SERIAL PRIMARY KEY,
+      service VARCHAR(64) NOT NULL,
+      status VARCHAR(32) NOT NULL,
+      latency_ms INTEGER,
+      details TEXT,
+      checked_at BIGINT NOT NULL
+    )`);
+    await rawSql(`CREATE TABLE IF NOT EXISTS health_baselines (
+      id SERIAL PRIMARY KEY,
+      service VARCHAR(64) NOT NULL,
+      metric VARCHAR(64) NOT NULL,
+      avg_value DOUBLE PRECISION,
+      std_dev DOUBLE PRECISION DEFAULT 0,
+      sample_count INTEGER DEFAULT 0,
+      last_updated BIGINT,
+      UNIQUE(service, metric)
+    )`);
+    await rawSql(`CREATE TABLE IF NOT EXISTS health_incidents (
+      id SERIAL PRIMARY KEY,
+      service VARCHAR(64) NOT NULL,
+      severity VARCHAR(32) NOT NULL,
+      status VARCHAR(32) NOT NULL DEFAULT 'active',
+      title TEXT,
+      description TEXT,
+      root_cause TEXT,
+      root_cause_category VARCHAR(64),
+      affected_events TEXT,
+      detected_at BIGINT NOT NULL,
+      resolved_at BIGINT
+    )`);
+    await rawSql(`CREATE TABLE IF NOT EXISTS health_incident_reports (
+      id SERIAL PRIMARY KEY,
+      incident_id INTEGER,
+      event_id INTEGER,
+      report_type VARCHAR(32),
+      title TEXT,
+      summary TEXT,
+      root_cause_attribution VARCHAR(64),
+      detailed_analysis TEXT,
+      timeline TEXT,
+      recommendations TEXT,
+      generated_by VARCHAR(64),
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
+    console.log("[HealthGuardian] ✓ Health tables ensured");
+  } catch (err: any) {
+    console.warn("[HealthGuardian] Table migration warning:", err?.message);
+  }
+}
+
 export function startHealthGuardian() {
   if (guardianInterval) return;
   console.log("[HealthGuardian] Starting autonomous monitoring (30s interval)");
-  runAllChecks().catch((e) => console.error("[HealthGuardian] Initial check failed:", e));
-  guardianInterval = setInterval(() => {
-    runAllChecks().catch((e) => console.error("[HealthGuardian] Check cycle failed:", e));
-  }, CHECK_INTERVAL_MS);
+  ensureHealthTables().then(() => {
+    runAllChecks().catch((e) => console.error("[HealthGuardian] Initial check failed:", e));
+    guardianInterval = setInterval(() => {
+      runAllChecks().catch((e) => console.error("[HealthGuardian] Check cycle failed:", e));
+    }, CHECK_INTERVAL_MS);
+  }).catch((e) => {
+    console.error("[HealthGuardian] Table setup failed:", e);
+    runAllChecks().catch(() => {});
+    guardianInterval = setInterval(() => {
+      runAllChecks().catch(() => {});
+    }, CHECK_INTERVAL_MS);
+  });
 }
 
 export function stopHealthGuardian() {
