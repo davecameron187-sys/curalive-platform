@@ -1,0 +1,41 @@
+✓  CuraLive environment validated — core services ready
+[Shadow Mode] WARNING: RECALL_AI_WEBHOOK_SECRET not set — Webhook signature verification will not work
+[Shadow Mode] WARNING: ABLY_API_KEY not set — Real-time transcript streaming to UI will not work
+[Shadow Mode] ✓ All critical environment variables configured
+[Recall] Webhook registered at POST /api/recall/webhook
+[Bridge Webhooks] Registering at /api/bridge
+[Bridge Webhooks] ✓ All bridge webhook endpoints registered
+[CuraLive v2025.04.10-B] Server running on http://0.0.0.0:10000/
+[ReminderScheduler] Started — interval: 300s, origin: https://curalive-node.onrender.com
+[HealthGuardian] Starting autonomous monitoring (30s interval)
+[ComplianceEngine] Started — scanning every 300s
+[ComplianceDeadlineMonitor] Started — checking every 15 minutes
+[BriefingScheduler] Started — checking every 5 minutes
+[SubscriptionBilling] Scheduler started — will run on 1st of each month at 08:00
+[ShadowWatchdog] Started — checking every 60s for zombie sessions
+[Migration] ✓ operator_actions table ensured
+[Migration] ✓ archive_events columns ensured (fingerprint + transcription status)
+[rawSql] Query failed: ALTER TABLE health_checks ALTER COLUMN checked_at TYPE TIMESTAMP USING to_timestamp(checked_at::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[Migration] ✓ P1 Q&A columns ensured (duplicate_of_id, legal_review_reason, ai_draft_text, ai_draft_reasoning)
+[rawSql] Query failed: ALTER TABLE health_baselines ALTER COLUMN last_updated TYPE TIMESTAMP USING to_timestamp(last_updated::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[rawSql] Query failed: ALTER TABLE health_incidents ALTER COLUMN detected_at TYPE TIMESTAMP USING to_timestamp(detected_at::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[rawSql] Query failed: ALTER TABLE health_incidents ALTER COLUMN resolved_at TYPE TIMESTAMP USING to_timestamp(resolved_at::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[HealthGuardian] ✓ Health tables ensured
+[Migration] ✓ shadow_sessions columns ensured
+Menu
+[Static] SPA HTML prepared from index.html
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://curalive-node.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
