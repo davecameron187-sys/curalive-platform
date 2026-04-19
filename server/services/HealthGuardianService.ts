@@ -412,8 +412,6 @@ async function ensureHealthTables() {
       details TEXT,
       checked_at TIMESTAMP NOT NULL DEFAULT NOW()
     )`);
-    // Fix column type if table was previously created with BIGINT
-    try { await rawSql(`ALTER TABLE health_checks ALTER COLUMN checked_at TYPE TIMESTAMP USING to_timestamp(checked_at::double precision / 1000.0)`); } catch {}
 
     await rawSql(`CREATE TABLE IF NOT EXISTS health_baselines (
       id SERIAL PRIMARY KEY,
@@ -425,7 +423,6 @@ async function ensureHealthTables() {
       last_updated TIMESTAMP,
       UNIQUE(service, metric)
     )`);
-    try { await rawSql(`ALTER TABLE health_baselines ALTER COLUMN last_updated TYPE TIMESTAMP USING to_timestamp(last_updated::double precision / 1000.0)`); } catch {}
 
     await rawSql(`CREATE TABLE IF NOT EXISTS health_incidents (
       id SERIAL PRIMARY KEY,
@@ -440,8 +437,6 @@ async function ensureHealthTables() {
       detected_at TIMESTAMP NOT NULL DEFAULT NOW(),
       resolved_at TIMESTAMP
     )`);
-    try { await rawSql(`ALTER TABLE health_incidents ALTER COLUMN detected_at TYPE TIMESTAMP USING to_timestamp(detected_at::double precision / 1000.0)`); } catch {}
-    try { await rawSql(`ALTER TABLE health_incidents ALTER COLUMN resolved_at TYPE TIMESTAMP USING to_timestamp(resolved_at::double precision / 1000.0)`); } catch {}
 
     await rawSql(`CREATE TABLE IF NOT EXISTS health_incident_reports (
       id SERIAL PRIMARY KEY,

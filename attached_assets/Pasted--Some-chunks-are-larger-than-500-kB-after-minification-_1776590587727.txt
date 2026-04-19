@@ -1,0 +1,68 @@
+ Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+  _build/index.js  2.2mb ⚠️
+⚡ Done in 154ms
+==> Uploading build...
+==> Uploaded in 11.6s. Compression took 31.4s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'NODE_ENV=production node _build/index.js'
+==> No open ports detected, continuing to scan...
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+[OAuth] Initialized with baseURL: 
+[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable.
+⚠  CuraLive — 10 optional service(s) not configured:
+   · ABLY_API_KEY → Real-time event streaming (disabled)
+   · RESEND_API_KEY → Email delivery (disabled)
+   · RECALL_AI_WEBHOOK_SECRET → Recall.ai bot webhooks (disabled)
+   · TWILIO_ACCOUNT_SID → Telephony (Twilio) (disabled)
+   · TWILIO_AUTH_TOKEN → Telephony (Twilio) (disabled)
+   · TELNYX_API_KEY → Telephony (Telnyx) (disabled)
+   · MUX_TOKEN_ID → Video streaming (Mux) (disabled)
+   · MUX_TOKEN_SECRET → Video streaming (Mux) (disabled)
+   · STRIPE_SECRET_KEY → Payment processing (disabled)
+   · OAUTH_SERVER_URL → OAuth authentication (disabled)
+✓  CuraLive environment validated — core services ready
+[Shadow Mode] WARNING: RECALL_AI_WEBHOOK_SECRET not set — Webhook signature verification will not work
+[Shadow Mode] WARNING: ABLY_API_KEY not set — Real-time transcript streaming to UI will not work
+[Shadow Mode] ✓ All critical environment variables configured
+[Recall] Webhook registered at POST /api/recall/webhook
+[Bridge Webhooks] Registering at /api/bridge
+[Bridge Webhooks] ✓ All bridge webhook endpoints registered
+[CuraLive v2025.04.10-B] Server running on http://0.0.0.0:10000/
+[ReminderScheduler] Started — interval: 300s, origin: https://curalive-node.onrender.com
+[HealthGuardian] Starting autonomous monitoring (30s interval)
+[ComplianceEngine] Started — scanning every 300s
+[ComplianceDeadlineMonitor] Started — checking every 15 minutes
+[BriefingScheduler] Started — checking every 5 minutes
+[SubscriptionBilling] Scheduler started — will run on 1st of each month at 08:00
+[ShadowWatchdog] Started — checking every 60s for zombie sessions
+[Migration] ✓ archive_events columns ensured (fingerprint + transcription status)
+[Migration] ✓ operator_actions table ensured
+[Migration] ✓ P1 Q&A columns ensured (duplicate_of_id, legal_review_reason, ai_draft_text, ai_draft_reasoning)
+[Static] SPA HTML prepared from index.html
+[rawSql] Query failed: ALTER TABLE health_checks ALTER COLUMN checked_at TYPE TIMESTAMP USING to_timestamp(checked_at::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[Migration] ✓ shadow_sessions columns ensured
+[rawSql] Query failed: ALTER TABLE health_baselines ALTER COLUMN last_updated TYPE TIMESTAMP USING to_timestamp(last_updated::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[rawSql] Query failed: ALTER TABLE health_incidents ALTER COLUMN detected_at TYPE TIMESTAMP USING to_timestamp(detected_at::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[rawSql] Query failed: ALTER TABLE health_incidents ALTER COLUMN resolved_at TYPE TIMESTAMP USING to_timestamp(resolved_at::double precision / 1000.0) 
+Params: 0 
+Error: cannot cast type timestamp without time zone to double precision
+[HealthGuardian] ✓ Health tables ensured
+[HealthGuardian] INCIDENT: WARNING — Anomaly detected: active_events latency 165ms (expected baseline exceeded)
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://curalive-node.onrender.com
+Menu
+==> 
