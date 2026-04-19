@@ -56,19 +56,20 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 const PLATFORM_LABELS: Record<string, string> = {
   zoom: "Zoom",
   teams: "Teams",
+  meet: "Google Meet",
   webex: "Webex",
-  google_meet: "Google Meet",
-  dialin: "Phone/Dial-in",
+  choruscall: "Chorus Call",
   other: "Other",
 };
 
-const RECALL_SUPPORTED_PLATFORMS = new Set(["zoom", "teams", "webex", "google_meet"]);
+const RECALL_SUPPORTED_PLATFORMS = new Set(["zoom", "teams", "meet", "webex"]);
 
 const detectPlatformFromUrl = (url: string): string | null => {
   if (url.includes("zoom.us")) return "zoom";
   if (url.includes("teams.microsoft")) return "teams";
   if (url.includes("webex.com")) return "webex";
-  if (url.includes("meet.google")) return "google_meet";
+  if (url.includes("meet.google")) return "meet";
+  if (url.includes("choruscall.com")) return "choruscall";
   return null;
 };
 
