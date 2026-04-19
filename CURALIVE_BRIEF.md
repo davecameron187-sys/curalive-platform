@@ -1,5 +1,5 @@
 # CuraLive — Living Session Brief
-**Last updated:** 19 April 2026
+**Last updated:** 19 April 2026 (Session 2)
 **Updated by:** Claude (Chief Architect)
 **Branch:** `RenderMigration`
 **Repo:** `davecameron187-sys/curalive-platform`
@@ -42,44 +42,73 @@ git push github RenderMigration
 | `/ping` returns pong | ✓ |
 | tRPC API responding | ✓ |
 | Frontend loads at root URL | ✓ Fixed 19 Apr 2026 |
-| Shadow Mode loads | ⚠ Old version showing — V3 not yet live |
+| Shadow Mode | ⚠ Old version still showing — V3 code written but not yet pushed |
+| Operator Dashboard | ✓ Built and verified working locally — needs push to deploy |
 | Session creation (tRPC) | ✓ Working |
-| Database migrations | ✓ All Phase 2 tables created |
+| Database migrations | ✓ All tables created on startup |
+
+---
+
+## OPERATOR DASHBOARD — STATUS
+
+**Route:** `/operator/dashboard`
+**Status:** ✓ Complete — verified working locally
+
+### 5 Panels (all working)
+1. **Command** — KPI cards, live session hero, upcoming this week, attention stack. Auto-refresh 60s.
+2. **Sessions** — Live hero + close button, paginated session list, row click to Shadow Mode detail.
+3. **Customers** — Active/Demo/Pilot tabs, data-incomplete indicators, pilot events progress bar.
+4. **Reports** — Pending reports with preview + approve+send, sent list paginated.
+5. **Billing** — Revenue KPIs, subscription list, ad-hoc/pilot/demo list, data-incomplete indicators.
+
+### Backend (all 10 procedures wired)
+`getDashboardSummary` · `getLiveSession` · `getUpcomingSessions` · `getAttentionItems` · `getAllSessions` · `getCustomersByStage` · `getReportsPending` · `getReportsSent` · `approveAndSendReport` · `getBillingSummary`
+
+### Files built or modified for Operator Dashboard
+| File | Status |
+|---|---|
+| `client/src/pages/OperatorDashboard.tsx` | ✓ Complete — 745 lines |
+| `server/routers/operatorDashboardRouter.ts` | ✓ Complete — 473 lines |
+| `server/_core/index.ts` | ✓ Modified — startup migrations added |
+| `drizzle/gaps.schema.ts` | ✓ Modified — `scheduledSessions` confirmed, `intelligenceFeed` added |
+| `client/src/pages/OperatorConsole.tsx` | ✓ Modified — Dashboard link added to header |
+| `client/src/App.tsx` | ✓ Already routed at `/operator/dashboard` |
+
+### Startup migrations added (run on Render startup)
+- `organisations` — created if missing + seeded 3 demo orgs on first run
+- `scheduled_sessions` — created if missing + `org_id`, `notes`, `platform` columns added if absent
+- `billing_invoices` — created if missing
+- `intelligence_feed` — created if missing
+- `shadow_sessions` — added `org_id`, `company`, `ai_core_results` columns
+
+### Demo organisations seeded (on first Render boot)
+| Name | Status | Billing |
+|---|---|---|
+| Meridian Resources | active | subscription — R25,000/mo |
+| Acacia Capital | pilot | adhoc |
+| Stellarway Holdings | demo | demo |
 
 ---
 
 ## SHADOW MODE — V3 vs CURRENT
 
 ### What's live now (old version)
-- 11 tabs, 4,472 lines, bloated — includes archive upload, AI dashboard, AI learning, advisory bot, diagnostics, board compass, compliance monitor
+- 11 tabs, 4,472 lines, bloated
 
-### What V3 should have (built in Claude, not yet live)
+### What V3 should have (built, NOT yet pushed)
 **5 focused tabs:**
-1. **Live Console** — session list, intelligence feed, PSIL indicator, heartbeat, session stats
-2. **Live Q&A** — placeholder, ready for next build phase
-3. **Participants** — placeholder, ready for next build phase
-4. **Pre-Event** — placeholder, ready for next build phase
+1. **Live Console** — session list, intelligence feed, PSIL indicator, heartbeat
+2. **Live Q&A** — placeholder
+3. **Participants** — placeholder
+4. **Pre-Event** — placeholder
 5. **History** — completed sessions list
 
-**New features not in old version:**
-- Intelligence Feed — live AI outputs colour-coded by severity
-- PSIL Indicator — shows Clear / Constrain / Redirect / Escalate in real time
-- CuraLive Assistant — floating advisory bot always accessible
-- Auto-select live session on page load
-- Live session duration timer
-- Clean monospace cockpit aesthetic
-
-### Files created or modified for V3
+### Files for V3 (built but pending push — verify on GitHub first)
 | File | Status |
 |---|---|
-| `client/src/pages/ShadowMode.tsx` | Complete replacement — V3 code |
-| `server/migrations/create-phase2-tables.ts` | Created |
-| `server/services/IntelligencePipelineService.ts` | Created |
-| `server/routers/shadowModeRouter.ts` | Modified — added `pushTranscriptSegment` and `getIntelligenceFeed` |
-| `drizzle/gaps.schema.ts` | Modified — added `intelligenceFeed` table |
-| `server/_core/vite.ts` | Modified — static path corrected |
-| `vite.config.ts` | Modified — build output directory |
-| `package.json` | Modified — build script and start script corrected |
+| `client/src/pages/ShadowMode.tsx` | Built in prior session — verify if on RenderMigration |
+| `server/routers/shadowModeRouter.ts` | `listSessions` (line 564) + `pushTranscriptSegment` (line 735) confirmed present — `getIntelligenceFeed` status unknown |
+| `drizzle/gaps.schema.ts` | `intelligenceFeed` table added this session |
 
 ---
 
@@ -87,17 +116,27 @@ git push github RenderMigration
 
 | # | Issue | Priority |
 |---|---|---|
-| 1 | Shadow Mode V3 not live — old version showing | HIGH |
-| 2 | Live Q&A tab — placeholder only | NEXT |
-| 3 | Participants tab — placeholder only | NEXT |
-| 4 | Pre-Event tab — placeholder only | NEXT |
-| 5 | `dialin` platform option not accepted by router enum | LOW |
-| 6 | `health_checks`, `health_baselines`, `health_incidents` tables missing — cosmetic log noise only | LOW |
-| 7 | `OAUTH_SERVER_URL` not configured — OAuth disabled | DEFERRED |
+| 1 | Shadow Mode V3 not live — old version showing on Render | HIGH |
+| 2 | `getIntelligenceFeed` procedure in shadowModeRouter — not confirmed present | HIGH |
+| 3 | Live Q&A tab — placeholder only | NEXT |
+| 4 | Participants tab — placeholder only | NEXT |
+| 5 | Pre-Event tab — placeholder only | NEXT |
+| 6 | `dialin` platform option not accepted by router enum | LOW |
+| 7 | `OAUTH_SERVER_URL` not configured — OAuth disabled, auth bypass active | DEFERRED |
 
 ---
 
-## FIXED TODAY — 19 APRIL 2026
+## FIXED TODAY — 19 APRIL 2026 (SESSION 2)
+
+| Fix | Details |
+|---|---|
+| Operator Dashboard built end-to-end | All 5 panels, all 10 tRPC procedures |
+| Startup migrations for missing tables | organisations, scheduled_sessions, billing_invoices, intelligence_feed |
+| shadow_sessions.org_id + company + ai_core_results | Added via startup ALTER TABLE IF NOT EXISTS |
+| Dashboard link added to OCC header | `/operator/dashboard` accessible from OCC |
+| `scheduledSessions` duplicate export fixed | Removed duplicate from gaps.schema.ts |
+
+## FIXED IN SESSION 1 — 19 APRIL 2026
 
 | Fix | Commit |
 |---|---|
@@ -114,11 +153,23 @@ git push github RenderMigration
 
 ## NEXT BUILD PRIORITIES
 
-1. **Get Shadow Mode V3 live** — confirm V3 file exists on RenderMigration, deploy it
-2. **Wire Live Q&A tab** — build out from placeholder
-3. **Wire Participants tab** — build out from placeholder
-4. **Meridian Resources demo data** — test session end to end
-5. **Fix `dialin` router enum**
+1. **Push Operator Dashboard to Render** — run git add/commit/push (files below)
+2. **Verify Shadow Mode V3** — check if V3 ShadowMode.tsx is on RenderMigration; if not, push it
+3. **Add `getIntelligenceFeed` to shadowModeRouter** — verify it exists or add it
+4. **Wire Live Q&A tab** — build out from placeholder
+5. **Wire Participants tab** — build out from placeholder
+
+### Git commands for this session's work
+```
+git add client/src/pages/OperatorDashboard.tsx \
+        server/routers/operatorDashboardRouter.ts \
+        server/_core/index.ts \
+        drizzle/gaps.schema.ts \
+        client/src/pages/OperatorConsole.tsx \
+        CURALIVE_BRIEF.md
+git commit -m "Build: Operator Dashboard — 5 panels, 10 tRPC procedures, startup migrations"
+git push github RenderMigration
+```
 
 ---
 

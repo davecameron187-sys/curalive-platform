@@ -11,7 +11,7 @@ import {
   Eye, EyeOff, Bell, BellOff, TrendingUp, Signal,
   Layers, Terminal, Database, Hash, Check, X, MoreVertical,
   Headphones, Video, VideoOff, Maximize2, AlertTriangle,
-  FileText, Download, RotateCcw, Info, Mail
+  FileText, Download, RotateCcw, Info, Mail, LayoutDashboard
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -238,6 +238,9 @@ export default function OperatorConsole() {
             <Users className="w-3.5 h-3.5" />
             <span className="font-semibold text-white">{attendeeList?.length ?? 1247}</span>
           </div>
+          <button onClick={() => navigate("/operator/dashboard")} className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white border border-white/10 px-2.5 py-1.5 rounded-lg transition-colors hover:bg-white/8">
+            <LayoutDashboard className="w-3 h-3" /> Dashboard
+          </button>
           <button onClick={() => navigate(`/event/${eventId}`)} className="flex items-center gap-1.5 text-xs font-semibold bg-white/8 hover:bg-white/12 border border-white/10 px-2.5 py-1.5 rounded-lg transition-colors">
             <ExternalLink className="w-3 h-3" /> Event Room
           </button>

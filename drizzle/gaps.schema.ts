@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, varchar, timestamp, boolean, json, real, date } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, varchar, timestamp, boolean, json, jsonb, real, date } from "drizzle-orm/pg-core";
 
 export const sessionReadinessChecks = pgTable("session_readiness_checks", {
   id: serial("id").primaryKey(),
@@ -195,5 +195,19 @@ export const sessionMarkers = pgTable("session_markers", {
   speaker: varchar("speaker", { length: 200 }),
   eventTimestamp: integer("event_timestamp"),
   operatorId: integer("operator_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const intelligenceFeed = pgTable("intelligence_feed", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  feedType: text("feed_type").notNull(),
+  severity: text("severity").notNull().default("info"),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  metadata: jsonb("metadata"),
+  pipeline: text("pipeline").notNull(),
+  speaker: text("speaker").notNull(),
+  timestampInEvent: integer("timestamp_in_event"),
   createdAt: timestamp("created_at").defaultNow(),
 });

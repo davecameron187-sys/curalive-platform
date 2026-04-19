@@ -140,9 +140,135 @@ async function ensureShadowSessionsColumns() {
     await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS notes TEXT`);
     await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS started_at BIGINT`);
     await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS ended_at BIGINT`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS org_id INTEGER`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS company VARCHAR(255)`);
+    await rawSql(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS ai_core_results TEXT`);
     console.log("[Migration] ✓ shadow_sessions columns ensured");
   } catch (err: any) {
     console.warn("[Migration] shadow_sessions column check skipped:", err?.message);
+  }
+}
+
+async function ensureOrganisationsTable() {
+  try {
+    const { rawSql } = await import("../db");
+    await rawSql(`CREATE TABLE IF NOT EXISTS organisations (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'demo',
+      billing_type VARCHAR(20) NOT NULL DEFAULT 'demo',
+      subscription_amount INTEGER,
+      per_event_price INTEGER,
+      billing_contact_email VARCHAR(255),
+      ir_contact_email VARCHAR(255),
+      pilot_events_total INTEGER DEFAULT 3,
+      pilot_events_used INTEGER DEFAULT 0,
+      pilot_notes TEXT,
+      followup_date DATE,
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+      updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )`);
+    const [existing] = await rawSql(`SELECT COUNT(*)::int AS cnt FROM organisations`);
+    if ((existing[0]?.cnt ?? 0) === 0) {
+      await rawSql(`INSERT INTO organisations (name, status, billing_type, subscription_amount, ir_contact_email, billing_contact_email) VALUES
+        ('Meridian Resources', 'active', 'subscription', 25000, 'ir@meridianresources.co.za', 'finance@meridianresources.co.za'),
+        ('Acacia Capital', 'pilot', 'adhoc', NULL, 'investor.relations@acaciacapital.co.za', NULL),
+        ('Stellarway Holdings', 'demo', 'demo', NULL, NULL, NULL)`);
+      console.log("[Migration] ✓ organisations seeded with 3 demo records");
+    }
+    console.log("[Migration] ✓ organisations table ensured");
+  } catch (err: any) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] organisations table check skipped:", err?.message);
+  }
+}
+
+async function ensureScheduledSessionsTable() {
+  try {
+    const { rawSql } = await import("../db");
+    await rawSql(`CREATE TABLE IF NOT EXISTS scheduled_sessions (
+      id SERIAL PRIMARY KEY,
+      org_id INTEGER,
+      event_name VARCHAR(255) NOT NULL,
+      company VARCHAR(255),
+      event_type VARCHAR(64) DEFAULT 'earnings_call',
+      platform VARCHAR(64) DEFAULT 'zoom',
+      meeting_url TEXT,
+      scheduled_at TIMESTAMP NOT NULL,
+      tier VARCHAR(32) DEFAULT 'essential',
+      partner_id INTEGER,
+      recipients JSON DEFAULT '[]',
+      pre_brief_sent_at TIMESTAMP,
+      session_created_id INTEGER,
+      created_by INTEGER,
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
+    await rawSql(`ALTER TABLE scheduled_sessions ADD COLUMN IF NOT EXISTS org_id INTEGER`);
+    await rawSql(`ALTER TABLE scheduled_sessions ADD COLUMN IF NOT EXISTS notes TEXT`);
+    await rawSql(`ALTER TABLE scheduled_sessions ADD COLUMN IF NOT EXISTS platform VARCHAR(64) DEFAULT 'zoom'`);
+    console.log("[Migration] ✓ scheduled_sessions table ensured");
+  } catch (err: any) {
+    console.warn("[Migration] scheduled_sessions table check skipped:", err?.message);
+  }
+}
+
+async function ensureBillingInvoicesTable() {
+  try {
+    const { rawSql } = await import("../db");
+    await rawSql(`CREATE TABLE IF NOT EXISTS billing_invoices (
+      id SERIAL PRIMARY KEY,
+      invoice_number VARCHAR(32) NOT NULL UNIQUE,
+      client_id INTEGER NOT NULL,
+      quote_id INTEGER,
+      title VARCHAR(255) NOT NULL,
+      subtotal_cents BIGINT NOT NULL DEFAULT 0,
+      discount_cents BIGINT NOT NULL DEFAULT 0,
+      tax_percent INTEGER NOT NULL DEFAULT 15,
+      tax_cents BIGINT NOT NULL DEFAULT 0,
+      total_cents BIGINT NOT NULL DEFAULT 0,
+      paid_cents BIGINT NOT NULL DEFAULT 0,
+      currency VARCHAR(8) NOT NULL DEFAULT 'ZAR',
+      status VARCHAR(64) NOT NULL DEFAULT 'draft',
+      issued_at TIMESTAMP,
+      due_at TIMESTAMP,
+      paid_at TIMESTAMP,
+      access_token VARCHAR(64) UNIQUE,
+      payment_terms TEXT,
+      internal_notes TEXT,
+      client_notes TEXT,
+      bank_details TEXT,
+      created_by_user_id INTEGER,
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+      updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )`);
+    console.log("[Migration] ✓ billing_invoices table ensured");
+  } catch (err: any) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] billing_invoices table check skipped:", err?.message);
+  }
+}
+
+async function ensureIntelligenceFeedTable() {
+  try {
+    const { rawSql } = await import("../db");
+    await rawSql(`CREATE TABLE IF NOT EXISTS intelligence_feed (
+      id SERIAL PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      feed_type TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'info',
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      metadata JSONB,
+      pipeline TEXT NOT NULL,
+      speaker TEXT NOT NULL,
+      timestamp_in_event INTEGER,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
+    console.log("[Migration] ✓ intelligence_feed table ensured");
+  } catch (err: any) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] intelligence_feed table check skipped:", err?.message);
   }
 }
 
@@ -230,6 +356,18 @@ async function startServer() {
   );
   ensureShadowSessionsColumns().catch(err =>
     console.warn("[Migration] shadow_sessions column migration failed:", err?.message)
+  );
+  ensureOrganisationsTable().catch(err =>
+    console.warn("[Migration] organisations table migration failed:", err?.message)
+  );
+  ensureScheduledSessionsTable().catch(err =>
+    console.warn("[Migration] scheduled_sessions table migration failed:", err?.message)
+  );
+  ensureBillingInvoicesTable().catch(err =>
+    console.warn("[Migration] billing_invoices table migration failed:", err?.message)
+  );
+  ensureIntelligenceFeedTable().catch(err =>
+    console.warn("[Migration] intelligence_feed table migration failed:", err?.message)
   );
 
   if (!isProd) {
