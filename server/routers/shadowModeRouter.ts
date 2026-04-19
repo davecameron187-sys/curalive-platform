@@ -263,8 +263,8 @@ export const shadowModeRouter = router({
       let inserted: any;
       try {
         const [insertRows] = await rawSql(
-          `INSERT INTO shadow_sessions (client_name, event_name, event_type, platform, meeting_url, status, notes)
-           VALUES ($1, $2, $3, $4, $5, 'pending', $6)
+          `INSERT INTO shadow_sessions (session_id, client_name, event_name, event_type, platform, meeting_url, status, notes)
+           VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, 'pending', $6)
            RETURNING *`,
           [input.clientName, input.eventName, input.eventType, input.platform, input.meetingUrl, input.notes ?? null]
         );
