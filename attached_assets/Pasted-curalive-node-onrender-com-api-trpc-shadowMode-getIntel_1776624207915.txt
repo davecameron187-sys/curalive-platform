@@ -1,0 +1,85 @@
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2238%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="88e90298-8d9d-4e63" responseTimeMS=6 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[Auth] Missing session cookie
+[Recall] Invalid webhook signature — rejecting
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2238%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="d60b2ff8-de7a-4e50" responseTimeMS=4 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[Auth] Missing session cookie
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="a66c574f-2407-4ed3" responseTimeMS=16 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="03fc1396-d984-4f12" responseTimeMS=4 responseBytes=334 userAgent=""
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="339605ac-e370-4cdf" responseTimeMS=3 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2238%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="3c7205a4-f1c1-4dde" responseTimeMS=5 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="e3079e14-eeed-4614" responseTimeMS=18 responseBytes=334 userAgent=""
+[Auth] Missing session cookie
+[Recall] Invalid webhook signature — rejecting
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="df9f3656-4109-4acb" responseTimeMS=5 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2238%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="f1ec5f33-9b2d-4ca0" responseTimeMS=5 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="4ad85077-10e0-42a9" responseTimeMS=2 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[Auth] Missing session cookie
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="10eed3c3-ddce-40ab" responseTimeMS=3 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="4d956f0f-c930-45e6" responseTimeMS=3 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2238%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="aedceed8-829f-4142" responseTimeMS=5 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="750f7ad5-3c99-42da" responseTimeMS=3 responseBytes=334 userAgent=""
+[Auth] Missing session cookie
+[Recall] Invalid webhook signature — rejecting
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="c9a90272-34b7-49b1" responseTimeMS=2 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2238%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="7f11fdfa-290f-43c9" responseTimeMS=7 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="a900f75a-154f-44dc" responseTimeMS=2 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[Auth] Missing session cookie
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="66485dac-b78b-4de4" responseTimeMS=8 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="5330048d-2b50-436e" responseTimeMS=2 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2238%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="34bda561-80c1-4bf5" responseTimeMS=6 responseBytes=396 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="a6dd6e62-a7fc-498e" responseTimeMS=18 responseBytes=334 userAgent=""
+[Auth] Missing session cookie
+[Recall] Invalid webhook signature — rejecting
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="420f4ca4-a05d-4c8c" responseTimeMS=2 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2238%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="46ad58f5-cce8-4f87" responseTimeMS=5 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="c5f89587-a76d-4e3a" responseTimeMS=3 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[Auth] Missing session cookie
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="6cb3ed8a-30ca-4d35" responseTimeMS=3 responseBytes=334 userAgent=""
+[Recall] Invalid webhook signature — rejecting
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="d120fb42-e86f-4464" responseTimeMS=3 responseBytes=334 userAgent=""
+Menu
+[Recall] Invalid webhook signature — rejecting
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.72.110.98" requestID="077fb9ff-3112-4265" responseTimeMS=3 responseBytes=334 userAgent=""
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2238%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="a8f6bf67-ce7a-4997" responseTimeMS=5 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[Auth] Missing session cookie
+[Recall] Invalid webhook signature — rejecting
+[Auth] Missing session cookie
