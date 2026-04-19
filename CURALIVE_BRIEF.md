@@ -80,7 +80,7 @@ git push github RenderMigration
 |---|---|
 | `RECALL_AI_API_KEY` | ✓ Updated 19 Apr 2026 — key: CuraLive Production |
 | `RECALL_AI_BASE_URL` | ✓ Set to `https://eu-central-1.recall.ai/api/v1` |
-| `ABLY_API_KEY` | ⚠ Not set — real-time transcript streaming disabled |
+| `ABLY_API_KEY` | ✓ Set — real-time streaming active |
 | `OAUTH_SERVER_URL` | ⚠ Not set — OAuth disabled, auth bypass active |
 | `RECALL_AI_WEBHOOK_SECRET` | ⚠ Not set — webhook verification disabled |
 
