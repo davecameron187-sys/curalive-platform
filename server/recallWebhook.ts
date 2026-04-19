@@ -61,10 +61,7 @@ async function ablyPublish(channel: string, name: string, data: unknown) {
 function verifyRecallSignature(rawBody: string, signature: string | undefined): boolean {
   const isProd = process.env.NODE_ENV === "production";
   if (!RECALL_WEBHOOK_SECRET) {
-    if (isProd) {
-      console.error("[Recall] RECALL_AI_WEBHOOK_SECRET not set — rejecting unsigned webhook in production");
-      return false;
-    }
+    console.warn("[Recall] RECALL_AI_WEBHOOK_SECRET not set — accepting webhook without signature verification");
     return true;
   }
   if (!signature) return false;

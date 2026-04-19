@@ -48,17 +48,15 @@ export async function handleRecallWebhookRequest(req: Request, res: Response): P
     const recallSecret = process.env.RECALL_AI_WEBHOOK_SECRET;
 
     if (!recallSecret) {
-      console.error("[Recall Webhook] RECALL_AI_WEBHOOK_SECRET not configured");
-      res.status(500).json({ error: "Webhook secret not configured" });
-      return;
-    }
-
-    // Verify webhook signature
-    const payload = JSON.stringify(req.body);
-    if (!verifyRecallWebhookSignature(payload, signature, recallSecret)) {
-      console.warn("[Recall Webhook] Invalid signature");
-      res.status(401).json({ error: "Invalid signature" });
-      return;
+      console.warn("[Recall Webhook] RECALL_AI_WEBHOOK_SECRET not configured — accepting webhook without signature verification");
+    } else {
+      // Verify webhook signature
+      const payload = JSON.stringify(req.body);
+      if (!verifyRecallWebhookSignature(payload, signature, recallSecret)) {
+        console.warn("[Recall Webhook] Invalid signature");
+        res.status(401).json({ error: "Invalid signature" });
+        return;
+      }
     }
 
     const webhookData = req.body as RecallWebhookPayload;
