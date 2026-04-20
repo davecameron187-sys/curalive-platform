@@ -1,0 +1,24 @@
+uralive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2253%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="71778c9c-cc16-46ce" responseTimeMS=5 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[Auth] Missing session cookie
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2253%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="939485c5-9bf7-492f" responseTimeMS=7 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[Auth] Missing session cookie
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2253%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="b0bd43d9-4fad-4e51" responseTimeMS=4 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[AudioTranscribe] Incoming request — content-type: multipart/form-data; boundary=----WebKitFormBoundarynklRbq7IAoUxoubh
+[AudioTranscribe] Received chunk.webm (0.2MB, video=true)
+[AudioTranscribe] Saved recording: 1776701603912_b3bf58a6fd54.webm (0.2MB)
+[AudioTranscribe] Small file (0.2MB), sending directly to Whisper API...
+[AudioTranscribe] Sending 0.2MB to Whisper API at https://api.openai.com (key: sk-proj-...)
+[Auth] Missing session cookie
+[AudioTranscribe] Error: Whisper API failed (400): {"error":{"message":"Invalid file format. Supported formats: ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm']","type":"invalid_request_error","param":null,"code":null},"usage":{"type":"duration","seconds":0}}
+    at callWhisperTranscribe (file:///opt/render/project/src/_build/index.js:46385:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async callTranscribeApi (file:///opt/render/project/src/_build/index.js:46405:10)
+    at async file:///opt/render/project/src/_build/index.js:46458:24
+[POST]
+curalive-node.onrender.com/api/transcribe-audio clientIP="41.157.80.44" requestID="f07353b5-f01e-4f1d" responseTimeMS=1102 responseBytes=569 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2253%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="ba08e374-ab42-40ac" responseTimeMS=6 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+Menu
+[Auth] Missing session cookie
