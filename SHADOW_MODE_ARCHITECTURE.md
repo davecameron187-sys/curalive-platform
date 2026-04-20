@@ -209,7 +209,7 @@ Three webhook handlers exist simultaneously. This must be resolved after Fixes 1
 |-----|--------|--------|------|
 | Step 1: Replace mock recallai.ts | ✅ COMPLETE | f8f9314 | Apr 2026 |
 | Fix 1: Webhook reachability test | ⏳ PENDING | — | — |
-| Fix 2: Pipeline wire | ⏳ PENDING | — | — |
+| Fix 2: Pipeline wire | ✅ COMPLETE | 07f81f6 | Apr 2026 |
 | Fix 3: Transcript DB write | ⏳ PENDING | — | — |
 | Webhook consolidation | ⏳ PENDING | — | — |
 
