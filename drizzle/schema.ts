@@ -842,10 +842,10 @@ export const recallBots = pgTable("recall_bots", {
   // Error message if bot failed
   errorMessage: text("error_message"),
   // Timestamps
-  startedAt: bigint("started_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  startedAt: bigint("started_at", { mode: "number" }).$defaultFn(() => Date.now()),
   joinedAt: bigint("joined_at", { mode: "number" }),
   leftAt: bigint("left_at", { mode: "number" }),
-  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  createdAt: bigint("created_at", { mode: "number" }).$defaultFn(() => Date.now()),
 });
 export type RecallBot = typeof recallBots.$inferSelect;
 export type InsertRecallBot = typeof recallBots.$inferInsert;
