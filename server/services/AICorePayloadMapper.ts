@@ -21,6 +21,7 @@ interface SessionData {
   jurisdiction?: string;
   platform?: string;
   local_transcript_json?: string;
+  recallBotId?: string;
 }
 
 export async function buildCanonicalPayload(
@@ -128,6 +129,33 @@ async function loadTranscriptSegments(
     return rows as TranscriptSegment[];
   }
 
+  // Fallback 2: recall_bots.transcriptJson via recallBotId
+  if (session.recallBotId) {
+    try {
+      const [botRows] = await rawSql(
+        `SELECT transcript_json FROM recall_bots WHERE recall_bot_id = $1`,
+        [session.recallBotId]
+      );
+      if (botRows.length > 0 && botRows[0].transcript_json) {
+        const parsed = JSON.parse(botRows[0].transcript_json);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          LOG(`Loaded ${parsed.length} segments from recall_bots.transcriptJson`);
+          return parsed.map(
+            (s: any): TranscriptSegment => ({
+              speaker_name: s.speaker ?? s.speaker_name ?? "Unknown",
+              speaker_role: s.role ?? s.speaker_role ?? null,
+              text: s.text ?? "",
+              start_time: s.start_time ?? s.timestamp ?? null,
+              end_time: s.end_time ?? null,
+              confidence: s.confidence ?? null,
+            })
+          );
+        }
+      }
+    } catch {}
+  }
+
+  // Fallback 3: local_transcript_json
   if (session.local_transcript_json) {
     try {
       const parsed = JSON.parse(session.local_transcript_json);

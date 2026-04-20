@@ -1,0 +1,61 @@
+Perfect. I can see the exact function. Here is the fix.
+The current function has two sources — occ_transcription_segments and local_transcript_json. We need to add recall_bots.transcriptJson as the middle fallback, between those two.
+
+Brief for Replit — Fix 1, one surgical edit.
+In server/services/AICorePayloadMapper.ts, replace this exact block:
+typescript  if (session.local_transcript_json) {
+With this:
+typescript  // Fallback 2: recall_bots.transcriptJson via recallBotId
+  if (session.recallBotId) {
+    try {
+      const [botRows] = await rawSql(
+        `SELECT transcript_json FROM recall_bots WHERE recall_bot_id = $1`,
+        [session.recallBotId]
+      );
+      if (botRows.length > 0 && botRows[0].transcript_json) {
+        const parsed = JSON.parse(botRows[0].transcript_json);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          LOG(`Loaded ${parsed.length} segments from recall_bots.transcriptJson`);
+          return parsed.map(
+            (s: any): TranscriptSegment => ({
+              speaker_name: s.speaker ?? s.speaker_name ?? "Unknown",
+              speaker_role: s.role ?? s.speaker_role ?? null,
+              text: s.text ?? "",
+              start_time: s.start_time ?? s.timestamp ?? null,
+              end_time: s.end_time ?? null,
+              confidence: s.confidence ?? null,
+            })
+          );
+        }
+      }
+    } catch {}
+  }
+
+  // Fallback 3: local_transcript_json
+  if (session.local_transcript_json) {
+Also update the SessionData interface at the top of the file — add recallBotId as an optional field. Find this block:
+typescriptinterface SessionData {
+  id: number;
+  client_name?: string;
+  company?: string;
+  event_name?: string;
+  event_type?: string;
+  jurisdiction?: string;
+  platform?: string;
+  local_transcript_json?: string;
+}
+Replace with:
+typescriptinterface SessionData {
+  id: number;
+  client_name?: string;
+  company?: string;
+  event_name?: string;
+  event_type?: string;
+  jurisdiction?: string;
+  platform?: string;
+  local_transcript_json?: string;
+  recallBotId?: string;
+}
+Commit message: Fix 1 — AICorePayloadMapper: add recall_bots.transcriptJson fallback for Shadow Mode sessions
+Branch: shadow-mode-relaunch
+Confirm the commit hash when done.
