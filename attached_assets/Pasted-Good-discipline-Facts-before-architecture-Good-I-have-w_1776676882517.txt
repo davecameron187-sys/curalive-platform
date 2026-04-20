@@ -1,0 +1,97 @@
+Good discipline. Facts before architecture.Good. I have what I need. Here's the Replit brief — tight, no assumptions, pure discovery.
+
+---
+
+## REPLIT DISCOVERY PACKET — CuraLive Lifecycle Architecture Audit
+
+**Purpose:** Facts only. No fixes. No interpretation. Run each command and return raw output.
+
+**Branch:** RenderMigration
+
+---
+
+### SECTION 1 — The Recall Webhook Handler
+
+**1.1** Run this and paste the full file:
+```bash
+cat server/recallWebhook.ts
+```
+
+**1.2** Run this and paste the full file:
+```bash
+cat server/webhooks/recall.ts 2>/dev/null || echo "FILE_NOT_FOUND"
+```
+
+**1.3** Run this — I need to know every place `handleBotStatusChange` or `recallWebhook` is registered as a route:
+```bash
+grep -r "recallWebhook\|handleBotStatusChange\|recall.*webhook\|webhook.*recall" server/ --include="*.ts" -l
+```
+
+---
+
+### SECTION 2 — The Status Writer
+
+**2.1** Run this and paste the full file:
+```bash
+cat server/services/recallStatusWriter.ts 2>/dev/null || echo "FILE_NOT_FOUND"
+```
+
+---
+
+### SECTION 3 — Any Lifecycle Coordinator Candidate
+
+**3.1** Run this — looking for any service that listens to multiple event signals and makes routing decisions:
+```bash
+grep -r "eventId\|EventLifecycle\|sessionOrchestrat\|pipelineController\|eventManager\|EventCoordinator" server/services/ --include="*.ts" -l
+```
+
+**3.2** For each file returned in 3.1, run:
+```bash
+grep -n "eventId" server/services/[FILENAME].ts | head -30
+```
+Replace `[FILENAME]` with each result.
+
+---
+
+### SECTION 4 — The Post-Session Pipeline
+
+**4.1** Run this and paste the full file:
+```bash
+cat server/services/SessionClosePipeline.ts 2>/dev/null || echo "FILE_NOT_FOUND"
+```
+
+**4.2** Run this and paste the full file:
+```bash
+cat server/services/AIReportPipeline.ts 2>/dev/null || echo "FILE_NOT_FOUND"
+```
+
+**4.3** Who calls these pipelines? Run:
+```bash
+grep -r "SessionClosePipeline\|AIReportPipeline" server/ --include="*.ts" -l
+```
+
+---
+
+### SECTION 5 — The recallBots Table Schema
+
+**5.1** Run this — I need the exact column definitions:
+```bash
+grep -A 40 "recallBots\s*=" server/db/schema.ts 2>/dev/null || grep -r "recallBots" server/ --include="*.ts" -l
+```
+
+---
+
+### SECTION 6 — What fires after a bot completes today
+
+**6.1** Run this — show every file that imports from `recallWebhook` or subscribes to bot status changes:
+```bash
+grep -r "bot\.status\|done.*recall\|recall.*done\|leftAt\|joinedAt" server/ --include="*.ts" -l
+```
+
+---
+
+**Return raw output only. No fixes. No commentary. Every answer matters.**
+
+---
+
+Paste that back here the moment Replit returns it. That output will tell us definitively whether a lifecycle coordinator already exists in some form, whether the post-session pipeline is wired or orphaned, and exactly what fires — or doesn't — when a bot completes. Everything after this depends on what's real.
