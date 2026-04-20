@@ -1266,6 +1266,13 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
+  app.use((err: any, req: any, res: any, _next: any) => {
+    console.error(`[Express] Unhandled error on ${req.method} ${req.url}:`, err?.message || err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: err?.message || "Internal server error" });
+    }
+  });
+
   server.listen(port, "0.0.0.0", () => {
     console.log(`[CuraLive v2025.04.10-B] Server running on http://0.0.0.0:${port}/`);
     const origin = process.env.APP_ORIGIN ?? `http://localhost:${port}`;

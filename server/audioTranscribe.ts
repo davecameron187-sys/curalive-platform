@@ -240,6 +240,7 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
   router.post(
     "/api/transcribe-audio",
     (req: any, res: any, next: any) => {
+      console.log(`[AudioTranscribe] Incoming request — content-type: ${req.headers["content-type"]?.slice(0, 80)}`);
       upload.single("file")(req, res, (err: any) => {
         if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
           res.status(413).json({ error: `File exceeds the ${MAX_UPLOAD_MB}MB upload limit.` });
