@@ -1,0 +1,43 @@
+~/workspace$ git pull github shadow-mode-relaunch --rebase
+git push github shadow-mode-relaunch
+git log -1 --oneline
+git show --name-only
+remote: Enumerating objects: 11, done.
+remote: Counting objects:   9%remote: Counting objects:  18%remote: Counting objects:  27%remote: Counting objects:  36%remote: Counting objects:  45%remote: Counting objects:  54%remote: Counting objects:  63%remote: Counting objects:  72%remote: Counting objects:  81%remote: Counting objects:  90%remote: Counting objects: 100%remote: Counting objects: 100% (11/11), done.
+remote: Compressing objects:  remote: Compressing objects:  remote: Compressing objects:  remote: Compressing objects:  remote: Compressing objects:  remote: Compressing objects: 1remote: Compressing objects: 100% (6/6), done.
+remote: Total 6 (delta 5), reused 0 (delta 0), pack-reused 0 (from 0)
+Unpacking objects: 100% (6/6), 697 bytes | 232.00 KiB/s, done.
+From https://github.com/davecameron187-sys/curalive-platform
+ * branch            shadow-mode-relaunch -> FETCH_HEAD
+   bc7b201..a694ef8  shadow-mode-relaunch -> github/shadow-mode-relaunch
+dropping a827288634269d62da05ba47e2347578f6ecc966 Implement real API for bot deployment and transcription -- patch contents already upstream
+Auto-merging client/src/pages/ShadowMode.tsx
+CONFLICT (content): Merge conflict in client/src/pages/ShadowMode.tsx
+error: could not apply 67d53c5... Add ability to capture audio in shadow mode sessions
+hint: Resolve all conflicts manually, mark them as resolved with
+hint: "git add/rm <conflicted_files>", then run "git rebase --continue".
+hint: You can instead skip this commit: run "git rebase --skip".
+hint: To abort and get back to the state before "git rebase", run "git rebase --abort".
+hint: Disable this message with "git config set advice.mergeConflict false"
+Could not apply 67d53c5... # Add ability to capture audio in shadow mode sessions
+To https://github.com/davecameron187-sys/curalive-platform.git
+ ! [rejected]        shadow-mode-relaunch -> shadow-mode-relaunch (non-fast-forward)
+error: failed to push some refs to 'https://github.com/davecameron187-sys/curalive-platform.git'
+hint: Updates were rejected because a pushed branch tip is behind its remote
+hint: counterpart. If you want to integrate the remote changes, use 'git pull'
+hint: before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+5570e2b (HEAD) Update data storage to allow null timestamps for recall bots
+commit 5570e2beebef3abe65914aa293b7ff49d7e51295 (HEAD)
+Author: davecameron187 <55743207-davecameron187@users.noreply.replit.com>
+Date:   Mon Apr 20 12:34:54 2026 +0000
+
+    Update data storage to allow null timestamps for recall bots
+    
+    Remove the `notNull()` constraint from `startedAt` and `createdAt` columns in the `recallBots` table definition within `drizzle/schema.ts`.
+    
+    Replit-Commit-Author: Agent
+    Replit-Commit-Session-Id: d1d58188-571e-42dc-8e82-48c6cb9df32f
+    Replit-Commit-Checkpoint-Type: full_checkpoint
+    Replit-Commit-Event-Id: 3601a612-7ab6-48f9-a009-d15d424a463e
+:
