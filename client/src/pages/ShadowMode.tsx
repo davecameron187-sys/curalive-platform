@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import LiveQaDashboard from "@/components/LiveQaDashboard";
+import LocalAudioCapture from "../components/LocalAudioCapture";
 
 type Tab = "console" | "qa" | "participants" | "pre-event" | "history";
 
@@ -352,6 +353,9 @@ export default function ShadowMode() {
                   >
                     END SESSION
                   </button>
+                  {!RECALL_SUPPORTED_PLATFORMS.has(s.platform) && (
+                    <LocalAudioCapture sessionId={Number(s.id)} isActive={true} />
+                  )}
                 </div>
               ))}
             </div>
