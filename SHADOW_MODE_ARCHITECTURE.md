@@ -27,6 +27,8 @@ Intelligence is written to the database. The operator sees the output.
 
 **No manual steps. No silent failures. No orphaned services.**
 
+Fix 2 implements a direct trigger. This is intentional and temporary. Final architecture replaces direct calls with event emission so pipeline, analytics, and notifications all respond to the same session.completed event independently.
+
 The nugget that drives every decision:
 > eventId / shadowSessionId is not just a foreign key —
 > it is the handoff that connects real-time capture to intelligence orchestration.
