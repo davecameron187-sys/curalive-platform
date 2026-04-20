@@ -1,0 +1,29 @@
+~/workspace$ git rm --cached "attached_assets/Pasted-Good-challenge-from-ChatGPT-They-re-right-about-the-thr_1776680181241.txt"
+git commit --amend --no-edit
+git push -u github shadow-mode-relaunch
+git log -1 --oneline
+git branch -a
+rm 'attached_assets/Pasted-Good-challenge-from-ChatGPT-They-re-right-about-the-thr_1776680181241.txt'
+[shadow-mode-relaunch f8f9314] Implement real API for bot deployment and transcription
+ Author: davecameron187 <55743207-davecameron187@users.noreply.replit.com>
+ Date: Mon Apr 20 10:17:49 2026 +0000
+ 1 file changed, 115 insertions(+), 70 deletions(-)
+Enumerating objects: 22, done.
+Counting objects: 100% (22/22), done.
+Delta compression using up to 8 threads
+Compressing objects:  58% (10/17Compressing objects:  64% (11/17Compressing objects:  70% (12/17Compressing objects:  76% (13/17Compressing objects:  82% (14/17Compressing objects:  88% (15/17Compressing objects:  94% (16/17Compressing objects: 100% (17/17Compressing objects: 100% (17/17), done.
+Writing objects: 100% (17/17), 8.25 KiB | 8.25 MiB/s, done.
+Total 17 (delta 11), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas:   0% (remote: Resolving deltas:   9% (remote: Resolving deltas:  18% (remote: Resolving deltas:  27% (remote: Resolving deltas:  36% (remote: Resolving deltas:  45% (remote: Resolving deltas:  54% (remote: Resolving deltas:  63% (remote: Resolving deltas:  72% (remote: Resolving deltas:  81% (remote: Resolving deltas:  90% (remote: Resolving deltas: 100% (remote: Resolving deltas: 100% (11/11), completed with 4 local objects.
+To https://github.com/davecameron187-sys/curalive-platform.git
+   9866de2..f8f9314  shadow-mode-relaunch -> shadow-mode-relaunch
+branch 'shadow-mode-relaunch' set up to track 'github/shadow-mode-relaunch'.
+f8f9314 (HEAD -> shadow-mode-relaunch, github/shadow-mode-relaunch) Implement real API for bot deployment and transcription
+  RenderMigration
+  main
+  replit-agent
+* shadow-mode-relaunch
+  remotes/github/RenderMigration
+  remotes/github/shadow-mode-relaunch
+  remotes/gitsafe-backup/main
+~/workspace$ 

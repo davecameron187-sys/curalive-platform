@@ -1,0 +1,29 @@
+/workspace$ git pull github shadow-mode-relaunch --rebase
+git push github shadow-mode-relaunch
+git log -1 --oneline
+remote: Enumerating objects: 5, done.
+remote: Counting objects:  20% (remote: Counting objects:  40% (remote: Counting objects:  60% (remote: Counting objects:  80% (remote: Counting objects: 100% (remote: Counting objects: 100% (5/5), done.
+remote: Compressing objects:  33remote: Compressing objects:  66remote: Compressing objects: 100remote: Compressing objects: 100% (3/3), done.
+remote: Total 3 (delta 2), reused 0 (delta 0), pack-reused 0 (from 0)
+Unpacking objects: 100% (3/3), 340 bytes | 170.00 KiB/s, done.
+From https://github.com/davecameron187-sys/curalive-platform
+ * branch            shadow-mode-relaunch -> FETCH_HEAD
+   07f81f6..ce309db  shadow-mode-relaunch -> github/shadow-mode-relaunch
+Auto-merging SHADOW_MODE_ARCHITECTURE.md
+CONFLICT (content): Merge conflict in SHADOW_MODE_ARCHITECTURE.md
+error: could not apply 4d901ab... Update progress tracker to show pipeline wire is complete
+hint: Resolve all conflicts manually, mark them as resolved with
+hint: "git add/rm <conflicted_files>", then run "git rebase --continue".
+hint: You can instead skip this commit: run "git rebase --skip".
+hint: To abort and get back to the state before "git rebase", run "git rebase --abort".
+hint: Disable this message with "git config set advice.mergeConflict false"
+Could not apply 4d901ab... # Update progress tracker to show pipeline wire is complete
+To https://github.com/davecameron187-sys/curalive-platform.git
+ ! [rejected]        shadow-mode-relaunch -> shadow-mode-relaunch (non-fast-forward)
+error: failed to push some refs to 'https://github.com/davecameron187-sys/curalive-platform.git'
+hint: Updates were rejected because a pushed branch tip is behind its remote
+hint: counterpart. If you want to integrate the remote changes, use 'git pull'
+hint: before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+b713117 (HEAD) Add automatic pipeline for bot session closure on completion
+~/workspace$ 

@@ -1,0 +1,33 @@
+~/workspace$ git pull github shadow-mode-relaunch --rebase
+git push github shadow-mode-relaunch
+git log --oneline -3
+git branch -a
+remote: Enumerating objects: 7, done.
+remote: Counting objects:  14% (remote: Counting objects:  28% (remote: Counting objects:  42% (remote: Counting objects:  57% (remote: Counting objects:  71% (remote: Counting objects:  85% (remote: Counting objects: 100% (remote: Counting objects: 100% (7/7), done.
+remote: Compressing objects:  16remote: Compressing objects:  33remote: Compressing objects:  50remote: Compressing objects:  66remote: Compressing objects:  83remote: Compressing objects: 100remote: Compressing objects: 100% (6/6), done.
+remote: Total 6 (delta 3), reused 0 (delta 0), pack-reused 0 (from 0)
+Unpacking objects: 100% (6/6), 4.78 KiB | 2.39 MiB/s, done.
+From https://github.com/davecameron187-sys/curalive-platform
+ * branch            shadow-mode-relaunch -> FETCH_HEAD
+   f8f9314..342ef2f  shadow-mode-relaunch -> github/shadow-mode-relaunch
+Successfully rebased and updated refs/heads/shadow-mode-relaunch.
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 8 threads
+Compressing objects:  83% (10/12Compressing objects:  91% (11/12Compressing objects: 100% (12/12Compressing objects: 100% (12/12), done.
+Writing objects: 100% (12/12), 4.38 KiB | 4.38 MiB/s, done.
+Total 12 (delta 9), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas:   0% (remote: Resolving deltas:  11% (remote: Resolving deltas:  22% (remote: Resolving deltas:  33% (remote: Resolving deltas:  44% (remote: Resolving deltas:  55% (remote: Resolving deltas:  66% (remote: Resolving deltas:  77% (remote: Resolving deltas:  88% (remote: Resolving deltas: 100% (remote: Resolving deltas: 100% (9/9), completed with 7 local objects.
+To https://github.com/davecameron187-sys/curalive-platform.git
+   342ef2f..1d73e43  shadow-mode-relaunch -> shadow-mode-relaunch
+1d73e43 (HEAD -> shadow-mode-relaunch, github/shadow-mode-relaunch) Add webhook URL to bot creation process
+bf34359 Implement the real API for bot deployment and transcription
+342ef2f [shadow-mode-relaunch] Add master architecture document — source of truth
+  RenderMigration
+  main
+  replit-agent
+* shadow-mode-relaunch
+  remotes/github/RenderMigration
+  remotes/github/shadow-mode-relaunch
+  remotes/gitsafe-backup/main
+~/workspace$ 
