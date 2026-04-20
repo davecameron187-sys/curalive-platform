@@ -362,6 +362,19 @@ export default function ShadowMode() {
               ))}
             </div>
 
+            {/* End Session Button */}
+              {selectedSessionId && (
+                <div style={{ marginBottom: "12px", display: "flex", justifyContent: "flex-end" }}>
+                  <button
+                    onClick={() => endSession.mutate({ sessionId: Number(selectedSessionId) }, {
+                      onSuccess: () => setSelectedSessionId(null)
+                    })}
+                    style={{ background: "#7f1d1d", border: "1px solid #991b1b", color: "#fca5a5", padding: "6px 16px", fontSize: "11px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}
+                  >
+                    ■ END SESSION
+                  </button>
+                </div>
+              )}
             {/* Intelligence Feed */}
             <div style={{ flex: 1 }}>
               <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px", marginBottom: "12px" }}>INTELLIGENCE FEED</div>
