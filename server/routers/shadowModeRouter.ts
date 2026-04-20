@@ -389,6 +389,7 @@ export const shadowModeRouter = router({
             meetingId: null,
             status: bot.status_code ?? "created",
             ablyChannel,
+            webhookUrl,
             transcriptJson: JSON.stringify([]),
           });
 
@@ -727,6 +728,7 @@ export const shadowModeRouter = router({
           meetingId: null,
           status: bot.status_code ?? "created",
           ablyChannel,
+          webhookUrl,
           transcriptJson: JSON.stringify([]),
         });
 

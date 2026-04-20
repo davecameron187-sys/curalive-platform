@@ -837,6 +837,8 @@ export const recallBots = pgTable("recall_bots", {
   summary: text("summary"),
   // Recording URL from Recall.ai (if recording enabled)
   recordingUrl: text("recording_url"),
+  // Webhook URL the bot was configured to deliver events to
+  webhookUrl: text("webhook_url"),
   // Error message if bot failed
   errorMessage: text("error_message"),
   // Timestamps
