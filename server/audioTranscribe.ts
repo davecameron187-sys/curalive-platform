@@ -180,37 +180,33 @@ async function callWhisperTranscribe(buffer: Buffer, filename: string): Promise<
   const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4"].includes(ext) ? ext : "mp3";
   const mimeType = safeExt === "mp4" ? "video/mp4" : `audio/${safeExt}`;
 
-  const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
-  const formData = new FormData();
-  formData.append("file", blob, `audio.${safeExt}`);
-  formData.append("model", "whisper-1");
-  formData.append("response_format", "verbose_json");
-  formData.append("prompt", "Transcribe this investor event recording accurately, including speaker names and financial terminology.");
+  const { default: OpenAI, toFile } = await import("openai");
+  const client = new OpenAI({ apiKey, baseURL: `${baseUrl}/v1` });
 
-  const url = `${baseUrl}/v1/audio/transcriptions`;
-  console.log(`[AudioTranscribe] Sending ${(buffer.length / 1024 / 1024).toFixed(1)}MB to Whisper API at ${baseUrl} (key: ${apiKey.slice(0, 8)}...)`);
+  console.log(`[AudioTranscribe] Sending ${(buffer.length / 1024 / 1024).toFixed(1)}MB to Whisper API at ${baseUrl} (key: ${apiKey.slice(0, 8)}...) via SDK toFile`);
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Accept-Encoding": "identity",
-    },
-    body: formData,
-  });
+  const file = await toFile(buffer, `audio.${safeExt}`, { type: mimeType });
 
-  if (!response.ok) {
-    const errText = await response.text().catch(() => response.statusText);
-    const isQuota = response.status === 429 || response.status === 402
+  let result: any;
+  try {
+    result = await client.audio.transcriptions.create({
+      file,
+      model: "whisper-1",
+      response_format: "verbose_json",
+      prompt: "Transcribe this investor event recording accurately, including speaker names and financial terminology.",
+    });
+  } catch (err: any) {
+    const status = err?.status ?? err?.statusCode ?? 0;
+    const errText = err?.message ?? String(err);
+    const isQuota = status === 429 || status === 402
       || errText.includes("insufficient_quota") || errText.includes("exceeded your current quota")
       || errText.includes("QUOTA_EXCEEDED") || errText.includes("billing");
     if (isQuota) {
       throw new Error(`QUOTA_EXCEEDED: The AI transcription service has reached its usage limit. The recording has been saved and you can retry transcription later.`);
     }
-    throw new Error(`Whisper API failed (${response.status}): ${errText}`);
+    throw new Error(`Whisper API failed (${status}): ${errText}`);
   }
 
-  const result = await response.json();
   return (result.text ?? "").trim();
 }
 
