@@ -2423,6 +2423,7 @@ export type InsertTaggedMetric = typeof taggedMetrics.$inferInsert;
 
 export const shadowSessions = pgTable("shadow_sessions", {
   id: serial("id").primaryKey(),
+  sessionId: varchar("session_id", { length: 128 }),
   clientName: varchar("client_name", { length: 255 }).notNull(),
   eventName: varchar("event_name", { length: 255 }).notNull(),
   eventType: varchar("event_type", { length: 64 }).notNull(),
