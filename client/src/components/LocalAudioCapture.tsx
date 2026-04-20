@@ -41,6 +41,7 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
 
   const whisperRecorderRef = useRef<MediaRecorder | null>(null);
   const whisperChunksRef = useRef<Blob[]>([]);
+  const whisperInitChunkRef = useRef<Blob | null>(null);
   const whisperIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const whisperActiveRef = useRef(false);
   const captureModeRef = useRef<CaptureMode>(captureMode);
@@ -80,7 +81,12 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
       return;
     }
 
-    const blob = new Blob(whisperChunksRef.current, { type: "audio/webm;codecs=opus" });
+    const currentChunks = whisperChunksRef.current;
+    const initChunk = whisperInitChunkRef.current;
+    const parts = (initChunk && currentChunks[0] !== initChunk)
+      ? [initChunk, ...currentChunks]
+      : currentChunks;
+    const blob = new Blob(parts, { type: "audio/webm;codecs=opus" });
     whisperChunksRef.current = [];
 
     console.log(`[LocalAudio] sendWhisperChunk: ${chunkCount} sub-chunks, blob size=${blob.size} bytes`);
@@ -133,6 +139,9 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
       let subChunkCount = 0;
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
+          if (!whisperInitChunkRef.current) {
+            whisperInitChunkRef.current = e.data;
+          }
           whisperChunksRef.current.push(e.data);
           subChunkCount++;
           if (subChunkCount <= 3 || subChunkCount % 10 === 0) {
@@ -163,6 +172,7 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
 
   const stopWhisperTranscription = useCallback(() => {
     whisperActiveRef.current = false;
+    whisperInitChunkRef.current = null;
     if (whisperIntervalRef.current) {
       clearInterval(whisperIntervalRef.current);
       whisperIntervalRef.current = null;
