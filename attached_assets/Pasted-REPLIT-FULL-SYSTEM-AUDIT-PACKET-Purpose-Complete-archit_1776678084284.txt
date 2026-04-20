@@ -1,0 +1,45 @@
+REPLIT — FULL SYSTEM AUDIT PACKET
+Purpose: Complete architectural picture of all AI services, Shadow Mode, and the pipeline architecture. No fixes. No changes. Discovery only.
+This is a one-time investment that saves weeks of reactive firefighting.
+
+SECTION A — Complete AI Services Inventory
+A1. List every file in server/services/ with its file size so we can identify dead stubs vs real implementations:
+bashls -la server/services/*.ts | awk '{print $5, $9}' | sort -rn
+A2. For each service, we need to know if it's real code or a stub. Run:
+bashfor f in server/services/*.ts; do lines=$(wc -l < "$f"); echo "$lines $f"; done | sort -rn
+A3. For every AI service file, show the first 5 lines — enough to see if it has real logic or is empty/placeholder:
+bashfor f in server/services/*.ts; do echo "=== $f ==="; head -5 "$f"; echo ""; done
+A4. Which services are actually imported and used somewhere — versus which are orphaned dead code:
+bashfor f in server/services/*.ts; do
+  name=$(basename "$f" .ts)
+  count=$(grep -r "$name" server/ --include="*.ts" -l 2>/dev/null | grep -v "$f" | wc -l)
+  echo "$count imports: $name"
+done | sort -rn
+
+SECTION B — Shadow Mode Complete Architecture
+B1. Full shadowModeRouter.ts — every procedure name and what it calls:
+bashgrep -n "procedure\|mutation\|query\|SessionClosePipeline\|AIReportPipeline\|UnifiedIntelligence\|eventId\|sessionId" server/routers/shadowModeRouter.ts
+B2. Full UnifiedIntelligenceService.ts:
+bashcat server/services/UnifiedIntelligenceService.ts
+B3. Full EventEchoPipeline.ts:
+bashcat server/services/EventEchoPipeline.ts
+B4. What does Shadow Mode's database schema actually look like — all tables it touches:
+bashgrep -r "shadow_sessions\|recall_bots\|ai_analyses\|session_runtime" server/ --include="*.ts" -l
+B5. Show all columns referenced for shadow_sessions across the codebase:
+bashgrep -r "shadow_sessions" server/ --include="*.ts" | grep -v "//.*shadow" | head -50
+
+SECTION C — The Pipeline Wiring Map
+C1. Every place SessionClosePipeline is called — with the surrounding 3 lines of context:
+bashgrep -rn "SessionClosePipeline\|sessionClosePipeline" server/ --include="*.ts" -B 1 -A 2
+C2. Every place AIReportPipeline is called:
+bashgrep -rn "AIReportPipeline\|aiReportPipeline" server/ --include="*.ts" -B 1 -A 2
+C3. What does ContentGenerationTriggerService actually trigger:
+bashcat server/services/ContentGenerationTriggerService.ts
+C4. The three Recall webhook handlers side by side — what each one does on done/call_ended/fatal:
+bashgrep -n "done\|call_ended\|fatal\|transcript\|recording\|pipeline\|close\|session" server/recallWebhook.ts server/webhooks/recall.ts server/webhooks/aiAmRecall.ts
+
+SECTION D — The Database Reality
+D1. Every table that exists in the live schema:
+bashgrep -r "pgTable\|createTable\|\.table\b" server/ --include="*.ts" | grep -v "//\|test\|spec" | head -80
+D2. Which tables are actually being written to vs just defined:
+bashgrep -rn "\.insert\|\.update\|INSERT INTO\|UPDATE " server/ --include="*.ts" | grep -v "//\|test\|spec" | sed 's/.*INTO \([a-z_]*\).*/\1/' | sort | uniq -c | sort -rn | head -30
