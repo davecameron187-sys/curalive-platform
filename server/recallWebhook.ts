@@ -24,6 +24,7 @@ import { getDb } from "./db";
 import { recallBots } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { scoreSentiment, generateRollingSummary } from "./aiAnalysis";
+import { runSessionClosePipeline } from "./services/SessionClosePipeline";
 
 const RECALL_WEBHOOK_SECRET = process.env.RECALL_AI_WEBHOOK_SECRET ?? "";
 const ABLY_API_KEY = process.env.ABLY_API_KEY ?? "";
@@ -99,6 +100,17 @@ async function handleBotStatusChange(payload: {
   }
   if (status === "done" || status === "call_ended" || status === "fatal") {
     updates.leftAt = Date.now();
+    const shadowSessionId = payload.data.bot.metadata?.shadowSessionId;
+    if (shadowSessionId) {
+      const sessionId = parseInt(shadowSessionId, 10);
+      if (!isNaN(sessionId)) {
+        const degraded = status === "fatal";
+        console.log(`[Recall] Bot ${recallBotId} ${status} — firing pipeline for session ${sessionId}${degraded ? " (degraded)" : ""}`);
+        runSessionClosePipeline(sessionId, { degraded }).catch(err =>
+          console.error(`[Recall] SessionClosePipeline failed for session ${sessionId}:`, err)
+        );
+      }
+    }
   }
 
   await db.update(recallBots).set(updates).where(eq(recallBots.recallBotId, recallBotId));

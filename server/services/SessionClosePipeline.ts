@@ -63,10 +63,10 @@ function skipStep(step: string, reason: string): PipelineStepTrace {
   };
 }
 
-export async function runSessionClosePipeline(sessionId: number): Promise<void> {
+export async function runSessionClosePipeline(sessionId: number, opts?: { degraded?: boolean }): Promise<void> {
   const pipelineStart = Date.now();
   const pipelineStartedAt = new Date().toISOString();
-  LOG(`Starting pipeline for session ${sessionId}`);
+  LOG(`Starting pipeline for session ${sessionId}${opts?.degraded ? " [degraded — bot fatal]" : ""}`);
 
   const steps: PipelineStepTrace[] = [];
 
