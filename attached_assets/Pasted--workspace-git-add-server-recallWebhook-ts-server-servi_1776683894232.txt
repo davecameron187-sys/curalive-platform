@@ -1,0 +1,33 @@
+~/workspace$ git add server/recallWebhook.ts server/services/SessionClosePipeline.ts
+git commit -m "[shadow-mode-relaunch] Fix 2: Wire automatic pipeline on bot completion"
+git push github shadow-mode-relaunch
+git log -1 --oneline
+git show --name-only
+On branch shadow-mode-relaunch
+Your branch is ahead of 'github/shadow-mode-relaunch' by 2 commits.
+  (use "git push" to publish your local commits)
+
+nothing to commit, working tree clean
+Enumerating objects: 16, done.
+Counting objects: 100% (16/16), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (10/10Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 2.42 KiB | 2.42 MiB/s, done.
+Total 10 (delta 8), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas:   0% (remote: Resolving deltas:  12% (remote: Resolving deltas:  25% (remote: Resolving deltas:  37% (remote: Resolving deltas:  50% (remote: Resolving deltas:  62% (remote: Resolving deltas:  75% (remote: Resolving deltas:  87% (remote: Resolving deltas: 100% (remote: Resolving deltas: 100% (8/8), completed with 6 local objects.
+To https://github.com/davecameron187-sys/curalive-platform.git
+   1d73e43..07f81f6  shadow-mode-relaunch -> shadow-mode-relaunch
+07f81f6 (HEAD -> shadow-mode-relaunch, github/shadow-mode-relaunch) Add automatic pipeline for bot session closure on completion
+commit 07f81f6ad7e3a8eb70daf4e02fdeb3a28e385648 (HEAD -> shadow-mode-relaunch, github/shadow-mode-relaunch)
+Author: davecameron187 <55743207-davecameron187@users.noreply.replit.com>
+Date:   Mon Apr 20 11:14:37 2026 +0000
+
+    Add automatic pipeline for bot session closure on completion
+    
+    Import `runSessionClosePipeline` into `recallWebhook.ts`, add logic to trigger it based on bot status, and update `SessionClosePipeline.ts` to accept an optional degraded mode parameter.
+    
+    Replit-Commit-Author: Agent
+    Replit-Commit-Session-Id: d1d58188-571e-42dc-8e82-48c6cb9df32f
+    Replit-Commit-Checkpoint-Type: full_checkpoint
+    Replit-Commit-Event-Id: 978e4111-943f-496e-8ada-9c86542d6103
+:
