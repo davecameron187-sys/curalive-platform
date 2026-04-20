@@ -258,11 +258,13 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
           return;
         }
 
-        const { buffer, originalname, size } = req.file;
+        const { buffer, originalname, size, mimetype } = req.file;
         const sizeMB = size / 1024 / 1024;
         const isVideo = VIDEO_EXTENSIONS.test(originalname);
         const isAudio = AUDIO_EXTENSIONS.test(originalname);
-        console.log(`[AudioTranscribe] Received ${originalname} (${sizeMB.toFixed(1)}MB, video=${isVideo})`);
+        const hexHeader = buffer.slice(0, 16).toString("hex").match(/.{2}/g)?.join(" ") ?? "";
+        console.log(`[AudioTranscribe] Received ${originalname} (${sizeMB.toFixed(1)}MB, video=${isVideo}, mimetype=${mimetype})`);
+        console.log(`[AudioTranscribe] File header bytes: ${hexHeader}`);
 
         try {
           const path = await import("path");
