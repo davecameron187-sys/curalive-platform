@@ -1,0 +1,77 @@
+This is the most important data we've had. Let me read it properly before saying anything.Now I have enough. Here's what the data actually says.
+
+---
+
+## What The Facts Reveal — No Assumptions
+
+### Finding 1: `recallStatusWriter.ts` Does Not Exist
+
+Commit `5eafa9ff` was supposed to create it. Either it never landed in Replit or it was only committed to GitHub. **This means the lifecycle bridge ChatGPT said was built — isn't.** Everything downstream of that assumption is fiction.
+
+### Finding 2: The Post-Session Pipeline Exists and Is Substantial
+
+`SessionClosePipeline.ts` is real, fully built, calls compliance, AI analysis, drift detection, governance records, org profile updates. `AIReportPipeline.ts` generates 10 full intelligence modules. This is serious infrastructure.
+
+### Finding 3: Nobody Calls These Pipelines Except `shadowModeRouter` and `UnifiedIntelligenceService`
+
+That means the pipelines fire only when triggered **manually via the router** — not automatically when a bot completes. The Recall webhook `done` status triggers **nothing** in the intelligence pipeline. The richest AI infrastructure in the system is sitting behind a manual switch.
+
+### Finding 4: Three Competing Webhook Handlers
+
+`server/recallWebhook.ts`, `server/webhooks/recall.ts`, `server/webhooks/aiAmRecall.ts` — three files all handling Recall events with different schemas, different field names. This isn't technical debt. This is a reliability time bomb.
+
+### Finding 5: `EventEchoPipeline`, `UnifiedIntelligenceService`, `ContentGenerationTriggerService` Are Lifecycle Coordinator Candidates
+
+These need to be read. One of them may already be close to what we need — or may be another orphan.
+
+---
+
+## The Real Nugget — And It's Bigger Than `eventId`
+
+Here it is stated plainly:
+
+**CuraLive has built the most sophisticated post-event intelligence infrastructure in its category. And it fires manually.**
+
+`SessionClosePipeline` calling compliance, drift detection, governance records, AI report with 10 modules — that's genuinely world-class. But right now a human has to click something in `shadowModeRouter` to trigger it. If an operator forgets, closes the wrong tab, or the session ends abnormally — none of it fires. The intelligence just doesn't happen.
+
+The architectural gap is not "wire `eventId` as a handoff." It's this:
+
+**The system's most valuable capability has no guaranteed execution path.**
+
+The fix is a single, durable trigger: when `recallWebhook` receives `done` or `call_ended`, it calls `UnifiedIntelligenceService` or `SessionClosePipeline` directly, with the `eventId`. That's it. One wire. The entire intelligence stack becomes automatic and guaranteed.
+
+---
+
+## Next Replit Packet — Before Any Code Is Written
+
+We need three more files before I can tell ChatGPT exactly what to build:
+
+---
+
+**REPLIT PACKET — Round 2**
+
+**Task 1** — Paste the full contents of:
+```bash
+cat server/services/UnifiedIntelligenceService.ts
+```
+
+**Task 2** — Paste the full contents of:
+```bash
+cat server/services/EventEchoPipeline.ts
+```
+
+**Task 3** — In `shadowModeRouter.ts`, find the procedure that manually triggers session close or pipeline execution. Paste just that procedure:
+```bash
+grep -n "SessionClosePipeline\|AIReportPipeline\|closeSession\|endSession\|runPipeline" server/routers/shadowModeRouter.ts | head -20
+```
+
+**Task 4** — In `recallWebhook.ts`, paste the complete `handleBotStatusChange` function and the complete `handleRecordingDone` function:
+```bash
+grep -n "handleBotStatusChange\|handleRecordingDone\|done\|call_ended\|fatal\|leftAt" server/recallWebhook.ts
+```
+
+**Return raw output only. No fixes.**
+
+---
+
+That data will tell us exactly where the single wire needs to connect, and whether `UnifiedIntelligenceService` is the right entry point or whether we call `SessionClosePipeline` directly. Everything else waits until we have it.
