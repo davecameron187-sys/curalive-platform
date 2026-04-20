@@ -1,3 +1,10 @@
+Good challenge from ChatGPT. They're right about the three sources of truth. I'll address it directly in a moment.
+First — send these exact commands to Replit shell. Do not paste yet, just run the commit:
+
+REPLIT — EXECUTE NOW
+bashgit checkout shadow-mode-relaunch
+Then create the file:
+bashcat > server/_core/recallai.ts << 'ENDOFFILE'
 /**
  * Recall.ai Integration Service
  * Handles bot creation, meeting joining, and transcription streaming
@@ -197,3 +204,11 @@ class RecallAiService extends EventEmitter {
 }
 
 export const recallAiService = new RecallAiService();
+ENDOFFILE
+Then commit and push:
+bashgit add server/_core/recallai.ts
+git commit -m "[shadow-mode-relaunch] Step 1: Replace mock Recall.ai client with real API implementation"
+git push origin shadow-mode-relaunch
+git log -1
+git show --name-only
+Bring back the commit hash and the show --name-only output.
