@@ -193,6 +193,19 @@ async function handleTranscriptData(payload: {
     .set({ transcriptJson: JSON.stringify(existing) })
     .where(eq(recallBots.recallBotId, recallBotId));
 
+  // Clear watchdog if running
+  const shadowSession = await db.query.shadowSessions?.findFirst?.({
+    where: (s: any, { eq }: any) => eq(s.recallBotId, recallBotId)
+  });
+  if (shadowSession?.id) {
+    const watchdogKey = `watchdog:${shadowSession.id}`;
+    if ((global as any)[watchdogKey]) {
+      clearTimeout((global as any)[watchdogKey]);
+      delete (global as any)[watchdogKey];
+      console.log(`[Watchdog] Cleared for session ${shadowSession.id} — transcript received`);
+    }
+  }
+
   // Publish transcript segment to Ably in real time
   if (bot.ablyChannel) {
     await ablyPublish(bot.ablyChannel, "curalive", JSON.stringify({
