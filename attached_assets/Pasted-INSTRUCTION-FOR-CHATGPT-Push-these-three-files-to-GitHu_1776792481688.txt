@@ -1,0 +1,492 @@
+INSTRUCTION FOR CHATGPT:
+Push these three files to GitHub repository davecameron187-sys/curalive-platform on branch shadow-mode-relaunch. Create or overwrite each file at the root level. Use commit message: docs: add master blueprint, architecture and session brief to version control.
+IMPORTANT: Always use branch shadow-mode-relaunch for all future document updates to this repo.
+
+FILE 1: MASTER_BLUEPRINT.md
+markdown# CURALIVE — MASTER OPERATING BLUEPRINT
+**Shadow Mode Relaunch — April 2026**
+**ONE SOURCE. ONE PLAN. ONE DIRECTION.**
+Read this before every session. Update after every commit.
+CONFIDENTIAL — FOUNDER CONTROL DOCUMENT
+
+---
+
+## How To Use This Document
+
+### BEFORE EVERY SESSION
+1. Open GitHub raw URLs for all three docs
+2. Paste links to Claude at start of conversation
+3. Claude reads current state, you state today's objective, work begins
+
+### AFTER EVERY SESSION
+1. Claude produces updated SHADOW_MODE_ARCHITECTURE.md and CURALIVE_BRIEF.md
+2. Take both to ChatGPT: "Push these to shadow-mode-relaunch branch on davecameron187-sys/curalive-platform"
+3. ChatGPT commits via GitHub API
+4. Both files always current, always versioned
+
+### Tool Roles
+| Tool | Role | How to Brief |
+|------|------|--------------|
+| Claude | Architect — diagnoses, designs, questions assumptions, decides between options | Paste GitHub raw URLs at session start |
+| Replit | Codebase reader and committer — proposes solutions, executes precise instructions | Problem first, propose options, then implement |
+| ChatGPT | GitHub doc updates, large file commits, architecture review | Share files + specific task only |
+| Manus | Emergency DB queries only — phase out | SQL only, sparingly, max 300 credits/day |
+
+### Tool Workflow — Permanent Process Rule
+1. Problem identified
+2. Brief Replit — explain the problem, ask for proposed solutions
+3. Replit proposes options based on real code
+4. Claude assesses options, recommends one
+5. Founder decides
+6. Replit implements with precise instruction from Claude
+7. Founder pushes from Replit Shell
+
+### Git Push Rule
+Founder always runs git push commands from Replit Shell. Claude gives exact command. Never let Replit push autonomously.
+
+### Replit Discipline Rule
+- Replit reads and reports only unless explicitly told to write or commit
+- Every action Replit takes must be instructed by Claude first
+- Replit never fixes, pushes, or runs commands on its own initiative
+- One instruction at a time, one file at a time
+- Always give Replit instructions in this format:
+  - **TASK:** one specific thing
+  - **FILE:** exact file path
+  - **ACTION:** read / create / edit — nothing else
+  - **DO NOT:** explore, fix, commit, push, or do anything else
+
+---
+
+## 1. The Root Cause — Verified and Fixed April 2026
+
+### Original Root Cause (Fixed)
+`AICorePayloadMapper.ts` queried `occ_transcription_segments` to build transcript payload.
+Shadow Mode NEVER writes to `occ_transcription_segments`. 0 rows.
+
+### Additional Root Cause Found and Fixed April 21 2026
+`AICorePayloadMapper` checked `session.recallBotId` but `rawSql` returns `session.recall_bot_id` in snake_case. This silently skipped the entire Recall transcript fallback for every session. Fixed by adding `recall_bot_id` to `SessionData` interface.
+
+### The Fix
+`AICorePayloadMapper.ts loadTranscriptSegments()` has three fallbacks:
+1. `occ_transcription_segments` (primary — OCC compatibility)
+2. `recall_bots.transcriptJson` via `shadow_sessions.recall_bot_id` (Shadow Mode primary)
+3. `shadow_sessions.local_transcript_json` (final fallback)
+
+---
+
+## 2. Database Reality — April 21 2026
+
+| Metric | Status |
+|--------|--------|
+| shadow_sessions total | 90+ |
+| ai_core_results populated | ✅ Working — session 90 confirmed |
+| recall_bots with transcript | ✅ Working |
+| Pipeline completion | ✅ 5+ steps completing |
+
+---
+
+## 3. System Status
+
+### Working
+| Component | Detail | Status |
+|-----------|--------|--------|
+| Session creation | INSERT confirmed | ✅ WORKING |
+| Session close pipeline | Fires on endSession + polling | ✅ WORKING |
+| AI Core analysis | 4 modules completing | ✅ WORKING |
+| Board Intelligence | Saves commitments correctly | ✅ WORKING |
+| AI report generation | Completes ~20 seconds | ✅ WORKING |
+| Recall bot creation | Bot created, joins meeting | ✅ WORKING |
+| Webhook registration | Correct URL, accepted | ✅ WORKING |
+| Transcript polling | 5s intervals, 60s max | ✅ WORKING |
+| Watchdog failover | 90s silence detection | ✅ WORKING |
+| ai_core_results | Populating on production | ✅ WORKING |
+
+### Backlog / Not Started
+| Component | Detail | Status |
+|-----------|--------|--------|
+| Fix 4 — webhook consolidation | Three handlers need merging | ⏳ BACKLOG |
+| Bot status updates | All stuck at 'created' | ⏳ BACKLOG |
+| Tier 2 standby buffer | Server-side implementation | ⏳ BACKLOG |
+| Session form simplification | Remove platform selection | ⏳ BACKLOG |
+| Shadow Mode UI consistency | Align with rest of platform | ⏳ BACKLOG |
+
+---
+
+## 4. Shadow Mode Architecture — Connectivity
+
+### Core Principle
+Every Shadow Mode session uses a meeting URL. Recall bot joins automatically. Platform is irrelevant — Recall handles detection.
+
+### Session Creation Form
+- Client Name
+- Event Name  
+- Event Type
+- Meeting URL
+*(Platform selection to be removed — backlog)*
+
+### Three-Tier Redundancy
+| Tier | Method | Status |
+|------|--------|--------|
+| Tier 1 | Recall bot via meeting URL | ✅ Active |
+| Tier 2 | Server-side transcript buffer (on failover) | ⏳ Backlog |
+| Tier 3 | Twilio dial-in (nuclear option) | ⏳ Phase 2 |
+
+### Watchdog
+90-second server-side timer per session. If no `transcript.data` webhook arrives, fires `bot.failover` via Ably and sets session status to `recall_failed`.
+
+---
+
+## 5. Phase Roadmap
+
+| Phase | Goal | Gate |
+|-------|------|------|
+| Phase 1 | Runtime chain end to end | ✅ COMPLETE — ai_core_results populating |
+| Phase 2 | Live operator experience | Operator can run session without manual steps |
+| Phase 3 | AGM Intelligence — Bastion/Lumi | Compliance officer can act on output |
+| Phase 4 | Full AI portfolio activated | No orphaned services |
+| Phase 5 | Intelligence moat — acquisition ready | Platform compounds over time |
+
+### Phase 2 Priority Order
+1. Fix 4 — webhook consolidation
+2. Session form simplification — remove platform selection
+3. Session list UI redesign
+4. Shadow Mode UI consistency with rest of platform
+5. Tier 2 standby buffer — server-side implementation
+6. Bot status update fix
+
+### Phase 3 — AGM Intelligence (Bastion / Lumi target)
+- AgmGovernanceAiService.ts
+- InvestorEngagementScoringService.ts
+- InvestorIntentionDecoderService.ts
+- CrossEventConsistencyService.ts
+- MaterialityRiskOracleService.ts
+
+---
+
+## 6. Render Services
+
+| Service | Purpose | Branch | Tier |
+|---------|---------|--------|------|
+| curalive-node | Main Node.js service | RenderMigration | Paid |
+| curalive-platform-1 | Python AI Core | RenderMigration | Starter ($7/mo) |
+| curalive-staging-db | PostgreSQL production | — | — |
+
+**AI Core URL:** `https://curalive-platform-1.onrender.com`
+
+---
+
+## 7. Branch Discipline
+
+| Branch | Purpose | Rule |
+|--------|---------|------|
+| shadow-mode-relaunch | Active development | All fixes here first |
+| RenderMigration | Live on Render | Merge from shadow-mode-relaunch after testing |
+| main | Stable baseline | Do not touch until Phase 2 complete |
+| replit-agent | Replit workspace | Do not merge anywhere |
+
+**Push command after every commit:**
+```bash
+git push github HEAD:RenderMigration && git push github HEAD:shadow-mode-relaunch && echo "===DONE==="
+```
+
+---
+
+## 8. AI Services Classification
+
+### Core Runtime — Phase 1 (Complete)
+- SessionClosePipeline.ts ✅
+- AICorePayloadMapper.ts ✅
+- AICoreClient.ts ✅
+- AIReportPipeline.ts ✅
+- BoardIntelligenceService.ts ✅
+- ComplianceDeadlineService.ts ✅
+- ClientDeliveryService.ts ✅
+
+### Phase 2 — Live Operator Experience
+- ComplianceEngineService.ts
+- SentimentAnalysisService.ts
+- LiveQaTriageService.ts
+- LiveRollingSummaryService.ts
+- EvasiveAnswerDetectionService.ts
+- ShadowModeGuardianService.ts
+- PreEventBriefingService.ts
+
+### Phase 3 — AGM Intelligence
+- AgmGovernanceAiService.ts
+- InvestorEngagementScoringService.ts
+- InvestorIntentionDecoderService.ts
+- CrossEventConsistencyService.ts
+- MaterialityRiskOracleService.ts
+- IpoMandAIntelligenceService.ts
+- ComplianceModerator.ts
+
+### DO NOT TOUCH
+LanguageDubber, PodcastConverterService, VirtualStudioService, SustainabilityOptimizer, VolatilitySimulatorService, LumiBookingService, BastionBookingService — not Shadow Mode. voiceTranscription.ts — confirmed dead code.
+
+---
+
+## 9. Founder Control View — Current State
+
+| Question | Answer |
+|----------|--------|
+| Active phase | Phase 2 — Live operator experience |
+| Active fix | Fix 4 — webhook consolidation |
+| Last confirmed commit | 5923e0e |
+| Success condition | One fresh Render session with ai_core_results populated ✅ MET |
+| Next customer milestone | Phase 3 complete — AGM Intelligence ready for Bastion/Lumi |
+| Do not touch | Webcast, Video, Dashboard, 60+ dormant services |
+
+---
+
+## 10. AI Redundancy Backlog
+
+1. Get Gemini API key → add to Render → transcription fallback active (Gemini already wired in code)
+2. Multi-provider fallback in Python AI Core — Phase 2
+3. Anthropic API for analysis layer — Phase 3
+
+## 11. Scaling Backlog
+1. Recall.ai plan — check concurrent bot limit
+2. AI Core — add workers for parallel processing
+3. Render instance — upgrade when needed
+
+---
+
+## 12. GitHub Document Update Process
+
+At end of every session:
+1. Claude produces updated `SHADOW_MODE_ARCHITECTURE.md` and `CURALIVE_BRIEF.md`
+2. Take to ChatGPT: "Push these files to branch `shadow-mode-relaunch` on `davecameron187-sys/curalive-platform`"
+3. ChatGPT commits via GitHub API
+4. Next session reads fresh context from GitHub raw URLs
+
+**Raw URLs:**
+- Master Blueprint: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/MASTER_BLUEPRINT.md`
+- Architecture: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/SHADOW_MODE_ARCHITECTURE.md`
+- Brief: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/CURALIVE_BRIEF.md`
+
+FILE 2: SHADOW_MODE_ARCHITECTURE.md
+markdown# SHADOW MODE — TECHNICAL ARCHITECTURE
+**Last Updated: April 21 2026**
+**Last Commit: 5923e0e**
+
+---
+
+## Current State — Phase 1 Complete
+
+`ai_core_results` confirmed populating on production via Recall bot path.
+Session 90: 396 words, 4 AI modules complete, results persisted.
+
+---
+
+## Pipeline Flow
+Meeting URL
+↓
+Recall Bot (joins automatically)
+↓
+transcript.data webhook → recallWebhook.ts
+↓
+recall_bots.transcript_json (written per segment)
+↓
+endSession triggered → polling loop (5s intervals, 60s max)
+↓
+AICorePayloadMapper (reads recall_bots via recall_bot_id)
+↓
+AICoreClient → Python AI Core (curalive-platform-1)
+↓
+ai_core_results persisted to shadow_sessions
+↓
+AIReportPipeline → archive_events
+↓
+BoardIntelligenceService → historical_commitments
+
+---
+
+## Key Files
+
+| File | Purpose | Status |
+|------|---------|--------|
+| server/services/AICorePayloadMapper.ts | Builds transcript payload | ✅ Fixed |
+| server/services/SessionClosePipeline.ts | Post-session orchestrator | ✅ Working |
+| server/services/AICoreClient.ts | Calls Python AI Core | ✅ Working |
+| server/_core/recallWebhook.ts | Handles Recall webhooks | ✅ Working |
+| server/routers/shadowModeRouter.ts | Session start/end mutations | ✅ Working |
+| client/src/pages/ShadowMode.tsx | Frontend operator console | ✅ Working |
+| curalive_ai_core/ | Python AI Core service | ✅ Deployed |
+
+---
+
+## Critical Fixes Applied
+
+### Fix — snake_case/camelCase mismatch (commit 5923e0e)
+`AICorePayloadMapper` `SessionData` interface now includes both `recallBotId` and `recall_bot_id`. Guard condition checks both. This was silently blocking all Recall transcript reads.
+
+### Fix — SessionClosePipeline transcript fallback (commit 2d5d670)
+`getTranscriptText` JOINs `recall_bots` and reads `recall_transcript_json` before `local_transcript_json`.
+
+### Fix — Transcript timing polling (commit 7dc6c99)
+`endSession` Recall branch polls `recall_bots.transcript_json` every 5s up to 60s before firing pipeline.
+
+### Fix — LocalAudioCapture removed (commit b607277)
+Browser audio capture removed entirely from Shadow Mode. Recall bot handles all audio.
+
+### Fix — AI Core deployed (multiple commits)
+Python service at `https://curalive-platform-1.onrender.com`. Starter tier — no sleeping.
+
+---
+
+## Watchdog System
+
+Located in: `server/routers/shadowModeRouter.ts`
+
+- Starts when bot is deployed
+- 90 second timer per session
+- If no `transcript.data` webhook arrives → fires `bot.failover` via Ably
+- Updates `shadow_sessions.status` to `recall_failed`
+- Frontend `LocalAudioCapture` in standby mode receives signal and promotes to primary
+- Watchdog cleared when first transcript chunk arrives via `recallWebhook.ts`
+
+---
+
+## Database Schema — Production (Render)
+
+### shadow_sessions — Key Columns
+- `recall_bot_id` — links to recall_bots table
+- `ai_core_status` — running/complete/failed
+- `ai_core_job_id` — AI Core job reference
+- `ai_core_results` — JSON of AI outputs
+- `ai_drift_status/results` — drift detection
+- `ai_profile_version/summary` — org profile
+- `ai_governance_id/results` — governance record
+- `report_links_sent_at` — report delivery timestamp
+- `ai_pipeline_trace` — full pipeline trace JSON
+
+### recall_bots — Key Columns
+- `recall_bot_id` — UUID from Recall.ai API
+- `transcript_json` — array of transcript segments
+- `status` — currently all stuck at 'created' (Fix 4 backlog)
+- `ably_channel` — real-time channel reference
+
+---
+
+## Redundancy Architecture
+
+### Three-Tier Model
+- **Tier 1:** Recall bot (primary, always deployed via meeting URL)
+- **Tier 2:** Server-side transcript buffer — backlog, implement server-side not frontend
+- **Tier 3:** Twilio dial-in — Phase 2 cold standby
+
+### Failure Detection
+- Watchdog: 90s no transcript → `bot.failover` event
+- Bot status stuck at `created` — webhook not updating (Fix 4 backlog)
+- Health monitoring via `HealthGuardianService`
+
+---
+
+## Render Environment Variables Required
+
+| Variable | Purpose |
+|----------|---------|
+| RECALL_AI_API_KEY | Recall bot deployment |
+| RECALL_WEBHOOK_BASE_URL | https://curalive-node.onrender.com |
+| AI_CORE_URL | https://curalive-platform-1.onrender.com |
+| OPENAI_API_KEY | Whisper + GPT-4o |
+| ABLY_API_KEY | Real-time messaging |
+| DATABASE_URL | PostgreSQL connection |
+
+---
+
+## Known Issues / Backlog
+
+1. **Bot status stuck at 'created'** — `handleBotStatusChange` not updating correctly
+2. **Fix 4 — webhook consolidation** — `server/webhooks/recall.ts` dead code, needs removal
+3. **Session form** — still has platform selection, needs simplification
+4. **Session list UI** — cramped, shows raw timestamp not formatted date
+5. **Shadow Mode UI** — inconsistent with rest of platform
+6. **Tier 2 standby** — needs proper server-side implementation
+7. **Fix 3 — WebM** — low priority, only for unsupported platforms
+
+FILE 3: CURALIVE_BRIEF.md
+markdown# CURALIVE — SESSION OPENING BRIEF
+**Date: April 21 2026 (update each session)**
+**For: Claude — read this before responding**
+
+---
+
+## Identity
+I am the founder of CuraLive — an AI-powered communication intelligence platform. Shadow Mode is the live operator intelligence surface. Target acquisition: Lumi Global / Notified.
+
+---
+
+## Read These First
+- Master Blueprint: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/MASTER_BLUEPRINT.md`
+- Architecture: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/SHADOW_MODE_ARCHITECTURE.md`
+
+---
+
+## Current State — April 21 2026
+
+**Phase 1: COMPLETE**
+- `ai_core_results` populating on production ✅
+- Recall bot path working end to end ✅
+- Last commit: `5923e0e` on `shadow-mode-relaunch` and `RenderMigration`
+
+**Active Phase: Phase 2 — Live operator experience**
+
+**First Priority:** Fix 4 — webhook consolidation
+- Deprecate `server/webhooks/recall.ts`
+- Absorb `aiAmRecall.ts` compliance logic into `server/_core/recallWebhook.ts`
+
+**Second Priority:** Session form simplification
+- Remove platform selection
+- Form: Client Name, Event Name, Event Type, Meeting URL only
+
+---
+
+## Tech Stack
+Node.js + TypeScript on Render, PostgreSQL, tRPC + Drizzle ORM, Recall.ai for meeting bots, Whisper + GPT-4o, React frontend.
+
+**GitHub:** davecameron187-sys/curalive-platform
+**Live branch on Render:** RenderMigration
+**Active dev branch:** shadow-mode-relaunch
+
+---
+
+## Render Services
+- `curalive-node` — main service at https://curalive-node.onrender.com
+- `curalive-platform-1` — Python AI Core at https://curalive-platform-1.onrender.com
+- `curalive-staging-db` — PostgreSQL
+
+---
+
+## Rules Claude Must Follow
+1. Question every assumption — don't just fix what's there
+2. One task at a time
+3. Brief Replit on problems, ask for proposed solutions before implementing
+4. Never let Replit push autonomously — founder pushes from Replit Shell
+5. Render Shell for DB commands only
+6. Manus — emergency only, max 300 credits/day
+7. Give instructions in plain English, one step at a time
+8. At end of session produce updated SHADOW_MODE_ARCHITECTURE.md and CURALIVE_BRIEF.md for GitHub
+
+---
+
+## End of Session Process
+1. Tell Claude: "Please give me the session files to save"
+2. Claude produces updated `SHADOW_MODE_ARCHITECTURE.md` and `CURALIVE_BRIEF.md`
+3. Take both to ChatGPT: "Push these files to branch `shadow-mode-relaunch` on `davecameron187-sys/curalive-platform`"
+4. ChatGPT commits via GitHub API
+5. Next session starts with full context
+
+That's everything. Take all three files to ChatGPT with the instruction at the top. Once ChatGPT confirms the commit, the new process is live and every future session starts from GitHub.You said: ok, seems chat cant push.ok, seems chat cant push. Let's stick with replit to push as we know that works. Make a new brief for replit7:26 PMClaude responded: Here's the brief for Replit:Here's the brief for Replit:
+
+TASK: Create three files and commit them
+BRANCH: shadow-mode-relaunch
+ACTION: Create these three files at the repository root, commit them, then push to both branches
+File 1: MASTER_BLUEPRINT.md
+File 2: SHADOW_MODE_ARCHITECTURE.md
+File 3: CURALIVE_BRIEF.md
+Copy the exact content for each file from the previous message where Claude produced all three.
+Commit message: docs: add master blueprint, architecture and session brief to version control
+Then run:
+bashgit push github HEAD:RenderMigration && git push github HEAD:shadow-mode-relaunch && echo "===DONE==="
+DO NOT modify any other files. Report back the commit hash when done.
