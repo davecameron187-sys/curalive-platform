@@ -472,6 +472,41 @@ export default function LocalAudioCapture({ sessionId, isActive, mode = "primary
     }
   }, [isActive]);
 
+  // Ably failover listener — promotes standby to primary
+  useEffect(() => {
+    if (mode !== "standby") return;
+    const ablyKey = (window as any).__ABLY_KEY__;
+    if (!ablyKey) return;
+
+    const Ably = (window as any).Ably;
+    if (!Ably) return;
+
+    const client = new Ably.Realtime({ key: ablyKey });
+    const channelName = `shadow-${sessionId}-failover`;
+    const channel = client.channels.get(channelName);
+
+    channel.subscribe("curalive", (msg: any) => {
+      try {
+        const payload = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
+        if (payload?.type === "bot.failover") {
+          console.log("[LocalAudio] Failover received — promoting standby to primary");
+          isStandbyRef.current = false;
+          // Flush buffer
+          if (standbyBufferRef.current.length > 0) {
+            whisperChunksRef.current = [...standbyBufferRef.current, ...whisperChunksRef.current];
+            standbyBufferRef.current = [];
+            sendWhisperChunk();
+          }
+        }
+      } catch {}
+    });
+
+    return () => {
+      channel.unsubscribe();
+      client.close();
+    };
+  }, [mode, sessionId]);
+
   if (!isActive && !isSavingRecording) return null;
 
   return (
