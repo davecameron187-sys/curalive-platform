@@ -130,6 +130,7 @@ async function loadTranscriptSegments(
   }
 
   // Fallback 2: recall_bots.transcriptJson via recallBotId
+  LOG(`recallBotId on session: ${session.recallBotId}`);
   if (session.recallBotId) {
     try {
       const [botRows] = await rawSql(
@@ -152,7 +153,9 @@ async function loadTranscriptSegments(
           );
         }
       }
-    } catch {}
+    } catch (err) {
+      LOG(`recall_bots fallback error: ${err}`);
+    }
   }
 
   // Fallback 3: local_transcript_json
