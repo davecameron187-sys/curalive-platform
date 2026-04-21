@@ -75,18 +75,18 @@ async function extractChunkMp3(
   startSec: number,
   durationSec: number
 ): Promise<void> {
-  await execFileAsync("ffmpeg", [
+  const args = [
     "-y",
-    "-ss", String(startSec),
     "-i", inputPath,
-    "-t", String(durationSec),
     "-vn",
     "-ar", "16000",
     "-ac", "1",
     "-b:a", CHUNK_BITRATE,
     "-codec:a", "libmp3lame",
     outputPath,
-  ]);
+  ];
+  if (startSec > 0) args.splice(2, 0, "-ss", String(startSec), "-t", String(durationSec));
+  await execFileAsync("ffmpeg", args);
 }
 
 async function callGeminiTranscribe(buffer: Buffer, filename: string): Promise<string> {
