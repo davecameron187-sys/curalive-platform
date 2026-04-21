@@ -19,7 +19,7 @@ Before responding, fetch and read:
 **Active Phase: Phase 2 — Live operator experience**
 
 Today's priorities in order:
-1. Fix 4 — webhook consolidation: deprecate `server/webhooks/recall.ts`, absorb `aiAmRecall.ts` into `server/recallWebhook.ts`
+1. Fix 4 — webhook consolidation: COMPLETE. Active handler is `server/recallWebhook.ts`. `server/webhooks/aiAmRecall.ts` is quarantined (AI-AM feature, unmounted, inert — do not delete). `server/webhooks/recall.ts` never existed.
 2. Session form simplification — remove platform selection, form: Client Name, Event Name, Event Type, Meeting URL only
 3. Session list UI — fix cramped layout and raw timestamp display
 
