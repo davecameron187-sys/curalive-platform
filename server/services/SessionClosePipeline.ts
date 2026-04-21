@@ -297,9 +297,20 @@ async function getTranscriptText(sessionId: number): Promise<string> {
     );
     if (rows.length) return rows.map((r: any) => r.text).join(' ');
     const [fallback] = await rawSql(
-      `SELECT local_transcript_json FROM shadow_sessions WHERE id = $1`,
+      `SELECT ss.local_transcript_json, rb.transcript_json as recall_transcript_json
+       FROM shadow_sessions ss
+       LEFT JOIN recall_bots rb ON rb.recall_bot_id = ss.recall_bot_id
+       WHERE ss.id = $1`,
       [sessionId]
     );
+    if (fallback[0]?.recall_transcript_json) {
+      try {
+        const parsed = JSON.parse(fallback[0].recall_transcript_json);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((s: any) => s.text ?? '').join(' ');
+        }
+      } catch {}
+    }
     if (fallback[0]?.local_transcript_json) {
       try {
         const parsed = JSON.parse(fallback[0].local_transcript_json);
