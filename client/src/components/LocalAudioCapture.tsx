@@ -13,6 +13,7 @@ type CaptureMode = "mic" | "tab" | "system";
 interface LocalAudioCaptureProps {
   sessionId: number;
   isActive: boolean;
+  mode?: "primary" | "standby";
   onSegment?: (segment: { speaker: string; text: string; timestamp: number; timeLabel: string }) => void;
 }
 
