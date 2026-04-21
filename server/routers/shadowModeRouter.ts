@@ -359,7 +359,7 @@ export const shadowModeRouter = router({
                 realtime_endpoints: [{
                   type: "webhook",
                   url: webhookUrl,
-                  events: ["transcript.data", "bot.status_change", "recording.done"],
+                  events: ["transcript.data"],
                 }],
               },
               webhook_url: webhookUrl,
