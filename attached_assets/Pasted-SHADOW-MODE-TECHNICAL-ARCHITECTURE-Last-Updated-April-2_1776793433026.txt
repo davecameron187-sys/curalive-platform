@@ -1,0 +1,184 @@
+SHADOW MODE — TECHNICAL ARCHITECTURE
+Last Updated: April 21 2026
+Last Commit: 9b280c5
+
+Current State — Phase 1 Complete
+ai_core_results confirmed populating on production via Recall bot path.
+Session 90: 396 words, 4 AI modules complete, results persisted.
+
+Pipeline Flow
+Meeting URL
+    ↓
+Recall Bot (joins automatically)
+    ↓
+transcript.data webhook → recallWebhook.ts
+    ↓
+recall_bots.transcript_json (written per segment)
+    ↓
+endSession triggered → polling loop (5s intervals, 60s max)
+    ↓
+AICorePayloadMapper (reads recall_bots via recall_bot_id)
+    ↓
+AICoreClient → Python AI Core (curalive-platform-1)
+    ↓
+ai_core_results persisted to shadow_sessions
+    ↓
+AIReportPipeline → archive_events
+    ↓
+BoardIntelligenceService → historical_commitments
+
+Key Files
+FilePurposeStatusserver/services/AICorePayloadMapper.tsBuilds transcript payload✅ Fixedserver/services/SessionClosePipeline.tsPost-session orchestrator✅ Workingserver/services/AICoreClient.tsCalls Python AI Core✅ Workingserver/_core/recallWebhook.tsHandles Recall webhooks✅ Workingserver/routers/shadowModeRouter.tsSession start/end mutations✅ Workingclient/src/pages/ShadowMode.tsxFrontend operator console✅ Workingcuralive_ai_core/Python AI Core service✅ Deployed
+
+Critical Fixes Applied
+Fix — snake_case/camelCase mismatch (commit 5923e0e)
+AICorePayloadMapper SessionData interface now includes both recallBotId and recall_bot_id. Guard condition checks both. This was silently blocking all Recall transcript reads.
+Fix — SessionClosePipeline transcript fallback (commit 2d5d670)
+getTranscriptText JOINs recall_bots and reads recall_transcript_json before local_transcript_json.
+Fix — Transcript timing polling (commit 7dc6c99)
+endSession Recall branch polls recall_bots.transcript_json every 5s up to 60s before firing pipeline.
+Fix — LocalAudioCapture removed (commit b607277)
+Browser audio capture removed entirely from Shadow Mode. Recall bot handles all audio.
+Fix — AI Core deployed
+Python service at https://curalive-platform-1.onrender.com. Starter tier — no sleeping.
+
+Watchdog System
+Located in: server/routers/shadowModeRouter.ts
+
+Starts when bot is deployed
+90 second timer per session
+If no transcript.data webhook arrives → fires bot.failover via Ably
+Updates shadow_sessions.status to recall_failed
+Watchdog cleared when first transcript chunk arrives via recallWebhook.ts
+
+
+Database Schema — Production (Render)
+shadow_sessions — Key Columns
+
+recall_bot_id — links to recall_bots table
+ai_core_status — running/complete/failed
+ai_core_job_id — AI Core job reference
+ai_core_results — JSON of AI outputs
+ai_drift_status/results — drift detection
+ai_profile_version/summary — org profile
+ai_governance_id/results — governance record
+report_links_sent_at — report delivery timestamp
+ai_pipeline_trace — full pipeline trace JSON
+
+recall_bots — Key Columns
+
+recall_bot_id — UUID from Recall.ai API
+transcript_json — array of transcript segments
+status — currently all stuck at 'created' (Fix 4 backlog)
+ably_channel — real-time channel reference
+
+
+Redundancy Architecture
+Three-Tier Model
+
+Tier 1: Recall bot (primary, always deployed via meeting URL)
+Tier 2: Server-side transcript buffer — backlog, implement server-side not frontend
+Tier 3: Twilio dial-in — Phase 2 cold standby
+
+Failure Detection
+
+Watchdog: 90s no transcript → bot.failover event
+Bot status stuck at created — webhook not updating (Fix 4 backlog)
+Health monitoring via HealthGuardianService
+
+
+Render Environment Variables Required
+VariablePurposeRECALL_AI_API_KEYRecall bot deploymentRECALL_WEBHOOK_BASE_URLhttps://curalive-node.onrender.comAI_CORE_URLhttps://curalive-platform-1.onrender.comOPENAI_API_KEYWhisper + GPT-4oABLY_API_KEYReal-time messagingDATABASE_URLPostgreSQL connection
+
+Known Issues / Backlog
+
+Bot status stuck at 'created' — handleBotStatusChange not updating correctly
+Fix 4 — webhook consolidation — server/webhooks/recall.ts dead code, needs removal
+Session form — still has platform selection, needs simplification
+Session list UI — cramped, shows raw timestamp not formatted date
+Shadow Mode UI — inconsistent with rest of platform
+Tier 2 standby — needs proper server-side implementation
+Fix 3 — WebM — low priority, only for unsupported platforms
+
+
+Scaling Backlog
+
+Recall.ai plan — check concurrent bot limit
+AI Core — add workers for parallel processing
+Render instance — upgrade when needed
+
+
+AI Redundancy Backlog
+
+Get Gemini API key → add to Render → transcription fallback active
+Multi-provider fallback in Python AI Core — Phase 2
+Anthropic API for analysis layer — Phase 3
+
+
+Now here is CURALIVE_BRIEF.md — paste this to Replit immediately after:
+
+CURALIVE — SESSION OPENING BRIEF
+Last Updated: April 21 2026
+For: Claude — read this before responding to anything
+
+Who I Am
+I am the founder of CuraLive — an AI-powered communication intelligence platform. Shadow Mode is the live operator intelligence surface. Target acquisition: Lumi Global / Notified.
+
+Read These First
+Before responding, fetch and read:
+
+https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/MASTER_BLUEPRINT.md
+https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/SHADOW_MODE_ARCHITECTURE.md
+
+
+Current State — April 21 2026
+Phase 1: COMPLETE
+
+ai_core_results populating on production ✅
+Recall bot path working end to end ✅
+Last commit: 9b280c5 on shadow-mode-relaunch and RenderMigration
+
+Active Phase: Phase 2 — Live operator experience
+Today's priorities in order:
+
+Fix 4 — webhook consolidation: deprecate server/webhooks/recall.ts, absorb aiAmRecall.ts into server/_core/recallWebhook.ts
+Session form simplification — remove platform selection, form: Client Name, Event Name, Event Type, Meeting URL only
+Session list UI — fix cramped layout and raw timestamp display
+
+
+Tech Stack
+Node.js + TypeScript on Render, PostgreSQL, tRPC + Drizzle ORM, Recall.ai for meeting bots, Whisper + GPT-4o, React frontend.
+GitHub: davecameron187-sys/curalive-platform
+Live branch on Render: RenderMigration
+Active dev branch: shadow-mode-relaunch
+
+Render Services
+
+curalive-node — https://curalive-node.onrender.com
+curalive-platform-1 — Python AI Core at https://curalive-platform-1.onrender.com
+curalive-staging-db — PostgreSQL
+
+
+Rules Claude Must Follow
+
+Act as ruthless mentor — stress test ideas, never sacrifice truth for politeness
+Question every assumption — don't just fix what's there
+One task at a time
+Brief Replit on problems first, ask for proposed solutions before implementing
+Never let Replit push autonomously — founder pushes from Replit Shell only
+Render Shell for DB commands only
+Manus — emergency only, max 300 credits/day
+Plain English instructions, one step at a time
+At end of session produce updated SHADOW_MODE_ARCHITECTURE.md and CURALIVE_BRIEF.md for GitHub
+
+
+Git Push Command — After Every Commit
+bashgit push github HEAD:RenderMigration && git push github HEAD:shadow-mode-relaunch && echo "===DONE==="
+
+End of Session Process
+
+Tell Claude: "Give me the session files to save"
+Claude produces updated SHADOW_MODE_ARCHITECTURE.md and CURALIVE_BRIEF.md
+Give to Replit: "Overwrite these two files and push to shadow-mode-relaunch"
+Replit commits and pushes
+Next session reads fresh context from GitHub raw URLs
