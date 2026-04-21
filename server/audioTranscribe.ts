@@ -288,8 +288,20 @@ export function registerAudioTranscribeRoute(app: import("express").Express) {
         const ffmpegAvailable = await checkFfmpegAvailable();
 
         if (sizeMB <= DIRECT_MAX_MB) {
-          console.log(`[AudioTranscribe] Small file (${sizeMB.toFixed(1)}MB), sending directly to Whisper API...`);
-          transcript = await callTranscribeApi(buffer, originalname);
+          const isWebM = originalname.toLowerCase().endsWith(".webm") || mimetype === "audio/webm" || mimetype === "video/webm";
+          if (isWebM && ffmpegAvailable) {
+            console.log(`[AudioTranscribe] Small WebM file — converting to MP3 via ffmpeg before Whisper...`);
+            tmpDir = await mkdtemp(join(tmpdir(), "curalive-audio-"));
+            const inputPath = join(tmpDir, "input.webm");
+            const outputPath = join(tmpDir, "converted.mp3");
+            await writeFile(inputPath, buffer);
+            await extractChunkMp3(inputPath, outputPath, 0, 9999);
+            const convertedBuffer = await readFile(outputPath);
+            transcript = await callTranscribeApi(convertedBuffer, "converted.mp3");
+          } else {
+            console.log(`[AudioTranscribe] Small file (${sizeMB.toFixed(1)}MB), sending directly to Whisper API...`);
+            transcript = await callTranscribeApi(buffer, originalname);
+          }
         } else if (!ffmpegAvailable) {
           console.warn(`[AudioTranscribe] ffmpeg not available — sending file directly to Whisper API (${sizeMB.toFixed(1)}MB)`);
           if (sizeMB > 24) {
