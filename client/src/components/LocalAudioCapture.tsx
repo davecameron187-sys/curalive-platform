@@ -450,6 +450,12 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
     }
   }, [isActive]);
 
+  useEffect(() => {
+    if (isActive && !isCapturing) {
+      startCapture();
+    }
+  }, [isActive]);
+
   if (!isActive && !isSavingRecording) return null;
 
   return (
