@@ -46,6 +46,8 @@ export default function LocalAudioCapture({ sessionId, isActive, mode = "primary
   const whisperIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const whisperActiveRef = useRef(false);
   const captureModeRef = useRef<CaptureMode>(captureMode);
+  const standbyBufferRef = useRef<Blob[]>([]);
+  const isStandbyRef = useRef(mode === "standby");
 
   useEffect(() => {
     captureModeRef.current = captureMode;
