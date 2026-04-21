@@ -512,7 +512,26 @@ export const shadowModeRouter = router({
           sourceType: "live_session",
         });
 
-        runSessionClosePipeline(input.sessionId).catch(console.error);
+        (async () => {
+          const POLL_INTERVAL_MS = 5_000;
+          const MAX_POLLS = 12; // 60s total
+          const botId = session.recallBotId!;
+          for (let i = 0; i < MAX_POLLS; i++) {
+            await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+            try {
+              const [latestBot] = await db
+                .select({ transcriptJson: recallBots.transcriptJson })
+                .from(recallBots)
+                .where(eq(recallBots.recallBotId, botId))
+                .limit(1);
+              const chunks = latestBot?.transcriptJson
+                ? JSON.parse(latestBot.transcriptJson as string)
+                : [];
+              if (Array.isArray(chunks) && chunks.length > 0) break;
+            } catch { /* continue polling */ }
+          }
+          runSessionClosePipeline(input.sessionId).catch(console.error);
+        })();
 
         await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: `${transcript.length} transcript segments, ${metricsCount} metrics generated`, metadata: { transcriptSegments: transcript.length, metricsCount } });
 
