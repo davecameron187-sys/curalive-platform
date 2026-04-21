@@ -22,6 +22,7 @@ interface SessionData {
   platform?: string;
   local_transcript_json?: string;
   recallBotId?: string;
+  recall_bot_id?: string;
 }
 
 export async function buildCanonicalPayload(
@@ -131,11 +132,11 @@ async function loadTranscriptSegments(
 
   // Fallback 2: recall_bots.transcriptJson via recallBotId
   LOG(`recallBotId on session: ${session.recallBotId}`);
-  if (session.recallBotId) {
+  if (session.recallBotId || session.recall_bot_id) {
     try {
       const [botRows] = await rawSql(
         `SELECT transcript_json FROM recall_bots WHERE recall_bot_id = $1`,
-        [session.recallBotId]
+        [session.recallBotId ?? session.recall_bot_id]
       );
       if (botRows.length > 0 && botRows[0].transcript_json) {
         const parsed = JSON.parse(botRows[0].transcript_json);
