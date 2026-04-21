@@ -19,6 +19,7 @@ type FeedItem = {
 
 type Session = {
   id: string;
+  clientName: string | null;
   eventName: string;
   status: string;
   startedAt: string | null;
@@ -116,10 +117,16 @@ export default function ShadowMode() {
   const rawSessions = sessionsQuery.data ?? [];
   const sessions: Session[] = rawSessions.map((s: any) => ({
     id: String(s.id),
+    clientName: s.clientName ?? s.client_name ?? null,
     eventName: s.eventName ?? s.event_name ?? "Untitled",
     status: s.status ?? "pending",
     startedAt: s.startedAt ?? s.started_at ?? null,
   }));
+
+const formatSessionTime = (ts: string | null) => {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+};
 
   const liveSessions = sessions.filter((s) => s.status === "live" || s.status === "bot_joining");
   const selectedSession = sessions.find((s) => s.id === selectedSessionId);
@@ -329,15 +336,13 @@ export default function ShadowMode() {
               )}
               {liveSessions.map((s) => (
                 <div key={s.id} onClick={() => setSelectedSessionId(s.id)}
-                  style={{ padding: "10px 12px", marginBottom: "6px", background: selectedSessionId === s.id ? "#1e293b" : "#111", border: `1px solid ${selectedSessionId === s.id ? "#3b82f6" : "#1e293b"}`, borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}>
-                  <div style={{ color: "#e2e8f0" }}>{s.eventName}</div>
-                  <div style={{ color: "#4ade80", fontSize: "10px", marginTop: "4px" }}>● {s.status.toUpperCase()}</div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); endSession.mutate({ sessionId: Number(s.id) }); }}
-                    style={{ background: "#7f1d1d", border: "none", color: "#fca5a5", padding: "3px 8px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", marginTop: "6px", letterSpacing: "1px" }}
-                  >
-                    END SESSION
-                  </button>
+                  style={{ padding: "14px 16px", marginBottom: "8px", background: selectedSessionId === s.id ? "#1e293b" : "#111", border: `1px solid ${selectedSessionId === s.id ? "#3b82f6" : "#1e293b"}`, borderRadius: "6px", cursor: "pointer" }}>
+                  <div style={{ color: "#94a3b8", fontSize: "10px", letterSpacing: "1px", marginBottom: "2px" }}>{s.clientName?.toUpperCase() ?? "—"}</div>
+                  <div style={{ color: "#e2e8f0", fontSize: "13px", fontWeight: 500 }}>{s.eventName}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>
+                    <div style={{ color: "#4ade80", fontSize: "10px" }}>● {s.status.toUpperCase()}</div>
+                    <div style={{ color: "#475569", fontSize: "10px" }}>{formatSessionTime(s.startedAt)}</div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -409,7 +414,7 @@ export default function ShadowMode() {
               .map((s) => (
                 <div key={s.id} style={{ padding: "10px 12px", marginBottom: "6px", background: "#111", border: "1px solid #1e293b", borderRadius: "4px", fontSize: "12px" }}>
                   <div style={{ color: "#e2e8f0" }}>{s.eventName}</div>
-                  <div style={{ color: "#475569", fontSize: "10px", marginTop: "4px" }}>{s.startedAt}</div>
+                  <div style={{ color: "#475569", fontSize: "10px", marginTop: "4px" }}>{formatSessionTime(s.startedAt)}</div>
                 </div>
               ))}
           </div>
