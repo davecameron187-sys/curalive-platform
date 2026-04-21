@@ -295,24 +295,9 @@ export default function ShadowMode() {
                       </select>
                     </div>
                     <div>
-                      <div style={{ color: "#475569", fontSize: "10px", marginBottom: "6px" }}>PLATFORM *</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                        {Object.entries(PLATFORM_LABELS).map(([v, l]) => (
-                          <button key={v} onClick={() => setForm(f => ({ ...f, platform: v as any }))}
-                            style={{ background: form.platform === v ? "#1e40af" : "#1e293b", border: `1px solid ${form.platform === v ? "#3b82f6" : "#334155"}`, color: form.platform === v ? "white" : "#475569", padding: "3px 8px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace" }}>
-                            {l}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
                       <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>MEETING URL *</div>
                       <input value={form.meetingUrl}
-                        onChange={e => {
-                          const url = e.target.value;
-                          const detected = detectPlatformFromUrl(url);
-                          setForm(f => ({ ...f, meetingUrl: url, ...(detected ? { platform: detected as any } : {}) }));
-                        }}
+                        onChange={e => setForm(f => ({ ...f, meetingUrl: e.target.value }))}
                         placeholder="https://zoom.us/j/..."
                         style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }} />
                     </div>
@@ -324,10 +309,10 @@ export default function ShadowMode() {
                     </div>
                     <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
                       <button
-                        onClick={() => startSession.mutate({ ...form, webhookBaseUrl: window.location.origin })}
+                        onClick={() => startSession.mutate({ ...form, platform: "zoom", webhookBaseUrl: window.location.origin })}
                         disabled={startSession.isPending || !form.clientName || !form.eventName || !form.meetingUrl}
                         style={{ background: form.clientName && form.eventName && form.meetingUrl ? "#166534" : "#1e293b", border: "none", color: form.clientName && form.eventName && form.meetingUrl ? "white" : "#475569", padding: "6px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}>
-                        {startSession.isPending ? "STARTING..." : RECALL_SUPPORTED_PLATFORMS.has(form.platform) ? "START SHADOW INTELLIGENCE" : "START LOCAL CAPTURE"}
+                        {startSession.isPending ? "STARTING..." : "START SHADOW INTELLIGENCE"}
                       </button>
                       <button onClick={() => setShowForm(false)}
                         style={{ background: "none", border: "1px solid #1e293b", color: "#475569", padding: "6px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace" }}>
