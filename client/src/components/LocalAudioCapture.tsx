@@ -19,7 +19,7 @@ interface LocalAudioCaptureProps {
 
 const WHISPER_CHUNK_INTERVAL_MS = 15000;
 
-export default function LocalAudioCapture({ sessionId, isActive, onSegment }: LocalAudioCaptureProps) {
+export default function LocalAudioCapture({ sessionId, isActive, mode = "primary", onSegment }: LocalAudioCaptureProps) {
   const [captureMode, setCaptureMode] = useState<CaptureMode>("tab");
   const [isCapturing, setIsCapturing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
