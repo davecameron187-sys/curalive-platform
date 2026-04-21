@@ -254,12 +254,12 @@ export default function ShadowMode() {
       </div>
 
       {/* Content */}
-      <div style={{ padding: "24px", display: "flex", gap: "24px" }}>
+      <div style={{ padding: "32px", display: "flex", gap: "24px" }}>
 
         {activeTab === "console" && (
           <>
             {/* Session list */}
-            <div style={{ width: "260px", flexShrink: 0 }}>
+            <div style={{ width: "320px", flexShrink: 0 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
                 <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px" }}>SESSIONS</div>
                 <button
@@ -378,7 +378,7 @@ export default function ShadowMode() {
             {/* Intelligence Feed */}
             <div style={{ flex: 1 }}>
               <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px", marginBottom: "12px" }}>INTELLIGENCE FEED</div>
-              <div ref={feedRef} style={{ height: "calc(100vh - 220px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div ref={feedRef} style={{ height: "calc(100vh - 180px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
                 {feedItems.length === 0 && (
                   <div style={{ color: "#334155", fontSize: "12px" }}>
                     {selectedSessionId ? "Waiting for intelligence signals..." : "Select a session to begin monitoring"}
