@@ -1,0 +1,56 @@
+CURALIVE — SHADOW MODE CONNECTIVITY & REDUNDANCY BRIEF
+For: Architecture Review
+Date: April 21 2026
+Classification: Founder Control — Confidential
+
+WHAT SHADOW MODE IS
+CuraLive Shadow Mode is a real-time AI intelligence layer that sits on top of live corporate events — earnings calls, AGMs, board meetings, investor days. Every AI service the platform offers — compliance flagging, sentiment analysis, commitment extraction, governance scoring, evasive answer detection — runs through Shadow Mode. Without audio, none of it works. Audio capture is the foundation of everything.
+
+CURRENT STATE
+Shadow Mode currently uses Recall.ai as its primary bot to join meetings and capture audio. The bot joins via a meeting URL, captures audio server-side, and streams transcripts via webhook to the AI pipeline in real time.
+Recall.ai supported platforms: Zoom, Google Meet, Microsoft Teams, Teams Live, GoToMeeting, Webex, Slack Huddles.
+The pipeline is now working end to end — transcripts flow, AI Core processes them, results populate. Phase 1 is complete.
+
+THE PROBLEM
+There is currently no redundancy. If the Recall bot fails to join — API outage, URL rejection, bot kicked from meeting — the session has no audio. No audio means no transcript. No transcript means no AI output. The entire value proposition collapses for that session.
+For a platform selling real-time intelligence on regulated financial events, a single point of failure at the audio layer is unacceptable.
+
+WHAT WE HAVE AVAILABLE
+
+Recall.ai — primary bot, already integrated, working in production
+Twilio — active account, browser-based webphone SDK available, zero call charges
+Telnyx — active account, browser-based WebRTC SDK available, zero call charges
+
+
+THE CORE QUESTION TO ANSWER
+What is the right connectivity and redundancy architecture for Shadow Mode audio capture?
+Specifically:
+
+Should every session deploy a primary Recall bot AND a simultaneous backup via Twilio or Telnyx webphone?
+How does the Twilio/Telnyx webphone join the same meeting as the Recall bot?
+How does the system detect Recall failure and switch to the backup automatically?
+What is the audio stream path from the backup webphone to the AI pipeline?
+Is there a cleaner redundancy approach we haven't considered?
+
+
+CONSTRAINTS
+
+Must be automatic — no operator intervention required for failover
+Must be real-time — post-session fallbacks are not acceptable
+Must be simple — complexity at the audio layer creates failure points
+Must be scalable — Shadow Mode needs to handle multiple simultaneous events
+Browser-based webphone = zero additional call cost on Twilio/Telnyx
+
+
+CURRENT ARCHITECTURE DECISIONS ALREADY MADE
+
+Platform selection is being removed — every session uses a meeting URL, Recall handles platform detection
+Local Audio browser capture (MediaRecorder/WebM) is being removed — wrong approach, wrong tool
+Session creation will be simplified to: Client Name, Event Name, Event Type, Meeting URL
+
+
+WHAT WE NEED FROM THIS REVIEW
+A clear redundancy architecture that gives Shadow Mode a solid, production-grade foundation. The recommendation should be specific — what to build, in what order, and why.
+
+TECH STACK FOR CONTEXT
+Node.js + TypeScript on Render, PostgreSQL, tRPC + Drizzle ORM, Recall.ai for meeting bots, Whisper + GPT-4o for transcription and AI, React frontend, GitHub: davecameron187-sys/curalive-platform.
