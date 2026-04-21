@@ -353,9 +353,13 @@ export default function ShadowMode() {
                   >
                     END SESSION
                   </button>
-                  {!RECALL_SUPPORTED_PLATFORMS.has(s.platform) && (
+                  {RECALL_SUPPORTED_PLATFORMS.has(s.platform) ? (
+                    <div onClick={(e) => e.stopPropagation()} style={{ display: "none" }}>
+                      <LocalAudioCapture sessionId={Number(s.id)} isActive={true} mode="standby" />
+                    </div>
+                  ) : (
                     <div onClick={(e) => e.stopPropagation()}>
-                      <LocalAudioCapture sessionId={Number(s.id)} isActive={true} />
+                      <LocalAudioCapture sessionId={Number(s.id)} isActive={true} mode="primary" />
                     </div>
                   )}
                 </div>
