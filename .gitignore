@@ -46,3 +46,16 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Database dumps and backups
+*.sql
+*.dump
+curalive_db_backup.sql
+curalive_replit.dump
+
+# Uploaded recordings
+uploads/recordings/
+
+# Attached assets (Replit artifacts)
+attached_assets/
+artifacts/
