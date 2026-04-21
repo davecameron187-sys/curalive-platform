@@ -174,14 +174,14 @@ Every Shadow Mode session uses a meeting URL. Recall bot joins automatically. Pl
 
 | Branch | Purpose | Rule |
 |--------|---------|------|
-| shadow-mode-relaunch | Active development | All fixes here first |
-| RenderMigration | Live on Render | Merge from shadow-mode-relaunch after testing |
-| main | Stable baseline | Do not touch until Phase 2 complete |
+| main | Single source of truth — active development and live on Render | All work here |
+| shadow-mode-relaunch | Retired — do not use | — |
+| RenderMigration | Retired — do not use | — |
 | replit-agent | Replit workspace | Do not merge anywhere |
 
 **Push command after every commit:**
 ```bash
-git push github HEAD:RenderMigration && git push github HEAD:shadow-mode-relaunch && echo "===DONE==="
+git push github HEAD:main && echo "===DONE==="
 ```
 
 ---

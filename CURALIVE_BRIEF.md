@@ -26,8 +26,8 @@ Today's priorities in order:
 ## Tech Stack
 Node.js + TypeScript on Render, PostgreSQL, tRPC + Drizzle ORM, Recall.ai for meeting bots, Whisper + GPT-4o, React frontend.
 - GitHub: `davecameron187-sys/curalive-platform`
-- Live branch on Render: `RenderMigration`
-- Active dev branch: `shadow-mode-relaunch`
+- Live branch on Render: `main`
+- Active dev branch: `main`
 
 ## Render Services
 - curalive-node — https://curalive-node.onrender.com
@@ -47,7 +47,7 @@ Node.js + TypeScript on Render, PostgreSQL, tRPC + Drizzle ORM, Recall.ai for me
 
 ## Git Push Command — After Every Commit
 ```bash
-git push github HEAD:RenderMigration && git push github HEAD:shadow-mode-relaunch && echo "===DONE==="
+git push github HEAD:main && echo "===DONE==="
 ```
 
 ## End of Session Process
