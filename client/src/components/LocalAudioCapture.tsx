@@ -83,7 +83,7 @@ export default function LocalAudioCapture({ sessionId, isActive, onSegment }: Lo
 
     const currentChunks = whisperChunksRef.current;
     const initChunk = whisperInitChunkRef.current;
-    const parts = (initChunk && currentChunks[0] !== initChunk)
+    const parts = initChunk
       ? [initChunk, ...currentChunks]
       : currentChunks;
     const blob = new Blob(parts, { type: "audio/webm;codecs=opus" });
