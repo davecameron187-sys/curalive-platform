@@ -1,0 +1,26 @@
+RESEARCH BRIEF — Shadow Mode Platform Branch Analysis
+Context: We are about to simplify the session creation form by removing the platform selector. Before touching anything, we need to fully understand what happens in the backend when isRecallSupported is false. This is production code. We cannot get this wrong.
+Background: Local Audio Capture was removed from the frontend in commit b607277. However, the backend startSession mutation in shadowModeRouter.ts still has branching logic at line 261 based on isRecallSupported. We need to know exactly what that branch does today — specifically whether removing the platform selector from the UI would expose any dead code paths, latent bugs, or broken fallbacks.
+
+What We Need You To Do
+Step 1 — Read the full startSession mutation
+In server/routers/shadowModeRouter.ts, find the startSession mutation (starts around line 245). Paste the complete mutation body — from the opening of the resolver function to its closing brace. Do not summarise. Paste it in full.
+Step 2 — Answer these specific questions based on what you read:
+
+When isRecallSupported is false — what code path executes? Does it attempt Local Audio Capture? Does it throw an error? Does it still insert a shadow_sessions row? Does it still deploy a Recall bot?
+When isRecallSupported is true — what happens? Does it deploy a Recall bot unconditionally?
+Is there any code path where a Recall bot is NOT deployed for a valid meeting URL?
+What platforms are in RECALL_SUPPORTED? Where is that constant defined? Paste the definition.
+What is the default value of platform in the zod schema — is it "zoom" or something else?
+
+Step 3 — Check the second mutation
+There's a second mutation at line 988 that also has platform in its schema. What mutation is this? Does it also have isRecallSupported branching logic, or is platform just passed through?
+
+What We Are Deciding
+Based on your findings, we need to determine the safest way to remove platform from the UI without breaking anything. The options are:
+
+Option A: Remove platform from the UI, hardcode platform: "zoom" as a silent default in the frontend mutation call, leave backend schema unchanged
+Option B: Remove platform from the UI, update backend zod schema to make platform fully optional with a default, strip the isRecallSupported branch entirely since Recall now handles everything
+Option C: Something else you identify based on the actual code
+
+DO NOT edit, fix, commit, push, or do anything else. Research and report only. We need the full picture before any decision is made.
