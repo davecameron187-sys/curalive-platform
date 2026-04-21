@@ -1,0 +1,33 @@
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2289%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="70e703df-b85a-4719" responseTimeMS=17 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[Auth] Missing session cookie
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2289%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="ea8fea16-5a95-4a8a" responseTimeMS=6 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[Auth] Missing session cookie
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2289%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="3a495798-1dbf-411a" responseTimeMS=5 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[Auth] Missing session cookie
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22sessionId%22%3A%2289%22%2C%22since%22%3A0%7D%7D%7D clientIP="41.157.80.44" requestID="9c59c463-8df7-4030" responseTimeMS=5 responseBytes=397 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.listSessions?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%2C%22meta%22%3A%7B%22values%22%3A%5B%22undefined%22%5D%7D%7D%7D clientIP="41.157.80.44" requestID="0d3f0301-2dd5-4bce" responseTimeMS=25 responseBytes=9768 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[POST]
+curalive-node.onrender.com/api/trpc/shadowMode.endSession?batch=1 clientIP="41.157.80.44" requestID="20b9b27d-ec14-4a9b" responseTimeMS=428 responseBytes=507 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[Auth] Missing session cookie
+[Auth] Missing session cookie
+[GET]
+curalive-node.onrender.com/api/trpc/shadowMode.listSessions?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%2C%22meta%22%3A%7B%22values%22%3A%5B%22undefined%22%5D%7D%7D%7D clientIP="41.157.80.44" requestID="48ae9b82-a38e-41f5" responseTimeMS=96 responseBytes=9799 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+[POST]
+curalive-node.onrender.com/api/recall/webhook clientIP="3.122.94.200" requestID="4bf5b3f0-aa29-4af7" responseTimeMS=84 responseBytes=322 userAgent=""
+[Recall] RECALL_AI_WEBHOOK_SECRET not set — accepting webhook without signature verification
+[Recall] Incoming event: {"event":"transcript.data","data":{"data":{"words":[{"text":"Voices","start_timestamp":{"relative":1.1200000047683716,"absolute":"2026-04-21T16:33:26Z"},"end_timestamp":{"relative":1.4800000190734863,"absolute":"2026-04-21T16:33:26.360Z"}},{"text":"have","start_timestamp":{"relative":1.4800000190734863,"absolute":"2026-04-21T16:33:26.360Z"},"end_timestamp":{"relative":1.6399999856948853,"absolute":"2026-04-21T16:33:26.520Z"}},{"text":"been","start_timestamp":{"relative":1.6399999856948853,"absol
+Menu
+[Recall] Looking up bot: cb4f6ca0-7256-48d1-8241-cc3affd3e871
+[SessionClose] Starting pipeline for session 89
+[AICoreMapper] recallBotId on session: undefined
+[AICoreMapper] No transcript segments found
+[AICoreMapper] Built payload: 0 speakers, 0 segments, 0 words
+[SessionClose] No transcript segments — skipping AI Core analysis
+[AIReport] Starting report generation for session 89 — Company
+[AIReport] Transcript too short — generating minimal report
