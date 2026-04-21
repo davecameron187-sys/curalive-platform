@@ -467,10 +467,10 @@ export default function LocalAudioCapture({ sessionId, isActive, mode = "primary
   }, [isActive]);
 
   useEffect(() => {
-    if (isActive && !isCapturing) {
+    if (isActive && !isCapturing && mode !== "standby") {
       startCapture();
     }
-  }, [isActive]);
+  }, [isActive, mode]);
 
   // Ably failover listener — promotes standby to primary
   useEffect(() => {
