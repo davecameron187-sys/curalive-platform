@@ -167,7 +167,11 @@ async function handleTranscriptData(payload: {
     .where(eq(recallBots.recallBotId, recallBotId))
     .limit(1);
 
-  if (!bot) return;
+  console.log(`[Recall] Looking up bot: ${recallBotId}`);
+  if (!bot) {
+    console.log(`[Recall] Bot not found in DB for recallBotId: ${recallBotId} — transcript not saved`);
+    return;
+  }
 
   // Build a single segment from the word batch
   const text = words.map((w) => w.text).join(" ").trim();
