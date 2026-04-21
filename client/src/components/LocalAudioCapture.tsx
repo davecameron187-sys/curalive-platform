@@ -84,6 +84,19 @@ export default function LocalAudioCapture({ sessionId, isActive, mode = "primary
       return;
     }
 
+    // In standby mode — buffer chunks, don't send
+    if (isStandbyRef.current) {
+      const currentChunks = whisperChunksRef.current;
+      standbyBufferRef.current.push(...currentChunks);
+      // Keep only last 30 seconds worth (approx 2 chunks at 15s interval)
+      if (standbyBufferRef.current.length > 4) {
+        standbyBufferRef.current = standbyBufferRef.current.slice(-4);
+      }
+      whisperChunksRef.current = [];
+      console.log(`[LocalAudio] Standby — buffered ${standbyBufferRef.current.length} chunks`);
+      return;
+    }
+
     const currentChunks = whisperChunksRef.current;
     const initChunk = whisperInitChunkRef.current;
     const parts = initChunk
