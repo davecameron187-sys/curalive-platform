@@ -299,6 +299,7 @@ export function registerRecallWebhookRoute(app: Express) {
       let event: { event: string; [key: string]: unknown };
       try {
         event = JSON.parse(rawBody);
+        console.log(`[Recall] Incoming event: ${JSON.stringify(event).slice(0, 500)}`);
       } catch {
         res.status(400).json({ error: "Invalid JSON" });
         return;
