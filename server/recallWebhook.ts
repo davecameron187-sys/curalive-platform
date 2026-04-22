@@ -59,7 +59,7 @@ async function ablyPublish(channel: string, name: string, data: unknown) {
 
 // ─── HMAC signature verification ─────────────────────────────────────────────
 
-function verifyRecallSignature(rawBody: string, signature: string | undefined): boolean {
+function verifyRecallSignature(rawBody: string, signature: string | undefined, msgId: string, msgTimestamp: string): boolean {
   const isProd = process.env.NODE_ENV === "production";
   if (!RECALL_WEBHOOK_SECRET) {
     console.warn("[Recall] RECALL_AI_WEBHOOK_SECRET not set — accepting webhook without signature verification");
@@ -71,9 +71,10 @@ function verifyRecallSignature(rawBody: string, signature: string | undefined): 
     for (const part of parts) {
       const [version, sig] = part.split(",");
       if (version === "v1") {
+        const toSign = `${msgId}.${msgTimestamp}.${rawBody}`;
         const expected = crypto
           .createHmac("sha256", RECALL_WEBHOOK_SECRET)
-          .update(rawBody)
+          .update(toSign)
           .digest("base64");
         if (crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) {
           return true;
@@ -313,8 +314,10 @@ export function registerRecallWebhookRoute(app: Express) {
       const rawBody = req.rawBody ?? "";
 
       console.log("[Recall] Raw signature header:", req.headers["webhook-signature"]);
+      const msgId = req.headers["webhook-id"] as string ?? "";
+      const msgTimestamp = req.headers["webhook-timestamp"] as string ?? "";
       // Verify signature
-      if (!verifyRecallSignature(rawBody, signature)) {
+      if (!verifyRecallSignature(rawBody, signature, msgId, msgTimestamp)) {
         console.warn("[Recall] Invalid webhook signature — rejecting");
         res.status(401).json({ error: "Invalid signature" });
         return;
