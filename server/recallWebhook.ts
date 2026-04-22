@@ -26,7 +26,7 @@ import { eq } from "drizzle-orm";
 import { scoreSentiment, generateRollingSummary } from "./aiAnalysis";
 import { runSessionClosePipeline } from "./services/SessionClosePipeline";
 
-const RECALL_WEBHOOK_SECRET = process.env.RECALL_AI_WEBHOOK_SECRET ?? "";
+const RECALL_WEBHOOK_SECRET = "";
 const ABLY_API_KEY = process.env.ABLY_API_KEY ?? "";
 const ABLY_REST_URL = "https://rest.ably.io";
 
