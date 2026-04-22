@@ -1,146 +1,118 @@
 # CURALIVE — SESSION LOG
-**Last Updated: April 21 2026**
-**Last Commit: 2219da9 on main**
+**Last Updated: April 22 2026**
+**Last Commit: 6609cfa on main**
 
 ---
 
-## SESSION: April 21 2026 — COMPLETE
+## SESSION: April 22 2026 — COMPLETE
 
 ### What Was Accomplished
-1. **Fix 4 — Webhook consolidation** — Closed. `server/recallWebhook.ts` is the canonical active 
-handler. `server/webhooks/aiAmRecall.ts` quarantined — AI-AM feature, unmounted, inert. Do not delete.
-2. **Session form simplified** — Platform selector removed. Form: Client Name, Event Name, Event 
-Type, Meeting URL, Notes. `platform: "zoom"` hardcoded — always routes through Recall bot.
-3. **Session list UI improved** — Client name shown above event name. Timestamps formatted. 
-Duplicate END SESSION button removed from list row.
-4. **Branch consolidated to `main`** — `RenderMigration` and `shadow-mode-relaunch` retired. 
-Render updated. Replit workspace on `main`.
-5. **Repo secured** — Made private. `.gitignore` updated — database dumps, recordings, 
-attached assets excluded.
-6. **SESSION_LOG.md created** — New handoff document. Added to session opener going forward.
+
+1. **Render verification** — Both services confirmed green on `main` before any work started.
+
+2. **Recall webhook endpoint registered** — First time ever. URL: `https://curalive-node.onrender.com/api/recall/webhook`. Events subscribed: `bot`, `transcript`, `recording`.
+
+3. **Bot status fix — COMPLETE (100%)** — Four compounding root causes identified and fixed:
+   - Wrong event names in switch (`bot.status_change` never exists — replaced with 7 discrete event cases)
+   - Wrong header name (`x-recall-signature` → `webhook-signature`)
+   - Wrong signing input (raw body only → `msgId.msgTimestamp.body`)
+   - Wrong secret format (`whsec_` prefix not stripped, secret not base64-decoded)
+   - All four were present simultaneously. System was rejecting every webhook event since launch.
+
+4. **Duplicate pipeline execution fixed** — In-memory `Set` guard added to `SessionClosePipeline`. Concurrent calls for same session dropped immediately.
+
+5. **`handleRecordingDone` payload shape fixed** — Was reading `payload.bot` but Recall sends `payload.data.bot`. Fixed.
+
+6. **Misleading debug log fixed** — `AICorePayloadMapper` now logs actual bot ID value instead of always logging `undefined`.
+
+7. **AI Services Classification complete** — Full inventory of 67 services across five boxes produced.
+
+8. **Patent reviewed** — SA Provisional 1773575338868, 54 claims, 12 figures read in full.
+
+9. **AI Architecture Roadmap v2 produced** — Eight-layer architecture mapped against patent claims. Three independent reviews incorporated. Pushed to `AI_ARCHITECTURE_ROADMAP.md` on main.
+
+### Confirmed Working After Today
+- Bot status progressing: `joining_call → in_call_not_recording → in_call_recording → done`
+- Webhook signature verification passing
+- Pipeline firing once per session (duplicate guard active)
+- `recallBotId` logging actual UUID
+- `handleRecordingDone` processing without crash
 
 ### Decisions Made
-- `aiAmRecall.ts` quarantined not deleted — AI-AM has live tRPC routers, real feature, 
-  webhook ingest is just unmounted
-- `!isRecallSupported` branch in `startSession` — dead code, harmless, remove in Phase 2 cleanup
-- `createScheduledSession` `?` placeholder — PostgreSQL bug, fix separately
-- Single `main` branch adopted permanently
+- Canonical Event Model is Layer 1 — build before any AI service wiring
+- Layer 0 (Connectivity) added to roadmap — was missing from v1
+- Real-Time Orchestration Engine added as Layer 2A
+- Flash Report (5 min post-session) added to Phase 3E
+- HITL verification added to Layer 3 for HIGH severity compliance flags
+- Ably token endpoint required before Layer 3 frontend work
+- `speaker_id` nullable in Layer 1 canonical schema — Identity Fusion populates later
+- Blob fallback in `AICorePayloadMapper` stays until 10 consecutive sessions confirmed on canonical data
+
+### Open Issues (Logged — Not Forgotten)
+- Pipeline fires before transcript arrives — timing issue, fix in Phase 1A
+- `createScheduledSession` PostgreSQL `?` placeholder — fix in Phase 1C
+- `!isRecallSupported` dead code in `startSession` — Phase 2 cleanup
+- AI-AM tRPC routers live but webhook ingest dead — by design, revisit when AI-AM prioritised
+- `transcript.done` unhandled event type — log only, not blocking
 
 ---
 
-## SESSION: April 22 2026 — OBJECTIVES
+## SESSION: April 23 2026 — OBJECTIVES
 
-### Confirm Before Starting
-After reading all five files, Claude must give a one-paragraph confirmation:
-- What was completed last session
-- Last known good commit
-- What we are doing first today
-- Do not start any work until founder confirms
+### MANDATORY SESSION OPENER
+Before any work starts, Claude must:
+1. Read all five files from GitHub raw URLs
+2. Confirm last commit, last completed phase, and what phase we are starting today
+3. State the gate condition that must be met before this session closes
+4. Do not start any work until founder confirms
 
-### First Task — Render Verification (5 minutes)
-Before any code work, confirm both Render services deployed cleanly from `main`:
-- curalive-node — check deploy log shows `main` branch, no errors
-- curalive-platform-1 — same
-If either failed, fix deployment before anything else.
+### PHASE GATE RULE — NON-NEGOTIABLE
+No phase may be started until the gate condition of the previous phase is confirmed met and logged in SESSION_LOG.md. No exceptions. Claude is responsible for enforcing this.
 
-### Second Task — Bot Status Fix
-`recall_bots.status` is stuck at `created` for every session.
-`handleBotStatusChange` in `server/recallWebhook.ts` is not updating correctly.
-This blocks reliable session state. Fix before any AI services work.
+### Tomorrow's Phase — Phase 0A + Phase 1A
 
-### Third Task — AI Services Classification (PRIMARY SESSION FOCUS)
-This is the main work for tomorrow. Full brief is in `AI_SERVICES_BRIEF.md`.
+**Phase 0A — Bot Health Heartbeat (first task)**
+Upgrade watchdog from single-tier 90s to two-tier:
+- 15 seconds silence → publish `transcript.warning` to operator Ably channel
+- 90 seconds silence → existing failover logic unchanged
+Gate: Operator console receives warning within 15s of transcript gap in test session.
 
-**Context Claude must understand before starting:**
-CuraLive has a large AI service portfolio. Most services exist in code but are 
-not wired into runtime. Phase 2 requires correctly classifying, activating, and 
-orchestrating these services — not building new ones.
+**Phase 1A — Canonical Event Model**
+Step 1 — Brief Replit to read current `handleTranscriptData` segment structure — report only
+Step 2 — Write `canonical_event_segments` migration
+Step 3 — Update `handleTranscriptData` to dual-write: canonical rows AND existing blob (migration safety)
+Step 4 — Confirm 10 consecutive sessions produce clean canonical rows
+Step 5 — Update `AICorePayloadMapper` to read from canonical table
+Step 6 — Confirm pipeline completes using canonical data
+Gate: 10 consecutive sessions produce clean canonical rows. Pipeline completes from canonical data. Confirmed in logs.
 
-**The five classification boxes:**
-- 🟩 Box 1 — Core Runtime (must run live during Shadow Mode session)
-- 🟦 Box 2 — Post-Session Essential (triggers automatically after session ends)
-- 🟨 Box 3 — Enhancement Layer (optional, activates after Phase 2 stable)
-- 🟥 Box 4 — Orphaned / Dormant (exists in code, not wired, do not touch yet)
-- 🟪 Box 5 — Patent / Future Moat (strategic, not current priority)
+**Phase 1B — Fix `createScheduledSession` PostgreSQL bug**
+One-line fix. Do not skip.
+Gate: Mutation executes without crash.
 
-**What Claude must do — in order:**
-
-Step 1 — Full inventory scan
-Brief Replit to list every file in `/server/services` and report back.
-Do not classify anything until the full list is confirmed.
-
-Step 2 — Cross-reference what is actually mounted
-Brief Replit to scan `server/routers.ts` and `server/routers.eager.ts` — 
-identify which services are actually imported and called.
-A service that exists but is not mounted is orphaned regardless of what it does.
-
-Step 3 — Cross-reference what the pipeline actually calls
-Brief Replit to scan `SessionClosePipeline.ts` and `recallWebhook.ts` — 
-identify every service called at runtime today.
-This is ground truth for Box 1 and Box 2.
-
-Step 4 — Classify every service into the five boxes
-Produce a full inventory table:
-| Service | File | Box | Status | Notes |
-
-Step 5 — Identify gaps
-Which Box 1 services are NOT currently wired into live Shadow Mode?
-These are the activation targets for Phase 2.
-
-Step 6 — The Golden Nugget
-After classification is complete, identify the single architectural insight 
-that changes how the AI system behaves at scale.
-This must be grounded in the actual codebase — not theoretical.
-
-**Box 1 candidates (must verify these are actually wired):**
-- ComplianceEngineService
-- SentimentAnalysisService
-- LiveQaTriageService
-- LiveRollingSummaryService
-- EvasiveAnswerDetectionService
-- ShadowModeGuardianService
-
-**Box 2 confirmed working:**
-- SessionClosePipeline ✅
-- AIReportPipeline ✅
-- AICorePayloadMapper ✅
-- AICoreClient ✅
-- BoardIntelligenceService ✅
-- ComplianceDeadlineService ✅
-- ClientDeliveryService ✅
-
-**Known orphaned (do not touch):**
-- PredictiveEventIntelligenceService
-- OrganizationalKnowledgeGraphService
-- BastionInvestorAiService
-- HealthGuardianService
-- InvestorEngagementScoringService
-
-**Do not touch under any circumstances:**
-LanguageDubber, PodcastConverterService, VirtualStudioService, 
-SustainabilityOptimizer, VolatilitySimulatorService, LumiBookingService, 
-BastionBookingService, voiceTranscription.ts
+### Session Close Process — MANDATORY
+At end of every session:
+1. Claude produces updated SESSION_LOG.md, SHADOW_MODE_ARCHITECTURE.md, CURALIVE_BRIEF.md
+2. Replit overwrites all three files and pushes to main in one commit
+3. Next session reads fresh context from GitHub raw URLs
+4. Claude confirms push was successful before session closes
 
 ---
 
-## Open Risks Going Into Tomorrow
-1. Render redeploy — confirm both services live on `main` before any work
-2. Bot status stuck at `created` — session state unreliable until fixed
-3. `createScheduledSession` PostgreSQL `?` placeholder — will fail if called
-4. AI-AM tRPC routers live but webhook ingest dead — partially broken by design
-5. `!isRecallSupported` dead code in `startSession` — harmless but needs cleanup
+## Phase 2 Priority Order (Full — Updated April 22)
+See AI_ARCHITECTURE_ROADMAP.md for complete phase plan.
 
----
+Current position: Phase 0A next.
 
-## Phase 2 Priority Order (Full)
-1. ✅ Fix 4 — webhook consolidation — DONE
-2. ✅ Session form simplification — DONE
-3. ✅ Session list UI — DONE
-4. Bot status fix — handleBotStatusChange
-5. AI services classification and activation
-6. Shadow Mode UI consistency
-7. Tier 2 standby buffer — server-side implementation
-8. Dead code cleanup — `!isRecallSupported` branch
+| Phase | Status |
+|-------|--------|
+| Fix 4 — webhook consolidation | ✅ DONE |
+| Session form simplification | ✅ DONE |
+| Session list UI | ✅ DONE |
+| Bot status fix | ✅ DONE April 22 |
+| Phase 0A — Bot health heartbeat | ⏳ NEXT |
+| Phase 1A — Canonical Event Model | ⏳ AFTER 0A |
+| Phase 1B — createScheduledSession bug | ⏳ Phase 1A session |
 
 ---
 
@@ -149,4 +121,4 @@ Master Blueprint: https://raw.githubusercontent.com/davecameron187-sys/curalive-
 Session Brief: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/CURALIVE_BRIEF.md
 Technical Architecture: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/SHADOW_MODE_ARCHITECTURE.md
 Session Log: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/SESSION_LOG.md
-AI Services Brief: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/AI_SERVICES_BRIEF.md
+AI Services Brief: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/AI_ARCHITECTURE_ROADMAP.md
