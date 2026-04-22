@@ -21,7 +21,7 @@
 import { Express, Request, Response } from "express";
 import crypto from "crypto";
 import { getDb } from "./db";
-import { recallBots } from "../drizzle/schema";
+import { recallBots, canonicalEventSegments } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { scoreSentiment, generateRollingSummary } from "./aiAnalysis";
 import { runSessionClosePipeline } from "./services/SessionClosePipeline";
@@ -225,6 +225,30 @@ async function handleTranscriptData(payload: {
       delete (global as any)[`watchdog-failover:${shadowSession.id}`];
     }
     console.log(`[Watchdog] Cleared for session ${shadowSession.id} — transcript received`);
+  }
+
+  // Phase 1A — dual-write to canonical_event_segments
+  try {
+    const sessionRecord = shadowSession ?? await db.query.shadowSessions?.findFirst?.({
+      where: (s: any, { eq }: any) => eq(s.recallBotId, recallBotId)
+    });
+    if (sessionRecord?.id) {
+      await db.insert(canonicalEventSegments).values({
+        sessionId: sessionRecord.id,
+        sourceType: "recall",
+        speakerName: speaker,
+        text: text,
+        startTimestamp: Math.round(startTime * 1000),
+        endTimestamp: Math.round((words[words.length - 1]?.end_timestamp?.relative ?? startTime) * 1000),
+        alignedTimestamp: Date.now(),
+        wordCount: words.length,
+        segmentIndex: existing.length,
+        confidenceScore: 1.0,
+        governanceStatus: "pending",
+      });
+    }
+  } catch (err) {
+    console.warn("[Canonical] Failed to write canonical segment:", err);
   }
 
   // Publish transcript segment to Ably in real time
