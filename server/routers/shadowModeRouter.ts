@@ -1211,7 +1211,7 @@ export const shadowModeRouter = router({
 
       let aiReport: AiReport | null = null;
       try {
-        const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`, [`shadow-${session.id}`]);
+        const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = $1 LIMIT 1`, [`shadow-${session.id}`]);
         if (rows?.[0]?.ai_report) aiReport = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
       } catch {}
 
@@ -1312,7 +1312,7 @@ export const shadowModeRouter = router({
 
       let aiReport: AiReport | null = null;
       try {
-        const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`, [`shadow-${session.id}`]);
+        const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = $1 LIMIT 1`, [`shadow-${session.id}`]);
         if (rows?.[0]?.ai_report) aiReport = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
       } catch {}
 
