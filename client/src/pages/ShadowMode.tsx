@@ -187,9 +187,10 @@ const formatSessionTime = (ts: string | null) => {
 
     const connectAbly = async () => {
       try {
-        const tokenRes = await fetch(`/api/ably-token?clientId=operator-${selectedSessionId}`);
-        const tokenData = await tokenRes.json();
-        const client = new Ably.Realtime({ token: tokenData.token });
+        const client = new Ably.Realtime({
+          authUrl: `/api/ably-token?clientId=operator-${selectedSessionId}`,
+          authMethod: "GET",
+        });
         ablyRef.current = client;
 
         const activeSession = sessions.find(s => s.id === selectedSessionId);
