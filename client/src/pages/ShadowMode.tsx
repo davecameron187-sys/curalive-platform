@@ -154,7 +154,17 @@ const formatSessionTime = (ts: string | null) => {
           )}`
         );
         const data = await res.json();
-        const items: FeedItem[] = data?.[0]?.result?.data?.json ?? [];
+        const rawItems = data?.[0]?.result?.data?.json ?? [];
+        const items: FeedItem[] = rawItems.map((r: any) => ({
+          id: r.id,
+          feedType: r.feed_type ?? r.feedType,
+          severity: r.severity,
+          title: r.title,
+          body: r.body,
+          pipeline: r.pipeline,
+          speaker: r.speaker ?? "",
+          createdAt: r.created_at ?? r.createdAt ?? "",
+        }));
         if (items.length > 0) {
           setFeedItems((prev) => [...prev, ...items].slice(-200));
           setLastFeedId(items[items.length - 1].id);
