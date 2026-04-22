@@ -113,6 +113,8 @@ Current position: Phase 0A next.
 | Phase 0A — Bot health heartbeat | ✅ DONE April 22 |
 | Phase 1A — Canonical Event Model | ✅ DONE April 22 |
 | Phase 1B — createScheduledSession bug | ✅ DONE April 22 |
+| Phase 2A — Segment Orchestrator | ✅ DONE April 22 |
+| Phase 2B — Pipelines 1-2 live | ⏳ NEXT |
 
 ---
 
