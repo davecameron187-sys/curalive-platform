@@ -10,6 +10,8 @@ import { buildCanonicalPayload } from "./AICorePayloadMapper";
 const LOG = (msg: string) => console.log(`[SessionClose] ${msg}`);
 const ERR = (msg: string, e: any) => console.error(`[SessionClose] ${msg}`, e);
 
+const pipelineRunning = new Set<number>();
+
 export interface PipelineStepTrace {
   step: string;
   status: "ok" | "skipped" | "error" | "timeout";
@@ -67,6 +69,13 @@ export async function runSessionClosePipeline(sessionId: number, opts?: { degrad
   const pipelineStart = Date.now();
   const pipelineStartedAt = new Date().toISOString();
   LOG(`Starting pipeline for session ${sessionId}${opts?.degraded ? " [degraded — bot fatal]" : ""}`);
+
+  if (pipelineRunning.has(sessionId)) {
+    console.log(`[SessionClose] Pipeline already running for session ${sessionId} — skipping duplicate`);
+    return;
+  }
+  pipelineRunning.add(sessionId);
+  try {
 
   const steps: PipelineStepTrace[] = [];
 
@@ -262,6 +271,9 @@ export async function runSessionClosePipeline(sessionId: number, opts?: { degrad
   ).catch(() => {});
 
   LOG(`Pipeline ${overallStatus} for session ${sessionId} in ${trace.total_duration_ms}ms (${okCount} ok, ${steps.filter(s=>s.status==="skipped").length} skipped, ${errorCount} errors)`);
+  } finally {
+    pipelineRunning.delete(sessionId);
+  }
 }
 
 async function generateAIReportWrapper(
