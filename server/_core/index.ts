@@ -300,6 +300,33 @@ async function ensureIntelligenceFeedTable() {
   }
 }
 
+async function ensureCanonicalEventSegmentsTable() {
+  try {
+    const { rawSql } = await import("../db");
+    await rawSql(`CREATE TABLE IF NOT EXISTS canonical_event_segments (
+      id SERIAL PRIMARY KEY,
+      session_id INTEGER NOT NULL,
+      source_type VARCHAR(50) NOT NULL DEFAULT 'recall',
+      speaker_id VARCHAR(255),
+      speaker_name VARCHAR(255),
+      speaker_role VARCHAR(50),
+      text TEXT NOT NULL,
+      start_timestamp BIGINT,
+      end_timestamp BIGINT,
+      aligned_timestamp BIGINT,
+      word_count INTEGER,
+      segment_index INTEGER,
+      confidence_score REAL,
+      governance_status VARCHAR(50) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )`);
+    console.log("[Migration] ✓ canonical_event_segments table ensured");
+  } catch (err: any) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] canonical_event_segments table check skipped:", err?.message);
+  }
+}
+
 async function startServer() {
   const app = express();
   const server = http.createServer(app);
@@ -396,6 +423,9 @@ async function startServer() {
   );
   ensureIntelligenceFeedTable().catch(err =>
     console.warn("[Migration] intelligence_feed table migration failed:", err?.message)
+  );
+  ensureCanonicalEventSegmentsTable().catch(err =>
+    console.warn("[Migration] canonical_event_segments table migration failed:", err?.message)
   );
 
   if (!isProd) {
