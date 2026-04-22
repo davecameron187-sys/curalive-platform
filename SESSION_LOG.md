@@ -111,8 +111,8 @@ Current position: Phase 0A next.
 | Session list UI | ✅ DONE |
 | Bot status fix | ✅ DONE April 22 |
 | Phase 0A — Bot health heartbeat | ✅ DONE April 22 |
-| Phase 1A — Canonical Event Model | ⏳ NEXT |
-| Phase 1B — createScheduledSession bug | ⏳ Phase 1A session |
+| Phase 1A — Canonical Event Model | ✅ DONE April 22 |
+| Phase 1B — createScheduledSession bug | ⏳ NEXT |
 
 ---
 
