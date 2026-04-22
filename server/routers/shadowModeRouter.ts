@@ -355,7 +355,17 @@ export const shadowModeRouter = router({
               meeting_url: input.meetingUrl,
               bot_name: "CuraLive Intelligence",
               recording_config: {
-                transcript: { provider: { recallai_streaming: {} } },
+                transcript: {
+                  provider: {
+                    recallai_streaming: {
+                      language_code: "en",
+                      mode: "prioritize_low_latency"
+                    }
+                  },
+                  diarization: {
+                    use_separate_streams_when_available: true
+                  }
+                },
                 realtime_endpoints: [{
                   type: "webhook",
                   url: webhookUrl,
@@ -750,7 +760,17 @@ export const shadowModeRouter = router({
             meeting_url: session.meetingUrl,
             bot_name: "CuraLive Intelligence",
             recording_config: {
-              transcript: { provider: { recallai_streaming: {} } },
+              transcript: {
+                provider: {
+                  recallai_streaming: {
+                    language_code: "en",
+                    mode: "prioritize_low_latency"
+                  }
+                },
+                diarization: {
+                  use_separate_streams_when_available: true
+                }
+              },
               realtime_endpoints: [{
                 type: "webhook",
                 url: webhookUrl,
