@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import LiveQaDashboard from "@/components/LiveQaDashboard";
+import Ably from "ably";
 
 
 type Tab = "console" | "qa" | "participants" | "pre-event" | "history";
@@ -86,6 +87,7 @@ export default function ShadowMode() {
   const [assistantMessages, setAssistantMessages] = useState<{ role: string; text: string }[]>([]);
   const feedRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const ablyRef = useRef<Ably.Realtime | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -176,6 +178,66 @@ const formatSessionTime = (ts: string | null) => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [selectedSessionId, lastFeedId]);
+
+  // Ably real-time subscription
+  useEffect(() => {
+    if (!selectedSessionId) return;
+
+    const connectAbly = async () => {
+      try {
+        const tokenRes = await fetch(`/api/ably-token?clientId=operator-${selectedSessionId}`);
+        const tokenData = await tokenRes.json();
+        const client = new Ably.Realtime({ token: tokenData.token });
+        ablyRef.current = client;
+
+        const channel = client.channels.get(selectedSessionId);
+        await channel.subscribe("curalive", (message) => {
+          const payload = typeof message.data === "string" ? JSON.parse(message.data) : message.data;
+          if (payload.type === "transcript.segment") return; // handled separately
+          if (payload.type === "sentiment.update" || payload.type === "rolling.summary") {
+            // These come from aiAnalysis — surface as feed items
+            const newItem: FeedItem = {
+              id: Date.now(),
+              sessionId: selectedSessionId,
+              feedType: payload.type === "sentiment.update" ? "sentiment" : "summary",
+              severity: "info",
+              title: payload.type === "sentiment.update" ? `Live Sentiment: ${payload.data?.label ?? ""}` : "Rolling Summary",
+              body: payload.type === "sentiment.update"
+                ? `Score: ${payload.data?.score ?? ""}. Keywords: ${payload.data?.keywords?.join(", ") ?? ""}`
+                : payload.data?.summary ?? "",
+              pipeline: payload.type === "sentiment.update" ? "sentiment" : "summary",
+              speaker: "",
+              timestamp_in_event: 0,
+            };
+            setFeedItems((prev) => [...prev, newItem].slice(-200));
+          }
+          if (payload.type === "transcript.warning") {
+            const warnItem: FeedItem = {
+              id: Date.now(),
+              sessionId: selectedSessionId,
+              feedType: "warning",
+              severity: "high",
+              title: "⚠️ Transcript Stream Interrupted",
+              body: "No transcript received in 15 seconds. Check bot connection.",
+              pipeline: "watchdog",
+              speaker: "",
+              timestamp_in_event: 0,
+            };
+            setFeedItems((prev) => [...prev, warnItem].slice(-200));
+          }
+        });
+      } catch (err) {
+        console.warn("[Ably] Connection failed:", err);
+      }
+    };
+
+    connectAbly();
+
+    return () => {
+      ablyRef.current?.close();
+      ablyRef.current = null;
+    };
+  }, [selectedSessionId]);
 
   // Auto-scroll feed
   useEffect(() => {
