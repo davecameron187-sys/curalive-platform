@@ -850,6 +850,24 @@ export const recallBots = pgTable("recall_bots", {
 export type RecallBot = typeof recallBots.$inferSelect;
 export type InsertRecallBot = typeof recallBots.$inferInsert;
 
+export const canonicalEventSegments = pgTable("canonical_event_segments", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id").notNull(),
+  sourceType: varchar("source_type", { length: 50 }).notNull().default("recall"),
+  speakerId: varchar("speaker_id", { length: 255 }),
+  speakerName: varchar("speaker_name", { length: 255 }),
+  speakerRole: varchar("speaker_role", { length: 50 }),
+  text: text("text").notNull(),
+  startTimestamp: bigint("start_timestamp", { mode: "number" }),
+  endTimestamp: bigint("end_timestamp", { mode: "number" }),
+  alignedTimestamp: bigint("aligned_timestamp", { mode: "number" }),
+  wordCount: integer("word_count"),
+  segmentIndex: integer("segment_index"),
+  confidenceScore: real("confidence_score"),
+  governanceStatus: varchar("governance_status", { length: 50 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 /**
  * mux_streams — Tracks Mux Live Stream instances for RTMP ingest.
  * Each row represents one Mux live stream (one RTMP ingest endpoint + one HLS playback URL).
