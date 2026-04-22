@@ -328,7 +328,13 @@ export function registerRecallWebhookRoute(app: Express) {
       // Process asynchronously
       try {
         switch (event.event) {
-          case "bot.status_change":
+          case "bot.joining_call":
+          case "bot.in_waiting_room":
+          case "bot.in_call_not_recording":
+          case "bot.in_call_recording":
+          case "bot.call_ended":
+          case "bot.done":
+          case "bot.fatal":
             await handleBotStatusChange(event as unknown as Parameters<typeof handleBotStatusChange>[0]);
             break;
           case "transcript.data":
