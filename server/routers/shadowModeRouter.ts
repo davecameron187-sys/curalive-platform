@@ -900,7 +900,7 @@ export const shadowModeRouter = router({
           ${input.since ? "AND id > $2" : ""}
           ORDER BY created_at ASC
           LIMIT 100`;
-        const params = input.since ? [input.sessionId, input.since] : [input.sessionId];
+        const params = input.since ? [`shadow-${input.sessionId}`, input.since] : [`shadow-${input.sessionId}`];
         const [rows] = await rawSql(sql, params);
         return rows as any[];
       } catch {
