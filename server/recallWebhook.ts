@@ -272,11 +272,13 @@ async function handleTranscriptData(payload: {
 }
 
 async function handleRecordingDone(payload: {
-  bot: { id: string };
-  data: { recording_url?: string };
+  data: {
+    bot: { id: string };
+    data: { recording_url?: string };
+  };
 }) {
-  const { id: recallBotId } = payload.bot;
-  const recordingUrl = payload.data.recording_url;
+  const { id: recallBotId } = payload.data.bot;
+  const recordingUrl = payload.data.data.recording_url;
   if (!recordingUrl) return;
 
   const db = await getDb();
