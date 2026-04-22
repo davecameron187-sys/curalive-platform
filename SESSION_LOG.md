@@ -1,6 +1,6 @@
 # CURALIVE — SESSION LOG
 **Last Updated: April 22 2026**
-**Last Commit: 6609cfa on main**
+**Last Commit: see latest push**
 
 ---
 
@@ -8,52 +8,49 @@
 
 ### What Was Accomplished
 
-1. **Render verification** — Both services confirmed green on `main` before any work started.
+1. **Render verification** — Both services confirmed green on `main`.
 
-2. **Recall webhook endpoint registered** — First time ever. URL: `https://curalive-node.onrender.com/api/recall/webhook`. Events subscribed: `bot`, `transcript`, `recording`.
+2. **Recall webhook endpoint registered** — First time ever. URL: `https://curalive-node.onrender.com/api/recall/webhook`. Events: bot, transcript, recording.
 
-3. **Bot status fix — COMPLETE (100%)** — Four compounding root causes identified and fixed:
-   - Wrong event names in switch (`bot.status_change` never exists — replaced with 7 discrete event cases)
+3. **Bot status fix — COMPLETE (100%)** — Four compounding root causes fixed:
+   - Wrong event names in switch (`bot.status_change` → 7 discrete cases)
    - Wrong header name (`x-recall-signature` → `webhook-signature`)
-   - Wrong signing input (raw body only → `msgId.msgTimestamp.body`)
+   - Wrong signing input (rawBody → `msgId.msgTimestamp.body`)
    - Wrong secret format (`whsec_` prefix not stripped, secret not base64-decoded)
-   - All four were present simultaneously. System was rejecting every webhook event since launch.
 
-4. **Duplicate pipeline execution fixed** — In-memory `Set` guard added to `SessionClosePipeline`. Concurrent calls for same session dropped immediately.
+4. **Duplicate pipeline execution fixed** — In-memory Set guard added to SessionClosePipeline.
 
-5. **`handleRecordingDone` payload shape fixed** — Was reading `payload.bot` but Recall sends `payload.data.bot`. Fixed.
+5. **handleRecordingDone payload shape fixed** — Payload path corrected.
 
-6. **Misleading debug log fixed** — `AICorePayloadMapper` now logs actual bot ID value instead of always logging `undefined`.
+6. **AI Architecture Roadmap v2 produced** — Eight-layer architecture mapped against patent claims. Pushed to `AI_ARCHITECTURE_ROADMAP.md` on main.
 
-7. **AI Services Classification complete** — Full inventory of 67 services across five boxes produced.
+7. **Phase 0A — COMPLETE** — Two-tier watchdog: 15s operator warning + 90s failover. Gate condition met.
 
-8. **Patent reviewed** — SA Provisional 1773575338868, 54 claims, 12 figures read in full.
+8. **Phase 1A — COMPLETE** — `canonical_event_segments` table live. Dual-write confirmed across 11 consecutive sessions. Gate condition met.
 
-9. **AI Architecture Roadmap v2 produced** — Eight-layer architecture mapped against patent claims. Three independent reviews incorporated. Pushed to `AI_ARCHITECTURE_ROADMAP.md` on main.
+9. **Phase 1B — COMPLETE** — MySQL `?` placeholder bugs fixed in shadowModeRouter.ts.
 
-### Confirmed Working After Today
-- Bot status progressing: `joining_call → in_call_not_recording → in_call_recording → done`
-- Webhook signature verification passing
-- Pipeline firing once per session (duplicate guard active)
-- `recallBotId` logging actual UUID
-- `handleRecordingDone` processing without crash
+10. **Phase 2A — COMPLETE** — SegmentOrchestrator built and wired. Compliance signal confirmed in intelligence_feed.
+
+11. **Phase 2B — COMPLETE** — Recall bot configured for low-latency real-time streaming. Compliance and sentiment pipelines firing and writing to intelligence_feed.
+
+12. **Phase 2C — PARTIALLY COMPLETE** — Ably subscription added to ShadowMode.tsx. Intelligence feed polling fixed (snake_case → camelCase mapping, session_id format fix). Sentiment displayed once on screen. Needs further testing to confirm stability.
 
 ### Decisions Made
-- Canonical Event Model is Layer 1 — build before any AI service wiring
-- Layer 0 (Connectivity) added to roadmap — was missing from v1
-- Real-Time Orchestration Engine added as Layer 2A
-- Flash Report (5 min post-session) added to Phase 3E
-- HITL verification added to Layer 3 for HIGH severity compliance flags
-- Ably token endpoint required before Layer 3 frontend work
-- `speaker_id` nullable in Layer 1 canonical schema — Identity Fusion populates later
-- Blob fallback in `AICorePayloadMapper` stays until 10 consecutive sessions confirmed on canonical data
+- Canonical Event Model is Layer 1 — built and confirmed
+- Recall bot `prioritize_low_latency` mode enabled — real-time segments now streaming
+- `intelligence_feed` schema extended: `canonical_segment_id`, `governance_status`, `confidence_score`
+- Ably auth uses `authUrl` not static token
+- Phase 2C needs retesting next session before marking complete
 
-### Open Issues (Logged — Not Forgotten)
-- Pipeline fires before transcript arrives — timing issue, fix in Phase 1A
-- `createScheduledSession` PostgreSQL `?` placeholder — fix in Phase 1C
-- `!isRecallSupported` dead code in `startSession` — Phase 2 cleanup
-- AI-AM tRPC routers live but webhook ingest dead — by design, revisit when AI-AM prioritised
-- `transcript.done` unhandled event type — log only, not blocking
+### Open Issues
+- Phase 2C — Intelligence Feed display needs stability testing
+- Pipeline fires before transcript arrives — timing issue, fix in future session
+- `!isRecallSupported` dead code — Phase 2 cleanup
+- AI-AM tRPC routers live but webhook ingest dead — by design
+- `transcript.done` unhandled event type — low priority
+- `transcript.warning` stacking in UI — needs deduplication
+- Remove Phase 2C debug log before Phase 2C marked complete
 
 ---
 
@@ -62,47 +59,33 @@
 ### MANDATORY SESSION OPENER
 Before any work starts, Claude must:
 1. Read all five files from GitHub raw URLs
-2. Confirm last commit, last completed phase, and what phase we are starting today
-3. State the gate condition that must be met before this session closes
-4. Do not start any work until founder confirms
+2. Confirm last commit, current phase, gate condition
+3. Do not start any work until founder confirms
 
 ### PHASE GATE RULE — NON-NEGOTIABLE
-No phase may be started until the gate condition of the previous phase is confirmed met and logged in SESSION_LOG.md. No exceptions. Claude is responsible for enforcing this.
+No phase may be started until the gate condition of the previous phase is confirmed met and logged in SESSION_LOG.md. Claude enforces this. No exceptions.
 
-### Tomorrow's Phase — Phase 0A + Phase 1A
+### First Task — Complete Phase 2C
+Phase 2C gate condition: Operator sees live compliance alerts AND sentiment on screen consistently during a session. Not once — consistently.
 
-**Phase 0A — Bot Health Heartbeat (first task)**
-Upgrade watchdog from single-tier 90s to two-tier:
-- 15 seconds silence → publish `transcript.warning` to operator Ably channel
-- 90 seconds silence → existing failover logic unchanged
-Gate: Operator console receives warning within 15s of transcript gap in test session.
+Steps to complete Phase 2C:
+1. Remove debug log added today (`console.log("[Feed] Poll response:..."`)
+2. Run 3 consecutive test sessions with earnings paragraph
+3. Confirm intelligence feed items appear reliably on screen each time
+4. If watchdog warning stacks — add deduplication
+5. Gate confirmed → log Phase 2C complete → move to Phase 2E (full operator console)
 
-**Phase 1A — Canonical Event Model**
-Step 1 — Brief Replit to read current `handleTranscriptData` segment structure — report only
-Step 2 — Write `canonical_event_segments` migration
-Step 3 — Update `handleTranscriptData` to dual-write: canonical rows AND existing blob (migration safety)
-Step 4 — Confirm 10 consecutive sessions produce clean canonical rows
-Step 5 — Update `AICorePayloadMapper` to read from canonical table
-Step 6 — Confirm pipeline completes using canonical data
-Gate: 10 consecutive sessions produce clean canonical rows. Pipeline completes from canonical data. Confirmed in logs.
-
-**Phase 1B — Fix `createScheduledSession` PostgreSQL bug**
-One-line fix. Do not skip.
-Gate: Mutation executes without crash.
-
-### Session Close Process — MANDATORY
-At end of every session:
-1. Claude produces updated SESSION_LOG.md, SHADOW_MODE_ARCHITECTURE.md, CURALIVE_BRIEF.md
-2. Replit overwrites all three files and pushes to main in one commit
-3. Next session reads fresh context from GitHub raw URLs
-4. Claude confirms push was successful before session closes
+### Phase 2E — Full Operator Console
+After Phase 2C confirmed:
+- Bot status indicator live
+- Live transcript feed panel
+- Speaker scorecards panel
+- PSIL status updating from compliance pipeline
+- Answer-risk panel placeholder
 
 ---
 
-## Phase 2 Priority Order (Full — Updated April 22)
-See AI_ARCHITECTURE_ROADMAP.md for complete phase plan.
-
-Current position: Phase 0A next.
+## Phase Status
 
 | Phase | Status |
 |-------|--------|
@@ -112,9 +95,11 @@ Current position: Phase 0A next.
 | Bot status fix | ✅ DONE April 22 |
 | Phase 0A — Bot health heartbeat | ✅ DONE April 22 |
 | Phase 1A — Canonical Event Model | ✅ DONE April 22 |
-| Phase 1B — createScheduledSession bug | ✅ DONE April 22 |
+| Phase 1B — SQL placeholder bug | ✅ DONE April 22 |
 | Phase 2A — Segment Orchestrator | ✅ DONE April 22 |
-| Phase 2B — Pipelines 1-2 live | ⏳ NEXT |
+| Phase 2B — Pipelines 1-2 live | ✅ DONE April 22 |
+| Phase 2C — Operator console live | ⚠️ PARTIAL — retest April 23 |
+| Phase 2E — Full operator console | ⏳ AFTER 2C |
 
 ---
 
@@ -123,4 +108,4 @@ Master Blueprint: https://raw.githubusercontent.com/davecameron187-sys/curalive-
 Session Brief: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/CURALIVE_BRIEF.md
 Technical Architecture: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/SHADOW_MODE_ARCHITECTURE.md
 Session Log: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/SESSION_LOG.md
-AI Services Brief: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/AI_ARCHITECTURE_ROADMAP.md
+AI Architecture Roadmap: https://raw.githubusercontent.com/davecameron187-sys/curalive-p
