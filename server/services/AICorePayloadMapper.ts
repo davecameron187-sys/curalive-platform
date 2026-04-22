@@ -131,7 +131,7 @@ async function loadTranscriptSegments(
   }
 
   // Fallback 2: recall_bots.transcriptJson via recallBotId
-  LOG(`recallBotId on session: ${session.recallBotId}`);
+  LOG(`recallBotId on session: ${session.recallBotId ?? session.recall_bot_id}`);
   if (session.recallBotId || session.recall_bot_id) {
     try {
       const [botRows] = await rawSql(
