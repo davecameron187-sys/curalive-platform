@@ -20,7 +20,7 @@
  */
 import { Express, Request, Response } from "express";
 import crypto from "crypto";
-import { getDb } from "./db";
+import { getDb, rawSql } from "./db";
 import { recallBots, canonicalEventSegments } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { scoreSentiment, generateRollingSummary } from "./aiAnalysis";
@@ -230,7 +230,6 @@ async function handleTranscriptData(payload: {
   // Phase 1A — dual-write to canonical_event_segments
   try {
     const sessionRecord = shadowSession ?? await (async () => {
-      const { rawSql } = await import("../db");
       const [rows] = await rawSql(
         `SELECT id FROM shadow_sessions WHERE recall_bot_id = $1 LIMIT 1`,
         [recallBotId]
