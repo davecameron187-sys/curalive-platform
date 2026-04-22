@@ -71,9 +71,14 @@ function verifyRecallSignature(rawBody: string, signature: string | undefined, m
     for (const part of parts) {
       const [version, sig] = part.split(",");
       if (version === "v1") {
+        const prefix = "whsec_";
+        const base64Part = RECALL_WEBHOOK_SECRET.startsWith(prefix)
+          ? RECALL_WEBHOOK_SECRET.slice(prefix.length)
+          : RECALL_WEBHOOK_SECRET;
+        const key = Buffer.from(base64Part, "base64");
         const toSign = `${msgId}.${msgTimestamp}.${rawBody}`;
         const expected = crypto
-          .createHmac("sha256", RECALL_WEBHOOK_SECRET)
+          .createHmac("sha256", key)
           .update(toSign)
           .digest("base64");
         if (crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) {
