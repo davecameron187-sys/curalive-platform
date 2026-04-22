@@ -67,14 +67,20 @@ function verifyRecallSignature(rawBody: string, signature: string | undefined): 
   }
   if (!signature) return false;
   try {
-    const expected = crypto
-      .createHmac("sha256", RECALL_WEBHOOK_SECRET)
-      .update(rawBody)
-      .digest("hex");
-    return crypto.timingSafeEqual(
-      Buffer.from(`sha256=${expected}`),
-      Buffer.from(signature)
-    );
+    const parts = signature.split(" ");
+    for (const part of parts) {
+      const [version, sig] = part.split(",");
+      if (version === "v1") {
+        const expected = crypto
+          .createHmac("sha256", RECALL_WEBHOOK_SECRET)
+          .update(rawBody)
+          .digest("base64");
+        if (crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) {
+          return true;
+        }
+      }
+    }
+    return false;
   } catch {
     return false;
   }
@@ -303,7 +309,7 @@ export function registerRecallWebhookRoute(app: Express) {
       });
     },
     async (req: Request & { rawBody?: string }, res: Response) => {
-      const signature = req.headers["x-recall-signature"] as string | undefined;
+      const signature = req.headers["webhook-signature"] as string | undefined;
       const rawBody = req.rawBody ?? "";
 
       console.log("[Recall] Raw signature header:", req.headers["x-recall-signature"]);
