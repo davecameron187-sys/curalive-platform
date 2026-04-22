@@ -229,9 +229,14 @@ async function handleTranscriptData(payload: {
 
   // Phase 1A — dual-write to canonical_event_segments
   try {
-    const sessionRecord = shadowSession ?? await db.query.shadowSessions?.findFirst?.({
-      where: (s: any, { eq }: any) => eq(s.recallBotId, recallBotId)
-    });
+    const sessionRecord = shadowSession ?? await (async () => {
+      const { rawSql } = await import("../db");
+      const [rows] = await rawSql(
+        `SELECT id FROM shadow_sessions WHERE recall_bot_id = $1 LIMIT 1`,
+        [recallBotId]
+      );
+      return rows?.[0] ?? null;
+    })();
     console.log(`[Canonical] sessionRecord found: ${sessionRecord?.id ?? 'NULL'} for recallBotId: ${recallBotId}`);
     if (sessionRecord?.id) {
       await db.insert(canonicalEventSegments).values({
