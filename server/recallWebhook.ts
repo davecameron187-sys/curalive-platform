@@ -25,6 +25,7 @@ import { recallBots, canonicalEventSegments } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { scoreSentiment, generateRollingSummary } from "./aiAnalysis";
 import { runSessionClosePipeline } from "./services/SessionClosePipeline";
+import { processSegment } from "./services/SegmentOrchestrator";
 
 const RECALL_WEBHOOK_SECRET = process.env.RECALL_AI_WEBHOOK_SECRET ?? "";
 const ABLY_API_KEY = process.env.ABLY_API_KEY ?? "";
@@ -250,6 +251,20 @@ async function handleTranscriptData(payload: {
         confidenceScore: 1.0,
         governanceStatus: "pending",
       });
+      // Trigger orchestrator for real-time AI pipeline
+      const insertedSegment = await rawSql(
+        `SELECT id FROM canonical_event_segments WHERE session_id = $1 ORDER BY created_at DESC LIMIT 1`,
+        [sessionRecord.id]
+      );
+      const canonicalSegmentId = insertedSegment?.[0]?.[0]?.id ?? 0;
+      void processSegment({
+        sessionId: sessionRecord.id,
+        canonicalSegmentId,
+        speaker,
+        text,
+        segmentIndex: existing.length,
+        ablyChannel: bot.ablyChannel ?? undefined,
+      }).catch(err => console.warn("[Orchestrator] processSegment failed:", err?.message));
     }
   } catch (err) {
     console.warn("[Canonical] Failed to write canonical segment:", err?.message ?? err);
