@@ -232,6 +232,7 @@ async function handleTranscriptData(payload: {
     const sessionRecord = shadowSession ?? await db.query.shadowSessions?.findFirst?.({
       where: (s: any, { eq }: any) => eq(s.recallBotId, recallBotId)
     });
+    console.log(`[Canonical] sessionRecord found: ${sessionRecord?.id ?? 'NULL'} for recallBotId: ${recallBotId}`);
     if (sessionRecord?.id) {
       await db.insert(canonicalEventSegments).values({
         sessionId: sessionRecord.id,
@@ -248,7 +249,7 @@ async function handleTranscriptData(payload: {
       });
     }
   } catch (err) {
-    console.warn("[Canonical] Failed to write canonical segment:", err);
+    console.warn("[Canonical] Failed to write canonical segment:", err?.message ?? err);
   }
 
   // Publish transcript segment to Ably in real time
