@@ -293,7 +293,10 @@ async function ensureIntelligenceFeedTable() {
       timestamp_in_event INTEGER,
       created_at TIMESTAMP DEFAULT NOW()
     )`);
-    console.log("[Migration] ✓ intelligence_feed table ensured");
+    await rawSql(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS canonical_segment_id INTEGER`);
+    await rawSql(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS governance_status VARCHAR(50) DEFAULT 'pending'`);
+    await rawSql(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS confidence_score REAL`);
+    console.log("[Migration] ✓ intelligence_feed columns ensured (canonical_segment_id, governance_status, confidence_score)");
   } catch (err: any) {
     if (err?.message?.includes("already exists")) return;
     console.warn("[Migration] intelligence_feed table check skipped:", err?.message);
