@@ -214,12 +214,17 @@ async function handleTranscriptData(payload: {
     where: (s: any, { eq }: any) => eq(s.recallBotId, recallBotId)
   });
   if (shadowSession?.id) {
-    const watchdogKey = `watchdog:${shadowSession.id}`;
-    if ((global as any)[watchdogKey]) {
-      clearTimeout((global as any)[watchdogKey]);
-      delete (global as any)[watchdogKey];
-      console.log(`[Watchdog] Cleared for session ${shadowSession.id} — transcript received`);
+    const warningTimer = (global as any)[`watchdog-warning:${shadowSession.id}`];
+    if (warningTimer) {
+      clearTimeout(warningTimer);
+      delete (global as any)[`watchdog-warning:${shadowSession.id}`];
     }
+    const failoverTimer = (global as any)[`watchdog-failover:${shadowSession.id}`];
+    if (failoverTimer) {
+      clearTimeout(failoverTimer);
+      delete (global as any)[`watchdog-failover:${shadowSession.id}`];
+    }
+    console.log(`[Watchdog] Cleared for session ${shadowSession.id} — transcript received`);
   }
 
   // Publish transcript segment to Ably in real time
