@@ -24,6 +24,7 @@ type Session = {
   eventName: string;
   status: string;
   startedAt: string | null;
+  ablyChannel: string | null;
 };
 
 const SEVERITY_COLOURS: Record<string, string> = {
@@ -123,6 +124,7 @@ export default function ShadowMode() {
     eventName: s.eventName ?? s.event_name ?? "Untitled",
     status: s.status ?? "pending",
     startedAt: s.startedAt ?? s.started_at ?? null,
+    ablyChannel: s.ablyChannel ?? s.ably_channel ?? null,
   }));
 
 const formatSessionTime = (ts: string | null) => {
@@ -190,7 +192,9 @@ const formatSessionTime = (ts: string | null) => {
         const client = new Ably.Realtime({ token: tokenData.token });
         ablyRef.current = client;
 
-        const channel = client.channels.get(selectedSessionId);
+        const activeSession = sessions.find(s => s.id === selectedSessionId);
+        const channelName = activeSession?.ablyChannel ?? selectedSessionId;
+        const channel = client.channels.get(channelName);
         await channel.subscribe("curalive", (message) => {
           const payload = typeof message.data === "string" ? JSON.parse(message.data) : message.data;
           if (payload.type === "transcript.segment") return; // handled separately
