@@ -306,6 +306,7 @@ export function registerRecallWebhookRoute(app: Express) {
       const signature = req.headers["x-recall-signature"] as string | undefined;
       const rawBody = req.rawBody ?? "";
 
+      console.log("[Recall] Raw signature header:", req.headers["x-recall-signature"]);
       // Verify signature
       if (!verifyRecallSignature(rawBody, signature)) {
         console.warn("[Recall] Invalid webhook signature — rejecting");
