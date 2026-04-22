@@ -395,16 +395,32 @@ export const shadowModeRouter = router({
 
           await logOperatorAction({ sessionId, actionType: "session_started", detail: `${input.clientName} — ${input.eventName} (Recall.ai bot)`, metadata: { platform: input.platform, eventType: input.eventType, botId: bot.id } });
 
-          // Watchdog — if no transcript arrives within 90s, promote Tier 2
-          const watchdogKey = `watchdog:${sessionId}`;
-          const watchdogTimeout = setTimeout(async () => {
+          // Watchdog — two-tier: 15s warning, 90s failover
+          const ablyKey = process.env.ABLY_API_KEY ?? "";
+          const ablyRestUrl = `https://rest.ably.io/channels/${encodeURIComponent(ablyChannel)}/messages`;
+
+          const warningTimer = setTimeout(async () => {
+            try {
+              console.log(`[Watchdog] Session ${sessionId} — no transcript in 15s, warning operator`);
+              if (ablyKey) {
+                await fetch(ablyRestUrl, {
+                  method: "POST",
+                  headers: { "Authorization": `Basic ${Buffer.from(ablyKey).toString("base64")}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({ name: "curalive", data: JSON.stringify({ type: "transcript.warning", data: { sessionId, reason: "no_transcript_15s" } }) }),
+                });
+              }
+            } catch (err) {
+              console.error(`[Watchdog] Warning publish error for session ${sessionId}:`, err);
+            }
+          }, 15000);
+          (global as any)[`watchdog-warning:${sessionId}`] = warningTimer;
+
+          const failoverTimer = setTimeout(async () => {
             try {
               console.log(`[Watchdog] Session ${sessionId} — no transcript in 90s, firing failover`);
               await rawSql(`UPDATE shadow_sessions SET status = 'recall_failed' WHERE id = $1`, [sessionId]);
-              const ablyKey = process.env.ABLY_API_KEY ?? "";
               if (ablyKey) {
-                const url = `https://rest.ably.io/channels/${encodeURIComponent(ablyChannel)}/messages`;
-                await fetch(url, {
+                await fetch(ablyRestUrl, {
                   method: "POST",
                   headers: { "Authorization": `Basic ${Buffer.from(ablyKey).toString("base64")}`, "Content-Type": "application/json" },
                   body: JSON.stringify({ name: "curalive", data: JSON.stringify({ type: "bot.failover", data: { sessionId, reason: "no_transcript_90s" } }) }),
@@ -414,7 +430,7 @@ export const shadowModeRouter = router({
               console.error(`[Watchdog] Failover error for session ${sessionId}:`, err);
             }
           }, 90000);
-          (global as any)[watchdogKey] = watchdogTimeout;
+          (global as any)[`watchdog-failover:${sessionId}`] = failoverTimer;
 
           return {
             sessionId,
