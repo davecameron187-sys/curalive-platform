@@ -236,7 +236,6 @@ async function handleTranscriptData(payload: {
       );
       return rows?.[0] ?? null;
     })();
-    console.log(`[Canonical] sessionRecord found: ${sessionRecord?.id ?? 'NULL'} for recallBotId: ${recallBotId}`);
     if (sessionRecord?.id) {
       await db.insert(canonicalEventSegments).values({
         sessionId: sessionRecord.id,
