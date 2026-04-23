@@ -865,6 +865,7 @@ export const canonicalEventSegments = pgTable("canonical_event_segments", {
   segmentIndex: integer("segment_index"),
   confidenceScore: real("confidence_score"),
   governanceStatus: varchar("governance_status", { length: 50 }).default("pending"),
+  idempotencyKey: varchar("idempotency_key", { length: 64 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
