@@ -62,6 +62,7 @@ export type InvokeParams = {
   tool_choice?: ToolChoice;
   maxTokens?: number;
   max_tokens?: number;
+  temperature?: number;
   outputSchema?: OutputSchema;
   output_schema?: OutputSchema;
   responseFormat?: ResponseFormat;
@@ -300,6 +301,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   const payload: Record<string, unknown> = {
     model: forge ? "gemini-2.5-flash" : "gpt-4o",
     messages: messages.map(normalizeMessage),
+    ...(params.temperature !== undefined && { temperature: params.temperature }),
   };
 
   if (tools && tools.length > 0) {
