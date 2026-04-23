@@ -7,6 +7,7 @@
 
 import { rawSql } from "../db";
 import { scoreSentiment } from "../aiAnalysis";
+import crypto from "crypto";
 
 // Maximum concurrent LLM calls per session
 const MAX_CONCURRENT_LLM_CALLS = 3;
@@ -54,13 +55,20 @@ async function writeToIntelligenceFeed(params: {
   speaker: string;
   confidenceScore: number;
   metadata?: Record<string, unknown>;
+  idempotencyKey?: string;
 }) {
   try {
+    const idempotencyKey = params.idempotencyKey ?? crypto
+      .createHash("sha256")
+      .update(`${params.sessionId}-${params.pipeline}-${params.canonicalSegmentId}-${params.feedType}`)
+      .digest("hex")
+      .substring(0, 64);
     await rawSql(
       `INSERT INTO intelligence_feed 
         (session_id, feed_type, severity, title, body, pipeline, speaker, 
-         canonical_segment_id, governance_status, confidence_score, metadata, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, NOW())`,
+         canonical_segment_id, governance_status, confidence_score, metadata, idempotency_key, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, NOW())
+       ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING`,
       [
         `shadow-${params.sessionId}`,
         params.feedType,
@@ -72,6 +80,7 @@ async function writeToIntelligenceFeed(params: {
         params.canonicalSegmentId,
         params.confidenceScore,
         params.metadata ? JSON.stringify(params.metadata) : null,
+        idempotencyKey,
       ]
     );
   } catch (err: any) {
