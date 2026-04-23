@@ -245,9 +245,15 @@ async function handleTranscriptData(payload: {
         sourceType: "recall",
         speakerName: speaker,
         text: text,
-        startTimestamp: Math.round(startTime * 1000),
-        endTimestamp: Math.round((words[words.length - 1]?.end_timestamp?.relative ?? startTime) * 1000),
-        alignedTimestamp: Date.now(),
+        startTimestamp: words[0]?.start_timestamp?.absolute
+          ? new Date(words[0].start_timestamp.absolute).getTime()
+          : Math.round(startTime * 1000),
+        endTimestamp: words[words.length - 1]?.end_timestamp?.absolute
+          ? new Date(words[words.length - 1].end_timestamp.absolute).getTime()
+          : Math.round((words[words.length - 1]?.end_timestamp?.relative ?? startTime) * 1000),
+        alignedTimestamp: words[0]?.start_timestamp?.absolute
+          ? new Date(words[0].start_timestamp.absolute).getTime()
+          : Date.now(),
         wordCount: words.length,
         segmentIndex: existing.length,
         confidenceScore: 1.0,
