@@ -14,7 +14,7 @@ import { evaluateOutput } from "./DeterministicGovernanceGateway";
 const MAX_CONCURRENT_LLM_CALLS = 3;
 
 // Pipeline trigger thresholds
-const SENTIMENT_INTERVAL = 3;
+const SENTIMENT_INTERVAL = 1;
 const SUMMARY_INTERVAL = 10;
 const DYNAMICS_INTERVAL = 10;
 
