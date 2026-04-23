@@ -81,13 +81,11 @@ export default function ShadowMode() {
   const [activeTab, setActiveTab] = useState<Tab>("console");
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
-  const [lastFeedId, setLastFeedId] = useState<number>(0);
   const [psil, setPsil] = useState<string>("clear");
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantInput, setAssistantInput] = useState("");
   const [assistantMessages, setAssistantMessages] = useState<{ role: string; text: string }[]>([]);
   const feedRef = useRef<HTMLDivElement>(null);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
   const ablyRef = useRef<Ably.Realtime | null>(null);
 
   const [showForm, setShowForm] = useState(false);
@@ -117,6 +115,24 @@ export default function ShadowMode() {
     onSuccess: () => sessionsQuery.refetch(),
   });
 
+  const intelligenceFeedQuery = trpc.shadowMode.getIntelligenceFeed.useQuery(
+    { sessionId: selectedSessionId ?? "" },
+    {
+      enabled: !!selectedSessionId,
+      refetchInterval: 3000,
+      select: (data: any[]) => data.map((r: any) => ({
+        id: r.id,
+        feedType: r.feed_type ?? r.feedType,
+        severity: r.severity,
+        title: r.title,
+        body: r.body,
+        pipeline: r.pipeline,
+        speaker: r.speaker ?? "",
+        createdAt: r.created_at ?? r.createdAt ?? "",
+      })),
+    }
+  );
+
   const rawSessions = sessionsQuery.data ?? [];
   const sessions: Session[] = rawSessions.map((s: any) => ({
     id: String(s.id),
@@ -141,55 +157,6 @@ const formatSessionTime = (ts: string | null) => {
       setSelectedSessionId(liveSessions[0].id);
     }
   }, [liveSessions, selectedSessionId]);
-
-  // Poll intelligence feed
-  useEffect(() => {
-    if (!selectedSessionId) return;
-
-    const poll = async () => {
-      try {
-        const res = await fetch(
-          `/api/trpc/shadowMode.getIntelligenceFeed?batch=1&input=${encodeURIComponent(
-            JSON.stringify({ "0": { json: { sessionId: selectedSessionId, since: lastFeedId } } })
-          )}`
-        );
-        const data = await res.json();
-        const rawItems = data?.[0]?.result?.data?.json ?? [];
-        const items: FeedItem[] = rawItems.map((r: any) => ({
-          id: r.id,
-          feedType: r.feed_type ?? r.feedType,
-          severity: r.severity,
-          title: r.title,
-          body: r.body,
-          pipeline: r.pipeline,
-          speaker: r.speaker ?? "",
-          createdAt: r.created_at ?? r.createdAt ?? "",
-        }));
-        if (items.length > 0) {
-          setFeedItems((prev) => [...prev, ...items].slice(-200));
-          setLastFeedId(items[items.length - 1].id);
-
-          // Update PSIL from latest escalation signal
-          const psilItem = [...items].reverse().find((i) => i.pipeline === "psil");
-          if (psilItem) {
-            if (psilItem.feedType === "psil") {
-              const raw = psilItem.title.toLowerCase();
-              if (raw.includes("escalat")) setPsil("escalate");
-              else if (raw.includes("redirect")) setPsil("redirect");
-              else setPsil("clear");
-            }
-          }
-        }
-      } catch {
-        // silent
-      }
-    };
-
-    pollRef.current = setInterval(poll, 3000);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [selectedSessionId, lastFeedId]);
 
   // Ably real-time subscription
   useEffect(() => {
@@ -259,7 +226,7 @@ const formatSessionTime = (ts: string | null) => {
     if (feedRef.current) {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
     }
-  }, [feedItems]);
+  }, [intelligenceFeedQuery.data]);
 
   // Session duration timer
   const [elapsed, setElapsed] = useState("00:00:00");
@@ -441,12 +408,12 @@ const formatSessionTime = (ts: string | null) => {
             <div style={{ flex: 1 }}>
               <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px", marginBottom: "12px" }}>INTELLIGENCE FEED</div>
               <div ref={feedRef} style={{ height: "calc(100vh - 180px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
-                {feedItems.length === 0 && (
+                {(intelligenceFeedQuery.data ?? []).length === 0 && (
                   <div style={{ color: "#334155", fontSize: "12px" }}>
                     {selectedSessionId ? "Waiting for intelligence signals..." : "Select a session to begin monitoring"}
                   </div>
                 )}
-                {feedItems.map((item) => (
+                {(intelligenceFeedQuery.data ?? []).map((item) => (
                   <div key={item.id} style={{ background: "#111", border: `1px solid ${SEVERITY_COLOURS[item.severity]}44`, borderLeft: `3px solid ${SEVERITY_COLOURS[item.severity]}`, borderRadius: "4px", padding: "10px 14px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                       <span style={{ color: SEVERITY_COLOURS[item.severity], fontSize: "11px", letterSpacing: "1px" }}>{item.severity.toUpperCase()} · {item.pipeline.toUpperCase()}</span>
