@@ -337,16 +337,30 @@ async function ensureCanonicalEventSegmentsTable() {
 async function ensureGovernanceDecisionsTable() {
   try {
     const { rawSql } = await import("../db");
+    await rawSql(`
+      CREATE TABLE IF NOT EXISTS governance_decisions (
+        id SERIAL PRIMARY KEY,
+        intelligence_feed_id INTEGER,
+        pipeline_id VARCHAR(50),
+        decision VARCHAR(20) NOT NULL DEFAULT 'pending',
+        stability_score REAL,
+        observation_count INTEGER,
+        failure_rate REAL,
+        reason_code VARCHAR(50),
+        chain_hash VARCHAR(255),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
     await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS intelligence_feed_id INTEGER`);
     await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS pipeline_id VARCHAR(50)`);
     await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS stability_score REAL`);
     await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS observation_count INTEGER`);
     await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS failure_rate REAL`);
     await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS reason_code VARCHAR(50)`);
-    console.log("[Migration] ✓ governance_decisions columns ensured (intelligence_feed_id, pipeline_id, stability_score, observation_count, failure_rate, reason_code)");
+    console.log("[Migration] ✓ governance_decisions table and columns ensured");
   } catch (err: any) {
-    if (err?.message?.includes("already exists") || err?.message?.includes("does not exist")) return;
-    console.warn("[Migration] governance_decisions column check skipped:", err?.message);
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] governance_decisions table migration failed:", err?.message);
   }
 }
 
