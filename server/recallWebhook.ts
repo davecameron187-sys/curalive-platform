@@ -245,7 +245,7 @@ async function handleTranscriptData(payload: {
         .update(`${sessionRecord.id}-${speaker}-${Math.round(startTime * 1000)}-${text.substring(0, 20)}`)
         .digest("hex")
         .substring(0, 64);
-      await db.insert(canonicalEventSegments).values({
+      const [insertedCanonical] = await db.insert(canonicalEventSegments).values({
         sessionId: sessionRecord.id,
         sourceType: "recall",
         speakerName: speaker,
@@ -266,11 +266,7 @@ async function handleTranscriptData(payload: {
         idempotencyKey: segmentIdempotencyKey,
       });
       // Trigger orchestrator for real-time AI pipeline
-      const insertedSegment = await rawSql(
-        `SELECT id FROM canonical_event_segments WHERE session_id = $1 ORDER BY created_at DESC LIMIT 1`,
-        [sessionRecord.id]
-      );
-      const canonicalSegmentId = insertedSegment?.[0]?.[0]?.id ?? 0;
+      const canonicalSegmentId = insertedCanonical?.id ?? 0;
       void processSegment({
         sessionId: sessionRecord.id,
         canonicalSegmentId,
