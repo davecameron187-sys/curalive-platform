@@ -334,6 +334,22 @@ async function ensureCanonicalEventSegmentsTable() {
   }
 }
 
+async function ensureGovernanceDecisionsTable() {
+  try {
+    const { rawSql } = await import("../db");
+    await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS intelligence_feed_id INTEGER`);
+    await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS pipeline_id VARCHAR(50)`);
+    await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS stability_score REAL`);
+    await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS observation_count INTEGER`);
+    await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS failure_rate REAL`);
+    await rawSql(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS reason_code VARCHAR(50)`);
+    console.log("[Migration] ✓ governance_decisions columns ensured (intelligence_feed_id, pipeline_id, stability_score, observation_count, failure_rate, reason_code)");
+  } catch (err: any) {
+    if (err?.message?.includes("already exists") || err?.message?.includes("does not exist")) return;
+    console.warn("[Migration] governance_decisions column check skipped:", err?.message);
+  }
+}
+
 async function startServer() {
   const app = express();
   const server = http.createServer(app);
@@ -433,6 +449,9 @@ async function startServer() {
   );
   ensureCanonicalEventSegmentsTable().catch(err =>
     console.warn("[Migration] canonical_event_segments table migration failed:", err?.message)
+  );
+  ensureGovernanceDecisionsTable().catch(err =>
+    console.warn("[Migration] governance_decisions table migration failed:", err?.message)
   );
 
   if (!isProd) {
