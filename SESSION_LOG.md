@@ -69,7 +69,7 @@ No phase may be started until the gate condition of the previous phase is confir
 Phase 2C gate condition: Operator sees live compliance alerts AND sentiment on screen consistently during a session. Not once — consistently.
 
 Steps to complete Phase 2C:
-1. Remove debug log added today (`console.log("[Feed] Poll response:..."`)
+1. Remove debug log added today (`console.log("[Feed] Poll response:..."`
 2. Run 3 consecutive test sessions with earnings paragraph
 3. Confirm intelligence feed items appear reliably on screen each time
 4. If watchdog warning stacks — add deduplication
@@ -99,7 +99,8 @@ After Phase 2C confirmed:
 | Phase 2A — Segment Orchestrator | ✅ DONE April 22 |
 | Phase 2B — Pipelines 1-2 live | ✅ DONE April 22 |
 | Phase 2C — Operator console live | ✅ DONE April 23 |
-| Phase 2E — Full operator console | ⏳ NEXT |
+| Phase 2E — Full operator console | ✅ DONE April 23 |
+| Phase 2F — Governance Gateway | ⏳ NEXT |
 
 ---
 
