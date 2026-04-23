@@ -98,8 +98,8 @@ After Phase 2C confirmed:
 | Phase 1B — SQL placeholder bug | ✅ DONE April 22 |
 | Phase 2A — Segment Orchestrator | ✅ DONE April 22 |
 | Phase 2B — Pipelines 1-2 live | ✅ DONE April 22 |
-| Phase 2C — Operator console live | ⚠️ PARTIAL — retest April 23 |
-| Phase 2E — Full operator console | ⏳ AFTER 2C |
+| Phase 2C — Operator console live | ✅ DONE April 23 |
+| Phase 2E — Full operator console | ⏳ NEXT |
 
 ---
 
