@@ -64,6 +64,7 @@ async function writeToIntelligenceFeed(params: {
       .update(`${params.sessionId}-${params.pipeline}-${params.canonicalSegmentId}-${params.feedType}`)
       .digest("hex")
       .substring(0, 64);
+    console.log(`[Orchestrator] Attempting intelligence_feed write for session ${params.sessionId}, pipeline ${params.pipeline}`);
     await rawSql(
       `INSERT INTO intelligence_feed 
         (session_id, feed_type, severity, title, body, pipeline, speaker, 
@@ -102,7 +103,7 @@ async function writeToIntelligenceFeed(params: {
       }).catch(err => console.warn("[Gateway] Evaluation failed:", err?.message));
     }
   } catch (err: any) {
-    console.warn(`[Orchestrator] Failed to write to intelligence_feed:`, err?.message);
+    console.error(`[Orchestrator] FAILED to write to intelligence_feed:`, err?.message, err?.code, JSON.stringify(err));
   }
 }
 
