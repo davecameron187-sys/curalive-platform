@@ -316,122 +316,239 @@ const formatSessionTime = (ts: string | null) => {
 
         {activeTab === "console" && (
           <>
-            {/* Session list */}
-            <div style={{ width: "320px", flexShrink: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-                <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px" }}>SESSIONS</div>
+            {/* LEFT COLUMN — Session Management */}
+            <div style={{ width: "280px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
+
+              {/* Session Controls Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: "#475569", fontSize: "10px", letterSpacing: "2px" }}>SESSIONS</span>
                 <button
-                  onClick={() => setShowForm(f => !f)}
-                  style={{ background: "#166534", border: "none", color: "white", padding: "4px 10px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}
+                  onClick={() => setShowForm(!showForm)}
+                  style={{ background: "#166534", border: "none", color: "#4ade80", padding: "4px 10px", fontSize: "9px", borderRadius: "2px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}
                 >
-                  + NEW SESSION
+                  + NEW
                 </button>
               </div>
 
-              {/* Session creation form */}
+              {/* Session Creation Form */}
               {showForm && (
-                <div style={{ background: "#111", border: "1px solid #1e293b", borderRadius: "6px", padding: "14px", marginBottom: "12px" }}>
-                  <div style={{ color: "#60a5fa", fontSize: "11px", letterSpacing: "1px", marginBottom: "12px" }}>NEW SHADOW INTELLIGENCE SESSION</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    <div>
-                      <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>CLIENT NAME *</div>
-                      <input value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))}
-                        placeholder="e.g. Anglo American plc"
-                        style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }} />
+                <div style={{ background: "#111", border: "1px solid #1e293b", borderRadius: "6px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {[
+                    { label: "CLIENT NAME *", key: "clientName", placeholder: "e.g. Acme Corp" },
+                    { label: "EVENT NAME *", key: "eventName", placeholder: "e.g. Q2 2026 Earnings Call" },
+                    { label: "MEETING URL *", key: "meetingUrl", placeholder: "https://zoom.us/j/..." },
+                    { label: "NOTES", key: "notes", placeholder: "Special instructions..." },
+                  ].map(({ label, key, placeholder }) => (
+                    <div key={key}>
+                      <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>{label}</div>
+                      <input
+                        value={(form as any)[key]}
+                        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                        placeholder={placeholder}
+                        style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }}
+                      />
                     </div>
-                    <div>
-                      <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>EVENT NAME *</div>
-                      <input value={form.eventName} onChange={e => setForm(f => ({ ...f, eventName: e.target.value }))}
-                        placeholder="e.g. Q2 2026 Earnings Call"
-                        style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }} />
-                    </div>
-                    <div>
-                      <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>EVENT TYPE *</div>
-                      <select value={form.eventType} onChange={e => setForm(f => ({ ...f, eventType: e.target.value as any }))}
-                        style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }}>
-                        {Object.entries(EVENT_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>MEETING URL *</div>
-                      <input value={form.meetingUrl}
-                        onChange={e => setForm(f => ({ ...f, meetingUrl: e.target.value }))}
-                        placeholder="https://zoom.us/j/..."
-                        style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }} />
-                    </div>
-                    <div>
-                      <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>NOTES</div>
-                      <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                        placeholder="Special instructions..."
-                        style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }} />
-                    </div>
-                    <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
-                      <button
-                        onClick={() => startSession.mutate({ ...form, platform: "zoom", webhookBaseUrl: window.location.origin })}
-                        disabled={startSession.isPending || !form.clientName || !form.eventName || !form.meetingUrl}
-                        style={{ background: form.clientName && form.eventName && form.meetingUrl ? "#166534" : "#1e293b", border: "none", color: form.clientName && form.eventName && form.meetingUrl ? "white" : "#475569", padding: "6px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}>
-                        {startSession.isPending ? "STARTING..." : "START SHADOW INTELLIGENCE"}
-                      </button>
-                      <button onClick={() => setShowForm(false)}
-                        style={{ background: "none", border: "1px solid #1e293b", color: "#475569", padding: "6px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace" }}>
-                        CANCEL
-                      </button>
-                    </div>
+                  ))}
+                  <div>
+                    <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>EVENT TYPE *</div>
+                    <select
+                      value={form.eventType}
+                      onChange={e => setForm(f => ({ ...f, eventType: e.target.value as any }))}
+                      style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }}
+                    >
+                      {Object.entries(EVENT_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
+                    <button
+                      onClick={() => startSession.mutate({ ...form, platform: "zoom", webhookBaseUrl: window.location.origin })}
+                      disabled={startSession.isPending || !form.clientName || !form.eventName || !form.meetingUrl}
+                      style={{ background: form.clientName && form.eventName && form.meetingUrl ? "#166534" : "#1e293b", border: "none", color: form.clientName && form.eventName && form.meetingUrl ? "white" : "#475569", padding: "6px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}
+                    >
+                      {startSession.isPending ? "STARTING..." : "START SESSION"}
+                    </button>
+                    <button
+                      onClick={() => setShowForm(false)}
+                      style={{ background: "none", border: "1px solid #1e293b", color: "#475569", padding: "6px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace" }}
+                    >
+                      CANCEL
+                    </button>
                   </div>
                 </div>
               )}
 
-              {/* Session list */}
-              {liveSessions.length === 0 && !showForm && (
-                <div style={{ color: "#334155", fontSize: "12px" }}>No live sessions</div>
-              )}
-              {liveSessions.map((s) => (
-                <div key={s.id} onClick={() => setSelectedSessionId(s.id)}
-                  style={{ padding: "14px 16px", marginBottom: "8px", background: selectedSessionId === s.id ? "#1e293b" : "#111", border: `1px solid ${selectedSessionId === s.id ? "#3b82f6" : "#1e293b"}`, borderRadius: "6px", cursor: "pointer" }}>
-                  <div style={{ color: "#94a3b8", fontSize: "10px", letterSpacing: "1px", marginBottom: "2px" }}>{s.clientName?.toUpperCase() ?? "—"}</div>
-                  <div style={{ color: "#e2e8f0", fontSize: "13px", fontWeight: 500 }}>{s.eventName}</div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>
-                    <div style={{ color: "#4ade80", fontSize: "10px" }}>● {s.status.toUpperCase()}</div>
-                    <div style={{ color: "#475569", fontSize: "10px" }}>{formatSessionTime(s.startedAt)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* End Session Button */}
-              {selectedSessionId && (
-                <div style={{ marginBottom: "12px", display: "flex", justifyContent: "flex-end" }}>
-                  <button
-                    onClick={() => endSession.mutate({ sessionId: Number(selectedSessionId) }, {
-                      onSuccess: () => setSelectedSessionId(null)
-                    })}
-                    style={{ background: "#7f1d1d", border: "1px solid #991b1b", color: "#fca5a5", padding: "6px 16px", fontSize: "11px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}
-                  >
-                    ■ END SESSION
-                  </button>
-                </div>
-              )}
-            {/* Intelligence Feed */}
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px", marginBottom: "12px" }}>INTELLIGENCE FEED</div>
-              <div ref={feedRef} style={{ height: "calc(100vh - 180px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
-                {mergedFeed.length === 0 && (
-                  <div style={{ color: "#334155", fontSize: "12px" }}>
-                    {selectedSessionId ? "Waiting for intelligence signals..." : "Select a session to begin monitoring"}
-                  </div>
+              {/* Session List */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "calc(100vh - 280px)" }}>
+                {liveSessions.length === 0 && !showForm && (
+                  <div style={{ color: "#334155", fontSize: "12px" }}>No live sessions</div>
                 )}
-                {mergedFeed.map((item) => (
-                  <div key={item.id} style={{ background: "#111", border: `1px solid ${SEVERITY_COLOURS[item.severity]}44`, borderLeft: `3px solid ${SEVERITY_COLOURS[item.severity]}`, borderRadius: "4px", padding: "10px 14px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ color: SEVERITY_COLOURS[item.severity], fontSize: "11px", letterSpacing: "1px" }}>{item.severity.toUpperCase()} · {item.pipeline.toUpperCase()}</span>
-                      <span style={{ color: "#334155", fontSize: "10px" }}>{item.speaker}</span>
+                {liveSessions.map((s) => (
+                  <div
+                    key={s.id}
+                    onClick={() => setSelectedSessionId(s.id)}
+                    style={{ padding: "12px 14px", background: selectedSessionId === s.id ? "#1e293b" : "#111", border: `1px solid ${selectedSessionId === s.id ? "#3b82f6" : "#1e293b"}`, borderRadius: "6px", cursor: "pointer", transition: "all 0.15s" }}
+                  >
+                    <div style={{ color: "#94a3b8", fontSize: "10px", letterSpacing: "1px", marginBottom: "2px" }}>{s.clientName?.toUpperCase() ?? "—"}</div>
+                    <div style={{ color: "#e2e8f0", fontSize: "13px", fontWeight: 500 }}>{s.eventName}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>
+                      <div style={{ color: "#4ade80", fontSize: "10px", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", animation: "pulse 2s infinite" }}></span>
+                        {s.status.toUpperCase()}
+                      </div>
+                      <div style={{ color: "#475569", fontSize: "10px" }}>{formatSessionTime(s.startedAt)}</div>
                     </div>
-                    <div style={{ color: "#e2e8f0", fontSize: "12px", fontWeight: "bold", marginBottom: "4px" }}>{item.title}</div>
-                    <div style={{ color: "#94a3b8", fontSize: "11px", lineHeight: "1.5" }}>{item.body}</div>
                   </div>
                 ))}
               </div>
+
+              {/* End Session Button */}
+              {selectedSessionId && (
+                <button
+                  onClick={() => endSession.mutate({ sessionId: Number(selectedSessionId) }, { onSuccess: () => setSelectedSessionId(null) })}
+                  style={{ background: "#7f1d1d", border: "1px solid #991b1b", color: "#fca5a5", padding: "8px 16px", fontSize: "11px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px", width: "100%" }}
+                >
+                  ■ END SESSION
+                </button>
+              )}
             </div>
+
+            {/* CENTRE COLUMN — Intelligence Feed + Transcript */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px", minWidth: 0 }}>
+
+              {/* Intelligence Feed */}
+              <div style={{ flex: 1, background: "#0d0d0d", border: "1px solid #1e293b", borderRadius: "6px", padding: "16px", display: "flex", flexDirection: "column" }}>
+                <div style={{ color: "#475569", fontSize: "10px", letterSpacing: "2px", marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>INTELLIGENCE FEED</span>
+                  {selectedSessionId && <span style={{ color: "#334155" }}>{mergedFeed.length} SIGNALS</span>}
+                </div>
+                <div ref={feedRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px", maxHeight: "calc(100vh - 320px)" }}>
+                  {mergedFeed.length === 0 && (
+                    <div style={{ color: "#334155", fontSize: "12px" }}>
+                      {selectedSessionId ? "Waiting for intelligence signals..." : "Select a session to begin monitoring"}
+                    </div>
+                  )}
+                  {mergedFeed.map((item) => (
+                    <div
+                      key={item.id}
+                      style={{ background: "#111", border: `1px solid ${SEVERITY_COLOURS[item.severity]}33`, borderLeft: `3px solid ${SEVERITY_COLOURS[item.severity]}`, borderRadius: "4px", padding: "10px 14px" }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                        <span style={{ color: SEVERITY_COLOURS[item.severity], fontSize: "10px", letterSpacing: "1px" }}>
+                          {item.severity.toUpperCase()} · {item.pipeline.toUpperCase()}
+                        </span>
+                        <span style={{ color: "#334155", fontSize: "10px" }}>{item.speaker}</span>
+                      </div>
+                      <div style={{ color: "#e2e8f0", fontSize: "12px", fontWeight: "bold", marginBottom: "4px" }}>{item.title}</div>
+                      <div style={{ color: "#94a3b8", fontSize: "11px", lineHeight: "1.5" }}>{item.body}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live Transcript Feed */}
+              <div style={{ background: "#0d0d0d", border: "1px solid #1e293b", borderRadius: "6px", padding: "16px", height: "180px" }}>
+                <div style={{ color: "#475569", fontSize: "10px", letterSpacing: "2px", marginBottom: "10px" }}>LIVE TRANSCRIPT</div>
+                <div style={{ overflowY: "auto", height: "120px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {selectedSessionId ? (
+                    <div style={{ color: "#334155", fontSize: "11px" }}>Transcript segments will appear here in real time...</div>
+                  ) : (
+                    <div style={{ color: "#334155", fontSize: "11px" }}>Select a session to view transcript</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN — Status + Speaker Cards + PSIL */}
+            <div style={{ width: "260px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
+
+              {/* Bot Status */}
+              <div style={{ background: "#0d0d0d", border: "1px solid #1e293b", borderRadius: "6px", padding: "16px" }}>
+                <div style={{ color: "#475569", fontSize: "10px", letterSpacing: "2px", marginBottom: "12px" }}>BOT STATUS</div>
+                {selectedSessionId ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#94a3b8", fontSize: "11px" }}>Connection</span>
+                      <span style={{ color: "#4ade80", fontSize: "11px", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80" }}></span>
+                        ACTIVE
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#94a3b8", fontSize: "11px" }}>Pipeline</span>
+                      <span style={{ color: "#4ade80", fontSize: "11px" }}>RUNNING</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#94a3b8", fontSize: "11px" }}>Signals</span>
+                      <span style={{ color: "#e2e8f0", fontSize: "11px" }}>{mergedFeed.length}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ color: "#334155", fontSize: "11px" }}>No active session</div>
+                )}
+              </div>
+
+              {/* PSIL Status */}
+              <div style={{ background: "#0d0d0d", border: "1px solid #1e293b", borderRadius: "6px", padding: "16px" }}>
+                <div style={{ color: "#475569", fontSize: "10px", letterSpacing: "2px", marginBottom: "12px" }}>PSIL STATUS</div>
+                {(["escalate", "redirect", "constrain", "clear"] as const).map((level) => (
+                  <div
+                    key={level}
+                    style={{
+                      padding: "8px 12px",
+                      marginBottom: "6px",
+                      borderRadius: "3px",
+                      background: psil === level ? (level === "escalate" ? "#7f1d1d" : level === "redirect" ? "#78350f" : level === "constrain" ? "#1e3a5f" : "#14532d") : "#111",
+                      border: `1px solid ${psil === level ? (level === "escalate" ? "#ef4444" : level === "redirect" ? "#f59e0b" : level === "constrain" ? "#3b82f6" : "#22c55e") : "#1e293b"}`,
+                      color: psil === level ? "#e2e8f0" : "#334155",
+                      fontSize: "11px",
+                      letterSpacing: "1px",
+                      fontFamily: "monospace",
+                      cursor: "default",
+                    }}
+                  >
+                    {level.toUpperCase()}
+                  </div>
+                ))}
+              </div>
+
+              {/* Speaker Scorecards */}
+              <div style={{ background: "#0d0d0d", border: "1px solid #1e293b", borderRadius: "6px", padding: "16px", flex: 1 }}>
+                <div style={{ color: "#475569", fontSize: "10px", letterSpacing: "2px", marginBottom: "12px" }}>SPEAKER INTELLIGENCE</div>
+                {mergedFeed.filter(i => i.pipeline === "sentiment" && i.speaker).length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {Array.from(new Set(mergedFeed.filter(i => i.pipeline === "sentiment" && i.speaker).map(i => i.speaker))).map(speaker => {
+                      const speakerItems = mergedFeed.filter(i => i.pipeline === "sentiment" && i.speaker === speaker);
+                      const latest = speakerItems[speakerItems.length - 1];
+                      const scoreMatch = latest?.body?.match(/Score: (\d+)/);
+                      const score = scoreMatch ? parseInt(scoreMatch[1]) : null;
+                      return (
+                        <div key={speaker} style={{ borderLeft: "2px solid #3b82f6", paddingLeft: "10px" }}>
+                          <div style={{ color: "#e2e8f0", fontSize: "11px", fontWeight: "bold", marginBottom: "4px" }}>{speaker}</div>
+                          <div style={{ color: "#94a3b8", fontSize: "10px", marginBottom: "4px" }}>{latest?.title ?? "—"}</div>
+                          {score !== null && (
+                            <div style={{ background: "#111", borderRadius: "2px", height: "4px", width: "100%", overflow: "hidden" }}>
+                              <div style={{ background: score > 60 ? "#4ade80" : score > 40 ? "#f59e0b" : "#ef4444", height: "100%", width: `${score}%`, transition: "width 0.5s ease" }}></div>
+                            </div>
+                          )}
+                          <div style={{ color: "#475569", fontSize: "10px", marginTop: "3px" }}>{score !== null ? `${score}/100` : "—"}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ color: "#334155", fontSize: "11px" }}>Speaker data will appear as session progresses</div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Pulse animation */}
+            <style>{`
+              @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.3; }
+              }
+            `}</style>
           </>
         )}
 
