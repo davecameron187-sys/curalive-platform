@@ -69,7 +69,7 @@ async function writeToIntelligenceFeed(params: {
         (session_id, feed_type, severity, title, body, pipeline, speaker, 
          canonical_segment_id, governance_status, confidence_score, metadata, idempotency_key, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, NOW())
-       ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING`,
+       ON CONFLICT DO NOTHING`,
       [
         `shadow-${params.sessionId}`,
         params.feedType,
