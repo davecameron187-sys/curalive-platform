@@ -240,6 +240,11 @@ async function handleTranscriptData(payload: {
       return rows?.[0] ?? null;
     })();
     if (sessionRecord?.id) {
+      const segmentIdempotencyKey = crypto
+        .createHash("sha256")
+        .update(`${sessionRecord.id}-${speaker}-${Math.round(startTime * 1000)}-${text.substring(0, 20)}`)
+        .digest("hex")
+        .substring(0, 64);
       await db.insert(canonicalEventSegments).values({
         sessionId: sessionRecord.id,
         sourceType: "recall",
@@ -255,9 +260,10 @@ async function handleTranscriptData(payload: {
           ? new Date(words[0].start_timestamp.absolute).getTime()
           : Date.now(),
         wordCount: words.length,
-        segmentIndex: existing.length,
+        segmentIndex: existing.length + 1,
         confidenceScore: 1.0,
         governanceStatus: "pending",
+        idempotencyKey: segmentIdempotencyKey,
       });
       // Trigger orchestrator for real-time AI pipeline
       const insertedSegment = await rawSql(

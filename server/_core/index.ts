@@ -325,6 +325,8 @@ async function ensureCanonicalEventSegmentsTable() {
       governance_status VARCHAR(50) DEFAULT 'pending',
       created_at TIMESTAMP DEFAULT NOW() NOT NULL
     )`);
+    await rawSql(`ALTER TABLE canonical_event_segments ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(64)`);
+    await rawSql(`CREATE UNIQUE INDEX IF NOT EXISTS idx_canonical_segments_idempotency ON canonical_event_segments(idempotency_key) WHERE idempotency_key IS NOT NULL`);
     console.log("[Migration] ✓ canonical_event_segments table ensured");
   } catch (err: any) {
     if (err?.message?.includes("already exists")) return;
