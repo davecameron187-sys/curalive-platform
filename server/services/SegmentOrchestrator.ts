@@ -151,6 +151,78 @@ async function runSentimentPipeline(
   }
 }
 
+// Correlation Engine — cross-dimensional signal detection
+async function runCorrelationEngine(
+  sessionId: number,
+  canonicalSegmentId: number,
+  buffer: ReturnType<typeof getOrCreateBuffer>
+) {
+  try {
+    const recentSegments = buffer.segments.slice(-5);
+    if (recentSegments.length < 2) return;
+
+    const [recentSignals] = await rawSql(
+      `SELECT feed_type, pipeline, confidence_score, body, created_at
+       FROM intelligence_feed
+       WHERE session_id = $1
+       AND created_at > NOW() - INTERVAL '2 minutes'
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [`shadow-${sessionId}`]
+    );
+
+    if (!recentSignals || recentSignals.length < 2) return;
+
+    const hasCompliance = recentSignals.some((s: any) => s.pipeline === "compliance");
+    const sentimentSignals = recentSignals.filter((s: any) => s.pipeline === "sentiment");
+    const latestSentiment = sentimentSignals[0];
+    const sentimentScore = latestSentiment?.body?.match(/Score: (\d+)/)?.[1];
+    const sentimentValue = sentimentScore ? parseInt(sentimentScore) : null;
+
+    if (hasCompliance && sentimentValue !== null && sentimentValue < 40) {
+      await writeToIntelligenceFeed({
+        sessionId,
+        canonicalSegmentId,
+        feedType: "composite",
+        severity: "critical",
+        title: "⚡ Composite Risk: Compliance + Negative Sentiment",
+        body: `Compliance signal detected alongside negative sentiment (${sentimentValue}/100). Elevated concern — review recent statements.`,
+        pipeline: "correlation",
+        speaker: recentSegments[recentSegments.length - 1]?.speaker ?? "",
+        confidenceScore: 0.92,
+        metadata: { patterns: ["compliance", "negative_sentiment"], sentimentValue },
+      });
+      console.log(`[Correlation] Composite risk detected for session ${sessionId}: compliance + negative sentiment`);
+    }
+
+    if (sentimentSignals.length >= 2) {
+      const scores = sentimentSignals
+        .map((s: any) => parseInt(s.body?.match(/Score: (\d+)/)?.[1] ?? "0"))
+        .filter((s: number) => s > 0);
+      if (scores.length >= 2) {
+        const drop = scores[scores.length - 1] - scores[0];
+        if (drop < -20) {
+          await writeToIntelligenceFeed({
+            sessionId,
+            canonicalSegmentId,
+            feedType: "composite",
+            severity: "high",
+            title: "⚡ Sentiment Deterioration Pattern",
+            body: `Sentiment dropped ${Math.abs(drop)} points across recent segments. Communication stress pattern detected.`,
+            pipeline: "correlation",
+            speaker: recentSegments[recentSegments.length - 1]?.speaker ?? "",
+            confidenceScore: 0.85,
+            metadata: { patterns: ["sentiment_drop"], drop, scores },
+          });
+          console.log(`[Correlation] Sentiment deterioration detected for session ${sessionId}: ${drop} point drop`);
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn(`[Correlation] Engine error:`, err?.message);
+  }
+}
+
 /**
  * Main entry point — called for every canonical segment written
  * This is the heart of the real-time AI system
@@ -187,4 +259,8 @@ export async function processSegment(params: {
       console.warn(`[Orchestrator] Sentiment pipeline failed:`, err?.message)
     );
   }
+
+  void runCorrelationEngine(sessionId, canonicalSegmentId, buffer).catch(err =>
+    console.warn("[Correlation] Failed:", err?.message)
+  );
 }
