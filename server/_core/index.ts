@@ -296,7 +296,9 @@ async function ensureIntelligenceFeedTable() {
     await rawSql(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS canonical_segment_id INTEGER`);
     await rawSql(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS governance_status VARCHAR(50) DEFAULT 'pending'`);
     await rawSql(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS confidence_score REAL`);
-    console.log("[Migration] ✓ intelligence_feed columns ensured (canonical_segment_id, governance_status, confidence_score)");
+    await rawSql(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(64)`);
+    await rawSql(`CREATE UNIQUE INDEX IF NOT EXISTS idx_intelligence_feed_idempotency ON intelligence_feed(idempotency_key) WHERE idempotency_key IS NOT NULL`);
+    console.log("[Migration] ✓ intelligence_feed columns ensured (canonical_segment_id, governance_status, confidence_score, idempotency_key)");
   } catch (err: any) {
     if (err?.message?.includes("already exists")) return;
     console.warn("[Migration] intelligence_feed table check skipped:", err?.message);
