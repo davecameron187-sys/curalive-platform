@@ -80,6 +80,7 @@ export async function scoreSentiment(
 ): Promise<SentimentResult> {
   try {
     const response = await invokeLLM({
+      temperature: 0.2,
       messages: [
         {
           role: "system",
@@ -148,6 +149,7 @@ export async function generateRollingSummary(
 
   try {
     const response = await invokeLLM({
+      temperature: 0,
       messages: [
         {
           role: "system",
