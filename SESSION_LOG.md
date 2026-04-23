@@ -101,7 +101,41 @@ After Phase 2C confirmed:
 | Phase 2C — Operator console live | ✅ DONE April 23 |
 | Phase 2E — Full operator console | ✅ DONE April 23 |
 | Phase 2F — Governance Gateway | ✅ DONE April 23 |
-| Phase 2G — All pipelines governed | ⏳ NEXT |
+| Phase 2G — All pipelines governed | ✅ DONE April 23 |
+
+---
+
+## SESSION: April 23 2026 — Phase 2G COMPLETE
+
+### Last Known Good Commit: 4fa92c9
+
+### What Was Confirmed
+1. governance_decisions table — 28 rows writing correctly
+2. Chain hash audit trail — verified unbroken across all rows
+3. Each row's previous_hash matches prior row's chain_hash exactly
+4. Genesis anchor confirmed as chain starting point
+5. Gateway correctly classifying — 20 authorised, 8 pending_review
+6. decided_at timestamps present and sequential
+7. DeterministicGovernanceGateway.ts — no changes made, working as built
+
+### Gate Condition — MET ✅
+- governance_decisions populating correctly ✅
+- Chain hash audit trail tamper-evident and complete ✅
+- Full governance flow confirmed: pipeline → gateway → decision ✅
+
+### Database State at Close
+- governance_decisions rows: 28
+- authorised: 20
+- pending_review: 8
+- withheld: 0
+- Schema: all columns confirmed present including chain_hash, previous_hash, decided_at
+
+### Nothing Was Changed Today
+- No code was modified
+- No schema was altered
+- Verification only session — confirmed what was built in Phase 2F is working correctly
+
+### Next Phase: 2H — To Be Defined
 
 ---
 
