@@ -8,6 +8,7 @@
 import { rawSql } from "../db";
 import { scoreSentiment } from "../aiAnalysis";
 import crypto from "crypto";
+import { evaluateOutput } from "./DeterministicGovernanceGateway";
 
 // Maximum concurrent LLM calls per session
 const MAX_CONCURRENT_LLM_CALLS = 3;
@@ -83,6 +84,23 @@ async function writeToIntelligenceFeed(params: {
         idempotencyKey,
       ]
     );
+    // Get the inserted row ID and evaluate through governance gateway
+    const [inserted] = await rawSql(
+      `SELECT id FROM intelligence_feed WHERE session_id = $1 AND pipeline = $2 ORDER BY created_at DESC LIMIT 1`,
+      [`shadow-${params.sessionId}`, params.pipeline]
+    );
+    const feedId = inserted?.[0]?.id;
+    if (feedId) {
+      void evaluateOutput({
+        intelligenceFeedId: feedId,
+        sessionId: params.sessionId,
+        pipeline: params.pipeline,
+        confidenceScore: params.confidenceScore,
+        feedType: params.feedType,
+        title: params.title,
+        body: params.body,
+      }).catch(err => console.warn("[Gateway] Evaluation failed:", err?.message));
+    }
   } catch (err: any) {
     console.warn(`[Orchestrator] Failed to write to intelligence_feed:`, err?.message);
   }
