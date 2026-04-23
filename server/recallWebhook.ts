@@ -211,9 +211,11 @@ async function handleTranscriptData(payload: {
     .where(eq(recallBots.recallBotId, recallBotId));
 
   // Clear watchdog if running
-  const shadowSession = await db.query.shadowSessions?.findFirst?.({
-    where: (s: any, { eq }: any) => eq(s.recallBotId, recallBotId)
-  });
+  const [shadowRows] = await rawSql(
+    `SELECT id FROM shadow_sessions WHERE recall_bot_id = $1 LIMIT 1`,
+    [recallBotId]
+  );
+  const shadowSession = shadowRows?.[0] ?? null;
   if (shadowSession?.id) {
     const warningTimer = (global as any)[`watchdog-warning:${shadowSession.id}`];
     if (warningTimer) {
