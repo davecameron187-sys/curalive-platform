@@ -172,10 +172,13 @@ const formatSessionTime = (ts: string | null) => {
 
         const activeSession = sessions.find(s => s.id === selectedSessionId);
         const channelName = activeSession?.ablyChannel ?? selectedSessionId;
-        const channel = client.channels.get(channelName);
+        const channel = client.channels.get(channelName, { params: { rewind: "0" } });
         await channel.subscribe("curalive", (message) => {
           const payload = typeof message.data === "string" ? JSON.parse(message.data) : message.data;
-          if (payload.type === "transcript.segment") return; // handled separately
+          if (payload.type === "transcript.segment") {
+            setFeedItems((prev) => prev.filter(item => item.pipeline !== "watchdog"));
+            return;
+          }
           if (payload.type === "sentiment.update" || payload.type === "rolling.summary") {
             // These come from aiAnalysis — surface as feed items
             const newItem: FeedItem = {
