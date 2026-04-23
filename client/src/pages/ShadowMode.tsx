@@ -154,7 +154,6 @@ const formatSessionTime = (ts: string | null) => {
           )}`
         );
         const data = await res.json();
-        console.log("[Feed] Poll response:", JSON.stringify(data?.[0]?.result?.data?.json?.slice(0,2)));
         const rawItems = data?.[0]?.result?.data?.json ?? [];
         const items: FeedItem[] = rawItems.map((r: any) => ({
           id: r.id,
