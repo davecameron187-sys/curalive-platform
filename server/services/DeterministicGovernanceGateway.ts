@@ -29,7 +29,7 @@ const GATEWAY_CONFIG: Record<string, {
   },
   sentiment: {
     minConfidence: 0.70,
-    minObservations: 3,
+    minObservations: 1,
     maxFailureRate: 0.30,
     minStabilityScore: 0.60,
     isComplianceCritical: false,
