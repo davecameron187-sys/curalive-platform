@@ -264,7 +264,7 @@ async function handleTranscriptData(payload: {
         confidenceScore: 1.0,
         governanceStatus: "pending",
         idempotencyKey: segmentIdempotencyKey,
-      });
+      }).returning({ id: canonicalEventSegments.id });
       // Trigger orchestrator for real-time AI pipeline
       const canonicalSegmentId = insertedCanonical?.id ?? 0;
       void processSegment({
