@@ -897,6 +897,7 @@ export const shadowModeRouter = router({
           SELECT id, session_id, feed_type, severity, title, body, metadata, pipeline, speaker, timestamp_in_event, created_at
           FROM intelligence_feed
           WHERE session_id = $1
+          AND (governance_status = 'authorised' OR governance_status IS NULL)
           ${input.since ? "AND id > $2" : ""}
           ORDER BY created_at ASC
           LIMIT 100`;
