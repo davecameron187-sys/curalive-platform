@@ -63,6 +63,7 @@ BoardIntelligenceService → historical_commitments
 | server/webhooks/aiAmRecall.ts | AI-AM webhook — quarantined | ⛔ Do not delete |
 | drizzle/schema.ts | Drizzle ORM schema | ✅ canonical_event_segments added |
 | server/_core/index.ts | Startup migrations | ✅ canonical_event_segments ensured |
+| server/services/DeterministicGovernanceGateway.ts | Phase 2F governance gateway | ✅ Built April 23 |
 
 ## Webhook Configuration
 - Endpoint: https://curalive-node.onrender.com/api/recall/webhook

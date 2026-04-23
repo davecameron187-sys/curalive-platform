@@ -24,8 +24,8 @@ Do not start any work until founder confirms.
 
 ## Current State — April 22 2026
 **Phase 1: COMPLETE**
-**Active Phase: Phase 0A — Bot Health Heartbeat**
-Last commit: 6609cfa on main
+**Active Phase: Phase 2G — All pipelines governed**
+Last commit: 3d9cabf on main
 
 Completed today:
 - Bot status fix — 100% complete
@@ -58,7 +58,7 @@ Node.js + TypeScript on Render, PostgreSQL, tRPC + Drizzle ORM, Recall.ai for me
 
 ## Architecture Reference
 Full eight-layer AI architecture in AI_ARCHITECTURE_ROADMAP.md.
-Current phase: Phase 0A.
+Current phase: Phase 2G.
 Phase gate rule: No phase starts until previous gate condition is logged as met.
 
 ## Git Push Command — After Every Commit
