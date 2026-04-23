@@ -251,6 +251,10 @@ const formatSessionTime = (ts: string | null) => {
     { id: "history", label: "History" },
   ];
 
+  const mergedFeed = [...(intelligenceFeedQuery.data ?? []), ...feedItems]
+    .sort((a, b) => a.id - b.id)
+    .filter((item, index, self) => self.findIndex(i => i.id === item.id) === index);
+
   return (
     <div style={{ fontFamily: "monospace", background: "#0a0a0a", minHeight: "100vh", color: "#e2e8f0", padding: "0" }}>
 
@@ -408,12 +412,12 @@ const formatSessionTime = (ts: string | null) => {
             <div style={{ flex: 1 }}>
               <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px", marginBottom: "12px" }}>INTELLIGENCE FEED</div>
               <div ref={feedRef} style={{ height: "calc(100vh - 180px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
-                {(intelligenceFeedQuery.data ?? []).length === 0 && (
+                {mergedFeed.length === 0 && (
                   <div style={{ color: "#334155", fontSize: "12px" }}>
                     {selectedSessionId ? "Waiting for intelligence signals..." : "Select a session to begin monitoring"}
                   </div>
                 )}
-                {(intelligenceFeedQuery.data ?? []).map((item) => (
+                {mergedFeed.map((item) => (
                   <div key={item.id} style={{ background: "#111", border: `1px solid ${SEVERITY_COLOURS[item.severity]}44`, borderLeft: `3px solid ${SEVERITY_COLOURS[item.severity]}`, borderRadius: "4px", padding: "10px 14px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                       <span style={{ color: SEVERITY_COLOURS[item.severity], fontSize: "11px", letterSpacing: "1px" }}>{item.severity.toUpperCase()} · {item.pipeline.toUpperCase()}</span>
