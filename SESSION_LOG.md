@@ -187,3 +187,57 @@ AI Architecture Roadmap: https://raw.githubusercontent.com/davecameron187-sys/cu
 - Add real-time Ably subscription to customer dashboard
 - Enforce customer role on dashboard route
 - Build Personal Intelligence Profiles
+
+---
+
+## PHASE 3 ALIGNMENT BRIEF — April 24 2026
+### From: ChatGPT (Architecture) → Claude (Chief Architect)
+### Purpose: Correct execution sequence + enforce system validation priorities
+
+### CORE PRINCIPLE
+CuraLive is NOT a reporting tool. CuraLive is a REAL-TIME intelligence system.
+
+### UPDATED PRIORITY ORDER (MANDATORY)
+1. Real-time Ably integration (customer dashboard)
+2. End-to-end live validation
+3. Customer role enforcement
+4. Profile foundation (NOT full profiles)
+
+### TASK 1 — REAL-TIME ABLY INTEGRATION
+- Subscribe to existing Ably channel used by operator console
+- When new intelligence_feed event published: append to feed, reflect instantly
+- NO manual refresh
+- Success: user feels the system is alive and reacting in real time
+
+### TASK 2 — LIVE SYSTEM VALIDATION (NON-NEGOTIABLE)
+Prove this full flow for ONE live session:
+Transcript → Canonical Segment → Pipeline → Intelligence Feed → Customer Dashboard → Customer Action → Database
+- Feed item appears live, no refresh needed
+- Action button works, row written to customer_actions
+- If ANY step fails → STOP and fix
+
+### TASK 3 — CUSTOMER ROLE ENFORCEMENT
+- Only role = customer can access /customer/dashboard
+- Operators must NOT use customer dashboard
+- Maintain org_id filtering
+
+### TASK 4 — PROFILE FOUNDATION (NOT FULL BUILD)
+- User role awareness in UI
+- Profile tab placeholder
+- Future hook for personalisation only
+- DO NOT build behavioural tracking, prediction logic, or full profile system
+
+### SYSTEM RISK
+Silent failure between: transcript → pipeline → feed → UI
+Every stage must be observable, verifiable, consistent.
+
+### SUCCESS CONDITION
+Phase 3 is complete when:
+- Live session runs
+- Intelligence appears in real time
+- Customer can act on it
+- Data persists correctly
+
+### PRODUCT TRUTH
+Operator dashboard = runs the system
+Customer dashboard = proves the system
