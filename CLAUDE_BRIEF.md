@@ -39,6 +39,8 @@ Customer dashboard = proves the system
 ---
 
 ## ARCHITECTURE — THE PIPELINE (NON-NEGOTIABLE ORDER)
+Transcript → Canonical Segment → Segment Orchestrator → AI Pipelines (Compliance P0, Sentiment P1, Correlation P2) → Governance Gateway → Intelligence Feed → Customer Dashboard → Customer Action → Database
+
 Every stage must be: observable, verifiable, consistent.
 Primary risk: silent failure between stages.
 If ANY stage fails → STOP and fix before continuing.
