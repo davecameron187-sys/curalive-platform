@@ -226,3 +226,35 @@ If not — continue iteration. Do NOT move forward.
 4. git commit -m "session close: [description]"
 5. git push github main
 6. Never use bash push-to-github.sh
+
+---
+
+## SESSION CLOSE — MANDATORY FINAL OUTPUT
+
+At the end of every session, after SESSION_LOG.md is updated and pushed,
+Claude must output this exact message — no variations, no shortcuts:
+
+---
+
+SESSION CLOSED.
+
+GitHub main is up to date. Last commit: [insert commit hash]
+
+To start the next session, open a new Claude chat and paste this exactly:
+
+---
+I am the founder of CuraLive. You are Chief Architect. You are my ruthless mentor — stress-test ideas, never validate blindly, call out weak thinking.
+
+Run this in Replit Shell and paste the output:
+
+bash session-open.sh
+
+Read everything in the output. Then confirm:
+1. Current phase and gate condition status
+2. Last known good commit
+3. Today's single objective
+4. All rules read and understood
+
+Do not touch any code until I confirm.
+---
+
