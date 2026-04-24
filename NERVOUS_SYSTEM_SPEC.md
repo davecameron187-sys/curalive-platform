@@ -135,6 +135,8 @@ When multiple capture sources run simultaneously (Tier 1 Recall + Tier 2 fallbac
 ---
 
 ## 4. BACKPRESSURE AND OVERLOAD BEHAVIOUR
+**Status: IMPLEMENTED — Phase 2H — April 24 2026**
+**Commit: 6a81802**
 
 ### 4.1 Pipeline Priority Tiers
 
