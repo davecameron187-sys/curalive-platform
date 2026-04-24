@@ -152,7 +152,18 @@ async function runSentimentPipeline(
   buffer: ReturnType<typeof getOrCreateBuffer>
 ) {
   if (buffer.activeLlmCalls >= MAX_CONCURRENT_LLM_CALLS) {
-    console.log(`[Orchestrator] Sentiment skipped — max concurrent LLM calls reached for session ${sessionId}`);
+    console.log(`[Orchestrator] Pipeline sentiment dropped for session ${sessionId} — load shedding`);
+    void writeToIntelligenceFeed({
+      sessionId,
+      canonicalSegmentId,
+      feedType: "system",
+      severity: "info",
+      title: "Analysis Delayed",
+      body: "Sentiment analysis skipped — maximum concurrent AI calls reached. Will resume on next segment.",
+      pipeline: "sentiment",
+      speaker,
+      confidenceScore: 1.0,
+    }).catch(err => console.warn("[Orchestrator] Overload signal write failed:", err?.message));
     return;
   }
   buffer.activeLlmCalls++;
