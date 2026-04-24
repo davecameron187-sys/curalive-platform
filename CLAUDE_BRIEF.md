@@ -258,3 +258,13 @@ Read everything in the output. Then confirm:
 Do not touch any code until I confirm.
 ---
 
+
+---
+
+## CRITICAL EXECUTION RULE — NON-NEGOTIABLE
+
+DO NOT START NEW FEATURES UNTIL TODAY'S OBJECTIVE IS COMPLETE AND VALIDATED.
+
+One objective per session.
+Validated means tested, confirmed working, and logged.
+Not assumed. Not partially working. CONFIRMED.
