@@ -306,12 +306,12 @@ export async function processSegment(params: {
 
   console.log(`[Orchestrator] Session ${sessionId} — segment ${segmentIndex} received (buffer: ${totalSegments})`);
 
-  // Pipeline 1 — Compliance (every segment, fire-and-forget, non-blocking)
+  // P0 — Compliance: always runs, never drops
   void runCompliancePipeline(sessionId, canonicalSegmentId, text, speaker).catch(err =>
     console.warn(`[Orchestrator] Compliance pipeline failed:`, err?.message)
   );
 
-  // Pipeline 2 — Sentiment (every 5 segments)
+  // P1 — Sentiment: real-time preferred, drops under load with operator signal
   if (totalSegments % SENTIMENT_INTERVAL === 0 && totalSegments > buffer.lastSentimentAt) {
     const recentText = buffer.segments
       .slice(-SENTIMENT_INTERVAL)
@@ -322,7 +322,23 @@ export async function processSegment(params: {
     );
   }
 
-  void runCorrelationEngine(sessionId, canonicalSegmentId, buffer).catch(err =>
-    console.warn("[Correlation] Failed:", err?.message)
-  );
+  // P2 — Correlation: best effort, drops under load with operator signal
+  if (globalActiveLlmCalls < MAX_GLOBAL_LLM_CALLS && buffer.activeLlmCalls < MAX_CONCURRENT_LLM_CALLS) {
+    void runCorrelationEngine(sessionId, canonicalSegmentId, buffer).catch(err =>
+      console.warn("[Correlation] Failed:", err?.message)
+    );
+  } else {
+    console.log(`[Orchestrator] Pipeline correlation dropped for session ${sessionId} — load shedding`);
+    void writeToIntelligenceFeed({
+      sessionId,
+      canonicalSegmentId,
+      feedType: "system",
+      severity: "info",
+      title: "Analysis Delayed",
+      body: "Correlation analysis skipped — maximum concurrent AI calls reached. Will resume on next segment.",
+      pipeline: "correlation",
+      speaker,
+      confidenceScore: 1.0,
+    }).catch(err => console.warn("[Orchestrator] Overload signal write failed:", err?.message));
+  }
 }
