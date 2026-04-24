@@ -186,6 +186,7 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: varchar("role", { length: 64 }).default("user").notNull(),
+  orgId: integer("orgId").default(1).notNull(),
   // Profile customisation fields
   jobTitle: varchar("jobTitle", { length: 255 }),
   organisation: varchar("organisation", { length: 255 }),
