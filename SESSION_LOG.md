@@ -139,6 +139,27 @@ After Phase 2C confirmed:
 
 ---
 
+## SESSION: April 24 2026 — Phase 2H COMPLETE
+
+### Last Known Good Commit: 405d49e
+
+### What Was Built
+1. Task 1 — Overload signalling: sentiment pipeline now writes to intelligence_feed when dropped
+2. Task 2 — Pipeline priority tiers and global LLM concurrency limit (MAX_GLOBAL_LLM_CALLS = 20)
+3. Task 3 — Degradation order enforced: P0 never drops, P1 drops with signal, P2 drops with signal
+4. Task 4 — Fail-safe confirmed: all overload writers have .catch handlers
+5. Task 5 — NERVOUS_SYSTEM_SPEC.md Section 4 marked as implemented
+
+### Gate Condition — MET ✅
+- Pipeline prioritisation logic active ✅
+- Degradation modes defined ✅
+- Fail-safe output rules implemented ✅
+- NERVOUS_SYSTEM_SPEC.md updated ✅
+
+### Next Phase: Phase 3 — Customer Dashboard
+
+---
+
 ## Raw URLs For Session Opener
 Master Blueprint: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/MASTER_BLUEPRINT.md
 Session Brief: https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/main/CURALIVE_BRIEF.md
