@@ -13,6 +13,27 @@ import { evaluateOutput } from "./DeterministicGovernanceGateway";
 // Maximum concurrent LLM calls per session
 const MAX_CONCURRENT_LLM_CALLS = 3;
 
+// Maximum concurrent LLM calls across all sessions
+const MAX_GLOBAL_LLM_CALLS = 20;
+
+// Pipeline priority tiers (per NERVOUS_SYSTEM_SPEC.md Section 4)
+const PIPELINE_PRIORITY = {
+  P0: 0,
+  P1: 1,
+  P2: 2,
+  P3: 3,
+};
+
+// Max wait times per tier before drop (ms)
+const TIER_MAX_WAIT = {
+  P1: 10_000,
+  P2: 30_000,
+  P3: 300_000,
+};
+
+// Global LLM call counter across all sessions
+let globalActiveLlmCalls = 0;
+
 // Pipeline trigger thresholds
 const SENTIMENT_INTERVAL = 1;
 const SUMMARY_INTERVAL = 10;
