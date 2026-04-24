@@ -172,7 +172,7 @@ async function runSentimentPipeline(
   speaker: string,
   buffer: ReturnType<typeof getOrCreateBuffer>
 ) {
-  if (buffer.activeLlmCalls >= MAX_CONCURRENT_LLM_CALLS) {
+if (buffer.activeLlmCalls >= MAX_CONCURRENT_LLM_CALLS || globalActiveLlmCalls >= MAX_GLOBAL_LLM_CALLS) {
     console.log(`[Orchestrator] Pipeline sentiment dropped for session ${sessionId} — load shedding`);
     void writeToIntelligenceFeed({
       sessionId,
