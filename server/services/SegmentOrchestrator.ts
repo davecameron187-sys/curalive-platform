@@ -187,7 +187,8 @@ async function runSentimentPipeline(
     }).catch(err => console.warn("[Orchestrator] Overload signal write failed:", err?.message));
     return;
   }
-  buffer.activeLlmCalls++;
+    globalActiveLlmCalls++;
+    buffer.activeLlmCalls++;
   try {
     const sentiment = await scoreSentiment(recentText);
     buffer.lastSentimentAt = buffer.segments.length;
@@ -207,6 +208,7 @@ async function runSentimentPipeline(
   } catch (err: any) {
     console.warn(`[Orchestrator] Sentiment pipeline error:`, err?.message);
   } finally {
+    globalActiveLlmCalls--;
     buffer.activeLlmCalls--;
   }
 }
