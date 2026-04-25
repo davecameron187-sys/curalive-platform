@@ -112,7 +112,7 @@ export default function CustomerDashboard() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<any>(null);
 
-  const sessionsQuery = trpc.customerDashboard.getSessions.useQuery();
+  const sessionsQuery = trpc.customerDashboard.getSessions.useQuery(undefined, { refetchInterval: 5000 });
   const feedQuery = trpc.customerDashboard.getFeed.useQuery(
     { sessionId: selectedSessionId! },
     { enabled: !!selectedSessionId }
