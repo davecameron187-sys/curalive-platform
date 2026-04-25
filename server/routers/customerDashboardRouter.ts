@@ -31,7 +31,7 @@ export const customerDashboardRouter = router({
         const [rows] = await rawSql(
           `SELECT f.id, f.session_id, f.feed_type, f.severity, f.title, f.body, f.pipeline, f.created_at
            FROM intelligence_feed f
-           JOIN shadow_sessions s ON s.session_id = f.session_id
+           JOIN shadow_sessions s ON s.id = replace(f.session_id, 'shadow-', '')::integer
            WHERE f.session_id = $1
            AND s.org_id = $2
            ORDER BY f.created_at ASC
