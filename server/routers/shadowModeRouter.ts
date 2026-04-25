@@ -266,7 +266,7 @@ export const shadowModeRouter = router({
           `INSERT INTO shadow_sessions (session_id, client_name, event_name, event_type, platform, meeting_url, status, notes, org_id)
            VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, 'pending', $6, $7)
            RETURNING *`,
-          [input.clientName, input.eventName, input.eventType, input.platform, input.meetingUrl, input.notes ?? null, input.orgId]
+          [input.clientName, input.eventName, input.eventType, input.platform, input.meetingUrl, input.notes ?? null, ctx.user?.orgId ?? 1]
         );
         inserted = insertRows[0];
       } catch (insertErr: any) {
