@@ -11,7 +11,7 @@ async function run() {
 
   const [rows] = await rawSql(
     "INSERT INTO canonical_event_segments (session_id, speaker, text, segment_index, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id",
-    ["shadow-164", "CEO", "We are projecting strong forward guidance for Q2 2026. Revenue growth remains on track.", 9999]
+    [164, "CEO", "We are projecting strong forward guidance for Q2 2026. Revenue growth remains on track.", 9999]
   );
 
   const canonicalSegmentId = rows?.[0]?.id;
