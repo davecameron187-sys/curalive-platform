@@ -91,6 +91,7 @@ import AutonomousIntervention from "./pages/AutonomousIntervention";
 import TaggedMetricsDashboard from "./pages/TaggedMetricsDashboard";
 import ShadowMode from "./pages/ShadowMode";
 import CustomerDashboard from "./pages/CustomerDashboard";
+import CustomerRoute from "./components/CustomerRoute";
 import HealthGuardian from "./pages/HealthGuardian";
 import ComplianceEngineDashboard from "./pages/ComplianceEngineDashboard";
 import BastionPartner from "./pages/BastionPartner";
@@ -235,7 +236,7 @@ function Router() {
       <Route path="/qa/:accessCode" component={AttendeeQA} />
       <Route path="/embed/qa/:accessCode" component={EmbeddableQaWidget} />
       <Route path="/shadow-mode"><Redirect to="/?tab=shadow-mode" /></Route>
-      <Route path="/customer/dashboard">{() => <RequireAuth requiredRole="customer"><CustomerDashboard /></RequireAuth>}</Route>
+      <Route path="/customer/dashboard">{() => <CustomerRoute><CustomerDashboard /></CustomerRoute>}</Route>
       <Route path="/shadow-mode/"><Redirect to="/?tab=shadow-mode" /></Route>
       <Route path="/health-guardian" component={HealthGuardian} />
       <Route path="/compliance-engine" component={ComplianceEngineDashboard} />
