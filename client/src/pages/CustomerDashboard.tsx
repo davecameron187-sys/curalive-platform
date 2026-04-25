@@ -195,10 +195,12 @@ export default function CustomerDashboard() {
   const decisions = governanceQuery.data ?? [];
 
   useEffect(() => {
-    if (sessions.length > 0 && !selectedSessionId) {
+    if (sessions.length > 0) {
       const first = sessions[0];
-      setSelectedSessionId(first.session_id);
-      setSelectedSession(first);
+      if (!selectedSessionId || (first.session_id !== selectedSessionId && (first.status === "active" || first.status === "live"))) {
+        setSelectedSessionId(first.session_id);
+        setSelectedSession(first);
+      }
     }
   }, [sessions]);
 
