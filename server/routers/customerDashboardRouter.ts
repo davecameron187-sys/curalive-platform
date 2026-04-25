@@ -1,11 +1,21 @@
 // @ts-nocheck
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../_core/trpc";
 import { rawSql } from "../db";
 
-export const customerDashboardRouter = router({
+const customerProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user?.role !== "customer") {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Customer access required",
+    });
+  }
+  return next({ ctx });
+});
 
-  getSessions: protectedProcedure
+export const customerDashboardRouter = router({
+  getSessions: customerProcedure
     .query(async ({ ctx }) => {
       try {
         const orgId = ctx.user?.orgId ?? 1;
@@ -22,8 +32,7 @@ export const customerDashboardRouter = router({
         return [];
       }
     }),
-
-  getFeed: protectedProcedure
+  getFeed: customerProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
       try {
@@ -43,8 +52,7 @@ export const customerDashboardRouter = router({
         return [];
       }
     }),
-
-  getGovernance: protectedProcedure
+  getGovernance: customerProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
       try {
@@ -64,8 +72,7 @@ export const customerDashboardRouter = router({
         return [];
       }
     }),
-
-  recordAction: protectedProcedure
+  recordAction: customerProcedure
     .input(z.object({
       sessionId: z.number(),
       targetType: z.string(),
@@ -86,5 +93,4 @@ export const customerDashboardRouter = router({
         return { success: false };
       }
     }),
-
 });
