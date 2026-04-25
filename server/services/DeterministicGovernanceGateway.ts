@@ -11,6 +11,7 @@
 
 import { rawSql } from "../db";
 import crypto from "crypto";
+import { publishFeedItem } from "./IntelligenceFeedPublisher";
 
 // Gateway configuration per pipeline
 const GATEWAY_CONFIG: Record<string, {
@@ -283,6 +284,16 @@ export async function evaluateOutput(params: {
     );
 
     console.log(`[Gateway] Session ${params.sessionId} — ${params.pipeline} → ${gatewayDecision.decision}${gatewayDecision.reasonCode ? ` (${gatewayDecision.reasonCode})` : ""}`);
+    void publishFeedItem({
+      sessionId: params.sessionId,
+      feedItemId: params.intelligenceFeedId,
+      feedType: params.feedType,
+      severity: "medium",
+      title: params.title,
+      body: params.body,
+      pipeline: params.pipeline,
+      decision: gatewayDecision.decision,
+    }).catch(err => console.error("[FeedPublisher] publish failed:", err?.message));
 
     return gatewayDecision.decision;
   } catch (err: any) {

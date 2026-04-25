@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import * as Ably from "ably";
 import { trpc } from "../lib/trpc";
 
 const TABS = ["Live Events", "Daily Intelligence", "Post-Event", "Governance", "Profile"];
@@ -114,16 +115,68 @@ export default function CustomerDashboard() {
   const sessionsQuery = trpc.customerDashboard.getSessions.useQuery();
   const feedQuery = trpc.customerDashboard.getFeed.useQuery(
     { sessionId: selectedSessionId! },
-    { enabled: !!selectedSessionId, refetchInterval: 10000 }
+    { enabled: !!selectedSessionId }
   );
   const governanceQuery = trpc.customerDashboard.getGovernance.useQuery(
     { sessionId: selectedSessionId! },
     { enabled: !!selectedSessionId }
   );
   const recordAction = trpc.customerDashboard.recordAction.useMutation();
+  const [liveItems, setLiveItems] = useState<any[]>([]);
+  const ablyRef = useRef<Ably.Realtime | null>(null);
+  const channelRef = useRef<Ably.RealtimeChannel | null>(null);
+
+  useEffect(() => {
+    if (!selectedSession?.ably_channel) return;
+
+    if (channelRef.current) {
+      channelRef.current.unsubscribe();
+      channelRef.current = null;
+    }
+    if (ablyRef.current) {
+      ablyRef.current.close();
+      ablyRef.current = null;
+    }
+
+    setLiveItems([]);
+
+    const ably = new Ably.Realtime({
+      authUrl: "/api/ably-token",
+    });
+    ablyRef.current = ably;
+
+    const channel = ably.channels.get(`curalive-event-${selectedSession.ably_channel}`);
+    channelRef.current = channel;
+
+    channel.subscribe("intelligence_feed", (message) => {
+      try {
+        const item = typeof message.data === "string"
+          ? JSON.parse(message.data)
+          : message.data;
+        setLiveItems(prev => {
+          if (prev.some(e => e.id === item.id)) return prev;
+          const updated = [item, ...prev];
+          updated.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          return updated;
+        });
+      } catch (err) {
+        console.error("[Ably] Failed to parse message:", err);
+      }
+    });
+
+    return () => {
+      channel.unsubscribe();
+      ably.close();
+    };
+  }, [selectedSession?.ably_channel]);
 
   const sessions = sessionsQuery.data ?? [];
-  const feedItems = feedQuery.data ?? [];
+  const dbItems = feedQuery.data ?? [];
+  const feedItems = [...liveItems, ...dbItems].reduce((acc: any[], item: any) => {
+    if (acc.some(e => e.id === item.id)) return acc;
+    acc.push(item);
+    return acc;
+  }, []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const decisions = governanceQuery.data ?? [];
 
   useEffect(() => {

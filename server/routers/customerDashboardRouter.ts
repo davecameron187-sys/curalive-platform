@@ -10,7 +10,7 @@ export const customerDashboardRouter = router({
       try {
         const orgId = ctx.user?.orgId ?? 1;
         const [rows] = await rawSql(
-          `SELECT id, session_id, client_name, event_name, event_type, status, created_at
+          `SELECT id, session_id, client_name, event_name, event_type, status, created_at, ably_channel
            FROM shadow_sessions
            WHERE org_id = $1
            ORDER BY created_at DESC
