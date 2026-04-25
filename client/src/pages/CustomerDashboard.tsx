@@ -201,9 +201,9 @@ export default function CustomerDashboard() {
   useEffect(() => {
     if (sessions.length > 0) {
       const newest = sessions[0];
-      if (!selectedSessionId || newest.session_id !== selectedSessionId) {
-        console.log("[CustomerDashboard] selectedSessionId:", newest.session_id);
-        setSelectedSessionId(newest.session_id);
+      if (!selectedSessionId || `shadow-${newest.id}` !== selectedSessionId) {
+        console.log("[CustomerDashboard] selectedSessionId:", `shadow-${newest.id}`);
+        setSelectedSessionId(`shadow-${newest.id}`);
         setSelectedSession(newest);
       }
     }
@@ -280,7 +280,7 @@ export default function CustomerDashboard() {
               {sessions.map((s: any) => (
                 <div
                   key={s.id}
-                  onClick={() => { setSelectedSessionId(s.session_id); setSelectedSession(s); }}
+                  onClick={() => { setSelectedSessionId(`shadow-${s.id}`); setSelectedSession(s); }}
                   className={`px-4 py-3 cursor-pointer border-b border-gray-900 hover:bg-gray-900 transition-colors ${
                     selectedSessionId === s.session_id ? "bg-gray-900 border-l-2 border-l-blue-500" : ""
                   }`}
