@@ -141,9 +141,17 @@ export default function CustomerDashboard() {
 
     setLiveItems([]);
 
-    const tokenResponse = await fetch("/api/ably-token");
-    const tokenRequest = await tokenResponse.json();
-    const ably = new (Ably as any).Realtime({ token: tokenRequest });
+    const ably = new (Ably as any).Realtime({
+      authCallback: async (_data: any, callback: any) => {
+        try {
+          const tokenResponse = await fetch("/api/ably-token");
+          const tokenRequest = await tokenResponse.json();
+          callback(null, tokenRequest);
+        } catch (err) {
+          callback(err, null);
+        }
+      },
+    });
     ablyRef.current = ably;
 
     const channel = ably.channels.get(`curalive-event-${selectedSession.ably_channel}`);
