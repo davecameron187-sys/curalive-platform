@@ -379,6 +379,7 @@ export default function CustomerDashboard() {
                   item={item}
                   sessionId={selectedSessionId}
                   onAction={handleAction}
+                  actionStates={actionStates}
                 />
               ))}
             </div>
