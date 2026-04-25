@@ -1,6 +1,10 @@
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getAblyClient } from "../_core/ably";
+// SECURITY FLAG: Ably token is not scoped to role or channel.
+// Any authenticated user can obtain a token.
+// Must be restricted before production.
+// Follow-up task: Phase 3 Task 4 — Ably Capability/Channel Scoping.
 
 /**
  * Ably Router — handles real-time messaging and token generation
