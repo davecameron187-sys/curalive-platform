@@ -235,7 +235,7 @@ function Router() {
       <Route path="/qa/:accessCode" component={AttendeeQA} />
       <Route path="/embed/qa/:accessCode" component={EmbeddableQaWidget} />
       <Route path="/shadow-mode"><Redirect to="/?tab=shadow-mode" /></Route>
-<Route path="/customer/dashboard" component={CustomerDashboard} />
+      <Route path="/customer/dashboard">{() => <RequireAuth requiredRole="customer"><CustomerDashboard /></RequireAuth>}</Route>
       <Route path="/shadow-mode/"><Redirect to="/?tab=shadow-mode" /></Route>
       <Route path="/health-guardian" component={HealthGuardian} />
       <Route path="/compliance-engine" component={ComplianceEngineDashboard} />
