@@ -32,7 +32,7 @@ function RiskBadge({ level }: { level: string }) {
   );
 }
 
-function FeedCard({ item, sessionId, onAction, actionStates }: { item: any; sessionId: string | null; onAction: (type: "acknowledge" | "follow_up", id: number) => void; actionStates: Record<string, string> }) {
+function FeedCard({ item, sessionId, onAction, actionStates = {} }: { item: any; sessionId: string | null; onAction: (type: "acknowledge" | "follow_up", id: number) => void; actionStates?: Record<string, string> }) {
   const typeColors: Record<string, string> = {
     compliance: "border-l-red-500",
     sentiment: "border-l-blue-500",
