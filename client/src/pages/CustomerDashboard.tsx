@@ -32,7 +32,7 @@ function RiskBadge({ level }: { level: string }) {
   );
 }
 
-function FeedCard({ item, sessionId, onAction }: { item: any; sessionId: string | null; onAction: (type: string, id: number) => void }) {
+function FeedCard({ item, sessionId, onAction, actionStates }: { item: any; sessionId: string | null; onAction: (type: "acknowledge" | "follow_up", id: number) => void; actionStates: Record<string, string> }) {
   const typeColors: Record<string, string> = {
     compliance: "border-l-red-500",
     sentiment: "border-l-blue-500",
@@ -60,15 +60,29 @@ function FeedCard({ item, sessionId, onAction }: { item: any; sessionId: string 
       <div className="flex gap-2">
         <button
           onClick={() => onAction("acknowledge", item.id)}
-          className="text-xs px-3 py-1.5 bg-blue-900/50 hover:bg-blue-800 text-blue-300 border border-blue-700 rounded transition-colors font-medium"
+          disabled={actionStates[`${item.id}:acknowledge`] === "loading" || actionStates[`${item.id}:acknowledge`] === "success"}
+          className={`text-xs px-3 py-1.5 border rounded transition-colors font-medium ${
+            actionStates[`${item.id}:acknowledge`] === "success"
+              ? "bg-green-900/50 text-green-300 border-green-700 cursor-default"
+              : actionStates[`${item.id}:acknowledge`] === "loading"
+              ? "bg-gray-800 text-gray-500 border-gray-700 cursor-wait"
+              : "bg-blue-900/50 hover:bg-blue-800 text-blue-300 border-blue-700"
+          }`}
         >
-          Acknowledge
+          {actionStates[`${item.id}:acknowledge`] === "loading" ? "..." : actionStates[`${item.id}:acknowledge`] === "success" ? "Acknowledged ✓" : "Acknowledge"}
         </button>
         <button
           onClick={() => onAction("follow_up", item.id)}
-          className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-600 rounded transition-colors font-medium"
+          disabled={actionStates[`${item.id}:follow_up`] === "loading" || actionStates[`${item.id}:follow_up`] === "success"}
+          className={`text-xs px-3 py-1.5 border rounded transition-colors font-medium ${
+            actionStates[`${item.id}:follow_up`] === "success"
+              ? "bg-green-900/50 text-green-300 border-green-700 cursor-default"
+              : actionStates[`${item.id}:follow_up`] === "loading"
+              ? "bg-gray-800 text-gray-500 border-gray-700 cursor-wait"
+              : "bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-600"
+          }`}
         >
-          Follow Up
+          {actionStates[`${item.id}:follow_up`] === "loading" ? "..." : actionStates[`${item.id}:follow_up`] === "success" ? "Followed Up ✓" : "Follow Up"}
         </button>
       </div>
     </div>
@@ -124,6 +138,8 @@ export default function CustomerDashboard() {
   const recordAction = trpc.customerDashboard.recordAction.useMutation();
   const [liveItems, setLiveItems] = useState<any[]>([]);
   const [ablyStatus, setAblyStatus] = useState<string>("disconnected");
+  const [actionStates, setActionStates] = useState<Record<string, "loading" | "success" | "error">>({});
+  const actionKey = (itemId: number, actionType: string) => `${itemId}:${actionType}`;
   const ablyRef = useRef<Ably.Realtime | null>(null);
   const channelRef = useRef<Ably.RealtimeChannel | null>(null);
 
@@ -209,14 +225,33 @@ export default function CustomerDashboard() {
     }
   }, [sessions]);
 
-  const handleAction = (actionType: string, itemId: number) => {
-    if (!selectedSessionId) return;
-    recordAction.mutate({
-      sessionId: selectedSession?.id ?? 0,
-      targetType: "feed_item",
-      targetId: itemId,
-      actionType: actionType as "acknowledge" | "follow_up",
-    });
+  const handleAction = (actionType: "acknowledge" | "follow_up", itemId: number) => {
+    if (!selectedSession?.id) return;
+    const key = actionKey(itemId, actionType);
+    setActionStates(prev => ({ ...prev, [key]: "loading" }));
+    recordAction.mutate(
+      {
+        sessionId: selectedSession.id,
+        targetType: "feed_item",
+        targetId: itemId,
+        actionType,
+      },
+      {
+        onSuccess: () => {
+          setActionStates(prev => ({ ...prev, [key]: "success" }));
+        },
+        onError: () => {
+          setActionStates(prev => ({ ...prev, [key]: "error" }));
+          setTimeout(() => {
+            setActionStates(prev => {
+              const next = { ...prev };
+              delete next[key];
+              return next;
+            });
+          }, 2500);
+        },
+      }
+    );
   };
 
   const riskLevel = feedItems.some((i: any) => i.severity === "high" || i.severity === "critical") ? "Elevated" : "Normal";
