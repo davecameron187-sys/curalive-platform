@@ -144,13 +144,13 @@ export default function CustomerDashboard() {
 
     setAblyStatus("connecting");
     const ably = new (Ably as any).Realtime({
-      authCallback: async (_data: any, callback: any) => {
+      authCallback: async (_tokenParams: any, callback: any) => {
         try {
-          const tokenResponse = await fetch("/api/ably-token");
-          const tokenRequest = await tokenResponse.json();
-          callback(null, tokenRequest);
+          const res = await fetch("/api/ably-token-string");
+          const { token } = await res.json();
+          callback(null, token);
         } catch (err) {
-          callback(err, null);
+          callback(err as Error, null);
         }
       },
     });

@@ -1314,6 +1314,27 @@ async function startServer() {
     }
   });
 
+  app.get("/api/ably-token-string", async (req, res) => {
+    const apiKey = process.env.ABLY_API_KEY;
+    if (!apiKey) { res.status(503).json({ error: "Ably not configured" }); return; }
+    try {
+      const clientId = (req.query.clientId as string) || "customer-user";
+      const Ably = await import("ably");
+      const client = new Ably.Rest(apiKey);
+      const token = await client.auth.requestToken({
+        clientId,
+        capability: {
+          "curalive-event-*": ["subscribe", "publish", "presence", "history"],
+        },
+        ttl: 3600000,
+      });
+      res.json({ token: token.token });
+    } catch (e) {
+      console.error("[Ably token-string]", e);
+      res.status(500).json({ error: "Token generation failed" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
