@@ -241,3 +241,29 @@ Phase 3 is complete when:
 ### PRODUCT TRUTH
 Operator dashboard = runs the system
 Customer dashboard = proves the system
+
+## Session: April 25 2026
+### Objective: Phase 3 Task 2 — Real-Time Ably Integration
+
+### Completed
+- Created IntelligenceFeedPublisher.ts — publishes to Ably after governance decision
+- Wired DeterministicGovernanceGateway to call publishFeedItem after audit trail
+- Added ably_channel to customerDashboardRouter getSessions query
+- Fixed intelligence_feed JOIN — now uses shadow-{id} format correctly
+- Fixed session identifier — frontend now uses shadow-{id} consistently
+- Added /api/ably-token-string endpoint returning real token string
+- Fixed Ably auth on customer dashboard using authCallback
+- Fixed org_id set on session creation in shadowModeRouter
+- Added Ably connection status indicator to customer dashboard
+- Added deterministic newest-session auto-select with 5s refetch
+- Added actionStates to FeedCard — loading, success, disabled states
+- Full pipeline validated end to end — real-time feed cards confirmed
+
+### Validation Confirmed
+- Transcript → Pipeline → intelligence_feed → Governance → Ably publish → Customer dashboard → Feed card appears instantly
+- Acknowledge and Follow Up buttons write to customer_actions
+- DB confirmed rows written correctly
+
+### Last Known Good Commit: a855e02
+
+### Next: Phase 3 Task 3 — Customer Role Enforcement
