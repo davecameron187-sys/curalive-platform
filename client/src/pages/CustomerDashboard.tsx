@@ -140,8 +140,10 @@ export default function CustomerDashboard() {
 
     setLiveItems([]);
 
-    const ably = new Ably.Realtime({
-      authUrl: "/api/ably-token",
+    const SESSION_ID = selectedSession?.id;
+    const ably = new (Ably as any).Realtime({
+      key: undefined,
+      authUrl: `/api/ably-token?clientId=customer-${SESSION_ID}`,
     });
     ablyRef.current = ably;
 
