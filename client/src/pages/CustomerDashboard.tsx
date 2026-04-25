@@ -128,6 +128,7 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     if (!selectedSession?.ably_channel) return;
+    (async () => {
 
     if (channelRef.current) {
       channelRef.current.unsubscribe();
@@ -140,11 +141,9 @@ export default function CustomerDashboard() {
 
     setLiveItems([]);
 
-    const SESSION_ID = selectedSession?.id;
-    const ably = new (Ably as any).Realtime({
-      key: undefined,
-      authUrl: `/api/ably-token?clientId=customer-${SESSION_ID}`,
-    });
+    const tokenResponse = await fetch("/api/ably-token");
+    const tokenRequest = await tokenResponse.json();
+    const ably = new (Ably as any).Realtime({ token: tokenRequest });
     ablyRef.current = ably;
 
     const channel = ably.channels.get(`curalive-event-${selectedSession.ably_channel}`);
@@ -166,9 +165,10 @@ export default function CustomerDashboard() {
       }
     });
 
+    })();
     return () => {
-      channel.unsubscribe();
-      ably.close();
+      if (channelRef.current) channelRef.current.unsubscribe();
+      if (ablyRef.current) ablyRef.current.close();
     };
   }, [selectedSession?.ably_channel]);
 
