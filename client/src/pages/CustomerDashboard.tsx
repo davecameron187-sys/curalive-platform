@@ -159,10 +159,13 @@ export default function CustomerDashboard() {
     ably.connection.on("failed", () => setAblyStatus("failed"));
     ably.connection.on("disconnected", () => setAblyStatus("disconnected"));
 
-    const channel = ably.channels.get(`curalive-event-${selectedSession.ably_channel}`);
+    const channelName = `curalive-event-${selectedSession.ably_channel}`;
+    console.log("[CustomerDashboard] subscribing to channel:", channelName);
+    const channel = ably.channels.get(channelName);
     channelRef.current = channel;
 
     channel.subscribe("intelligence_feed", (message) => {
+      console.log("[CustomerDashboard] Ably message received:", message.data);
       try {
         const item = typeof message.data === "string"
           ? JSON.parse(message.data)
@@ -180,6 +183,7 @@ export default function CustomerDashboard() {
 
     })();
     return () => {
+      console.log("[CustomerDashboard] unsubscribing from channel:", selectedSession.ably_channel);
       if (channelRef.current) channelRef.current.unsubscribe();
       if (ablyRef.current) ablyRef.current.close();
     };
@@ -196,10 +200,11 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     if (sessions.length > 0) {
-      const first = sessions[0];
-      if (!selectedSessionId || (first.session_id !== selectedSessionId && (first.status === "active" || first.status === "live"))) {
-        setSelectedSessionId(first.session_id);
-        setSelectedSession(first);
+      const newest = sessions[0];
+      if (!selectedSessionId || newest.session_id !== selectedSessionId) {
+        console.log("[CustomerDashboard] selectedSessionId:", newest.session_id);
+        setSelectedSessionId(newest.session_id);
+        setSelectedSession(newest);
       }
     }
   }, [sessions]);
