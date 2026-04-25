@@ -267,3 +267,33 @@ Customer dashboard = proves the system
 ### Last Known Good Commit: a855e02
 
 ### Next: Phase 3 Task 3 — Customer Role Enforcement
+
+## Session: April 25 2026
+
+### Objective: Phase 3 Task 3 — Customer Role Enforcement + Task 3B Validation
+
+### Completed
+- customerProcedure created in customerDashboardRouter.ts
+- All 4 procedures protected: getSessions, getFeed, getGovernance, recordAction
+- CustomerRoute component created — redirects non-customers to /
+- /customer/dashboard wrapped with CustomerRoute in App.tsx
+- RequireAuth removed from customer route — does not support customer role
+- Ably token security flag added to ably.ts
+- Operator redirect confirmed working in browser — negative validation PASSED
+- auth.me updated in routers.ts — now reads real DB user from session cookie in dev bypass mode
+- devLoginRouter.ts created then deleted — never registered, never deployed
+
+### Blocked
+- Positive customer login validation blocked — OAuth not configured on Render
+- No mechanism to issue customer session token without OAuth or locked file change
+- Locked file discipline maintained — index.ts not touched
+
+### Follow-up Task
+- Phase 3 Task 3B — Configure proper customer authentication on Render
+- Complete positive customer validation once OAuth or customer session path exists
+
+### Replit Auto-Commits Detected
+- R10 noted — Replit committed autonomously during session multiple times
+
+### Last Known Good Commit: 85b4bdc
+### Next: Phase 3 Task 3B — OAuth/customer login configuration
