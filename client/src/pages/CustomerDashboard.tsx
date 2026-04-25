@@ -123,6 +123,7 @@ export default function CustomerDashboard() {
   );
   const recordAction = trpc.customerDashboard.recordAction.useMutation();
   const [liveItems, setLiveItems] = useState<any[]>([]);
+  const [ablyStatus, setAblyStatus] = useState<string>("disconnected");
   const ablyRef = useRef<Ably.Realtime | null>(null);
   const channelRef = useRef<Ably.RealtimeChannel | null>(null);
 
@@ -141,6 +142,7 @@ export default function CustomerDashboard() {
 
     setLiveItems([]);
 
+    setAblyStatus("connecting");
     const ably = new (Ably as any).Realtime({
       authCallback: async (_data: any, callback: any) => {
         try {
@@ -153,6 +155,9 @@ export default function CustomerDashboard() {
       },
     });
     ablyRef.current = ably;
+    ably.connection.on("connected", () => setAblyStatus("connected"));
+    ably.connection.on("failed", () => setAblyStatus("failed"));
+    ably.connection.on("disconnected", () => setAblyStatus("disconnected"));
 
     const channel = ably.channels.get(`curalive-event-${selectedSession.ably_channel}`);
     channelRef.current = channel;
@@ -286,6 +291,14 @@ export default function CustomerDashboard() {
             {/* CENTRE — Intelligence Feed */}
             <div className="flex-1 overflow-y-auto p-6 bg-gray-950">
               <LiveEventsBanner session={selectedSession} />
+              <div className={`text-xs px-3 py-1 rounded mb-4 ${
+                ablyStatus === "connected" ? "bg-green-900/30 text-green-400 border border-green-700" :
+                ablyStatus === "connecting" ? "bg-yellow-900/30 text-yellow-400 border border-yellow-700" :
+                ablyStatus === "failed" ? "bg-red-900/30 text-red-400 border border-red-700" :
+                "bg-gray-900 text-gray-500 border border-gray-700"
+              }`}>
+                Ably: {ablyStatus}
+              </div>
 
               {/* KPI Strip */}
               {selectedSessionId && (
