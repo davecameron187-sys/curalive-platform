@@ -8,7 +8,7 @@ import { clerkMiddleware, getCurrentUser } from "./auth";
 
 export function registerOAuthRoutes(app: Express) {
   // Register Clerk middleware scoped to /api only
-  app.use("/api", clerkMiddleware());
+  app.use("/api", clerkMiddleware({ publishableKey: process.env.CLERK_PUBLISHABLE_KEY, secretKey: process.env.CLERK_SECRET_KEY }));
 
   // Login — redirect to Clerk hosted sign-in
   app.get("/api/oauth/login", (req: Request, res: Response) => {
