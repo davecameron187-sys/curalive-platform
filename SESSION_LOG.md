@@ -330,3 +330,25 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: 130e379
 ### Next: Phase 3 Task 3C — Custom domain + Clerk Production + full browser validation on Render
+
+## Session: April 26 2026
+### Objective: Phase 3 Task 3C — Custom Domain + Clerk Production + Browser Validation
+### Completed
+- Added structured error logging to getCurrentUser in auth.ts
+- Purchased and configured app.curalive.cc subdomain
+- Moved DNS from Konsoleh to Cloudflare for reliable CNAME handling
+- All 5 Clerk Production DNS records verified in Cloudflare
+- Render redeployed with production Clerk keys (sk_live / pk_live)
+- Customer test user created in Clerk (user_3CuDZMD0Moz882aj7ZGu0ioDbaI)
+- Customer user mapped in CuraLive DB: role=customer, orgId=1
+### Blocked
+- Browser validation blocked — DNS nameserver propagation pending (1-3 days)
+- app.curalive.cc not yet resolving via Cloudflare
+### Last Known Good Commit: 0acc16b
+### Next: Phase 3 Task 3C continued — browser validation once DNS propagates
+- Open app.curalive.cc in browser
+- Login as customer@curalive.cc
+- Confirm /api/auth/status returns authenticated true, role customer, orgId 1
+- Confirm /customer/dashboard loads with live feed
+- Confirm customer action writes to customer_actions
+- Confirm operator is blocked
