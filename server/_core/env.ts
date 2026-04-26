@@ -9,4 +9,7 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.BUILT_IN_FORGE_API_KEY ?? process.env.OPENAI_API_KEY ?? "",
   resendApiKey: process.env.RESEND_API_KEY ?? "",
+  clerkSecretKey: process.env.CLERK_SECRET_KEY ?? "",
+  clerkPublishableKey: process.env.CLERK_PUBLISHABLE_KEY ?? "",
+  clerkSignInUrl: process.env.CLERK_SIGN_IN_URL ?? "",
 };

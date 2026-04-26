@@ -6,7 +6,7 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 import { storagePut } from "./storage";
-import { sdk } from "./_core/sdk";
+import { requireAuth } from "./_core/auth";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -42,7 +42,7 @@ export function registerSlideDeckUploadRoute(app: import("express").Express) {
     async (req: Request, res: Response, next: any) => {
       // Require authenticated session
       try {
-        const user = await sdk.authenticateRequest(req);
+        const user = await requireAuth(req);
         if (!user) {
           res.status(401).json({ error: "Unauthorized" });
           return;
