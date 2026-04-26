@@ -59,3 +59,4 @@ uploads/recordings/
 # Attached assets (Replit artifacts)
 attached_assets/
 artifacts/
+.env
