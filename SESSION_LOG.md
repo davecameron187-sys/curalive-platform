@@ -297,3 +297,36 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: 85b4bdc
 ### Next: Phase 3 Task 3B — OAuth/customer login configuration
+
+## Session: April 26 2026
+### Objective: Phase 3 Task 3B — Clerk Auth Integration
+
+### Completed
+- Diagnosed WebDev OAuth server as non-existent and uncontrollable
+- Decision made: replace WebDev OAuth scaffold with Clerk
+- Installed @clerk/express and @clerk/react (correct non-deprecated packages)
+- Created server/_core/auth.ts — CuraLive auth abstraction layer (only file that knows about Clerk)
+- Updated server/_core/oauth.ts — replaced WebDev internals, registerOAuthRoutes export preserved
+- Updated server/_core/context.ts — replaced sdk.authenticateRequest with getCurrentUser
+- Updated server/slideDeckUpload.ts — replaced sdk.authenticateRequest with requireAuth
+- Updated server/_core/env.ts — added Clerk env vars
+- Added .env to .gitignore
+- Fixed clerkMiddleware to pass keys explicitly
+- Deployed to Render — /api/auth/status confirmed returning mode: clerk
+
+### Validation Confirmed
+- /api/auth/status returns authenticated: false, mode: clerk, oauthConfigured: true ✅
+- /api/oauth/login returns 302 redirect to Clerk sign-in ✅
+- Backend auth path confirmed functional via curl ✅
+
+### Blocked
+- Full browser flow blocked on Replit — webview proxy interferes
+- Full browser flow blocked on Render — requires custom domain + Clerk Production instance
+
+### Replit Auto-Commits Detected
+- R10 violation — Replit committed autonomously multiple times during session
+- Local branch reset to github/main to restore clean state
+- GitHub remote confirmed clean at 130e379
+
+### Last Known Good Commit: 130e379
+### Next: Phase 3 Task 3C — Custom domain + Clerk Production + full browser validation on Render
