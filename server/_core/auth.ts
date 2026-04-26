@@ -23,7 +23,8 @@ export async function getCurrentUser(req: Request): Promise<User | null> {
 
     const user = await db.getUserByOpenId(auth.userId);
     return user ?? null;
-  } catch {
+  } catch (err) {
+    console.error("[Auth] getCurrentUser failed", { path: req.path, error: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }
