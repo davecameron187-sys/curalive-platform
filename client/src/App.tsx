@@ -92,6 +92,7 @@ import AutonomousIntervention from "./pages/AutonomousIntervention";
 import TaggedMetricsDashboard from "./pages/TaggedMetricsDashboard";
 import ShadowMode from "./pages/ShadowMode";
 import CustomerDashboard from "./pages/CustomerDashboard";
+import CustomerProfile from "./pages/CustomerProfile";
 import CustomerRoute from "./components/CustomerRoute";
 import HealthGuardian from "./pages/HealthGuardian";
 import ComplianceEngineDashboard from "./pages/ComplianceEngineDashboard";
@@ -144,6 +145,7 @@ function Router() {
       <Route path="/operator/analytics">{() => <RequireAuth requiredRole="operator"><OperatorAnalytics /></RequireAuth>}</Route>
       <Route path="/operator/dashboard">{() => <RequireAuth requiredRole="operator"><OperatorDashboard /></RequireAuth>}</Route>
       <Route path="/operator/:id">{(params: any) => <RequireAuth requiredRole="operator"><OperatorConsole {...params} /></RequireAuth>}</Route>
+      <Route path="/customer/profile">{() => <CustomerRoute><CustomerProfile /></CustomerRoute>}</Route>
       <Route path="/register/:id" component={Registration} />
       <Route path="/demo-registration" component={DemoRegistration} />
       <Route path="/event-pass/:id" component={EventPass} />
