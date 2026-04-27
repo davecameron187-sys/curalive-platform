@@ -432,7 +432,7 @@ export default function CustomerDashboard() {
         {activeTab === "Daily Intelligence" && <ComingSoon label="Daily Intelligence" />}
         {activeTab === "Post-Event" && <ComingSoon label="Post-Event" />}
         {activeTab === "Governance" && <ComingSoon label="Governance" />}
-        {activeTab === "Profile" && <ComingSoon label="Profile" />}
+        {activeTab === "Profile" && (() => { window.location.href = "/customer/profile"; return null; })()}
 
       </div>
     </div>
