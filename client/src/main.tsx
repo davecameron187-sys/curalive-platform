@@ -61,7 +61,12 @@ function TrpcProvider({ children }: { children: React.ReactNode }) {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
+  <ClerkProvider
+    publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
+    signInUrl="/sign-in"
+    afterSignInUrl="/customer/dashboard"
+    afterSignUpUrl="/customer/dashboard"
+  >
     <TrpcProvider>
       <QueryClientProvider client={queryClient}>
         <App />
