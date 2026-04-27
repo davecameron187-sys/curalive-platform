@@ -276,7 +276,7 @@ function Router() {
       <Route path="/my-dashboard" component={OperatorQuickRef} />
       <Route path="/live-sentiment">{() => { window.location.replace("/operator/q4-earnings-2026/sentiment"); return null; }}</Route>
       <Route path="/post-event">{() => { window.location.replace("/post-event/q4-earnings-2026"); return null; }}</Route>
-      <Route path="/sign-in">{() => <div style={{ color: "white", background: "black", padding: 40 }}>SIGN IN ROUTE ACTIVE</div>}</Route>
+      <Route path="/sign-in">{() => <ClerkSignIn routing="path" path="/sign-in" />}</Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
