@@ -369,3 +369,30 @@ Customer dashboard = proves the system
 - Unauthenticated users blocked and redirected ✅
 ### Last Known Good Commit: 62c0622
 ### Next: Phase 3 Task 4 — Profile Foundation
+
+## Session: April 27 2026
+### Objective: Phase 3 Task 4 — Profile Foundation
+
+### Completed
+- Created CustomerProfile.tsx — displays email, role, orgId from auth.me
+- Added /customer/profile route in App.tsx wrapped with CustomerRoute
+- Updated CustomerDashboard.tsx — Profile tab navigates via Wouter, no page reload
+- Fixed CustomerRoute — redirects to /sign-in, shows loading div not null
+- Fixed useAuth — removed localStorage, added staleTime/gcTime, confirmed auth only on isSuccess
+- Fixed routers.ts and routers.eager.ts — removed OAUTH_SERVER_URL dev bypass
+- Fixed ClerkProvider — added signInUrl, afterSignInUrl, afterSignUpUrl
+- Fixed /sign-in route — wrapped ClerkSignIn with forceRedirectUrl
+
+### Validation Confirmed
+- Fresh incognito to /customer/profile redirects to /sign-in
+- Login redirects to /customer/dashboard
+- Profile page displays email, role, orgId correctly
+- Back button returns to /customer/dashboard
+- Auth wall confirmed airtight in production
+
+### Security Fix
+- Production auth bypass via OAUTH_SERVER_URL removed from routers.ts and routers.eager.ts
+- Confirmed: auth.me returns null for unauthenticated
+
+### Last Known Good Commit: 0458c2c
+### Next: Phase 4 — Personal Intelligence Profiles
