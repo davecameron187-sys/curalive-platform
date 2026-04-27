@@ -9,6 +9,13 @@ type Props = {
 export default function CustomerRoute({ children }: Props) {
   const { user, loading } = useAuth();
 
+  console.log("[CustomerRoute]", {
+    path: window.location.pathname,
+    loading,
+    hasUser: Boolean(user),
+    role: user?.role,
+  });
+
   if (loading) return <div className="p-8 text-white">Loading...</div>;
   if (!user) return <Redirect to="/sign-in" />;
   if (user.role !== "customer") return <Redirect to="/" />;
