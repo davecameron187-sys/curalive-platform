@@ -1,6 +1,7 @@
+import React from 'react';
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
-import { ClerkProvider, SignIn as ClerkSignIn } from "@clerk/react";
+import { ClerkProvider, SignIn as ClerkSignIn, useAuth } from "@clerk/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
@@ -35,27 +36,36 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-const trpcClient = trpc.createClient({
-  links: [
-    httpBatchLink({
-      url: "/api/trpc",
-      transformer: superjson,
-      fetch(input, init) {
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          credentials: "include",
-        });
-      },
-    }),
-  ],
-});
+function TrpcProvider({ children }: { children: React.ReactNode }) {
+  const { getToken } = useAuth();
+  const client = trpc.createClient({
+    links: [
+      httpBatchLink({
+        url: "/api/trpc",
+        transformer: superjson,
+        async fetch(input, init) {
+          const token = await getToken();
+          return globalThis.fetch(input, {
+            ...(init ?? {}),
+            credentials: "include",
+            headers: {
+              ...(init?.headers ?? {}),
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
+        },
+      }),
+    ],
+  });
+  return <trpc.Provider client={client} queryClient={queryClient}>{children}</trpc.Provider>;
+}
 
 createRoot(document.getElementById("root")!).render(
   <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+    <TrpcProvider>
       <QueryClientProvider client={queryClient}>
         <App />
       </QueryClientProvider>
-    </trpc.Provider>
+    </TrpcProvider>
   </ClerkProvider>
 );
