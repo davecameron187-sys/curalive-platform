@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import * as Ably from "ably";
 import { trpc } from "../lib/trpc";
 
@@ -123,6 +124,7 @@ function LiveEventsBanner({ session }: { session: any }) {
 
 export default function CustomerDashboard() {
   const [activeTab, setActiveTab] = useState("Live Events");
+  const [, navigate] = useLocation();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<any>(null);
 
@@ -432,7 +434,7 @@ export default function CustomerDashboard() {
         {activeTab === "Daily Intelligence" && <ComingSoon label="Daily Intelligence" />}
         {activeTab === "Post-Event" && <ComingSoon label="Post-Event" />}
         {activeTab === "Governance" && <ComingSoon label="Governance" />}
-        {activeTab === "Profile" && (() => { window.location.href = "/customer/profile"; return null; })()}
+        {activeTab === "Profile" && navigate("/customer/profile")}
 
       </div>
     </div>
