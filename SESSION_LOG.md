@@ -352,3 +352,20 @@ Customer dashboard = proves the system
 - Confirm /customer/dashboard loads with live feed
 - Confirm customer action writes to customer_actions
 - Confirm operator is blocked
+
+## Session: April 27 2026
+### Objective: Phase 3 Task 3C — Browser Validation (continued)
+### Completed
+- Removed AUTH_BYPASS=true from Render environment — was forcing dev bypass in production
+- Added /sign-in route with Clerk SignIn component
+- Fixed Clerk JWT token passing in tRPC requests via Authorization header
+- Switched Clerk SignIn to hash routing to handle sub-routes correctly
+- Full browser validation confirmed on app.curalive.cc
+### Validation Confirmed
+- /api/auth/status returns authenticated true, mode clerk, role customer, orgId 1 ✅
+- /customer/dashboard loads correctly ✅
+- Ably connected on customer dashboard ✅
+- Live feed visible ✅
+- Unauthenticated users blocked and redirected ✅
+### Last Known Good Commit: 62c0622
+### Next: Phase 3 Task 4 — Profile Foundation
