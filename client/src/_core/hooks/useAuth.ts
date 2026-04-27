@@ -16,6 +16,8 @@ export function useAuth(options?: UseAuthOptions) {
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -42,11 +44,20 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
+    console.log("[useAuth]", {
+      status: meQuery.status,
+      isLoading: meQuery.isLoading,
+      isFetching: meQuery.isFetching,
+      isSuccess: meQuery.isSuccess,
+      hasData: Boolean(meQuery.data),
+    });
+    const confirmedUser =
+      meQuery.isSuccess && meQuery.data ? meQuery.data : null;
     return {
-      user: meQuery.data ?? null,
-      loading: meQuery.isLoading || logoutMutation.isPending,
+      user: confirmedUser,
+      loading: meQuery.isLoading || meQuery.isFetching || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: meQuery.isSuccess && Boolean(meQuery.data),
+      isAuthenticated: Boolean(confirmedUser),
     };
   }, [
     meQuery.data,
