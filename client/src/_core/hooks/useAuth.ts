@@ -44,7 +44,7 @@ export function useAuth(options?: UseAuthOptions) {
   const state = useMemo(() => {
     return {
       user: meQuery.data ?? null,
-      loading: meQuery.isLoading || meQuery.isFetching || logoutMutation.isPending,
+      loading: meQuery.isLoading || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
       isAuthenticated: meQuery.isSuccess && Boolean(meQuery.data),
     };
@@ -52,7 +52,6 @@ export function useAuth(options?: UseAuthOptions) {
     meQuery.data,
     meQuery.error,
     meQuery.isLoading,
-    meQuery.isFetching,
     meQuery.isSuccess,
     logoutMutation.error,
     logoutMutation.isPending,
