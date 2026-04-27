@@ -396,3 +396,26 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: 0458c2c
 ### Next: Phase 4 — Personal Intelligence Profiles
+
+## Session: April 27 2026 (Phase 3.5 Brief)
+### Objective: Document Phase 3.5 Trust Hardening doctrine
+
+### Completed
+- Created PHASE_3_5_TRUST_HARDENING.md — full doctrine locked
+- Phase 3.5 is now the active phase
+- Phase 4 locked until gate condition met
+- Build targets defined: signal discipline core, signal collapsing, post-event summary, outcome marker, presence indicator
+
+### Phase Sequence Update
+- Phase 3 COMPLETE
+- Phase 3.5 CURRENT
+- Phase 4 LOCKED
+- Phase 5 LOCKED
+
+### Gate Condition
+Phase 3.5 complete when lead user says after a real live event:
+1. I trust it
+2. I want it in every event
+
+### Last Known Good Commit: 17b3181
+### Next: Phase 3.5 Task 1 — Signal Discipline Core
