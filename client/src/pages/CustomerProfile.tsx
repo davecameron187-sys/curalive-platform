@@ -1,12 +1,12 @@
 import { useLocation } from "wouter";
-import { trpc } from "../lib/trpc";
+import { useAuth } from "../_core/hooks/useAuth";
 
 export default function CustomerProfile() {
   const [, navigate] = useLocation();
-  const { data: user, isLoading } = trpc.auth.me.useQuery();
+  const { user, loading } = useAuth();
 
-  if (isLoading) return <div className="p-8 text-white">Loading...</div>;
-  if (!user) return <div className="p-8 text-white">Not authenticated.</div>;
+  if (loading) return <div className="p-8 text-white">Loading...</div>;
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-8">
