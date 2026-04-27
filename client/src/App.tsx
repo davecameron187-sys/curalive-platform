@@ -1,3 +1,4 @@
+import { SignIn as ClerkSignIn } from "@clerk/react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -273,7 +274,7 @@ function Router() {
       <Route path="/my-dashboard" component={OperatorQuickRef} />
       <Route path="/live-sentiment">{() => { window.location.replace("/operator/q4-earnings-2026/sentiment"); return null; }}</Route>
       <Route path="/post-event">{() => { window.location.replace("/post-event/q4-earnings-2026"); return null; }}</Route>
-      <Route path="/sign-in">{() => { const { SignIn } = require("@clerk/clerk-react"); return <SignIn routing="path" path="/sign-in" />; }}</Route>
+      <Route path="/sign-in">{() => <ClerkSignIn routing="path" path="/sign-in" />}</Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
