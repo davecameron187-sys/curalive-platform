@@ -323,16 +323,6 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(async ({ ctx }) => {
       if (ctx.user) return ctx.user;
-      const isDev =
-        process.env.NODE_ENV !== 'production' && process.env.AUTH_BYPASS === 'true';
-      if (isDev) {
-        try {
-          const { sdk } = await import("./_core/sdk");
-          const realUser = await sdk.authenticateRequest(ctx.req);
-          if (realUser) return realUser;
-        } catch {}
-        return { id: 0, name: 'Dev Operator', email: 'dev@curalive.local', role: 'operator' as const };
-      }
       return null;
     }),
     logout: publicProcedure.mutation(({ ctx }) => {
