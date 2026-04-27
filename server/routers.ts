@@ -324,8 +324,7 @@ export const appRouter = router({
     me: publicProcedure.query(async ({ ctx }) => {
       if (ctx.user) return ctx.user;
       const isDev =
-        !process.env.OAUTH_SERVER_URL ||
-        (process.env.NODE_ENV !== 'production' && (process.env.AUTH_BYPASS === 'true' || process.env.NODE_ENV === 'development'));
+        process.env.NODE_ENV !== 'production' && process.env.AUTH_BYPASS === 'true';
       if (isDev) {
         try {
           const { sdk } = await import("./_core/sdk");
