@@ -8,6 +8,7 @@
 import { rawSql } from "../db";
 import { scoreSentiment } from "../aiAnalysis";
 import crypto from "crypto";
+import { evaluateSignalDiscipline } from "./SignalDiscipline";
 import { evaluateOutput } from "./DeterministicGovernanceGateway";
 
 // Maximum concurrent LLM calls per session
@@ -86,6 +87,20 @@ async function writeToIntelligenceFeed(params: {
       .digest("hex")
       .substring(0, 64);
     console.log(`[Orchestrator] Attempting intelligence_feed write for session ${params.sessionId}, pipeline ${params.pipeline}`);
+    // ── Signal Discipline Gate (Phase 3.5) ──────────────────────────────────
+    const disciplineResult = evaluateSignalDiscipline({
+      sessionId: params.sessionId,
+      title: params.title,
+      body: params.body,
+      confidenceScore: params.confidenceScore ?? null,
+    });
+    if (!disciplineResult.shouldSurface) {
+      console.log(
+        `[Orchestrator] Signal suppressed by discipline — sessionId=${params.sessionId} reason=${disciplineResult.reason}`
+      );
+      return;
+    }
+    // ────────────────────────────────────────────────────────────────────────
     await rawSql(
       `INSERT INTO intelligence_feed 
         (session_id, feed_type, severity, title, body, pipeline, speaker, 
