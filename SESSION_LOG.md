@@ -398,24 +398,25 @@ Customer dashboard = proves the system
 ### Next: Phase 4 — Personal Intelligence Profiles
 
 ## Session: April 27 2026 (Phase 3.5 Brief)
-### Objective: Document Phase 3.5 Trust Hardening doctrine
+### Objective: Phase 3.5 Task 1 — Signal Discipline Core
 
 ### Completed
-- Created PHASE_3_5_TRUST_HARDENING.md — full doctrine locked
-- Phase 3.5 is now the active phase
-- Phase 4 locked until gate condition met
-- Build targets defined: signal discipline core, signal collapsing, post-event summary, outcome marker, presence indicator
+- Created server/services/SignalDiscipline.ts — Signal Discipline Core module
+- Added evaluateSignalDiscipline() — confidence filtering + dedup gate
+- Normalization: lowercase, trim, punctuation strip, whitespace collapse
+- TTL-based session state cleanup (4 hours inactivity, 30 min interval)
+- Integrated into SegmentOrchestrator.ts — one import, one guard block before INSERT
+- Signal Discipline sits between Governance Gateway and intelligence_feed write
 
-### Phase Sequence Update
-- Phase 3 COMPLETE
-- Phase 3.5 CURRENT
-- Phase 4 LOCKED
-- Phase 5 LOCKED
+### Validation Confirmed
+- Session 175 — 3 segments processed in production
+- [SignalDiscipline] surfaced logged for all 3 segments ✅
+- Confidence 0.8 threshold active ✅
+- Ably publish unchanged ✅
+- Feed items 179, 180, 181 written and published ✅
 
-### Gate Condition
-Phase 3.5 complete when lead user says after a real live event:
-1. I trust it
-2. I want it in every event
+### Replit Auto-Commits Detected
+- R10 violation — Replit committed autonomously multiple times during session
 
-### Last Known Good Commit: 17b3181
-### Next: Phase 3.5 Task 1 — Signal Discipline Core
+### Last Known Good Commit: c71166c
+### Next: Phase 3.5 Task 2 — Signal Collapsing
