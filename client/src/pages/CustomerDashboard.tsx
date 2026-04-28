@@ -504,7 +504,75 @@ export default function CustomerDashboard() {
         )}
 
         {activeTab === "Daily Intelligence" && <ComingSoon label="Daily Intelligence" />}
-        {activeTab === "Post-Event" && <ComingSoon label="Post-Event" />}
+        {activeTab === "Post-Event" && (
+          <div className="p-6 max-w-2xl mx-auto">
+            <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-6">Post-Event Summary</div>
+            {!selectedSessionId ? (
+              <div className="text-gray-600 text-sm">Select a session to view summary.</div>
+            ) : (function() {
+              const clusters = collapseIntoClusters(feedItems);
+              const sorted = [...clusters].sort((a, b) =>
+                new Date(b.latestTimestamp).getTime() - new Date(a.latestTimestamp).getTime()
+              );
+              const keySignals = sorted.slice(0, 3).map(c => c.title);
+              const latestSignalAt = feedItems.length > 0
+                ? feedItems.reduce((latest, item) =>
+                    new Date(item.created_at) > new Date(latest) ? item.created_at : latest,
+                    feedItems[0].created_at)
+                : null;
+              const generatedAt = new Date().toLocaleTimeString();
+              return (
+                <div className="space-y-4">
+                  <div className="bg-gray-900 border border-gray-800 rounded-lg p-5 space-y-4">
+                    <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+                      <div>
+                        <div className="text-white font-semibold text-sm">{selectedSession?.event_name ?? "Session"}</div>
+                        <div className="text-gray-500 text-xs mt-0.5">{selectedSession?.client_name ?? ""}</div>
+                      </div>
+                      <div className="text-xs text-gray-600">Generated {generatedAt}</div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-gray-950 rounded-lg p-3 border border-gray-800">
+                        <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Signals</div>
+                        <div className="text-2xl font-bold text-blue-400">{feedItems.length}</div>
+                      </div>
+                      <div className="bg-gray-950 rounded-lg p-3 border border-gray-800">
+                        <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Clusters</div>
+                        <div className="text-2xl font-bold text-blue-400">{clusters.length}</div>
+                      </div>
+                      <div className="bg-gray-950 rounded-lg p-3 border border-gray-800">
+                        <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Latest Signal</div>
+                        <div className="text-sm font-bold text-blue-400">
+                          {latestSignalAt ? new Date(latestSignalAt).toLocaleTimeString() : "—"}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-widest mb-3">Key Signals</div>
+                      {keySignals.length === 0 ? (
+                        <div className="text-gray-600 text-sm">No signals recorded for this session.</div>
+                      ) : (
+                        <div className="space-y-2">
+                          {keySignals.map((title, i) => (
+                            <div key={i} className="flex items-center gap-3 bg-gray-950 border border-gray-800 rounded-lg px-4 py-3">
+                              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                              <span className="text-sm text-white">{title} Cluster</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="border-t border-gray-800 pt-4">
+                      <div className="text-xs text-gray-600">
+                        Session ID: {selectedSession?.id ?? "—"} · Summary derived from live feed data · No AI summarisation
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
         {activeTab === "Governance" && <ComingSoon label="Governance" />}
         {activeTab === "Profile" && navigate("/customer/profile")}
 
