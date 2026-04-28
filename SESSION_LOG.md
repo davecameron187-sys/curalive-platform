@@ -420,3 +420,31 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: c71166c
 ### Next: Phase 3.5 Task 2 — Signal Collapsing
+
+## Session: April 28 2026 (Session 2)
+### Objective: Phase 3.5 Task 2 — Signal Collapsing
+
+### Completed
+- Added CLUSTER_STOPWORDS and getClusterKey() to CustomerDashboard.tsx
+- Added collapseIntoClusters() — groups feedItems by first meaningful word
+- Added expandedClusters state tracking expanded clusters
+- Replaced feedItems.map() with cluster render
+- KPI strip unchanged — still shows raw feedItems.length
+
+### Validation Confirmed
+- Session 177 — 5 sentiment signals arrived live via Ably
+- All 5 collapsed into Sentiment Cluster — 5 signals
+- Expand revealed all 5 signals with timestamps, scores, keywords
+- Acknowledge and Follow Up buttons functional inside cluster
+- No flicker, no duplication, real-time stable
+
+### Known Limitations
+- Customer dashboard does not yet rehydrate historical feedItems from database
+- Clustering validated in live session context only
+- History persistence deferred — not in scope for Phase 3.5
+
+### Replit Auto-Commits Detected
+- R10 violation — Replit committed autonomously multiple times during session
+
+### Last Known Good Commit: 6fec2ab
+### Next: Phase 3.5 Task 3 — Post-Event Summary
