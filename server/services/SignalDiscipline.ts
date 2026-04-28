@@ -36,7 +36,7 @@ const sessionStore = new Map<number, SessionState>();
 function runCleanup(): void {
   const now = Date.now();
   let removed = 0;
-  for (const [sessionId, state] of sessionStore.entries()) {
+  for (const [sessionId, state] of Array.from(sessionStore.entries())) {
     if (now - state.lastSeen > SESSION_TTL_MS) {
       sessionStore.delete(sessionId);
       removed++;
@@ -104,3 +104,4 @@ export function evaluateSignalDiscipline(params: {
   console.log(`[SignalDiscipline] ${reason} — sessionId=${sessionId} confidence=${confidenceScore ?? 'n/a'} key=${normalizedKey}`);
 
   return { shouldSurface: true, reason, normalizedKey };
+}
