@@ -82,6 +82,7 @@ export function evaluateSignalDiscipline(params: {
   const now = Date.now();
 
   let state = sessionStore.get(sessionId);
+  if (!state) {
     state = { keys: new Set(), lastSeen: now };
     sessionStore.set(sessionId, state);
   }
