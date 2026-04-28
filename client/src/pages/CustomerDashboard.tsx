@@ -6,6 +6,31 @@ import { trpc } from "../lib/trpc";
 
 const TABS = ["Live Events", "Daily Intelligence", "Post-Event", "Governance", "Profile"];
 
+const CLUSTER_STOPWORDS = new Set(["the","a","an","detected","signal","alert","risk","concern","warning","update","note","flag"]);
+
+function getClusterKey(title: string): string {
+  if (!title) return "general";
+  const words = title.toLowerCase().replace(/[^\w\s]/g,"").trim().split(/\s+/);
+  const meaningful = words.find(w => w.length > 1 && !CLUSTER_STOPWORDS.has(w));
+  return meaningful ?? "general";
+}
+
+function collapseIntoClusters(items: any[]): { key: string; title: string; count: number; latestTimestamp: string; items: any[] }[] {
+  const map = new Map<string, any[]>();
+  for (const item of items) {
+    const k = getClusterKey(item.title ?? item.feed_type ?? "");
+    if (!map.has(k)) map.set(k, []);
+    map.get(k)!.push(item);
+  }
+  return Array.from(map.entries()).map(([key, clusterItems]) => ({
+    key,
+    title: key.charAt(0).toUpperCase() + key.slice(1),
+    count: clusterItems.length,
+    latestTimestamp: clusterItems[0]?.created_at ?? "",
+    items: clusterItems,
+  }));
+}
+
 function ComingSoon({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center h-96 text-center">
