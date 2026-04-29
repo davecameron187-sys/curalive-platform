@@ -177,11 +177,6 @@ export default function CustomerDashboard() {
     { enabled: !!selectedSessionId }
   );
   const actionResolution = actionResolutionQuery.data ?? { requiredAttention: 0, actioned: 0, unresolved: 0 };
-  const actionResolutionQuery = trpc.customerDashboard.getActionResolution.useQuery(
-    { sessionId: selectedSessionId ?? "" },
-    { enabled: !!selectedSessionId }
-  );
-  const actionResolution = actionResolutionQuery.data ?? { requiredAttention: 0, actioned: 0, unresolved: 0 };
   const actionKey = (itemId: number, actionType: string) => `${itemId}:${actionType}`;
   const ablyRef = useRef<Ably.Realtime | null>(null);
   const channelRef = useRef<Ably.RealtimeChannel | null>(null);
