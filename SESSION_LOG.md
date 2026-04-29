@@ -528,3 +528,32 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: to be confirmed after push
 ### Next: Phase 3.5 Task 6 — Daily Confidence Signal
+
+## Session: April 29 2026 (Session 4)
+### Objective: Phase 3.5 Task 6 — Daily Confidence Signal
+
+### Completed
+- Added getDailyConfidence query to customerDashboardRouter.ts
+- Replaced Daily Intelligence Coming Soon with confidence panel
+- Three states: CONFIDENT / CAUTION / NOT READY
+- State derived from latest completed session unresolved high/critical counts
+- Max 3 supporting items with title and severity badge
+- Hook moved to component level to fix React rules violation
+
+### Validation Confirmed
+- Daily Intelligence tab shows NOT READY for session 180
+- 3 Sentiment Deterioration Pattern items listed as HIGH
+- Session name and date correct
+- No AI recommendations footer confirmed
+- State logic correct: 4 unresolved high items triggers NOT READY
+
+### PCT Flags
+- Confidence state generation — flag for PCT
+- Signal compression logic — flag for PCT
+- Actionability filtering — flag for PCT
+
+### Replit Auto-Commits Detected
+- R10 violation — Replit intervened during hook fix
+
+### Last Known Good Commit: to confirm after push
+### Next: Phase 3.5 Task 7 — First Event Protocol (operational, no build)
