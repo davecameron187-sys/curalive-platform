@@ -557,3 +557,26 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: to confirm after push
 ### Next: Phase 3.5 Task 7 — First Event Protocol (operational, no build)
+
+## Session: April 29 2026 (Session 5)
+### Objective: rawSql governance_decisions JOIN bug fix
+
+### Completed
+- Located rawSql error: operator does not exist: text = integer in getGovernance query
+- Confirmed query in customerDashboardRouter.ts — not in any locked file
+- Fixed JOIN across three iterations:
+  - Attempt 1: s.session_id::text = g.session_id → changed error to invalid input syntax
+  - Attempt 2: replace(g.session_id, 'shadow-', '')::integer → g.session_id is integer, replace() failed
+  - Attempt 3: s.id = g.session_id — direct integer join, correct solution
+- Deployed to Render, confirmed zero rawSql errors in polling cycle
+
+### Validation Confirmed
+- Render logs clean — no rawSql Query failed errors
+- governance_decisions JOIN executing silently as expected
+- Polling loop stable
+
+### Replit Auto-Commits Detected
+- R10 violation — Replit auto-committed all three fix iterations
+
+### Last Known Good Commit: 78aba04
+### Next: Phase 3.5 Stage 1A — Deterministic Delta Prototype
