@@ -172,6 +172,11 @@ export default function CustomerDashboard() {
     { enabled: !!selectedSessionId, refetchInterval: 10000 }
   );
   const customerSuppression = customerSuppressionQuery.data ?? { totalAssessed: 0, totalSurfaced: 0, totalSuppressed: 0 };
+  const actionResolutionQuery = trpc.customerDashboard.getActionResolution.useQuery(
+    { sessionId: selectedSessionId ?? "" },
+    { enabled: !!selectedSessionId }
+  );
+  const actionResolution = actionResolutionQuery.data ?? { requiredAttention: 0, actioned: 0, unresolved: 0 };
   const actionKey = (itemId: number, actionType: string) => `${itemId}:${actionType}`;
   const ablyRef = useRef<Ably.Realtime | null>(null);
   const channelRef = useRef<Ably.RealtimeChannel | null>(null);
@@ -571,6 +576,23 @@ export default function CustomerDashboard() {
                           ))}
                         </div>
                       )}
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-widest mb-3">Action Resolution</div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between bg-gray-950 border border-gray-800 rounded-lg px-4 py-3">
+                          <span className="text-xs text-gray-400">Signals requiring attention</span>
+                          <span className="text-sm font-bold text-white">{actionResolution.requiredAttention}</span>
+                        </div>
+                        <div className="flex items-center justify-between bg-gray-950 border border-gray-800 rounded-lg px-4 py-3">
+                          <span className="text-xs text-gray-400">Acknowledged</span>
+                          <span className="text-sm font-bold text-green-400">{actionResolution.actioned}</span>
+                        </div>
+                        <div className="flex items-center justify-between bg-gray-950 border border-gray-800 rounded-lg px-4 py-3">
+                          <span className="text-xs text-gray-400">Unresolved</span>
+                          <span className="text-sm font-bold" style={{color: actionResolution.unresolved > 0 ? '#f87171' : '#6b7280'}}>{actionResolution.unresolved}</span>
+                        </div>
+                      </div>
                     </div>
                     <div className="border-t border-gray-800 pt-4">
                       <div className="text-xs text-gray-600">

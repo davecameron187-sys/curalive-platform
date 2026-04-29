@@ -32,6 +32,35 @@ export const customerDashboardRouter = router({
         return [];
       }
     }),
+  getActionResolution: customerProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      try {
+        const orgId = ctx.user?.orgId ?? 1;
+        const [rows] = await rawSql(
+          `SELECT
+            COUNT(*) FILTER (WHERE f.severity IN ('high', 'critical')) AS required_attention,
+            COUNT(DISTINCT ca.target_id) FILTER (WHERE f.severity IN ('high', 'critical') AND ca.target_id IS NOT NULL) AS actioned
+           FROM intelligence_feed f
+           LEFT JOIN customer_actions ca ON ca.target_id = f.id
+             AND ca.session_id = replace(f.session_id, 'shadow-', '')::integer
+           JOIN shadow_sessions s ON s.id = replace(f.session_id, 'shadow-', '')::integer
+           WHERE f.session_id = $1
+           AND s.org_id = $2`,
+          [input.sessionId, orgId]
+        );
+        const row = rows?.[0];
+        const requiredAttention = parseInt(row?.required_attention ?? '0', 10);
+        const actioned = parseInt(row?.actioned ?? '0', 10);
+        return {
+          requiredAttention,
+          actioned,
+          unresolved: requiredAttention - actioned,
+        };
+      } catch {
+        return { requiredAttention: 0, actioned: 0, unresolved: 0 };
+      }
+    }),
   getSuppressionStats: customerProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
