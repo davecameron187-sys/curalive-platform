@@ -32,6 +32,30 @@ export const customerDashboardRouter = router({
         return [];
       }
     }),
+  getSuppressionStats: customerProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      try {
+        const orgId = ctx.user?.orgId ?? 1;
+        const [rows] = await rawSql(
+          `SELECT
+            COUNT(*) AS total_assessed,
+            COUNT(*) FILTER (WHERE gd.decision = 'authorised') AS total_surfaced
+           FROM governance_decisions gd
+           JOIN intelligence_feed f ON f.id = gd.intelligence_feed_id
+           JOIN shadow_sessions s ON s.id = replace(f.session_id, 'shadow-', '')::integer
+           WHERE f.session_id = $1
+           AND s.org_id = $2`,
+          [input.sessionId, orgId]
+        );
+        const row = rows?.[0];
+        const totalAssessed = parseInt(row?.total_assessed ?? '0', 10);
+        const totalSurfaced = parseInt(row?.total_surfaced ?? '0', 10);
+        return { totalAssessed, totalSurfaced, totalSuppressed: totalAssessed - totalSurfaced };
+      } catch {
+        return { totalAssessed: 0, totalSurfaced: 0, totalSuppressed: 0 };
+      }
+    }),
   getFeed: customerProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
