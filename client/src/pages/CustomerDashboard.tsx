@@ -523,7 +523,89 @@ export default function CustomerDashboard() {
           </div>
         )}
 
-        {activeTab === "Daily Intelligence" && <ComingSoon label="Daily Intelligence" />}
+        {activeTab === "Daily Intelligence" && (() => {
+          const dailyQuery = trpc.customerDashboard.getDailyConfidence.useQuery(undefined, {
+            refetchInterval: 30000
+          });
+          const daily = dailyQuery.data;
+          const stateConfig = {
+            confident: {
+              label: "CONFIDENT",
+              sub: "No material issues detected",
+              color: "text-green-400",
+              border: "border-green-900/40",
+              bg: "bg-green-950/20",
+              dot: "bg-green-400",
+            },
+            caution: {
+              label: "CAUTION",
+              sub: "Review specific items before communicating",
+              color: "text-yellow-400",
+              border: "border-yellow-900/40",
+              bg: "bg-yellow-950/20",
+              dot: "bg-yellow-400",
+            },
+            not_ready: {
+              label: "NOT READY",
+              sub: "Significant unresolved issue exists",
+              color: "text-red-400",
+              border: "border-red-900/40",
+              bg: "bg-red-950/20",
+              dot: "bg-red-400",
+            },
+          };
+          const state = daily?.state ?? "confident";
+          const cfg = stateConfig[state as keyof typeof stateConfig];
+          return (
+            <div className="p-6 max-w-2xl mx-auto">
+              <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-6">Daily Intelligence</div>
+              {dailyQuery.isLoading ? (
+                <div className="text-gray-600 text-sm">Loading...</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className={`rounded-lg border ${cfg.border} ${cfg.bg} p-6`}>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`w-3 h-3 rounded-full ${cfg.dot}`} />
+                      <span className={`text-xl font-bold tracking-wide ${cfg.color}`}>{cfg.label}</span>
+                    </div>
+                    <div className="text-gray-400 text-sm mb-4">{cfg.sub}</div>
+                    {daily?.sessionName && (
+                      <div className="text-xs text-gray-600">
+                        Based on: {daily.sessionName}
+                        {daily.latestSessionAt ? ` · ${new Date(daily.latestSessionAt).toLocaleDateString()}` : ""}
+                      </div>
+                    )}
+                  </div>
+                  {daily?.items && daily.items.length > 0 && (
+                    <div>
+                      <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3">Requires Attention</div>
+                      <div className="space-y-2">
+                        {daily.items.map((item: any) => (
+                          <div key={item.id} className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-lg px-4 py-3">
+                            <span className="text-sm text-white truncate mr-3">{item.title}</span>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase flex-shrink-0 ${
+                              item.severity === "critical"
+                                ? "bg-red-950 text-red-300 border border-red-700"
+                                : "bg-red-900/60 text-red-300 border border-red-700"
+                            }`}>{item.severity}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(!daily?.items || daily.items.length === 0) && state === "confident" && (
+                    <div className="text-xs text-gray-600 text-center py-4">
+                      No items require attention from your latest session.
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-700 pt-2">
+                    Derived from latest completed session · No AI recommendations · {new Date().toLocaleTimeString()}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
         {activeTab === "Post-Event" && (
           <div className="p-6 max-w-2xl mx-auto">
             <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-6">Post-Event Summary</div>
