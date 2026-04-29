@@ -474,3 +474,31 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: cace7c3
 ### Next: Phase 3.5 Task 4 — Outcome Marker
+
+## Session: April 29 2026 (Session 2)
+### Objective: Phase 3.5 Task 5 — Presence Indicator
+
+### Completed
+- Added getSuppressionStats query to shadowModeRouter.ts
+- Added getSuppressionStats query to customerDashboardRouter.ts
+- Component 1: CAPTURING indicator in operator header (green pulsing dot)
+- Component 2: Suppression counter in operator feed header (X ASSESSED · Y SURFACED · Z FILTERED)
+- Component 2 simplified: filtered for clarity on customer dashboard (conditional)
+- Component 3: Session Confirmation in Post-Event tab (CuraLive captured X minutes)
+
+### Validation Confirmed
+- Session 180 — all three components validated in production
+- CAPTURING indicator visible in operator header
+- 56 ASSESSED · 56 SURFACED · 0 FILTERED confirmed in operator feed header
+- CuraLive captured 8 minutes. 59 signals assessed. 59 surfaced — confirmed in Post-Event tab
+
+### PCT Flags
+- Presence indicator mechanics — flag for PCT
+- Suppression counter as trust signal — flag for PCT
+- Session confirmation closing presence loop — flag for PCT
+
+### Replit Auto-Commits Detected
+- R10 violation — Replit committed autonomously multiple times
+
+### Last Known Good Commit: 99a2e0c
+### Next: Phase 3.5 Task 6 — Daily Confidence Signal (after Task 3 refinement)
