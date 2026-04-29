@@ -167,6 +167,11 @@ export default function CustomerDashboard() {
   const [ablyStatus, setAblyStatus] = useState<string>("disconnected");
   const [actionStates, setActionStates] = useState<Record<string, "loading" | "success" | "error">>({});
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
+  const customerSuppressionQuery = trpc.customerDashboard.getSuppressionStats.useQuery(
+    { sessionId: selectedSessionId ?? "" },
+    { enabled: !!selectedSessionId, refetchInterval: 10000 }
+  );
+  const customerSuppression = customerSuppressionQuery.data ?? { totalAssessed: 0, totalSurfaced: 0, totalSuppressed: 0 };
   const actionKey = (itemId: number, actionType: string) => `${itemId}:${actionType}`;
   const ablyRef = useRef<Ably.Realtime | null>(null);
   const channelRef = useRef<Ably.RealtimeChannel | null>(null);
@@ -369,6 +374,11 @@ export default function CustomerDashboard() {
               }`}>
                 Ably: {ablyStatus}
               </div>
+              {customerSuppression.totalSuppressed > 0 && (
+                <div className="text-xs px-3 py-1 rounded mb-4 bg-gray-900 text-gray-500 border border-gray-800">
+                  {customerSuppression.totalSuppressed} signal{customerSuppression.totalSuppressed !== 1 ? 's' : ''} filtered for clarity
+                </div>
+              )}
 
               {/* KPI Strip */}
               {selectedSessionId && (
@@ -567,6 +577,26 @@ export default function CustomerDashboard() {
                         Session ID: {selectedSession?.id ?? "—"} · Summary derived from live feed data · No AI summarisation
                       </div>
                     </div>
+                    {selectedSession?.status === "completed" && feedItems.length > 0 && (() => {
+                      const sessionStart = selectedSession?.created_at ? new Date(selectedSession.created_at) : null;
+                      const lastSignal = feedItems.length > 0
+                        ? feedItems.reduce((latest, item) =>
+                            new Date(item.created_at) > new Date(latest) ? item.created_at : latest,
+                            feedItems[0].created_at)
+                        : null;
+                      const durationMs = sessionStart && lastSignal
+                        ? new Date(lastSignal).getTime() - sessionStart.getTime()
+                        : 0;
+                      const durationMins = Math.round(durationMs / 60000);
+                      return (
+                        <div className="mb-4 px-4 py-3 rounded-lg bg-blue-950/30 border border-blue-900/40 text-xs text-blue-300">
+                          CuraLive captured {durationMins > 0 ? `${durationMins} minute${durationMins !== 1 ? 's' : ''}` : 'this session'}.{' '}
+                          {customerSuppression.totalAssessed > 0
+                            ? `${customerSuppression.totalAssessed} signals assessed. ${customerSuppression.totalSurfaced} surfaced.`
+                            : `${feedItems.length} signals surfaced.`}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );
