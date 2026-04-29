@@ -61,6 +61,76 @@ export const customerDashboardRouter = router({
         return { requiredAttention: 0, actioned: 0, unresolved: 0 };
       }
     }),
+  getDailyConfidence: customerProcedure
+    .query(async ({ ctx }) => {
+      try {
+        const orgId = ctx.user?.orgId ?? 1;
+
+        const [sessionRows] = await rawSql(
+          `SELECT id, session_id, event_name, client_name, created_at
+           FROM shadow_sessions
+           WHERE org_id = $1 AND status = 'completed'
+           ORDER BY created_at DESC
+           LIMIT 1`,
+          [orgId]
+        );
+        const session = sessionRows?.[0];
+        if (!session) {
+          return { state: 'confident', sessionId: null, sessionName: null, latestSessionAt: null, items: [] };
+        }
+
+        const feedSessionId = `shadow-${session.id}`;
+
+        const [resRows] = await rawSql(
+          `SELECT
+            COUNT(*) FILTER (WHERE f.severity IN ('high', 'critical')) AS required_attention,
+            COUNT(DISTINCT ca.target_id) FILTER (WHERE f.severity IN ('high', 'critical') AND ca.target_id IS NOT NULL) AS actioned,
+            COUNT(*) FILTER (WHERE f.severity = 'critical') AS critical_count,
+            COUNT(DISTINCT ca.target_id) FILTER (WHERE f.severity = 'critical' AND ca.target_id IS NOT NULL) AS critical_actioned
+           FROM intelligence_feed f
+           LEFT JOIN customer_actions ca ON ca.target_id = f.id AND ca.session_id = $2
+           WHERE f.session_id = $1`,
+          [feedSessionId, session.id]
+        );
+        const res = resRows?.[0];
+        const requiredAttention = parseInt(res?.required_attention ?? '0', 10);
+        const actioned = parseInt(res?.actioned ?? '0', 10);
+        const criticalCount = parseInt(res?.critical_count ?? '0', 10);
+        const criticalActioned = parseInt(res?.critical_actioned ?? '0', 10);
+        const unresolved = requiredAttention - actioned;
+        const unresolvedCritical = criticalCount - criticalActioned;
+
+        const [itemRows] = await rawSql(
+          `SELECT f.id, f.title, f.severity
+           FROM intelligence_feed f
+           LEFT JOIN customer_actions ca ON ca.target_id = f.id AND ca.session_id = $2
+           WHERE f.session_id = $1
+           AND f.severity IN ('high', 'critical')
+           AND ca.target_id IS NULL
+           ORDER BY CASE f.severity WHEN 'critical' THEN 0 ELSE 1 END, f.created_at DESC
+           LIMIT 3`,
+          [feedSessionId, session.id]
+        );
+        const items = (itemRows ?? []).map((r: any) => ({ id: r.id, title: r.title, severity: r.severity }));
+
+        let state: 'confident' | 'caution' | 'not_ready' = 'confident';
+        if (unresolvedCritical > 0 || unresolved >= 3) {
+          state = 'not_ready';
+        } else if (unresolved >= 1) {
+          state = 'caution';
+        }
+
+        return {
+          state,
+          sessionId: session.id,
+          sessionName: session.event_name,
+          latestSessionAt: session.created_at,
+          items,
+        };
+      } catch {
+        return { state: 'confident', sessionId: null, sessionName: null, latestSessionAt: null, items: [] };
+      }
+    }),
   getSuppressionStats: customerProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
