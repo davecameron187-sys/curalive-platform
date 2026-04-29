@@ -448,3 +448,29 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: 6fec2ab
 ### Next: Phase 3.5 Task 3 — Post-Event Summary
+
+## Session: April 29 2026
+### Objective: Phase 3.5 Task 3 — Post-Event Summary validation
+
+### Completed
+- Post-Event Summary panel deployed in previous session (cace7c3)
+- Validated live against session 178
+
+### Validation Confirmed
+- Total Signals: 7 matched live feed count
+- Clusters: 1 (Sentiment Cluster) matched Signal Collapsing output
+- Latest Signal timestamp: 10:21:32 AM correct
+- Key Signals: Sentiment Cluster listed correctly
+- Session name displayed correctly
+- No AI summarisation footer confirmed
+- No Coming Soon placeholder
+
+### Known Limitations
+- Summary derived from live feed only — history persistence still deferred
+- Clustering validated in live session context only
+
+### Replit Auto-Commits Detected
+- R10 violation — monitor on every push
+
+### Last Known Good Commit: cace7c3
+### Next: Phase 3.5 Task 4 — Outcome Marker
