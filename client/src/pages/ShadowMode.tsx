@@ -132,6 +132,11 @@ export default function ShadowMode() {
       })),
     }
   );
+  const suppressionQuery = trpc.shadowMode.getSuppressionStats.useQuery(
+    { sessionId: selectedSessionId ?? "" },
+    { enabled: !!selectedSessionId, refetchInterval: 5000 }
+  );
+  const suppression = suppressionQuery.data ?? { totalAssessed: 0, totalSurfaced: 0, totalSuppressed: 0 };
 
   const rawSessions = sessionsQuery.data ?? [];
   const sessions: Session[] = rawSessions.map((s: any) => ({
@@ -272,6 +277,10 @@ const formatSessionTime = (ts: string | null) => {
             <>
               <span style={{ color: "#94a3b8", fontSize: "11px" }}>{selectedSession.eventName}</span>
               <span style={{ color: "#4ade80", fontSize: "11px" }}>{elapsed}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "#4ade80", fontSize: "11px", letterSpacing: "1px" }}>
+                <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", animation: "pulse 2s infinite" }}></span>
+                CAPTURING
+              </span>
             </>
           )}
           <div style={{
@@ -419,7 +428,12 @@ const formatSessionTime = (ts: string | null) => {
               <div style={{ flex: 1, background: "#0d0d0d", border: "1px solid #1e293b", borderRadius: "6px", padding: "16px", display: "flex", flexDirection: "column" }}>
                 <div style={{ color: "#475569", fontSize: "10px", letterSpacing: "2px", marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>INTELLIGENCE FEED</span>
-                  {selectedSessionId && <span style={{ color: "#334155" }}>{mergedFeed.length} SIGNALS</span>}
+                  <span style={{ color: "#334155" }}>{mergedFeed.length} SIGNALS</span>
+                  {selectedSessionId && suppression.totalAssessed > 0 && (
+                    <span style={{ color: "#475569", fontSize: "10px", letterSpacing: "1px" }}>
+                      {suppression.totalAssessed} ASSESSED · {suppression.totalSurfaced} SURFACED · {suppression.totalSuppressed} FILTERED
+                    </span>
+                  )}
                 </div>
                 <div ref={feedRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px", maxHeight: "calc(100vh - 320px)" }}>
                   {mergedFeed.length === 0 && (
