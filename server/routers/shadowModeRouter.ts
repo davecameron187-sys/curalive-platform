@@ -908,6 +908,32 @@ export const shadowModeRouter = router({
       }
     }),
 
+  getSuppressionStats: operatorProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const [rows] = await rawSql(
+          `SELECT
+            COUNT(*) AS total_assessed,
+            COUNT(*) FILTER (WHERE gd.decision = 'authorised') AS total_surfaced
+           FROM governance_decisions gd
+           JOIN intelligence_feed f ON f.id = gd.intelligence_feed_id
+           WHERE f.session_id = $1`,
+          [`shadow-${input.sessionId}`]
+        );
+        const row = rows?.[0];
+        const totalAssessed = parseInt(row?.total_assessed ?? '0', 10);
+        const totalSurfaced = parseInt(row?.total_surfaced ?? '0', 10);
+        return {
+          totalAssessed,
+          totalSurfaced,
+          totalSuppressed: totalAssessed - totalSurfaced,
+        };
+      } catch {
+        return { totalAssessed: 0, totalSurfaced: 0, totalSuppressed: 0 };
+      }
+    }),
+
   deleteSession: operatorProcedure
     .input(z.object({ sessionId: z.number() }))
     .mutation(async ({ input }) => {
