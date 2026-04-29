@@ -177,6 +177,8 @@ export default function CustomerDashboard() {
     { enabled: !!selectedSessionId }
   );
   const actionResolution = actionResolutionQuery.data ?? { requiredAttention: 0, actioned: 0, unresolved: 0 };
+  const dailyConfidenceQuery = trpc.customerDashboard.getDailyConfidence.useQuery(undefined, { refetchInterval: 30000 });
+  const dailyConfidence = dailyConfidenceQuery.data;
   const actionKey = (itemId: number, actionType: string) => `${itemId}:${actionType}`;
   const ablyRef = useRef<Ably.Realtime | null>(null);
   const channelRef = useRef<Ably.RealtimeChannel | null>(null);
@@ -519,10 +521,7 @@ export default function CustomerDashboard() {
         )}
 
         {activeTab === "Daily Intelligence" && (() => {
-          const dailyQuery = trpc.customerDashboard.getDailyConfidence.useQuery(undefined, {
-            refetchInterval: 30000
-          });
-          const daily = dailyQuery.data;
+          const daily = dailyConfidence;
           const stateConfig = {
             confident: {
               label: "CONFIDENT",
