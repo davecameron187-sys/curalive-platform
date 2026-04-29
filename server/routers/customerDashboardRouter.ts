@@ -183,7 +183,7 @@ export const customerDashboardRouter = router({
         const [rows] = await rawSql(
           `SELECT g.id, g.session_id, g.decision_type, g.decision, g.confidence_score, g.reasoning, g.decided_at
            FROM governance_decisions g
-           JOIN shadow_sessions s ON s.session_id::text = g.session_id
+           JOIN shadow_sessions s ON s.id = g.session_id::integer
            WHERE g.session_id = $1
            AND s.org_id = $2
            ORDER BY g.decided_at ASC
