@@ -553,7 +553,7 @@ export default function CustomerDashboard() {
           return (
             <div className="p-6 max-w-2xl mx-auto">
               <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-6">Daily Intelligence</div>
-              {dailyQuery.isLoading ? (
+              {dailyConfidenceQuery.isLoading ? (
                 <div className="text-gray-600 text-sm">Loading...</div>
               ) : (
                 <div className="space-y-4">
