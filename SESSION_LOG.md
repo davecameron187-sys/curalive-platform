@@ -502,3 +502,29 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: 99a2e0c
 ### Next: Phase 3.5 Task 6 — Daily Confidence Signal (after Task 3 refinement)
+
+## Session: April 29 2026 (Session 3)
+### Objective: Phase 3.5 Task 3 Refinement — Action Resolution in Post-Event Summary
+
+### Completed
+- Added getActionResolution query to customerDashboardRouter.ts
+- Added Action Resolution block to Post-Event tab in CustomerDashboard.tsx
+- Required attention = high/critical severity feed items
+- Actioned = matched customer_actions.target_id
+- Unresolved = required attention minus actioned
+
+### Validation Confirmed
+- Session 180 — 4 high/critical signals in DB confirmed
+- UI shows: 4 requiring attention, 0 acknowledged, 4 unresolved
+- DB query confirmed exact match
+- Post-Event Summary now answers: did I handle what mattered
+
+### PCT Flag
+- User relevance filtering mechanism — actionability filter on severity
+- Flag for PCT documentation
+
+### Replit Auto-Commits Detected
+- R10 violation — monitor on every push
+
+### Last Known Good Commit: to be confirmed after push
+### Next: Phase 3.5 Task 6 — Daily Confidence Signal
