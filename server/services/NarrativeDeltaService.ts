@@ -71,6 +71,7 @@ interface TopicRecord {
 interface SessionDeltaState {
   topicsEncountered: Map<string, TopicRecord>;
   riskSignalsActive: Set<string>;
+  surfacedSignals: Set<string>;
   lastSeen: number;
 }
 
@@ -96,7 +97,7 @@ if (cleanupTimer.unref) cleanupTimer.unref();
 function getOrCreateSession(sessionId: string): SessionDeltaState {
   let state = sessionStore.get(sessionId);
   if (!state) {
-    state = { topicsEncountered: new Map(), riskSignalsActive: new Set(), lastSeen: Date.now() };
+    state = { topicsEncountered: new Map(), riskSignalsActive: new Set(), surfacedSignals: new Set(), lastSeen: Date.now() };
     sessionStore.set(sessionId, state);
   }
   state.lastSeen = Date.now();
@@ -185,6 +186,11 @@ function scorePriority(item: FeedItem, state: SessionDeltaState, topicKey: strin
       titleLower.includes('anomaly') ||
       titleLower.includes('escalation');
     if (isDeterioration) {
+      const signalKey = topicKey + ':' + item.pipeline + ':deterioration';
+      if (state.surfacedSignals.has(signalKey)) {
+        console.log(`[NarrativeDelta] SUPPRESSED_DUPLICATE_PATTERN feedItemId=${item.id} key=${signalKey}`);
+        return { priority: 'SUPPRESSED', suppressionReason: 'duplicate_pattern' };
+      }
       state.riskSignalsActive.add(topicKey);
       return { priority: 'P1', suppressionReason: null };
     }
