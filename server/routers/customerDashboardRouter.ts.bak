@@ -44,7 +44,7 @@ export const customerDashboardRouter = router({
            FROM intelligence_feed f
            LEFT JOIN customer_actions ca ON ca.target_id = f.id
              AND ca.session_id = replace(f.session_id, 'shadow-', '')::integer
-           JOIN shadow_sessions s ON s.id = CAST(replace(f.session_id, 'shadow-', '') AS integer)
+           JOIN shadow_sessions s ON s.id = replace(f.session_id, 'shadow-', '')::integer
            WHERE f.session_id = $1
            AND s.org_id = $2`,
           [input.sessionId, orgId]
