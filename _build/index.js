@@ -14,22 +14,9 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
-// shared/const.ts
-var COOKIE_NAME, ONE_YEAR_MS, AXIOS_TIMEOUT_MS, UNAUTHED_ERR_MSG, NOT_ADMIN_ERR_MSG;
-var init_const = __esm({
-  "shared/const.ts"() {
-    "use strict";
-    COOKIE_NAME = "app_session_id";
-    ONE_YEAR_MS = 1e3 * 60 * 60 * 24 * 365;
-    AXIOS_TIMEOUT_MS = 3e4;
-    UNAUTHED_ERR_MSG = "Please login (10001)";
-    NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
-  }
-});
-
 // drizzle/gaps.schema.ts
-import { pgTable, serial, integer, text, varchar, timestamp, boolean, json, real, date } from "drizzle-orm/pg-core";
-var sessionReadinessChecks, sessionMessages, approvedQuestionsQueue, clientReportViewLog, scheduledSessions, sessionHandoffs, sessionOperators, clientReportFeedback, agmResolutions, agmShareholderSignals, historicalCommitments, boardMembers, complianceDeadlines, briefingAccuracyScores, organisations, sessionMarkers;
+import { pgTable, serial, integer, text, varchar, timestamp, boolean, json, jsonb, real, date } from "drizzle-orm/pg-core";
+var sessionReadinessChecks, sessionMessages, approvedQuestionsQueue, clientReportViewLog, scheduledSessions, sessionHandoffs, sessionOperators, clientReportFeedback, agmResolutions, agmShareholderSignals, historicalCommitments, boardMembers, complianceDeadlines, briefingAccuracyScores, organisations, sessionMarkers, intelligenceFeed;
 var init_gaps_schema = __esm({
   "drizzle/gaps.schema.ts"() {
     "use strict";
@@ -215,6 +202,19 @@ var init_gaps_schema = __esm({
       operatorId: integer("operator_id"),
       createdAt: timestamp("created_at").defaultNow()
     });
+    intelligenceFeed = pgTable("intelligence_feed", {
+      id: serial("id").primaryKey(),
+      sessionId: text("session_id").notNull(),
+      feedType: text("feed_type").notNull(),
+      severity: text("severity").notNull().default("info"),
+      title: text("title").notNull(),
+      body: text("body").notNull(),
+      metadata: jsonb("metadata"),
+      pipeline: text("pipeline").notNull(),
+      speaker: text("speaker").notNull(),
+      timestampInEvent: integer("timestamp_in_event"),
+      createdAt: timestamp("created_at").defaultNow()
+    });
   }
 });
 
@@ -343,6 +343,7 @@ __export(schema_exports, {
   briefingProvenance: () => briefingProvenance,
   broadcastSessions: () => broadcastSessions,
   call_qualityEnum: () => call_qualityEnum,
+  canonicalEventSegments: () => canonicalEventSegments,
   capabilityRoadmap: () => capabilityRoadmap,
   carrierEnum: () => carrierEnum,
   categoryEnum: () => categoryEnum,
@@ -411,6 +412,7 @@ __export(schema_exports, {
   guidance_typeEnum: () => guidance_typeEnum,
   historicalCommitments: () => historicalCommitments,
   industry_verticalEnum: () => industry_verticalEnum,
+  intelligenceFeed: () => intelligenceFeed,
   interconnectionActivations: () => interconnectionActivations,
   interconnectionAnalytics: () => interconnectionAnalytics,
   investorBriefingPacks: () => investorBriefingPacks,
@@ -566,7 +568,7 @@ __export(schema_exports, {
   whiteLabelClients: () => whiteLabelClients
 });
 import { boolean as boolean3, integer as integer3, real as real2, smallint, json as json3, text as text3, timestamp as timestamp3, varchar as varchar3, bigint, serial as serial3, pgTable as pgTable3, pgEnum } from "drizzle-orm/pg-core";
-var roleEnum, statusEnum, stateEnum, senderTypeEnum, recipientTypeEnum, eventEnum, triggeredByEnum, serviceTypeEnum, platformEnum, meetingTypeEnum, waitingRoomStatusEnum, sentimentEnum, signalTypeEnum, event_typeEnum, industry_verticalEnum, webcast_statusEnum, qa_statusEnum, poll_statusEnum, carrierEnum, directionEnum, recording_statusEnum, transcription_statusEnum, transfer_typeEnum, outcomeEnum, payment_methodEnum, frequencyEnum, call_qualityEnum, report_typeEnum, sourceEnum, poll_typeEnum, resource_typeEnum, default_platformEnum, billing_tierEnum, risk_levelEnum, compliance_statusEnum, actionEnum, follow_up_statusEnum, approval_statusEnum, moment_typeEnum, severityEnum, device_typeEnum, content_typeEnum, moderation_statusEnum, publish_statusEnum, tag_typeEnum, correction_typeEnum, metric_typeEnum, deliveryStatusEnum, tierEnum, default_join_methodEnum, join_methodEnum, control_typeEnum, threat_typeEnum, frameworkEnum, check_typeEnum, source_typeEnum, observation_typeEnum, categoryEnum, estimated_impactEnum, jurisdictionEnum, pattern_typeEnum, algorithm_sourceEnum, guidance_typeEnum, confidence_levelEnum, met_or_missedEnum, action_typeEnum, timeframeEnum, priorityEnum, qa_session_statusEnum, question_categoryEnum, question_statusEnum, recommended_actionEnum, share_typeEnum, users, events, attendeeRegistrations, irContacts, occConferences, occParticipants, occLounge, occOperatorRequests, occOperatorSessions, occChatMessages, occAudioFiles, occParticipantHistory, occAccessCodeLog, occDialOutHistory, occGreenRooms, liveRoadshows, liveRoadshowMeetings, liveRoadshowInvestors, liveMeetingSummaries, slideThumbnails, commitmentSignals, investorBriefingPacks, eventBranding, webcastEvents, webcastRegistrations, webcastQa, webcastPolls, recallBots, muxStreams, webphoneSessions, webphoneCarrierStatus, speakerPaceResults, eventCustomisation, directAccessLog, billingClients, billingQuotes, billingLineItems, billingInvoices, billingPayments, billingClientContacts, billingQuoteVersions, billingCreditNotes, billingFxRates, billingActivityLog, billingLineItemTemplates, billingEmailEvents, billingRecurringTemplates, trainingModeSessions, trainingConferences, trainingParticipants, trainingLounge, trainingCallLogs, trainingPerformanceMetrics, postEventReports, transcriptionJobs, polls, pollOptions, pollVotes, eventSchedules, operatorAvailability, resourceAllocations, eventTemplates, clients, clientPortals, complianceFlags, complianceAuditLog, investorFollowups, followupEmails, sentimentSnapshots, aiGeneratedContent, occTranscriptionSegments, occLiveRollingSummaries, qaAutoTriageResults, speakingPaceAnalysis, toxicityFilterResults, transcriptEdits, transcriptVersions, transcriptEditAuditLog, eventBriefResults, contentEngagementEvents, contentPerformanceMetrics, contentTypePerformance, eventPerformanceSummary, reportKeyMoments, complianceCertificates, pushSubscriptions, whiteLabelClients, clientEventAssignments, socialMediaAccounts, socialPosts, socialPostPlatforms, socialMetrics, socialAuditLog, webcastEnhancements, webcastAnalyticsExpanded, interconnectionActivations, interconnectionAnalytics, virtualStudios, esgStudioFlags, studioInterconnections, operatorLinkAnalytics, operatorLinksMetadata, agenticAnalyses, autonomousInterventions, taggedMetrics, shadowSessions, operatorActions, operatorCorrections, adaptiveThresholds, complianceVocabulary, userFeedback, aiAmAuditLog, complianceViolations, alertPreferences, alertHistory, postEventData, stripeCustomers, stripeSubscriptions, premiumFeatures, stripePaymentEvents, mailingLists, mailingListEntries, crmApiKeys, soc2Controls, iso27001Controls, complianceEvidenceFiles, complianceThreats, complianceFrameworkChecks, sustainabilityReports, broadcastSessions, studioSessions, archiveEvents, aiEvolutionObservations, aiToolProposals, conferenceDialouts, conferenceDialoutParticipants, agmResolutions2, agmIntelligenceSessions, agmDissentPatterns, agmGovernanceObservations, lumiBookings, bastionIntelligenceSessions, bastionInvestorObservations, bastionGuidanceTracker, bastionBookings, disclosureCertificates, crisisPredictions, valuationImpacts, monthlyReports, advisoryChatMessages, evolutionAuditLog, capabilityRoadmap, liveQaSessions, liveQaQuestions, liveQaAnswers, liveQaComplianceFlags, liveQaPlatformShares, bridgeEventPhaseEnum, bridgeConfTypeEnum, bridgeConfPhaseEnum, bridgeParticipantStatusEnum, bridgeParticipantRoleEnum, bridgeGreeterStatusEnum, bridgeQaStatusEnum, bridgeQaMethodEnum, bridgeEvents, bridgeConferences, bridgeParticipants, bridgeGreeterQueue, bridgeQaQuestions, bridgeOperatorActions, bridgeCallRecordings, boardIntelligenceCompass, priorCommitmentAudits, directorLiabilityMaps, analystExpectationAudits, governanceCommunicationScores, boardResolutions, compassProvenance, compassActionHistory, preEventIntelligenceBriefings, analystConsensusData, predictedQaItems, complianceHotspots, readinessScores, briefingProvenance, briefingActionHistory, regulatoryComplianceMonitors, regulatoryFlags, disclosureTriggers, jurisdictionProfiles, complianceActionItems, complianceProvenance, complianceDetectionStats;
+var roleEnum, statusEnum, stateEnum, senderTypeEnum, recipientTypeEnum, eventEnum, triggeredByEnum, serviceTypeEnum, platformEnum, meetingTypeEnum, waitingRoomStatusEnum, sentimentEnum, signalTypeEnum, event_typeEnum, industry_verticalEnum, webcast_statusEnum, qa_statusEnum, poll_statusEnum, carrierEnum, directionEnum, recording_statusEnum, transcription_statusEnum, transfer_typeEnum, outcomeEnum, payment_methodEnum, frequencyEnum, call_qualityEnum, report_typeEnum, sourceEnum, poll_typeEnum, resource_typeEnum, default_platformEnum, billing_tierEnum, risk_levelEnum, compliance_statusEnum, actionEnum, follow_up_statusEnum, approval_statusEnum, moment_typeEnum, severityEnum, device_typeEnum, content_typeEnum, moderation_statusEnum, publish_statusEnum, tag_typeEnum, correction_typeEnum, metric_typeEnum, deliveryStatusEnum, tierEnum, default_join_methodEnum, join_methodEnum, control_typeEnum, threat_typeEnum, frameworkEnum, check_typeEnum, source_typeEnum, observation_typeEnum, categoryEnum, estimated_impactEnum, jurisdictionEnum, pattern_typeEnum, algorithm_sourceEnum, guidance_typeEnum, confidence_levelEnum, met_or_missedEnum, action_typeEnum, timeframeEnum, priorityEnum, qa_session_statusEnum, question_categoryEnum, question_statusEnum, recommended_actionEnum, share_typeEnum, users, events, attendeeRegistrations, irContacts, occConferences, occParticipants, occLounge, occOperatorRequests, occOperatorSessions, occChatMessages, occAudioFiles, occParticipantHistory, occAccessCodeLog, occDialOutHistory, occGreenRooms, liveRoadshows, liveRoadshowMeetings, liveRoadshowInvestors, liveMeetingSummaries, slideThumbnails, commitmentSignals, investorBriefingPacks, eventBranding, webcastEvents, webcastRegistrations, webcastQa, webcastPolls, recallBots, canonicalEventSegments, muxStreams, webphoneSessions, webphoneCarrierStatus, speakerPaceResults, eventCustomisation, directAccessLog, billingClients, billingQuotes, billingLineItems, billingInvoices, billingPayments, billingClientContacts, billingQuoteVersions, billingCreditNotes, billingFxRates, billingActivityLog, billingLineItemTemplates, billingEmailEvents, billingRecurringTemplates, trainingModeSessions, trainingConferences, trainingParticipants, trainingLounge, trainingCallLogs, trainingPerformanceMetrics, postEventReports, transcriptionJobs, polls, pollOptions, pollVotes, eventSchedules, operatorAvailability, resourceAllocations, eventTemplates, clients, clientPortals, complianceFlags, complianceAuditLog, investorFollowups, followupEmails, sentimentSnapshots, aiGeneratedContent, occTranscriptionSegments, occLiveRollingSummaries, qaAutoTriageResults, speakingPaceAnalysis, toxicityFilterResults, transcriptEdits, transcriptVersions, transcriptEditAuditLog, eventBriefResults, contentEngagementEvents, contentPerformanceMetrics, contentTypePerformance, eventPerformanceSummary, reportKeyMoments, complianceCertificates, pushSubscriptions, whiteLabelClients, clientEventAssignments, socialMediaAccounts, socialPosts, socialPostPlatforms, socialMetrics, socialAuditLog, webcastEnhancements, webcastAnalyticsExpanded, interconnectionActivations, interconnectionAnalytics, virtualStudios, esgStudioFlags, studioInterconnections, operatorLinkAnalytics, operatorLinksMetadata, agenticAnalyses, autonomousInterventions, taggedMetrics, shadowSessions, operatorActions, operatorCorrections, adaptiveThresholds, complianceVocabulary, userFeedback, aiAmAuditLog, complianceViolations, alertPreferences, alertHistory, postEventData, stripeCustomers, stripeSubscriptions, premiumFeatures, stripePaymentEvents, mailingLists, mailingListEntries, crmApiKeys, soc2Controls, iso27001Controls, complianceEvidenceFiles, complianceThreats, complianceFrameworkChecks, sustainabilityReports, broadcastSessions, studioSessions, archiveEvents, aiEvolutionObservations, aiToolProposals, conferenceDialouts, conferenceDialoutParticipants, agmResolutions2, agmIntelligenceSessions, agmDissentPatterns, agmGovernanceObservations, lumiBookings, bastionIntelligenceSessions, bastionInvestorObservations, bastionGuidanceTracker, bastionBookings, disclosureCertificates, crisisPredictions, valuationImpacts, monthlyReports, advisoryChatMessages, evolutionAuditLog, capabilityRoadmap, liveQaSessions, liveQaQuestions, liveQaAnswers, liveQaComplianceFlags, liveQaPlatformShares, bridgeEventPhaseEnum, bridgeConfTypeEnum, bridgeConfPhaseEnum, bridgeParticipantStatusEnum, bridgeParticipantRoleEnum, bridgeGreeterStatusEnum, bridgeQaStatusEnum, bridgeQaMethodEnum, bridgeEvents, bridgeConferences, bridgeParticipants, bridgeGreeterQueue, bridgeQaQuestions, bridgeOperatorActions, bridgeCallRecordings, boardIntelligenceCompass, priorCommitmentAudits, directorLiabilityMaps, analystExpectationAudits, governanceCommunicationScores, boardResolutions, compassProvenance, compassActionHistory, preEventIntelligenceBriefings, analystConsensusData, predictedQaItems, complianceHotspots, readinessScores, briefingProvenance, briefingActionHistory, regulatoryComplianceMonitors, regulatoryFlags, disclosureTriggers, jurisdictionProfiles, complianceActionItems, complianceProvenance, complianceDetectionStats;
 var init_schema = __esm({
   "drizzle/schema.ts"() {
     "use strict";
@@ -784,6 +786,7 @@ var init_schema = __esm({
       email: varchar3("email", { length: 320 }),
       loginMethod: varchar3("loginMethod", { length: 64 }),
       role: varchar3("role", { length: 64 }).default("user").notNull(),
+      orgId: integer3("orgId").default(1).notNull(),
       // Profile customisation fields
       jobTitle: varchar3("jobTitle", { length: 255 }),
       organisation: varchar3("organisation", { length: 255 }),
@@ -1279,13 +1282,33 @@ var init_schema = __esm({
       summary: text3("summary"),
       // Recording URL from Recall.ai (if recording enabled)
       recordingUrl: text3("recording_url"),
+      // Webhook URL the bot was configured to deliver events to
+      webhookUrl: text3("webhook_url"),
       // Error message if bot failed
       errorMessage: text3("error_message"),
       // Timestamps
-      startedAt: bigint("started_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+      startedAt: bigint("started_at", { mode: "number" }).$defaultFn(() => Date.now()),
       joinedAt: bigint("joined_at", { mode: "number" }),
       leftAt: bigint("left_at", { mode: "number" }),
-      createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now())
+      createdAt: bigint("created_at", { mode: "number" }).$defaultFn(() => Date.now())
+    });
+    canonicalEventSegments = pgTable3("canonical_event_segments", {
+      id: serial3("id").primaryKey(),
+      sessionId: integer3("session_id").notNull(),
+      sourceType: varchar3("source_type", { length: 50 }).notNull().default("recall"),
+      speakerId: varchar3("speaker_id", { length: 255 }),
+      speakerName: varchar3("speaker_name", { length: 255 }),
+      speakerRole: varchar3("speaker_role", { length: 50 }),
+      text: text3("text").notNull(),
+      startTimestamp: bigint("start_timestamp", { mode: "number" }),
+      endTimestamp: bigint("end_timestamp", { mode: "number" }),
+      alignedTimestamp: bigint("aligned_timestamp", { mode: "number" }),
+      wordCount: integer3("word_count"),
+      segmentIndex: integer3("segment_index"),
+      confidenceScore: real2("confidence_score"),
+      governanceStatus: varchar3("governance_status", { length: 50 }).default("pending"),
+      idempotencyKey: varchar3("idempotency_key", { length: 64 }),
+      createdAt: timestamp3("created_at").defaultNow().notNull()
     });
     muxStreams = pgTable3("mux_streams", {
       id: serial3("id").primaryKey(),
@@ -2513,6 +2536,7 @@ var init_schema = __esm({
     });
     shadowSessions = pgTable3("shadow_sessions", {
       id: serial3("id").primaryKey(),
+      sessionId: varchar3("session_id", { length: 128 }),
       clientName: varchar3("client_name", { length: 255 }).notNull(),
       eventName: varchar3("event_name", { length: 255 }).notNull(),
       eventType: varchar3("event_type", { length: 64 }).notNull(),
@@ -3758,7 +3782,10 @@ var init_env = __esm({
       isProduction: process.env.NODE_ENV === "production",
       forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
       forgeApiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.BUILT_IN_FORGE_API_KEY ?? process.env.OPENAI_API_KEY ?? "",
-      resendApiKey: process.env.RESEND_API_KEY ?? ""
+      resendApiKey: process.env.RESEND_API_KEY ?? "",
+      clerkSecretKey: process.env.CLERK_SECRET_KEY ?? "",
+      clerkPublishableKey: process.env.CLERK_PUBLISHABLE_KEY ?? "",
+      clerkSignInUrl: process.env.CLERK_SIGN_IN_URL ?? ""
     };
   }
 });
@@ -3834,10 +3861,10 @@ async function getDb() {
   }
   return _db;
 }
-async function rawSql(sql25, params = []) {
+async function rawSql(sql23, params = []) {
   const pool = getPool();
   if (!pool) throw new Error("Database not available");
-  let pgSql = mysqlToPostgres(sql25);
+  let pgSql = mysqlToPostgres(sql23);
   const pgParams = params.filter((p) => p !== void 0).map((p) => {
     if (typeof p === "number" && p > 1e12 && p < 1e13) {
       return new Date(p);
@@ -3860,8 +3887,8 @@ async function rawSql(sql25, params = []) {
     throw err;
   }
 }
-function mysqlToPostgres(sql25) {
-  let s = sql25;
+function mysqlToPostgres(sql23) {
+  let s = sql23;
   s = s.replace(/`/g, '"');
   let idx = 0;
   s = s.replace(/\?/g, () => `$${++idx}`);
@@ -4169,6 +4196,83 @@ var init_db = __esm({
   }
 });
 
+// server/_core/auth.ts
+import { clerkMiddleware, getAuth } from "@clerk/express";
+import { TRPCError } from "@trpc/server";
+async function getCurrentUser(req) {
+  try {
+    const auth = getAuth(req);
+    if (!auth?.userId) return null;
+    const user = await getUserByOpenId(auth.userId);
+    return user ?? null;
+  } catch (err) {
+    console.error("[Auth] getCurrentUser failed", { path: req.path, error: err instanceof Error ? err.message : String(err) });
+    return null;
+  }
+}
+async function requireAuth(req) {
+  const user = await getCurrentUser(req);
+  if (!user) throw new TRPCError({ code: "UNAUTHORIZED" });
+  return user;
+}
+var init_auth = __esm({
+  "server/_core/auth.ts"() {
+    "use strict";
+    init_db();
+  }
+});
+
+// server/_core/oauth.ts
+function registerOAuthRoutes(app) {
+  app.use("/api", clerkMiddleware({ publishableKey: process.env.CLERK_PUBLISHABLE_KEY, secretKey: process.env.CLERK_SECRET_KEY }));
+  app.get("/api/oauth/login", (req, res) => {
+    const signInBase = process.env.CLERK_SIGN_IN_URL;
+    if (!signInBase) {
+      res.status(500).send("Auth not configured");
+      return;
+    }
+    const appOrigin = process.env.APP_ORIGIN ?? `${req.protocol}://${req.get("host")}`;
+    const returnTo = req.query.returnTo;
+    const redirectTarget = typeof returnTo === "string" && returnTo.startsWith("/") ? `${appOrigin}${returnTo}` : appOrigin;
+    const signInUrl = new URL(signInBase);
+    signInUrl.searchParams.set("redirect_url", redirectTarget);
+    res.redirect(302, signInUrl.toString());
+  });
+  app.get("/api/auth/status", async (req, res) => {
+    const user = await getCurrentUser(req);
+    res.json({
+      authenticated: Boolean(user),
+      mode: "clerk",
+      user: user ? {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        orgId: user.orgId
+      } : null,
+      oauthConfigured: true
+    });
+  });
+}
+var init_oauth = __esm({
+  "server/_core/oauth.ts"() {
+    "use strict";
+    init_auth();
+  }
+});
+
+// shared/const.ts
+var COOKIE_NAME, ONE_YEAR_MS, AXIOS_TIMEOUT_MS, UNAUTHED_ERR_MSG, NOT_ADMIN_ERR_MSG;
+var init_const = __esm({
+  "shared/const.ts"() {
+    "use strict";
+    COOKIE_NAME = "app_session_id";
+    ONE_YEAR_MS = 1e3 * 60 * 60 * 24 * 365;
+    AXIOS_TIMEOUT_MS = 3e4;
+    UNAUTHED_ERR_MSG = "Please login (10001)";
+    NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
+  }
+});
+
 // server/_core/cookies.ts
 function isSecureRequest(req) {
   if (req.protocol === "https") return true;
@@ -4192,341 +4296,22 @@ var init_cookies = __esm({
   }
 });
 
-// shared/_core/errors.ts
-var HttpError, ForbiddenError;
-var init_errors = __esm({
-  "shared/_core/errors.ts"() {
-    "use strict";
-    HttpError = class extends Error {
-      constructor(statusCode, message) {
-        super(message);
-        this.statusCode = statusCode;
-        this.name = "HttpError";
-      }
-    };
-    ForbiddenError = (msg) => new HttpError(403, msg);
-  }
-});
-
-// server/_core/sdk.ts
-var sdk_exports = {};
-__export(sdk_exports, {
-  sdk: () => sdk
-});
-import axios from "axios";
-import { parse as parseCookieHeader } from "cookie";
-import { SignJWT, jwtVerify } from "jose";
-var isNonEmptyString, EXCHANGE_TOKEN_PATH, GET_USER_INFO_PATH, GET_USER_INFO_WITH_JWT_PATH, OAuthService, createOAuthHttpClient, SDKServer, sdk;
-var init_sdk = __esm({
-  "server/_core/sdk.ts"() {
-    "use strict";
-    init_const();
-    init_errors();
-    init_db();
-    init_env();
-    isNonEmptyString = (value) => typeof value === "string" && value.length > 0;
-    EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
-    GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
-    GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfoWithJwt`;
-    OAuthService = class {
-      constructor(client) {
-        this.client = client;
-        console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
-        if (!ENV.oAuthServerUrl) {
-          console.error(
-            "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
-          );
-        }
-      }
-      decodeState(state) {
-        const redirectUri = atob(state);
-        return redirectUri;
-      }
-      async getTokenByCode(code, state) {
-        const payload = {
-          clientId: ENV.appId,
-          grantType: "authorization_code",
-          code,
-          redirectUri: this.decodeState(state)
-        };
-        const { data } = await this.client.post(
-          EXCHANGE_TOKEN_PATH,
-          payload
-        );
-        return data;
-      }
-      async getUserInfoByToken(token) {
-        const { data } = await this.client.post(
-          GET_USER_INFO_PATH,
-          {
-            accessToken: token.accessToken
-          }
-        );
-        return data;
-      }
-    };
-    createOAuthHttpClient = () => axios.create({
-      baseURL: ENV.oAuthServerUrl,
-      timeout: AXIOS_TIMEOUT_MS
-    });
-    SDKServer = class {
-      client;
-      oauthService;
-      constructor(client = createOAuthHttpClient()) {
-        this.client = client;
-        this.oauthService = new OAuthService(this.client);
-      }
-      deriveLoginMethod(platforms, fallback) {
-        if (fallback && fallback.length > 0) return fallback;
-        if (!Array.isArray(platforms) || platforms.length === 0) return null;
-        const set = new Set(
-          platforms.filter((p) => typeof p === "string")
-        );
-        if (set.has("REGISTERED_PLATFORM_EMAIL")) return "email";
-        if (set.has("REGISTERED_PLATFORM_GOOGLE")) return "google";
-        if (set.has("REGISTERED_PLATFORM_APPLE")) return "apple";
-        if (set.has("REGISTERED_PLATFORM_MICROSOFT") || set.has("REGISTERED_PLATFORM_AZURE"))
-          return "microsoft";
-        if (set.has("REGISTERED_PLATFORM_GITHUB")) return "github";
-        const first = Array.from(set)[0];
-        return first ? first.toLowerCase() : null;
-      }
-      /**
-       * Exchange OAuth authorization code for access token
-       * @example
-       * const tokenResponse = await sdk.exchangeCodeForToken(code, state);
-       */
-      async exchangeCodeForToken(code, state) {
-        return this.oauthService.getTokenByCode(code, state);
-      }
-      /**
-       * Get user information using access token
-       * @example
-       * const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
-       */
-      async getUserInfo(accessToken) {
-        const data = await this.oauthService.getUserInfoByToken({
-          accessToken
-        });
-        const loginMethod = this.deriveLoginMethod(
-          data?.platforms,
-          data?.platform ?? data.platform ?? null
-        );
-        return {
-          ...data,
-          platform: loginMethod,
-          loginMethod
-        };
-      }
-      parseCookies(cookieHeader) {
-        if (!cookieHeader) {
-          return /* @__PURE__ */ new Map();
-        }
-        const parsed = parseCookieHeader(cookieHeader);
-        return new Map(Object.entries(parsed));
-      }
-      getSessionSecret() {
-        const secret = ENV.cookieSecret;
-        return new TextEncoder().encode(secret);
-      }
-      /**
-       * Create a session token for a user openId
-       * @example
-       * const sessionToken = await sdk.createSessionToken(userInfo.openId);
-       */
-      async createSessionToken(openId, options = {}) {
-        return this.signSession(
-          {
-            openId,
-            appId: ENV.appId,
-            name: options.name || ""
-          },
-          options
-        );
-      }
-      async signSession(payload, options = {}) {
-        const issuedAt = Date.now();
-        const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
-        const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1e3);
-        const secretKey = this.getSessionSecret();
-        return new SignJWT({
-          openId: payload.openId,
-          appId: payload.appId,
-          name: payload.name
-        }).setProtectedHeader({ alg: "HS256", typ: "JWT" }).setExpirationTime(expirationSeconds).sign(secretKey);
-      }
-      async verifySession(cookieValue) {
-        if (!cookieValue) {
-          console.warn("[Auth] Missing session cookie");
-          return null;
-        }
-        try {
-          const secretKey = this.getSessionSecret();
-          const { payload } = await jwtVerify(cookieValue, secretKey, {
-            algorithms: ["HS256"]
-          });
-          const { openId, appId, name } = payload;
-          if (!isNonEmptyString(openId) || !isNonEmptyString(appId) || !isNonEmptyString(name)) {
-            console.warn("[Auth] Session payload missing required fields");
-            return null;
-          }
-          return {
-            openId,
-            appId,
-            name
-          };
-        } catch (error) {
-          console.warn("[Auth] Session verification failed", String(error));
-          return null;
-        }
-      }
-      async getUserInfoWithJwt(jwtToken) {
-        const payload = {
-          jwtToken,
-          projectId: ENV.appId
-        };
-        const { data } = await this.client.post(
-          GET_USER_INFO_WITH_JWT_PATH,
-          payload
-        );
-        const loginMethod = this.deriveLoginMethod(
-          data?.platforms,
-          data?.platform ?? data.platform ?? null
-        );
-        return {
-          ...data,
-          platform: loginMethod,
-          loginMethod
-        };
-      }
-      async authenticateRequest(req) {
-        const cookies = this.parseCookies(req.headers.cookie);
-        const sessionCookie = cookies.get(COOKIE_NAME);
-        const session = await this.verifySession(sessionCookie);
-        if (!session) {
-          throw ForbiddenError("Invalid session cookie");
-        }
-        const sessionUserId = session.openId;
-        const signedInAt = /* @__PURE__ */ new Date();
-        let user = await getUserByOpenId(sessionUserId);
-        if (!user) {
-          try {
-            const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-            await upsertUser({
-              openId: userInfo.openId,
-              name: userInfo.name || null,
-              email: userInfo.email ?? null,
-              loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-              lastSignedIn: signedInAt
-            });
-            user = await getUserByOpenId(userInfo.openId);
-          } catch (error) {
-            console.error("[Auth] Failed to sync user from OAuth:", error);
-            throw ForbiddenError("Failed to sync user info");
-          }
-        }
-        if (!user) {
-          throw ForbiddenError("User not found");
-        }
-        await upsertUser({
-          openId: user.openId,
-          lastSignedIn: signedInAt
-        });
-        return user;
-      }
-    };
-    sdk = new SDKServer();
-  }
-});
-
-// server/_core/oauth.ts
-function getQueryParam(req, key) {
-  const value = req.query[key];
-  return typeof value === "string" ? value : void 0;
-}
-function registerOAuthRoutes(app) {
-  const oauthEnabled = Boolean(process.env.OAUTH_SERVER_URL);
-  app.get("/api/auth/status", async (req, res) => {
-    const mode = oauthEnabled ? "oauth" : "dev-bypass";
-    let user = null;
-    try {
-      const sessionUser = await sdk.authenticateRequest(req);
-      if (sessionUser) {
-        user = { id: sessionUser.id, name: sessionUser.name, email: sessionUser.email, role: sessionUser.role };
-      }
-    } catch {
-    }
-    res.json({
-      authenticated: Boolean(user),
-      mode,
-      user,
-      oauthConfigured: oauthEnabled
-    });
-  });
-  app.get("/api/oauth/callback", async (req, res) => {
-    if (!oauthEnabled) {
-      res.status(503).json({ error: "OAuth is not configured. Set OAUTH_SERVER_URL to enable authentication." });
-      return;
-    }
-    const code = getQueryParam(req, "code");
-    const state = getQueryParam(req, "state");
-    if (!code || !state) {
-      res.status(400).json({ error: "code and state are required" });
-      return;
-    }
-    try {
-      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
-      const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
-      if (!userInfo.openId) {
-        res.status(400).json({ error: "openId missing from user info" });
-        return;
-      }
-      await upsertUser({
-        openId: userInfo.openId,
-        name: userInfo.name || null,
-        email: userInfo.email ?? null,
-        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-        lastSignedIn: /* @__PURE__ */ new Date()
-      });
-      const sessionToken = await sdk.createSessionToken(userInfo.openId, {
-        name: userInfo.name || "",
-        expiresInMs: ONE_YEAR_MS
-      });
-      const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-      res.redirect(302, "/");
-    } catch (error) {
-      console.error("[OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
-    }
-  });
-}
-var init_oauth = __esm({
-  "server/_core/oauth.ts"() {
-    "use strict";
-    init_const();
-    init_db();
-    init_cookies();
-    init_sdk();
-  }
-});
-
 // server/_core/notification.ts
 var notification_exports = {};
 __export(notification_exports, {
   notifyOwner: () => notifyOwner
 });
-import { TRPCError } from "@trpc/server";
+import { TRPCError as TRPCError2 } from "@trpc/server";
 async function notifyOwner(payload) {
   const { title, content } = validatePayload(payload);
   if (!ENV.forgeApiUrl) {
-    throw new TRPCError({
+    throw new TRPCError2({
       code: "INTERNAL_SERVER_ERROR",
       message: "Notification service URL is not configured."
     });
   }
   if (!ENV.forgeApiKey) {
-    throw new TRPCError({
+    throw new TRPCError2({
       code: "INTERNAL_SERVER_ERROR",
       message: "Notification service API key is not configured."
     });
@@ -4556,7 +4341,7 @@ async function notifyOwner(payload) {
     return false;
   }
 }
-var TITLE_MAX_LENGTH, CONTENT_MAX_LENGTH, trimValue, isNonEmptyString2, buildEndpointUrl, validatePayload;
+var TITLE_MAX_LENGTH, CONTENT_MAX_LENGTH, trimValue, isNonEmptyString, buildEndpointUrl, validatePayload;
 var init_notification = __esm({
   "server/_core/notification.ts"() {
     "use strict";
@@ -4564,7 +4349,7 @@ var init_notification = __esm({
     TITLE_MAX_LENGTH = 1200;
     CONTENT_MAX_LENGTH = 2e4;
     trimValue = (value) => value.trim();
-    isNonEmptyString2 = (value) => typeof value === "string" && value.trim().length > 0;
+    isNonEmptyString = (value) => typeof value === "string" && value.trim().length > 0;
     buildEndpointUrl = (baseUrl) => {
       const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
       return new URL(
@@ -4573,14 +4358,14 @@ var init_notification = __esm({
       ).toString();
     };
     validatePayload = (input) => {
-      if (!isNonEmptyString2(input.title)) {
-        throw new TRPCError({
+      if (!isNonEmptyString(input.title)) {
+        throw new TRPCError2({
           code: "BAD_REQUEST",
           message: "Notification title is required."
         });
       }
-      if (!isNonEmptyString2(input.content)) {
-        throw new TRPCError({
+      if (!isNonEmptyString(input.content)) {
+        throw new TRPCError2({
           code: "BAD_REQUEST",
           message: "Notification content is required."
         });
@@ -4588,13 +4373,13 @@ var init_notification = __esm({
       const title = trimValue(input.title);
       const content = trimValue(input.content);
       if (title.length > TITLE_MAX_LENGTH) {
-        throw new TRPCError({
+        throw new TRPCError2({
           code: "BAD_REQUEST",
           message: `Notification title must be at most ${TITLE_MAX_LENGTH} characters.`
         });
       }
       if (content.length > CONTENT_MAX_LENGTH) {
-        throw new TRPCError({
+        throw new TRPCError2({
           code: "BAD_REQUEST",
           message: `Notification content must be at most ${CONTENT_MAX_LENGTH} characters.`
         });
@@ -4605,7 +4390,7 @@ var init_notification = __esm({
 });
 
 // server/_core/trpc.ts
-import { initTRPC, TRPCError as TRPCError2 } from "@trpc/server";
+import { initTRPC, TRPCError as TRPCError3 } from "@trpc/server";
 import superjson from "superjson";
 var t, router, publicProcedure, createCallerFactory, DEV_BYPASS, DEV_USER, requireUser, protectedProcedure, adminProcedure, operatorProcedure;
 var init_trpc = __esm({
@@ -4618,7 +4403,7 @@ var init_trpc = __esm({
     router = t.router;
     publicProcedure = t.procedure;
     createCallerFactory = t.createCallerFactory;
-    DEV_BYPASS = process.env.NODE_ENV !== "production" && (process.env.AUTH_BYPASS === "true" || process.env.NODE_ENV === "development");
+    DEV_BYPASS = !process.env.OAUTH_SERVER_URL || process.env.NODE_ENV !== "production" && (process.env.AUTH_BYPASS === "true" || process.env.NODE_ENV === "development");
     DEV_USER = { id: 0, name: "Dev Operator", email: "dev@curalive.local", role: "operator" };
     requireUser = t.middleware(async (opts) => {
       const { ctx, next } = opts;
@@ -4626,7 +4411,7 @@ var init_trpc = __esm({
         if (DEV_BYPASS) {
           return next({ ctx: { ...ctx, user: DEV_USER } });
         }
-        throw new TRPCError2({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+        throw new TRPCError3({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
       }
       return next({
         ctx: {
@@ -4643,7 +4428,7 @@ var init_trpc = __esm({
           if (DEV_BYPASS) {
             return next({ ctx: { ...ctx, user: DEV_USER } });
           }
-          throw new TRPCError2({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+          throw new TRPCError3({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
         }
         return next({
           ctx: {
@@ -4660,13 +4445,13 @@ var init_trpc = __esm({
           if (DEV_BYPASS) {
             return next({ ctx: { ...ctx, user: DEV_USER } });
           }
-          throw new TRPCError2({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+          throw new TRPCError3({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
         }
         if (ctx.user.role !== "operator" && ctx.user.role !== "admin") {
           if (DEV_BYPASS) {
             return next({ ctx: { ...ctx, user: DEV_USER } });
           }
-          throw new TRPCError2({ code: "FORBIDDEN", message: "Operator or admin role required (10003)" });
+          throw new TRPCError3({ code: "FORBIDDEN", message: "Operator or admin role required (10003)" });
         }
         return next({
           ctx: {
@@ -4730,7 +4515,8 @@ async function invokeLLM(params) {
   const forge = isForgeMode();
   const payload = {
     model: forge ? "gemini-2.5-flash" : "gpt-4o",
-    messages: messages.map(normalizeMessage)
+    messages: messages.map(normalizeMessage),
+    ...params.temperature !== void 0 && { temperature: params.temperature }
   };
   if (tools && tools.length > 0) {
     payload.tools = tools;
@@ -9305,7 +9091,7 @@ var init_webcastRouter = __esm({
 
 // server/routers/recallRouter.ts
 import { z as z7 } from "zod";
-import { TRPCError as TRPCError3 } from "@trpc/server";
+import { TRPCError as TRPCError4 } from "@trpc/server";
 import { eq as eq15 } from "drizzle-orm";
 async function recallFetch(path5, options = {}) {
   const res = await fetch(`${RECALL_BASE_URL}${path5}`, {
@@ -9432,7 +9218,7 @@ var init_recallRouter = __esm({
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
         const [localBot] = await db2.select().from(recallBots).where(eq15(recallBots.recallBotId, input.recallBotId)).limit(1);
-        if (!localBot) throw new TRPCError3({ code: "NOT_FOUND", message: "Bot not found" });
+        if (!localBot) throw new TRPCError4({ code: "NOT_FOUND", message: "Bot not found" });
         let liveStatus = localBot.status;
         try {
           const recallData = await getRecallBotStatus(input.recallBotId);
@@ -9455,7 +9241,7 @@ var init_recallRouter = __esm({
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
         const [localBot] = await db2.select().from(recallBots).where(eq15(recallBots.recallBotId, input.recallBotId)).limit(1);
-        if (!localBot) throw new TRPCError3({ code: "NOT_FOUND", message: "Bot not found" });
+        if (!localBot) throw new TRPCError4({ code: "NOT_FOUND", message: "Bot not found" });
         try {
           await stopRecallBot(input.recallBotId);
         } catch (err) {
@@ -9488,7 +9274,7 @@ var init_recallRouter = __esm({
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
         const [bot] = await db2.select().from(recallBots).where(eq15(recallBots.recallBotId, input.recallBotId)).limit(1);
-        if (!bot) throw new TRPCError3({ code: "NOT_FOUND", message: "Bot not found" });
+        if (!bot) throw new TRPCError4({ code: "NOT_FOUND", message: "Bot not found" });
         return {
           recallBotId: bot.recallBotId,
           status: bot.status,
@@ -9868,7 +9654,7 @@ var init_audioIngest = __esm({
 
 // server/routers/muxRouter.ts
 import { z as z8 } from "zod";
-import { TRPCError as TRPCError4 } from "@trpc/server";
+import { TRPCError as TRPCError5 } from "@trpc/server";
 import { eq as eq16 } from "drizzle-orm";
 function muxAuthHeader() {
   const credentials = Buffer.from(`${MUX_TOKEN_ID}:${MUX_TOKEN_SECRET}`).toString("base64");
@@ -9919,7 +9705,7 @@ var init_muxRouter = __esm({
         isPublic: z8.boolean().default(true)
       })).mutation(async ({ input }) => {
         if (!MUX_TOKEN_ID || !MUX_TOKEN_SECRET) {
-          throw new TRPCError4({
+          throw new TRPCError5({
             code: "PRECONDITION_FAILED",
             message: "Mux API credentials are not configured. Please add MUX_TOKEN_ID and MUX_TOKEN_SECRET."
           });
@@ -9939,7 +9725,7 @@ var init_muxRouter = __esm({
         const stream = muxResponse.data;
         const playbackId = stream.playback_ids?.[0]?.id ?? null;
         const db2 = await getDb();
-        if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         await db2.insert(muxStreams).values({
           eventId: input.eventId ?? null,
           meetingId: input.meetingId ?? null,
@@ -9968,9 +9754,9 @@ var init_muxRouter = __esm({
        */
       getStream: publicProcedure.input(z8.object({ muxStreamId: z8.string() })).query(async ({ input }) => {
         const db2 = await getDb();
-        if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const [localStream] = await db2.select().from(muxStreams).where(eq16(muxStreams.muxStreamId, input.muxStreamId)).limit(1);
-        if (!localStream) throw new TRPCError4({ code: "NOT_FOUND", message: "Stream not found" });
+        if (!localStream) throw new TRPCError5({ code: "NOT_FOUND", message: "Stream not found" });
         let liveStatus = localStream.status;
         if (MUX_TOKEN_ID && MUX_TOKEN_SECRET) {
           try {
@@ -10015,9 +9801,9 @@ var init_muxRouter = __esm({
        */
       disableStream: protectedProcedure.input(z8.object({ muxStreamId: z8.string() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const [localStream] = await db2.select().from(muxStreams).where(eq16(muxStreams.muxStreamId, input.muxStreamId)).limit(1);
-        if (!localStream) throw new TRPCError4({ code: "NOT_FOUND", message: "Stream not found" });
+        if (!localStream) throw new TRPCError5({ code: "NOT_FOUND", message: "Stream not found" });
         if (MUX_TOKEN_ID && MUX_TOKEN_SECRET) {
           try {
             await muxFetch(`/video/v1/live-streams/${input.muxStreamId}/disable`, {
@@ -10035,9 +9821,9 @@ var init_muxRouter = __esm({
        */
       enableStream: protectedProcedure.input(z8.object({ muxStreamId: z8.string() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const [localStream] = await db2.select().from(muxStreams).where(eq16(muxStreams.muxStreamId, input.muxStreamId)).limit(1);
-        if (!localStream) throw new TRPCError4({ code: "NOT_FOUND", message: "Stream not found" });
+        if (!localStream) throw new TRPCError5({ code: "NOT_FOUND", message: "Stream not found" });
         if (MUX_TOKEN_ID && MUX_TOKEN_SECRET) {
           try {
             await muxFetch(`/video/v1/live-streams/${input.muxStreamId}/enable`, {
@@ -10055,9 +9841,9 @@ var init_muxRouter = __esm({
        */
       deleteStream: protectedProcedure.input(z8.object({ muxStreamId: z8.string() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const [localStream] = await db2.select().from(muxStreams).where(eq16(muxStreams.muxStreamId, input.muxStreamId)).limit(1);
-        if (!localStream) throw new TRPCError4({ code: "NOT_FOUND", message: "Stream not found" });
+        if (!localStream) throw new TRPCError5({ code: "NOT_FOUND", message: "Stream not found" });
         if (MUX_TOKEN_ID && MUX_TOKEN_SECRET) {
           try {
             await muxFetch(`/video/v1/live-streams/${input.muxStreamId}`, {
@@ -10083,11 +9869,11 @@ var init_muxRouter = __esm({
         })
       ).mutation(async ({ input }) => {
         const db2 = await getDb();
-        if (!db2) throw new TRPCError4({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db2) throw new TRPCError5({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const [stream] = await db2.select().from(muxStreams).where(eq16(muxStreams.muxStreamId, input.muxStreamId)).limit(1);
-        if (!stream) throw new TRPCError4({ code: "NOT_FOUND", message: "Stream not found" });
+        if (!stream) throw new TRPCError5({ code: "NOT_FOUND", message: "Stream not found" });
         if (!stream.muxPlaybackId) {
-          throw new TRPCError4({
+          throw new TRPCError5({
             code: "BAD_REQUEST",
             message: "Stream has no playback ID yet \u2014 wait for the stream to become active."
           });
@@ -10571,7 +10357,7 @@ var init_db_billing = __esm({
 
 // server/routers/billingRouter.ts
 import { z as z9 } from "zod";
-import { TRPCError as TRPCError5 } from "@trpc/server";
+import { TRPCError as TRPCError6 } from "@trpc/server";
 function buildPaymentReminderEmailHtml(opts) {
   const dueDate = opts.dueAt ? new Date(opts.dueAt).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "as per agreed terms";
   const daysPast = opts.dueAt ? Math.max(0, Math.floor((Date.now() - new Date(opts.dueAt).getTime()) / 864e5)) : 0;
@@ -10659,7 +10445,7 @@ var init_billingRouter = __esm({
     init_email();
     adminProcedure2 = protectedProcedure.use(({ ctx, next }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "operator") {
-        throw new TRPCError5({ code: "FORBIDDEN", message: "Admin access required" });
+        throw new TRPCError6({ code: "FORBIDDEN", message: "Admin access required" });
       }
       return next({ ctx });
     });
@@ -10678,7 +10464,7 @@ var init_billingRouter = __esm({
       }),
       getClient: adminProcedure2.input(z9.object({ id: z9.number() })).query(async ({ input }) => {
         const client = await getBillingClient(input.id);
-        if (!client) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!client) throw new TRPCError6({ code: "NOT_FOUND" });
         const contacts = await getClientContacts(input.id);
         const quotes = await getBillingQuotes({ clientId: input.id });
         const invoices = await getBillingInvoices({ clientId: input.id });
@@ -10780,7 +10566,7 @@ var init_billingRouter = __esm({
       }),
       getQuote: adminProcedure2.input(z9.object({ id: z9.number() })).query(async ({ input }) => {
         const quote = await getBillingQuote(input.id);
-        if (!quote) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!quote) throw new TRPCError6({ code: "NOT_FOUND" });
         const lineItems = await getLineItems(input.id, void 0);
         const versions = await getQuoteVersions(input.id);
         const activity = await getActivityLog({ quoteId: input.id });
@@ -10847,7 +10633,7 @@ var init_billingRouter = __esm({
         createVersion: z9.boolean().default(false)
       })).mutation(async ({ input, ctx }) => {
         const existing = await getBillingQuote(input.id);
-        if (!existing) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!existing) throw new TRPCError6({ code: "NOT_FOUND" });
         if (input.createVersion) {
           const currentItems = await getLineItems(input.id);
           await createQuoteVersion({
@@ -10899,7 +10685,7 @@ var init_billingRouter = __esm({
         origin: z9.string()
       })).mutation(async ({ input, ctx }) => {
         const quote = await getBillingQuote(input.id);
-        if (!quote) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!quote) throw new TRPCError6({ code: "NOT_FOUND" });
         const trackingToken = generateTrackingToken();
         const quoteUrl = `${input.origin}/quote/${quote.accessToken}`;
         const trackingPixelUrl = `${input.origin}/api/billing/track/${trackingToken}`;
@@ -10940,7 +10726,7 @@ var init_billingRouter = __esm({
       // Public quote view (client-facing) 
       getQuoteByToken: publicProcedure.input(z9.object({ token: z9.string() })).query(async ({ input, ctx }) => {
         const quote = await getBillingQuoteByToken(input.token);
-        if (!quote) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!quote) throw new TRPCError6({ code: "NOT_FOUND" });
         const lineItems = await getLineItems(quote.id, void 0);
         const client = await getBillingClient(quote.clientId);
         if (quote.status === "sent") {
@@ -10958,9 +10744,9 @@ var init_billingRouter = __esm({
       }),
       acceptQuote: publicProcedure.input(z9.object({ token: z9.string(), signerName: z9.string().optional() })).mutation(async ({ input, ctx }) => {
         const quote = await getBillingQuoteByToken(input.token);
-        if (!quote) throw new TRPCError5({ code: "NOT_FOUND" });
-        if (quote.status === "expired") throw new TRPCError5({ code: "BAD_REQUEST", message: "This quote has expired." });
-        if (quote.status === "invoiced") throw new TRPCError5({ code: "BAD_REQUEST", message: "This quote has already been invoiced." });
+        if (!quote) throw new TRPCError6({ code: "NOT_FOUND" });
+        if (quote.status === "expired") throw new TRPCError6({ code: "BAD_REQUEST", message: "This quote has expired." });
+        if (quote.status === "invoiced") throw new TRPCError6({ code: "BAD_REQUEST", message: "This quote has already been invoiced." });
         await updateBillingQuote(quote.id, {
           status: "accepted",
           acceptedAt: /* @__PURE__ */ new Date()
@@ -10978,7 +10764,7 @@ var init_billingRouter = __esm({
       // Convert quote to invoice 
       convertToInvoice: adminProcedure2.input(z9.object({ quoteId: z9.number() })).mutation(async ({ input, ctx }) => {
         const quote = await getBillingQuote(input.quoteId);
-        if (!quote) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!quote) throw new TRPCError6({ code: "NOT_FOUND" });
         const { invoiceId, invoiceNumber, accessToken } = await convertQuoteToInvoice(input.quoteId, ctx.user.id);
         await logBillingActivity({
           quoteId: input.quoteId,
@@ -10997,7 +10783,7 @@ var init_billingRouter = __esm({
       }),
       getInvoice: adminProcedure2.input(z9.object({ id: z9.number() })).query(async ({ input }) => {
         const invoice = await getBillingInvoice(input.id);
-        if (!invoice) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!invoice) throw new TRPCError6({ code: "NOT_FOUND" });
         const lineItems = await getLineItems(void 0, input.id);
         const payments = await getPayments(input.id);
         const creditNotes = await getCreditNotes(input.id);
@@ -11014,7 +10800,7 @@ var init_billingRouter = __esm({
         origin: z9.string()
       })).mutation(async ({ input, ctx }) => {
         const invoice = await getBillingInvoice(input.id);
-        if (!invoice) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!invoice) throw new TRPCError6({ code: "NOT_FOUND" });
         const trackingToken = generateTrackingToken();
         const invoiceUrl = `${input.origin}/invoice/${invoice.accessToken}`;
         const trackingPixelUrl = `${input.origin}/api/billing/track/${trackingToken}`;
@@ -11055,7 +10841,7 @@ var init_billingRouter = __esm({
       // Public invoice view
       getInvoiceByToken: publicProcedure.input(z9.object({ token: z9.string() })).query(async ({ input, ctx }) => {
         const invoice = await getBillingInvoiceByToken(input.token);
-        if (!invoice) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!invoice) throw new TRPCError6({ code: "NOT_FOUND" });
         const lineItems = await getLineItems(void 0, invoice.id);
         const client = await getBillingClient(invoice.clientId);
         const creditNotes = await getCreditNotes(invoice.id);
@@ -11082,7 +10868,7 @@ var init_billingRouter = __esm({
         notes: z9.string().optional()
       })).mutation(async ({ input, ctx }) => {
         const invoice = await getBillingInvoice(input.invoiceId);
-        if (!invoice) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!invoice) throw new TRPCError6({ code: "NOT_FOUND" });
         const id = await recordPayment({
           invoiceId: input.invoiceId,
           clientId: invoice.clientId,
@@ -11113,7 +10899,7 @@ var init_billingRouter = __esm({
         notes: z9.string().optional()
       })).mutation(async ({ input, ctx }) => {
         const invoice = await getBillingInvoice(input.invoiceId);
-        if (!invoice) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!invoice) throw new TRPCError6({ code: "NOT_FOUND" });
         const taxCents = Math.round(input.amountCents * 0.15);
         const totalCents = input.amountCents + taxCents;
         const { id, creditNoteNumber } = await createCreditNote({
@@ -11263,7 +11049,7 @@ var init_billingRouter = __esm({
         origin: z9.string()
       })).mutation(async ({ input, ctx }) => {
         const invoice = await getBillingInvoice(input.id);
-        if (!invoice) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!invoice) throw new TRPCError6({ code: "NOT_FOUND" });
         const trackingToken = generateTrackingToken();
         const invoiceUrl = `${input.origin}/invoice/${invoice.accessToken}`;
         const trackingPixelUrl = `${input.origin}/api/billing/track/${trackingToken}`;
@@ -11311,14 +11097,14 @@ var init_billingRouter = __esm({
       generateFromRecurringTemplate: adminProcedure2.input(z9.object({ id: z9.number(), origin: z9.string() })).mutation(async ({ input, ctx }) => {
         const templates = await getRecurringTemplates();
         const template = templates.find((t2) => t2.id === input.id);
-        if (!template) throw new TRPCError5({ code: "NOT_FOUND" });
+        if (!template) throw new TRPCError6({ code: "NOT_FOUND" });
         const now = /* @__PURE__ */ new Date();
         const month = now.toLocaleString("en-ZA", { month: "long" });
         const quarter = `Q${Math.ceil((now.getMonth() + 1) / 3)}`;
         const year = now.getFullYear().toString();
         const title = template.titleTemplate.replace(/{month}/g, month).replace(/{quarter}/g, quarter).replace(/{year}/g, year);
         const client = await getBillingClient(template.clientId);
-        if (!client) throw new TRPCError5({ code: "NOT_FOUND", message: "Client not found" });
+        if (!client) throw new TRPCError6({ code: "NOT_FOUND", message: "Client not found" });
         const lineItems = JSON.parse(template.lineItemsJson);
         const subtotal = lineItems.reduce((s, li) => s + li.quantity * li.unitPriceCents, 0);
         const discountCents = Math.round(subtotal * (template.discountPercent / 100));
@@ -11408,6 +11194,7 @@ function extractContent(content) {
 async function scoreSentiment(recentText) {
   try {
     const response = await invokeLLM({
+      temperature: 0.2,
       messages: [
         {
           role: "system",
@@ -11461,6 +11248,7 @@ async function generateRollingSummary(segments, eventTitle) {
   const context = segments.slice(-20).map((s) => `${s.speaker}: ${s.text}`).join("\n");
   try {
     const response = await invokeLLM({
+      temperature: 0,
       messages: [
         {
           role: "system",
@@ -12475,7 +12263,7 @@ var init_webphoneRouter = __esm({
       })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return [];
-        const { and: and49, isNotNull: isNotNull3 } = await import("drizzle-orm");
+        const { and: and48, isNotNull: isNotNull3 } = await import("drizzle-orm");
         const conditions = input.conferenceId != null ? eq20(webphoneSessions.conferenceId, input.conferenceId) : isNotNull3(webphoneSessions.id);
         const rows = await db2.select().from(webphoneSessions).where(conditions).orderBy(desc8(webphoneSessions.startedAt)).limit(input.limit);
         const totalCalls = rows.length;
@@ -20719,7 +20507,7 @@ ${transcript.slice(0, 800)}`);
 
 // server/routers/socialMedia.ts
 import { z as z31 } from "zod";
-import { TRPCError as TRPCError6 } from "@trpc/server";
+import { TRPCError as TRPCError7 } from "@trpc/server";
 import { eq as eq43, and as and25, desc as desc20 } from "drizzle-orm";
 var PLATFORMS, socialMediaRouter;
 var init_socialMedia = __esm({
@@ -20880,7 +20668,7 @@ var init_socialMedia = __esm({
         accountIds: z31.array(z31.number()).min(1)
       })).mutation(async ({ ctx, input }) => {
         const db2 = await getDb();
-        if (!db2) throw new TRPCError6({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        if (!db2) throw new TRPCError7({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
         const accounts = await db2.select().from(socialMediaAccounts).where(
           and25(
             eq43(socialMediaAccounts.userId, ctx.user.id),
@@ -20888,7 +20676,7 @@ var init_socialMedia = __esm({
           )
         );
         const selected = accounts.filter((a) => input.accountIds.includes(a.id));
-        if (selected.length === 0) throw new TRPCError6({ code: "BAD_REQUEST", message: "No valid accounts found" });
+        if (selected.length === 0) throw new TRPCError7({ code: "BAD_REQUEST", message: "No valid accounts found" });
         const results = await socialMediaService.publishPost(input.postId, ctx.user.id, selected);
         return { results, publishedCount: results.filter((r) => r.success).length };
       }),
@@ -24526,6 +24314,253 @@ var init_storageAdapter = __esm({
   }
 });
 
+// shared/_core/errors.ts
+var HttpError, ForbiddenError;
+var init_errors = __esm({
+  "shared/_core/errors.ts"() {
+    "use strict";
+    HttpError = class extends Error {
+      constructor(statusCode, message) {
+        super(message);
+        this.statusCode = statusCode;
+        this.name = "HttpError";
+      }
+    };
+    ForbiddenError = (msg) => new HttpError(403, msg);
+  }
+});
+
+// server/_core/sdk.ts
+var sdk_exports = {};
+__export(sdk_exports, {
+  sdk: () => sdk
+});
+import axios from "axios";
+import { parse as parseCookieHeader } from "cookie";
+import { SignJWT, jwtVerify } from "jose";
+var isNonEmptyString2, EXCHANGE_TOKEN_PATH, GET_USER_INFO_PATH, GET_USER_INFO_WITH_JWT_PATH, OAuthService, createOAuthHttpClient, SDKServer, sdk;
+var init_sdk = __esm({
+  "server/_core/sdk.ts"() {
+    "use strict";
+    init_const();
+    init_errors();
+    init_db();
+    init_env();
+    isNonEmptyString2 = (value) => typeof value === "string" && value.length > 0;
+    EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
+    GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
+    GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfoWithJwt`;
+    OAuthService = class {
+      constructor(client) {
+        this.client = client;
+        console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
+        if (!ENV.oAuthServerUrl) {
+          console.error(
+            "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
+          );
+        }
+      }
+      decodeState(state) {
+        const redirectUri = atob(state);
+        return redirectUri;
+      }
+      async getTokenByCode(code, state) {
+        const payload = {
+          clientId: ENV.appId,
+          grantType: "authorization_code",
+          code,
+          redirectUri: this.decodeState(state)
+        };
+        const { data } = await this.client.post(
+          EXCHANGE_TOKEN_PATH,
+          payload
+        );
+        return data;
+      }
+      async getUserInfoByToken(token) {
+        const { data } = await this.client.post(
+          GET_USER_INFO_PATH,
+          {
+            accessToken: token.accessToken
+          }
+        );
+        return data;
+      }
+    };
+    createOAuthHttpClient = () => axios.create({
+      baseURL: ENV.oAuthServerUrl,
+      timeout: AXIOS_TIMEOUT_MS
+    });
+    SDKServer = class {
+      client;
+      oauthService;
+      constructor(client = createOAuthHttpClient()) {
+        this.client = client;
+        this.oauthService = new OAuthService(this.client);
+      }
+      deriveLoginMethod(platforms, fallback) {
+        if (fallback && fallback.length > 0) return fallback;
+        if (!Array.isArray(platforms) || platforms.length === 0) return null;
+        const set = new Set(
+          platforms.filter((p) => typeof p === "string")
+        );
+        if (set.has("REGISTERED_PLATFORM_EMAIL")) return "email";
+        if (set.has("REGISTERED_PLATFORM_GOOGLE")) return "google";
+        if (set.has("REGISTERED_PLATFORM_APPLE")) return "apple";
+        if (set.has("REGISTERED_PLATFORM_MICROSOFT") || set.has("REGISTERED_PLATFORM_AZURE"))
+          return "microsoft";
+        if (set.has("REGISTERED_PLATFORM_GITHUB")) return "github";
+        const first = Array.from(set)[0];
+        return first ? first.toLowerCase() : null;
+      }
+      /**
+       * Exchange OAuth authorization code for access token
+       * @example
+       * const tokenResponse = await sdk.exchangeCodeForToken(code, state);
+       */
+      async exchangeCodeForToken(code, state) {
+        return this.oauthService.getTokenByCode(code, state);
+      }
+      /**
+       * Get user information using access token
+       * @example
+       * const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
+       */
+      async getUserInfo(accessToken) {
+        const data = await this.oauthService.getUserInfoByToken({
+          accessToken
+        });
+        const loginMethod = this.deriveLoginMethod(
+          data?.platforms,
+          data?.platform ?? data.platform ?? null
+        );
+        return {
+          ...data,
+          platform: loginMethod,
+          loginMethod
+        };
+      }
+      parseCookies(cookieHeader) {
+        if (!cookieHeader) {
+          return /* @__PURE__ */ new Map();
+        }
+        const parsed = parseCookieHeader(cookieHeader);
+        return new Map(Object.entries(parsed));
+      }
+      getSessionSecret() {
+        const secret = ENV.cookieSecret;
+        return new TextEncoder().encode(secret);
+      }
+      /**
+       * Create a session token for a user openId
+       * @example
+       * const sessionToken = await sdk.createSessionToken(userInfo.openId);
+       */
+      async createSessionToken(openId, options = {}) {
+        return this.signSession(
+          {
+            openId,
+            appId: ENV.appId,
+            name: options.name || ""
+          },
+          options
+        );
+      }
+      async signSession(payload, options = {}) {
+        const issuedAt = Date.now();
+        const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
+        const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1e3);
+        const secretKey = this.getSessionSecret();
+        return new SignJWT({
+          openId: payload.openId,
+          appId: payload.appId,
+          name: payload.name
+        }).setProtectedHeader({ alg: "HS256", typ: "JWT" }).setExpirationTime(expirationSeconds).sign(secretKey);
+      }
+      async verifySession(cookieValue) {
+        if (!cookieValue) {
+          console.warn("[Auth] Missing session cookie");
+          return null;
+        }
+        try {
+          const secretKey = this.getSessionSecret();
+          const { payload } = await jwtVerify(cookieValue, secretKey, {
+            algorithms: ["HS256"]
+          });
+          const { openId, appId, name } = payload;
+          if (!isNonEmptyString2(openId) || !isNonEmptyString2(appId) || !isNonEmptyString2(name)) {
+            console.warn("[Auth] Session payload missing required fields");
+            return null;
+          }
+          return {
+            openId,
+            appId,
+            name
+          };
+        } catch (error) {
+          console.warn("[Auth] Session verification failed", String(error));
+          return null;
+        }
+      }
+      async getUserInfoWithJwt(jwtToken) {
+        const payload = {
+          jwtToken,
+          projectId: ENV.appId
+        };
+        const { data } = await this.client.post(
+          GET_USER_INFO_WITH_JWT_PATH,
+          payload
+        );
+        const loginMethod = this.deriveLoginMethod(
+          data?.platforms,
+          data?.platform ?? data.platform ?? null
+        );
+        return {
+          ...data,
+          platform: loginMethod,
+          loginMethod
+        };
+      }
+      async authenticateRequest(req) {
+        const cookies = this.parseCookies(req.headers.cookie);
+        const sessionCookie = cookies.get(COOKIE_NAME);
+        const session = await this.verifySession(sessionCookie);
+        if (!session) {
+          throw ForbiddenError("Invalid session cookie");
+        }
+        const sessionUserId = session.openId;
+        const signedInAt = /* @__PURE__ */ new Date();
+        let user = await getUserByOpenId(sessionUserId);
+        if (!user) {
+          try {
+            const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+            await upsertUser({
+              openId: userInfo.openId,
+              name: userInfo.name || null,
+              email: userInfo.email ?? null,
+              loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+              lastSignedIn: signedInAt
+            });
+            user = await getUserByOpenId(userInfo.openId);
+          } catch (error) {
+            console.error("[Auth] Failed to sync user from OAuth:", error);
+            throw ForbiddenError("Failed to sync user info");
+          }
+        }
+        if (!user) {
+          throw ForbiddenError("User not found");
+        }
+        await upsertUser({
+          openId: user.openId,
+          lastSignedIn: signedInAt
+        });
+        return user;
+      }
+    };
+    sdk = new SDKServer();
+  }
+});
+
 // server/services/AiEvolutionService.ts
 var AiEvolutionService_exports = {};
 __export(AiEvolutionService_exports, {
@@ -28096,6 +28131,33 @@ async function loadTranscriptSegments(sessionId, session) {
     LOG2(`Loaded ${rows.length} segments from occ_transcription_segments`);
     return rows;
   }
+  LOG2(`recallBotId on session: ${session.recallBotId ?? session.recall_bot_id}`);
+  if (session.recallBotId || session.recall_bot_id) {
+    try {
+      const [botRows] = await rawSql(
+        `SELECT transcript_json FROM recall_bots WHERE recall_bot_id = $1`,
+        [session.recallBotId ?? session.recall_bot_id]
+      );
+      if (botRows.length > 0 && botRows[0].transcript_json) {
+        const parsed = JSON.parse(botRows[0].transcript_json);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          LOG2(`Loaded ${parsed.length} segments from recall_bots.transcriptJson`);
+          return parsed.map(
+            (s) => ({
+              speaker_name: s.speaker ?? s.speaker_name ?? "Unknown",
+              speaker_role: s.role ?? s.speaker_role ?? null,
+              text: s.text ?? "",
+              start_time: s.start_time ?? s.timestamp ?? null,
+              end_time: s.end_time ?? null,
+              confidence: s.confidence ?? null
+            })
+          );
+        }
+      }
+    } catch (err) {
+      LOG2(`recall_bots fallback error: ${err}`);
+    }
+  }
   if (session.local_transcript_json) {
     try {
       const parsed = JSON.parse(session.local_transcript_json);
@@ -28660,186 +28722,195 @@ function skipStep(step, reason) {
     detail: { reason }
   };
 }
-async function runSessionClosePipeline(sessionId) {
+async function runSessionClosePipeline(sessionId, opts) {
   const pipelineStart = Date.now();
   const pipelineStartedAt = (/* @__PURE__ */ new Date()).toISOString();
-  LOG4(`Starting pipeline for session ${sessionId}`);
-  const steps = [];
-  const db2 = await getDb();
-  if (!db2) {
-    ERR3("No database connection", null);
+  LOG4(`Starting pipeline for session ${sessionId}${opts?.degraded ? " [degraded \u2014 bot fatal]" : ""}`);
+  if (pipelineRunning.has(sessionId)) {
+    console.log(`[SessionClose] Pipeline already running for session ${sessionId} \u2014 skipping duplicate`);
     return;
   }
-  const [sessionRows] = await rawSql(
-    `SELECT s.*,
+  pipelineRunning.add(sessionId);
+  try {
+    const steps = [];
+    const db2 = await getDb();
+    if (!db2) {
+      ERR3("No database connection", null);
+      return;
+    }
+    const [sessionRows] = await rawSql(
+      `SELECT s.*,
             p.sending_name, p.sending_email, p.logo_url, p.primary_color
      FROM shadow_sessions s
      LEFT JOIN partners p ON p.id = s.partner_id
      WHERE s.id = $1`,
-    [sessionId]
-  );
-  if (!sessionRows.length) {
-    ERR3(`Session ${sessionId} not found`, null);
-    return;
-  }
-  const session = sessionRows[0];
-  const recipients = typeof session.recipients === "string" ? JSON.parse(session.recipients) : session.recipients ?? [];
-  const [flagRows] = await rawSql(
-    `SELECT id, flag_type, severity, statement, rule_basis, jurisdiction
+      [sessionId]
+    );
+    if (!sessionRows.length) {
+      ERR3(`Session ${sessionId} not found`, null);
+      return;
+    }
+    const session = sessionRows[0];
+    const recipients = typeof session.recipients === "string" ? JSON.parse(session.recipients) : session.recipients ?? [];
+    const [flagRows] = await rawSql(
+      `SELECT id, flag_type, severity, statement, rule_basis, jurisdiction
      FROM regulatory_flags
      WHERE monitor_id = $1
      ORDER BY severity DESC, created_at ASC`,
-    [sessionId]
-  );
-  const complianceRecipients = recipients.filter(
-    (r) => r.role?.toLowerCase().includes("compliance") || r.sendReport !== false
-  );
-  if (flagRows.length > 0 && complianceRecipients.length > 0) {
-    const compStep = await traceStep("compliance_email", async () => {
-      for (const flag of flagRows) {
-        const deadlineHours = 48;
-        await rawSql(
-          `INSERT INTO compliance_deadlines
+      [sessionId]
+    );
+    const complianceRecipients = recipients.filter(
+      (r) => r.role?.toLowerCase().includes("compliance") || r.sendReport !== false
+    );
+    if (flagRows.length > 0 && complianceRecipients.length > 0) {
+      const compStep = await traceStep("compliance_email", async () => {
+        for (const flag of flagRows) {
+          const deadlineHours = 48;
+          await rawSql(
+            `INSERT INTO compliance_deadlines
              (session_id, flag_id, action, deadline_at, jurisdiction, priority, status, assigned_to)
            VALUES ($1, $2, $3, NOW() + ($4 || ' hours')::interval, $5, $6, 'open', $7)`,
-          [
-            sessionId,
-            flag.id,
-            flag.statement ?? flag.flag_type,
-            deadlineHours,
-            flag.jurisdiction ?? session.jurisdiction ?? "JSE",
-            flag.severity === "critical" ? "critical" : "high",
-            complianceRecipients[0]?.email ?? null
-          ]
-        );
-      }
-      await sendComplianceCloseEmail({
-        sessionId,
-        companyName: session.company ?? session.client_name ?? "Company",
-        eventName: session.event_name ?? "Event",
-        flags: flagRows.map((f) => ({
-          title: f.flag_type ?? f.statement,
-          body: f.statement ?? f.rule_basis ?? "",
-          severity: f.severity ?? "high"
-        })),
-        deadlines: flagRows.map((f) => ({
-          action: f.statement ?? f.flag_type,
-          hours: 48,
-          jurisdiction: f.jurisdiction ?? session.jurisdiction ?? "JSE"
-        })),
-        recipients: complianceRecipients.map((r) => ({ name: r.name, email: r.email }))
+            [
+              sessionId,
+              flag.id,
+              flag.statement ?? flag.flag_type,
+              deadlineHours,
+              flag.jurisdiction ?? session.jurisdiction ?? "JSE",
+              flag.severity === "critical" ? "critical" : "high",
+              complianceRecipients[0]?.email ?? null
+            ]
+          );
+        }
+        await sendComplianceCloseEmail({
+          sessionId,
+          companyName: session.company ?? session.client_name ?? "Company",
+          eventName: session.event_name ?? "Event",
+          flags: flagRows.map((f) => ({
+            title: f.flag_type ?? f.statement,
+            body: f.statement ?? f.rule_basis ?? "",
+            severity: f.severity ?? "high"
+          })),
+          deadlines: flagRows.map((f) => ({
+            action: f.statement ?? f.flag_type,
+            hours: 48,
+            jurisdiction: f.jurisdiction ?? session.jurisdiction ?? "JSE"
+          })),
+          recipients: complianceRecipients.map((r) => ({ name: r.name, email: r.email }))
+        });
+        return { recipients: complianceRecipients.length, flags: flagRows.length };
       });
-      return { recipients: complianceRecipients.length, flags: flagRows.length };
+      steps.push(compStep);
+      if (compStep.status === "ok") LOG4(`Compliance email sent to ${complianceRecipients.length} recipients (${compStep.duration_ms}ms)`);
+      else ERR3(`Compliance email ${compStep.status}`, compStep.error);
+    } else {
+      steps.push(skipStep("compliance_email", flagRows.length === 0 ? "no_flags" : "no_recipients"));
+    }
+    let aiCoreResult = null;
+    const analysisStep = await traceStep("ai_core_analysis", async () => {
+      aiCoreResult = await runAICoreAnalysisStep(sessionId, session);
+      if (!aiCoreResult) return { skipped: true, reason: "no_segments_or_unhealthy" };
+      return { job_id: aiCoreResult.job_id, status: aiCoreResult.overall_status, modules: aiCoreResult.modules_completed.length };
     });
-    steps.push(compStep);
-    if (compStep.status === "ok") LOG4(`Compliance email sent to ${complianceRecipients.length} recipients (${compStep.duration_ms}ms)`);
-    else ERR3(`Compliance email ${compStep.status}`, compStep.error);
-  } else {
-    steps.push(skipStep("compliance_email", flagRows.length === 0 ? "no_flags" : "no_recipients"));
-  }
-  let aiCoreResult = null;
-  const analysisStep = await traceStep("ai_core_analysis", async () => {
-    aiCoreResult = await runAICoreAnalysisStep(sessionId, session);
-    if (!aiCoreResult) return { skipped: true, reason: "no_segments_or_unhealthy" };
-    return { job_id: aiCoreResult.job_id, status: aiCoreResult.overall_status, modules: aiCoreResult.modules_completed.length };
-  });
-  steps.push(analysisStep);
-  if (analysisStep.status === "ok" && aiCoreResult) {
-    LOG4(`AI Core analysis complete: job=${aiCoreResult.job_id} status=${aiCoreResult.overall_status} (${analysisStep.duration_ms}ms)`);
-  } else if (analysisStep.status !== "ok") {
-    ERR3(`AI Core analysis ${analysisStep.status} \u2014 continuing`, analysisStep.error);
-  }
-  if (aiCoreResult && aiCoreResult.overall_status === "complete") {
-    const driftStep = await traceStep("drift_detection", async () => {
-      await runDriftDetectionStep(sessionId, session, aiCoreResult);
-    });
-    steps.push(driftStep);
-    if (driftStep.status !== "ok") ERR3(`Drift detection ${driftStep.status}`, driftStep.error);
-  } else {
-    steps.push(skipStep("drift_detection", aiCoreResult ? "analysis_incomplete" : "no_analysis"));
-  }
-  if (aiCoreResult) {
-    const govStep = await traceStep("governance_record", async () => {
-      await runGovernanceRecordStep(sessionId, session, aiCoreResult);
-    });
-    steps.push(govStep);
-    if (govStep.status !== "ok") ERR3(`Governance ${govStep.status}`, govStep.error);
-    const profileStep = await traceStep("profile_update", async () => {
-      await runProfileUpdateStep(sessionId, session, aiCoreResult);
-    });
-    steps.push(profileStep);
-    if (profileStep.status !== "ok") ERR3(`Profile update ${profileStep.status}`, profileStep.error);
-  } else {
-    steps.push(skipStep("governance_record", "no_analysis"));
-    steps.push(skipStep("profile_update", "no_analysis"));
-  }
-  let reportModules = {};
-  const reportStep = await traceStep("ai_report", async () => {
-    reportModules = await generateAIReportWrapper(sessionId, session);
-    return { modules: Object.keys(reportModules).length };
-  });
-  steps.push(reportStep);
-  if (reportStep.status === "ok") LOG4(`AI report generated (${reportStep.duration_ms}ms)`);
-  else ERR3(`AI report ${reportStep.status}`, reportStep.error);
-  const reportRecipients = recipients.filter((r) => r.sendReport !== false);
-  if (reportRecipients.length > 0) {
-    const deliveryStep = await traceStep("report_delivery", async () => {
-      await sendReportLinks({
-        sessionId,
-        eventName: session.event_name ?? "Event",
-        companyName: session.company ?? session.client_name ?? "Company",
-        eventDate: new Date(session.created_at).toLocaleDateString(),
-        reportModules: Object.keys(reportModules).length,
-        complianceFlags: flagRows.length,
-        sessionDuration: calculateDuration(session),
-        recipients: reportRecipients.map((r) => ({ name: r.name, email: r.email })),
-        partnerId: session.partner_id ?? void 0
+    steps.push(analysisStep);
+    if (analysisStep.status === "ok" && aiCoreResult) {
+      LOG4(`AI Core analysis complete: job=${aiCoreResult.job_id} status=${aiCoreResult.overall_status} (${analysisStep.duration_ms}ms)`);
+    } else if (analysisStep.status !== "ok") {
+      ERR3(`AI Core analysis ${analysisStep.status} \u2014 continuing`, analysisStep.error);
+    }
+    if (aiCoreResult && aiCoreResult.overall_status === "complete") {
+      const driftStep = await traceStep("drift_detection", async () => {
+        await runDriftDetectionStep(sessionId, session, aiCoreResult);
       });
-      return { recipients: reportRecipients.length };
+      steps.push(driftStep);
+      if (driftStep.status !== "ok") ERR3(`Drift detection ${driftStep.status}`, driftStep.error);
+    } else {
+      steps.push(skipStep("drift_detection", aiCoreResult ? "analysis_incomplete" : "no_analysis"));
+    }
+    if (aiCoreResult) {
+      const govStep = await traceStep("governance_record", async () => {
+        await runGovernanceRecordStep(sessionId, session, aiCoreResult);
+      });
+      steps.push(govStep);
+      if (govStep.status !== "ok") ERR3(`Governance ${govStep.status}`, govStep.error);
+      const profileStep = await traceStep("profile_update", async () => {
+        await runProfileUpdateStep(sessionId, session, aiCoreResult);
+      });
+      steps.push(profileStep);
+      if (profileStep.status !== "ok") ERR3(`Profile update ${profileStep.status}`, profileStep.error);
+    } else {
+      steps.push(skipStep("governance_record", "no_analysis"));
+      steps.push(skipStep("profile_update", "no_analysis"));
+    }
+    let reportModules = {};
+    const reportStep = await traceStep("ai_report", async () => {
+      reportModules = await generateAIReportWrapper(sessionId, session);
+      return { modules: Object.keys(reportModules).length };
     });
-    steps.push(deliveryStep);
-    if (deliveryStep.status === "ok") LOG4(`Report links sent to ${reportRecipients.length} recipients (${deliveryStep.duration_ms}ms)`);
-    else ERR3(`Report delivery ${deliveryStep.status}`, deliveryStep.error);
-  } else {
-    steps.push(skipStep("report_delivery", "no_recipients"));
-  }
-  steps.push(skipStep("board_intelligence", "async_deferred"));
-  steps.push(skipStep("briefing_accuracy", "async_deferred"));
-  runBoardIntelligenceUpdate({
-    sessionId,
-    company: session.company ?? session.client_name ?? "",
-    eventType: session.event_type,
-    reportModules: {
-      module08: reportModules["module_08"] ?? reportModules["guidance"],
-      module07: reportModules["module_07"] ?? reportModules["tone"],
-      module05: reportModules["module_05"] ?? reportModules["compliance"],
-      module19: reportModules["module_19"] ?? reportModules["governance"]
-    },
-    transcriptText: await getTranscriptText(sessionId)
-  }).catch((e) => ERR3("Board Intelligence update failed", e));
-  scoreBriefingAccuracy(sessionId).catch(
-    (e) => ERR3("Briefing accuracy scoring failed", e)
-  );
-  const errorCount = steps.filter((s) => s.status === "error" || s.status === "timeout").length;
-  const okCount = steps.filter((s) => s.status === "ok").length;
-  const overallStatus = errorCount === 0 ? "complete" : okCount === 0 ? "error" : "partial";
-  const trace = {
-    session_id: sessionId,
-    started_at: pipelineStartedAt,
-    completed_at: (/* @__PURE__ */ new Date()).toISOString(),
-    total_duration_ms: Date.now() - pipelineStart,
-    steps,
-    overall_status: overallStatus
-  };
-  await rawSql(
-    `UPDATE shadow_sessions
+    steps.push(reportStep);
+    if (reportStep.status === "ok") LOG4(`AI report generated (${reportStep.duration_ms}ms)`);
+    else ERR3(`AI report ${reportStep.status}`, reportStep.error);
+    const reportRecipients = recipients.filter((r) => r.sendReport !== false);
+    if (reportRecipients.length > 0) {
+      const deliveryStep = await traceStep("report_delivery", async () => {
+        await sendReportLinks({
+          sessionId,
+          eventName: session.event_name ?? "Event",
+          companyName: session.company ?? session.client_name ?? "Company",
+          eventDate: new Date(session.created_at).toLocaleDateString(),
+          reportModules: Object.keys(reportModules).length,
+          complianceFlags: flagRows.length,
+          sessionDuration: calculateDuration(session),
+          recipients: reportRecipients.map((r) => ({ name: r.name, email: r.email })),
+          partnerId: session.partner_id ?? void 0
+        });
+        return { recipients: reportRecipients.length };
+      });
+      steps.push(deliveryStep);
+      if (deliveryStep.status === "ok") LOG4(`Report links sent to ${reportRecipients.length} recipients (${deliveryStep.duration_ms}ms)`);
+      else ERR3(`Report delivery ${deliveryStep.status}`, deliveryStep.error);
+    } else {
+      steps.push(skipStep("report_delivery", "no_recipients"));
+    }
+    steps.push(skipStep("board_intelligence", "async_deferred"));
+    steps.push(skipStep("briefing_accuracy", "async_deferred"));
+    runBoardIntelligenceUpdate({
+      sessionId,
+      company: session.company ?? session.client_name ?? "",
+      eventType: session.event_type,
+      reportModules: {
+        module08: reportModules["module_08"] ?? reportModules["guidance"],
+        module07: reportModules["module_07"] ?? reportModules["tone"],
+        module05: reportModules["module_05"] ?? reportModules["compliance"],
+        module19: reportModules["module_19"] ?? reportModules["governance"]
+      },
+      transcriptText: await getTranscriptText(sessionId)
+    }).catch((e) => ERR3("Board Intelligence update failed", e));
+    scoreBriefingAccuracy(sessionId).catch(
+      (e) => ERR3("Briefing accuracy scoring failed", e)
+    );
+    const errorCount = steps.filter((s) => s.status === "error" || s.status === "timeout").length;
+    const okCount = steps.filter((s) => s.status === "ok").length;
+    const overallStatus = errorCount === 0 ? "complete" : okCount === 0 ? "error" : "partial";
+    const trace = {
+      session_id: sessionId,
+      started_at: pipelineStartedAt,
+      completed_at: (/* @__PURE__ */ new Date()).toISOString(),
+      total_duration_ms: Date.now() - pipelineStart,
+      steps,
+      overall_status: overallStatus
+    };
+    await rawSql(
+      `UPDATE shadow_sessions
      SET report_links_sent_at = NOW(),
          ai_pipeline_trace = $1
      WHERE id = $2`,
-    [JSON.stringify(trace), sessionId]
-  ).catch(() => {
-  });
-  LOG4(`Pipeline ${overallStatus} for session ${sessionId} in ${trace.total_duration_ms}ms (${okCount} ok, ${steps.filter((s) => s.status === "skipped").length} skipped, ${errorCount} errors)`);
+      [JSON.stringify(trace), sessionId]
+    ).catch(() => {
+    });
+    LOG4(`Pipeline ${overallStatus} for session ${sessionId} in ${trace.total_duration_ms}ms (${okCount} ok, ${steps.filter((s) => s.status === "skipped").length} skipped, ${errorCount} errors)`);
+  } finally {
+    pipelineRunning.delete(sessionId);
+  }
 }
 async function generateAIReportWrapper(sessionId, session) {
   await rawSql(
@@ -28869,9 +28940,21 @@ async function getTranscriptText(sessionId) {
     );
     if (rows.length) return rows.map((r) => r.text).join(" ");
     const [fallback] = await rawSql(
-      `SELECT local_transcript_json FROM shadow_sessions WHERE id = $1`,
+      `SELECT ss.local_transcript_json, rb.transcript_json as recall_transcript_json
+       FROM shadow_sessions ss
+       LEFT JOIN recall_bots rb ON rb.recall_bot_id = ss.recall_bot_id
+       WHERE ss.id = $1`,
       [sessionId]
     );
+    if (fallback[0]?.recall_transcript_json) {
+      try {
+        const parsed = JSON.parse(fallback[0].recall_transcript_json);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((s) => s.text ?? "").join(" ");
+        }
+      } catch {
+      }
+    }
     if (fallback[0]?.local_transcript_json) {
       try {
         const parsed = JSON.parse(fallback[0].local_transcript_json);
@@ -29104,7 +29187,7 @@ async function runAICoreAnalysisStep(sessionId, session) {
   LOG4(`Persisted AI Core results: job=${result.job_id}, modules=${result.modules_completed.length}/${result.modules_requested.length}`);
   return result;
 }
-var LOG4, ERR3;
+var LOG4, ERR3, pipelineRunning;
 var init_SessionClosePipeline = __esm({
   "server/services/SessionClosePipeline.ts"() {
     "use strict";
@@ -29117,6 +29200,7 @@ var init_SessionClosePipeline = __esm({
     init_AICorePayloadMapper();
     LOG4 = (msg) => console.log(`[SessionClose] ${msg}`);
     ERR3 = (msg, e) => console.error(`[SessionClose] ${msg}`, e);
+    pipelineRunning = /* @__PURE__ */ new Set();
   }
 });
 
@@ -29284,15 +29368,25 @@ var init_shadowModeRouter = __esm({
         const userId = ctx.user?.id ?? null;
         const RECALL_SUPPORTED = /* @__PURE__ */ new Set(["zoom", "teams", "meet", "webex"]);
         const isRecallSupported = RECALL_SUPPORTED.has(input.platform);
-        const [inserted] = await db2.insert(shadowSessions).values({
-          clientName: input.clientName,
-          eventName: input.eventName,
-          eventType: input.eventType,
-          platform: input.platform,
-          meetingUrl: input.meetingUrl,
-          status: "pending",
-          notes: input.notes ?? null
-        }).returning();
+        let inserted;
+        try {
+          const [insertRows] = await rawSql(
+            `INSERT INTO shadow_sessions (session_id, client_name, event_name, event_type, platform, meeting_url, status, notes, org_id)
+           VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, 'pending', $6, $7)
+           RETURNING *`,
+            [input.clientName, input.eventName, input.eventType, input.platform, input.meetingUrl, input.notes ?? null, ctx.user?.orgId ?? 1]
+          );
+          inserted = insertRows[0];
+        } catch (insertErr) {
+          console.error("[Shadow] rawSql INSERT failed:", insertErr?.message ?? insertErr);
+          console.error("[Shadow] rawSql error code:", insertErr?.code ?? "none");
+          console.error("[Shadow] rawSql error detail:", insertErr?.detail ?? "none");
+          throw new Error(`Session insert failed [${insertErr?.code ?? "no-code"}]: ${insertErr?.message ?? "unknown"}`);
+        }
+        if (!inserted) {
+          console.error("[Shadow] shadow_sessions INSERT returned no rows");
+          throw new Error("Session insert returned no rows \u2014 check database table structure");
+        }
         const sessionId = inserted.id;
         const ablyChannel = `shadow-${sessionId}-${Date.now()}`;
         let agmSessionId = null;
@@ -29352,7 +29446,17 @@ var init_shadowModeRouter = __esm({
                 meeting_url: input.meetingUrl,
                 bot_name: "CuraLive Intelligence",
                 recording_config: {
-                  transcript: { provider: { recallai_streaming: {} } },
+                  transcript: {
+                    provider: {
+                      recallai_streaming: {
+                        language_code: "en",
+                        mode: "prioritize_low_latency"
+                      }
+                    },
+                    diarization: {
+                      use_separate_streams_when_available: true
+                    }
+                  },
                   realtime_endpoints: [{
                     type: "webhook",
                     url: webhookUrl,
@@ -29382,9 +29486,43 @@ var init_shadowModeRouter = __esm({
               meetingId: null,
               status: bot.status_code ?? "created",
               ablyChannel,
+              webhookUrl,
               transcriptJson: JSON.stringify([])
             });
             await logOperatorAction({ sessionId, actionType: "session_started", detail: `${input.clientName} \u2014 ${input.eventName} (Recall.ai bot)`, metadata: { platform: input.platform, eventType: input.eventType, botId: bot.id } });
+            const ablyKey = process.env.ABLY_API_KEY ?? "";
+            const ablyRestUrl = `https://rest.ably.io/channels/${encodeURIComponent(ablyChannel)}/messages`;
+            const warningTimer = setTimeout(async () => {
+              try {
+                console.log(`[Watchdog] Session ${sessionId} \u2014 no transcript in 15s, warning operator`);
+                if (ablyKey) {
+                  await fetch(ablyRestUrl, {
+                    method: "POST",
+                    headers: { "Authorization": `Basic ${Buffer.from(ablyKey).toString("base64")}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: "curalive", data: JSON.stringify({ type: "transcript.warning", data: { sessionId, reason: "no_transcript_15s" } }) })
+                  });
+                }
+              } catch (err) {
+                console.error(`[Watchdog] Warning publish error for session ${sessionId}:`, err);
+              }
+            }, 15e3);
+            global[`watchdog-warning:${sessionId}`] = warningTimer;
+            const failoverTimer = setTimeout(async () => {
+              try {
+                console.log(`[Watchdog] Session ${sessionId} \u2014 no transcript in 90s, firing failover`);
+                await rawSql(`UPDATE shadow_sessions SET status = 'recall_failed' WHERE id = $1`, [sessionId]);
+                if (ablyKey) {
+                  await fetch(ablyRestUrl, {
+                    method: "POST",
+                    headers: { "Authorization": `Basic ${Buffer.from(ablyKey).toString("base64")}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: "curalive", data: JSON.stringify({ type: "bot.failover", data: { sessionId, reason: "no_transcript_90s" } }) })
+                  });
+                }
+              } catch (err) {
+                console.error(`[Watchdog] Failover error for session ${sessionId}:`, err);
+              }
+            }, 9e4);
+            global[`watchdog-failover:${sessionId}`] = failoverTimer;
             return {
               sessionId,
               botId: bot.id,
@@ -29444,7 +29582,21 @@ var init_shadowModeRouter = __esm({
             eventDate: null,
             sourceType: "live_session"
           });
-          runSessionClosePipeline(input.sessionId).catch(console.error);
+          (async () => {
+            const POLL_INTERVAL_MS = 5e3;
+            const MAX_POLLS = 12;
+            const botId = session.recallBotId;
+            for (let i = 0; i < MAX_POLLS; i++) {
+              await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+              try {
+                const [latestBot] = await db2.select({ transcriptJson: recallBots.transcriptJson }).from(recallBots).where(eq55(recallBots.recallBotId, botId)).limit(1);
+                const chunks = latestBot?.transcriptJson ? JSON.parse(latestBot.transcriptJson) : [];
+                if (Array.isArray(chunks) && chunks.length > 0) break;
+              } catch {
+              }
+            }
+            runSessionClosePipeline(input.sessionId).catch(console.error);
+          })();
           await logOperatorAction({ sessionId: input.sessionId, actionType: "session_ended", detail: `${transcript.length} transcript segments, ${metricsCount} metrics generated`, metadata: { transcriptSegments: transcript.length, metricsCount } });
           return {
             success: true,
@@ -29585,7 +29737,17 @@ var init_shadowModeRouter = __esm({
               meeting_url: session.meetingUrl,
               bot_name: "CuraLive Intelligence",
               recording_config: {
-                transcript: { provider: { recallai_streaming: {} } },
+                transcript: {
+                  provider: {
+                    recallai_streaming: {
+                      language_code: "en",
+                      mode: "prioritize_low_latency"
+                    }
+                  },
+                  diarization: {
+                    use_separate_streams_when_available: true
+                  }
+                },
                 realtime_endpoints: [{
                   type: "webhook",
                   url: webhookUrl,
@@ -29615,6 +29777,7 @@ var init_shadowModeRouter = __esm({
             meetingId: null,
             status: bot.status_code ?? "created",
             ablyChannel,
+            webhookUrl,
             transcriptJson: JSON.stringify([])
           });
           return {
@@ -29676,6 +29839,48 @@ var init_shadowModeRouter = __esm({
           }
         }
         return { success: true, segmentCount: existingTranscript.length };
+      }),
+      getIntelligenceFeed: operatorProcedure.input(z42.object({
+        sessionId: z42.string(),
+        since: z42.number().optional()
+      })).query(async ({ input }) => {
+        try {
+          const sql23 = `
+          SELECT id, session_id, feed_type, severity, title, body, metadata, pipeline, speaker, timestamp_in_event, created_at
+          FROM intelligence_feed
+          WHERE session_id = $1
+          ${input.since ? "AND id > $2" : ""}
+          ORDER BY created_at ASC
+          LIMIT 100`;
+          const params = input.since ? [`shadow-${input.sessionId}`, input.since] : [`shadow-${input.sessionId}`];
+          const [rows] = await rawSql(sql23, params);
+          return rows;
+        } catch {
+          return [];
+        }
+      }),
+      getSuppressionStats: operatorProcedure.input(z42.object({ sessionId: z42.string() })).query(async ({ input }) => {
+        try {
+          const [rows] = await rawSql(
+            `SELECT
+            COUNT(*) AS total_assessed,
+            COUNT(*) FILTER (WHERE gd.decision = 'authorised') AS total_surfaced
+           FROM governance_decisions gd
+           JOIN intelligence_feed f ON f.id = gd.intelligence_feed_id
+           WHERE f.session_id = $1`,
+            [`shadow-${input.sessionId}`]
+          );
+          const row = rows?.[0];
+          const totalAssessed = parseInt(row?.total_assessed ?? "0", 10);
+          const totalSurfaced = parseInt(row?.total_surfaced ?? "0", 10);
+          return {
+            totalAssessed,
+            totalSurfaced,
+            totalSuppressed: totalAssessed - totalSurfaced
+          };
+        } catch {
+          return { totalAssessed: 0, totalSurfaced: 0, totalSuppressed: 0 };
+        }
       }),
       deleteSession: operatorProcedure.input(z42.object({ sessionId: z42.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
@@ -29959,7 +30164,7 @@ var init_shadowModeRouter = __esm({
         const actions = await db2.select().from(operatorActions).where(eq55(operatorActions.sessionId, input.sessionId)).orderBy(desc31(operatorActions.createdAt)).limit(200);
         let aiReport = null;
         try {
-          const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`, [`shadow-${session.id}`]);
+          const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = $1 LIMIT 1`, [`shadow-${session.id}`]);
           if (rows?.[0]?.ai_report) aiReport = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
         } catch {
         }
@@ -30059,7 +30264,7 @@ var init_shadowModeRouter = __esm({
         const actions = await db2.select().from(operatorActions).where(eq55(operatorActions.sessionId, input.sessionId)).orderBy(desc31(operatorActions.createdAt)).limit(500);
         let aiReport = null;
         try {
-          const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = ? LIMIT 1`, [`shadow-${session.id}`]);
+          const [rows] = await rawSql(`SELECT ai_report FROM archive_events WHERE event_id = $1 LIMIT 1`, [`shadow-${session.id}`]);
           if (rows?.[0]?.ai_report) aiReport = typeof rows[0].ai_report === "string" ? JSON.parse(rows[0].ai_report) : rows[0].ai_report;
         } catch {
         }
@@ -30204,10 +30409,216 @@ var init_shadowModeRouter = __esm({
   }
 });
 
+// server/routers/customerDashboardRouter.ts
+import { z as z43 } from "zod";
+import { TRPCError as TRPCError8 } from "@trpc/server";
+var customerProcedure, customerDashboardRouter;
+var init_customerDashboardRouter = __esm({
+  "server/routers/customerDashboardRouter.ts"() {
+    "use strict";
+    init_trpc();
+    init_db();
+    customerProcedure = protectedProcedure.use(({ ctx, next }) => {
+      if (ctx.user?.role !== "customer") {
+        throw new TRPCError8({
+          code: "UNAUTHORIZED",
+          message: "Customer access required"
+        });
+      }
+      return next({ ctx });
+    });
+    customerDashboardRouter = router({
+      getSessions: customerProcedure.query(async ({ ctx }) => {
+        try {
+          const orgId = ctx.user?.orgId ?? 1;
+          const [rows] = await rawSql(
+            `SELECT id, session_id, client_name, event_name, event_type, status, created_at, ably_channel
+           FROM shadow_sessions
+           WHERE org_id = $1
+           ORDER BY created_at DESC
+           LIMIT 50`,
+            [orgId]
+          );
+          return rows;
+        } catch {
+          return [];
+        }
+      }),
+      getActionResolution: customerProcedure.input(z43.object({ sessionId: z43.string() })).query(async ({ input, ctx }) => {
+        try {
+          const orgId = ctx.user?.orgId ?? 1;
+          const [rows] = await rawSql(
+            `SELECT
+            COUNT(*) FILTER (WHERE f.severity IN ('high', 'critical')) AS required_attention,
+            COUNT(DISTINCT ca.target_id) FILTER (WHERE f.severity IN ('high', 'critical') AND ca.target_id IS NOT NULL) AS actioned
+           FROM intelligence_feed f
+           LEFT JOIN customer_actions ca ON ca.target_id = f.id
+             AND ca.session_id = replace(f.session_id, 'shadow-', '')::integer
+           JOIN shadow_sessions s ON s.id = CAST(replace(f.session_id, 'shadow-', '') AS integer)
+           WHERE f.session_id = $1
+           AND s.org_id = $2`,
+            [input.sessionId, orgId]
+          );
+          const row = rows?.[0];
+          const requiredAttention = parseInt(row?.required_attention ?? "0", 10);
+          const actioned = parseInt(row?.actioned ?? "0", 10);
+          return {
+            requiredAttention,
+            actioned,
+            unresolved: requiredAttention - actioned
+          };
+        } catch {
+          return { requiredAttention: 0, actioned: 0, unresolved: 0 };
+        }
+      }),
+      getDailyConfidence: customerProcedure.query(async ({ ctx }) => {
+        try {
+          const orgId = ctx.user?.orgId ?? 1;
+          const [sessionRows] = await rawSql(
+            `SELECT id, session_id, event_name, client_name, created_at
+           FROM shadow_sessions
+           WHERE org_id = $1 AND status = 'completed'
+           ORDER BY created_at DESC
+           LIMIT 1`,
+            [orgId]
+          );
+          const session = sessionRows?.[0];
+          if (!session) {
+            return { state: "confident", sessionId: null, sessionName: null, latestSessionAt: null, items: [] };
+          }
+          const feedSessionId = `shadow-${session.id}`;
+          const [resRows] = await rawSql(
+            `SELECT
+            COUNT(*) FILTER (WHERE f.severity IN ('high', 'critical')) AS required_attention,
+            COUNT(DISTINCT ca.target_id) FILTER (WHERE f.severity IN ('high', 'critical') AND ca.target_id IS NOT NULL) AS actioned,
+            COUNT(*) FILTER (WHERE f.severity = 'critical') AS critical_count,
+            COUNT(DISTINCT ca.target_id) FILTER (WHERE f.severity = 'critical' AND ca.target_id IS NOT NULL) AS critical_actioned
+           FROM intelligence_feed f
+           LEFT JOIN customer_actions ca ON ca.target_id = f.id AND ca.session_id = $2
+           WHERE f.session_id = $1`,
+            [feedSessionId, session.id]
+          );
+          const res = resRows?.[0];
+          const requiredAttention = parseInt(res?.required_attention ?? "0", 10);
+          const actioned = parseInt(res?.actioned ?? "0", 10);
+          const criticalCount = parseInt(res?.critical_count ?? "0", 10);
+          const criticalActioned = parseInt(res?.critical_actioned ?? "0", 10);
+          const unresolved = requiredAttention - actioned;
+          const unresolvedCritical = criticalCount - criticalActioned;
+          const [itemRows] = await rawSql(
+            `SELECT f.id, f.title, f.severity
+           FROM intelligence_feed f
+           LEFT JOIN customer_actions ca ON ca.target_id = f.id AND ca.session_id = $2
+           WHERE f.session_id = $1
+           AND f.severity IN ('high', 'critical')
+           AND ca.target_id IS NULL
+           ORDER BY CASE f.severity WHEN 'critical' THEN 0 ELSE 1 END, f.created_at DESC
+           LIMIT 3`,
+            [feedSessionId, session.id]
+          );
+          const items = (itemRows ?? []).map((r) => ({ id: r.id, title: r.title, severity: r.severity }));
+          let state = "confident";
+          if (unresolvedCritical > 0 || unresolved >= 3) {
+            state = "not_ready";
+          } else if (unresolved >= 1) {
+            state = "caution";
+          }
+          return {
+            state,
+            sessionId: session.id,
+            sessionName: session.event_name,
+            latestSessionAt: session.created_at,
+            items
+          };
+        } catch {
+          return { state: "confident", sessionId: null, sessionName: null, latestSessionAt: null, items: [] };
+        }
+      }),
+      getSuppressionStats: customerProcedure.input(z43.object({ sessionId: z43.string() })).query(async ({ input, ctx }) => {
+        try {
+          const orgId = ctx.user?.orgId ?? 1;
+          const [rows] = await rawSql(
+            `SELECT
+            COUNT(*) AS total_assessed,
+            COUNT(*) FILTER (WHERE gd.decision = 'authorised') AS total_surfaced
+           FROM governance_decisions gd
+           JOIN intelligence_feed f ON f.id = gd.intelligence_feed_id
+           JOIN shadow_sessions s ON s.id = CAST(replace(f.session_id, 'shadow-', '') AS integer)
+           WHERE f.session_id = $1
+           AND s.org_id = $2`,
+            [input.sessionId, orgId]
+          );
+          const row = rows?.[0];
+          const totalAssessed = parseInt(row?.total_assessed ?? "0", 10);
+          const totalSurfaced = parseInt(row?.total_surfaced ?? "0", 10);
+          return { totalAssessed, totalSurfaced, totalSuppressed: totalAssessed - totalSurfaced };
+        } catch {
+          return { totalAssessed: 0, totalSurfaced: 0, totalSuppressed: 0 };
+        }
+      }),
+      getFeed: customerProcedure.input(z43.object({ sessionId: z43.string() })).query(async ({ input, ctx }) => {
+        try {
+          const orgId = ctx.user?.orgId ?? 1;
+          const [rows] = await rawSql(
+            `SELECT f.id, f.session_id, f.feed_type, f.severity, f.title, f.body, f.pipeline, f.created_at
+           FROM intelligence_feed f
+           JOIN shadow_sessions s ON s.id = CAST(replace(f.session_id, 'shadow-', '') AS integer)
+           WHERE f.session_id = $1
+           AND s.org_id = $2
+           ORDER BY f.created_at ASC
+           LIMIT 100`,
+            [input.sessionId, orgId]
+          );
+          return rows;
+        } catch {
+          return [];
+        }
+      }),
+      getGovernance: customerProcedure.input(z43.object({ sessionId: z43.string() })).query(async ({ input, ctx }) => {
+        try {
+          const orgId = ctx.user?.orgId ?? 1;
+          const [rows] = await rawSql(
+            `SELECT g.id, g.session_id, g.decision_type, g.decision, g.confidence_score, g.reasoning, g.decided_at
+           FROM governance_decisions g
+           JOIN shadow_sessions s ON s.id = CAST(g.session_id AS integer)
+           WHERE g.session_id = $1
+           AND s.org_id = $2
+           ORDER BY g.decided_at ASC
+           LIMIT 100`,
+            [input.sessionId, orgId]
+          );
+          return rows;
+        } catch {
+          return [];
+        }
+      }),
+      recordAction: customerProcedure.input(z43.object({
+        sessionId: z43.number(),
+        targetType: z43.string(),
+        targetId: z43.number(),
+        actionType: z43.enum(["acknowledge", "follow_up"])
+      })).mutation(async ({ input, ctx }) => {
+        try {
+          const orgId = ctx.user?.orgId ?? 1;
+          const userId = ctx.user?.id ?? 0;
+          await rawSql(
+            `INSERT INTO customer_actions (org_id, user_id, session_id, action_type, target_type, target_id)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+            [orgId, userId, input.sessionId, input.actionType, input.targetType, input.targetId]
+          );
+          return { success: true };
+        } catch (err) {
+          return { success: false };
+        }
+      })
+    });
+  }
+});
+
 // server/routers/benchmarksRouter.ts
-async function rawQuery2(sql25, params = []) {
+async function rawQuery2(sql23, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql25, params);
+  const [rows] = await rawSql(sql23, params);
   return rows;
 }
 var benchmarksRouter;
@@ -30292,7 +30703,7 @@ var init_benchmarksRouter = __esm({
 });
 
 // server/routers/marketReactionRouter.ts
-import { z as z43 } from "zod";
+import { z as z44 } from "zod";
 async function rawQuery3(query, params = []) {
   const db2 = await getDb();
   if (!db2) return [];
@@ -30446,27 +30857,27 @@ var init_marketReactionRouter = __esm({
           avgPriceChange24h: priceChanges24h.length > 0 ? Number((priceChanges24h.reduce((a, b) => a + b, 0) / priceChanges24h.length).toFixed(2)) : null
         };
       }),
-      addRecord: publicProcedure.input(z43.object({
-        sessionId: z43.number().optional(),
-        companyName: z43.string().min(1),
-        ticker: z43.string().optional(),
-        eventType: z43.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).default("earnings_call"),
-        eventDate: z43.string().optional(),
-        sentimentScore: z43.number().min(0).max(100).optional(),
-        complianceFlags: z43.number().default(0),
-        executiveConfidenceScore: z43.number().min(0).max(100).optional(),
-        qaDifficultyScore: z43.number().min(0).max(100).optional(),
-        transcriptSegments: z43.number().default(0),
-        keyTopics: z43.string().optional(),
-        guidanceDiscussed: z43.boolean().default(false),
-        revenueDiscussed: z43.boolean().default(false),
-        marginDiscussed: z43.boolean().default(false),
-        pricePreEvent: z43.number().optional(),
-        pricePost24h: z43.number().optional(),
-        pricePost48h: z43.number().optional(),
-        pricePost7d: z43.number().optional(),
-        marketReaction: z43.enum(["strongly_positive", "positive", "neutral", "negative", "strongly_negative"]).optional(),
-        notes: z43.string().optional()
+      addRecord: publicProcedure.input(z44.object({
+        sessionId: z44.number().optional(),
+        companyName: z44.string().min(1),
+        ticker: z44.string().optional(),
+        eventType: z44.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).default("earnings_call"),
+        eventDate: z44.string().optional(),
+        sentimentScore: z44.number().min(0).max(100).optional(),
+        complianceFlags: z44.number().default(0),
+        executiveConfidenceScore: z44.number().min(0).max(100).optional(),
+        qaDifficultyScore: z44.number().min(0).max(100).optional(),
+        transcriptSegments: z44.number().default(0),
+        keyTopics: z44.string().optional(),
+        guidanceDiscussed: z44.boolean().default(false),
+        revenueDiscussed: z44.boolean().default(false),
+        marginDiscussed: z44.boolean().default(false),
+        pricePreEvent: z44.number().optional(),
+        pricePost24h: z44.number().optional(),
+        pricePost48h: z44.number().optional(),
+        pricePost7d: z44.number().optional(),
+        marketReaction: z44.enum(["strongly_positive", "positive", "neutral", "negative", "strongly_negative"]).optional(),
+        notes: z44.string().optional()
       })).mutation(async ({ input }) => {
         let reactionMagnitude = null;
         if (input.pricePreEvent && input.pricePost24h) {
@@ -30526,16 +30937,16 @@ Write a 2-3 sentence intelligence brief explaining the key communication signals
         ]);
         return { success: true };
       }),
-      generatePrediction: publicProcedure.input(z43.object({
-        sentimentScore: z43.number().optional(),
-        complianceFlags: z43.number().default(0),
-        executiveConfidenceScore: z43.number().optional(),
-        qaDifficultyScore: z43.number().optional(),
-        guidanceDiscussed: z43.boolean().default(false),
-        revenueDiscussed: z43.boolean().default(false),
-        marginDiscussed: z43.boolean().default(false),
-        eventType: z43.string().default("earnings_call"),
-        companyName: z43.string().optional()
+      generatePrediction: publicProcedure.input(z44.object({
+        sentimentScore: z44.number().optional(),
+        complianceFlags: z44.number().default(0),
+        executiveConfidenceScore: z44.number().optional(),
+        qaDifficultyScore: z44.number().optional(),
+        guidanceDiscussed: z44.boolean().default(false),
+        revenueDiscussed: z44.boolean().default(false),
+        marginDiscussed: z44.boolean().default(false),
+        eventType: z44.string().default("earnings_call"),
+        companyName: z44.string().optional()
       })).mutation(async ({ input }) => {
         const historicalAvgs = await rawQuery3(`
       SELECT
@@ -30593,7 +31004,7 @@ Respond in JSON only: {"direction": "positive"|"neutral"|"negative", "confidence
           dataPoints: Number(totalRecords)
         };
       }),
-      deleteRecord: publicProcedure.input(z43.object({ id: z43.number() })).mutation(async ({ input }) => {
+      deleteRecord: publicProcedure.input(z44.object({ id: z44.number() })).mutation(async ({ input }) => {
         await rawExecute2(`DELETE FROM market_reaction_correlations WHERE id = ?`, [input.id]);
         return { success: true };
       })
@@ -30602,7 +31013,7 @@ Respond in JSON only: {"direction": "positive"|"neutral"|"negative", "confidence
 });
 
 // server/routers/communicationIndexRouter.ts
-import { z as z44 } from "zod";
+import { z as z45 } from "zod";
 async function rawQuery4(query, params = []) {
   const db2 = await getDb();
   if (!db2) return [];
@@ -30769,8 +31180,8 @@ var init_communicationIndexRouter = __esm({
     `);
         return snapshots;
       }),
-      getPeerBenchmark: protectedProcedure.input(z44.object({
-        sector: z44.string().default("general")
+      getPeerBenchmark: protectedProcedure.input(z45.object({
+        sector: z45.string().default("general")
       })).query(async ({ input }) => {
         const cici = await computeCICI();
         return computePeerBenchmark(cici, input.sector);
@@ -30785,7 +31196,7 @@ var init_communicationIndexRouter = __esm({
           label: v.label
         }));
       }),
-      getExecutiveScorecard: protectedProcedure.input(z44.object({ sector: z44.string().default("general") })).query(async ({ input }) => {
+      getExecutiveScorecard: protectedProcedure.input(z45.object({ sector: z45.string().default("general") })).query(async ({ input }) => {
         const cici = await computeCICI();
         const benchmark = computePeerBenchmark(cici, input.sector);
         const history = await rawQuery4(`
@@ -30873,15 +31284,15 @@ Write a professional 3-sentence quarterly index commentary in the style of a Blo
 });
 
 // server/routers/investorQuestionsRouter.ts
-import { z as z45 } from "zod";
-async function rawQuery5(sql25, params = []) {
+import { z as z46 } from "zod";
+async function rawQuery5(sql23, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql25, params);
+  const [rows] = await rawSql(sql23, params);
   return rows;
 }
-async function rawExecute4(sql25, params = []) {
+async function rawExecute4(sql23, params = []) {
   const db2 = await getDb();
-  const [result] = await rawSql(sql25, params);
+  const [result] = await rawSql(sql23, params);
   return result;
 }
 var investorQuestionsRouter;
@@ -30892,7 +31303,7 @@ var init_investorQuestionsRouter = __esm({
     init_db();
     init_llm();
     investorQuestionsRouter = router({
-      analyzeQuestion: publicProcedure.input(z45.object({ questionText: z45.string(), responseText: z45.string().optional() })).mutation(async ({ input }) => {
+      analyzeQuestion: publicProcedure.input(z46.object({ questionText: z46.string(), responseText: z46.string().optional() })).mutation(async ({ input }) => {
         const prompt = `You are an expert investor relations analyst. Analyze the following investor question and executive response from an earnings call.
 
 QUESTION: ${input.questionText}
@@ -30919,26 +31330,26 @@ Return ONLY a JSON object with these fields (no markdown, no code blocks):
           return {};
         }
       }),
-      addQuestion: publicProcedure.input(z45.object({
-        companyName: z45.string().optional(),
-        sector: z45.string().optional(),
-        eventType: z45.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).default("earnings_call"),
-        eventQuarter: z45.string().optional(),
-        investorName: z45.string().optional(),
-        investorFirm: z45.string().optional(),
-        questionText: z45.string().min(1),
-        responseText: z45.string().optional(),
-        questionTopic: z45.string().optional(),
-        topicCategory: z45.string().optional(),
-        questionSentiment: z45.string().optional(),
-        difficultySCore: z45.number().optional(),
-        responseSentiment: z45.string().optional(),
-        responseLengthWords: z45.number().optional(),
-        avoidanceDetected: z45.boolean().optional(),
-        avoidanceScore: z45.number().optional(),
-        avoidanceReason: z45.string().optional(),
-        followUpCount: z45.number().optional(),
-        aiAnalysis: z45.string().optional()
+      addQuestion: publicProcedure.input(z46.object({
+        companyName: z46.string().optional(),
+        sector: z46.string().optional(),
+        eventType: z46.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).default("earnings_call"),
+        eventQuarter: z46.string().optional(),
+        investorName: z46.string().optional(),
+        investorFirm: z46.string().optional(),
+        questionText: z46.string().min(1),
+        responseText: z46.string().optional(),
+        questionTopic: z46.string().optional(),
+        topicCategory: z46.string().optional(),
+        questionSentiment: z46.string().optional(),
+        difficultySCore: z46.number().optional(),
+        responseSentiment: z46.string().optional(),
+        responseLengthWords: z46.number().optional(),
+        avoidanceDetected: z46.boolean().optional(),
+        avoidanceScore: z46.number().optional(),
+        avoidanceReason: z46.string().optional(),
+        followUpCount: z46.number().optional(),
+        aiAnalysis: z46.string().optional()
       })).mutation(async ({ input }) => {
         const wordCount = input.responseText ? input.responseText.split(/\s+/).filter(Boolean).length : 0;
         await rawExecute4(
@@ -30972,12 +31383,12 @@ Return ONLY a JSON object with these fields (no markdown, no code blocks):
         );
         return { ok: true };
       }),
-      listQuestions: publicProcedure.input(z45.object({
-        limit: z45.number().default(50),
-        sector: z45.string().optional(),
-        topicCategory: z45.string().optional(),
-        avoidanceOnly: z45.boolean().optional(),
-        minDifficulty: z45.number().optional()
+      listQuestions: publicProcedure.input(z46.object({
+        limit: z46.number().default(50),
+        sector: z46.string().optional(),
+        topicCategory: z46.string().optional(),
+        avoidanceOnly: z46.boolean().optional(),
+        minDifficulty: z46.number().optional()
       })).query(async ({ input }) => {
         let where = "WHERE 1=1";
         const params = [];
@@ -31055,15 +31466,15 @@ Return ONLY a JSON object with these fields (no markdown, no code blocks):
 });
 
 // server/routers/intelligenceReportRouter.ts
-import { z as z46 } from "zod";
-async function rawQuery6(sql25, params = []) {
+import { z as z47 } from "zod";
+async function rawQuery6(sql23, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql25, params);
+  const [rows] = await rawSql(sql23, params);
   return rows;
 }
-async function rawExecute5(sql25, params = []) {
+async function rawExecute5(sql23, params = []) {
   const db2 = await getDb();
-  const [result] = await rawSql(sql25, params);
+  const [result] = await rawSql(sql23, params);
   return result;
 }
 var intelligenceReportRouter;
@@ -31074,21 +31485,21 @@ var init_intelligenceReportRouter = __esm({
     init_db();
     init_llm();
     intelligenceReportRouter = router({
-      generate: publicProcedure.input(z46.object({
-        eventName: z46.string().min(1),
-        companyName: z46.string().optional(),
-        sector: z46.string().optional(),
-        eventType: z46.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).default("earnings_call"),
-        eventQuarter: z46.string().optional(),
-        reportDate: z46.string().optional(),
-        sentimentScore: z46.number().optional(),
-        communicationScore: z46.number().optional(),
-        totalQuestions: z46.number().optional(),
-        highDifficultyCount: z46.number().optional(),
-        avoidanceEvents: z46.number().optional(),
-        marketReaction: z46.enum(["positive", "neutral", "negative"]).default("neutral"),
-        executiveScores: z46.record(z46.number()).optional(),
-        topConcerns: z46.array(z46.string()).optional()
+      generate: publicProcedure.input(z47.object({
+        eventName: z47.string().min(1),
+        companyName: z47.string().optional(),
+        sector: z47.string().optional(),
+        eventType: z47.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).default("earnings_call"),
+        eventQuarter: z47.string().optional(),
+        reportDate: z47.string().optional(),
+        sentimentScore: z47.number().optional(),
+        communicationScore: z47.number().optional(),
+        totalQuestions: z47.number().optional(),
+        highDifficultyCount: z47.number().optional(),
+        avoidanceEvents: z47.number().optional(),
+        marketReaction: z47.enum(["positive", "neutral", "negative"]).default("neutral"),
+        executiveScores: z47.record(z47.number()).optional(),
+        topConcerns: z47.array(z47.string()).optional()
       })).mutation(async ({ input }) => {
         const [iqiStats] = await rawQuery6(
           `SELECT COUNT(*) as total, ROUND(AVG(difficulty_score),1) as avg_diff,
@@ -31244,11 +31655,11 @@ Generate the following as a JSON object (no markdown, no code fences):
        FROM intelligence_reports ORDER BY created_at DESC LIMIT 50`
         );
       }),
-      getOne: publicProcedure.input(z46.object({ id: z46.number() })).query(async ({ input }) => {
+      getOne: publicProcedure.input(z47.object({ id: z47.number() })).query(async ({ input }) => {
         const rows = await rawQuery6(`SELECT * FROM intelligence_reports WHERE id = ?`, [input.id]);
         return rows[0] ?? null;
       }),
-      delete: publicProcedure.input(z46.object({ id: z46.number() })).mutation(async ({ input }) => {
+      delete: publicProcedure.input(z47.object({ id: z47.number() })).mutation(async ({ input }) => {
         await rawExecute5(`DELETE FROM intelligence_reports WHERE id = ?`, [input.id]);
         return { ok: true };
       })
@@ -31257,15 +31668,15 @@ Generate the following as a JSON object (no markdown, no code fences):
 });
 
 // server/routers/callPrepRouter.ts
-import { z as z47 } from "zod";
-async function rawQuery7(sql25, params = []) {
+import { z as z48 } from "zod";
+async function rawQuery7(sql23, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql25, params);
+  const [rows] = await rawSql(sql23, params);
   return rows;
 }
-async function rawExecute6(sql25, params = []) {
+async function rawExecute6(sql23, params = []) {
   const db2 = await getDb();
-  const [result] = await rawSql(sql25, params);
+  const [result] = await rawSql(sql23, params);
   return result;
 }
 var TOPIC_LABELS, callPrepRouter;
@@ -31292,15 +31703,15 @@ var init_callPrepRouter = __esm({
       other: "Other"
     };
     callPrepRouter = router({
-      generate: publicProcedure.input(z47.object({
-        eventName: z47.string().min(1),
-        companyName: z47.string().optional(),
-        sector: z47.string().optional(),
-        eventType: z47.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).default("earnings_call"),
-        eventQuarter: z47.string().optional(),
-        keyAnnouncements: z47.string().optional(),
-        financialPerformance: z47.enum(["strong", "positive", "mixed", "challenging", "difficult"]).default("mixed"),
-        knownSensitivities: z47.string().optional()
+      generate: publicProcedure.input(z48.object({
+        eventName: z48.string().min(1),
+        companyName: z48.string().optional(),
+        sector: z48.string().optional(),
+        eventType: z48.enum(["earnings_call", "agm", "capital_markets_day", "ceo_town_hall", "board_meeting", "webcast", "other"]).default("earnings_call"),
+        eventQuarter: z48.string().optional(),
+        keyAnnouncements: z48.string().optional(),
+        financialPerformance: z48.enum(["strong", "positive", "mixed", "challenging", "difficult"]).default("mixed"),
+        knownSensitivities: z48.string().optional()
       })).mutation(async ({ input }) => {
         const sectorTopics = await rawQuery7(
           `SELECT topic_category, COUNT(*) as cnt,
@@ -31474,11 +31885,11 @@ Generate exactly 6 predicted questions and 3 risk areas. Make the questions real
        FROM call_preparations ORDER BY created_at DESC LIMIT 50`
         );
       }),
-      getOne: publicProcedure.input(z47.object({ id: z47.number() })).query(async ({ input }) => {
+      getOne: publicProcedure.input(z48.object({ id: z48.number() })).query(async ({ input }) => {
         const rows = await rawQuery7(`SELECT * FROM call_preparations WHERE id = ?`, [input.id]);
         return rows[0] ?? null;
       }),
-      delete: publicProcedure.input(z47.object({ id: z47.number() })).mutation(async ({ input }) => {
+      delete: publicProcedure.input(z48.object({ id: z48.number() })).mutation(async ({ input }) => {
         await rawExecute6(`DELETE FROM call_preparations WHERE id = ?`, [input.id]);
         return { ok: true };
       })
@@ -31487,10 +31898,10 @@ Generate exactly 6 predicted questions and 3 risk areas. Make the questions real
 });
 
 // server/routers/intelligenceTerminalRouter.ts
-import { z as z48 } from "zod";
-async function rawQuery8(sql25, params = []) {
+import { z as z49 } from "zod";
+async function rawQuery8(sql23, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql25, params);
+  const [rows] = await rawSql(sql23, params);
   return rows;
 }
 var TOPIC_LABELS2, intelligenceTerminalRouter;
@@ -31529,8 +31940,8 @@ var init_intelligenceTerminalRouter = __esm({
     `);
         return scale;
       }),
-      getGlobalConcerns: publicProcedure.input(z48.object({ quarter: z48.string().optional(), sector: z48.string().optional() })).query(async ({ input }) => {
-        const global = await rawQuery8(`
+      getGlobalConcerns: publicProcedure.input(z49.object({ quarter: z49.string().optional(), sector: z49.string().optional() })).query(async ({ input }) => {
+        const global2 = await rawQuery8(`
         SELECT topic_category,
                COUNT(*) as frequency,
                ROUND(AVG(difficulty_score), 1) as avg_difficulty,
@@ -31561,7 +31972,7 @@ var init_intelligenceTerminalRouter = __esm({
         LIMIT 40
       `);
         return {
-          global: global.map((r) => ({ ...r, label: TOPIC_LABELS2[r.topic_category] ?? r.topic_category })),
+          global: global2.map((r) => ({ ...r, label: TOPIC_LABELS2[r.topic_category] ?? r.topic_category })),
           trend,
           bySector
         };
@@ -31671,8 +32082,8 @@ var init_intelligenceTerminalRouter = __esm({
 });
 
 // server/routers/bot.ts
-import { z as z49 } from "zod";
-import { TRPCError as TRPCError7 } from "@trpc/server";
+import { z as z50 } from "zod";
+import { TRPCError as TRPCError9 } from "@trpc/server";
 var botSessions, botRouter;
 var init_bot = __esm({
   "server/routers/bot.ts"() {
@@ -31680,7 +32091,7 @@ var init_bot = __esm({
     init_trpc();
     botSessions = /* @__PURE__ */ new Map();
     botRouter = router({
-      createBot: publicProcedure.input(z49.object({ conferenceId: z49.string(), meetingUrl: z49.string().url() })).mutation(async ({ input }) => {
+      createBot: publicProcedure.input(z50.object({ conferenceId: z50.string(), meetingUrl: z50.string().url() })).mutation(async ({ input }) => {
         const botId = `bot_${input.conferenceId}_${Date.now()}`;
         const botSession = {
           id: botId,
@@ -31693,27 +32104,27 @@ var init_bot = __esm({
         botSessions.set(botId, botSession);
         return { botId, status: "created" };
       }),
-      startTranscription: publicProcedure.input(z49.object({ botId: z49.string() })).mutation(async ({ input }) => {
+      startTranscription: publicProcedure.input(z50.object({ botId: z50.string() })).mutation(async ({ input }) => {
         const botSession = botSessions.get(input.botId);
         if (!botSession) {
-          throw new TRPCError7({ code: "NOT_FOUND", message: "Bot not found" });
+          throw new TRPCError9({ code: "NOT_FOUND", message: "Bot not found" });
         }
         botSession.status = "connecting";
         botSession.startedAt = /* @__PURE__ */ new Date();
         return { botId: input.botId, status: botSession.status };
       }),
       addTranscriptionSegment: publicProcedure.input(
-        z49.object({
-          botId: z49.string(),
-          text: z49.string(),
-          startTime: z49.number(),
-          endTime: z49.number(),
-          speaker: z49.string().optional()
+        z50.object({
+          botId: z50.string(),
+          text: z50.string(),
+          startTime: z50.number(),
+          endTime: z50.number(),
+          speaker: z50.string().optional()
         })
       ).mutation(async ({ input }) => {
         const botSession = botSessions.get(input.botId);
         if (!botSession) {
-          throw new TRPCError7({ code: "NOT_FOUND", message: "Bot not found" });
+          throw new TRPCError9({ code: "NOT_FOUND", message: "Bot not found" });
         }
         botSession.transcriptionSegments.push({
           text: input.text,
@@ -31723,10 +32134,10 @@ var init_bot = __esm({
         });
         return { botId: input.botId, segmentCount: botSession.transcriptionSegments.length };
       }),
-      getBotStatus: publicProcedure.input(z49.object({ botId: z49.string() })).query(async ({ input }) => {
+      getBotStatus: publicProcedure.input(z50.object({ botId: z50.string() })).query(async ({ input }) => {
         const botSession = botSessions.get(input.botId);
         if (!botSession) {
-          throw new TRPCError7({ code: "NOT_FOUND", message: "Bot not found" });
+          throw new TRPCError9({ code: "NOT_FOUND", message: "Bot not found" });
         }
         return {
           botId: input.botId,
@@ -31735,10 +32146,10 @@ var init_bot = __esm({
           segmentCount: botSession.transcriptionSegments.length
         };
       }),
-      getTranscriptionSegments: publicProcedure.input(z49.object({ botId: z49.string() })).query(async ({ input }) => {
+      getTranscriptionSegments: publicProcedure.input(z50.object({ botId: z50.string() })).query(async ({ input }) => {
         const botSession = botSessions.get(input.botId);
         if (!botSession) {
-          throw new TRPCError7({ code: "NOT_FOUND", message: "Bot not found" });
+          throw new TRPCError9({ code: "NOT_FOUND", message: "Bot not found" });
         }
         return {
           botId: input.botId,
@@ -31746,20 +32157,20 @@ var init_bot = __esm({
           totalSegments: botSession.transcriptionSegments.length
         };
       }),
-      stopTranscription: publicProcedure.input(z49.object({ botId: z49.string() })).mutation(async ({ input }) => {
+      stopTranscription: publicProcedure.input(z50.object({ botId: z50.string() })).mutation(async ({ input }) => {
         const botSession = botSessions.get(input.botId);
         if (!botSession) {
-          throw new TRPCError7({ code: "NOT_FOUND", message: "Bot not found" });
+          throw new TRPCError9({ code: "NOT_FOUND", message: "Bot not found" });
         }
         botSession.status = "stopped";
         botSession.stoppedAt = /* @__PURE__ */ new Date();
         return { botId: input.botId, status: botSession.status };
       }),
-      deleteBot: publicProcedure.input(z49.object({ botId: z49.string() })).mutation(async ({ input }) => {
+      deleteBot: publicProcedure.input(z50.object({ botId: z50.string() })).mutation(async ({ input }) => {
         botSessions.delete(input.botId);
         return { botId: input.botId, message: "Bot deleted" };
       }),
-      listBots: publicProcedure.input(z49.object({ conferenceId: z49.string() })).query(async ({ input }) => {
+      listBots: publicProcedure.input(z50.object({ conferenceId: z50.string() })).query(async ({ input }) => {
         const bots = Array.from(botSessions.values()).filter(
           (bot) => bot.conferenceId === input.conferenceId
         );
@@ -31778,7 +32189,7 @@ var init_bot = __esm({
 });
 
 // server/routers/mailingListRouter.ts
-import { z as z50 } from "zod";
+import { z as z51 } from "zod";
 import { eq as eq56, and as and34, sql as sql11 } from "drizzle-orm";
 import crypto3 from "crypto";
 function generateConfirmToken() {
@@ -31859,9 +32270,9 @@ var init_mailingListRouter = __esm({
     init_directAccess();
     init_email();
     mailingListRouter = router({
-      create: protectedProcedure.input(z50.object({
-        eventId: z50.string().min(1),
-        name: z50.string().min(1)
+      create: protectedProcedure.input(z51.object({
+        eventId: z51.string().min(1),
+        name: z51.string().min(1)
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
@@ -31871,7 +32282,7 @@ var init_mailingListRouter = __esm({
         }).$returningId();
         return { success: true, id: result?.id };
       }),
-      getLists: protectedProcedure.input(z50.object({ eventId: z50.string().optional() })).query(async ({ input }) => {
+      getLists: protectedProcedure.input(z51.object({ eventId: z51.string().optional() })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return [];
         if (input.eventId) {
@@ -31879,7 +32290,7 @@ var init_mailingListRouter = __esm({
         }
         return db2.select().from(mailingLists).orderBy(mailingLists.createdAt);
       }),
-      getList: protectedProcedure.input(z50.object({ id: z50.number() })).query(async ({ input }) => {
+      getList: protectedProcedure.input(z51.object({ id: z51.number() })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return null;
         const [list] = await db2.select().from(mailingLists).where(eq56(mailingLists.id, input.id)).limit(1);
@@ -31887,9 +32298,9 @@ var init_mailingListRouter = __esm({
         const entries = await db2.select().from(mailingListEntries).where(eq56(mailingListEntries.mailingListId, input.id)).orderBy(mailingListEntries.createdAt);
         return { ...list, entries };
       }),
-      importCSV: protectedProcedure.input(z50.object({
-        mailingListId: z50.number(),
-        csvText: z50.string().min(1)
+      importCSV: protectedProcedure.input(z51.object({
+        mailingListId: z51.number(),
+        csvText: z51.string().min(1)
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable", imported: 0, duplicates: 0 };
@@ -31942,9 +32353,9 @@ var init_mailingListRouter = __esm({
         }).where(eq56(mailingLists.id, input.mailingListId));
         return { success: true, imported, duplicates };
       }),
-      sendInvitations: protectedProcedure.input(z50.object({
-        mailingListId: z50.number(),
-        personalMessage: z50.string().optional()
+      sendInvitations: protectedProcedure.input(z51.object({
+        mailingListId: z51.number(),
+        personalMessage: z51.string().optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable", sent: 0, failed: 0 };
@@ -31998,7 +32409,7 @@ var init_mailingListRouter = __esm({
         }).where(eq56(mailingLists.id, input.mailingListId));
         return { success: true, sent, failed };
       }),
-      getEntryByToken: publicProcedure.input(z50.object({ token: z50.string().min(1) })).query(async ({ input }) => {
+      getEntryByToken: publicProcedure.input(z51.object({ token: z51.string().min(1) })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
         const [entry] = await db2.select().from(mailingListEntries).where(eq56(mailingListEntries.confirmToken, input.token)).limit(1);
@@ -32017,9 +32428,9 @@ var init_mailingListRouter = __esm({
           company: event?.company || "CuraLive Inc."
         };
       }),
-      confirmRegistration: publicProcedure.input(z50.object({
-        token: z50.string().min(1),
-        joinMethod: z50.enum(["phone", "teams", "zoom", "web"])
+      confirmRegistration: publicProcedure.input(z51.object({
+        token: z51.string().min(1),
+        joinMethod: z51.enum(["phone", "teams", "zoom", "web"])
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
@@ -32110,7 +32521,7 @@ var init_mailingListRouter = __esm({
           company: event?.company || "CuraLive Inc."
         };
       }),
-      trackClick: publicProcedure.input(z50.object({ token: z50.string().min(1) })).mutation(async ({ input }) => {
+      trackClick: publicProcedure.input(z51.object({ token: z51.string().min(1) })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false };
         await db2.update(mailingListEntries).set({
@@ -32122,16 +32533,16 @@ var init_mailingListRouter = __esm({
         ));
         return { success: true };
       }),
-      deleteList: protectedProcedure.input(z50.object({ id: z50.number() })).mutation(async ({ input }) => {
+      deleteList: protectedProcedure.input(z51.object({ id: z51.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
         await db2.delete(mailingListEntries).where(eq56(mailingListEntries.mailingListId, input.id));
         await db2.delete(mailingLists).where(eq56(mailingLists.id, input.id));
         return { success: true };
       }),
-      preRegisterAll: protectedProcedure.input(z50.object({
-        mailingListId: z50.number(),
-        defaultJoinMethod: z50.enum(["phone", "teams", "zoom", "web"])
+      preRegisterAll: protectedProcedure.input(z51.object({
+        mailingListId: z51.number(),
+        defaultJoinMethod: z51.enum(["phone", "teams", "zoom", "web"])
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable", registered: 0, skipped: 0 };
@@ -32216,7 +32627,7 @@ var init_mailingListRouter = __esm({
         }).where(eq56(mailingLists.id, input.mailingListId));
         return { success: true, registered, skipped };
       }),
-      zeroClickRegister: publicProcedure.input(z50.object({ token: z50.string().min(1) })).mutation(async ({ input }) => {
+      zeroClickRegister: publicProcedure.input(z51.object({ token: z51.string().min(1) })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
         const [entryRows] = await rawSql(
@@ -32291,7 +32702,7 @@ var init_mailingListRouter = __esm({
           registeredVia: "zero-click"
         };
       }),
-      deleteEntry: protectedProcedure.input(z50.object({ id: z50.number() })).mutation(async ({ input }) => {
+      deleteEntry: protectedProcedure.input(z51.object({ id: z51.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
         const [entry] = await db2.select().from(mailingListEntries).where(eq56(mailingListEntries.id, input.id)).limit(1);
@@ -32659,13 +33070,75 @@ async function runAllChecks() {
   }
   return results;
 }
+async function ensureHealthTables() {
+  try {
+    await rawSql(`CREATE TABLE IF NOT EXISTS health_checks (
+      id SERIAL PRIMARY KEY,
+      service VARCHAR(64) NOT NULL,
+      status VARCHAR(32) NOT NULL,
+      latency_ms INTEGER,
+      details TEXT,
+      checked_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )`);
+    await rawSql(`CREATE TABLE IF NOT EXISTS health_baselines (
+      id SERIAL PRIMARY KEY,
+      service VARCHAR(64) NOT NULL,
+      metric VARCHAR(64) NOT NULL,
+      avg_value DOUBLE PRECISION,
+      std_dev DOUBLE PRECISION DEFAULT 0,
+      sample_count INTEGER DEFAULT 0,
+      last_updated TIMESTAMP,
+      UNIQUE(service, metric)
+    )`);
+    await rawSql(`CREATE TABLE IF NOT EXISTS health_incidents (
+      id SERIAL PRIMARY KEY,
+      service VARCHAR(64) NOT NULL,
+      severity VARCHAR(32) NOT NULL,
+      status VARCHAR(32) NOT NULL DEFAULT 'active',
+      title TEXT,
+      description TEXT,
+      root_cause TEXT,
+      root_cause_category VARCHAR(64),
+      affected_events TEXT,
+      detected_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      resolved_at TIMESTAMP
+    )`);
+    await rawSql(`CREATE TABLE IF NOT EXISTS health_incident_reports (
+      id SERIAL PRIMARY KEY,
+      incident_id INTEGER,
+      event_id INTEGER,
+      report_type VARCHAR(32),
+      title TEXT,
+      summary TEXT,
+      root_cause_attribution VARCHAR(64),
+      detailed_analysis TEXT,
+      timeline TEXT,
+      recommendations TEXT,
+      generated_by VARCHAR(64),
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
+    console.log("[HealthGuardian] \u2713 Health tables ensured");
+  } catch (err) {
+    console.warn("[HealthGuardian] Table migration warning:", err?.message);
+  }
+}
 function startHealthGuardian() {
   if (guardianInterval) return;
   console.log("[HealthGuardian] Starting autonomous monitoring (30s interval)");
-  runAllChecks().catch((e) => console.error("[HealthGuardian] Initial check failed:", e));
-  guardianInterval = setInterval(() => {
-    runAllChecks().catch((e) => console.error("[HealthGuardian] Check cycle failed:", e));
-  }, CHECK_INTERVAL_MS);
+  ensureHealthTables().then(() => {
+    runAllChecks().catch((e) => console.error("[HealthGuardian] Initial check failed:", e));
+    guardianInterval = setInterval(() => {
+      runAllChecks().catch((e) => console.error("[HealthGuardian] Check cycle failed:", e));
+    }, CHECK_INTERVAL_MS);
+  }).catch((e) => {
+    console.error("[HealthGuardian] Table setup failed:", e);
+    runAllChecks().catch(() => {
+    });
+    guardianInterval = setInterval(() => {
+      runAllChecks().catch(() => {
+      });
+    }, CHECK_INTERVAL_MS);
+  });
 }
 function stopHealthGuardian() {
   if (guardianInterval) {
@@ -32815,7 +33288,7 @@ var init_HealthGuardianService = __esm({
 });
 
 // server/routers/healthGuardianRouter.ts
-import { z as z51 } from "zod";
+import { z as z52 } from "zod";
 var healthGuardianRouter;
 var init_healthGuardianRouter = __esm({
   "server/routers/healthGuardianRouter.ts"() {
@@ -32833,19 +33306,19 @@ var init_healthGuardianRouter = __esm({
         const overall = await getOverallHealthScore();
         return { results, overall };
       }),
-      history: protectedProcedure.input(z51.object({ service: z51.string().optional(), limit: z51.number().default(100) })).query(async ({ input }) => {
+      history: protectedProcedure.input(z52.object({ service: z52.string().optional(), limit: z52.number().default(100) })).query(async ({ input }) => {
         return getHealthHistory(input.service, input.limit);
       }),
-      incidents: protectedProcedure.input(z51.object({ status: z51.string().optional(), limit: z51.number().default(50) })).query(async ({ input }) => {
+      incidents: protectedProcedure.input(z52.object({ status: z52.string().optional(), limit: z52.number().default(50) })).query(async ({ input }) => {
         return getIncidents(input.status, input.limit);
       }),
-      incidentDetail: protectedProcedure.input(z51.object({ id: z51.number() })).query(async ({ input }) => {
+      incidentDetail: protectedProcedure.input(z52.object({ id: z52.number() })).query(async ({ input }) => {
         const incident = await getIncidentById(input.id);
         if (!incident) throw new Error("Incident not found");
         const reports = await getReportsForIncident(input.id);
         return { incident, reports };
       }),
-      generateReport: operatorProcedure.input(z51.object({ incidentId: z51.number(), eventId: z51.number().optional() })).mutation(async ({ input }) => {
+      generateReport: operatorProcedure.input(z52.object({ incidentId: z52.number(), eventId: z52.number().optional() })).mutation(async ({ input }) => {
         return generateCustomerReport(input.incidentId, input.eventId);
       })
     });
@@ -32853,7 +33326,7 @@ var init_healthGuardianRouter = __esm({
 });
 
 // server/routers/crmApiRouter.ts
-import { z as z52 } from "zod";
+import { z as z53 } from "zod";
 import { eq as eq57, and as and35 } from "drizzle-orm";
 import crypto4 from "crypto";
 function hashApiKey(key) {
@@ -32889,10 +33362,10 @@ var init_crmApiRouter = __esm({
     init_directAccess();
     init_email();
     crmApiRouter = router({
-      generateKey: protectedProcedure.input(z52.object({
-        name: z52.string().min(1).max(255),
-        eventId: z52.string().optional(),
-        permissions: z52.array(z52.enum(["read", "write", "register"])).default(["read", "write", "register"])
+      generateKey: protectedProcedure.input(z53.object({
+        name: z53.string().min(1).max(255),
+        eventId: z53.string().optional(),
+        permissions: z53.array(z53.enum(["read", "write", "register"])).default(["read", "write", "register"])
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
@@ -32907,7 +33380,7 @@ var init_crmApiRouter = __esm({
         });
         return { success: true, apiKey: key, prefix };
       }),
-      listKeys: protectedProcedure.input(z52.object({ eventId: z52.string().optional() })).query(async ({ input }) => {
+      listKeys: protectedProcedure.input(z53.object({ eventId: z53.string().optional() })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return [];
         let query = db2.select({
@@ -32925,21 +33398,21 @@ var init_crmApiRouter = __esm({
         }
         return query.orderBy(crmApiKeys.createdAt);
       }),
-      revokeKey: protectedProcedure.input(z52.object({ id: z52.number() })).mutation(async ({ input }) => {
+      revokeKey: protectedProcedure.input(z53.object({ id: z53.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
         await db2.update(crmApiKeys).set({ active: false }).where(eq57(crmApiKeys.id, input.id));
         return { success: true };
       }),
-      deleteKey: protectedProcedure.input(z52.object({ id: z52.number() })).mutation(async ({ input }) => {
+      deleteKey: protectedProcedure.input(z53.object({ id: z53.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
         await db2.delete(crmApiKeys).where(eq57(crmApiKeys.id, input.id));
         return { success: true };
       }),
-      setWebhookUrl: protectedProcedure.input(z52.object({
-        mailingListId: z52.number(),
-        webhookUrl: z52.string().url().max(512).or(z52.literal(""))
+      setWebhookUrl: protectedProcedure.input(z53.object({
+        mailingListId: z53.number(),
+        webhookUrl: z53.string().url().max(512).or(z53.literal(""))
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
@@ -32948,16 +33421,16 @@ var init_crmApiRouter = __esm({
         }).where(eq57(mailingLists.id, input.mailingListId));
         return { success: true };
       }),
-      createRegistration: publicProcedure.input(z52.object({
-        apiKey: z52.string().min(1),
-        eventId: z52.string().min(1),
-        firstName: z52.string().min(1),
-        lastName: z52.string().min(1),
-        email: z52.string().email(),
-        company: z52.string().optional(),
-        jobTitle: z52.string().optional(),
-        joinMethod: z52.enum(["phone", "teams", "zoom", "web"]).optional().default("phone"),
-        sendConfirmationEmail: z52.boolean().optional().default(true)
+      createRegistration: publicProcedure.input(z53.object({
+        apiKey: z53.string().min(1),
+        eventId: z53.string().min(1),
+        firstName: z53.string().min(1),
+        lastName: z53.string().min(1),
+        email: z53.string().email(),
+        company: z53.string().optional(),
+        jobTitle: z53.string().optional(),
+        joinMethod: z53.enum(["phone", "teams", "zoom", "web"]).optional().default("phone"),
+        sendConfirmationEmail: z53.boolean().optional().default(true)
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
@@ -33039,17 +33512,17 @@ var init_crmApiRouter = __esm({
           joinMethod: input.joinMethod
         };
       }),
-      bulkCreateRegistrations: publicProcedure.input(z52.object({
-        apiKey: z52.string().min(1),
-        eventId: z52.string().min(1),
-        joinMethod: z52.enum(["phone", "teams", "zoom", "web"]).optional().default("phone"),
-        sendConfirmationEmails: z52.boolean().optional().default(true),
-        contacts: z52.array(z52.object({
-          firstName: z52.string().min(1),
-          lastName: z52.string().min(1),
-          email: z52.string().email(),
-          company: z52.string().optional(),
-          jobTitle: z52.string().optional()
+      bulkCreateRegistrations: publicProcedure.input(z53.object({
+        apiKey: z53.string().min(1),
+        eventId: z53.string().min(1),
+        joinMethod: z53.enum(["phone", "teams", "zoom", "web"]).optional().default("phone"),
+        sendConfirmationEmails: z53.boolean().optional().default(true),
+        contacts: z53.array(z53.object({
+          firstName: z53.string().min(1),
+          lastName: z53.string().min(1),
+          email: z53.string().email(),
+          company: z53.string().optional(),
+          jobTitle: z53.string().optional()
         })).min(1).max(500)
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
@@ -33125,10 +33598,10 @@ var init_crmApiRouter = __esm({
         }
         return { success: true, created, skipped, registrations: results };
       }),
-      getRegistrationStatus: publicProcedure.input(z52.object({
-        apiKey: z52.string().min(1),
-        eventId: z52.string().min(1),
-        email: z52.string().email()
+      getRegistrationStatus: publicProcedure.input(z53.object({
+        apiKey: z53.string().min(1),
+        eventId: z53.string().min(1),
+        email: z53.string().email()
       })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
@@ -33159,9 +33632,9 @@ var init_crmApiRouter = __esm({
           createdAt: reg.createdAt
         };
       }),
-      listRegistrations: publicProcedure.input(z52.object({
-        apiKey: z52.string().min(1),
-        eventId: z52.string().min(1)
+      listRegistrations: publicProcedure.input(z53.object({
+        apiKey: z53.string().min(1),
+        eventId: z53.string().min(1)
       })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
@@ -33188,9 +33661,9 @@ var init_crmApiRouter = __esm({
         }).from(attendeeRegistrations).where(eq57(attendeeRegistrations.eventId, input.eventId)).orderBy(attendeeRegistrations.createdAt);
         return { success: true, registrations: regs, total: regs.length };
       }),
-      getEventStats: publicProcedure.input(z52.object({
-        apiKey: z52.string().min(1),
-        eventId: z52.string().min(1)
+      getEventStats: publicProcedure.input(z53.object({
+        apiKey: z53.string().min(1),
+        eventId: z53.string().min(1)
       })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { success: false, error: "Database unavailable" };
@@ -33233,9 +33706,9 @@ var init_crmApiRouter = __esm({
 });
 
 // server/services/KnowledgeRetrievalService.ts
-async function rawQuery10(sql25, params = []) {
+async function rawQuery10(sql23, params = []) {
   const db2 = await getDb();
-  const [rows] = await rawSql(sql25, params);
+  const [rows] = await rawSql(sql23, params);
   return rows;
 }
 function scoreEntry(entry, terms) {
@@ -33277,10 +33750,10 @@ var init_KnowledgeRetrievalService = __esm({
 });
 
 // server/routers/supportChatRouter.ts
-import { z as z53 } from "zod";
-async function rawExecute7(sql25, params = []) {
+import { z as z54 } from "zod";
+async function rawExecute7(sql23, params = []) {
   const db2 = await getDb();
-  await rawSql(sql25, params);
+  await rawSql(sql23, params);
 }
 var BASE_SYSTEM_PROMPT, PAGE_LABELS, supportChatRouter;
 var init_supportChatRouter = __esm({
@@ -33334,12 +33807,12 @@ IMPORTANT: Never speculate about internal workings even if asked to "guess", "es
       "/archive-upload": "Archive Upload \u2014 user is uploading a past event transcript"
     };
     supportChatRouter = router({
-      ask: protectedProcedure.input(z53.object({
-        message: z53.string().min(1).max(1e3),
-        conversationId: z53.string().optional(),
-        currentPage: z53.string().optional(),
-        eventId: z53.string().optional(),
-        eventName: z53.string().optional()
+      ask: protectedProcedure.input(z54.object({
+        message: z54.string().min(1).max(1e3),
+        conversationId: z54.string().optional(),
+        currentPage: z54.string().optional(),
+        eventId: z54.string().optional(),
+        eventName: z54.string().optional()
       })).mutation(async ({ input, ctx }) => {
         const { message, conversationId, currentPage, eventId, eventName } = input;
         const user = ctx.user;
@@ -33399,7 +33872,7 @@ ${contextBlock}`
         }
         return { answer, needsEscalation };
       }),
-      getRecentQueries: protectedProcedure.input(z53.object({ limit: z53.number().optional().default(20) })).query(async ({ input }) => {
+      getRecentQueries: protectedProcedure.input(z54.object({ limit: z54.number().optional().default(20) })).query(async ({ input }) => {
         const db2 = await getDb();
         const [rows] = await rawSql(
           `SELECT id, conversation_id, user_message, ai_response, needs_escalation,
@@ -33416,7 +33889,7 @@ ${contextBlock}`
 });
 
 // server/routers/soc2Router.ts
-import { z as z54 } from "zod";
+import { z as z55 } from "zod";
 import { createRequire as createRequire2 } from "module";
 import { eq as eq58, and as and36 } from "drizzle-orm";
 var _require2, SOC2_SEED, soc2Router;
@@ -33485,7 +33958,7 @@ var init_soc2Router = __esm({
         await db2.insert(soc2Controls).values(SOC2_SEED);
         return { seeded: true, count: SOC2_SEED.length };
       }),
-      getControls: protectedProcedure.input(z54.object({ category: z54.string().optional() }).optional()).query(async ({ input }) => {
+      getControls: protectedProcedure.input(z55.object({ category: z55.string().optional() }).optional()).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return [];
         const rows = await db2.select().from(soc2Controls);
@@ -33520,12 +33993,12 @@ var init_soc2Router = __esm({
         }
         return Array.from(map.values());
       }),
-      updateControl: protectedProcedure.input(z54.object({
-        id: z54.number(),
-        status: z54.enum(["compliant", "partial", "non_compliant", "not_applicable"]).optional(),
-        ownerName: z54.string().optional(),
-        notes: z54.string().optional(),
-        testingFrequency: z54.string().optional()
+      updateControl: protectedProcedure.input(z55.object({
+        id: z55.number(),
+        status: z55.enum(["compliant", "partial", "non_compliant", "not_applicable"]).optional(),
+        ownerName: z55.string().optional(),
+        notes: z55.string().optional(),
+        testingFrequency: z55.string().optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
@@ -33535,22 +34008,22 @@ var init_soc2Router = __esm({
         await db2.update(soc2Controls).set(filtered).where(eq58(soc2Controls.id, id));
         return { updated: true };
       }),
-      assignOwner: protectedProcedure.input(z54.object({
-        id: z54.number(),
-        ownerName: z54.string().min(1).max(100),
-        testingFrequency: z54.string().optional()
+      assignOwner: protectedProcedure.input(z55.object({
+        id: z55.number(),
+        ownerName: z55.string().min(1).max(100),
+        testingFrequency: z55.string().optional()
       })).mutation(async ({ input, ctx }) => {
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
         await db2.update(soc2Controls).set({ ownerName: input.ownerName, testingFrequency: input.testingFrequency ?? null }).where(eq58(soc2Controls.id, input.id));
         return { assigned: true, ownerName: input.ownerName };
       }),
-      uploadEvidence: protectedProcedure.input(z54.object({
-        controlId: z54.number(),
-        fileName: z54.string().min(1).max(255),
-        fileBase64: z54.string(),
-        mimeType: z54.string().default("application/octet-stream"),
-        expiresAt: z54.number().optional()
+      uploadEvidence: protectedProcedure.input(z55.object({
+        controlId: z55.number(),
+        fileName: z55.string().min(1).max(255),
+        fileBase64: z55.string(),
+        mimeType: z55.string().default("application/octet-stream"),
+        expiresAt: z55.number().optional()
         // Unix ms
       })).mutation(async ({ input, ctx }) => {
         const db2 = await getDb();
@@ -33573,8 +34046,8 @@ var init_soc2Router = __esm({
         });
         return { uploaded: true, url, fileName: input.fileName };
       }),
-      bulkImportCSV: protectedProcedure.input(z54.object({
-        csvBase64: z54.string()
+      bulkImportCSV: protectedProcedure.input(z55.object({
+        csvBase64: z55.string()
         // base64-encoded CSV content
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
@@ -33653,7 +34126,7 @@ var init_soc2Router = __esm({
         const { url } = await storagePut(fileKey, zipBuffer, "application/zip");
         return { url, fileName: `soc2-audit-pack-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.zip`, controlCount: controls.length, evidenceCount: evidence.length };
       }),
-      getEvidenceFiles: protectedProcedure.input(z54.object({ controlId: z54.number() })).query(async ({ input }) => {
+      getEvidenceFiles: protectedProcedure.input(z55.object({ controlId: z55.number() })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return [];
         return db2.select().from(complianceEvidenceFiles).where(and36(
@@ -33661,7 +34134,7 @@ var init_soc2Router = __esm({
           eq58(complianceEvidenceFiles.controlId, input.controlId)
         )).orderBy(complianceEvidenceFiles.uploadedAt);
       }),
-      deleteEvidence: protectedProcedure.input(z54.object({ evidenceId: z54.number() })).mutation(async ({ input }) => {
+      deleteEvidence: protectedProcedure.input(z55.object({ evidenceId: z55.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
         await db2.delete(complianceEvidenceFiles).where(eq58(complianceEvidenceFiles.id, input.evidenceId));
@@ -33672,7 +34145,7 @@ var init_soc2Router = __esm({
 });
 
 // server/routers/iso27001Router.ts
-import { z as z55 } from "zod";
+import { z as z56 } from "zod";
 import { createRequire as createRequire3 } from "module";
 import { eq as eq59, and as and37 } from "drizzle-orm";
 var _require3, ISO27001_SEED, iso27001Router;
@@ -33792,7 +34265,7 @@ var init_iso27001Router = __esm({
         await db2.insert(iso27001Controls).values(ISO27001_SEED);
         return { seeded: true, count: ISO27001_SEED.length };
       }),
-      getControls: protectedProcedure.input(z55.object({ clause: z55.string().optional() }).optional()).query(async ({ input }) => {
+      getControls: protectedProcedure.input(z56.object({ clause: z56.string().optional() }).optional()).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return [];
         const rows = await db2.select().from(iso27001Controls);
@@ -33827,12 +34300,12 @@ var init_iso27001Router = __esm({
         }
         return Array.from(map.values());
       }),
-      updateControl: protectedProcedure.input(z55.object({
-        id: z55.number(),
-        status: z55.enum(["compliant", "partial", "non_compliant", "not_applicable"]).optional(),
-        ownerName: z55.string().optional(),
-        notes: z55.string().optional(),
-        testingFrequency: z55.string().optional()
+      updateControl: protectedProcedure.input(z56.object({
+        id: z56.number(),
+        status: z56.enum(["compliant", "partial", "non_compliant", "not_applicable"]).optional(),
+        ownerName: z56.string().optional(),
+        notes: z56.string().optional(),
+        testingFrequency: z56.string().optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
@@ -33842,22 +34315,22 @@ var init_iso27001Router = __esm({
         await db2.update(iso27001Controls).set(filtered).where(eq59(iso27001Controls.id, id));
         return { updated: true };
       }),
-      assignOwner: protectedProcedure.input(z55.object({
-        id: z55.number(),
-        ownerName: z55.string().min(1).max(100),
-        testingFrequency: z55.string().optional()
+      assignOwner: protectedProcedure.input(z56.object({
+        id: z56.number(),
+        ownerName: z56.string().min(1).max(100),
+        testingFrequency: z56.string().optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
         await db2.update(iso27001Controls).set({ ownerName: input.ownerName, testingFrequency: input.testingFrequency ?? null }).where(eq59(iso27001Controls.id, input.id));
         return { assigned: true, ownerName: input.ownerName };
       }),
-      uploadEvidence: protectedProcedure.input(z55.object({
-        controlId: z55.number(),
-        fileName: z55.string().min(1).max(255),
-        fileBase64: z55.string(),
-        mimeType: z55.string().default("application/octet-stream"),
-        expiresAt: z55.number().optional()
+      uploadEvidence: protectedProcedure.input(z56.object({
+        controlId: z56.number(),
+        fileName: z56.string().min(1).max(255),
+        fileBase64: z56.string(),
+        mimeType: z56.string().default("application/octet-stream"),
+        expiresAt: z56.number().optional()
       })).mutation(async ({ input, ctx }) => {
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
@@ -33879,7 +34352,7 @@ var init_iso27001Router = __esm({
         });
         return { uploaded: true, url, fileName: input.fileName };
       }),
-      bulkImportCSV: protectedProcedure.input(z55.object({ csvBase64: z55.string() })).mutation(async ({ input }) => {
+      bulkImportCSV: protectedProcedure.input(z56.object({ csvBase64: z56.string() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
         const csv = Buffer.from(input.csvBase64, "base64").toString("utf-8");
@@ -33953,7 +34426,7 @@ var init_iso27001Router = __esm({
         const { url } = await storagePut(fileKey, zipBuffer, "application/zip");
         return { url, fileName: `iso27001-audit-pack-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.zip`, controlCount: controls.length, evidenceCount: evidence.length };
       }),
-      getEvidenceFiles: protectedProcedure.input(z55.object({ controlId: z55.number() })).query(async ({ input }) => {
+      getEvidenceFiles: protectedProcedure.input(z56.object({ controlId: z56.number() })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return [];
         return db2.select().from(complianceEvidenceFiles).where(and37(
@@ -33961,7 +34434,7 @@ var init_iso27001Router = __esm({
           eq59(complianceEvidenceFiles.controlId, input.controlId)
         )).orderBy(complianceEvidenceFiles.uploadedAt);
       }),
-      deleteEvidence: protectedProcedure.input(z55.object({ evidenceId: z55.number() })).mutation(async ({ input }) => {
+      deleteEvidence: protectedProcedure.input(z56.object({ evidenceId: z56.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
         await db2.delete(complianceEvidenceFiles).where(eq59(complianceEvidenceFiles.id, input.evidenceId));
@@ -33972,7 +34445,7 @@ var init_iso27001Router = __esm({
 });
 
 // server/routers/adaptiveIntelligenceRouter.ts
-import { z as z56 } from "zod";
+import { z as z57 } from "zod";
 import { eq as eq60, desc as desc32 } from "drizzle-orm";
 async function recalculateThreshold(metricType, level, eventType) {
   const db2 = await getDb();
@@ -34026,19 +34499,19 @@ var init_adaptiveIntelligenceRouter = __esm({
       engagement_moderate: 5
     };
     adaptiveIntelligenceRouter = router({
-      submitCorrection: publicProcedure.input(z56.object({
-        eventId: z56.string(),
-        eventTitle: z56.string().optional(),
-        metricId: z56.number().optional(),
-        correctionType: z56.enum(["sentiment_override", "compliance_dismiss", "compliance_add", "severity_change", "threshold_adjust"]),
-        originalValue: z56.number().optional(),
-        correctedValue: z56.number().optional(),
-        originalLabel: z56.string().optional(),
-        correctedLabel: z56.string().optional(),
-        reason: z56.string().optional(),
-        eventType: z56.string().optional(),
-        clientName: z56.string().optional(),
-        dismissedKeywords: z56.array(z56.string()).optional()
+      submitCorrection: publicProcedure.input(z57.object({
+        eventId: z57.string(),
+        eventTitle: z57.string().optional(),
+        metricId: z57.number().optional(),
+        correctionType: z57.enum(["sentiment_override", "compliance_dismiss", "compliance_add", "severity_change", "threshold_adjust"]),
+        originalValue: z57.number().optional(),
+        correctedValue: z57.number().optional(),
+        originalLabel: z57.string().optional(),
+        correctedLabel: z57.string().optional(),
+        reason: z57.string().optional(),
+        eventType: z57.string().optional(),
+        clientName: z57.string().optional(),
+        dismissedKeywords: z57.array(z57.string()).optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await db2.insert(operatorCorrections).values({
@@ -34092,9 +34565,9 @@ var init_adaptiveIntelligenceRouter = __esm({
           thresholdUpdate
         };
       }),
-      getCorrections: publicProcedure.input(z56.object({
-        eventId: z56.string().optional(),
-        limit: z56.number().default(50)
+      getCorrections: publicProcedure.input(z57.object({
+        eventId: z57.string().optional(),
+        limit: z57.number().default(50)
       })).query(async ({ input }) => {
         const db2 = await getDb();
         const conditions = input.eventId ? eq60(operatorCorrections.eventId, input.eventId) : void 0;
@@ -34120,9 +34593,9 @@ var init_adaptiveIntelligenceRouter = __esm({
         const db2 = await getDb();
         return db2.select().from(complianceVocabulary).orderBy(desc32(complianceVocabulary.effectiveWeight));
       }),
-      addComplianceKeyword: publicProcedure.input(z56.object({
-        keyword: z56.string().min(2).max(100),
-        sector: z56.string().optional()
+      addComplianceKeyword: publicProcedure.input(z57.object({
+        keyword: z57.string().min(2).max(100),
+        sector: z57.string().optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await rawSql(
@@ -34133,7 +34606,7 @@ var init_adaptiveIntelligenceRouter = __esm({
         );
         return { success: true, message: `"${input.keyword}" added to compliance vocabulary.` };
       }),
-      toggleComplianceKeyword: publicProcedure.input(z56.object({ id: z56.number(), active: z56.boolean() })).mutation(async ({ input }) => {
+      toggleComplianceKeyword: publicProcedure.input(z57.object({ id: z57.number(), active: z57.boolean() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await db2.update(complianceVocabulary).set({ active: input.active ? 1 : 0 }).where(eq60(complianceVocabulary.id, input.id));
         return { success: true };
@@ -34185,7 +34658,7 @@ var init_adaptiveIntelligenceRouter = __esm({
 });
 
 // server/routers/sustainabilityRouter.ts
-import { z as z57 } from "zod";
+import { z as z58 } from "zod";
 async function rawQuery11(query, params = []) {
   const db2 = await getDb();
   if (!db2) return [];
@@ -34236,21 +34709,21 @@ var init_sustainabilityRouter = __esm({
       groundTransport: 85
     };
     sustainabilityRouter = router({
-      calculateEvent: publicProcedure.input(z57.object({
-        eventId: z57.string().optional(),
-        eventTitle: z57.string().optional(),
-        totalAttendees: z57.number().min(1),
-        durationHours: z57.number().min(0.5).max(24),
-        isVirtual: z57.boolean().default(true),
-        domesticAttendees: z57.number().default(0),
-        internationalAttendees: z57.number().default(0),
-        avgDomesticFlightKm: z57.number().default(800),
-        avgInternationalFlightKm: z57.number().default(4e3),
-        hotelNights: z57.number().default(0),
-        cateringMeals: z57.number().default(0),
-        printedPacks: z57.number().default(0),
-        venueHours: z57.number().default(0),
-        country: z57.string().default("ZA")
+      calculateEvent: publicProcedure.input(z58.object({
+        eventId: z58.string().optional(),
+        eventTitle: z58.string().optional(),
+        totalAttendees: z58.number().min(1),
+        durationHours: z58.number().min(0.5).max(24),
+        isVirtual: z58.boolean().default(true),
+        domesticAttendees: z58.number().default(0),
+        internationalAttendees: z58.number().default(0),
+        avgDomesticFlightKm: z58.number().default(800),
+        avgInternationalFlightKm: z58.number().default(4e3),
+        hotelNights: z58.number().default(0),
+        cateringMeals: z58.number().default(0),
+        printedPacks: z58.number().default(0),
+        venueHours: z58.number().default(0),
+        country: z58.string().default("ZA")
       })).mutation(async ({ input }) => {
         const domesticFlightCO2 = input.domesticAttendees * input.avgDomesticFlightKm * EMISSION_FACTORS.flightShortHaul;
         const internationalFlightCO2 = input.internationalAttendees * input.avgInternationalFlightKm * EMISSION_FACTORS.flightLongHaul;
@@ -34327,7 +34800,7 @@ var init_sustainabilityRouter = __esm({
           equivalents: { treesEquivalent, carsOffRoadDays, smartphoneCharges }
         };
       }),
-      getReport: publicProcedure.input(z57.object({ eventId: z57.string() })).query(async ({ input }) => {
+      getReport: publicProcedure.input(z58.object({ eventId: z58.string() })).query(async ({ input }) => {
         const [report] = await rawQuery11(`SELECT * FROM sustainability_reports WHERE event_id = ? LIMIT 1`, [input.eventId]);
         if (!report) return null;
         return {
@@ -34361,7 +34834,7 @@ var init_sustainabilityRouter = __esm({
           byGrade
         };
       }),
-      generateESGNarrative: publicProcedure.input(z57.object({ eventId: z57.string() })).mutation(async ({ input }) => {
+      generateESGNarrative: publicProcedure.input(z58.object({ eventId: z58.string() })).mutation(async ({ input }) => {
         const [report] = await rawQuery11(`SELECT * FROM sustainability_reports WHERE event_id = ? LIMIT 1`, [input.eventId]);
         if (!report) return { success: false, error: "No sustainability report found for this event" };
         let narrative = "";
@@ -34389,7 +34862,7 @@ Write a 3-paragraph ESG disclosure narrative suitable for an annual sustainabili
 });
 
 // server/routers/broadcasterRouter.ts
-import { z as z58 } from "zod";
+import { z as z59 } from "zod";
 async function rawQuery12(query, params = []) {
   const db2 = await getDb();
   if (!db2) return [];
@@ -34452,12 +34925,12 @@ var init_broadcasterRouter = __esm({
     OPTIMAL_WPM = { min: 130, max: 160 };
     FILLER_WORDS = ["um", "uh", "like", "you know", "sort of", "kind of", "basically", "actually", "right", "so yeah"];
     broadcasterRouter = router({
-      analyseSegment: publicProcedure.input(z58.object({
-        eventId: z58.string(),
-        presenterName: z58.string().optional(),
-        text: z58.string().min(1),
-        durationSeconds: z58.number().min(1),
-        segmentTimestamp: z58.number().default(0)
+      analyseSegment: publicProcedure.input(z59.object({
+        eventId: z59.string(),
+        presenterName: z59.string().optional(),
+        text: z59.string().min(1),
+        durationSeconds: z59.number().min(1),
+        segmentTimestamp: z59.number().default(0)
       })).mutation(async ({ input }) => {
         const pace = analyseSegmentPace(input.text, input.durationSeconds);
         const keyMoments = detectKeyMoments(input.text, input.segmentTimestamp);
@@ -34471,19 +34944,19 @@ var init_broadcasterRouter = __esm({
           keyMoments
         };
       }),
-      updateSessionStats: publicProcedure.input(z58.object({
-        eventId: z58.string(),
-        presenterName: z58.string().optional(),
-        avgWpm: z58.number(),
-        paceAlerts: z58.number().default(0),
-        fillerWordCount: z58.number().default(0),
-        keyMoments: z58.array(z58.object({
-          type: z58.string(),
-          text: z58.string(),
-          timestamp: z58.number(),
-          confidence: z58.number()
+      updateSessionStats: publicProcedure.input(z59.object({
+        eventId: z59.string(),
+        presenterName: z59.string().optional(),
+        avgWpm: z59.number(),
+        paceAlerts: z59.number().default(0),
+        fillerWordCount: z59.number().default(0),
+        keyMoments: z59.array(z59.object({
+          type: z59.string(),
+          text: z59.string(),
+          timestamp: z59.number(),
+          confidence: z59.number()
         })).default([]),
-        durationSeconds: z58.number().default(0)
+        durationSeconds: z59.number().default(0)
       })).mutation(async ({ input }) => {
         await rawExecute9(`
         INSERT INTO broadcast_sessions
@@ -34508,7 +34981,7 @@ var init_broadcasterRouter = __esm({
         ]);
         return { success: true };
       }),
-      getSession: publicProcedure.input(z58.object({ eventId: z58.string() })).query(async ({ input }) => {
+      getSession: publicProcedure.input(z59.object({ eventId: z59.string() })).query(async ({ input }) => {
         const [session] = await rawQuery12(`SELECT * FROM broadcast_sessions WHERE event_id = ? LIMIT 1`, [input.eventId]);
         if (!session) return null;
         return {
@@ -34517,19 +34990,19 @@ var init_broadcasterRouter = __esm({
           recap: session.recap_json ? typeof session.recap_json === "string" ? JSON.parse(session.recap_json) : session.recap_json : null
         };
       }),
-      generateRecap: publicProcedure.input(z58.object({
-        eventId: z58.string(),
-        eventTitle: z58.string().optional(),
-        transcript: z58.array(z58.object({
-          speaker: z58.string(),
-          text: z58.string(),
-          timestamp: z58.number().optional()
+      generateRecap: publicProcedure.input(z59.object({
+        eventId: z59.string(),
+        eventTitle: z59.string().optional(),
+        transcript: z59.array(z59.object({
+          speaker: z59.string(),
+          text: z59.string(),
+          timestamp: z59.number().optional()
         })).optional(),
-        keyMoments: z58.array(z58.object({
-          type: z58.string(),
-          text: z58.string(),
-          timestamp: z58.number(),
-          confidence: z58.number()
+        keyMoments: z59.array(z59.object({
+          type: z59.string(),
+          text: z59.string(),
+          timestamp: z59.number(),
+          confidence: z59.number()
         })).optional()
       })).mutation(async ({ input }) => {
         const [session] = await rawQuery12(`SELECT * FROM broadcast_sessions WHERE event_id = ? LIMIT 1`, [input.eventId]);
@@ -34895,22 +35368,22 @@ var init_ConferenceDialoutService = __esm({
 });
 
 // server/routers/conferenceDialoutRouter.ts
-import { z as z59 } from "zod";
+import { z as z60 } from "zod";
 var participantSchema, conferenceDialoutRouter;
 var init_conferenceDialoutRouter = __esm({
   "server/routers/conferenceDialoutRouter.ts"() {
     "use strict";
     init_trpc();
     init_ConferenceDialoutService();
-    participantSchema = z59.object({
-      phoneNumber: z59.string().min(5, "Phone number too short").max(20, "Phone number too long"),
-      label: z59.string().max(255).optional()
+    participantSchema = z60.object({
+      phoneNumber: z60.string().min(5, "Phone number too short").max(20, "Phone number too long"),
+      label: z60.string().max(255).optional()
     });
     conferenceDialoutRouter = router({
-      create: protectedProcedure.input(z59.object({
-        name: z59.string().min(1, "Conference name is required").max(255),
-        callerId: z59.string().max(32).optional(),
-        participants: z59.array(participantSchema).min(1, "At least one participant required").max(200, "Maximum 200 participants")
+      create: protectedProcedure.input(z60.object({
+        name: z60.string().min(1, "Conference name is required").max(255),
+        callerId: z60.string().max(32).optional(),
+        participants: z60.array(participantSchema).min(1, "At least one participant required").max(200, "Maximum 200 participants")
       })).mutation(async ({ ctx, input }) => {
         return await createConferenceDialout({
           userId: ctx.user.id,
@@ -34919,16 +35392,16 @@ var init_conferenceDialoutRouter = __esm({
           participants: input.participants
         });
       }),
-      start: protectedProcedure.input(z59.object({ dialoutId: z59.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      start: protectedProcedure.input(z60.object({ dialoutId: z60.number().int().positive() })).mutation(async ({ ctx, input }) => {
         return await startDialling(input.dialoutId, ctx.user.id);
       }),
-      status: protectedProcedure.input(z59.object({ dialoutId: z59.number().int().positive() })).query(async ({ ctx, input }) => {
+      status: protectedProcedure.input(z60.object({ dialoutId: z60.number().int().positive() })).query(async ({ ctx, input }) => {
         return await getDialoutStatus(input.dialoutId, ctx.user.id);
       }),
-      cancel: protectedProcedure.input(z59.object({ dialoutId: z59.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      cancel: protectedProcedure.input(z60.object({ dialoutId: z60.number().int().positive() })).mutation(async ({ ctx, input }) => {
         return await cancelDialout(input.dialoutId, ctx.user.id);
       }),
-      list: protectedProcedure.input(z59.object({ limit: z59.number().int().min(1).max(50).default(20) })).query(async ({ ctx, input }) => {
+      list: protectedProcedure.input(z60.object({ limit: z60.number().int().min(1).max(50).default(20) })).query(async ({ ctx, input }) => {
         return await listDialouts(ctx.user.id, input.limit);
       })
     });
@@ -34936,7 +35409,7 @@ var init_conferenceDialoutRouter = __esm({
 });
 
 // server/routers/agmGovernanceRouter.ts
-import { z as z60 } from "zod";
+import { z as z61 } from "zod";
 var agmGovernanceRouter;
 var init_agmGovernanceRouter = __esm({
   "server/routers/agmGovernanceRouter.ts"() {
@@ -34944,18 +35417,18 @@ var init_agmGovernanceRouter = __esm({
     init_trpc();
     init_AgmGovernanceAiService();
     agmGovernanceRouter = router({
-      createSession: protectedProcedure.input(z60.object({
-        clientName: z60.string().min(1),
-        agmTitle: z60.string().min(1),
-        agmDate: z60.string().optional(),
-        jurisdiction: z60.enum(["south_africa", "united_kingdom", "united_states", "australia", "other"]).optional(),
-        shadowSessionId: z60.number().optional()
+      createSession: protectedProcedure.input(z61.object({
+        clientName: z61.string().min(1),
+        agmTitle: z61.string().min(1),
+        agmDate: z61.string().optional(),
+        jurisdiction: z61.enum(["south_africa", "united_kingdom", "united_states", "australia", "other"]).optional(),
+        shadowSessionId: z61.number().optional()
       })).mutation(async ({ ctx, input }) => createAgmSession(ctx.user.id, input)),
-      addResolution: protectedProcedure.input(z60.object({
-        sessionId: z60.number(),
-        resolutionNumber: z60.number(),
-        title: z60.string().min(1),
-        category: z60.enum([
+      addResolution: protectedProcedure.input(z61.object({
+        sessionId: z61.number(),
+        resolutionNumber: z61.number(),
+        title: z61.string().min(1),
+        category: z61.enum([
           "ordinary",
           "special",
           "advisory",
@@ -34967,50 +35440,50 @@ var init_agmGovernanceRouter = __esm({
           "esg",
           "other"
         ]).optional(),
-        proposedBy: z60.string().optional()
+        proposedBy: z61.string().optional()
       })).mutation(async ({ ctx, input }) => addResolution(ctx.user.id, input.sessionId, input)),
-      predictApproval: protectedProcedure.input(z60.object({
-        sessionId: z60.number(),
-        resolutionId: z60.number(),
-        transcriptSegments: z60.array(z60.object({
-          speaker: z60.string(),
-          text: z60.string(),
-          timestamp: z60.number()
+      predictApproval: protectedProcedure.input(z61.object({
+        sessionId: z61.number(),
+        resolutionId: z61.number(),
+        transcriptSegments: z61.array(z61.object({
+          speaker: z61.string(),
+          text: z61.string(),
+          timestamp: z61.number()
         })).optional().default([])
       })).mutation(async ({ ctx, input }) => predictResolutionApproval(ctx.user.id, input.sessionId, input.resolutionId, input.transcriptSegments)),
-      recordResult: protectedProcedure.input(z60.object({
-        sessionId: z60.number(),
-        resolutionId: z60.number(),
-        actualApprovalPct: z60.number().min(0).max(100)
+      recordResult: protectedProcedure.input(z61.object({
+        sessionId: z61.number(),
+        resolutionId: z61.number(),
+        actualApprovalPct: z61.number().min(0).max(100)
       })).mutation(async ({ ctx, input }) => recordActualResult(ctx.user.id, input.sessionId, input.resolutionId, input.actualApprovalPct)),
-      analyzeDissentPatterns: protectedProcedure.input(z60.object({ sessionId: z60.number(), clientName: z60.string().min(1) })).mutation(async ({ ctx, input }) => analyzeDissentPatterns(ctx.user.id, input.sessionId, input.clientName)),
-      triageQuestions: protectedProcedure.input(z60.object({
-        sessionId: z60.number(),
-        questions: z60.array(z60.object({
-          speaker: z60.string(),
-          question: z60.string(),
-          timestamp: z60.number().optional()
+      analyzeDissentPatterns: protectedProcedure.input(z61.object({ sessionId: z61.number(), clientName: z61.string().min(1) })).mutation(async ({ ctx, input }) => analyzeDissentPatterns(ctx.user.id, input.sessionId, input.clientName)),
+      triageQuestions: protectedProcedure.input(z61.object({
+        sessionId: z61.number(),
+        questions: z61.array(z61.object({
+          speaker: z61.string(),
+          question: z61.string(),
+          timestamp: z61.number().optional()
         }))
       })).mutation(async ({ ctx, input }) => triageGovernanceQuestions(ctx.user.id, input.sessionId, input.questions)),
-      analyzeQuorum: protectedProcedure.input(z60.object({
-        sessionId: z60.number(),
-        attendanceCount: z60.number(),
-        proxyCount: z60.number(),
-        totalEligibleShares: z60.number(),
-        sharesRepresented: z60.number(),
-        jurisdiction: z60.string().optional()
+      analyzeQuorum: protectedProcedure.input(z61.object({
+        sessionId: z61.number(),
+        attendanceCount: z61.number(),
+        proxyCount: z61.number(),
+        totalEligibleShares: z61.number(),
+        sharesRepresented: z61.number(),
+        jurisdiction: z61.string().optional()
       })).mutation(async ({ ctx, input }) => analyzeQuorumAndParticipation(ctx.user.id, input.sessionId, input.attendanceCount, input.proxyCount, input.totalEligibleShares, input.sharesRepresented, input.jurisdiction)),
-      scanCompliance: protectedProcedure.input(z60.object({
-        sessionId: z60.number(),
-        transcriptSegments: z60.array(z60.object({
-          speaker: z60.string(),
-          text: z60.string(),
-          timestamp: z60.number()
+      scanCompliance: protectedProcedure.input(z61.object({
+        sessionId: z61.number(),
+        transcriptSegments: z61.array(z61.object({
+          speaker: z61.string(),
+          text: z61.string(),
+          timestamp: z61.number()
         }))
       })).mutation(async ({ ctx, input }) => scanRegulatoryCompliance(ctx.user.id, input.sessionId, input.transcriptSegments)),
-      generateReport: protectedProcedure.input(z60.object({ sessionId: z60.number() })).mutation(async ({ ctx, input }) => generateGovernanceReport(ctx.user.id, input.sessionId)),
-      dashboard: protectedProcedure.input(z60.object({ sessionId: z60.number() })).query(async ({ ctx, input }) => getSessionDashboard2(ctx.user.id, input.sessionId)),
-      listSessions: protectedProcedure.input(z60.object({ limit: z60.number().optional().default(20) })).query(async ({ ctx, input }) => listAgmSessions(ctx.user.id, input.limit))
+      generateReport: protectedProcedure.input(z61.object({ sessionId: z61.number() })).mutation(async ({ ctx, input }) => generateGovernanceReport(ctx.user.id, input.sessionId)),
+      dashboard: protectedProcedure.input(z61.object({ sessionId: z61.number() })).query(async ({ ctx, input }) => getSessionDashboard2(ctx.user.id, input.sessionId)),
+      listSessions: protectedProcedure.input(z61.object({ limit: z61.number().optional().default(20) })).query(async ({ ctx, input }) => listAgmSessions(ctx.user.id, input.limit))
     });
   }
 });
@@ -35408,7 +35881,7 @@ var init_LumiBookingService = __esm({
 });
 
 // server/routers/lumiBookingRouter.ts
-import { z as z61 } from "zod";
+import { z as z62 } from "zod";
 function assertUser(ctx) {
   if (!ctx.user) throw new Error("Login required");
   return ctx.user.id;
@@ -35420,21 +35893,21 @@ var init_lumiBookingRouter = __esm({
     init_trpc();
     init_LumiBookingService();
     lumiBookingRouter = router({
-      create: publicProcedure.input(z61.object({
-        clientName: z61.string().min(1),
-        agmTitle: z61.string().min(1),
-        agmDate: z61.string().optional(),
-        agmTime: z61.string().optional(),
-        jurisdiction: z61.enum(["south_africa", "united_kingdom", "united_states", "australia", "other"]).default("south_africa"),
-        expectedAttendees: z61.number().int().optional(),
-        meetingUrl: z61.string().optional(),
-        platform: z61.enum(["zoom", "teams", "meet", "webex", "webphone", "other"]).default("zoom"),
-        contactName: z61.string().optional(),
-        contactEmail: z61.string().email().optional(),
-        lumiReference: z61.string().optional(),
-        lumiRecipients: z61.string().optional(),
-        notes: z61.string().optional(),
-        resolutionsJson: z61.any().optional()
+      create: publicProcedure.input(z62.object({
+        clientName: z62.string().min(1),
+        agmTitle: z62.string().min(1),
+        agmDate: z62.string().optional(),
+        agmTime: z62.string().optional(),
+        jurisdiction: z62.enum(["south_africa", "united_kingdom", "united_states", "australia", "other"]).default("south_africa"),
+        expectedAttendees: z62.number().int().optional(),
+        meetingUrl: z62.string().optional(),
+        platform: z62.enum(["zoom", "teams", "meet", "webex", "webphone", "other"]).default("zoom"),
+        contactName: z62.string().optional(),
+        contactEmail: z62.string().email().optional(),
+        lumiReference: z62.string().optional(),
+        lumiRecipients: z62.string().optional(),
+        notes: z62.string().optional(),
+        resolutionsJson: z62.any().optional()
       })).mutation(async ({ ctx, input }) => {
         const userId = assertUser(ctx);
         return lumiBookingService.createBooking({ ...input, userId });
@@ -35443,62 +35916,62 @@ var init_lumiBookingRouter = __esm({
         const userId = assertUser(ctx);
         return lumiBookingService.listBookings(userId);
       }),
-      getById: publicProcedure.input(z61.object({ id: z61.number() })).query(async ({ ctx, input }) => {
+      getById: publicProcedure.input(z62.object({ id: z62.number() })).query(async ({ ctx, input }) => {
         const userId = assertUser(ctx);
         return lumiBookingService.getBookingById(input.id, userId);
       }),
-      update: publicProcedure.input(z61.object({
-        id: z61.number(),
-        clientName: z61.string().optional(),
-        agmTitle: z61.string().optional(),
-        agmDate: z61.string().optional(),
-        agmTime: z61.string().optional(),
-        jurisdiction: z61.enum(["south_africa", "united_kingdom", "united_states", "australia", "other"]).optional(),
-        expectedAttendees: z61.number().int().optional(),
-        meetingUrl: z61.string().optional(),
-        platform: z61.enum(["zoom", "teams", "meet", "webex", "webphone", "other"]).optional(),
-        contactName: z61.string().optional(),
-        contactEmail: z61.string().email().optional(),
-        lumiReference: z61.string().optional(),
-        lumiRecipients: z61.string().optional(),
-        notes: z61.string().optional(),
-        resolutionsJson: z61.any().optional(),
-        status: z61.enum(["booked", "setup", "ready", "live", "completed", "cancelled"]).optional()
+      update: publicProcedure.input(z62.object({
+        id: z62.number(),
+        clientName: z62.string().optional(),
+        agmTitle: z62.string().optional(),
+        agmDate: z62.string().optional(),
+        agmTime: z62.string().optional(),
+        jurisdiction: z62.enum(["south_africa", "united_kingdom", "united_states", "australia", "other"]).optional(),
+        expectedAttendees: z62.number().int().optional(),
+        meetingUrl: z62.string().optional(),
+        platform: z62.enum(["zoom", "teams", "meet", "webex", "webphone", "other"]).optional(),
+        contactName: z62.string().optional(),
+        contactEmail: z62.string().email().optional(),
+        lumiReference: z62.string().optional(),
+        lumiRecipients: z62.string().optional(),
+        notes: z62.string().optional(),
+        resolutionsJson: z62.any().optional(),
+        status: z62.enum(["booked", "setup", "ready", "live", "completed", "cancelled"]).optional()
       })).mutation(async ({ ctx, input }) => {
         const userId = assertUser(ctx);
         const { id, ...updates } = input;
         return lumiBookingService.updateBooking(id, updates, userId);
       }),
-      runChecklist: publicProcedure.input(z61.object({ id: z61.number() })).mutation(async ({ ctx, input }) => {
+      runChecklist: publicProcedure.input(z62.object({ id: z62.number() })).mutation(async ({ ctx, input }) => {
         const userId = assertUser(ctx);
         const booking = await lumiBookingService.getBookingById(input.id, userId);
         if (!booking) throw new Error("Booking not found");
         return lumiBookingService.runChecklist(input.id);
       }),
-      linkSessions: publicProcedure.input(z61.object({
-        bookingId: z61.number(),
-        shadowSessionId: z61.number(),
-        agmSessionId: z61.number().nullable()
+      linkSessions: publicProcedure.input(z62.object({
+        bookingId: z62.number(),
+        shadowSessionId: z62.number(),
+        agmSessionId: z62.number().nullable()
       })).mutation(async ({ ctx, input }) => {
         const userId = assertUser(ctx);
         const booking = await lumiBookingService.getBookingById(input.bookingId, userId);
         if (!booking) throw new Error("Booking not found");
         return lumiBookingService.linkSessions(input.bookingId, input.shadowSessionId, input.agmSessionId);
       }),
-      complete: publicProcedure.input(z61.object({ id: z61.number() })).mutation(async ({ ctx, input }) => {
+      complete: publicProcedure.input(z62.object({ id: z62.number() })).mutation(async ({ ctx, input }) => {
         const userId = assertUser(ctx);
         const booking = await lumiBookingService.getBookingById(input.id, userId);
         if (!booking) throw new Error("Booking not found");
         return lumiBookingService.completeBooking(input.id);
       }),
-      sendConfirmation: publicProcedure.input(z61.object({ id: z61.number() })).mutation(async ({ ctx, input }) => {
+      sendConfirmation: publicProcedure.input(z62.object({ id: z62.number() })).mutation(async ({ ctx, input }) => {
         const userId = assertUser(ctx);
         const booking = await lumiBookingService.getBookingById(input.id, userId);
         if (!booking) throw new Error("Booking not found");
         const baseUrl = `${ctx.req.protocol}://${ctx.req.get("host")}`;
         return lumiBookingService.sendBookingConfirmation(input.id, baseUrl, userId);
       }),
-      clientDashboard: publicProcedure.input(z61.object({ token: z61.string() })).query(async ({ input }) => {
+      clientDashboard: publicProcedure.input(z62.object({ token: z62.string() })).query(async ({ input }) => {
         return lumiBookingService.getClientDashboardData(input.token);
       })
     });
@@ -35887,7 +36360,7 @@ var init_BastionBookingService = __esm({
 });
 
 // server/routers/bastionBookingRouter.ts
-import { z as z62 } from "zod";
+import { z as z63 } from "zod";
 function assertUser2(ctx) {
   if (!ctx.user) throw new Error("Login required");
   return ctx.user.id;
@@ -35899,22 +36372,22 @@ var init_bastionBookingRouter = __esm({
     init_trpc();
     init_BastionBookingService();
     bastionBookingRouter = router({
-      create: publicProcedure.input(z62.object({
-        clientName: z62.string().min(1),
-        eventTitle: z62.string().min(1),
-        eventType: z62.enum(["earnings_call", "agm", "investor_day", "roadshow", "capital_markets_day", "special_call", "other"]).default("earnings_call"),
-        eventDate: z62.string().optional(),
-        eventTime: z62.string().optional(),
-        sector: z62.string().optional(),
-        ticker: z62.string().optional(),
-        expectedAttendees: z62.number().int().optional(),
-        meetingUrl: z62.string().optional(),
-        platform: z62.enum(["zoom", "teams", "meet", "webex", "webphone", "other"]).default("zoom"),
-        contactName: z62.string().optional(),
-        contactEmail: z62.string().email().optional(),
-        bastionReference: z62.string().optional(),
-        confirmationRecipients: z62.string().optional(),
-        notes: z62.string().optional()
+      create: publicProcedure.input(z63.object({
+        clientName: z63.string().min(1),
+        eventTitle: z63.string().min(1),
+        eventType: z63.enum(["earnings_call", "agm", "investor_day", "roadshow", "capital_markets_day", "special_call", "other"]).default("earnings_call"),
+        eventDate: z63.string().optional(),
+        eventTime: z63.string().optional(),
+        sector: z63.string().optional(),
+        ticker: z63.string().optional(),
+        expectedAttendees: z63.number().int().optional(),
+        meetingUrl: z63.string().optional(),
+        platform: z63.enum(["zoom", "teams", "meet", "webex", "webphone", "other"]).default("zoom"),
+        contactName: z63.string().optional(),
+        contactEmail: z63.string().email().optional(),
+        bastionReference: z63.string().optional(),
+        confirmationRecipients: z63.string().optional(),
+        notes: z63.string().optional()
       })).mutation(async ({ ctx, input }) => {
         const userId = assertUser2(ctx);
         return bastionBookingService.createBooking({ ...input, userId });
@@ -35923,63 +36396,63 @@ var init_bastionBookingRouter = __esm({
         const userId = assertUser2(ctx);
         return bastionBookingService.listBookings(userId);
       }),
-      getById: publicProcedure.input(z62.object({ id: z62.number() })).query(async ({ ctx, input }) => {
+      getById: publicProcedure.input(z63.object({ id: z63.number() })).query(async ({ ctx, input }) => {
         const userId = assertUser2(ctx);
         return bastionBookingService.getBookingById(input.id, userId);
       }),
-      update: publicProcedure.input(z62.object({
-        id: z62.number(),
-        clientName: z62.string().optional(),
-        eventTitle: z62.string().optional(),
-        eventType: z62.enum(["earnings_call", "agm", "investor_day", "roadshow", "capital_markets_day", "special_call", "other"]).optional(),
-        eventDate: z62.string().optional(),
-        eventTime: z62.string().optional(),
-        sector: z62.string().optional(),
-        ticker: z62.string().optional(),
-        expectedAttendees: z62.number().int().optional(),
-        meetingUrl: z62.string().optional(),
-        platform: z62.enum(["zoom", "teams", "meet", "webex", "webphone", "other"]).optional(),
-        contactName: z62.string().optional(),
-        contactEmail: z62.string().email().optional(),
-        bastionReference: z62.string().optional(),
-        confirmationRecipients: z62.string().optional(),
-        notes: z62.string().optional(),
-        status: z62.enum(["booked", "setup", "ready", "live", "completed", "cancelled"]).optional()
+      update: publicProcedure.input(z63.object({
+        id: z63.number(),
+        clientName: z63.string().optional(),
+        eventTitle: z63.string().optional(),
+        eventType: z63.enum(["earnings_call", "agm", "investor_day", "roadshow", "capital_markets_day", "special_call", "other"]).optional(),
+        eventDate: z63.string().optional(),
+        eventTime: z63.string().optional(),
+        sector: z63.string().optional(),
+        ticker: z63.string().optional(),
+        expectedAttendees: z63.number().int().optional(),
+        meetingUrl: z63.string().optional(),
+        platform: z63.enum(["zoom", "teams", "meet", "webex", "webphone", "other"]).optional(),
+        contactName: z63.string().optional(),
+        contactEmail: z63.string().email().optional(),
+        bastionReference: z63.string().optional(),
+        confirmationRecipients: z63.string().optional(),
+        notes: z63.string().optional(),
+        status: z63.enum(["booked", "setup", "ready", "live", "completed", "cancelled"]).optional()
       })).mutation(async ({ ctx, input }) => {
         const userId = assertUser2(ctx);
         const { id, ...updates } = input;
         return bastionBookingService.updateBooking(id, updates, userId);
       }),
-      runChecklist: publicProcedure.input(z62.object({ id: z62.number() })).mutation(async ({ ctx, input }) => {
+      runChecklist: publicProcedure.input(z63.object({ id: z63.number() })).mutation(async ({ ctx, input }) => {
         const userId = assertUser2(ctx);
         const booking = await bastionBookingService.getBookingById(input.id, userId);
         if (!booking) throw new Error("Booking not found");
         return bastionBookingService.runChecklist(input.id);
       }),
-      linkSessions: publicProcedure.input(z62.object({
-        bookingId: z62.number(),
-        shadowSessionId: z62.number(),
-        bastionSessionId: z62.number().nullable()
+      linkSessions: publicProcedure.input(z63.object({
+        bookingId: z63.number(),
+        shadowSessionId: z63.number(),
+        bastionSessionId: z63.number().nullable()
       })).mutation(async ({ ctx, input }) => {
         const userId = assertUser2(ctx);
         const booking = await bastionBookingService.getBookingById(input.bookingId, userId);
         if (!booking) throw new Error("Booking not found");
         return bastionBookingService.linkSessions(input.bookingId, input.shadowSessionId, input.bastionSessionId);
       }),
-      complete: publicProcedure.input(z62.object({ id: z62.number() })).mutation(async ({ ctx, input }) => {
+      complete: publicProcedure.input(z63.object({ id: z63.number() })).mutation(async ({ ctx, input }) => {
         const userId = assertUser2(ctx);
         const booking = await bastionBookingService.getBookingById(input.id, userId);
         if (!booking) throw new Error("Booking not found");
         return bastionBookingService.updateBooking(input.id, { status: "completed" }, userId);
       }),
-      sendConfirmation: publicProcedure.input(z62.object({ id: z62.number() })).mutation(async ({ ctx, input }) => {
+      sendConfirmation: publicProcedure.input(z63.object({ id: z63.number() })).mutation(async ({ ctx, input }) => {
         const userId = assertUser2(ctx);
         const booking = await bastionBookingService.getBookingById(input.id, userId);
         if (!booking) throw new Error("Booking not found");
         const baseUrl = `${ctx.req.protocol}://${ctx.req.get("host")}`;
         return bastionBookingService.sendBookingConfirmation(input.id, baseUrl, userId);
       }),
-      clientDashboard: publicProcedure.input(z62.object({ token: z62.string() })).query(async ({ input }) => {
+      clientDashboard: publicProcedure.input(z63.object({ token: z63.string() })).query(async ({ input }) => {
         return bastionBookingService.getClientDashboardData(input.token);
       })
     });
@@ -36104,7 +36577,7 @@ Output JSON only:
 });
 
 // server/routers/evasiveAnswerRouter.ts
-import { z as z63 } from "zod";
+import { z as z64 } from "zod";
 var evasiveAnswerRouter;
 var init_evasiveAnswerRouter = __esm({
   "server/routers/evasiveAnswerRouter.ts"() {
@@ -36112,12 +36585,12 @@ var init_evasiveAnswerRouter = __esm({
     init_trpc();
     init_EvasiveAnswerDetectionService();
     evasiveAnswerRouter = router({
-      detectEvasiveness: protectedProcedure.input(z63.object({
-        responseText: z63.string().max(1e4),
-        questionText: z63.string().max(5e3),
-        speakerRole: z63.string().max(100).optional(),
-        eventId: z63.number().optional(),
-        sessionId: z63.number().optional()
+      detectEvasiveness: protectedProcedure.input(z64.object({
+        responseText: z64.string().max(1e4),
+        questionText: z64.string().max(5e3),
+        speakerRole: z64.string().max(100).optional(),
+        eventId: z64.number().optional(),
+        sessionId: z64.number().optional()
       })).mutation(async ({ input }) => {
         const result = await EvasiveAnswerDetectionService.scoreResponse(
           input.responseText,
@@ -36135,20 +36608,20 @@ var init_evasiveAnswerRouter = __esm({
         }
         return result;
       }),
-      batchAnalyze: protectedProcedure.input(z63.object({
-        qaExchanges: z63.array(z63.object({
-          questionText: z63.string().max(5e3),
-          responseText: z63.string().max(1e4),
-          speakerRole: z63.string().max(100).optional(),
-          questionId: z63.number().optional()
+      batchAnalyze: protectedProcedure.input(z64.object({
+        qaExchanges: z64.array(z64.object({
+          questionText: z64.string().max(5e3),
+          responseText: z64.string().max(1e4),
+          speakerRole: z64.string().max(100).optional(),
+          questionId: z64.number().optional()
         })).max(20)
       })).mutation(async ({ input }) => {
         return EvasiveAnswerDetectionService.batchAnalyzeQA(input.qaExchanges);
       }),
-      getEventEvasiveness: protectedProcedure.input(z63.object({ eventId: z63.number() })).query(async ({ input }) => {
+      getEventEvasiveness: protectedProcedure.input(z64.object({ eventId: z64.number() })).query(async ({ input }) => {
         return EvasiveAnswerDetectionService.getEventEvasiveness(input.eventId);
       }),
-      getAggregateStats: protectedProcedure.input(z63.object({ eventId: z63.number() })).query(async ({ input }) => {
+      getAggregateStats: protectedProcedure.input(z64.object({ eventId: z64.number() })).query(async ({ input }) => {
         return EvasiveAnswerDetectionService.getAggregateStats(input.eventId);
       })
     });
@@ -36262,7 +36735,7 @@ Output JSON only:
 });
 
 // server/routers/marketImpactPredictorRouter.ts
-import { z as z64 } from "zod";
+import { z as z65 } from "zod";
 var marketImpactPredictorRouter;
 var init_marketImpactPredictorRouter = __esm({
   "server/routers/marketImpactPredictorRouter.ts"() {
@@ -36270,16 +36743,16 @@ var init_marketImpactPredictorRouter = __esm({
     init_trpc();
     init_MarketImpactPredictorService();
     marketImpactPredictorRouter = router({
-      predictImpact: protectedProcedure.input(z64.object({
-        sentimentScore: z64.number().min(-1).max(1),
-        topicKeywords: z64.array(z64.string().max(200)).max(20),
-        evasivenessScore: z64.number().min(0).max(1).optional(),
-        companyTicker: z64.string().max(20).optional(),
-        eventType: z64.string().max(50).optional(),
-        transcriptExcerpt: z64.string().max(15e3).optional(),
-        historicalContext: z64.string().max(5e3).optional(),
-        eventId: z64.number().optional(),
-        sessionId: z64.number().optional()
+      predictImpact: protectedProcedure.input(z65.object({
+        sentimentScore: z65.number().min(-1).max(1),
+        topicKeywords: z65.array(z65.string().max(200)).max(20),
+        evasivenessScore: z65.number().min(0).max(1).optional(),
+        companyTicker: z65.string().max(20).optional(),
+        eventType: z65.string().max(50).optional(),
+        transcriptExcerpt: z65.string().max(15e3).optional(),
+        historicalContext: z65.string().max(5e3).optional(),
+        eventId: z65.number().optional(),
+        sessionId: z65.number().optional()
       })).mutation(async ({ input }) => {
         const prediction = await MarketImpactPredictorService.predictImpact({
           sentimentScore: input.sentimentScore,
@@ -36301,10 +36774,10 @@ var init_marketImpactPredictorRouter = __esm({
         }
         return prediction;
       }),
-      getEventPredictions: protectedProcedure.input(z64.object({ eventId: z64.number() })).query(async ({ input }) => {
+      getEventPredictions: protectedProcedure.input(z65.object({ eventId: z65.number() })).query(async ({ input }) => {
         return MarketImpactPredictorService.getEventPredictions(input.eventId);
       }),
-      getLatestPrediction: protectedProcedure.input(z64.object({ eventId: z64.number() })).query(async ({ input }) => {
+      getLatestPrediction: protectedProcedure.input(z65.object({ eventId: z65.number() })).query(async ({ input }) => {
         return MarketImpactPredictorService.getLatestPrediction(input.eventId);
       })
     });
@@ -36424,7 +36897,7 @@ Output JSON only:
 });
 
 // server/routers/multiModalComplianceRouter.ts
-import { z as z65 } from "zod";
+import { z as z66 } from "zod";
 var multiModalComplianceRouter;
 var init_multiModalComplianceRouter = __esm({
   "server/routers/multiModalComplianceRouter.ts"() {
@@ -36432,20 +36905,20 @@ var init_multiModalComplianceRouter = __esm({
     init_trpc();
     init_MultiModalComplianceService();
     multiModalComplianceRouter = router({
-      scoreComplianceRisk: protectedProcedure.input(z65.object({
-        transcriptText: z65.string().max(2e4),
-        sentimentData: z65.object({
-          overallSentiment: z65.string().max(50),
-          confidence: z65.number().min(0).max(1),
-          emotionDistribution: z65.record(z65.number())
+      scoreComplianceRisk: protectedProcedure.input(z66.object({
+        transcriptText: z66.string().max(2e4),
+        sentimentData: z66.object({
+          overallSentiment: z66.string().max(50),
+          confidence: z66.number().min(0).max(1),
+          emotionDistribution: z66.record(z66.number())
         }).optional(),
-        evasivenessScore: z65.number().min(0).max(1).optional(),
-        speakerRole: z65.string().max(100).optional(),
-        eventType: z65.string().max(50).optional(),
-        companyTicker: z65.string().max(20).optional(),
-        jurisdiction: z65.string().max(50).optional(),
-        eventId: z65.number().optional(),
-        sessionId: z65.number().optional()
+        evasivenessScore: z66.number().min(0).max(1).optional(),
+        speakerRole: z66.string().max(100).optional(),
+        eventType: z66.string().max(50).optional(),
+        companyTicker: z66.string().max(20).optional(),
+        jurisdiction: z66.string().max(50).optional(),
+        eventId: z66.number().optional(),
+        sessionId: z66.number().optional()
       })).mutation(async ({ input }) => {
         const score = await MultiModalComplianceService.scoreComplianceRisk({
           transcriptText: input.transcriptText,
@@ -36465,7 +36938,7 @@ var init_multiModalComplianceRouter = __esm({
         }
         return score;
       }),
-      getEventComplianceScores: protectedProcedure.input(z65.object({ eventId: z65.number() })).query(async ({ input }) => {
+      getEventComplianceScores: protectedProcedure.input(z66.object({ eventId: z66.number() })).query(async ({ input }) => {
         return MultiModalComplianceService.getEventComplianceScores(input.eventId);
       })
     });
@@ -36581,7 +37054,7 @@ Output JSON only:
 });
 
 // server/routers/externalSentimentRouter.ts
-import { z as z66 } from "zod";
+import { z as z67 } from "zod";
 var externalSentimentRouter;
 var init_externalSentimentRouter = __esm({
   "server/routers/externalSentimentRouter.ts"() {
@@ -36589,15 +37062,15 @@ var init_externalSentimentRouter = __esm({
     init_trpc();
     init_ExternalSentimentService();
     externalSentimentRouter = router({
-      aggregateExternalSentiment: protectedProcedure.input(z66.object({
-        companyTicker: z66.string().max(20),
-        companyName: z66.string().max(200),
-        eventType: z66.string().max(50),
-        callSentiment: z66.number().min(-1).max(1),
-        keyTopicsFromCall: z66.array(z66.string().max(200)).max(20),
-        transcriptHighlights: z66.string().max(15e3).optional(),
-        eventId: z66.number().optional(),
-        sessionId: z66.number().optional()
+      aggregateExternalSentiment: protectedProcedure.input(z67.object({
+        companyTicker: z67.string().max(20),
+        companyName: z67.string().max(200),
+        eventType: z67.string().max(50),
+        callSentiment: z67.number().min(-1).max(1),
+        keyTopicsFromCall: z67.array(z67.string().max(200)).max(20),
+        transcriptHighlights: z67.string().max(15e3).optional(),
+        eventId: z67.number().optional(),
+        sessionId: z67.number().optional()
       })).mutation(async ({ input }) => {
         const snapshot = await ExternalSentimentService.aggregateExternalSentiment({
           companyTicker: input.companyTicker,
@@ -36616,7 +37089,7 @@ var init_externalSentimentRouter = __esm({
         }
         return snapshot;
       }),
-      getEventSnapshots: protectedProcedure.input(z66.object({ eventId: z66.number() })).query(async ({ input }) => {
+      getEventSnapshots: protectedProcedure.input(z67.object({ eventId: z67.number() })).query(async ({ input }) => {
         return ExternalSentimentService.getEventSnapshots(input.eventId);
       })
     });
@@ -36747,7 +37220,7 @@ Output JSON only:
 });
 
 // server/routers/personalizedBriefingRouter.ts
-import { z as z67 } from "zod";
+import { z as z68 } from "zod";
 var personalizedBriefingRouter;
 var init_personalizedBriefingRouter = __esm({
   "server/routers/personalizedBriefingRouter.ts"() {
@@ -36755,28 +37228,28 @@ var init_personalizedBriefingRouter = __esm({
     init_trpc();
     init_PersonalizedBriefingService();
     personalizedBriefingRouter = router({
-      generateBriefing: protectedProcedure.input(z67.object({
-        stakeholderType: z67.enum(["ceo", "cfo", "ir_head", "board_member", "analyst", "compliance_officer", "investor"]),
-        companyName: z67.string().max(200),
-        eventName: z67.string().max(500),
-        eventType: z67.string().max(50),
-        transcriptExcerpt: z67.string().max(2e4),
-        sentimentScore: z67.number().min(-1).max(1).optional(),
-        evasivenessData: z67.object({
-          avgScore: z67.number().min(0).max(1),
-          highEvasionCount: z67.number().min(0)
+      generateBriefing: protectedProcedure.input(z68.object({
+        stakeholderType: z68.enum(["ceo", "cfo", "ir_head", "board_member", "analyst", "compliance_officer", "investor"]),
+        companyName: z68.string().max(200),
+        eventName: z68.string().max(500),
+        eventType: z68.string().max(50),
+        transcriptExcerpt: z68.string().max(2e4),
+        sentimentScore: z68.number().min(-1).max(1).optional(),
+        evasivenessData: z68.object({
+          avgScore: z68.number().min(0).max(1),
+          highEvasionCount: z68.number().min(0)
         }).optional(),
-        marketImpactData: z67.object({
-          volatility: z67.number().min(0).max(10),
-          direction: z67.string().max(20)
+        marketImpactData: z68.object({
+          volatility: z68.number().min(0).max(10),
+          direction: z68.string().max(20)
         }).optional(),
-        complianceData: z67.object({
-          overallRisk: z67.number().min(0).max(1),
-          violationCount: z67.number().min(0)
+        complianceData: z68.object({
+          overallRisk: z68.number().min(0).max(1),
+          violationCount: z68.number().min(0)
         }).optional(),
-        previousBriefings: z67.string().max(1e4).optional(),
-        eventId: z67.number().optional(),
-        sessionId: z67.number().optional()
+        previousBriefings: z68.string().max(1e4).optional(),
+        eventId: z68.number().optional(),
+        sessionId: z68.number().optional()
       })).mutation(async ({ input }) => {
         const briefing = await PersonalizedBriefingService.generateBriefing({
           stakeholderType: input.stakeholderType,
@@ -36800,9 +37273,9 @@ var init_personalizedBriefingRouter = __esm({
         }
         return briefing;
       }),
-      getEventBriefings: protectedProcedure.input(z67.object({
-        eventId: z67.number(),
-        stakeholderType: z67.string().max(50).optional()
+      getEventBriefings: protectedProcedure.input(z68.object({
+        eventId: z68.number(),
+        stakeholderType: z68.string().max(50).optional()
       })).query(async ({ input }) => {
         return PersonalizedBriefingService.getEventBriefings(input.eventId, input.stakeholderType);
       })
@@ -36921,7 +37394,7 @@ ${input.priorFilings}` : ""}`
 });
 
 // server/routers/materialityRiskRouter.ts
-import { z as z68 } from "zod";
+import { z as z69 } from "zod";
 var materialityRiskRouter;
 var init_materialityRiskRouter = __esm({
   "server/routers/materialityRiskRouter.ts"() {
@@ -36929,15 +37402,15 @@ var init_materialityRiskRouter = __esm({
     init_trpc();
     init_MaterialityRiskOracleService();
     materialityRiskRouter = router({
-      scoreStatement: protectedProcedure.input(z68.object({
-        statementText: z68.string().max(1e4),
-        speakerRole: z68.string().max(100).optional(),
-        companyTicker: z68.string().max(20).optional(),
-        jurisdiction: z68.string().max(50).optional(),
-        eventType: z68.string().max(50).optional(),
-        priorFilings: z68.string().max(15e3).optional(),
-        eventId: z68.number().optional(),
-        sessionId: z68.number().optional()
+      scoreStatement: protectedProcedure.input(z69.object({
+        statementText: z69.string().max(1e4),
+        speakerRole: z69.string().max(100).optional(),
+        companyTicker: z69.string().max(20).optional(),
+        jurisdiction: z69.string().max(50).optional(),
+        eventType: z69.string().max(50).optional(),
+        priorFilings: z69.string().max(15e3).optional(),
+        eventId: z69.number().optional(),
+        sessionId: z69.number().optional()
       })).mutation(async ({ input }) => {
         const result = await MaterialityRiskOracleService.scoreStatement(input);
         if (input.eventId && input.sessionId && result.materialityScore > 0.5) {
@@ -37064,7 +37537,7 @@ ${input.historicalQuestions.join("\n")}` : ""}`
 });
 
 // server/routers/investorIntentRouter.ts
-import { z as z69 } from "zod";
+import { z as z70 } from "zod";
 var investorIntentRouter;
 var init_investorIntentRouter = __esm({
   "server/routers/investorIntentRouter.ts"() {
@@ -37072,15 +37545,15 @@ var init_investorIntentRouter = __esm({
     init_trpc();
     init_InvestorIntentionDecoderService();
     investorIntentRouter = router({
-      decodeIntent: protectedProcedure.input(z69.object({
-        questionText: z69.string().max(5e3),
-        investorName: z69.string().max(200).optional(),
-        investorType: z69.string().max(100).optional(),
-        historicalQuestions: z69.array(z69.string().max(2e3)).max(10).optional(),
-        eventContext: z69.string().max(2e3).optional(),
-        companyTicker: z69.string().max(20).optional(),
-        eventId: z69.number().optional(),
-        sessionId: z69.number().optional()
+      decodeIntent: protectedProcedure.input(z70.object({
+        questionText: z70.string().max(5e3),
+        investorName: z70.string().max(200).optional(),
+        investorType: z70.string().max(100).optional(),
+        historicalQuestions: z70.array(z70.string().max(2e3)).max(10).optional(),
+        eventContext: z70.string().max(2e3).optional(),
+        companyTicker: z70.string().max(20).optional(),
+        eventId: z70.number().optional(),
+        sessionId: z70.number().optional()
       })).mutation(async ({ input }) => {
         const result = await InvestorIntentionDecoderService.decodeIntent(input);
         if (input.eventId && input.sessionId) {
@@ -37197,7 +37670,7 @@ ${input.peerStatements.join("\n")}` : ""}`
 });
 
 // server/routers/crossEventConsistencyRouter.ts
-import { z as z70 } from "zod";
+import { z as z71 } from "zod";
 var crossEventConsistencyRouter;
 var init_crossEventConsistencyRouter = __esm({
   "server/routers/crossEventConsistencyRouter.ts"() {
@@ -37205,15 +37678,15 @@ var init_crossEventConsistencyRouter = __esm({
     init_trpc();
     init_CrossEventConsistencyService();
     crossEventConsistencyRouter = router({
-      checkConsistency: protectedProcedure.input(z70.object({
-        currentStatement: z70.string().max(1e4),
-        speakerRole: z70.string().max(100).optional(),
-        companyName: z70.string().max(200).optional(),
-        historicalStatements: z70.array(z70.string().max(5e3)).max(20).optional(),
-        peerStatements: z70.array(z70.string().max(5e3)).max(10).optional(),
-        eventType: z70.string().max(50).optional(),
-        eventId: z70.number().optional(),
-        sessionId: z70.number().optional()
+      checkConsistency: protectedProcedure.input(z71.object({
+        currentStatement: z71.string().max(1e4),
+        speakerRole: z71.string().max(100).optional(),
+        companyName: z71.string().max(200).optional(),
+        historicalStatements: z71.array(z71.string().max(5e3)).max(20).optional(),
+        peerStatements: z71.array(z71.string().max(5e3)).max(10).optional(),
+        eventType: z71.string().max(50).optional(),
+        eventId: z71.number().optional(),
+        sessionId: z71.number().optional()
       })).mutation(async ({ input }) => {
         const result = await CrossEventConsistencyService.checkConsistency(input);
         if (input.eventId && input.sessionId) {
@@ -37333,7 +37806,7 @@ PRIOR 30-DAY REALIZED VOL: ${input.priorVolatility || "N/A"}`
 });
 
 // server/routers/volatilitySimulatorRouter.ts
-import { z as z71 } from "zod";
+import { z as z72 } from "zod";
 var volatilitySimulatorRouter;
 var init_volatilitySimulatorRouter = __esm({
   "server/routers/volatilitySimulatorRouter.ts"() {
@@ -37341,16 +37814,16 @@ var init_volatilitySimulatorRouter = __esm({
     init_trpc();
     init_VolatilitySimulatorService();
     volatilitySimulatorRouter = router({
-      runSimulation: protectedProcedure.input(z71.object({
-        transcriptExcerpt: z71.string().max(2e4),
-        currentSentiment: z71.number().min(-1).max(1),
-        guidanceTone: z71.string().max(200).optional(),
-        companyTicker: z71.string().max(20).optional(),
-        eventType: z71.string().max(50).optional(),
-        sectorContext: z71.string().max(200).optional(),
-        priorVolatility: z71.number().min(0).max(100).optional(),
-        eventId: z71.number().optional(),
-        sessionId: z71.number().optional()
+      runSimulation: protectedProcedure.input(z72.object({
+        transcriptExcerpt: z72.string().max(2e4),
+        currentSentiment: z72.number().min(-1).max(1),
+        guidanceTone: z72.string().max(200).optional(),
+        companyTicker: z72.string().max(20).optional(),
+        eventType: z72.string().max(50).optional(),
+        sectorContext: z72.string().max(200).optional(),
+        priorVolatility: z72.number().min(0).max(100).optional(),
+        eventId: z72.number().optional(),
+        sessionId: z72.number().optional()
       })).mutation(async ({ input }) => {
         const result = await VolatilitySimulatorService.runSimulation(input);
         if (input.eventId && input.sessionId) {
@@ -37473,7 +37946,7 @@ ${Object.entries(input.currentThresholds).map(([k, v]) => `${k}: ${v}`).join("\n
 });
 
 // server/routers/regulatoryInterventionRouter.ts
-import { z as z72 } from "zod";
+import { z as z73 } from "zod";
 var regulatoryInterventionRouter;
 var init_regulatoryInterventionRouter = __esm({
   "server/routers/regulatoryInterventionRouter.ts"() {
@@ -37481,18 +37954,18 @@ var init_regulatoryInterventionRouter = __esm({
     init_trpc();
     init_RegulatoryInterventionService();
     regulatoryInterventionRouter = router({
-      analyzeAndEvolve: protectedProcedure.input(z72.object({
-        eventTranscript: z72.string().max(3e4),
-        regulatoryOutcomes: z72.array(z72.object({
-          type: z72.string().max(200),
-          result: z72.string().max(200),
-          details: z72.string().max(2e3)
+      analyzeAndEvolve: protectedProcedure.input(z73.object({
+        eventTranscript: z73.string().max(3e4),
+        regulatoryOutcomes: z73.array(z73.object({
+          type: z73.string().max(200),
+          result: z73.string().max(200),
+          details: z73.string().max(2e3)
         })).max(20).optional(),
-        currentThresholds: z72.record(z72.number()).optional(),
-        jurisdiction: z72.string().max(50).optional(),
-        companyTicker: z72.string().max(20).optional(),
-        eventId: z72.number().optional(),
-        sessionId: z72.number().optional()
+        currentThresholds: z73.record(z73.number()).optional(),
+        jurisdiction: z73.string().max(50).optional(),
+        companyTicker: z73.string().max(20).optional(),
+        eventId: z73.number().optional(),
+        sessionId: z73.number().optional()
       })).mutation(async ({ input }) => {
         const result = await RegulatoryInterventionService.analyzeAndEvolve(input);
         if (input.eventId && input.sessionId) {
@@ -37640,7 +38113,7 @@ ${input.segments.slice(0, 5).map((s, i) => `[${s.timestamp}] Sentiment: ${s.sent
 });
 
 // server/routers/eventIntegrityRouter.ts
-import { z as z73 } from "zod";
+import { z as z74 } from "zod";
 var eventIntegrityRouter;
 var init_eventIntegrityRouter = __esm({
   "server/routers/eventIntegrityRouter.ts"() {
@@ -37648,23 +38121,23 @@ var init_eventIntegrityRouter = __esm({
     init_trpc();
     init_EventIntegrityTwinService();
     eventIntegrityRouter = router({
-      buildDigitalTwin: protectedProcedure.input(z73.object({
-        eventId: z73.string().max(100),
-        eventName: z73.string().max(500),
-        companyName: z73.string().max(200),
-        segments: z73.array(z73.object({
-          transcript: z73.string().max(5e3),
-          sentiment: z73.number().min(-1).max(1),
-          compliance: z73.number().min(0).max(1),
-          timestamp: z73.string().max(50)
+      buildDigitalTwin: protectedProcedure.input(z74.object({
+        eventId: z74.string().max(100),
+        eventName: z74.string().max(500),
+        companyName: z74.string().max(200),
+        segments: z74.array(z74.object({
+          transcript: z74.string().max(5e3),
+          sentiment: z74.number().min(-1).max(1),
+          compliance: z74.number().min(0).max(1),
+          timestamp: z74.string().max(50)
         })).max(100),
-        overallSentiment: z73.number().min(-1).max(1).optional(),
-        complianceScore: z73.number().min(0).max(1).optional(),
-        evasivenessAvg: z73.number().min(0).max(1).optional(),
-        attendeeCount: z73.number().optional(),
-        qaCount: z73.number().optional(),
-        dbEventId: z73.number().optional(),
-        sessionId: z73.number().optional()
+        overallSentiment: z74.number().min(-1).max(1).optional(),
+        complianceScore: z74.number().min(0).max(1).optional(),
+        evasivenessAvg: z74.number().min(0).max(1).optional(),
+        attendeeCount: z74.number().optional(),
+        qaCount: z74.number().optional(),
+        dbEventId: z74.number().optional(),
+        sessionId: z74.number().optional()
       })).mutation(async ({ input }) => {
         const result = await EventIntegrityTwinService.buildDigitalTwin(input);
         if (input.dbEventId && input.sessionId) {
@@ -37677,7 +38150,7 @@ var init_eventIntegrityRouter = __esm({
 });
 
 // server/routers/monthlyReportRouter.ts
-import { z as z74 } from "zod";
+import { z as z75 } from "zod";
 import { desc as desc36, eq as eq64 } from "drizzle-orm";
 var monthlyReportRouter;
 var init_monthlyReportRouter = __esm({
@@ -37688,9 +38161,9 @@ var init_monthlyReportRouter = __esm({
     init_schema();
     init_llm();
     monthlyReportRouter = router({
-      generate: publicProcedure.input(z74.object({
-        month: z74.string().regex(/^\d{4}-\d{2}$/),
-        clientName: z74.string().optional()
+      generate: publicProcedure.input(z75.object({
+        month: z75.string().regex(/^\d{4}-\d{2}$/),
+        clientName: z75.string().optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const [inserted] = await db2.insert(monthlyReports).values({
@@ -37802,7 +38275,7 @@ ${JSON.stringify(eventSummaries.slice(0, 30), null, 2)}`
         const db2 = await getDb();
         return db2.select().from(monthlyReports).orderBy(desc36(monthlyReports.createdAt)).limit(24);
       }),
-      get: publicProcedure.input(z74.object({ id: z74.number() })).query(async ({ input }) => {
+      get: publicProcedure.input(z75.object({ id: z75.number() })).query(async ({ input }) => {
         const db2 = await getDb();
         const [report] = await db2.select().from(monthlyReports).where(eq64(monthlyReports.id, input.id)).limit(1);
         return report ?? null;
@@ -37812,7 +38285,7 @@ ${JSON.stringify(eventSummaries.slice(0, 30), null, 2)}`
 });
 
 // server/routers/advisoryBotRouter.ts
-import { z as z75 } from "zod";
+import { z as z76 } from "zod";
 import { desc as desc37, eq as eq65 } from "drizzle-orm";
 var advisoryBotRouter;
 var init_advisoryBotRouter = __esm({
@@ -37823,10 +38296,10 @@ var init_advisoryBotRouter = __esm({
     init_schema();
     init_llm();
     advisoryBotRouter = router({
-      chat: publicProcedure.input(z75.object({
-        sessionKey: z75.string(),
-        message: z75.string().min(1).max(2e3),
-        eventIds: z75.array(z75.string()).optional()
+      chat: publicProcedure.input(z76.object({
+        sessionKey: z76.string(),
+        message: z76.string().min(1).max(2e3),
+        eventIds: z76.array(z76.string()).optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await db2.insert(advisoryChatMessages).values({
@@ -37901,11 +38374,11 @@ ${contextData || "No event data available yet. Suggest the user run some Shadow 
         });
         return { reply };
       }),
-      getHistory: publicProcedure.input(z75.object({ sessionKey: z75.string() })).query(async ({ input }) => {
+      getHistory: publicProcedure.input(z76.object({ sessionKey: z76.string() })).query(async ({ input }) => {
         const db2 = await getDb();
         return db2.select().from(advisoryChatMessages).where(eq65(advisoryChatMessages.sessionKey, input.sessionKey)).orderBy(advisoryChatMessages.createdAt).limit(100);
       }),
-      clearHistory: publicProcedure.input(z75.object({ sessionKey: z75.string() })).mutation(async ({ input }) => {
+      clearHistory: publicProcedure.input(z76.object({ sessionKey: z76.string() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await rawSql(`DELETE FROM advisory_chat_messages WHERE session_key = ?`, [input.sessionKey]);
         return { success: true };
@@ -37915,7 +38388,7 @@ ${contextData || "No event data available yet. Suggest the user run some Shadow 
 });
 
 // server/routers/evolutionAuditRouter.ts
-import { z as z76 } from "zod";
+import { z as z77 } from "zod";
 import { desc as desc38, eq as eq66, sql as sql20 } from "drizzle-orm";
 import { createHash as createHash5 } from "crypto";
 function sha2562(data) {
@@ -38070,7 +38543,7 @@ var init_evolutionAuditRouter = __esm({
         }
         return { valid, totalEntries: entries.length, brokenAt };
       }),
-      shadowTest: operatorProcedure.input(z76.object({ proposalId: z76.number() })).mutation(async ({ input }) => {
+      shadowTest: operatorProcedure.input(z77.object({ proposalId: z77.number() })).mutation(async ({ input }) => {
         return shadowTestProposal(input.proposalId);
       }),
       getRoadmap: operatorProcedure.query(async () => {
@@ -38369,1308 +38842,183 @@ var init_systemDiagnosticsRouter = __esm({
   }
 });
 
-// server/_core/ably.ts
-async function getAblyClient() {
-  if (_ablyClient) return _ablyClient;
-  const apiKey = process.env.ABLY_API_KEY;
-  if (!apiKey) {
-    console.warn("[Ably] ABLY_API_KEY not set \u2014 real-time alerts disabled");
-    return null;
-  }
-  try {
-    const Ably3 = await import("ably");
-    _ablyClient = new Ably3.Rest(apiKey);
-    return _ablyClient;
-  } catch (err) {
-    console.error("[Ably] Failed to initialise client:", err);
-    return null;
-  }
-}
-async function publishToChannel(channelName, eventName, data) {
-  const client = await getAblyClient();
-  if (!client) return false;
-  try {
-    const channel = client.channels.get(channelName);
-    await channel.publish(eventName, data);
-    return true;
-  } catch (err) {
-    console.error("[Ably] Publish error:", err);
-    return false;
-  }
-}
-async function publishPostEventData(postEventData2) {
-  return publishToChannel("post_event:updates", "post_event.generated", {
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    ...postEventData2
-  });
-}
-var _ablyClient;
-var init_ably = __esm({
-  "server/_core/ably.ts"() {
-    "use strict";
-    _ablyClient = null;
-  }
-});
-
-// server/services/AgiComplianceService.ts
-async function predictiveRiskAnalysis(sessionContext) {
-  try {
-    const questionSummary = sessionContext.questions.slice(0, 20).map(
-      (q, i) => `${i + 1}. [${q.category}] (risk: ${q.complianceRiskScore}) ${q.text.slice(0, 100)}`
-    ).join("\n");
-    const flagSummary = sessionContext.existingFlags.map(
-      (f) => `${f.jurisdiction}: ${f.riskType} (score: ${f.riskScore})`
-    ).join(", ");
-    const result = await invokeLLM({
-      model: "openai:gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are CuraLive's AGI Corporate Compliance Layer. Perform predictive risk analysis on a live Q&A session and auto-generate compliance policies.
-
-Jurisdictions: ZA_JSE (JSE Listings Requirements), US_SEC (Regulation FD), UK_FCA (MAR/DTR), EU_ESMA (MAR), Global best practices.
-
-Return ONLY valid JSON:
-{
-  "overallRiskLevel": "low|moderate|elevated|high|critical",
-  "riskScore": 0-100,
-  "predictedEscalations": [
-    {
-      "trigger": "what could escalate",
-      "probability": 0.0-1.0,
-      "impact": "low|medium|high|critical",
-      "mitigationStrategy": "how to prevent"
-    }
-  ],
-  "autoGeneratedPolicies": [
-    {
-      "policyName": "short_name",
-      "policyType": "disclosure|response_template|escalation_rule|safe_harbour|redaction",
-      "description": "what this policy does",
-      "autoEnforce": true/false,
-      "ruleDefinition": "the actual rule logic"
-    }
-  ],
-  "jurisdictionAlerts": [
-    {
-      "jurisdiction": "ZA_JSE|US_SEC|UK_FCA|EU_ESMA|global",
-      "regulation": "specific regulation name",
-      "relevantSection": "section reference",
-      "riskDescription": "what the risk is",
-      "requiredAction": "what must be done"
-    }
-  ],
-  "reasoning": "analysis explanation"
-}`
-        },
-        {
-          role: "user",
-          content: `Event: "${sessionContext.eventName}" | Client: "${sessionContext.clientName}"
-
-Questions (${sessionContext.questions.length} total):
-${questionSummary}
-
-Existing Flags: ${flagSummary || "None"}`
-        }
-      ],
-      temperature: 0.2
-    });
-    const parsed = JSON.parse(result.text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
-    return {
-      overallRiskLevel: parsed.overallRiskLevel || "moderate",
-      riskScore: Math.min(100, Math.max(0, parsed.riskScore || 30)),
-      predictedEscalations: Array.isArray(parsed.predictedEscalations) ? parsed.predictedEscalations : [],
-      autoGeneratedPolicies: Array.isArray(parsed.autoGeneratedPolicies) ? parsed.autoGeneratedPolicies : [],
-      jurisdictionAlerts: Array.isArray(parsed.jurisdictionAlerts) ? parsed.jurisdictionAlerts : [],
-      reasoning: parsed.reasoning || ""
-    };
-  } catch (err) {
-    console.error("[AgiCompliance] Predictive risk analysis failed:", err);
-    return {
-      overallRiskLevel: "moderate",
-      riskScore: 30,
-      predictedEscalations: [],
-      autoGeneratedPolicies: [],
-      jurisdictionAlerts: [],
-      reasoning: "Predictive analysis unavailable \u2014 manual review recommended"
-    };
-  }
-}
-async function generateComplianceSafeResponse(questionText, category, jurisdictions, existingDraft) {
-  try {
-    const result = await invokeLLM({
-      model: "openai:gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are the AGI Corporate Compliance Layer. Review a Q&A response and ensure it is fully compliant across all applicable jurisdictions.
-
-Jurisdictions to check: ${jurisdictions.join(", ")}
-
-Return JSON:
-{
-  "safeResponse": "the compliance-safe version",
-  "modifications": ["list of changes made"],
-  "disclaimers": ["required disclaimers to append"]
-}`
-        },
-        {
-          role: "user",
-          content: `Category: ${category}
-Question: ${questionText}
-${existingDraft ? `Draft Response: ${existingDraft}` : "No existing draft \u2014 generate a safe response."}`
-        }
-      ],
-      temperature: 0.2
-    });
-    const parsed = JSON.parse(result.text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
-    return {
-      safeResponse: parsed.safeResponse || existingDraft || "",
-      modifications: Array.isArray(parsed.modifications) ? parsed.modifications : [],
-      disclaimers: Array.isArray(parsed.disclaimers) ? parsed.disclaimers : []
-    };
-  } catch {
-    return {
-      safeResponse: existingDraft || "",
-      modifications: [],
-      disclaimers: ["Standard compliance disclaimer: This response has not been verified by the AGI compliance layer."]
-    };
-  }
-}
-var init_AgiComplianceService = __esm({
-  "server/services/AgiComplianceService.ts"() {
-    "use strict";
-    init_llm();
-  }
-});
-
-// server/services/LiveQaTriageService.ts
-function extractLLMText2(result) {
-  if (result?.text) return result.text;
-  const content = result?.choices?.[0]?.message?.content;
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) return content.map((p) => p.text || "").join("");
-  return "";
-}
-function computeP2P(sentimentPolarity, polarityScore, disclosureUrgency) {
-  const polarityWeights = {
-    adversarial: 1,
-    negative: 0.75,
-    neutral: 0.4,
-    positive: 0.2
-  };
-  const polarityWeight = polarityWeights[sentimentPolarity] ?? 0.4;
-  const normalizedPolarity = Math.min(1, Math.max(0, polarityScore / 100));
-  const normalizedUrgency = Math.min(1, Math.max(0, disclosureUrgency / 100));
-  const p2pRank = polarityWeight * 0.4 + normalizedPolarity * 0.25 + normalizedUrgency * 0.35;
-  return Math.round(p2pRank * 100);
-}
-function authoriseGoLive(triageScore, complianceRiskScore, threshold = DEFAULT_GO_LIVE_THRESHOLD) {
-  const complianceCleared = complianceRiskScore <= 70;
-  const meetsThreshold = triageScore >= threshold;
-  const authorised = meetsThreshold && complianceCleared;
-  let reason;
-  if (authorised) {
-    reason = `Authorised: triage score ${triageScore} meets threshold ${threshold}, compliance risk ${complianceRiskScore} within limits`;
-  } else if (!complianceCleared) {
-    reason = `Blocked: compliance risk score ${complianceRiskScore} exceeds safety limit (max 70). Manual review required.`;
-  } else {
-    reason = `Blocked: triage score ${triageScore} below minimum threshold ${threshold}. Operator override available.`;
-  }
-  return { authorised, triageScore, complianceCleared, minimumThreshold: threshold, reason };
-}
-async function triageQuestion2(questionText, eventName, clientName, existingQuestions) {
-  try {
-    const existingContext = existingQuestions.length > 0 ? `
-Existing questions already asked:
-${existingQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n")}` : "";
-    const result = await invokeLLM({
-      model: "openai:gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are CuraLive's Live Q&A Triage Engine for investor events. Analyze submitted questions and return a JSON assessment.
-
-Event: "${eventName}" | Client: "${clientName}"
-${existingContext}
-
-Return ONLY valid JSON with these fields:
-{
-  "category": one of "financial"|"operational"|"esg"|"governance"|"strategy"|"general",
-  "triageScore": 0-100 (urgency/relevance score),
-  "triageClassification": one of "high_priority"|"standard"|"low_priority"|"duplicate"|"hostile",
-  "triageReason": "brief explanation",
-  "complianceRiskScore": 0-100 (regulatory risk),
-  "priorityScore": 0-100 (combined priority for queue ordering),
-  "sentimentPolarity": one of "positive"|"neutral"|"negative"|"adversarial",
-  "polarityScore": 0-100 (intensity of sentiment polarity),
-  "disclosureUrgency": 0-100 (how urgently this requires a disclosure-sensitive response),
-  "complianceFlags": [
-    {
-      "jurisdiction": "ZA_JSE|US_SEC|UK_FCA|EU_ESMA|global",
-      "riskScore": 0-100,
-      "riskType": "material_non_public|forward_looking|insider_trading|selective_disclosure|market_manipulation",
-      "riskDescription": "explanation",
-      "recommendedAction": "forward|route_to_bot|legal_review|delay_24h",
-      "autoRemediationSuggestion": "suggested safe wording"
-    }
-  ]
-}`
-        },
-        { role: "user", content: questionText }
-      ],
-      temperature: 0.2
-    });
-    const llmText = extractLLMText2(result);
-    if (!llmText) throw new Error("Empty LLM response");
-    const parsed = JSON.parse(llmText.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
-    const triageScore = Math.min(100, Math.max(0, parsed.triageScore || 50));
-    const complianceRiskScore = Math.min(100, Math.max(0, parsed.complianceRiskScore || 0));
-    const polarity = ["positive", "neutral", "negative", "adversarial"].includes(parsed.sentimentPolarity) ? parsed.sentimentPolarity : "neutral";
-    const polarityScore = Math.min(100, Math.max(0, parsed.polarityScore || 50));
-    const disclosureUrgency = Math.min(100, Math.max(0, parsed.disclosureUrgency || 30));
-    const p2pRank = computeP2P(polarity, polarityScore, disclosureUrgency);
-    const goLive = authoriseGoLive(triageScore, complianceRiskScore);
-    const basePriority = Math.min(100, Math.max(0, parsed.priorityScore || 50));
-    const effectivePriority = Math.min(100, Math.round(basePriority * 0.6 + p2pRank * 0.4));
-    return {
-      category: parsed.category || "general",
-      triageScore,
-      triageClassification: parsed.triageClassification || "standard",
-      triageReason: parsed.triageReason || "Auto-triaged",
-      complianceRiskScore,
-      priorityScore: effectivePriority,
-      complianceFlags: Array.isArray(parsed.complianceFlags) ? parsed.complianceFlags : [],
-      sentimentPolarity: { polarity, polarityScore, disclosureUrgency, p2pRank },
-      goLiveAuthorisation: goLive
-    };
-  } catch (err) {
-    console.error("[LiveQaTriage] Triage failed:", err);
-    return {
-      category: "general",
-      triageScore: 50,
-      triageClassification: "standard",
-      triageReason: "Auto-triage unavailable \u2014 manual review recommended",
-      complianceRiskScore: 0,
-      priorityScore: 50,
-      complianceFlags: [],
-      sentimentPolarity: { polarity: "neutral", polarityScore: 50, disclosureUrgency: 30, p2pRank: computeP2P("neutral", 50, 30) },
-      goLiveAuthorisation: authoriseGoLive(50, 0)
-    };
-  }
-}
-async function generateAutoDraft(questionText, eventName, clientName, category) {
-  try {
-    const result = await invokeLLM({
-      model: "openai:gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are CuraLive's Auto-Draft Response Engine. Generate a professional, compliance-safe draft answer for an investor question.
-
-Event: "${eventName}" | Client: "${clientName}" | Category: ${category}
-
-Guidelines:
-- Be factual and measured; avoid forward-looking statements
-- Include appropriate disclaimers where needed
-- Flag if the question requires management/legal input
-- Keep under 200 words
-
-Return ONLY valid JSON:
-{
-  "answerText": "the draft response",
-  "reasoning": "why this response is appropriate"
-}`
-        },
-        { role: "user", content: questionText }
-      ],
-      temperature: 0.3
-    });
-    const llmText = extractLLMText2(result);
-    if (!llmText) throw new Error("Empty LLM response");
-    const parsed = JSON.parse(llmText.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
-    let answerText = parsed.answerText || "Draft unavailable \u2014 please compose manually.";
-    try {
-      const complianceCheck = await generateComplianceSafeResponse(
-        questionText,
-        category,
-        ["ZA_JSE", "US_SEC", "UK_FCA", "EU_ESMA"],
-        answerText
-      );
-      if (complianceCheck.safeResponse) {
-        answerText = complianceCheck.safeResponse;
-      }
-      if (complianceCheck.disclaimers.length > 0) {
-        answerText += "\n\n" + complianceCheck.disclaimers.join("\n");
-      }
-    } catch {
-      console.log("[LiveQaTriage] AGI compliance pass skipped \u2014 using base draft");
-    }
-    return {
-      answerText,
-      reasoning: parsed.reasoning || ""
-    };
-  } catch (err) {
-    console.error("[LiveQaTriage] Auto-draft failed:", err);
-    return {
-      answerText: "Auto-draft unavailable. Please compose a response manually.",
-      reasoning: "AI service error"
-    };
-  }
-}
-var DEFAULT_GO_LIVE_THRESHOLD;
-var init_LiveQaTriageService = __esm({
-  "server/services/LiveQaTriageService.ts"() {
-    "use strict";
-    init_llm();
-    init_AgiComplianceService();
-    DEFAULT_GO_LIVE_THRESHOLD = 40;
-  }
-});
-
-// server/services/AgiToolGeneratorService.ts
-async function generateAutonomousTools(sessionContext) {
-  try {
-    const result = await invokeLLM({
-      model: "openai:gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are CuraLive's AGI Tool Generator Engine. Based on real-time Q&A session data, autonomously propose new micro-tools that would improve the operator's workflow.
-
-Analyze the session context and propose 2-4 tools that would be most valuable RIGHT NOW based on the patterns you detect.
-
-Tool categories: compliance, analytics, communication, automation, risk
-
-Return ONLY valid JSON:
-{
-  "tools": [
-    {
-      "toolName": "short_snake_case_name",
-      "description": "What this tool does",
-      "category": "compliance|analytics|communication|automation|risk",
-      "implementation": "Brief technical description of how it works",
-      "triggerConditions": ["when X happens", "when Y exceeds threshold"],
-      "estimatedImpact": "Expected improvement description",
-      "confidence": 0.0-1.0
-    }
-  ],
-  "reasoning": "Why these tools were proposed based on session patterns",
-  "sessionContext": "Summary of detected patterns"
-}`
-        },
-        {
-          role: "user",
-          content: `Session: "${sessionContext.eventName}" | Client: "${sessionContext.clientName}"
-Questions: ${sessionContext.totalQuestions} | Flagged: ${sessionContext.flaggedCount}
-Avg Compliance Risk: ${sessionContext.avgComplianceRisk.toFixed(1)}%
-Categories: ${JSON.stringify(sessionContext.categories)}
-Top Themes: ${sessionContext.topThemes.join(", ")}`
-        }
-      ],
-      temperature: 0.4
-    });
-    const parsed = JSON.parse(result.text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
-    return {
-      tools: Array.isArray(parsed.tools) ? parsed.tools.map((t2) => ({
-        toolName: t2.toolName || "unnamed_tool",
-        description: t2.description || "",
-        category: t2.category || "automation",
-        implementation: t2.implementation || "",
-        triggerConditions: Array.isArray(t2.triggerConditions) ? t2.triggerConditions : [],
-        estimatedImpact: t2.estimatedImpact || "",
-        confidence: Math.min(1, Math.max(0, t2.confidence || 0.5))
-      })) : [],
-      reasoning: parsed.reasoning || "",
-      sessionContext: parsed.sessionContext || ""
-    };
-  } catch (err) {
-    console.error("[AgiToolGenerator] Generation failed:", err);
-    return { tools: [], reasoning: "Tool generation unavailable", sessionContext: "" };
-  }
-}
-var init_AgiToolGeneratorService = __esm({
-  "server/services/AgiToolGeneratorService.ts"() {
-    "use strict";
-    init_llm();
-  }
-});
-
 // server/routers/liveQaRouter.ts
-import { z as z77 } from "zod";
-import { eq as eq67, desc as desc39, sql as sql21 } from "drizzle-orm";
-import { createHash as createHash6 } from "crypto";
-function tokenize(text4) {
-  return new Set(
-    text4.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter((w) => w.length > 2)
-  );
-}
-function jaccardSimilarity(a, b) {
-  const setA = tokenize(a);
-  const setB = tokenize(b);
-  if (setA.size === 0 && setB.size === 0) return 0;
-  let intersection = 0;
-  for (const word of setA) {
-    if (setB.has(word)) intersection++;
-  }
-  const union = setA.size + setB.size - intersection;
-  return union === 0 ? 0 : intersection / union;
-}
-function findDuplicate(newQuestion, existingQuestions) {
-  let bestMatch = null;
-  for (const eq84 of existingQuestions) {
-    const sim = jaccardSimilarity(newQuestion, eq84.text);
-    if (sim >= DUPLICATE_THRESHOLD && (!bestMatch || sim > bestMatch.similarity)) {
-      bestMatch = { id: eq84.id, similarity: sim };
-    }
-  }
-  return bestMatch;
-}
-function generateSessionCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
-var DUPLICATE_THRESHOLD, upvoteTracker, UPVOTE_COOLDOWN_MS, liveQaRouter;
+import { z as z78 } from "zod";
+import Ably2 from "ably";
+var getAblyClient, liveQaRouter;
 var init_liveQaRouter = __esm({
   "server/routers/liveQaRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
-    init_schema();
-    init_ably();
-    init_LiveQaTriageService();
-    init_ably();
-    init_AgiToolGeneratorService();
-    init_AgiComplianceService();
-    DUPLICATE_THRESHOLD = 0.55;
-    upvoteTracker = /* @__PURE__ */ new Map();
-    UPVOTE_COOLDOWN_MS = 1e4;
+    getAblyClient = () => {
+      const key = process.env.ABLY_API_KEY;
+      if (!key) throw new Error("ABLY_API_KEY not configured");
+      return new Ably2.Rest(key);
+    };
     liveQaRouter = router({
-      createSession: operatorProcedure.input(z77.object({
-        eventName: z77.string().min(1),
-        clientName: z77.string().optional(),
-        shadowSessionId: z77.number().optional()
+      getAblyToken: publicProcedure.input(z78.object({
+        sessionId: z78.string(),
+        attendeeId: z78.string().optional()
       })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        const sessionCode = generateSessionCode();
-        await db2.insert(liveQaSessions).values({
-          sessionCode,
-          eventName: input.eventName,
-          clientName: input.clientName || null,
-          shadowSessionId: input.shadowSessionId || null
-        });
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.sessionCode, sessionCode));
-        return session;
-      }),
-      getSession: operatorProcedure.input(z77.object({ sessionId: z77.number() })).query(async ({ input }) => {
-        const db2 = await getDb();
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.id, input.sessionId));
-        return session || null;
-      }),
-      getSessionByCode: publicProcedure.input(z77.object({ accessCode: z77.string() })).query(async ({ input }) => {
-        const db2 = await getDb();
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.sessionCode, input.accessCode.toUpperCase()));
-        if (!session) return null;
-        let ablyChannel = null;
-        let shadowStatus = null;
-        if (session.shadowSessionId) {
-          const [shadow] = await db2.select({ ablyChannel: shadowSessions.ablyChannel, status: shadowSessions.status }).from(shadowSessions).where(eq67(shadowSessions.id, session.shadowSessionId));
-          if (shadow) {
-            ablyChannel = shadow.ablyChannel;
-            shadowStatus = shadow.status;
-          }
-        }
-        return {
-          id: session.id,
-          sessionCode: session.sessionCode,
-          eventName: session.eventName,
-          clientName: session.clientName,
-          status: session.status,
-          totalQuestions: session.totalQuestions,
-          ablyChannel,
-          isLiveStreaming: shadowStatus === "live" || shadowStatus === "bot_joining"
-        };
-      }),
-      getAttendeeAblyToken: publicProcedure.input(z77.object({ accessCode: z77.string() })).query(async ({ input }) => {
-        const db2 = await getDb();
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.sessionCode, input.accessCode.toUpperCase()));
-        if (!session || !session.shadowSessionId) return { tokenRequest: null };
-        if (session.status === "closed") return { tokenRequest: null };
-        const [shadow] = await db2.select({ ablyChannel: shadowSessions.ablyChannel, status: shadowSessions.status }).from(shadowSessions).where(eq67(shadowSessions.id, session.shadowSessionId));
-        if (!shadow?.ablyChannel) return { tokenRequest: null };
-        if (shadow.status !== "live" && shadow.status !== "bot_joining") return { tokenRequest: null };
-        try {
-          const client = await getAblyClient();
-          if (!client) return { tokenRequest: null };
-          const tokenRequest = await client.auth.createTokenRequest({
-            clientId: `attendee-${input.accessCode}-${Date.now()}`,
-            ttl: 9e5,
-            capability: JSON.stringify({
-              [shadow.ablyChannel]: ["subscribe"]
-            })
-          });
-          return { tokenRequest, channel: shadow.ablyChannel };
-        } catch (err) {
-          console.error("[LiveQA] Failed to generate attendee Ably token:", err);
-          return { tokenRequest: null };
-        }
-      }),
-      getSessionByShadow: operatorProcedure.input(z77.object({ shadowSessionId: z77.number() })).query(async ({ input }) => {
-        const db2 = await getDb();
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.shadowSessionId, input.shadowSessionId));
-        return session || null;
-      }),
-      updateSessionStatus: operatorProcedure.input(z77.object({
-        sessionId: z77.number(),
-        status: z77.enum(["active", "paused", "closed"])
-      })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        const updates = { status: input.status };
-        if (input.status === "closed") updates.closedAt = /* @__PURE__ */ new Date();
-        await db2.update(liveQaSessions).set(updates).where(eq67(liveQaSessions.id, input.sessionId));
-        return { success: true };
-      }),
-      submitQuestion: publicProcedure.input(z77.object({
-        sessionCode: z77.string(),
-        questionText: z77.string().min(5).max(2e3),
-        submitterName: z77.string().optional(),
-        submitterEmail: z77.string().email().optional(),
-        submitterCompany: z77.string().optional(),
-        isAnonymous: z77.boolean().optional()
-      })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.sessionCode, input.sessionCode.toUpperCase()));
-        if (!session) throw new Error("Q&A session not found");
-        if (session.status === "closed") throw new Error("Q&A session is closed");
-        if (session.status === "paused") throw new Error("Q&A session is paused");
-        const existingQs = await db2.select({ id: liveQaQuestions.id, text: liveQaQuestions.questionText }).from(liveQaQuestions).where(eq67(liveQaQuestions.sessionId, session.id)).limit(200);
-        const triage = await triageQuestion2(
-          input.questionText,
-          session.eventName,
-          session.clientName || "",
-          existingQs.map((q) => q.text)
+        const [rows] = await rawSql(
+          `SELECT id, status FROM shadow_sessions WHERE id = $1`,
+          [input.sessionId]
         );
-        const duplicateMatch = findDuplicate(input.questionText, existingQs.map((q) => ({ id: q.id, text: q.text })));
-        const isDuplicate = !!duplicateMatch;
-        const effectiveClassification = isDuplicate ? "duplicate" : triage.triageClassification;
-        const effectiveStatus = triage.complianceRiskScore > 70 ? "flagged" : "triaged";
-        const nowEpoch = String(Date.now());
-        const [insertResult] = await rawSql(
-          `INSERT INTO live_qa_questions (session_id, question_text, submitter_name, submitter_email, submitter_company, question_category, question_status, upvotes, triage_score, triage_classification, triage_reason, compliance_risk_score, priority_score, is_anonymous, duplicate_of_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            session.id,
-            input.questionText,
-            input.isAnonymous ? null : input.submitterName || null,
-            input.isAnonymous ? null : input.submitterEmail || null,
-            input.isAnonymous ? null : input.submitterCompany || null,
-            triage.category,
-            effectiveStatus,
-            triage.triageScore,
-            effectiveClassification,
-            isDuplicate ? `Possible duplicate of Q#${duplicateMatch.id} (${Math.round(duplicateMatch.similarity * 100)}% match). ${triage.triageReason}` : triage.triageReason,
-            triage.complianceRiskScore,
-            isDuplicate ? Math.max(0, triage.priorityScore - 20) : triage.priorityScore,
-            input.isAnonymous ? 1 : 0,
-            duplicateMatch?.id || null,
-            nowEpoch,
-            nowEpoch
-          ]
-        );
-        const questionId = insertResult.insertId;
-        if (triage.complianceFlags.length > 0 && questionId) {
-          for (const flag of triage.complianceFlags) {
-            await db2.insert(liveQaComplianceFlags).values({
-              questionId,
-              jurisdiction: flag.jurisdiction || "global",
-              riskScore: flag.riskScore || 0,
-              riskType: flag.riskType || "unknown",
-              riskDescription: flag.riskDescription || "",
-              recommendedAction: flag.recommendedAction || "forward",
-              autoRemediationSuggestion: flag.autoRemediationSuggestion || ""
-            });
-          }
+        const session = rows?.[0];
+        if (!session || !["live", "bot_joining"].includes(session.status)) {
+          throw new Error("Session is not active");
         }
-        await db2.update(liveQaSessions).set({ totalQuestions: sql21`total_questions + 1` }).where(eq67(liveQaSessions.id, session.id));
-        publishToChannel(`curalive-qa-${session.id}`, "qa.submitted", {
-          questionId,
-          questionText: input.questionText,
-          category: triage.category,
-          triageClassification: triage.triageClassification,
-          triageScore: triage.triageScore,
-          priorityScore: triage.priorityScore,
-          complianceRiskScore: triage.complianceRiskScore,
-          status: triage.complianceRiskScore > 70 ? "flagged" : "triaged",
-          timestamp: Date.now()
-        }).catch(() => {
+        const ably2 = getAblyClient();
+        const tokenRequest = await ably2.auth.createTokenRequest({
+          clientId: input.attendeeId ?? `attendee-${Date.now()}`,
+          capability: {
+            [`session:${input.sessionId}:qa`]: ["publish", "subscribe", "presence"],
+            [`session:${input.sessionId}:transcript`]: ["subscribe"]
+          }
         });
-        return {
-          questionId,
-          category: triage.category,
-          triageClassification: triage.triageClassification,
-          status: triage.complianceRiskScore > 70 ? "flagged" : "triaged"
-        };
+        return tokenRequest;
       }),
-      listQuestions: operatorProcedure.input(z77.object({
-        sessionId: z77.number(),
-        statusFilter: z77.string().optional(),
-        sortBy: z77.enum(["priority", "time", "compliance"]).optional(),
-        sortOrder: z77.enum(["asc", "desc"]).optional()
+      submitQuestion: publicProcedure.input(z78.object({
+        sessionId: z78.string(),
+        attendeeId: z78.string(),
+        attendeeName: z78.string().optional(),
+        questionText: z78.string().min(1).max(1e3)
+      })).mutation(async ({ input }) => {
+        const [rows] = await rawSql(
+          `INSERT INTO qa_questions
+          (session_id, attendee_id, attendee_name, question_text, status, submitted_at)
+         VALUES ($1, $2, $3, $4, 'pending', NOW())
+         RETURNING id`,
+          [input.sessionId, input.attendeeId, input.attendeeName ?? "Anonymous", input.questionText]
+        );
+        return { id: rows?.[0]?.id };
+      }),
+      listQuestions: protectedProcedure.input(z78.object({
+        sessionId: z78.string(),
+        status: z78.enum(["pending", "approved", "answered", "dismissed", "all"]).optional()
       })).query(async ({ input }) => {
-        const db2 = await getDb();
-        let query = `SELECT q.*, 
-        (SELECT COUNT(*) FROM live_qa_answers a WHERE a.question_id = q.id) as answer_count,
-        (SELECT COUNT(*) FROM live_qa_compliance_flags f WHERE f.question_id = q.id AND f.resolved = false) as unresolved_flags,
-        (SELECT COUNT(*) FROM live_qa_questions d WHERE d.duplicate_of_id = q.id) as duplicate_count
-        FROM live_qa_questions q WHERE q.session_id = ?`;
-        const params = [input.sessionId];
-        const filter = input.statusFilter || "all";
-        if (filter === "legal_review") {
-          query += ` AND q.legal_review_reason IS NOT NULL`;
-        } else if (filter === "duplicates") {
-          query += ` AND q.duplicate_of_id IS NOT NULL`;
-        } else if (filter === "unanswered") {
-          query += ` AND q.question_status NOT IN ('answered', 'rejected')`;
-        } else if (filter === "high_priority") {
-          query += ` AND (q.triage_classification = 'high_priority' OR q.compliance_risk_score > 60)`;
-        } else if (filter === "sent_to_speaker") {
-          query += ` AND q.operator_notes LIKE '%Sent to speaker%'`;
-        } else if (filter !== "all") {
-          query += ` AND q.question_status = ?`;
-          params.push(filter);
-        }
-        const sortBy = input.sortBy || "priority";
-        const sortOrder = (input.sortOrder || "desc").toUpperCase();
-        if (sortBy === "compliance") {
-          query += ` ORDER BY q.compliance_risk_score ${sortOrder}, q.priority_score DESC`;
-        } else if (sortBy === "time") {
-          query += ` ORDER BY q.created_at ${sortOrder}`;
-        } else {
-          query += ` ORDER BY q.priority_score ${sortOrder}, q.created_at DESC`;
-        }
-        const [rows] = await rawSql(query, params);
-        return rows || [];
-      }),
-      listQuestionsPublic: publicProcedure.input(z77.object({ sessionCode: z77.string() })).query(async ({ input }) => {
-        const db2 = await getDb();
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.sessionCode, input.sessionCode.toUpperCase()));
-        if (!session) return [];
+        const statusFilter = input.status && input.status !== "all" ? `AND status = '${input.status}'` : "";
         const [rows] = await rawSql(
-          `SELECT id, question_text, question_category as category, question_status as status, 
-                upvotes, submitter_name, submitter_company, is_anonymous, created_at
-         FROM live_qa_questions 
-         WHERE session_id = ? AND question_status IN ('triaged','approved','answered')
-         ORDER BY upvotes DESC, created_at DESC`,
-          [session.id]
+          `SELECT id, session_id, attendee_id, attendee_name, question_text, status, upvotes, submitted_at, answered_at
+         FROM qa_questions
+         WHERE session_id = $1 ${statusFilter}
+         ORDER BY upvotes DESC, submitted_at ASC`,
+          [input.sessionId]
         );
-        return (rows || []).map((r) => ({
-          ...r,
-          submitterName: r.is_anonymous ? "Anonymous" : r.submitter_name,
-          submitterCompany: r.is_anonymous ? null : r.submitter_company
-        }));
+        return rows ?? [];
       }),
-      upvoteQuestion: publicProcedure.input(z77.object({
-        questionId: z77.number(),
-        fingerprint: z77.string().max(64).optional()
+      updateQuestionStatus: protectedProcedure.input(z78.object({
+        questionId: z78.number(),
+        status: z78.enum(["approved", "answered", "dismissed"])
       })).mutation(async ({ input }) => {
-        const key = `${input.fingerprint || "anon"}-${input.questionId}`;
-        const lastVote = upvoteTracker.get(key);
-        if (lastVote && Date.now() - lastVote < UPVOTE_COOLDOWN_MS) {
-          throw new Error("Please wait before voting again");
-        }
-        upvoteTracker.set(key, Date.now());
-        if (upvoteTracker.size > 1e4) {
-          const cutoff = Date.now() - 36e5;
-          for (const [k, v] of upvoteTracker) {
-            if (v < cutoff) upvoteTracker.delete(k);
-          }
-        }
-        const db2 = await getDb();
-        await db2.update(liveQaQuestions).set({ upvotes: sql21`upvotes + 1` }).where(eq67(liveQaQuestions.id, input.questionId));
-        return { success: true };
-      }),
-      updateQuestionStatus: operatorProcedure.input(z77.object({
-        questionId: z77.number(),
-        status: z77.enum(["pending", "triaged", "approved", "answered", "rejected", "flagged"]),
-        operatorNotes: z77.string().optional()
-      })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        const [existing] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
-        if (!existing) throw new Error("Question not found");
-        const oldStatus = existing.questionStatus;
-        if (oldStatus === input.status && !input.operatorNotes) return { success: true };
-        const nowEpoch = String(Date.now());
-        const updates = { status: input.status, updatedAt: nowEpoch };
-        if (input.operatorNotes !== void 0) updates.operatorNotes = input.operatorNotes;
-        await db2.update(liveQaQuestions).set(updates).where(eq67(liveQaQuestions.id, input.questionId));
-        if (oldStatus !== input.status) {
-          const wasApproved = oldStatus === "approved";
-          const wasRejected = oldStatus === "rejected";
-          const isApproved = input.status === "approved";
-          const isRejected = input.status === "rejected";
-          if (wasApproved && !isApproved) await rawSql(`UPDATE live_qa_sessions SET total_approved = GREATEST(0, total_approved - 1) WHERE id = ?`, [existing.sessionId]);
-          if (wasRejected && !isRejected) await rawSql(`UPDATE live_qa_sessions SET total_rejected = GREATEST(0, total_rejected - 1) WHERE id = ?`, [existing.sessionId]);
-          if (!wasApproved && isApproved) await rawSql(`UPDATE live_qa_sessions SET total_approved = total_approved + 1 WHERE id = ?`, [existing.sessionId]);
-          if (!wasRejected && isRejected) await rawSql(`UPDATE live_qa_sessions SET total_rejected = total_rejected + 1 WHERE id = ?`, [existing.sessionId]);
-        }
-        publishToChannel(`curalive-qa-${existing.sessionId}`, "qa.statusChanged", {
-          questionId: input.questionId,
-          newStatus: input.status,
-          operatorNotes: input.operatorNotes || null,
-          timestamp: Date.now()
-        }).catch(() => {
-        });
-        return { success: true };
-      }),
-      generateDraft: operatorProcedure.input(z77.object({ questionId: z77.number() })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        const [q] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
-        if (!q) throw new Error("Question not found");
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.id, q.sessionId));
-        if (!session) throw new Error("Session not found");
-        const draft = await generateAutoDraft(
-          q.questionText,
-          session.eventName,
-          session.clientName || "",
-          q.category
+        await rawSql(
+          `UPDATE qa_questions SET status = $1, answered_at = CASE WHEN $1 = 'answered' THEN NOW() ELSE answered_at END WHERE id = $2`,
+          [input.status, input.questionId]
         );
-        await db2.insert(liveQaAnswers).values({
-          questionId: input.questionId,
-          answerText: draft.answerText,
-          isAutoDraft: true,
-          autoDraftReasoning: draft.reasoning,
-          approvedByOperator: false
-        });
-        return draft;
-      }),
-      submitAnswer: operatorProcedure.input(z77.object({
-        questionId: z77.number(),
-        answerText: z77.string().min(1)
-      })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        await db2.insert(liveQaAnswers).values({
-          questionId: input.questionId,
-          answerText: input.answerText,
-          isAutoDraft: false,
-          approvedByOperator: true
-        });
-        await db2.update(liveQaQuestions).set({ status: "answered", updatedAt: Date.now() }).where(eq67(liveQaQuestions.id, input.questionId));
-        const [q] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
-        if (q) {
-          publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
-            questionId: input.questionId,
-            newStatus: "answered",
-            timestamp: Date.now()
-          }).catch(() => {
-          });
-        }
         return { success: true };
       }),
-      getAnswers: operatorProcedure.input(z77.object({ questionId: z77.number() })).query(async ({ input }) => {
-        const db2 = await getDb();
-        return db2.select().from(liveQaAnswers).where(eq67(liveQaAnswers.questionId, input.questionId));
-      }),
-      getComplianceFlags: operatorProcedure.input(z77.object({ questionId: z77.number() })).query(async ({ input }) => {
-        const db2 = await getDb();
-        return db2.select().from(liveQaComplianceFlags).where(eq67(liveQaComplianceFlags.questionId, input.questionId));
-      }),
-      resolveComplianceFlag: operatorProcedure.input(z77.object({ flagId: z77.number() })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        await db2.update(liveQaComplianceFlags).set({ resolved: true }).where(eq67(liveQaComplianceFlags.id, input.flagId));
-        return { success: true };
-      }),
-      listSessions: operatorProcedure.query(async () => {
-        const db2 = await getDb();
-        return db2.select().from(liveQaSessions).orderBy(desc39(liveQaSessions.createdAt));
-      }),
-      sendToSpeaker: operatorProcedure.input(z77.object({
-        questionId: z77.number(),
-        speakerNote: z77.string().optional(),
-        suggestedAnswer: z77.string().optional()
-      })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        const [q] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
-        if (!q) throw new Error("Question not found");
-        await db2.update(liveQaQuestions).set({ status: "approved", operatorNotes: input.speakerNote || "Sent to speaker", updatedAt: Date.now() }).where(eq67(liveQaQuestions.id, input.questionId));
-        publishToChannel(`curalive-qa-${q.sessionId}`, "qa.sentToSpeaker", {
-          questionId: input.questionId,
-          questionText: q.questionText,
-          speakerNote: input.speakerNote || null,
-          suggestedAnswer: input.suggestedAnswer || null,
-          timestamp: Date.now()
-        }).catch(() => {
-        });
-        return { success: true };
-      }),
-      broadcastToTeam: operatorProcedure.input(z77.object({
-        sessionId: z77.number(),
-        message: z77.string().min(1).max(2e3),
-        priority: z77.enum(["normal", "urgent"]).optional()
-      })).mutation(async ({ input }) => {
-        publishToChannel(`curalive-qa-${input.sessionId}`, "qa.teamBroadcast", {
-          message: input.message,
-          priority: input.priority || "normal",
-          timestamp: Date.now()
-        }).catch(() => {
-        });
-        return { success: true, broadcastedAt: Date.now() };
-      }),
-      postIrChatMessage: operatorProcedure.input(z77.object({
-        sessionId: z77.number(),
-        message: z77.string().min(1).max(2e3),
-        senderRole: z77.enum(["operator", "ir_team", "legal", "speaker"]).optional()
-      })).mutation(async ({ input }) => {
-        const messageId = Date.now();
-        publishToChannel(`curalive-qa-${input.sessionId}`, "qa.irChat", {
-          id: messageId,
-          message: input.message,
-          senderRole: input.senderRole || "operator",
-          timestamp: Date.now()
-        }).catch(() => {
-        });
-        return { success: true, messageId };
-      }),
-      setLegalReview: operatorProcedure.input(z77.object({
-        questionId: z77.number(),
-        reason: z77.string().min(1).max(2e3)
-      })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        await db2.update(liveQaQuestions).set({
-          status: "flagged",
-          operatorNotes: `Legal Review: ${input.reason}`,
-          updatedAt: Date.now()
-        }).where(eq67(liveQaQuestions.id, input.questionId));
-        await rawSql(`UPDATE live_qa_questions SET legal_review_reason = ? WHERE id = ?`, [input.reason, input.questionId]);
-        const [q] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
-        if (q) {
-          publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
-            questionId: input.questionId,
-            newStatus: "flagged",
-            legalReview: true,
-            reason: input.reason,
-            timestamp: Date.now()
-          }).catch(() => {
-          });
-        }
-        return { success: true };
-      }),
-      clearLegalReview: operatorProcedure.input(z77.object({ questionId: z77.number() })).mutation(async ({ input }) => {
-        await rawSql(`UPDATE live_qa_questions SET legal_review_reason = NULL WHERE id = ?`, [input.questionId]);
-        return { success: true };
-      }),
-      getDuplicatesOf: operatorProcedure.input(z77.object({ questionId: z77.number() })).query(async ({ input }) => {
-        const [rows] = await rawSql(
-          `SELECT id, question_text, submitter_name, submitter_company, question_status, created_at
-         FROM live_qa_questions WHERE duplicate_of_id = ?
-         ORDER BY created_at DESC`,
+      upvoteQuestion: publicProcedure.input(z78.object({ questionId: z78.number() })).mutation(async ({ input }) => {
+        await rawSql(
+          `UPDATE qa_questions SET upvotes = upvotes + 1 WHERE id = $1`,
           [input.questionId]
         );
-        return rows || [];
-      }),
-      unlinkDuplicate: operatorProcedure.input(z77.object({ questionId: z77.number() })).mutation(async ({ input }) => {
-        await rawSql(`UPDATE live_qa_questions SET duplicate_of_id = NULL, triage_classification = 'standard' WHERE id = ?`, [input.questionId]);
         return { success: true };
       }),
-      linkDuplicate: operatorProcedure.input(z77.object({
-        questionId: z77.number(),
-        duplicateOfId: z77.number()
-      })).mutation(async ({ input }) => {
-        await rawSql(`UPDATE live_qa_questions SET duplicate_of_id = ?, triage_classification = 'duplicate' WHERE id = ?`, [input.duplicateOfId, input.questionId]);
-        return { success: true };
-      }),
-      generateContextDraft: operatorProcedure.input(z77.object({
-        questionId: z77.number(),
-        includeTranscript: z77.boolean().optional()
-      })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        const [q] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
-        if (!q) throw new Error("Question not found");
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.id, q.sessionId));
-        if (!session) throw new Error("Session not found");
-        let transcriptContext = "";
-        if (input.includeTranscript && session.shadowSessionId) {
-          try {
-            const [transcriptRows] = await rawSql(
-              `SELECT transcript_json FROM recall_bots WHERE recall_bot_id = (SELECT recall_bot_id FROM shadow_sessions WHERE id = ?)`,
-              [session.shadowSessionId]
-            );
-            if (transcriptRows?.[0]?.transcript_json) {
-              const segments = JSON.parse(transcriptRows[0].transcript_json);
-              const recentSegments = segments.slice(-20);
-              transcriptContext = recentSegments.map((s) => `${s.speaker || "Speaker"}: ${s.text}`).join("\n");
-            }
-          } catch {
-          }
-        }
-        const draft = await generateAutoDraft(
-          q.questionText + (transcriptContext ? `
-
-Recent transcript context:
-${transcriptContext}` : ""),
-          session.eventName,
-          session.clientName || "",
-          q.category
+      getJoinLinks: publicProcedure.input(z78.object({ sessionId: z78.string() })).query(async ({ input }) => {
+        const [rows] = await rawSql(
+          `SELECT webphone_url, dial_in_number, access_code FROM shadow_sessions WHERE id = $1`,
+          [input.sessionId]
         );
-        await rawSql(
-          `UPDATE live_qa_questions SET ai_draft_text = ?, ai_draft_reasoning = ? WHERE id = ?`,
-          [draft.answerText, draft.reasoning, input.questionId]
-        );
-        return draft;
-      }),
-      bulkAction: operatorProcedure.input(z77.object({
-        questionIds: z77.array(z77.number()).min(1).max(50),
-        action: z77.enum(["approve", "reject", "flagged", "legal_review"]),
-        reason: z77.string().optional()
-      })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        let processed = 0;
-        for (const qId of input.questionIds) {
-          try {
-            if (input.action === "legal_review") {
-              await db2.update(liveQaQuestions).set({ status: "flagged", operatorNotes: `Legal Review: ${input.reason || "Bulk escalation"}`, updatedAt: Date.now() }).where(eq67(liveQaQuestions.id, qId));
-              await rawSql(`UPDATE live_qa_questions SET legal_review_reason = ? WHERE id = ?`, [input.reason || "Bulk escalation", qId]);
-            } else {
-              const notes = input.action === "approve" ? "Bulk approved" : input.action === "reject" ? "Bulk rejected" : "Bulk flagged";
-              await db2.update(liveQaQuestions).set({ status: input.action, operatorNotes: notes, updatedAt: Date.now() }).where(eq67(liveQaQuestions.id, qId));
-            }
-            processed++;
-          } catch {
-          }
-        }
-        return { success: true, processed, total: input.questionIds.length };
-      }),
-      generateQaCertificate: operatorProcedure.input(z77.object({ sessionId: z77.number() })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.id, input.sessionId));
-        if (!session) throw new Error("Session not found");
-        const questions = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.sessionId, input.sessionId)).orderBy(liveQaQuestions.createdAt);
-        const answers = await db2.select().from(liveQaAnswers).where(sql21`${liveQaAnswers.questionId} IN (SELECT id FROM live_qa_questions WHERE session_id = ${input.sessionId})`);
-        const flags = await db2.select().from(liveQaComplianceFlags).where(sql21`${liveQaComplianceFlags.questionId} IN (SELECT id FROM live_qa_questions WHERE session_id = ${input.sessionId})`);
-        let previousHash = "GENESIS";
-        const hashChain = [];
-        const sessionPayload = JSON.stringify({
-          sessionId: session.id,
-          eventName: session.eventName,
-          clientName: session.clientName,
-          sessionCode: session.sessionCode,
-          startedAt: session.createdAt,
-          previousHash
-        });
-        const sessionHash = createHash6("sha256").update(sessionPayload).digest("hex");
-        hashChain.push({ index: 0, hash: sessionHash, previousHash, type: "session_genesis", summary: `Session created: ${session.eventName}` });
-        previousHash = sessionHash;
-        for (let i = 0; i < questions.length; i++) {
-          const q = questions[i];
-          const qPayload = JSON.stringify({
-            questionId: q.id,
-            text: q.questionText,
-            category: q.category,
-            status: q.status,
-            triageScore: q.triageScore,
-            complianceRiskScore: q.complianceRiskScore,
-            createdAt: q.createdAt,
-            previousHash
-          });
-          const qHash = createHash6("sha256").update(qPayload).digest("hex");
-          hashChain.push({ index: i + 1, hash: qHash, previousHash, type: "question", summary: `Q${i + 1}: ${q.questionText?.slice(0, 60)}...` });
-          previousHash = qHash;
-        }
-        const certificateHash = createHash6("sha256").update(JSON.stringify(hashChain)).digest("hex");
-        const totalAnswered = answers.filter((a) => !a.isAutoDraft || a.approvedByOperator).length;
-        const unresolvedFlags = flags.filter((f) => !f.resolved).length;
-        const complianceClean = unresolvedFlags === 0;
-        const certificate = {
-          certificateId: `CDC-QA-${session.sessionCode}-${Date.now()}`,
-          type: "Clean Disclosure Certificate \u2014 Live Q&A Session",
-          eventName: session.eventName,
-          clientName: session.clientName,
-          sessionCode: session.sessionCode,
-          issuedAt: (/* @__PURE__ */ new Date()).toISOString(),
-          metrics: {
-            totalQuestions: questions.length,
-            totalAnswered,
-            totalFlagged: flags.length,
-            unresolvedFlags,
-            responseRate: questions.length > 0 ? Math.round(totalAnswered / questions.length * 100) : 0
-          },
-          complianceStatus: complianceClean ? "CLEAN" : "FLAGS_OUTSTANDING",
-          certificateGrade: complianceClean ? questions.length > 0 && totalAnswered / questions.length > 0.8 ? "AAA" : "AA" : unresolvedFlags > 3 ? "B" : "BBB",
-          hashChain,
-          certificateHash,
-          chainLength: hashChain.length,
-          verificationInstructions: "To verify: recompute SHA-256 hash chain from genesis block through each question segment. Final certificate hash must match.",
-          disclaimer: "This certificate attests that all Q&A interactions during the specified session were processed through CuraLive's compliance screening engine. It does not constitute legal advice.",
-          cipcPatent: "CIPC Patent App ID 1773575338868 | CIP5 | Claims 46-55"
-        };
-        return certificate;
-      }),
-      generateAgiTools: operatorProcedure.input(z77.object({ sessionId: z77.number() })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.id, input.sessionId));
-        if (!session) throw new Error("Session not found");
-        const questions = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.sessionId, input.sessionId));
-        const categories = {};
-        let totalRisk = 0;
-        const themes = [];
-        questions.forEach((q) => {
-          categories[q.category] = (categories[q.category] || 0) + 1;
-          totalRisk += q.complianceRiskScore || 0;
-          if (q.triageClassification === "high_priority") themes.push(q.questionText?.slice(0, 50) || "");
-        });
-        return generateAutonomousTools({
-          eventName: session.eventName,
-          clientName: session.clientName || "",
-          totalQuestions: questions.length,
-          categories,
-          avgComplianceRisk: questions.length > 0 ? totalRisk / questions.length : 0,
-          flaggedCount: questions.filter((q) => q.status === "flagged").length,
-          topThemes: themes.slice(0, 5)
-        });
-      }),
-      goLive: operatorProcedure.input(z77.object({
-        questionId: z77.number(),
-        minimumThreshold: z77.number().min(0).max(100).optional()
-      })).mutation(async ({ input }) => {
-        const db2 = await getDb();
-        const [q] = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.id, input.questionId));
-        if (!q) throw new Error("Question not found");
-        const authorisation = authoriseGoLive(
-          q.triageScore || 0,
-          q.complianceRiskScore || 0,
-          input.minimumThreshold
-        );
-        if (authorisation.authorised) {
-          await db2.update(liveQaQuestions).set({ status: "approved", operatorNotes: `Go Live authorised: ${authorisation.reason}`, updatedAt: Date.now() }).where(eq67(liveQaQuestions.id, input.questionId));
-          await rawSql(`UPDATE live_qa_sessions SET total_approved = total_approved + 1 WHERE id = ?`, [q.sessionId]);
-          publishToChannel(`curalive-qa-${q.sessionId}`, "qa.statusChanged", {
-            questionId: input.questionId,
-            newStatus: "approved",
-            operatorNotes: `Go Live authorised: ${authorisation.reason}`,
-            timestamp: Date.now()
-          }).catch(() => {
-          });
-          publishToChannel(`curalive-qa-${q.sessionId}`, "qa.goLive", {
-            questionId: input.questionId,
-            questionText: q.questionText,
-            submitterName: q.submitterName,
-            submitterCompany: q.submitterCompany,
-            triageScore: q.triageScore,
-            authorisation,
-            timestamp: Date.now()
-          }).catch(() => {
-          });
-        }
-        return authorisation;
-      }),
-      predictiveRisk: operatorProcedure.input(z77.object({ sessionId: z77.number() })).query(async ({ input }) => {
-        const db2 = await getDb();
-        const [session] = await db2.select().from(liveQaSessions).where(eq67(liveQaSessions.id, input.sessionId));
-        if (!session) throw new Error("Session not found");
-        const questions = await db2.select().from(liveQaQuestions).where(eq67(liveQaQuestions.sessionId, input.sessionId));
-        const flags = await db2.select().from(liveQaComplianceFlags).where(sql21`${liveQaComplianceFlags.questionId} IN (SELECT id FROM live_qa_questions WHERE session_id = ${input.sessionId})`);
-        return predictiveRiskAnalysis({
-          eventName: session.eventName,
-          clientName: session.clientName || "",
-          questions: questions.map((q) => ({
-            text: q.questionText,
-            category: q.category,
-            complianceRiskScore: q.complianceRiskScore || 0,
-            status: q.status
-          })),
-          existingFlags: flags.map((f) => ({
-            jurisdiction: f.jurisdiction,
-            riskType: f.riskType,
-            riskScore: f.riskScore || 0
-          }))
-        });
+        return rows?.[0] ?? null;
       })
     });
   }
 });
 
 // server/services/PlatformEmbedService.ts
-import { eq as eq68, desc as desc40, sql as sql22 } from "drizzle-orm";
-async function generateShareLink(sessionId, sessionCode, platform, baseUrl) {
-  const db2 = await getDb();
-  const [session] = await db2.select().from(liveQaSessions).where(eq68(liveQaSessions.id, sessionId));
-  if (!session || session.sessionCode !== sessionCode) {
-    throw new Error("Session ID and code mismatch");
-  }
-  const shareLink = `${baseUrl}/qa/${sessionCode}?utm_source=${platform}&utm_medium=chat`;
-  await db2.insert(liveQaPlatformShares).values({
-    sessionId,
-    platform,
-    shareType: "link",
-    shareLink
-  });
-  const platformLabel = PLATFORM_LABELS[platform];
-  const chatMessage = `${platformLabel} Live Q&A is open! Join via your browser \u2014 follow the live transcript and submit questions. No dial-in needed:
-${shareLink}`;
-  return { shareLink, chatMessage };
+function generateShareLink(sessionId, sessionCode, platform, baseUrl) {
+  const shareLink = `${baseUrl}/embed/${sessionCode}?platform=${platform}&ref=share`;
+  return { shareLink, platform, sessionId };
 }
 function getEmbedCode(sessionCode, baseUrl, options = {}) {
-  const {
-    whiteLabel = false,
-    brandName,
-    brandColor,
-    width = 400,
-    height = 640,
-    hideBranding = false
-  } = options;
+  const w = options.width ?? 800;
+  const h = options.height ?? 600;
+  const src = `${baseUrl}/embed/${sessionCode}`;
   const params = new URLSearchParams();
-  if (whiteLabel) params.set("theme", "platform");
-  if (brandName) params.set("brandName", brandName);
-  if (brandColor) params.set("brandColor", brandColor);
-  if (hideBranding) params.set("hideBranding", "1");
-  const queryString = params.toString();
-  const url = `${baseUrl}/embed/qa/${sessionCode}${queryString ? `?${queryString}` : ""}`;
-  return `<iframe
-  src="${url}"
-  width="${width}"
-  height="${height}"
-  frameborder="0"
-  allow="clipboard-write"
-  style="border-radius: 12px; border: 1px solid #2a2a4a;"
-></iframe>`;
+  if (options.whiteLabel) params.set("whiteLabel", "1");
+  if (options.brandName) params.set("brand", options.brandName);
+  if (options.brandColor) params.set("color", options.brandColor.replace("#", ""));
+  if (options.hideBranding) params.set("hideBranding", "1");
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return `<iframe src="${src}${query}" width="${w}" height="${h}" frameborder="0" allowfullscreen></iframe>`;
 }
-async function trackEmbedShare(sessionId, platform, shareType, shareLink, whiteLabel = false, brandName, brandColor) {
-  const db2 = await getDb();
-  await db2.insert(liveQaPlatformShares).values({
-    sessionId,
-    platform,
-    shareType,
-    shareLink,
-    whiteLabel,
-    brandName,
-    brandColor
+async function trackEmbedShare(sessionId, platform, shareType, shareLink, whiteLabel, brandName, brandColor) {
+  await rawSql(
+    `INSERT INTO embed_share_events
+       (session_id, platform, share_type, share_link, white_label, brand_name, brand_color, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+     ON CONFLICT DO NOTHING`,
+    [sessionId, platform, shareType, shareLink, whiteLabel ?? false, brandName ?? null, brandColor ?? null]
+  ).catch(() => {
   });
 }
 async function getShareAnalytics(sessionId) {
-  const db2 = await getDb();
-  const shares = await db2.select().from(liveQaPlatformShares).where(eq68(liveQaPlatformShares.sessionId, sessionId)).orderBy(desc40(liveQaPlatformShares.createdAt));
+  const [rows] = await rawSql(
+    `SELECT platform, share_type, COUNT(*) as count
+     FROM embed_share_events
+     WHERE session_id = $1
+     GROUP BY platform, share_type`,
+    [sessionId]
+  ).catch(() => [[]]);
   const byPlatform = {};
   const byType = {};
-  shares.forEach((s) => {
-    byPlatform[s.platform] = (byPlatform[s.platform] || 0) + 1;
-    byType[s.shareType] = (byType[s.shareType] || 0) + 1;
-  });
-  return {
-    totalShares: shares.length,
-    byPlatform,
-    byType,
-    shares: shares.slice(0, 20)
-  };
+  let total = 0;
+  for (const row of rows ?? []) {
+    const c = Number(row.count);
+    byPlatform[row.platform] = (byPlatform[row.platform] ?? 0) + c;
+    byType[row.share_type] = (byType[row.share_type] ?? 0) + c;
+    total += c;
+  }
+  return { total, byPlatform, byType };
 }
 async function generateEventSummary(sessionId) {
-  const db2 = await getDb();
-  const [session] = await db2.select().from(liveQaSessions).where(eq68(liveQaSessions.id, sessionId));
-  if (!session) throw new Error("Session not found");
-  const questions = await db2.select().from(liveQaQuestions).where(eq68(liveQaQuestions.sessionId, sessionId)).orderBy(desc40(liveQaQuestions.priorityScore));
-  const allAnswers = await db2.select().from(liveQaAnswers).where(
-    sql22`${liveQaAnswers.questionId} IN (SELECT id FROM live_qa_questions WHERE session_id = ${sessionId})`
-  );
-  const answers = allAnswers.filter((a) => !a.isAutoDraft || a.approvedByOperator);
-  const complianceFlags2 = await db2.select().from(liveQaComplianceFlags).where(
-    sql22`${liveQaComplianceFlags.questionId} IN (SELECT id FROM live_qa_questions WHERE session_id = ${sessionId})`
-  );
-  const categoryBreakdown = {};
-  const statusBreakdown = {};
-  let totalTriageScore = 0;
-  let totalComplianceRisk = 0;
-  let triageCount = 0;
-  let complianceCount = 0;
-  questions.forEach((q) => {
-    categoryBreakdown[q.category] = (categoryBreakdown[q.category] || 0) + 1;
-    statusBreakdown[q.status] = (statusBreakdown[q.status] || 0) + 1;
-    if (q.triageScore != null) {
-      totalTriageScore += q.triageScore;
-      triageCount++;
+  const [[sessionRows], [qaRows]] = await Promise.all([
+    rawSql(`SELECT event_name, status FROM shadow_sessions WHERE id = $1`, [sessionId]).catch(() => [[]]),
+    rawSql(`SELECT COUNT(*) as count FROM qa_questions WHERE session_id = $1`, [String(sessionId)]).catch(() => [[]])
+  ]);
+  const session = sessionRows?.[0];
+  const qaCount = Number(qaRows?.[0]?.count ?? 0);
+  const [txRows] = await rawSql(
+    `SELECT transcript FROM shadow_sessions WHERE id = $1`,
+    [sessionId]
+  ).catch(() => [[]]);
+  let transcriptLength = 0;
+  try {
+    const tx = txRows?.[0]?.transcript;
+    if (tx) {
+      const segments = typeof tx === "string" ? JSON.parse(tx) : tx;
+      transcriptLength = Array.isArray(segments) ? segments.length : 0;
     }
-    if (q.complianceRiskScore != null) {
-      totalComplianceRisk += q.complianceRiskScore;
-      complianceCount++;
-    }
-  });
-  const topQuestions = questions.filter((q) => q.status !== "rejected").sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0)).slice(0, 10).map((q) => ({
-    id: q.id,
-    text: q.questionText,
-    category: q.category,
-    upvotes: q.upvotes || 0,
-    status: q.status,
-    triageScore: q.triageScore,
-    complianceRiskScore: q.complianceRiskScore,
-    submitter: q.isAnonymous ? "Anonymous" : q.submitterName || "Anonymous"
-  }));
-  const unresolvedFlags = complianceFlags2.filter((f) => !f.resolved);
-  const flagsByJurisdiction = {};
-  const flagsByRiskType = {};
-  complianceFlags2.forEach((f) => {
-    flagsByJurisdiction[f.jurisdiction] = (flagsByJurisdiction[f.jurisdiction] || 0) + 1;
-    flagsByRiskType[f.riskType] = (flagsByRiskType[f.riskType] || 0) + 1;
-  });
-  const avgSentiment = complianceCount > 0 ? totalComplianceRisk / complianceCount <= 30 ? "Positive" : totalComplianceRisk / complianceCount <= 60 ? "Neutral" : "Cautious" : "Neutral";
-  const shareAnalytics = await getShareAnalytics(sessionId).catch(() => null);
+  } catch {
+  }
   return {
-    session: {
-      id: session.id,
-      eventName: session.eventName,
-      clientName: session.clientName,
-      sessionCode: session.sessionCode,
-      status: session.status,
-      createdAt: session.createdAt,
-      closedAt: session.closedAt
-    },
-    metrics: {
-      totalQuestions: questions.length,
-      totalAnswered: answers.length,
-      totalApproved: statusBreakdown["approved"] || 0,
-      totalRejected: statusBreakdown["rejected"] || 0,
-      totalFlagged: statusBreakdown["flagged"] || 0,
-      responseRate: questions.length > 0 ? Math.round(answers.length / questions.length * 100) : 0,
-      averageTriageScore: triageCount > 0 ? Math.round(totalTriageScore / triageCount) : 0,
-      averageComplianceRisk: complianceCount > 0 ? Math.round(totalComplianceRisk / complianceCount) : 0,
-      overallSentiment: avgSentiment
-    },
-    categoryBreakdown,
-    statusBreakdown,
-    topQuestions,
-    compliance: {
-      totalFlags: complianceFlags2.length,
-      unresolvedFlags: unresolvedFlags.length,
-      flagsByJurisdiction,
-      flagsByRiskType,
-      highRiskFlags: complianceFlags2.filter((f) => f.riskScore >= 70).map((f) => ({
-        jurisdiction: f.jurisdiction,
-        riskType: f.riskType,
-        riskScore: f.riskScore,
-        description: f.riskDescription,
-        resolved: f.resolved
-      }))
-    },
-    distribution: shareAnalytics,
-    generatedAt: Date.now()
+    sessionId,
+    eventName: session?.event_name ?? null,
+    status: session?.status ?? null,
+    transcriptLength,
+    questionCount: qaCount
   };
 }
-var PLATFORM_LABELS;
 var init_PlatformEmbedService = __esm({
   "server/services/PlatformEmbedService.ts"() {
     "use strict";
     init_db();
-    init_schema();
-    PLATFORM_LABELS = {
-      zoom: "Zoom",
-      teams: "Microsoft Teams",
-      webex: "Webex",
-      meet: "Google Meet",
-      generic: "Meeting"
-    };
   }
 });
 
 // server/routers/platformEmbedRouter.ts
-import { z as z78 } from "zod";
+import { z as z79 } from "zod";
 var platformEmbedRouter;
 var init_platformEmbedRouter = __esm({
   "server/routers/platformEmbedRouter.ts"() {
@@ -39679,10 +39027,10 @@ var init_platformEmbedRouter = __esm({
     init_PlatformEmbedService();
     platformEmbedRouter = router({
       generateShareLink: operatorProcedure.input(
-        z78.object({
-          sessionId: z78.number(),
-          sessionCode: z78.string(),
-          platform: z78.enum(["zoom", "teams", "webex", "meet", "generic"])
+        z79.object({
+          sessionId: z79.number(),
+          sessionCode: z79.string(),
+          platform: z79.enum(["zoom", "teams", "webex", "meet", "generic"])
         })
       ).mutation(async ({ input, ctx }) => {
         const baseUrl = `${ctx.req.protocol}://${ctx.req.get("host")}`;
@@ -39694,14 +39042,14 @@ var init_platformEmbedRouter = __esm({
         );
       }),
       getEmbedCode: operatorProcedure.input(
-        z78.object({
-          sessionCode: z78.string(),
-          whiteLabel: z78.boolean().optional(),
-          brandName: z78.string().optional(),
-          brandColor: z78.string().optional(),
-          width: z78.number().optional(),
-          height: z78.number().optional(),
-          hideBranding: z78.boolean().optional()
+        z79.object({
+          sessionCode: z79.string(),
+          whiteLabel: z79.boolean().optional(),
+          brandName: z79.string().optional(),
+          brandColor: z79.string().optional(),
+          width: z79.number().optional(),
+          height: z79.number().optional(),
+          hideBranding: z79.boolean().optional()
         })
       ).query(({ input, ctx }) => {
         const baseUrl = `${ctx.req.protocol}://${ctx.req.get("host")}`;
@@ -39717,14 +39065,14 @@ var init_platformEmbedRouter = __esm({
         };
       }),
       trackShare: operatorProcedure.input(
-        z78.object({
-          sessionId: z78.number(),
-          platform: z78.enum(["zoom", "teams", "webex", "meet", "generic"]),
-          shareType: z78.enum(["link", "embed", "widget"]),
-          shareLink: z78.string(),
-          whiteLabel: z78.boolean().optional(),
-          brandName: z78.string().optional(),
-          brandColor: z78.string().optional()
+        z79.object({
+          sessionId: z79.number(),
+          platform: z79.enum(["zoom", "teams", "webex", "meet", "generic"]),
+          shareType: z79.enum(["link", "embed", "widget"]),
+          shareLink: z79.string(),
+          whiteLabel: z79.boolean().optional(),
+          brandName: z79.string().optional(),
+          brandColor: z79.string().optional()
         })
       ).mutation(async ({ input }) => {
         await trackEmbedShare(
@@ -39738,10 +39086,10 @@ var init_platformEmbedRouter = __esm({
         );
         return { success: true };
       }),
-      getShareAnalytics: operatorProcedure.input(z78.object({ sessionId: z78.number() })).query(async ({ input }) => {
+      getShareAnalytics: operatorProcedure.input(z79.object({ sessionId: z79.number() })).query(async ({ input }) => {
         return getShareAnalytics(input.sessionId);
       }),
-      getEventSummary: operatorProcedure.input(z78.object({ sessionId: z78.number() })).query(async ({ input }) => {
+      getEventSummary: operatorProcedure.input(z79.object({ sessionId: z79.number() })).query(async ({ input }) => {
         return generateEventSummary(input.sessionId);
       })
     });
@@ -39755,8 +39103,8 @@ function recencyDecay(lastInteractionDate) {
 }
 function generateInvestorId(name, email) {
   const key = email?.toLowerCase() || name.toLowerCase().replace(/\s+/g, "-");
-  const { createHash: createHash7 } = __require("crypto");
-  return createHash7("sha256").update(key).digest("hex").slice(0, 16);
+  const { createHash: createHash6 } = __require("crypto");
+  return createHash6("sha256").update(key).digest("hex").slice(0, 16);
 }
 function computeEngagementComponents(profile) {
   const interactions = profile.interactions;
@@ -40074,7 +39422,7 @@ ${profile.interactions.slice(-5).map(
 });
 
 // server/routers/investorEngagementRouter.ts
-import { z as z79 } from "zod";
+import { z as z80 } from "zod";
 var investorEngagementRouter;
 var init_investorEngagementRouter = __esm({
   "server/routers/investorEngagementRouter.ts"() {
@@ -40082,49 +39430,49 @@ var init_investorEngagementRouter = __esm({
     init_trpc();
     init_InvestorEngagementScoringService();
     investorEngagementRouter = router({
-      recordInteraction: protectedProcedure.input(z79.object({
-        name: z79.string().max(255),
-        email: z79.string().max(320).optional(),
-        company: z79.string().max(255).optional(),
-        investorType: z79.enum(["institutional", "retail", "analyst", "activist", "insider", "unknown"]).optional(),
-        eventId: z79.string().max(128),
-        eventTitle: z79.string().max(255),
-        eventDate: z79.string(),
-        eventType: z79.string().max(64),
-        questionsAsked: z79.number().int().min(0).default(0),
-        questionTopics: z79.array(z79.string().max(100)).max(20).default([]),
-        sentimentScore: z79.number().min(0).max(100).default(50),
-        upvotesGiven: z79.number().int().min(0).default(0),
-        sessionDuration: z79.number().optional()
+      recordInteraction: protectedProcedure.input(z80.object({
+        name: z80.string().max(255),
+        email: z80.string().max(320).optional(),
+        company: z80.string().max(255).optional(),
+        investorType: z80.enum(["institutional", "retail", "analyst", "activist", "insider", "unknown"]).optional(),
+        eventId: z80.string().max(128),
+        eventTitle: z80.string().max(255),
+        eventDate: z80.string(),
+        eventType: z80.string().max(64),
+        questionsAsked: z80.number().int().min(0).default(0),
+        questionTopics: z80.array(z80.string().max(100)).max(20).default([]),
+        sentimentScore: z80.number().min(0).max(100).default(50),
+        upvotesGiven: z80.number().int().min(0).default(0),
+        sessionDuration: z80.number().optional()
       })).mutation(async ({ input }) => {
         return InvestorEngagementScoringService.recordInteraction(input);
       }),
-      getProfile: protectedProcedure.input(z79.object({ investorId: z79.string() })).query(async ({ input }) => {
+      getProfile: protectedProcedure.input(z80.object({ investorId: z80.string() })).query(async ({ input }) => {
         return InvestorEngagementScoringService.getProfile(input.investorId);
       }),
-      getProfileByEmail: protectedProcedure.input(z79.object({ email: z79.string() })).query(async ({ input }) => {
+      getProfileByEmail: protectedProcedure.input(z80.object({ email: z80.string() })).query(async ({ input }) => {
         return InvestorEngagementScoringService.getProfileByEmail(input.email);
       }),
-      listProfiles: protectedProcedure.input(z79.object({
-        lifecycle: z79.enum(["new", "engaged", "loyal", "at_risk", "churned", "reactivated"]).optional(),
-        minScore: z79.number().optional(),
-        maxScore: z79.number().optional(),
-        investorType: z79.enum(["institutional", "retail", "analyst", "activist", "insider", "unknown"]).optional(),
-        sortBy: z79.enum(["engagementScore", "churnProbability", "totalEvents", "lastSeen"]).optional(),
-        limit: z79.number().int().min(1).max(500).optional()
+      listProfiles: protectedProcedure.input(z80.object({
+        lifecycle: z80.enum(["new", "engaged", "loyal", "at_risk", "churned", "reactivated"]).optional(),
+        minScore: z80.number().optional(),
+        maxScore: z80.number().optional(),
+        investorType: z80.enum(["institutional", "retail", "analyst", "activist", "insider", "unknown"]).optional(),
+        sortBy: z80.enum(["engagementScore", "churnProbability", "totalEvents", "lastSeen"]).optional(),
+        limit: z80.number().int().min(1).max(500).optional()
       }).optional()).query(async ({ input }) => {
         return InvestorEngagementScoringService.listProfiles(input || void 0);
       }),
-      getEngagementBreakdown: protectedProcedure.input(z79.object({ investorId: z79.string() })).query(async ({ input }) => {
+      getEngagementBreakdown: protectedProcedure.input(z80.object({ investorId: z80.string() })).query(async ({ input }) => {
         return InvestorEngagementScoringService.getEngagementBreakdown(input.investorId);
       }),
       getDashboardStats: protectedProcedure.query(async () => {
         return InvestorEngagementScoringService.getDashboardStats();
       }),
-      generateInsight: protectedProcedure.input(z79.object({ investorId: z79.string() })).mutation(async ({ input }) => {
+      generateInsight: protectedProcedure.input(z80.object({ investorId: z80.string() })).mutation(async ({ input }) => {
         return InvestorEngagementScoringService.generateRelationshipInsight(input.investorId);
       }),
-      getCohortAnalysis: protectedProcedure.input(z79.object({ eventId: z79.string() })).query(async ({ input }) => {
+      getCohortAnalysis: protectedProcedure.input(z80.object({ eventId: z80.string() })).query(async ({ input }) => {
         return InvestorEngagementScoringService.generateCohortAnalysis(input.eventId);
       })
     });
@@ -40455,7 +39803,7 @@ TRANSLATION (${input.targetLanguage}): ${input.translated}`
 });
 
 // server/routers/liveSubtitleRouter.ts
-import { z as z80 } from "zod";
+import { z as z81 } from "zod";
 var liveSubtitleRouter;
 var init_liveSubtitleRouter = __esm({
   "server/routers/liveSubtitleRouter.ts"() {
@@ -40466,50 +39814,50 @@ var init_liveSubtitleRouter = __esm({
       getSupportedLanguages: publicProcedure.query(async () => {
         return LiveSubtitleTranslationService.getSupportedLanguages();
       }),
-      getFinancialGlossary: publicProcedure.input(z80.object({ languageCode: z80.string().max(10) })).query(async ({ input }) => {
+      getFinancialGlossary: publicProcedure.input(z81.object({ languageCode: z81.string().max(10) })).query(async ({ input }) => {
         return LiveSubtitleTranslationService.getFinancialGlossary(input.languageCode);
       }),
-      startSession: protectedProcedure.input(z80.object({
-        sessionId: z80.string().max(64),
-        eventId: z80.string().max(128),
-        sourceLanguage: z80.string().max(10).optional(),
-        targetLanguages: z80.array(z80.string().max(10)).min(1).max(10)
+      startSession: protectedProcedure.input(z81.object({
+        sessionId: z81.string().max(64),
+        eventId: z81.string().max(128),
+        sourceLanguage: z81.string().max(10).optional(),
+        targetLanguages: z81.array(z81.string().max(10)).min(1).max(10)
       })).mutation(async ({ input }) => {
         return LiveSubtitleTranslationService.startSession(input);
       }),
-      getSession: protectedProcedure.input(z80.object({ sessionId: z80.string() })).query(async ({ input }) => {
+      getSession: protectedProcedure.input(z81.object({ sessionId: z81.string() })).query(async ({ input }) => {
         return LiveSubtitleTranslationService.getSession(input.sessionId);
       }),
-      endSession: protectedProcedure.input(z80.object({ sessionId: z80.string() })).mutation(async ({ input }) => {
+      endSession: protectedProcedure.input(z81.object({ sessionId: z81.string() })).mutation(async ({ input }) => {
         return LiveSubtitleTranslationService.endSession(input.sessionId);
       }),
-      translateSegment: protectedProcedure.input(z80.object({
-        sessionId: z80.string().max(64),
-        text: z80.string().max(5e3),
-        speaker: z80.string().max(255),
-        timestamp: z80.number(),
-        targetLanguage: z80.string().max(10)
+      translateSegment: protectedProcedure.input(z81.object({
+        sessionId: z81.string().max(64),
+        text: z81.string().max(5e3),
+        speaker: z81.string().max(255),
+        timestamp: z81.number(),
+        targetLanguage: z81.string().max(10)
       })).mutation(async ({ input }) => {
         return LiveSubtitleTranslationService.translateSegment(input);
       }),
-      translateBatch: protectedProcedure.input(z80.object({
-        segments: z80.array(z80.object({
-          text: z80.string().max(5e3),
-          speaker: z80.string().max(255),
-          timestamp: z80.number()
+      translateBatch: protectedProcedure.input(z81.object({
+        segments: z81.array(z81.object({
+          text: z81.string().max(5e3),
+          speaker: z81.string().max(255),
+          timestamp: z81.number()
         })).min(1).max(50),
-        targetLanguage: z80.string().max(10),
-        sessionId: z80.string().max(64).optional()
+        targetLanguage: z81.string().max(10),
+        sessionId: z81.string().max(64).optional()
       })).mutation(async ({ input }) => {
         return LiveSubtitleTranslationService.translateBatch(input);
       }),
-      detectLanguage: publicProcedure.input(z80.object({ text: z80.string().max(2e3) })).mutation(async ({ input }) => {
+      detectLanguage: publicProcedure.input(z81.object({ text: z81.string().max(2e3) })).mutation(async ({ input }) => {
         return LiveSubtitleTranslationService.detectLanguage(input.text);
       }),
-      verifyQuality: protectedProcedure.input(z80.object({
-        original: z80.string().max(5e3),
-        translated: z80.string().max(5e3),
-        targetLanguage: z80.string().max(10)
+      verifyQuality: protectedProcedure.input(z81.object({
+        original: z81.string().max(5e3),
+        translated: z81.string().max(5e3),
+        targetLanguage: z81.string().max(10)
       })).mutation(async ({ input }) => {
         return LiveSubtitleTranslationService.verifyTranslationQuality(input);
       }),
@@ -40521,7 +39869,7 @@ var init_liveSubtitleRouter = __esm({
 });
 
 // server/routers/ipoMandARouter.ts
-import { z as z81 } from "zod";
+import { z as z82 } from "zod";
 var ipoMandARouter;
 var init_ipoMandARouter = __esm({
   "server/routers/ipoMandARouter.ts"() {
@@ -40530,117 +39878,117 @@ var init_ipoMandARouter = __esm({
     init_IpoMandAIntelligenceService();
     ipoMandARouter = router({
       // ─── IPO Intelligence ──────────────────────────────────────────────────────
-      analyzePricingSensitivity: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        companyName: z81.string().max(255),
-        sector: z81.string().max(100),
-        proposedRange: z81.string().max(100).optional(),
-        comparableIPOs: z81.array(z81.string().max(255)).max(10).optional()
+      analyzePricingSensitivity: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        companyName: z82.string().max(255),
+        sector: z82.string().max(100),
+        proposedRange: z82.string().max(100).optional(),
+        comparableIPOs: z82.array(z82.string().max(255)).max(10).optional()
       })).mutation(async ({ input }) => {
         return IpoIntelligenceService.analyzePricingSensitivity(input);
       }),
-      detectBookBuildingSignals: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        companyName: z81.string().max(255),
-        targetRaise: z81.string().max(100)
+      detectBookBuildingSignals: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        companyName: z82.string().max(255),
+        targetRaise: z82.string().max(100)
       })).mutation(async ({ input }) => {
         return IpoIntelligenceService.detectBookBuildingSignals(input);
       }),
-      assessIPOReadiness: protectedProcedure.input(z81.object({
-        companyName: z81.string().max(255),
-        sector: z81.string().max(100),
-        financialSummary: z81.string().max(5e3),
-        governanceNotes: z81.string().max(5e3),
-        marketConditions: z81.string().max(2e3).optional()
+      assessIPOReadiness: protectedProcedure.input(z82.object({
+        companyName: z82.string().max(255),
+        sector: z82.string().max(100),
+        financialSummary: z82.string().max(5e3),
+        governanceNotes: z82.string().max(5e3),
+        marketConditions: z82.string().max(2e3).optional()
       })).mutation(async ({ input }) => {
         return IpoIntelligenceService.assessIPOReadiness(input);
       }),
-      scanIPORegulatoryRedFlags: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        jurisdiction: z81.enum(["JSE", "SEC", "FCA", "HKEX", "ASX"]),
-        isQuietPeriod: z81.boolean()
+      scanIPORegulatoryRedFlags: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        jurisdiction: z82.enum(["JSE", "SEC", "FCA", "HKEX", "ASX"]),
+        isQuietPeriod: z82.boolean()
       })).mutation(async ({ input }) => {
         return IpoIntelligenceService.scanRegulatoryRedFlags(input);
       }),
       // ─── M&A Intelligence ─────────────────────────────────────────────────────
-      monitorOfferCompliance: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        dealType: z81.enum(["friendly", "hostile", "merger_of_equals", "scheme_of_arrangement"]),
-        jurisdiction: z81.enum(["JSE", "SEC", "FCA", "EU"]),
-        offerPrice: z81.string().max(100).optional(),
-        targetCompany: z81.string().max(255),
-        acquirerCompany: z81.string().max(255)
+      monitorOfferCompliance: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        dealType: z82.enum(["friendly", "hostile", "merger_of_equals", "scheme_of_arrangement"]),
+        jurisdiction: z82.enum(["JSE", "SEC", "FCA", "EU"]),
+        offerPrice: z82.string().max(100).optional(),
+        targetCompany: z82.string().max(255),
+        acquirerCompany: z82.string().max(255)
       })).mutation(async ({ input }) => {
         return MandAIntelligenceService.monitorOfferPeriodCompliance(input);
       }),
-      detectInformationLeaks: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        isPreAnnouncement: z81.boolean(),
-        knownInsiders: z81.array(z81.string().max(255)).max(50).default([])
+      detectInformationLeaks: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        isPreAnnouncement: z82.boolean(),
+        knownInsiders: z82.array(z82.string().max(255)).max(50).default([])
       })).mutation(async ({ input }) => {
         return MandAIntelligenceService.detectInformationLeaks(input);
       }),
-      analyzeSynergies: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        acquirerCompany: z81.string().max(255),
-        targetCompany: z81.string().max(255),
-        statedSynergies: z81.string().max(2e3).optional(),
-        sector: z81.string().max(100)
+      analyzeSynergies: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        acquirerCompany: z82.string().max(255),
+        targetCompany: z82.string().max(255),
+        statedSynergies: z82.string().max(2e3).optional(),
+        sector: z82.string().max(100)
       })).mutation(async ({ input }) => {
         return MandAIntelligenceService.analyzeSynergyValidation(input);
       }),
-      mapStakeholderImpact: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        acquirerCompany: z81.string().max(255),
-        targetCompany: z81.string().max(255),
-        dealSize: z81.string().max(100),
-        sector: z81.string().max(100)
+      mapStakeholderImpact: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        acquirerCompany: z82.string().max(255),
+        targetCompany: z82.string().max(255),
+        dealSize: z82.string().max(100),
+        sector: z82.string().max(100)
       })).mutation(async ({ input }) => {
         return MandAIntelligenceService.mapStakeholderImpact(input);
       }),
-      predictDealCertainty: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        acquirerCompany: z81.string().max(255),
-        targetCompany: z81.string().max(255),
-        dealType: z81.string().max(100),
-        jurisdiction: z81.string().max(50),
-        announcedDate: z81.string().optional()
+      predictDealCertainty: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        acquirerCompany: z82.string().max(255),
+        targetCompany: z82.string().max(255),
+        dealType: z82.string().max(100),
+        jurisdiction: z82.string().max(50),
+        announcedDate: z82.string().optional()
       })).mutation(async ({ input }) => {
         return MandAIntelligenceService.predictDealCertainty(input);
       }),
       // ─── Credit & Bondholder Intelligence ──────────────────────────────────────
-      analyzeCreditSpreadImpact: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        companyName: z81.string().max(255),
-        currentRating: z81.string().max(20),
-        sector: z81.string().max(100)
+      analyzeCreditSpreadImpact: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        companyName: z82.string().max(255),
+        currentRating: z82.string().max(20),
+        sector: z82.string().max(100)
       })).mutation(async ({ input }) => {
         return CreditBondholderIntelligenceService.analyzeCreditSpreadImpact(input);
       }),
-      scanCovenantCompliance: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        companyName: z81.string().max(255),
-        knownCovenants: z81.array(z81.string().max(255)).max(20).optional()
+      scanCovenantCompliance: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        companyName: z82.string().max(255),
+        knownCovenants: z82.array(z82.string().max(255)).max(20).optional()
       })).mutation(async ({ input }) => {
         return CreditBondholderIntelligenceService.scanCovenantCompliance(input);
       }),
       // ─── Activist & Proxy Intelligence ─────────────────────────────────────────
-      detectActivistCampaign: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        companyName: z81.string().max(255),
-        knownActivists: z81.array(z81.string().max(255)).max(20).optional()
+      detectActivistCampaign: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        companyName: z82.string().max(255),
+        knownActivists: z82.array(z82.string().max(255)).max(20).optional()
       })).mutation(async ({ input }) => {
         return ActivistProxyIntelligenceService.detectActivistCampaign(input);
       }),
-      predictProxyVote: protectedProcedure.input(z81.object({
-        transcript: z81.string().max(2e4),
-        companyName: z81.string().max(255),
-        resolutions: z81.array(z81.object({
-          id: z81.string(),
-          description: z81.string().max(500),
-          managementRecommendation: z81.enum(["for", "against"])
+      predictProxyVote: protectedProcedure.input(z82.object({
+        transcript: z82.string().max(2e4),
+        companyName: z82.string().max(255),
+        resolutions: z82.array(z82.object({
+          id: z82.string(),
+          description: z82.string().max(500),
+          managementRecommendation: z82.enum(["for", "against"])
         })).min(1).max(20),
-        shareholderBase: z81.string().max(2e3).optional()
+        shareholderBase: z82.string().max(2e3).optional()
       })).mutation(async ({ input }) => {
         return ActivistProxyIntelligenceService.predictProxyVote(input);
       })
@@ -41097,7 +40445,7 @@ var init_ComplianceEngineService = __esm({
 });
 
 // server/routers/complianceEngineRouter.ts
-import { z as z82 } from "zod";
+import { z as z83 } from "zod";
 var complianceEngineRouter;
 var init_complianceEngineRouter = __esm({
   "server/routers/complianceEngineRouter.ts"() {
@@ -41112,20 +40460,20 @@ var init_complianceEngineRouter = __esm({
         const result = await runFullScan();
         return result;
       }),
-      threats: adminProcedure.input(z82.object({
-        status: z82.enum(["detected", "investigating", "confirmed", "mitigated", "false_positive"]).optional(),
-        severity: z82.enum(["low", "medium", "high", "critical"]).optional(),
-        type: z82.enum(["fraud", "access_anomaly", "data_exfiltration", "policy_violation", "regulatory_breach", "predictive_warning"]).optional(),
-        limit: z82.number().default(100)
+      threats: adminProcedure.input(z83.object({
+        status: z83.enum(["detected", "investigating", "confirmed", "mitigated", "false_positive"]).optional(),
+        severity: z83.enum(["low", "medium", "high", "critical"]).optional(),
+        type: z83.enum(["fraud", "access_anomaly", "data_exfiltration", "policy_violation", "regulatory_breach", "predictive_warning"]).optional(),
+        limit: z83.number().default(100)
       }).optional()).query(async ({ input }) => {
         return getThreats(input ?? {});
       }),
       threatStats: adminProcedure.query(async () => {
         return getThreatStats();
       }),
-      updateThreat: adminProcedure.input(z82.object({
-        id: z82.number(),
-        status: z82.enum(["detected", "investigating", "confirmed", "mitigated", "false_positive"])
+      updateThreat: adminProcedure.input(z83.object({
+        id: z83.number(),
+        status: z83.enum(["detected", "investigating", "confirmed", "mitigated", "false_positive"])
       })).mutation(async ({ input }) => {
         return updateThreatStatus(input.id, input.status);
       }),
@@ -41139,7 +40487,7 @@ var init_complianceEngineRouter = __esm({
 });
 
 // server/_core/compliance.ts
-import { eq as eq69, and as and43 } from "drizzle-orm";
+import { eq as eq67, and as and42 } from "drizzle-orm";
 async function detectViolation(transcriptExcerpt, speakerName, speakerRole) {
   try {
     const systemPrompt = `You are a compliance detection AI for enterprise events (earnings calls, investor relations, board meetings).
@@ -41241,7 +40589,7 @@ async function acknowledgeViolation(violationId, operatorId, notes) {
       acknowledgedBy: operatorId,
       acknowledgedAt: /* @__PURE__ */ new Date(),
       notes: notes || null
-    }).where(eq69(complianceViolations.id, violationId));
+    }).where(eq67(complianceViolations.id, violationId));
     await db.insert(alertHistory).values({
       violationId,
       action: "acknowledged",
@@ -41256,8 +40604,8 @@ async function acknowledgeViolation(violationId, operatorId, notes) {
 async function getEventViolations(eventId, limit = 100) {
   try {
     return await db.query.complianceViolations.findMany({
-      where: eq69(complianceViolations.eventId, eventId),
-      orderBy: (violations, { desc: desc43 }) => [desc43(violations.createdAt)],
+      where: eq67(complianceViolations.eventId, eventId),
+      orderBy: (violations, { desc: desc41 }) => [desc41(violations.createdAt)],
       limit
     });
   } catch (error) {
@@ -41268,11 +40616,11 @@ async function getEventViolations(eventId, limit = 100) {
 async function getUnacknowledgedViolations(eventId) {
   try {
     return await db.query.complianceViolations.findMany({
-      where: and43(
-        eq69(complianceViolations.eventId, eventId),
-        eq69(complianceViolations.acknowledged, false)
+      where: and42(
+        eq67(complianceViolations.eventId, eventId),
+        eq67(complianceViolations.acknowledged, false)
       ),
-      orderBy: (violations, { desc: desc43 }) => [desc43(violations.severity), desc43(violations.createdAt)]
+      orderBy: (violations, { desc: desc41 }) => [desc41(violations.severity), desc41(violations.createdAt)]
     });
   } catch (error) {
     console.error("[Compliance] Query error:", error);
@@ -41398,9 +40746,52 @@ var init_compliance2 = __esm({
   }
 });
 
+// server/_core/ably.ts
+async function getAblyClient2() {
+  if (_ablyClient) return _ablyClient;
+  const apiKey = process.env.ABLY_API_KEY;
+  if (!apiKey) {
+    console.warn("[Ably] ABLY_API_KEY not set \u2014 real-time alerts disabled");
+    return null;
+  }
+  try {
+    const Ably4 = await import("ably");
+    _ablyClient = new Ably4.Rest(apiKey);
+    return _ablyClient;
+  } catch (err) {
+    console.error("[Ably] Failed to initialise client:", err);
+    return null;
+  }
+}
+async function publishToChannel(channelName, eventName, data) {
+  const client = await getAblyClient2();
+  if (!client) return false;
+  try {
+    const channel = client.channels.get(channelName);
+    await channel.publish(eventName, data);
+    return true;
+  } catch (err) {
+    console.error("[Ably] Publish error:", err);
+    return false;
+  }
+}
+async function publishPostEventData(postEventData2) {
+  return publishToChannel("post_event:updates", "post_event.generated", {
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    ...postEventData2
+  });
+}
+var _ablyClient;
+var init_ably = __esm({
+  "server/_core/ably.ts"() {
+    "use strict";
+    _ablyClient = null;
+  }
+});
+
 // server/routers/aiAm.ts
-import { z as z83 } from "zod";
-import { eq as eq70, and as and44, desc as desc41 } from "drizzle-orm";
+import { z as z84 } from "zod";
+import { eq as eq68, and as and43, desc as desc39 } from "drizzle-orm";
 var aiAmRouter;
 var init_aiAm = __esm({
   "server/routers/aiAm.ts"() {
@@ -41416,14 +40807,14 @@ var init_aiAm = __esm({
        * Called in real-time as transcripts are received from Recall.ai
        */
       detectAndAlert: protectedProcedure.input(
-        z83.object({
-          eventId: z83.string(),
-          conferenceId: z83.string().optional(),
-          transcriptExcerpt: z83.string(),
-          speakerName: z83.string().optional(),
-          speakerRole: z83.string().optional(),
-          startTimeMs: z83.number().optional(),
-          endTimeMs: z83.number().optional()
+        z84.object({
+          eventId: z84.string(),
+          conferenceId: z84.string().optional(),
+          transcriptExcerpt: z84.string(),
+          speakerName: z84.string().optional(),
+          speakerRole: z84.string().optional(),
+          startTimeMs: z84.number().optional(),
+          endTimeMs: z84.number().optional()
         })
       ).mutation(async ({ input, ctx }) => {
         try {
@@ -41446,7 +40837,7 @@ var init_aiAm = __esm({
             input.endTimeMs
           );
           const violationId = Number(result.id);
-          const ably2 = getAblyClient();
+          const ably2 = getAblyClient2();
           const channel = ably2.channels.get(`aiAm:alerts:${input.eventId}`);
           await channel.publish("violation_detected", {
             violationId,
@@ -41474,35 +40865,35 @@ var init_aiAm = __esm({
        * Get all violations for an event with optional filtering
        */
       getViolations: protectedProcedure.input(
-        z83.object({
-          eventId: z83.string(),
-          severity: z83.enum(["low", "medium", "high", "critical"]).optional(),
-          violationType: z83.string().optional(),
-          acknowledged: z83.boolean().optional(),
-          limit: z83.number().default(100),
-          offset: z83.number().default(0)
+        z84.object({
+          eventId: z84.string(),
+          severity: z84.enum(["low", "medium", "high", "critical"]).optional(),
+          violationType: z84.string().optional(),
+          acknowledged: z84.boolean().optional(),
+          limit: z84.number().default(100),
+          offset: z84.number().default(0)
         })
       ).query(async ({ input }) => {
         try {
           const query = db.query.complianceViolations.findMany({
-            where: eq70(complianceViolations.eventId, input.eventId),
-            orderBy: [desc41(complianceViolations.severity), desc41(complianceViolations.createdAt)],
+            where: eq68(complianceViolations.eventId, input.eventId),
+            orderBy: [desc39(complianceViolations.severity), desc39(complianceViolations.createdAt)],
             limit: input.limit,
             offset: input.offset
           });
-          const conditions = [eq70(complianceViolations.eventId, input.eventId)];
+          const conditions = [eq68(complianceViolations.eventId, input.eventId)];
           if (input.severity) {
-            conditions.push(eq70(complianceViolations.severity, input.severity));
+            conditions.push(eq68(complianceViolations.severity, input.severity));
           }
           if (input.violationType) {
-            conditions.push(eq70(complianceViolations.violationType, input.violationType));
+            conditions.push(eq68(complianceViolations.violationType, input.violationType));
           }
           if (input.acknowledged !== void 0) {
-            conditions.push(eq70(complianceViolations.acknowledged, input.acknowledged));
+            conditions.push(eq68(complianceViolations.acknowledged, input.acknowledged));
           }
           const violations = await db.query.complianceViolations.findMany({
-            where: and44(...conditions),
-            orderBy: [desc41(complianceViolations.severity), desc41(complianceViolations.createdAt)],
+            where: and43(...conditions),
+            orderBy: [desc39(complianceViolations.severity), desc39(complianceViolations.createdAt)],
             limit: input.limit,
             offset: input.offset
           });
@@ -41515,7 +40906,7 @@ var init_aiAm = __esm({
       /**
        * Get unacknowledged violations for an event (high priority)
        */
-      getUnacknowledgedViolations: protectedProcedure.input(z83.object({ eventId: z83.string() })).query(async ({ input }) => {
+      getUnacknowledgedViolations: protectedProcedure.input(z84.object({ eventId: z84.string() })).query(async ({ input }) => {
         try {
           return await getUnacknowledgedViolations(input.eventId);
         } catch (error) {
@@ -41527,15 +40918,15 @@ var init_aiAm = __esm({
        * Acknowledge a violation alert (mark as reviewed by operator)
        */
       acknowledgeViolation: protectedProcedure.input(
-        z83.object({
-          violationId: z83.number(),
-          eventId: z83.string(),
-          notes: z83.string().optional()
+        z84.object({
+          violationId: z84.number(),
+          eventId: z84.string(),
+          notes: z84.string().optional()
         })
       ).mutation(async ({ input, ctx }) => {
         try {
           await acknowledgeViolation(input.violationId, ctx.user.id, input.notes);
-          const ably2 = getAblyClient();
+          const ably2 = getAblyClient2();
           const channel = ably2.channels.get(`aiAm:alerts:${input.eventId}`);
           await channel.publish("violation_acknowledged", {
             violationId: input.violationId,
@@ -41552,12 +40943,12 @@ var init_aiAm = __esm({
       /**
        * Get operator alert preferences
        */
-      getAlertPreferences: protectedProcedure.input(z83.object({ eventId: z83.string().optional() })).query(async ({ input, ctx }) => {
+      getAlertPreferences: protectedProcedure.input(z84.object({ eventId: z84.string().optional() })).query(async ({ input, ctx }) => {
         try {
           const prefs = await db.query.alertPreferences.findFirst({
-            where: and44(
-              eq70(alertPreferences.operatorId, ctx.user.id),
-              input.eventId ? eq70(alertPreferences.eventId, input.eventId) : void 0
+            where: and43(
+              eq68(alertPreferences.operatorId, ctx.user.id),
+              input.eventId ? eq68(alertPreferences.eventId, input.eventId) : void 0
             )
           });
           return prefs || {
@@ -41575,22 +40966,22 @@ var init_aiAm = __esm({
        * Update operator alert preferences
        */
       updateAlertPreferences: protectedProcedure.input(
-        z83.object({
-          eventId: z83.string().optional(),
-          enableAlerts: z83.boolean().optional(),
-          notificationMethod: z83.enum(["in_app", "email", "sms", "all"]).optional(),
-          minSeverity: z83.enum(["low", "medium", "high", "critical"]).optional(),
-          enabledViolationTypes: z83.array(z83.string()).optional(),
-          quietHoursStart: z83.string().optional(),
-          quietHoursEnd: z83.string().optional(),
-          timezone: z83.string().optional()
+        z84.object({
+          eventId: z84.string().optional(),
+          enableAlerts: z84.boolean().optional(),
+          notificationMethod: z84.enum(["in_app", "email", "sms", "all"]).optional(),
+          minSeverity: z84.enum(["low", "medium", "high", "critical"]).optional(),
+          enabledViolationTypes: z84.array(z84.string()).optional(),
+          quietHoursStart: z84.string().optional(),
+          quietHoursEnd: z84.string().optional(),
+          timezone: z84.string().optional()
         })
       ).mutation(async ({ input, ctx }) => {
         try {
           const existing = await db.query.alertPreferences.findFirst({
-            where: and44(
-              eq70(alertPreferences.operatorId, ctx.user.id),
-              input.eventId ? eq70(alertPreferences.eventId, input.eventId) : void 0
+            where: and43(
+              eq68(alertPreferences.operatorId, ctx.user.id),
+              input.eventId ? eq68(alertPreferences.eventId, input.eventId) : void 0
             )
           });
           if (existing) {
@@ -41602,7 +40993,7 @@ var init_aiAm = __esm({
               quietHoursStart: input.quietHoursStart ?? existing.quietHoursStart,
               quietHoursEnd: input.quietHoursEnd ?? existing.quietHoursEnd,
               timezone: input.timezone ?? existing.timezone
-            }).where(eq70(alertPreferences.id, existing.id));
+            }).where(eq68(alertPreferences.id, existing.id));
           } else {
             await db.insert(alertPreferences).values({
               operatorId: ctx.user.id,
@@ -41625,11 +41016,11 @@ var init_aiAm = __esm({
       /**
        * Get compliance detection statistics for an event
        */
-      getStats: protectedProcedure.input(z83.object({ eventId: z83.string() })).query(async ({ input }) => {
+      getStats: protectedProcedure.input(z84.object({ eventId: z84.string() })).query(async ({ input }) => {
         try {
           const stats = await db.query.complianceDetectionStats.findFirst({
-            where: eq70(complianceDetectionStats.eventId, input.eventId),
-            orderBy: [desc41(complianceDetectionStats.recordedAt)]
+            where: eq68(complianceDetectionStats.eventId, input.eventId),
+            orderBy: [desc39(complianceDetectionStats.recordedAt)]
           });
           if (!stats) {
             const violations = await getEventViolations(input.eventId);
@@ -41665,10 +41056,10 @@ var init_aiAm = __esm({
        * Search violations by text
        */
       searchViolations: protectedProcedure.input(
-        z83.object({
-          eventId: z83.string(),
-          query: z83.string(),
-          limit: z83.number().default(50)
+        z84.object({
+          eventId: z84.string(),
+          query: z84.string(),
+          limit: z84.number().default(50)
         })
       ).query(async ({ input }) => {
         try {
@@ -41686,9 +41077,9 @@ var init_aiAm = __esm({
 });
 
 // server/routers/rbac.ts
-import { TRPCError as TRPCError8 } from "@trpc/server";
-import { z as z84 } from "zod";
-import { eq as eq71, count as count2 } from "drizzle-orm";
+import { TRPCError as TRPCError10 } from "@trpc/server";
+import { z as z85 } from "zod";
+import { eq as eq69, count as count2 } from "drizzle-orm";
 function hasRole(userRole, requiredRole) {
   return (roleHierarchy[userRole] ?? 0) >= (roleHierarchy[requiredRole] ?? 0);
 }
@@ -41706,13 +41097,13 @@ var init_rbac = __esm({
     };
     adminProcedure4 = protectedProcedure.use(({ ctx, next }) => {
       if (ctx.user.role !== "admin") {
-        throw new TRPCError8({ code: "FORBIDDEN", message: "Admin access required" });
+        throw new TRPCError10({ code: "FORBIDDEN", message: "Admin access required" });
       }
       return next({ ctx });
     });
     operatorProcedure3 = protectedProcedure.use(({ ctx, next }) => {
       if (!hasRole(ctx.user.role, "operator")) {
-        throw new TRPCError8({ code: "FORBIDDEN", message: "Operator access required" });
+        throw new TRPCError10({ code: "FORBIDDEN", message: "Operator access required" });
       }
       return next({ ctx });
     });
@@ -41722,7 +41113,7 @@ var init_rbac = __esm({
         userId: ctx.user.id,
         email: ctx.user.email
       })),
-      hasRole: protectedProcedure.input(z84.object({ requiredRole: z84.enum(["admin", "operator", "user"]) })).query(({ ctx, input }) => ({
+      hasRole: protectedProcedure.input(z85.object({ requiredRole: z85.enum(["admin", "operator", "user"]) })).query(({ ctx, input }) => ({
         hasRole: hasRole(ctx.user.role, input.requiredRole),
         userRole: ctx.user.role
       })),
@@ -41743,7 +41134,7 @@ var init_rbac = __esm({
       }),
       getAllUsers: adminProcedure4.query(async () => {
         const db2 = await getDb();
-        if (!db2) throw new TRPCError8({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db2) throw new TRPCError10({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
         return db2.select({
           id: users.id,
           name: users.name,
@@ -41755,16 +41146,16 @@ var init_rbac = __esm({
           lastSignedIn: users.lastSignedIn
         }).from(users).orderBy(users.createdAt);
       }),
-      updateUserRole: adminProcedure4.input(z84.object({
-        userId: z84.number(),
-        newRole: z84.enum(["admin", "operator", "user"])
+      updateUserRole: adminProcedure4.input(z85.object({
+        userId: z85.number(),
+        newRole: z85.enum(["admin", "operator", "user"])
       })).mutation(async ({ ctx, input }) => {
         if (ctx.user.id === input.userId) {
-          throw new TRPCError8({ code: "BAD_REQUEST", message: "Cannot change your own role" });
+          throw new TRPCError10({ code: "BAD_REQUEST", message: "Cannot change your own role" });
         }
         const db2 = await getDb();
-        if (!db2) throw new TRPCError8({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-        await db2.update(users).set({ role: input.newRole }).where(eq71(users.id, input.userId));
+        if (!db2) throw new TRPCError10({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await db2.update(users).set({ role: input.newRole }).where(eq69(users.id, input.userId));
         return { success: true, userId: input.userId, newRole: input.newRole };
       }),
       getRoleStatistics: adminProcedure4.query(async () => {
@@ -41785,8 +41176,8 @@ var init_rbac = __esm({
 });
 
 // server/routers/aiEvolutionRouter.ts
-import { z as z85 } from "zod";
-import { eq as eq72 } from "drizzle-orm";
+import { z as z86 } from "zod";
+import { eq as eq70 } from "drizzle-orm";
 var VALID_TRANSITIONS, aiEvolutionRouter;
 var init_aiEvolutionRouter = __esm({
   "server/routers/aiEvolutionRouter.ts"() {
@@ -41810,18 +41201,18 @@ var init_aiEvolutionRouter = __esm({
       runAccumulation: protectedProcedure.mutation(async () => {
         return runAccumulationEngine();
       }),
-      updateProposalStatus: protectedProcedure.input(z85.object({
-        proposalId: z85.number(),
-        status: z85.enum(["emerging", "proposed", "approved", "building", "live", "rejected"])
+      updateProposalStatus: protectedProcedure.input(z86.object({
+        proposalId: z86.number(),
+        status: z86.enum(["emerging", "proposed", "approved", "building", "live", "rejected"])
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        const [existing] = await db2.select().from(aiToolProposals).where(eq72(aiToolProposals.id, input.proposalId)).limit(1);
+        const [existing] = await db2.select().from(aiToolProposals).where(eq70(aiToolProposals.id, input.proposalId)).limit(1);
         if (!existing) throw new Error("Proposal not found");
         const allowed = VALID_TRANSITIONS[existing.status] ?? [];
         if (!allowed.includes(input.status)) {
           throw new Error(`Cannot transition from "${existing.status}" to "${input.status}"`);
         }
-        await db2.update(aiToolProposals).set({ status: input.status }).where(eq72(aiToolProposals.id, input.proposalId));
+        await db2.update(aiToolProposals).set({ status: input.status }).where(eq70(aiToolProposals.id, input.proposalId));
         return { success: true };
       })
     });
@@ -41829,7 +41220,7 @@ var init_aiEvolutionRouter = __esm({
 });
 
 // server/routers/persistence.ts
-import { z as z86 } from "zod";
+import { z as z87 } from "zod";
 var persistenceRouter;
 var init_persistence = __esm({
   "server/routers/persistence.ts"() {
@@ -41846,24 +41237,24 @@ var init_persistence = __esm({
          * Save post-event data (AI summary, transcript, analytics, compliance report)
          */
         save: protectedProcedure.input(
-          z86.object({
-            eventId: z86.string(),
-            conferenceId: z86.number().optional(),
-            aiSummary: z86.string().optional(),
-            keyTopics: z86.string().optional(),
-            sentimentTrends: z86.string().optional(),
-            keyQuotes: z86.string().optional(),
-            fullTranscript: z86.string().optional(),
-            transcriptFormat: z86.enum(["txt", "pdf", "vtt", "srt", "json"]).optional(),
-            recordingUrl: z86.string().optional(),
-            recordingKey: z86.string().optional(),
-            recordingDurationSeconds: z86.number().optional(),
-            complianceScore: z86.number().optional(),
-            flaggedItems: z86.string().optional(),
-            totalParticipants: z86.number().optional(),
-            totalDuration: z86.number().optional(),
-            engagementScore: z86.number().optional(),
-            analyticsData: z86.string().optional()
+          z87.object({
+            eventId: z87.string(),
+            conferenceId: z87.number().optional(),
+            aiSummary: z87.string().optional(),
+            keyTopics: z87.string().optional(),
+            sentimentTrends: z87.string().optional(),
+            keyQuotes: z87.string().optional(),
+            fullTranscript: z87.string().optional(),
+            transcriptFormat: z87.enum(["txt", "pdf", "vtt", "srt", "json"]).optional(),
+            recordingUrl: z87.string().optional(),
+            recordingKey: z87.string().optional(),
+            recordingDurationSeconds: z87.number().optional(),
+            complianceScore: z87.number().optional(),
+            flaggedItems: z87.string().optional(),
+            totalParticipants: z87.number().optional(),
+            totalDuration: z87.number().optional(),
+            engagementScore: z87.number().optional(),
+            analyticsData: z87.string().optional()
           })
         ).mutation(async ({ input }) => {
           try {
@@ -41883,7 +41274,7 @@ var init_persistence = __esm({
         /**
          * Retrieve post-event data for a specific event
          */
-        get: publicProcedure.input(z86.object({ eventId: z86.string() })).query(async ({ input }) => {
+        get: publicProcedure.input(z87.object({ eventId: z87.string() })).query(async ({ input }) => {
           try {
             const data = await getPostEventData(input.eventId);
             return data;
@@ -41901,9 +41292,9 @@ var init_persistence = __esm({
          * Create or get Stripe customer record
          */
         getOrCreateCustomer: protectedProcedure.input(
-          z86.object({
-            stripeCustomerId: z86.string(),
-            email: z86.string().email()
+          z87.object({
+            stripeCustomerId: z87.string(),
+            email: z87.string().email()
           })
         ).mutation(async ({ ctx, input }) => {
           try {
@@ -41922,13 +41313,13 @@ var init_persistence = __esm({
          * Create subscription record
          */
         createSubscription: protectedProcedure.input(
-          z86.object({
-            stripeSubscriptionId: z86.string(),
-            stripePriceId: z86.string(),
-            status: z86.enum(["active", "past_due", "unpaid", "canceled", "incomplete"]),
-            tier: z86.enum(["basic", "professional", "enterprise"]),
-            currentPeriodStart: z86.date().optional(),
-            currentPeriodEnd: z86.date().optional()
+          z87.object({
+            stripeSubscriptionId: z87.string(),
+            stripePriceId: z87.string(),
+            status: z87.enum(["active", "past_due", "unpaid", "canceled", "incomplete"]),
+            tier: z87.enum(["basic", "professional", "enterprise"]),
+            currentPeriodStart: z87.date().optional(),
+            currentPeriodEnd: z87.date().optional()
           })
         ).mutation(async ({ ctx, input }) => {
           try {
@@ -42206,7 +41597,7 @@ var init_aiAmPhase2AutoMuting = __esm({
 });
 
 // server/routers/aiAmPhase2.ts
-import { z as z87 } from "zod";
+import { z as z88 } from "zod";
 var aiAmPhase2Router;
 var init_aiAmPhase2 = __esm({
   "server/routers/aiAmPhase2.ts"() {
@@ -42217,7 +41608,7 @@ var init_aiAmPhase2 = __esm({
       /**
        * Get current muting configuration for an event
        */
-      getMutingConfig: protectedProcedure.input(z87.object({ eventId: z87.string() })).query(async ({ input }) => {
+      getMutingConfig: protectedProcedure.input(z88.object({ eventId: z88.string() })).query(async ({ input }) => {
         const config = await getMutingConfig(input.eventId);
         return config || null;
       }),
@@ -42225,16 +41616,16 @@ var init_aiAmPhase2 = __esm({
        * Configure muting settings for an event
        */
       configureMuting: protectedProcedure.input(
-        z87.object({
-          eventId: z87.string(),
-          enabled: z87.boolean().optional(),
-          softMuteThreshold: z87.number().min(1).optional(),
-          hardMuteThreshold: z87.number().min(1).optional(),
-          muteDuration: z87.number().min(0).optional(),
-          autoUnmuteAfter: z87.number().optional(),
-          violationTypes: z87.array(z87.string()).optional(),
-          excludedSpeakers: z87.array(z87.string()).optional(),
-          operatorOverride: z87.boolean().optional()
+        z88.object({
+          eventId: z88.string(),
+          enabled: z88.boolean().optional(),
+          softMuteThreshold: z88.number().min(1).optional(),
+          hardMuteThreshold: z88.number().min(1).optional(),
+          muteDuration: z88.number().min(0).optional(),
+          autoUnmuteAfter: z88.number().optional(),
+          violationTypes: z88.array(z88.string()).optional(),
+          excludedSpeakers: z88.array(z88.string()).optional(),
+          operatorOverride: z88.boolean().optional()
         })
       ).mutation(async ({ input, ctx }) => {
         if (ctx.user.role !== "admin" && ctx.user.role !== "operator") {
@@ -42257,10 +41648,10 @@ var init_aiAmPhase2 = __esm({
        * Evaluate a specific speaker for muting
        */
       evaluateSpeaker: protectedProcedure.input(
-        z87.object({
-          eventId: z87.string(),
-          speakerId: z87.string(),
-          speakerName: z87.string()
+        z88.object({
+          eventId: z88.string(),
+          speakerId: z88.string(),
+          speakerName: z88.string()
         })
       ).query(async ({ input }) => {
         const evaluation = await evaluateSpeakerForMuting(
@@ -42273,7 +41664,7 @@ var init_aiAmPhase2 = __esm({
       /**
        * Evaluate all speakers in an event for muting
        */
-      evaluateAllSpeakers: protectedProcedure.input(z87.object({ eventId: z87.string() })).query(async ({ input }) => {
+      evaluateAllSpeakers: protectedProcedure.input(z88.object({ eventId: z88.string() })).query(async ({ input }) => {
         const evaluations = await evaluateAllSpeakersForMuting(input.eventId);
         return evaluations;
       }),
@@ -42281,11 +41672,11 @@ var init_aiAmPhase2 = __esm({
        * Apply muting to a speaker
        */
       applyMute: protectedProcedure.input(
-        z87.object({
-          eventId: z87.string(),
-          speakerId: z87.string(),
-          speakerName: z87.string(),
-          muteType: z87.enum(["soft", "hard"])
+        z88.object({
+          eventId: z88.string(),
+          speakerId: z88.string(),
+          speakerName: z88.string(),
+          muteType: z88.enum(["soft", "hard"])
         })
       ).mutation(async ({ input, ctx }) => {
         if (ctx.user.role !== "admin" && ctx.user.role !== "operator") {
@@ -42305,10 +41696,10 @@ var init_aiAmPhase2 = __esm({
        * Remove muting from a speaker
        */
       removeMute: protectedProcedure.input(
-        z87.object({
-          eventId: z87.string(),
-          speakerId: z87.string(),
-          speakerName: z87.string()
+        z88.object({
+          eventId: z88.string(),
+          speakerId: z88.string(),
+          speakerName: z88.string()
         })
       ).mutation(async ({ input, ctx }) => {
         if (ctx.user.role !== "admin" && ctx.user.role !== "operator") {
@@ -42326,14 +41717,14 @@ var init_aiAmPhase2 = __esm({
       /**
        * Get speaker violation counts for an event
        */
-      getSpeakerViolations: protectedProcedure.input(z87.object({ eventId: z87.string() })).query(async ({ input }) => {
+      getSpeakerViolations: protectedProcedure.input(z88.object({ eventId: z88.string() })).query(async ({ input }) => {
         const violations = await getSpeakerViolationCounts(input.eventId);
         return violations;
       }),
       /**
        * Get muting statistics for an event
        */
-      getMutingStats: protectedProcedure.input(z87.object({ eventId: z87.string() })).query(async ({ input }) => {
+      getMutingStats: protectedProcedure.input(z88.object({ eventId: z88.string() })).query(async ({ input }) => {
         const stats = await getMutingStatistics(input.eventId);
         return stats;
       })
@@ -42342,7 +41733,7 @@ var init_aiAmPhase2 = __esm({
 });
 
 // server/routers/restBridgeRouter.ts
-import { z as z88 } from "zod";
+import { z as z89 } from "zod";
 var restBridgeRouter;
 var init_restBridgeRouter = __esm({
   "server/routers/restBridgeRouter.ts"() {
@@ -42394,7 +41785,7 @@ var init_restBridgeRouter = __esm({
           oauthConfigured: oauthEnabled
         };
       }),
-      archiveTranscript: publicProcedure.input(z88.object({ id: z88.number().int().positive() })).query(async ({ input }) => {
+      archiveTranscript: publicProcedure.input(z89.object({ id: z89.number().int().positive() })).query(async ({ input }) => {
         const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
         const [rows] = await rawSql2(
           `SELECT event_name, client_name, event_date, transcript_text FROM archive_events WHERE id = ? LIMIT 1`,
@@ -42420,7 +41811,7 @@ ${"=".repeat(40)}
           content: header + row.transcript_text
         };
       }),
-      archiveRecording: publicProcedure.input(z88.object({ id: z88.number().int().positive() })).query(async ({ input }) => {
+      archiveRecording: publicProcedure.input(z89.object({ id: z89.number().int().positive() })).query(async ({ input }) => {
         const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
         const [rows] = await rawSql2(
           `SELECT event_name, recording_path FROM archive_events WHERE id = ? LIMIT 1`,
@@ -42465,7 +41856,7 @@ ${"=".repeat(40)}
 });
 
 // server/routers/session.ts
-import { z as z89 } from "zod";
+import { z as z90 } from "zod";
 var sessionRouter;
 var init_session = __esm({
   "server/routers/session.ts"() {
@@ -42475,7 +41866,7 @@ var init_session = __esm({
       getLiveSession: publicProcedure.query(async () => {
         return null;
       }),
-      getLiveQA: publicProcedure.input(z89.object({ sessionId: z89.string() })).query(async ({ input }) => {
+      getLiveQA: publicProcedure.input(z90.object({ sessionId: z90.string() })).query(async ({ input }) => {
         return {
           pendingCount: 0,
           approvedCount: 0,
@@ -42483,22 +41874,22 @@ var init_session = __esm({
           approved: []
         };
       }),
-      getLiveTranscript: publicProcedure.input(z89.object({ sessionId: z89.string() })).query(async ({ input }) => {
+      getLiveTranscript: publicProcedure.input(z90.object({ sessionId: z90.string() })).query(async ({ input }) => {
         return [];
       }),
-      getNotes: publicProcedure.input(z89.object({ sessionId: z89.string() })).query(async ({ input }) => {
+      getNotes: publicProcedure.input(z90.object({ sessionId: z90.string() })).query(async ({ input }) => {
         return { notes: "" };
       }),
-      approveQuestion: operatorProcedure.input(z89.object({ questionId: z89.string(), sessionId: z89.string() })).mutation(async ({ input }) => {
+      approveQuestion: operatorProcedure.input(z90.object({ questionId: z90.string(), sessionId: z90.string() })).mutation(async ({ input }) => {
         return { success: true, questionId: input.questionId };
       }),
-      rejectQuestion: operatorProcedure.input(z89.object({ questionId: z89.string(), sessionId: z89.string() })).mutation(async ({ input }) => {
+      rejectQuestion: operatorProcedure.input(z90.object({ questionId: z90.string(), sessionId: z90.string() })).mutation(async ({ input }) => {
         return { success: true, questionId: input.questionId };
       }),
-      saveNotes: operatorProcedure.input(z89.object({ sessionId: z89.string(), notes: z89.string() })).mutation(async ({ input }) => {
+      saveNotes: operatorProcedure.input(z90.object({ sessionId: z90.string(), notes: z90.string() })).mutation(async ({ input }) => {
         return { success: true };
       }),
-      exportSession: operatorProcedure.input(z89.object({ sessionId: z89.string(), format: z89.enum(["json", "pdf"]) })).mutation(async ({ input }) => {
+      exportSession: operatorProcedure.input(z90.object({ sessionId: z90.string(), format: z90.enum(["json", "pdf"]) })).mutation(async ({ input }) => {
         const exportData = {
           sessionId: input.sessionId,
           exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -42510,10 +41901,10 @@ var init_session = __esm({
           filename: `session-${input.sessionId}-export.${input.format}`
         };
       }),
-      handoffSession: operatorProcedure.input(z89.object({
-        sessionId: z89.string(),
-        targetOperatorId: z89.string(),
-        handoffNotes: z89.string().optional()
+      handoffSession: operatorProcedure.input(z90.object({
+        sessionId: z90.string(),
+        targetOperatorId: z90.string(),
+        handoffNotes: z90.string().optional()
       })).mutation(async ({ input }) => {
         return {
           success: true,
@@ -42526,17 +41917,17 @@ var init_session = __esm({
 });
 
 // server/routers/archive.ts
-import { z as z90 } from "zod";
+import { z as z91 } from "zod";
 var archiveRouter;
 var init_archive = __esm({
   "server/routers/archive.ts"() {
     "use strict";
     init_trpc();
     archiveRouter = router({
-      getArchivedSessions: publicProcedure.input(z90.object({
-        page: z90.number().optional().default(1),
-        limit: z90.number().optional().default(10),
-        search: z90.string().optional().default("")
+      getArchivedSessions: publicProcedure.input(z91.object({
+        page: z91.number().optional().default(1),
+        limit: z91.number().optional().default(10),
+        search: z91.string().optional().default("")
       })).query(async ({ input }) => {
         return [];
       })
@@ -42545,8 +41936,8 @@ var init_archive = __esm({
 });
 
 // server/routers/bridgeConsoleRouter.ts
-import { z as z91 } from "zod";
-import { eq as eq73, and as and45, asc as asc7, desc as desc42, sql as sql23 } from "drizzle-orm";
+import { z as z92 } from "zod";
+import { eq as eq71, and as and44, asc as asc7, desc as desc40, sql as sql21 } from "drizzle-orm";
 import twilio4 from "twilio";
 function getTwilioClient2() {
   if (!TWILIO_ACCOUNT_SID2 || !TWILIO_AUTH_TOKEN2) return null;
@@ -42576,22 +41967,22 @@ async function logOperatorAction2(conferenceId, action, category, targetId, meta
   });
 }
 async function requireConference(db2, conferenceId) {
-  const [conf] = await db2.select().from(bridgeConferences).where(eq73(bridgeConferences.id, conferenceId));
+  const [conf] = await db2.select().from(bridgeConferences).where(eq71(bridgeConferences.id, conferenceId));
   if (!conf) throw new Error("Conference not found");
   return conf;
 }
 async function requireParticipantInConference(db2, participantId, conferenceId) {
-  const [p] = await db2.select().from(bridgeParticipants).where(and45(eq73(bridgeParticipants.id, participantId), eq73(bridgeParticipants.conferenceId, conferenceId)));
+  const [p] = await db2.select().from(bridgeParticipants).where(and44(eq71(bridgeParticipants.id, participantId), eq71(bridgeParticipants.conferenceId, conferenceId)));
   if (!p) throw new Error("Participant not found in this conference");
   return p;
 }
 async function requireQuestionInConference(db2, questionId, conferenceId) {
-  const [q] = await db2.select().from(bridgeQaQuestions).where(and45(eq73(bridgeQaQuestions.id, questionId), eq73(bridgeQaQuestions.conferenceId, conferenceId)));
+  const [q] = await db2.select().from(bridgeQaQuestions).where(and44(eq71(bridgeQaQuestions.id, questionId), eq71(bridgeQaQuestions.conferenceId, conferenceId)));
   if (!q) throw new Error("Question not found in this conference");
   return q;
 }
 async function requireGreeterInConference(db2, greeterId, conferenceId) {
-  const [g] = await db2.select().from(bridgeGreeterQueue).where(and45(eq73(bridgeGreeterQueue.id, greeterId), eq73(bridgeGreeterQueue.conferenceId, conferenceId)));
+  const [g] = await db2.select().from(bridgeGreeterQueue).where(and44(eq71(bridgeGreeterQueue.id, greeterId), eq71(bridgeGreeterQueue.conferenceId, conferenceId)));
   if (!g) throw new Error("Greeter entry not found in this conference");
   return g;
 }
@@ -42607,13 +41998,13 @@ var init_bridgeConsoleRouter = __esm({
     TWILIO_CALLER_ID2 = process.env.TWILIO_CALLER_ID ?? "";
     RECALL_API_KEY3 = process.env.RECALL_AI_API_KEY ?? "";
     bridgeConsoleRouter = router({
-      createEvent: operatorProcedure.input(z91.object({
-        name: z91.string().min(1),
-        organiserName: z91.string().optional(),
-        organiserEmail: z91.string().optional(),
-        scheduledAt: z91.string().optional(),
-        dialInNumber: z91.string().optional(),
-        externalSources: z91.array(z91.string()).optional()
+      createEvent: operatorProcedure.input(z92.object({
+        name: z92.string().min(1),
+        organiserName: z92.string().optional(),
+        organiserEmail: z92.string().optional(),
+        scheduledAt: z92.string().optional(),
+        dialInNumber: z92.string().optional(),
+        externalSources: z92.array(z92.string()).optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const accessCode = String(Math.floor(1e7 + Math.random() * 9e7));
@@ -42649,94 +42040,94 @@ var init_bridgeConsoleRouter = __esm({
       }),
       getEvents: operatorProcedure.query(async () => {
         const db2 = await getDb();
-        return db2.select().from(bridgeEvents).orderBy(desc42(bridgeEvents.createdAt));
+        return db2.select().from(bridgeEvents).orderBy(desc40(bridgeEvents.createdAt));
       }),
-      getEvent: operatorProcedure.input(z91.object({ id: z91.number() })).query(async ({ input }) => {
+      getEvent: operatorProcedure.input(z92.object({ id: z92.number() })).query(async ({ input }) => {
         const db2 = await getDb();
-        const [event] = await db2.select().from(bridgeEvents).where(eq73(bridgeEvents.id, input.id));
+        const [event] = await db2.select().from(bridgeEvents).where(eq71(bridgeEvents.id, input.id));
         if (!event) throw new Error("Bridge event not found");
-        const conferences = await db2.select().from(bridgeConferences).where(eq73(bridgeConferences.bridgeEventId, event.id));
+        const conferences = await db2.select().from(bridgeConferences).where(eq71(bridgeConferences.bridgeEventId, event.id));
         const mainConf = conferences.find((c) => c.type === "main");
         const greenRoom = conferences.find((c) => c.type === "green_room");
         let participants = [];
         let greeterQueue = [];
         let qaQuestions = [];
         if (mainConf) {
-          participants = await db2.select().from(bridgeParticipants).where(eq73(bridgeParticipants.bridgeEventId, event.id)).orderBy(asc7(bridgeParticipants.createdAt));
-          qaQuestions = await db2.select().from(bridgeQaQuestions).where(eq73(bridgeQaQuestions.conferenceId, mainConf.id)).orderBy(asc7(bridgeQaQuestions.queuePosition));
+          participants = await db2.select().from(bridgeParticipants).where(eq71(bridgeParticipants.bridgeEventId, event.id)).orderBy(asc7(bridgeParticipants.createdAt));
+          qaQuestions = await db2.select().from(bridgeQaQuestions).where(eq71(bridgeQaQuestions.conferenceId, mainConf.id)).orderBy(asc7(bridgeQaQuestions.queuePosition));
         }
-        greeterQueue = await db2.select().from(bridgeGreeterQueue).where(and45(
-          eq73(bridgeGreeterQueue.bridgeEventId, event.id),
-          eq73(bridgeGreeterQueue.status, "waiting")
+        greeterQueue = await db2.select().from(bridgeGreeterQueue).where(and44(
+          eq71(bridgeGreeterQueue.bridgeEventId, event.id),
+          eq71(bridgeGreeterQueue.status, "waiting")
         )).orderBy(asc7(bridgeGreeterQueue.queuedAt));
         return { event, mainConf, greenRoom, participants, greeterQueue, qaQuestions };
       }),
-      openConference: operatorProcedure.input(z91.object({ conferenceId: z91.number() })).mutation(async ({ input }) => {
+      openConference: operatorProcedure.input(z92.object({ conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await requireConference(db2, input.conferenceId);
-        const [conf] = await db2.update(bridgeConferences).set({ phase: "live", startedAt: /* @__PURE__ */ new Date() }).where(eq73(bridgeConferences.id, input.conferenceId)).returning();
+        const [conf] = await db2.update(bridgeConferences).set({ phase: "live", startedAt: /* @__PURE__ */ new Date() }).where(eq71(bridgeConferences.id, input.conferenceId)).returning();
         if (!conf) throw new Error("Failed to update conference");
-        await db2.update(bridgeParticipants).set({ isMuted: false }).where(and45(
-          eq73(bridgeParticipants.conferenceId, input.conferenceId),
-          eq73(bridgeParticipants.role, "presenter")
+        await db2.update(bridgeParticipants).set({ isMuted: false }).where(and44(
+          eq71(bridgeParticipants.conferenceId, input.conferenceId),
+          eq71(bridgeParticipants.role, "presenter")
         ));
         await logOperatorAction2(input.conferenceId, "conference_opened", "conference");
         await publishBridgeEvent(input.conferenceId, "conference:opened", { phase: "live", startedAt: conf.startedAt });
         return { phase: "live", startedAt: conf.startedAt };
       }),
-      endConference: operatorProcedure.input(z91.object({ conferenceId: z91.number() })).mutation(async ({ input }) => {
+      endConference: operatorProcedure.input(z92.object({ conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await requireConference(db2, input.conferenceId);
-        const [conf] = await db2.update(bridgeConferences).set({ phase: "ended", endedAt: /* @__PURE__ */ new Date() }).where(eq73(bridgeConferences.id, input.conferenceId)).returning();
+        const [conf] = await db2.update(bridgeConferences).set({ phase: "ended", endedAt: /* @__PURE__ */ new Date() }).where(eq71(bridgeConferences.id, input.conferenceId)).returning();
         if (!conf) throw new Error("Failed to update conference");
-        await db2.update(bridgeParticipants).set({ status: "left", leaveTime: /* @__PURE__ */ new Date() }).where(and45(
-          eq73(bridgeParticipants.conferenceId, input.conferenceId),
-          sql23`${bridgeParticipants.status} NOT IN ('left', 'removed', 'failed')`
+        await db2.update(bridgeParticipants).set({ status: "left", leaveTime: /* @__PURE__ */ new Date() }).where(and44(
+          eq71(bridgeParticipants.conferenceId, input.conferenceId),
+          sql21`${bridgeParticipants.status} NOT IN ('left', 'removed', 'failed')`
         ));
         await logOperatorAction2(input.conferenceId, "conference_ended", "conference");
         await publishBridgeEvent(input.conferenceId, "conference:ended", { endedAt: conf.endedAt });
         return { endedAt: conf.endedAt };
       }),
-      toggleLock: operatorProcedure.input(z91.object({ conferenceId: z91.number(), locked: z91.boolean() })).mutation(async ({ input }) => {
+      toggleLock: operatorProcedure.input(z92.object({ conferenceId: z92.number(), locked: z92.boolean() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        await db2.update(bridgeConferences).set({ isLocked: input.locked }).where(eq73(bridgeConferences.id, input.conferenceId));
+        await db2.update(bridgeConferences).set({ isLocked: input.locked }).where(eq71(bridgeConferences.id, input.conferenceId));
         await logOperatorAction2(input.conferenceId, input.locked ? "conference_locked" : "conference_unlocked", "operator");
         await publishBridgeEvent(input.conferenceId, "conference:lock", { locked: input.locked });
         return { locked: input.locked };
       }),
-      toggleRecording: operatorProcedure.input(z91.object({ conferenceId: z91.number(), recording: z91.boolean() })).mutation(async ({ input }) => {
+      toggleRecording: operatorProcedure.input(z92.object({ conferenceId: z92.number(), recording: z92.boolean() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        await db2.update(bridgeConferences).set({ isRecording: input.recording }).where(eq73(bridgeConferences.id, input.conferenceId));
+        await db2.update(bridgeConferences).set({ isRecording: input.recording }).where(eq71(bridgeConferences.id, input.conferenceId));
         await logOperatorAction2(input.conferenceId, input.recording ? "recording_started" : "recording_paused", "operator");
         await publishBridgeEvent(input.conferenceId, "conference:recording", { recording: input.recording });
         return { recording: input.recording };
       }),
-      toggleQA: operatorProcedure.input(z91.object({ conferenceId: z91.number(), active: z91.boolean() })).mutation(async ({ input }) => {
+      toggleQA: operatorProcedure.input(z92.object({ conferenceId: z92.number(), active: z92.boolean() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        await db2.update(bridgeConferences).set({ qaActive: input.active }).where(eq73(bridgeConferences.id, input.conferenceId));
+        await db2.update(bridgeConferences).set({ qaActive: input.active }).where(eq71(bridgeConferences.id, input.conferenceId));
         await logOperatorAction2(input.conferenceId, input.active ? "qa_opened" : "qa_closed", "qa");
         await publishBridgeEvent(input.conferenceId, "qa:toggle", { active: input.active });
         return { qaActive: input.active };
       }),
       // --- GREETER QUEUE ---
-      getGreeterQueue: operatorProcedure.input(z91.object({ bridgeEventId: z91.number() })).query(async ({ input }) => {
+      getGreeterQueue: operatorProcedure.input(z92.object({ bridgeEventId: z92.number() })).query(async ({ input }) => {
         const db2 = await getDb();
-        return db2.select().from(bridgeGreeterQueue).where(and45(
-          eq73(bridgeGreeterQueue.bridgeEventId, input.bridgeEventId),
-          eq73(bridgeGreeterQueue.status, "waiting")
+        return db2.select().from(bridgeGreeterQueue).where(and44(
+          eq71(bridgeGreeterQueue.bridgeEventId, input.bridgeEventId),
+          eq71(bridgeGreeterQueue.status, "waiting")
         )).orderBy(asc7(bridgeGreeterQueue.queuedAt));
       }),
-      admitCaller: operatorProcedure.input(z91.object({
-        greeterId: z91.number(),
-        conferenceId: z91.number(),
-        name: z91.string(),
-        organisation: z91.string(),
-        role: z91.enum(["presenter", "participant", "observer"])
+      admitCaller: operatorProcedure.input(z92.object({
+        greeterId: z92.number(),
+        conferenceId: z92.number(),
+        name: z92.string(),
+        organisation: z92.string(),
+        role: z92.enum(["presenter", "participant", "observer"])
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const greeter = await requireGreeterInConference(db2, input.greeterId, input.conferenceId);
-        await db2.update(bridgeGreeterQueue).set({ status: "admitted", admittedAt: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeGreeterQueue.id, input.greeterId), eq73(bridgeGreeterQueue.conferenceId, input.conferenceId)));
-        const [conf] = await db2.select().from(bridgeConferences).where(eq73(bridgeConferences.id, input.conferenceId));
+        await db2.update(bridgeGreeterQueue).set({ status: "admitted", admittedAt: /* @__PURE__ */ new Date() }).where(and44(eq71(bridgeGreeterQueue.id, input.greeterId), eq71(bridgeGreeterQueue.conferenceId, input.conferenceId)));
+        const [conf] = await db2.select().from(bridgeConferences).where(eq71(bridgeConferences.id, input.conferenceId));
         const [participant] = await db2.insert(bridgeParticipants).values({
           bridgeEventId: greeter.bridgeEventId,
           conferenceId: input.conferenceId,
@@ -42762,29 +42153,29 @@ var init_bridgeConsoleRouter = __esm({
         });
         return { participantId: participant.id, status: "muted" };
       }),
-      rejectCaller: operatorProcedure.input(z91.object({ greeterId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+      rejectCaller: operatorProcedure.input(z92.object({ greeterId: z92.number(), conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        const [greeter] = await db2.update(bridgeGreeterQueue).set({ status: "rejected" }).where(eq73(bridgeGreeterQueue.id, input.greeterId)).returning();
+        const [greeter] = await db2.update(bridgeGreeterQueue).set({ status: "rejected" }).where(eq71(bridgeGreeterQueue.id, input.greeterId)).returning();
         await logOperatorAction2(input.conferenceId, "caller_rejected", "operator", input.greeterId);
         await publishBridgeEvent(input.conferenceId, "greeter:rejected", { greeterId: input.greeterId });
         return { status: "rejected" };
       }),
-      editGreeter: operatorProcedure.input(z91.object({ greeterId: z91.number(), name: z91.string().optional(), organisation: z91.string().optional() })).mutation(async ({ input }) => {
+      editGreeter: operatorProcedure.input(z92.object({ greeterId: z92.number(), name: z92.string().optional(), organisation: z92.string().optional() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const updates = {};
         if (input.name) updates.transcribedName = input.name;
         if (input.organisation) updates.transcribedOrg = input.organisation;
-        await db2.update(bridgeGreeterQueue).set(updates).where(eq73(bridgeGreeterQueue.id, input.greeterId));
+        await db2.update(bridgeGreeterQueue).set(updates).where(eq71(bridgeGreeterQueue.id, input.greeterId));
         return { updated: true };
       }),
       // --- PARTICIPANT MANAGEMENT ---
-      dialOut: operatorProcedure.input(z91.object({
-        bridgeEventId: z91.number(),
-        conferenceId: z91.number(),
-        name: z91.string(),
-        organisation: z91.string(),
-        phoneNumber: z91.string(),
-        role: z91.enum(["presenter", "participant", "observer"])
+      dialOut: operatorProcedure.input(z92.object({
+        bridgeEventId: z92.number(),
+        conferenceId: z92.number(),
+        name: z92.string(),
+        organisation: z92.string(),
+        phoneNumber: z92.string(),
+        role: z92.enum(["presenter", "participant", "observer"])
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const [participant] = await db2.insert(bridgeParticipants).values({
@@ -42805,11 +42196,11 @@ var init_bridgeConsoleRouter = __esm({
         await publishBridgeEvent(input.conferenceId, "participant:dialing", { participant });
         return { participantId: participant.id, status: "dialing" };
       }),
-      muteParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number(), muted: z91.boolean() })).mutation(async ({ input }) => {
+      muteParticipant: operatorProcedure.input(z92.object({ participantId: z92.number(), conferenceId: z92.number(), muted: z92.boolean() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await requireParticipantInConference(db2, input.participantId, input.conferenceId);
         const newStatus = input.muted ? "muted" : "live";
-        await db2.update(bridgeParticipants).set({ isMuted: input.muted, status: newStatus }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await db2.update(bridgeParticipants).set({ isMuted: input.muted, status: newStatus }).where(and44(eq71(bridgeParticipants.id, input.participantId), eq71(bridgeParticipants.conferenceId, input.conferenceId)));
         await logOperatorAction2(input.conferenceId, input.muted ? "participant_muted" : "participant_unmuted", "operator", input.participantId);
         await publishBridgeEvent(input.conferenceId, "participant:updated", {
           participantId: input.participantId,
@@ -42818,11 +42209,11 @@ var init_bridgeConsoleRouter = __esm({
         });
         return { status: newStatus };
       }),
-      holdParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number(), hold: z91.boolean() })).mutation(async ({ input }) => {
+      holdParticipant: operatorProcedure.input(z92.object({ participantId: z92.number(), conferenceId: z92.number(), hold: z92.boolean() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await requireParticipantInConference(db2, input.participantId, input.conferenceId);
         const newStatus = input.hold ? "hold" : "muted";
-        await db2.update(bridgeParticipants).set({ isOnHold: input.hold, status: newStatus }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await db2.update(bridgeParticipants).set({ isOnHold: input.hold, status: newStatus }).where(and44(eq71(bridgeParticipants.id, input.participantId), eq71(bridgeParticipants.conferenceId, input.conferenceId)));
         await logOperatorAction2(input.conferenceId, input.hold ? "participant_held" : "participant_unheld", "operator", input.participantId);
         await publishBridgeEvent(input.conferenceId, "participant:updated", {
           participantId: input.participantId,
@@ -42831,20 +42222,20 @@ var init_bridgeConsoleRouter = __esm({
         });
         return { status: newStatus };
       }),
-      removeParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+      removeParticipant: operatorProcedure.input(z92.object({ participantId: z92.number(), conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await requireParticipantInConference(db2, input.participantId, input.conferenceId);
-        await db2.update(bridgeParticipants).set({ status: "removed", leaveTime: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await db2.update(bridgeParticipants).set({ status: "removed", leaveTime: /* @__PURE__ */ new Date() }).where(and44(eq71(bridgeParticipants.id, input.participantId), eq71(bridgeParticipants.conferenceId, input.conferenceId)));
         await logOperatorAction2(input.conferenceId, "participant_removed", "operator", input.participantId);
         await publishBridgeEvent(input.conferenceId, "participant:removed", { participantId: input.participantId });
         return { status: "removed" };
       }),
-      updateParticipant: operatorProcedure.input(z91.object({
-        participantId: z91.number(),
-        name: z91.string().optional(),
-        organisation: z91.string().optional(),
-        role: z91.string().optional(),
-        notes: z91.string().optional()
+      updateParticipant: operatorProcedure.input(z92.object({
+        participantId: z92.number(),
+        name: z92.string().optional(),
+        organisation: z92.string().optional(),
+        role: z92.string().optional(),
+        notes: z92.string().optional()
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const updates = {};
@@ -42853,39 +42244,39 @@ var init_bridgeConsoleRouter = __esm({
         if (input.role !== void 0) updates.role = input.role;
         if (input.notes !== void 0) updates.notes = input.notes;
         updates.updatedAt = /* @__PURE__ */ new Date();
-        await db2.update(bridgeParticipants).set(updates).where(eq73(bridgeParticipants.id, input.participantId));
+        await db2.update(bridgeParticipants).set(updates).where(eq71(bridgeParticipants.id, input.participantId));
         return { updated: true };
       }),
-      muteAll: operatorProcedure.input(z91.object({ conferenceId: z91.number() })).mutation(async ({ input }) => {
+      muteAll: operatorProcedure.input(z92.object({ conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        const result = await db2.update(bridgeParticipants).set({ isMuted: true, status: "muted" }).where(and45(
-          eq73(bridgeParticipants.conferenceId, input.conferenceId),
-          sql23`${bridgeParticipants.role} NOT IN ('presenter', 'operator')`,
-          sql23`${bridgeParticipants.status} NOT IN ('left', 'removed', 'failed', 'invited')`
+        const result = await db2.update(bridgeParticipants).set({ isMuted: true, status: "muted" }).where(and44(
+          eq71(bridgeParticipants.conferenceId, input.conferenceId),
+          sql21`${bridgeParticipants.role} NOT IN ('presenter', 'operator')`,
+          sql21`${bridgeParticipants.status} NOT IN ('left', 'removed', 'failed', 'invited')`
         )).returning();
         await logOperatorAction2(input.conferenceId, "mute_all", "operator");
         await publishBridgeEvent(input.conferenceId, "conference:mute_all", { count: result.length });
         return { mutedCount: result.length };
       }),
-      unmuteAll: operatorProcedure.input(z91.object({ conferenceId: z91.number() })).mutation(async ({ input }) => {
+      unmuteAll: operatorProcedure.input(z92.object({ conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        const result = await db2.update(bridgeParticipants).set({ isMuted: false, status: "live" }).where(and45(
-          eq73(bridgeParticipants.conferenceId, input.conferenceId),
-          sql23`${bridgeParticipants.status} NOT IN ('left', 'removed', 'failed', 'invited', 'hold')`
+        const result = await db2.update(bridgeParticipants).set({ isMuted: false, status: "live" }).where(and44(
+          eq71(bridgeParticipants.conferenceId, input.conferenceId),
+          sql21`${bridgeParticipants.status} NOT IN ('left', 'removed', 'failed', 'invited', 'hold')`
         )).returning();
         await logOperatorAction2(input.conferenceId, "unmute_all", "operator");
         await publishBridgeEvent(input.conferenceId, "conference:unmute_all", { count: result.length });
         return { unmutedCount: result.length };
       }),
       // --- Q&A MANAGEMENT ---
-      raiseHand: protectedProcedure.input(z91.object({
-        conferenceId: z91.number(),
-        participantId: z91.number(),
-        questionText: z91.string().optional(),
-        method: z91.enum(["phone_keypress", "web_button", "operator_added"])
+      raiseHand: protectedProcedure.input(z92.object({
+        conferenceId: z92.number(),
+        participantId: z92.number(),
+        questionText: z92.string().optional(),
+        method: z92.enum(["phone_keypress", "web_button", "operator_added"])
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        const maxPos = await db2.select({ max: sql23`COALESCE(MAX(${bridgeQaQuestions.queuePosition}), 0)` }).from(bridgeQaQuestions).where(eq73(bridgeQaQuestions.conferenceId, input.conferenceId));
+        const maxPos = await db2.select({ max: sql21`COALESCE(MAX(${bridgeQaQuestions.queuePosition}), 0)` }).from(bridgeQaQuestions).where(eq71(bridgeQaQuestions.conferenceId, input.conferenceId));
         const nextPos = (maxPos[0]?.max ?? 0) + 1;
         const [question] = await db2.insert(bridgeQaQuestions).values({
           conferenceId: input.conferenceId,
@@ -42895,82 +42286,82 @@ var init_bridgeConsoleRouter = __esm({
           queuePosition: nextPos,
           status: "pending"
         }).returning();
-        await db2.update(bridgeParticipants).set({ handRaised: true, handRaisedAt: /* @__PURE__ */ new Date() }).where(eq73(bridgeParticipants.id, input.participantId));
+        await db2.update(bridgeParticipants).set({ handRaised: true, handRaisedAt: /* @__PURE__ */ new Date() }).where(eq71(bridgeParticipants.id, input.participantId));
         await publishBridgeEvent(input.conferenceId, "qa:raised", { question });
         return { questionId: question.id, queuePosition: nextPos };
       }),
-      approveQuestion: operatorProcedure.input(z91.object({ questionId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+      approveQuestion: operatorProcedure.input(z92.object({ questionId: z92.number(), conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await requireQuestionInConference(db2, input.questionId, input.conferenceId);
-        const [q] = await db2.update(bridgeQaQuestions).set({ status: "approved", approvedAt: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeQaQuestions.id, input.questionId), eq73(bridgeQaQuestions.conferenceId, input.conferenceId))).returning();
+        const [q] = await db2.update(bridgeQaQuestions).set({ status: "approved", approvedAt: /* @__PURE__ */ new Date() }).where(and44(eq71(bridgeQaQuestions.id, input.questionId), eq71(bridgeQaQuestions.conferenceId, input.conferenceId))).returning();
         if (!q) throw new Error("Failed to approve question");
         await logOperatorAction2(input.conferenceId, "qa_approved", "qa", input.questionId);
         await publishBridgeEvent(input.conferenceId, "qa:approved", { question: q });
         return { status: "approved", queuePosition: q.queuePosition };
       }),
-      takeQuestion: operatorProcedure.input(z91.object({ questionId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+      takeQuestion: operatorProcedure.input(z92.object({ questionId: z92.number(), conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await requireQuestionInConference(db2, input.questionId, input.conferenceId);
-        const [q] = await db2.update(bridgeQaQuestions).set({ status: "live", wentLiveAt: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeQaQuestions.id, input.questionId), eq73(bridgeQaQuestions.conferenceId, input.conferenceId))).returning();
+        const [q] = await db2.update(bridgeQaQuestions).set({ status: "live", wentLiveAt: /* @__PURE__ */ new Date() }).where(and44(eq71(bridgeQaQuestions.id, input.questionId), eq71(bridgeQaQuestions.conferenceId, input.conferenceId))).returning();
         if (!q) throw new Error("Failed to take question");
         if (q.participantId) {
-          await db2.update(bridgeParticipants).set({ isMuted: false, status: "live" }).where(and45(eq73(bridgeParticipants.id, q.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+          await db2.update(bridgeParticipants).set({ isMuted: false, status: "live" }).where(and44(eq71(bridgeParticipants.id, q.participantId), eq71(bridgeParticipants.conferenceId, input.conferenceId)));
         }
         await logOperatorAction2(input.conferenceId, "qa_take", "qa", input.questionId);
         await publishBridgeEvent(input.conferenceId, "qa:live", { question: q });
         return { status: "live" };
       }),
-      doneQuestion: operatorProcedure.input(z91.object({ questionId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+      doneQuestion: operatorProcedure.input(z92.object({ questionId: z92.number(), conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await requireQuestionInConference(db2, input.questionId, input.conferenceId);
-        const [q] = await db2.update(bridgeQaQuestions).set({ status: "answered", answeredAt: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeQaQuestions.id, input.questionId), eq73(bridgeQaQuestions.conferenceId, input.conferenceId))).returning();
+        const [q] = await db2.update(bridgeQaQuestions).set({ status: "answered", answeredAt: /* @__PURE__ */ new Date() }).where(and44(eq71(bridgeQaQuestions.id, input.questionId), eq71(bridgeQaQuestions.conferenceId, input.conferenceId))).returning();
         if (!q) throw new Error("Failed to complete question");
         if (q.participantId) {
-          await db2.update(bridgeParticipants).set({ isMuted: true, status: "muted", handRaised: false }).where(and45(eq73(bridgeParticipants.id, q.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+          await db2.update(bridgeParticipants).set({ isMuted: true, status: "muted", handRaised: false }).where(and44(eq71(bridgeParticipants.id, q.participantId), eq71(bridgeParticipants.conferenceId, input.conferenceId)));
         }
         await logOperatorAction2(input.conferenceId, "qa_done", "qa", input.questionId);
         await publishBridgeEvent(input.conferenceId, "qa:done", { question: q });
         return { status: "answered" };
       }),
-      dismissQuestion: operatorProcedure.input(z91.object({ questionId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+      dismissQuestion: operatorProcedure.input(z92.object({ questionId: z92.number(), conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await requireQuestionInConference(db2, input.questionId, input.conferenceId);
-        await db2.update(bridgeQaQuestions).set({ status: "dismissed", dismissedAt: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeQaQuestions.id, input.questionId), eq73(bridgeQaQuestions.conferenceId, input.conferenceId)));
+        await db2.update(bridgeQaQuestions).set({ status: "dismissed", dismissedAt: /* @__PURE__ */ new Date() }).where(and44(eq71(bridgeQaQuestions.id, input.questionId), eq71(bridgeQaQuestions.conferenceId, input.conferenceId)));
         await logOperatorAction2(input.conferenceId, "qa_dismissed", "qa", input.questionId);
         await publishBridgeEvent(input.conferenceId, "qa:dismissed", { questionId: input.questionId });
         return { status: "dismissed" };
       }),
-      skipQuestion: operatorProcedure.input(z91.object({ questionId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+      skipQuestion: operatorProcedure.input(z92.object({ questionId: z92.number(), conferenceId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
         await requireQuestionInConference(db2, input.questionId, input.conferenceId);
-        const maxPos = await db2.select({ max: sql23`COALESCE(MAX(${bridgeQaQuestions.queuePosition}), 0)` }).from(bridgeQaQuestions).where(eq73(bridgeQaQuestions.conferenceId, input.conferenceId));
+        const maxPos = await db2.select({ max: sql21`COALESCE(MAX(${bridgeQaQuestions.queuePosition}), 0)` }).from(bridgeQaQuestions).where(eq71(bridgeQaQuestions.conferenceId, input.conferenceId));
         const newPos = (maxPos[0]?.max ?? 0) + 1;
-        await db2.update(bridgeQaQuestions).set({ queuePosition: newPos, status: "pending" }).where(and45(eq73(bridgeQaQuestions.id, input.questionId), eq73(bridgeQaQuestions.conferenceId, input.conferenceId)));
+        await db2.update(bridgeQaQuestions).set({ queuePosition: newPos, status: "pending" }).where(and44(eq71(bridgeQaQuestions.id, input.questionId), eq71(bridgeQaQuestions.conferenceId, input.conferenceId)));
         await logOperatorAction2(input.conferenceId, "qa_skipped", "qa", input.questionId);
         await publishBridgeEvent(input.conferenceId, "qa:skipped", { questionId: input.questionId, newPosition: newPos });
         return { newPosition: newPos };
       }),
       // --- OPERATOR EVENT LOG ---
-      getOperatorLog: operatorProcedure.input(z91.object({ conferenceId: z91.number() })).query(async ({ input }) => {
+      getOperatorLog: operatorProcedure.input(z92.object({ conferenceId: z92.number() })).query(async ({ input }) => {
         const db2 = await getDb();
-        return db2.select().from(bridgeOperatorActions).where(eq73(bridgeOperatorActions.conferenceId, input.conferenceId)).orderBy(desc42(bridgeOperatorActions.performedAt)).limit(200);
+        return db2.select().from(bridgeOperatorActions).where(eq71(bridgeOperatorActions.conferenceId, input.conferenceId)).orderBy(desc40(bridgeOperatorActions.performedAt)).limit(200);
       }),
-      addLogEntry: operatorProcedure.input(z91.object({
-        conferenceId: z91.number(),
-        action: z91.string(),
-        category: z91.string(),
-        targetId: z91.number().optional(),
-        metadata: z91.any().optional()
+      addLogEntry: operatorProcedure.input(z92.object({
+        conferenceId: z92.number(),
+        action: z92.string(),
+        category: z92.string(),
+        targetId: z92.number().optional(),
+        metadata: z92.any().optional()
       })).mutation(async ({ input }) => {
         await logOperatorAction2(input.conferenceId, input.action, input.category, input.targetId, input.metadata);
         return { logged: true };
       }),
       // --- ATTENDANCE REPORT ---
-      getAttendanceReport: operatorProcedure.input(z91.object({ bridgeEventId: z91.number() })).query(async ({ input }) => {
+      getAttendanceReport: operatorProcedure.input(z92.object({ bridgeEventId: z92.number() })).query(async ({ input }) => {
         const db2 = await getDb();
-        const [event] = await db2.select().from(bridgeEvents).where(eq73(bridgeEvents.id, input.bridgeEventId));
-        const participants = await db2.select().from(bridgeParticipants).where(eq73(bridgeParticipants.bridgeEventId, input.bridgeEventId)).orderBy(asc7(bridgeParticipants.joinTime));
-        const conferences = await db2.select().from(bridgeConferences).where(eq73(bridgeConferences.bridgeEventId, input.bridgeEventId));
+        const [event] = await db2.select().from(bridgeEvents).where(eq71(bridgeEvents.id, input.bridgeEventId));
+        const participants = await db2.select().from(bridgeParticipants).where(eq71(bridgeParticipants.bridgeEventId, input.bridgeEventId)).orderBy(asc7(bridgeParticipants.joinTime));
+        const conferences = await db2.select().from(bridgeConferences).where(eq71(bridgeConferences.bridgeEventId, input.bridgeEventId));
         const mainConf = conferences.find((c) => c.type === "main");
         return {
           event,
@@ -42994,12 +42385,12 @@ var init_bridgeConsoleRouter = __esm({
         };
       }),
       // --- PRE-REGISTER PARTICIPANTS ---
-      addInvitedParticipant: operatorProcedure.input(z91.object({
-        bridgeEventId: z91.number(),
-        name: z91.string(),
-        organisation: z91.string(),
-        phoneNumber: z91.string(),
-        role: z91.enum(["presenter", "participant", "observer"])
+      addInvitedParticipant: operatorProcedure.input(z92.object({
+        bridgeEventId: z92.number(),
+        name: z92.string(),
+        organisation: z92.string(),
+        phoneNumber: z92.string(),
+        role: z92.enum(["presenter", "participant", "observer"])
       })).mutation(async ({ input }) => {
         const db2 = await getDb();
         const [participant] = await db2.insert(bridgeParticipants).values({
@@ -43014,13 +42405,13 @@ var init_bridgeConsoleRouter = __esm({
         }).returning();
         return participant;
       }),
-      twilioDialOut: operatorProcedure.input(z91.object({
-        bridgeEventId: z91.number(),
-        conferenceId: z91.number(),
-        name: z91.string(),
-        organisation: z91.string(),
-        phoneNumber: z91.string(),
-        role: z91.enum(["presenter", "participant", "observer"])
+      twilioDialOut: operatorProcedure.input(z92.object({
+        bridgeEventId: z92.number(),
+        conferenceId: z92.number(),
+        name: z92.string(),
+        organisation: z92.string(),
+        phoneNumber: z92.string(),
+        role: z92.enum(["presenter", "participant", "observer"])
       })).mutation(async ({ input }) => {
         const client = getTwilioClient2();
         const db2 = await getDb();
@@ -43048,14 +42439,14 @@ var init_bridgeConsoleRouter = __esm({
               statusCallbackEvent: ["initiated", "ringing", "answered", "completed"],
               statusCallbackMethod: "POST"
             });
-            await db2.update(bridgeParticipants).set({ twilioCallSid: call.sid }).where(eq73(bridgeParticipants.id, participant.id));
+            await db2.update(bridgeParticipants).set({ twilioCallSid: call.sid }).where(eq71(bridgeParticipants.id, participant.id));
             await logOperatorAction2(input.conferenceId, "twilio_dial_out", "operator", participant.id, {
               phoneNumber: input.phoneNumber,
               callSid: call.sid
             });
           } catch (err) {
             console.error("[Bridge] Twilio dial-out failed:", err.message);
-            await db2.update(bridgeParticipants).set({ status: "failed" }).where(eq73(bridgeParticipants.id, participant.id));
+            await db2.update(bridgeParticipants).set({ status: "failed" }).where(eq71(bridgeParticipants.id, participant.id));
             throw new Error(`Dial-out failed: ${err.message}`);
           }
         } else {
@@ -43067,18 +42458,18 @@ var init_bridgeConsoleRouter = __esm({
         await publishBridgeEvent(input.conferenceId, "participant:dialing", { participant });
         return { participantId: participant.id, status: participant.status };
       }),
-      twilioAdmitCaller: operatorProcedure.input(z91.object({
-        greeterId: z91.number(),
-        conferenceId: z91.number(),
-        name: z91.string(),
-        organisation: z91.string(),
-        role: z91.enum(["presenter", "participant", "observer"])
+      twilioAdmitCaller: operatorProcedure.input(z92.object({
+        greeterId: z92.number(),
+        conferenceId: z92.number(),
+        name: z92.string(),
+        organisation: z92.string(),
+        role: z92.enum(["presenter", "participant", "observer"])
       })).mutation(async ({ input }) => {
         const client = getTwilioClient2();
         const db2 = await getDb();
         const greeter = await requireGreeterInConference(db2, input.greeterId, input.conferenceId);
         const conf = await requireConference(db2, input.conferenceId);
-        await db2.update(bridgeGreeterQueue).set({ status: "admitted", admittedAt: /* @__PURE__ */ new Date() }).where(eq73(bridgeGreeterQueue.id, input.greeterId));
+        await db2.update(bridgeGreeterQueue).set({ status: "admitted", admittedAt: /* @__PURE__ */ new Date() }).where(eq71(bridgeGreeterQueue.id, input.greeterId));
         const [participant] = await db2.insert(bridgeParticipants).values({
           bridgeEventId: greeter.bridgeEventId,
           conferenceId: input.conferenceId,
@@ -43114,7 +42505,7 @@ var init_bridgeConsoleRouter = __esm({
         });
         return { participantId: participant.id, status: "muted" };
       }),
-      twilioMuteParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number(), muted: z91.boolean() })).mutation(async ({ input }) => {
+      twilioMuteParticipant: operatorProcedure.input(z92.object({ participantId: z92.number(), conferenceId: z92.number(), muted: z92.boolean() })).mutation(async ({ input }) => {
         const client = getTwilioClient2();
         const db2 = await getDb();
         const p = await requireParticipantInConference(db2, input.participantId, input.conferenceId);
@@ -43128,7 +42519,7 @@ var init_bridgeConsoleRouter = __esm({
           }
         }
         const newStatus = input.muted ? "muted" : "live";
-        await db2.update(bridgeParticipants).set({ isMuted: input.muted, status: newStatus }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await db2.update(bridgeParticipants).set({ isMuted: input.muted, status: newStatus }).where(and44(eq71(bridgeParticipants.id, input.participantId), eq71(bridgeParticipants.conferenceId, input.conferenceId)));
         await logOperatorAction2(input.conferenceId, input.muted ? "twilio_muted" : "twilio_unmuted", "operator", input.participantId);
         await publishBridgeEvent(input.conferenceId, "participant:updated", {
           participantId: input.participantId,
@@ -43137,7 +42528,7 @@ var init_bridgeConsoleRouter = __esm({
         });
         return { status: newStatus };
       }),
-      twilioHoldParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number(), hold: z91.boolean() })).mutation(async ({ input }) => {
+      twilioHoldParticipant: operatorProcedure.input(z92.object({ participantId: z92.number(), conferenceId: z92.number(), hold: z92.boolean() })).mutation(async ({ input }) => {
         const client = getTwilioClient2();
         const db2 = await getDb();
         const p = await requireParticipantInConference(db2, input.participantId, input.conferenceId);
@@ -43154,7 +42545,7 @@ var init_bridgeConsoleRouter = __esm({
           }
         }
         const newStatus = input.hold ? "hold" : "muted";
-        await db2.update(bridgeParticipants).set({ isOnHold: input.hold, status: newStatus }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await db2.update(bridgeParticipants).set({ isOnHold: input.hold, status: newStatus }).where(and44(eq71(bridgeParticipants.id, input.participantId), eq71(bridgeParticipants.conferenceId, input.conferenceId)));
         await logOperatorAction2(input.conferenceId, input.hold ? "twilio_held" : "twilio_unheld", "operator", input.participantId);
         await publishBridgeEvent(input.conferenceId, "participant:updated", {
           participantId: input.participantId,
@@ -43163,7 +42554,7 @@ var init_bridgeConsoleRouter = __esm({
         });
         return { status: newStatus };
       }),
-      twilioRemoveParticipant: operatorProcedure.input(z91.object({ participantId: z91.number(), conferenceId: z91.number() })).mutation(async ({ input }) => {
+      twilioRemoveParticipant: operatorProcedure.input(z92.object({ participantId: z92.number(), conferenceId: z92.number() })).mutation(async ({ input }) => {
         const client = getTwilioClient2();
         const db2 = await getDb();
         const p = await requireParticipantInConference(db2, input.participantId, input.conferenceId);
@@ -43176,12 +42567,12 @@ var init_bridgeConsoleRouter = __esm({
             throw new Error(`Twilio remove failed: ${err.message}`);
           }
         }
-        await db2.update(bridgeParticipants).set({ status: "removed", leaveTime: /* @__PURE__ */ new Date() }).where(and45(eq73(bridgeParticipants.id, input.participantId), eq73(bridgeParticipants.conferenceId, input.conferenceId)));
+        await db2.update(bridgeParticipants).set({ status: "removed", leaveTime: /* @__PURE__ */ new Date() }).where(and44(eq71(bridgeParticipants.id, input.participantId), eq71(bridgeParticipants.conferenceId, input.conferenceId)));
         await logOperatorAction2(input.conferenceId, "twilio_removed", "operator", input.participantId);
         await publishBridgeEvent(input.conferenceId, "participant:removed", { participantId: input.participantId });
         return { status: "removed" };
       }),
-      twilioAnnounce: operatorProcedure.input(z91.object({ conferenceId: z91.number(), message: z91.string() })).mutation(async ({ input }) => {
+      twilioAnnounce: operatorProcedure.input(z92.object({ conferenceId: z92.number(), message: z92.string() })).mutation(async ({ input }) => {
         const client = getTwilioClient2();
         const db2 = await getDb();
         const conf = await requireConference(db2, input.conferenceId);
@@ -43199,9 +42590,9 @@ var init_bridgeConsoleRouter = __esm({
         await publishBridgeEvent(input.conferenceId, "conference:announce", { message: input.message });
         return { announced: true };
       }),
-      deployRecallBot: operatorProcedure.input(z91.object({ bridgeEventId: z91.number() })).mutation(async ({ input }) => {
+      deployRecallBot: operatorProcedure.input(z92.object({ bridgeEventId: z92.number() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        const [event] = await db2.select().from(bridgeEvents).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        const [event] = await db2.select().from(bridgeEvents).where(eq71(bridgeEvents.id, input.bridgeEventId));
         if (!event) throw new Error("Bridge event not found");
         if (!RECALL_API_KEY3) {
           return { deployed: false, reason: "RECALL_AI_API_KEY not configured" };
@@ -43255,7 +42646,7 @@ var init_bridgeConsoleRouter = __esm({
         if (deployedBots.length === 0) {
           return { deployed: false, reason: "All bot deployments failed", botCount: 0, bots: [] };
         }
-        await db2.update(bridgeEvents).set({ recallBotIds: JSON.stringify(deployedBots.map((b) => b.botId)) }).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        await db2.update(bridgeEvents).set({ recallBotIds: JSON.stringify(deployedBots.map((b) => b.botId)) }).where(eq71(bridgeEvents.id, input.bridgeEventId));
         let shadowSessionId = null;
         try {
           const [session] = await db2.insert(shadowSessions).values({
@@ -43267,7 +42658,7 @@ var init_bridgeConsoleRouter = __esm({
             startedAt: /* @__PURE__ */ new Date()
           }).returning();
           shadowSessionId = session.id;
-          await db2.update(bridgeEvents).set({ shadowSessionId: session.id }).where(eq73(bridgeEvents.id, input.bridgeEventId));
+          await db2.update(bridgeEvents).set({ shadowSessionId: session.id }).where(eq71(bridgeEvents.id, input.bridgeEventId));
         } catch (err) {
           console.error("[Bridge Recall] Shadow session creation failed:", err.message);
         }
@@ -43278,29 +42669,29 @@ var init_bridgeConsoleRouter = __esm({
           shadowSessionId
         };
       }),
-      getPostCallPackage: operatorProcedure.input(z91.object({ bridgeEventId: z91.number() })).query(async ({ input }) => {
+      getPostCallPackage: operatorProcedure.input(z92.object({ bridgeEventId: z92.number() })).query(async ({ input }) => {
         const db2 = await getDb();
-        const [event] = await db2.select().from(bridgeEvents).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        const [event] = await db2.select().from(bridgeEvents).where(eq71(bridgeEvents.id, input.bridgeEventId));
         if (!event) throw new Error("Bridge event not found");
-        const conferences = await db2.select().from(bridgeConferences).where(eq73(bridgeConferences.bridgeEventId, input.bridgeEventId));
+        const conferences = await db2.select().from(bridgeConferences).where(eq71(bridgeConferences.bridgeEventId, input.bridgeEventId));
         const mainConf = conferences.find((c) => c.type === "main");
-        const participants = await db2.select().from(bridgeParticipants).where(eq73(bridgeParticipants.bridgeEventId, input.bridgeEventId)).orderBy(asc7(bridgeParticipants.joinTime));
+        const participants = await db2.select().from(bridgeParticipants).where(eq71(bridgeParticipants.bridgeEventId, input.bridgeEventId)).orderBy(asc7(bridgeParticipants.joinTime));
         let recordings = [];
         if (mainConf) {
-          recordings = await db2.select().from(bridgeCallRecordings).where(eq73(bridgeCallRecordings.conferenceId, mainConf.id));
+          recordings = await db2.select().from(bridgeCallRecordings).where(eq71(bridgeCallRecordings.conferenceId, mainConf.id));
         }
         let qaQuestions = [];
         if (mainConf) {
-          qaQuestions = await db2.select().from(bridgeQaQuestions).where(eq73(bridgeQaQuestions.conferenceId, mainConf.id)).orderBy(asc7(bridgeQaQuestions.queuePosition));
+          qaQuestions = await db2.select().from(bridgeQaQuestions).where(eq71(bridgeQaQuestions.conferenceId, mainConf.id)).orderBy(asc7(bridgeQaQuestions.queuePosition));
         }
         let operatorLog = [];
         if (mainConf) {
-          operatorLog = await db2.select().from(bridgeOperatorActions).where(eq73(bridgeOperatorActions.conferenceId, mainConf.id)).orderBy(asc7(bridgeOperatorActions.performedAt)).limit(500);
+          operatorLog = await db2.select().from(bridgeOperatorActions).where(eq71(bridgeOperatorActions.conferenceId, mainConf.id)).orderBy(asc7(bridgeOperatorActions.performedAt)).limit(500);
         }
         let shadowReport = null;
         if (event.shadowSessionId) {
           try {
-            const [session] = await db2.select().from(shadowSessions).where(eq73(shadowSessions.id, event.shadowSessionId));
+            const [session] = await db2.select().from(shadowSessions).where(eq71(shadowSessions.id, event.shadowSessionId));
             if (session) {
               shadowReport = {
                 sessionId: session.id,
@@ -43382,11 +42773,11 @@ var init_bridgeConsoleRouter = __esm({
           shadowReport
         };
       }),
-      exportAttendanceCsv: operatorProcedure.input(z91.object({ bridgeEventId: z91.number() })).query(async ({ input }) => {
+      exportAttendanceCsv: operatorProcedure.input(z92.object({ bridgeEventId: z92.number() })).query(async ({ input }) => {
         const db2 = await getDb();
-        const [event] = await db2.select().from(bridgeEvents).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        const [event] = await db2.select().from(bridgeEvents).where(eq71(bridgeEvents.id, input.bridgeEventId));
         if (!event) throw new Error("Bridge event not found");
-        const participants = await db2.select().from(bridgeParticipants).where(eq73(bridgeParticipants.bridgeEventId, input.bridgeEventId)).orderBy(asc7(bridgeParticipants.joinTime));
+        const participants = await db2.select().from(bridgeParticipants).where(eq71(bridgeParticipants.bridgeEventId, input.bridgeEventId)).orderBy(asc7(bridgeParticipants.joinTime));
         const header = "Name,Organisation,Role,Connection,Join Time,Leave Time,Duration (s),Status";
         const rows = participants.map((p) => [
           `"${(p.name ?? "").replace(/"/g, '""')}"`,
@@ -43403,9 +42794,9 @@ var init_bridgeConsoleRouter = __esm({
           csv: [header, ...rows].join("\n")
         };
       }),
-      updateEventStatus: operatorProcedure.input(z91.object({ bridgeEventId: z91.number(), status: z91.string() })).mutation(async ({ input }) => {
+      updateEventStatus: operatorProcedure.input(z92.object({ bridgeEventId: z92.number(), status: z92.string() })).mutation(async ({ input }) => {
         const db2 = await getDb();
-        await db2.update(bridgeEvents).set({ status: input.status, updatedAt: /* @__PURE__ */ new Date() }).where(eq73(bridgeEvents.id, input.bridgeEventId));
+        await db2.update(bridgeEvents).set({ status: input.status, updatedAt: /* @__PURE__ */ new Date() }).where(eq71(bridgeEvents.id, input.bridgeEventId));
         return { status: input.status };
       })
     });
@@ -43413,8 +42804,8 @@ var init_bridgeConsoleRouter = __esm({
 });
 
 // server/routers/boardIntelligenceRouter.ts
-import { z as z92 } from "zod";
-import { eq as eq74 } from "drizzle-orm";
+import { z as z93 } from "zod";
+import { eq as eq72 } from "drizzle-orm";
 async function requireDb2() {
   const db2 = await getDb();
   if (!db2) throw new Error("Database not available");
@@ -43428,9 +42819,9 @@ var init_boardIntelligenceRouter = __esm({
     init_db();
     init_schema();
     boardIntelligenceRouter = router({
-      getOrCreateCompass: operatorProcedure.input(z92.object({ sessionId: z92.number() })).query(async ({ input }) => {
+      getOrCreateCompass: operatorProcedure.input(z93.object({ sessionId: z93.number() })).query(async ({ input }) => {
         const db2 = await requireDb2();
-        const existing = await db2.select().from(boardIntelligenceCompass).where(eq74(boardIntelligenceCompass.sessionId, input.sessionId)).limit(1);
+        const existing = await db2.select().from(boardIntelligenceCompass).where(eq72(boardIntelligenceCompass.sessionId, input.sessionId)).limit(1);
         if (existing.length > 0) return existing[0];
         const [created] = await db2.insert(boardIntelligenceCompass).values({
           sessionId: input.sessionId,
@@ -43438,34 +42829,34 @@ var init_boardIntelligenceRouter = __esm({
         }).returning();
         return created;
       }),
-      getPriorCommitmentAudit: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+      getPriorCommitmentAudit: operatorProcedure.input(z93.object({ compassId: z93.number() })).query(async ({ input }) => {
         const db2 = await requireDb2();
-        return await db2.select().from(priorCommitmentAudits).where(eq74(priorCommitmentAudits.compassId, input.compassId));
+        return await db2.select().from(priorCommitmentAudits).where(eq72(priorCommitmentAudits.compassId, input.compassId));
       }),
-      getDirectorLiabilityMap: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+      getDirectorLiabilityMap: operatorProcedure.input(z93.object({ compassId: z93.number() })).query(async ({ input }) => {
         const db2 = await requireDb2();
-        return await db2.select().from(directorLiabilityMaps).where(eq74(directorLiabilityMaps.compassId, input.compassId));
+        return await db2.select().from(directorLiabilityMaps).where(eq72(directorLiabilityMaps.compassId, input.compassId));
       }),
-      getAnalystExpectationAudit: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+      getAnalystExpectationAudit: operatorProcedure.input(z93.object({ compassId: z93.number() })).query(async ({ input }) => {
         const db2 = await requireDb2();
-        return await db2.select().from(analystExpectationAudits).where(eq74(analystExpectationAudits.compassId, input.compassId));
+        return await db2.select().from(analystExpectationAudits).where(eq72(analystExpectationAudits.compassId, input.compassId));
       }),
-      getGovernanceCommunicationScore: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+      getGovernanceCommunicationScore: operatorProcedure.input(z93.object({ compassId: z93.number() })).query(async ({ input }) => {
         const db2 = await requireDb2();
-        const results = await db2.select().from(governanceCommunicationScores).where(eq74(governanceCommunicationScores.compassId, input.compassId)).limit(1);
+        const results = await db2.select().from(governanceCommunicationScores).where(eq72(governanceCommunicationScores.compassId, input.compassId)).limit(1);
         return results[0] ?? null;
       }),
-      getBoardResolutions: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+      getBoardResolutions: operatorProcedure.input(z93.object({ compassId: z93.number() })).query(async ({ input }) => {
         const db2 = await requireDb2();
-        return await db2.select().from(boardResolutions).where(eq74(boardResolutions.compassId, input.compassId));
+        return await db2.select().from(boardResolutions).where(eq72(boardResolutions.compassId, input.compassId));
       }),
-      createBoardResolution: operatorProcedure.input(z92.object({
-        compassId: z92.number(),
-        actionType: z92.string(),
-        description: z92.string(),
-        priority: z92.enum(["low", "medium", "high"]),
-        owner: z92.string(),
-        dueDate: z92.string()
+      createBoardResolution: operatorProcedure.input(z93.object({
+        compassId: z93.number(),
+        actionType: z93.string(),
+        description: z93.string(),
+        priority: z93.enum(["low", "medium", "high"]),
+        owner: z93.string(),
+        dueDate: z93.string()
       })).mutation(async ({ input }) => {
         const db2 = await requireDb2();
         const [created] = await db2.insert(boardResolutions).values({
@@ -43479,22 +42870,22 @@ var init_boardIntelligenceRouter = __esm({
         }).returning();
         return created;
       }),
-      updateResolutionStatus: operatorProcedure.input(z92.object({
-        resolutionId: z92.number(),
-        status: z92.enum(["pending", "in_progress", "completed"])
+      updateResolutionStatus: operatorProcedure.input(z93.object({
+        resolutionId: z93.number(),
+        status: z93.enum(["pending", "in_progress", "completed"])
       })).mutation(async ({ input }) => {
         const db2 = await requireDb2();
-        const [updated] = await db2.update(boardResolutions).set({ status: input.status }).where(eq74(boardResolutions.id, input.resolutionId)).returning();
+        const [updated] = await db2.update(boardResolutions).set({ status: input.status }).where(eq72(boardResolutions.id, input.resolutionId)).returning();
         return updated;
       }),
-      generateBoardBriefing: operatorProcedure.input(z92.object({ compassId: z92.number() })).query(async ({ input }) => {
+      generateBoardBriefing: operatorProcedure.input(z93.object({ compassId: z93.number() })).query(async ({ input }) => {
         const db2 = await requireDb2();
-        const compass = await db2.select().from(boardIntelligenceCompass).where(eq74(boardIntelligenceCompass.id, input.compassId)).limit(1);
-        const commitments = await db2.select().from(priorCommitmentAudits).where(eq74(priorCommitmentAudits.compassId, input.compassId));
-        const liabilities = await db2.select().from(directorLiabilityMaps).where(eq74(directorLiabilityMaps.compassId, input.compassId));
-        const expectations = await db2.select().from(analystExpectationAudits).where(eq74(analystExpectationAudits.compassId, input.compassId));
-        const governance = await db2.select().from(governanceCommunicationScores).where(eq74(governanceCommunicationScores.compassId, input.compassId)).limit(1);
-        const resolutions = await db2.select().from(boardResolutions).where(eq74(boardResolutions.compassId, input.compassId));
+        const compass = await db2.select().from(boardIntelligenceCompass).where(eq72(boardIntelligenceCompass.id, input.compassId)).limit(1);
+        const commitments = await db2.select().from(priorCommitmentAudits).where(eq72(priorCommitmentAudits.compassId, input.compassId));
+        const liabilities = await db2.select().from(directorLiabilityMaps).where(eq72(directorLiabilityMaps.compassId, input.compassId));
+        const expectations = await db2.select().from(analystExpectationAudits).where(eq72(analystExpectationAudits.compassId, input.compassId));
+        const governance = await db2.select().from(governanceCommunicationScores).where(eq72(governanceCommunicationScores.compassId, input.compassId)).limit(1);
+        const resolutions = await db2.select().from(boardResolutions).where(eq72(boardResolutions.compassId, input.compassId));
         return {
           compass: compass[0] ?? null,
           priorCommitments: commitments,
@@ -43509,8 +42900,8 @@ var init_boardIntelligenceRouter = __esm({
 });
 
 // server/routers/preEventIntelligenceRouter.ts
-import { z as z93 } from "zod";
-import { eq as eq75 } from "drizzle-orm";
+import { z as z94 } from "zod";
+import { eq as eq73 } from "drizzle-orm";
 async function requireDb3() {
   const db2 = await getDb();
   if (!db2) throw new Error("Database not available");
@@ -43524,9 +42915,9 @@ var init_preEventIntelligenceRouter = __esm({
     init_db();
     init_schema();
     preEventIntelligenceRouter = router({
-      getOrCreateBriefing: protectedProcedure.input(z93.object({ sessionId: z93.number() })).query(async ({ input }) => {
+      getOrCreateBriefing: protectedProcedure.input(z94.object({ sessionId: z94.number() })).query(async ({ input }) => {
         const db2 = await requireDb3();
-        const existing = await db2.select().from(preEventIntelligenceBriefings).where(eq75(preEventIntelligenceBriefings.sessionId, input.sessionId)).limit(1);
+        const existing = await db2.select().from(preEventIntelligenceBriefings).where(eq73(preEventIntelligenceBriefings.sessionId, input.sessionId)).limit(1);
         if (existing.length > 0) return existing[0];
         const [created] = await db2.insert(preEventIntelligenceBriefings).values({
           sessionId: input.sessionId,
@@ -43534,29 +42925,29 @@ var init_preEventIntelligenceRouter = __esm({
         }).returning();
         return created;
       }),
-      getAnalystConsensus: protectedProcedure.input(z93.object({ briefingId: z93.number() })).query(async ({ input }) => {
+      getAnalystConsensus: protectedProcedure.input(z94.object({ briefingId: z94.number() })).query(async ({ input }) => {
         const db2 = await requireDb3();
-        return await db2.select().from(analystConsensusData).where(eq75(analystConsensusData.briefingId, input.briefingId));
+        return await db2.select().from(analystConsensusData).where(eq73(analystConsensusData.briefingId, input.briefingId));
       }),
-      getPredictedQa: protectedProcedure.input(z93.object({ briefingId: z93.number() })).query(async ({ input }) => {
+      getPredictedQa: protectedProcedure.input(z94.object({ briefingId: z94.number() })).query(async ({ input }) => {
         const db2 = await requireDb3();
-        return await db2.select().from(predictedQaItems).where(eq75(predictedQaItems.briefingId, input.briefingId));
+        return await db2.select().from(predictedQaItems).where(eq73(predictedQaItems.briefingId, input.briefingId));
       }),
-      getComplianceHotspots: protectedProcedure.input(z93.object({ briefingId: z93.number() })).query(async ({ input }) => {
+      getComplianceHotspots: protectedProcedure.input(z94.object({ briefingId: z94.number() })).query(async ({ input }) => {
         const db2 = await requireDb3();
-        return await db2.select().from(complianceHotspots).where(eq75(complianceHotspots.briefingId, input.briefingId));
+        return await db2.select().from(complianceHotspots).where(eq73(complianceHotspots.briefingId, input.briefingId));
       }),
-      getReadinessScores: protectedProcedure.input(z93.object({ briefingId: z93.number() })).query(async ({ input }) => {
+      getReadinessScores: protectedProcedure.input(z94.object({ briefingId: z94.number() })).query(async ({ input }) => {
         const db2 = await requireDb3();
-        return await db2.select().from(readinessScores).where(eq75(readinessScores.briefingId, input.briefingId));
+        return await db2.select().from(readinessScores).where(eq73(readinessScores.briefingId, input.briefingId));
       }),
-      addPredictedQa: protectedProcedure.input(z93.object({
-        briefingId: z93.number(),
-        topic: z93.string(),
-        predictedQuestion: z93.string(),
-        suggestedAnswer: z93.string(),
-        probability: z93.number(),
-        riskLevel: z93.enum(["low", "medium", "high"])
+      addPredictedQa: protectedProcedure.input(z94.object({
+        briefingId: z94.number(),
+        topic: z94.string(),
+        predictedQuestion: z94.string(),
+        suggestedAnswer: z94.string(),
+        probability: z94.number(),
+        riskLevel: z94.enum(["low", "medium", "high"])
       })).mutation(async ({ input }) => {
         const db2 = await requireDb3();
         const [created] = await db2.insert(predictedQaItems).values({
@@ -43569,13 +42960,13 @@ var init_preEventIntelligenceRouter = __esm({
         }).returning();
         return created;
       }),
-      generateFullBriefing: protectedProcedure.input(z93.object({ briefingId: z93.number() })).query(async ({ input }) => {
+      generateFullBriefing: protectedProcedure.input(z94.object({ briefingId: z94.number() })).query(async ({ input }) => {
         const db2 = await requireDb3();
-        const briefing = await db2.select().from(preEventIntelligenceBriefings).where(eq75(preEventIntelligenceBriefings.id, input.briefingId)).limit(1);
-        const consensus = await db2.select().from(analystConsensusData).where(eq75(analystConsensusData.briefingId, input.briefingId));
-        const qa = await db2.select().from(predictedQaItems).where(eq75(predictedQaItems.briefingId, input.briefingId));
-        const hotspotsList = await db2.select().from(complianceHotspots).where(eq75(complianceHotspots.briefingId, input.briefingId));
-        const scoresList = await db2.select().from(readinessScores).where(eq75(readinessScores.briefingId, input.briefingId));
+        const briefing = await db2.select().from(preEventIntelligenceBriefings).where(eq73(preEventIntelligenceBriefings.id, input.briefingId)).limit(1);
+        const consensus = await db2.select().from(analystConsensusData).where(eq73(analystConsensusData.briefingId, input.briefingId));
+        const qa = await db2.select().from(predictedQaItems).where(eq73(predictedQaItems.briefingId, input.briefingId));
+        const hotspotsList = await db2.select().from(complianceHotspots).where(eq73(complianceHotspots.briefingId, input.briefingId));
+        const scoresList = await db2.select().from(readinessScores).where(eq73(readinessScores.briefingId, input.briefingId));
         return {
           briefing: briefing[0] ?? null,
           analystConsensus: consensus,
@@ -43589,8 +42980,8 @@ var init_preEventIntelligenceRouter = __esm({
 });
 
 // server/routers/regulatoryComplianceRouter.ts
-import { z as z94 } from "zod";
-import { eq as eq76 } from "drizzle-orm";
+import { z as z95 } from "zod";
+import { eq as eq74 } from "drizzle-orm";
 async function requireDb4() {
   const db2 = await getDb();
   if (!db2) throw new Error("Database not available");
@@ -43604,9 +42995,9 @@ var init_regulatoryComplianceRouter = __esm({
     init_db();
     init_schema();
     regulatoryComplianceRouter = router({
-      getOrCreateMonitor: operatorProcedure.input(z94.object({ sessionId: z94.number() })).query(async ({ input }) => {
+      getOrCreateMonitor: operatorProcedure.input(z95.object({ sessionId: z95.number() })).query(async ({ input }) => {
         const db2 = await requireDb4();
-        const existing = await db2.select().from(regulatoryComplianceMonitors).where(eq76(regulatoryComplianceMonitors.sessionId, input.sessionId)).limit(1);
+        const existing = await db2.select().from(regulatoryComplianceMonitors).where(eq74(regulatoryComplianceMonitors.sessionId, input.sessionId)).limit(1);
         if (existing.length > 0) return existing[0];
         const [created] = await db2.insert(regulatoryComplianceMonitors).values({
           sessionId: input.sessionId,
@@ -43614,16 +43005,16 @@ var init_regulatoryComplianceRouter = __esm({
         }).returning();
         return created;
       }),
-      getSessionRegulatoryFlags: operatorProcedure.input(z94.object({ sessionId: z94.number() })).query(async ({ input }) => {
+      getSessionRegulatoryFlags: operatorProcedure.input(z95.object({ sessionId: z95.number() })).query(async ({ input }) => {
         const db2 = await requireDb4();
-        const monitor = await db2.select().from(regulatoryComplianceMonitors).where(eq76(regulatoryComplianceMonitors.sessionId, input.sessionId)).limit(1);
+        const monitor = await db2.select().from(regulatoryComplianceMonitors).where(eq74(regulatoryComplianceMonitors.sessionId, input.sessionId)).limit(1);
         if (monitor.length === 0) return { flags: [] };
-        const flags = await db2.select().from(regulatoryFlags).where(eq76(regulatoryFlags.monitorId, monitor[0].id));
+        const flags = await db2.select().from(regulatoryFlags).where(eq74(regulatoryFlags.monitorId, monitor[0].id));
         return { flags };
       }),
-      getEventComplianceSummary: operatorProcedure.input(z94.object({ sessionId: z94.number() })).query(async ({ input }) => {
+      getEventComplianceSummary: operatorProcedure.input(z95.object({ sessionId: z95.number() })).query(async ({ input }) => {
         const db2 = await requireDb4();
-        const monitor = await db2.select().from(regulatoryComplianceMonitors).where(eq76(regulatoryComplianceMonitors.sessionId, input.sessionId)).limit(1);
+        const monitor = await db2.select().from(regulatoryComplianceMonitors).where(eq74(regulatoryComplianceMonitors.sessionId, input.sessionId)).limit(1);
         if (monitor.length === 0) return {
           totalFlagsDetected: 0,
           highSeverityFlags: 0,
@@ -43633,8 +43024,8 @@ var init_regulatoryComplianceRouter = __esm({
           complianceRiskLevel: "low",
           recommendedActions: []
         };
-        const flags = await db2.select().from(regulatoryFlags).where(eq76(regulatoryFlags.monitorId, monitor[0].id));
-        const disclosures = await db2.select().from(disclosureTriggers).where(eq76(disclosureTriggers.monitorId, monitor[0].id));
+        const flags = await db2.select().from(regulatoryFlags).where(eq74(regulatoryFlags.monitorId, monitor[0].id));
+        const disclosures = await db2.select().from(disclosureTriggers).where(eq74(disclosureTriggers.monitorId, monitor[0].id));
         const highCount = flags.filter((f) => f.severity === "high").length;
         const mediumCount = flags.filter((f) => f.severity === "medium").length;
         const lowCount = flags.filter((f) => f.severity === "low").length;
@@ -43652,9 +43043,9 @@ var init_regulatoryComplianceRouter = __esm({
           ]
         };
       }),
-      getJurisdictionRules: operatorProcedure.input(z94.object({ jurisdiction: z94.string() })).query(async ({ input }) => {
+      getJurisdictionRules: operatorProcedure.input(z95.object({ jurisdiction: z95.string() })).query(async ({ input }) => {
         const db2 = await requireDb4();
-        const results = await db2.select().from(jurisdictionProfiles).where(eq76(jurisdictionProfiles.code, input.jurisdiction)).limit(1);
+        const results = await db2.select().from(jurisdictionProfiles).where(eq74(jurisdictionProfiles.code, input.jurisdiction)).limit(1);
         return results[0] ?? {
           code: input.jurisdiction,
           name: input.jurisdiction,
@@ -43667,15 +43058,15 @@ var init_regulatoryComplianceRouter = __esm({
         const jurisdictions = await db2.select().from(jurisdictionProfiles);
         return { jurisdictions };
       }),
-      addRegulatoryFlag: operatorProcedure.input(z94.object({
-        monitorId: z94.number(),
-        flagType: z94.string(),
-        jurisdiction: z94.string(),
-        ruleSet: z94.string(),
-        severity: z94.enum(["low", "medium", "high"]),
-        statement: z94.string(),
-        speaker: z94.string(),
-        ruleBasis: z94.string()
+      addRegulatoryFlag: operatorProcedure.input(z95.object({
+        monitorId: z95.number(),
+        flagType: z95.string(),
+        jurisdiction: z95.string(),
+        ruleSet: z95.string(),
+        severity: z95.enum(["low", "medium", "high"]),
+        statement: z95.string(),
+        speaker: z95.string(),
+        ruleBasis: z95.string()
       })).mutation(async ({ input }) => {
         const db2 = await requireDb4();
         const [created] = await db2.insert(regulatoryFlags).values({
@@ -43690,10 +43081,10 @@ var init_regulatoryComplianceRouter = __esm({
         }).returning();
         return created;
       }),
-      addDisclosureTrigger: operatorProcedure.input(z94.object({
-        monitorId: z94.number(),
-        filingType: z94.string(),
-        triggerReason: z94.string()
+      addDisclosureTrigger: operatorProcedure.input(z95.object({
+        monitorId: z95.number(),
+        filingType: z95.string(),
+        triggerReason: z95.string()
       })).mutation(async ({ input }) => {
         const db2 = await requireDb4();
         const [created] = await db2.insert(disclosureTriggers).values({
@@ -43704,21 +43095,21 @@ var init_regulatoryComplianceRouter = __esm({
         }).returning();
         return created;
       }),
-      updateDisclosureStatus: operatorProcedure.input(z94.object({
-        disclosureId: z94.number(),
-        status: z94.enum(["draft", "pending_review", "submitted"])
+      updateDisclosureStatus: operatorProcedure.input(z95.object({
+        disclosureId: z95.number(),
+        status: z95.enum(["draft", "pending_review", "submitted"])
       })).mutation(async ({ input }) => {
         const db2 = await requireDb4();
-        const [updated] = await db2.update(disclosureTriggers).set({ status: input.status }).where(eq76(disclosureTriggers.id, input.disclosureId)).returning();
+        const [updated] = await db2.update(disclosureTriggers).set({ status: input.status }).where(eq74(disclosureTriggers.id, input.disclosureId)).returning();
         return updated;
       }),
-      createComplianceAction: operatorProcedure.input(z94.object({
-        monitorId: z94.number(),
-        actionType: z94.string(),
-        description: z94.string(),
-        priority: z94.enum(["low", "medium", "high"]),
-        owner: z94.string(),
-        dueDate: z94.string()
+      createComplianceAction: operatorProcedure.input(z95.object({
+        monitorId: z95.number(),
+        actionType: z95.string(),
+        description: z95.string(),
+        priority: z95.enum(["low", "medium", "high"]),
+        owner: z95.string(),
+        dueDate: z95.string()
       })).mutation(async ({ input }) => {
         const db2 = await requireDb4();
         const [created] = await db2.insert(complianceActionItems).values({
@@ -43737,8 +43128,8 @@ var init_regulatoryComplianceRouter = __esm({
 });
 
 // server/routers/partnerRouter.ts
-import { z as z95 } from "zod";
-import { eq as eq77 } from "drizzle-orm";
+import { z as z96 } from "zod";
+import { eq as eq75 } from "drizzle-orm";
 var partnerRouter;
 var init_partnerRouter = __esm({
   "server/routers/partnerRouter.ts"() {
@@ -43752,24 +43143,24 @@ var init_partnerRouter = __esm({
         if (!db2) return [];
         return db2.select().from(partners).orderBy(partners.name);
       }),
-      getPartnerBySlug: publicProcedure.input(z95.object({ slug: z95.string() })).query(async ({ input }) => {
+      getPartnerBySlug: publicProcedure.input(z96.object({ slug: z96.string() })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return null;
-        const [partner] = await db2.select().from(partners).where(eq77(partners.slug, input.slug)).limit(1);
+        const [partner] = await db2.select().from(partners).where(eq75(partners.slug, input.slug)).limit(1);
         return partner || null;
       }),
-      getPartnerById: publicProcedure.input(z95.object({ id: z95.number().int() })).query(async ({ input }) => {
+      getPartnerById: publicProcedure.input(z96.object({ id: z96.number().int() })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return null;
-        const [partner] = await db2.select().from(partners).where(eq77(partners.id, input.id)).limit(1);
+        const [partner] = await db2.select().from(partners).where(eq75(partners.id, input.id)).limit(1);
         return partner || null;
       }),
-      getBrandConfig: publicProcedure.input(z95.object({ partnerId: z95.number().int().optional(), domain: z95.string().optional() })).query(async ({ input }) => {
+      getBrandConfig: publicProcedure.input(z96.object({ partnerId: z96.number().int().optional(), domain: z96.string().optional() })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return null;
         let partner;
         if (input.partnerId) {
-          [partner] = await db2.select().from(partners).where(eq77(partners.id, input.partnerId)).limit(1);
+          [partner] = await db2.select().from(partners).where(eq75(partners.id, input.partnerId)).limit(1);
         } else if (input.domain) {
           const [rows] = await rawSql(
             `SELECT * FROM partners WHERE custom_domain = $1 AND active = true LIMIT 1`,
@@ -43787,15 +43178,15 @@ var init_partnerRouter = __esm({
           isWhiteLabel: true
         };
       }),
-      upsertPartner: operatorProcedure.input(z95.object({
-        slug: z95.string(),
-        name: z95.string(),
-        displayName: z95.string().optional(),
-        logoUrl: z95.string().optional(),
-        primaryColor: z95.string().optional(),
-        accentColor: z95.string().optional(),
-        model: z95.string().optional(),
-        revenueSharePct: z95.number().int().optional()
+      upsertPartner: operatorProcedure.input(z96.object({
+        slug: z96.string(),
+        name: z96.string(),
+        displayName: z96.string().optional(),
+        logoUrl: z96.string().optional(),
+        primaryColor: z96.string().optional(),
+        accentColor: z96.string().optional(),
+        model: z96.string().optional(),
+        revenueSharePct: z96.number().int().optional()
       })).mutation(async ({ input }) => {
         const [rows] = await rawSql(
           `INSERT INTO partners (slug, name, display_name, logo_url, primary_color, accent_color, model, revenue_share_pct)
@@ -43821,7 +43212,7 @@ var init_partnerRouter = __esm({
         );
         return { success: true };
       }),
-      validateToken: publicProcedure.input(z95.object({ token: z95.string() })).query(async ({ input }) => {
+      validateToken: publicProcedure.input(z96.object({ token: z96.string() })).query(async ({ input }) => {
         const [rows] = await rawSql(
           `SELECT ct.*, p.display_name as partner_display_name, p.logo_url as partner_logo_url,
                 p.primary_color as partner_primary_color, p.accent_color as partner_accent_color
@@ -43849,7 +43240,7 @@ var init_partnerRouter = __esm({
           } : null
         };
       }),
-      getReportByToken: publicProcedure.input(z95.object({ token: z95.string() })).query(async ({ input }) => {
+      getReportByToken: publicProcedure.input(z96.object({ token: z96.string() })).query(async ({ input }) => {
         const [tokenRows] = await rawSql(
           `SELECT session_id FROM client_tokens
          WHERE token = $1 AND access_type = 'report'
@@ -43876,7 +43267,7 @@ var init_partnerRouter = __esm({
 });
 
 // server/routers/sessionConfigRouter.ts
-import { z as z96 } from "zod";
+import { z as z97 } from "zod";
 var sessionConfigRouter;
 var init_sessionConfigRouter = __esm({
   "server/routers/sessionConfigRouter.ts"() {
@@ -43884,7 +43275,7 @@ var init_sessionConfigRouter = __esm({
     init_trpc();
     init_db();
     sessionConfigRouter = router({
-      getSessionConfig: operatorProcedure.input(z96.object({ sessionId: z96.number().int() })).query(async ({ input }) => {
+      getSessionConfig: operatorProcedure.input(z97.object({ sessionId: z97.number().int() })).query(async ({ input }) => {
         const [rows] = await rawSql(
           `SELECT id, tier, partner_id, recipients, scheduled_at, company, event_name, event_type,
                 pre_brief_sent_at, live_links_sent_at, report_links_sent_at
@@ -43898,16 +43289,16 @@ var init_sessionConfigRouter = __esm({
           recipients: s.recipients ? typeof s.recipients === "string" ? JSON.parse(s.recipients) : s.recipients : []
         };
       }),
-      updateSessionConfig: operatorProcedure.input(z96.object({
-        sessionId: z96.number().int(),
-        tier: z96.enum(["essential", "intelligence", "enterprise", "agm"]).optional(),
-        partnerId: z96.number().int().nullable().optional(),
-        recipients: z96.array(z96.object({
-          name: z96.string(),
-          email: z96.string().email(),
-          role: z96.string().optional(),
-          sendLive: z96.boolean().optional().default(true),
-          sendReport: z96.boolean().optional().default(true)
+      updateSessionConfig: operatorProcedure.input(z97.object({
+        sessionId: z97.number().int(),
+        tier: z97.enum(["essential", "intelligence", "enterprise", "agm"]).optional(),
+        partnerId: z97.number().int().nullable().optional(),
+        recipients: z97.array(z97.object({
+          name: z97.string(),
+          email: z97.string().email(),
+          role: z97.string().optional(),
+          sendLive: z97.boolean().optional().default(true),
+          sendReport: z97.boolean().optional().default(true)
         })).optional()
       })).mutation(async ({ input }) => {
         const updates = [];
@@ -43933,7 +43324,7 @@ var init_sessionConfigRouter = __esm({
         );
         return { success: true };
       }),
-      runReadinessCheck: operatorProcedure.input(z96.object({ sessionId: z96.number().int() })).mutation(async ({ input }) => {
+      runReadinessCheck: operatorProcedure.input(z97.object({ sessionId: z97.number().int() })).mutation(async ({ input }) => {
         const checks = [];
         const [session] = await rawSql(`SELECT * FROM shadow_sessions WHERE id = $1`, [input.sessionId]);
         const s = session[0];
@@ -43977,19 +43368,19 @@ var init_sessionConfigRouter = __esm({
         }
         return { checks, allPassed: checks.every((c) => c.passed) };
       }),
-      scheduleSession: operatorProcedure.input(z96.object({
-        eventName: z96.string(),
-        company: z96.string().optional(),
-        eventType: z96.string().optional(),
-        scheduledAt: z96.string(),
-        tier: z96.string().optional(),
-        partnerId: z96.number().int().optional(),
-        recipients: z96.array(z96.object({
-          name: z96.string(),
-          email: z96.string().email(),
-          role: z96.string().optional()
+      scheduleSession: operatorProcedure.input(z97.object({
+        eventName: z97.string(),
+        company: z97.string().optional(),
+        eventType: z97.string().optional(),
+        scheduledAt: z97.string(),
+        tier: z97.string().optional(),
+        partnerId: z97.number().int().optional(),
+        recipients: z97.array(z97.object({
+          name: z97.string(),
+          email: z97.string().email(),
+          role: z97.string().optional()
         })).optional(),
-        meetingUrl: z96.string().optional()
+        meetingUrl: z97.string().optional()
       })).mutation(async ({ input, ctx }) => {
         const [rows] = await rawSql(
           `INSERT INTO scheduled_sessions (event_name, company, event_type, scheduled_at, tier, partner_id, recipients, meeting_url, created_by)
@@ -44020,7 +43411,7 @@ var init_sessionConfigRouter = __esm({
 });
 
 // server/routers/sessionMessagesRouter.ts
-import { z as z97 } from "zod";
+import { z as z98 } from "zod";
 async function validateClientToken(token, sessionId) {
   const [rows] = await rawSql(
     `SELECT id FROM client_tokens WHERE token = $1 AND session_id = $2 AND expires_at > NOW()`,
@@ -44035,12 +43426,12 @@ var init_sessionMessagesRouter = __esm({
     init_trpc();
     init_db();
     sessionMessagesRouter = router({
-      sendMessage: publicProcedure.input(z97.object({
-        sessionId: z97.number().int(),
-        fromRole: z97.enum(["operator", "client"]),
-        fromName: z97.string().optional(),
-        message: z97.string().min(1).max(2e3),
-        token: z97.string().optional()
+      sendMessage: publicProcedure.input(z98.object({
+        sessionId: z98.number().int(),
+        fromRole: z98.enum(["operator", "client"]),
+        fromName: z98.string().optional(),
+        message: z98.string().min(1).max(2e3),
+        token: z98.string().optional()
       })).mutation(async ({ input, ctx }) => {
         if (input.fromRole === "client") {
           if (!input.token || !await validateClientToken(input.token, input.sessionId)) {
@@ -44056,10 +43447,10 @@ var init_sessionMessagesRouter = __esm({
         );
         const messageId = rows[0]?.id;
         try {
-          const Ably3 = (await import("ably")).default;
+          const Ably4 = (await import("ably")).default;
           const apiKey = process.env.ABLY_API_KEY;
           if (apiKey) {
-            const ably2 = new Ably3.Rest(apiKey);
+            const ably2 = new Ably4.Rest(apiKey);
             const channelName = input.fromRole === "client" ? `operator-${input.sessionId}` : `client-${input.sessionId}`;
             const channel = ably2.channels.get(channelName);
             await channel.publish("message", {
@@ -44076,28 +43467,28 @@ var init_sessionMessagesRouter = __esm({
         }
         return { success: true, messageId };
       }),
-      getSessionMessages: publicProcedure.input(z97.object({
-        sessionId: z97.number().int(),
-        fromRole: z97.string().optional(),
-        limit: z97.number().int().optional().default(50),
-        token: z97.string().optional()
+      getSessionMessages: publicProcedure.input(z98.object({
+        sessionId: z98.number().int(),
+        fromRole: z98.string().optional(),
+        limit: z98.number().int().optional().default(50),
+        token: z98.string().optional()
       })).query(async ({ input, ctx }) => {
         if (!ctx.user) {
           if (!input.token || !await validateClientToken(input.token, input.sessionId)) {
             throw new Error("Invalid or expired token");
           }
         }
-        let sql25 = `SELECT * FROM session_messages WHERE session_id = $1`;
+        let sql23 = `SELECT * FROM session_messages WHERE session_id = $1`;
         const params = [input.sessionId];
         if (input.fromRole) {
-          sql25 += ` AND from_role = $2`;
+          sql23 += ` AND from_role = $2`;
           params.push(input.fromRole);
         }
-        sql25 += ` ORDER BY created_at DESC LIMIT ${input.limit}`;
-        const [rows] = await rawSql(sql25, params);
+        sql23 += ` ORDER BY created_at DESC LIMIT ${input.limit}`;
+        const [rows] = await rawSql(sql23, params);
         return rows.reverse();
       }),
-      markRead: operatorProcedure.input(z97.object({ messageIds: z97.array(z97.number().int()) })).mutation(async ({ input }) => {
+      markRead: operatorProcedure.input(z98.object({ messageIds: z98.array(z98.number().int()) })).mutation(async ({ input }) => {
         if (input.messageIds.length === 0) return { success: true };
         const placeholders = input.messageIds.map((_, i) => `$${i + 1}`).join(",");
         await rawSql(
@@ -44106,7 +43497,7 @@ var init_sessionMessagesRouter = __esm({
         );
         return { success: true };
       }),
-      getUnreadCount: operatorProcedure.input(z97.object({ sessionId: z97.number().int() })).query(async ({ input }) => {
+      getUnreadCount: operatorProcedure.input(z98.object({ sessionId: z98.number().int() })).query(async ({ input }) => {
         const [rows] = await rawSql(
           `SELECT COUNT(*) as count FROM session_messages WHERE session_id = $1 AND from_role = 'client' AND read_at IS NULL`,
           [input.sessionId]
@@ -44118,7 +43509,7 @@ var init_sessionMessagesRouter = __esm({
 });
 
 // server/routers/speakerQueueRouter.ts
-import { z as z98 } from "zod";
+import { z as z99 } from "zod";
 var speakerQueueRouter;
 var init_speakerQueueRouter = __esm({
   "server/routers/speakerQueueRouter.ts"() {
@@ -44126,13 +43517,13 @@ var init_speakerQueueRouter = __esm({
     init_trpc();
     init_db();
     speakerQueueRouter = router({
-      queueForSpeaker: operatorProcedure.input(z98.object({
-        sessionId: z98.number().int(),
-        questionId: z98.number().int().optional(),
-        questionText: z98.string(),
-        askerName: z98.string().optional(),
-        askerFirm: z98.string().optional(),
-        aiSuggestedAnswer: z98.string().optional()
+      queueForSpeaker: operatorProcedure.input(z99.object({
+        sessionId: z99.number().int(),
+        questionId: z99.number().int().optional(),
+        questionText: z99.string(),
+        askerName: z99.string().optional(),
+        askerFirm: z99.string().optional(),
+        aiSuggestedAnswer: z99.string().optional()
       })).mutation(async ({ input, ctx }) => {
         const [rows] = await rawSql(
           `INSERT INTO approved_questions_queue (session_id, question_id, question_text, asker_name, asker_firm, ai_suggested_answer, operator_id)
@@ -44148,10 +43539,10 @@ var init_speakerQueueRouter = __esm({
           ]
         );
         try {
-          const Ably3 = (await import("ably")).default;
+          const Ably4 = (await import("ably")).default;
           const apiKey = process.env.ABLY_API_KEY;
           if (apiKey) {
-            const ably2 = new Ably3.Rest(apiKey);
+            const ably2 = new Ably4.Rest(apiKey);
             const speakerChannel = ably2.channels.get(`speaker-${input.sessionId}`);
             await speakerChannel.publish("question.queued", {
               id: rows[0]?.id,
@@ -44175,14 +43566,14 @@ var init_speakerQueueRouter = __esm({
         }
         return { success: true, id: rows[0]?.id };
       }),
-      getSpeakerQueue: operatorProcedure.input(z98.object({ sessionId: z98.number().int() })).query(async ({ input }) => {
+      getSpeakerQueue: operatorProcedure.input(z99.object({ sessionId: z99.number().int() })).query(async ({ input }) => {
         const [rows] = await rawSql(
           `SELECT * FROM approved_questions_queue WHERE session_id = $1 ORDER BY queued_at ASC`,
           [input.sessionId]
         );
         return rows;
       }),
-      getPresenterQueue: publicProcedure.input(z98.object({ sessionId: z98.number().int(), token: z98.string() })).query(async ({ input }) => {
+      getPresenterQueue: publicProcedure.input(z99.object({ sessionId: z99.number().int(), token: z99.string() })).query(async ({ input }) => {
         const [valid] = await rawSql(
           `SELECT id FROM client_tokens WHERE token = $1 AND session_id = $2 AND expires_at > NOW() AND access_type IN ('presenter', 'live')`,
           [input.token, input.sessionId]
@@ -44194,7 +43585,7 @@ var init_speakerQueueRouter = __esm({
         );
         return rows;
       }),
-      markAnswered: operatorProcedure.input(z98.object({ questionId: z98.number().int() })).mutation(async ({ input }) => {
+      markAnswered: operatorProcedure.input(z99.object({ questionId: z99.number().int() })).mutation(async ({ input }) => {
         await rawSql(
           `UPDATE approved_questions_queue SET status = 'answered', answered_at = NOW() WHERE id = $1`,
           [input.questionId]
@@ -44202,10 +43593,10 @@ var init_speakerQueueRouter = __esm({
         try {
           const [q] = await rawSql(`SELECT session_id FROM approved_questions_queue WHERE id = $1`, [input.questionId]);
           if (q[0]) {
-            const Ably3 = (await import("ably")).default;
+            const Ably4 = (await import("ably")).default;
             const apiKey = process.env.ABLY_API_KEY;
             if (apiKey) {
-              const ably2 = new Ably3.Rest(apiKey);
+              const ably2 = new Ably4.Rest(apiKey);
               const channel = ably2.channels.get(`speaker-${q[0].session_id}`);
               await channel.publish("question.answered", { id: input.questionId, timestamp: Date.now() });
             }
@@ -44214,7 +43605,7 @@ var init_speakerQueueRouter = __esm({
         }
         return { success: true };
       }),
-      skipQuestion: operatorProcedure.input(z98.object({ questionId: z98.number().int() })).mutation(async ({ input }) => {
+      skipQuestion: operatorProcedure.input(z99.object({ questionId: z99.number().int() })).mutation(async ({ input }) => {
         await rawSql(
           `UPDATE approved_questions_queue SET status = 'skipped' WHERE id = $1`,
           [input.questionId]
@@ -44226,7 +43617,7 @@ var init_speakerQueueRouter = __esm({
 });
 
 // server/routers/agmIntelligenceRouter.ts
-import { z as z99 } from "zod";
+import { z as z100 } from "zod";
 var DISSENT_KEYWORDS, PROXY_ADVISORS, agmIntelligenceRouter;
 var init_agmIntelligenceRouter = __esm({
   "server/routers/agmIntelligenceRouter.ts"() {
@@ -44236,12 +43627,12 @@ var init_agmIntelligenceRouter = __esm({
     DISSENT_KEYWORDS = ["vote against", "oppose", "reject", "excessive", "unacceptable", "shareholder revolt", "proxy fight"];
     PROXY_ADVISORS = ["ISS", "Glass Lewis", "Hermes", "Sustainalytics", "PIRC"];
     agmIntelligenceRouter = router({
-      createResolution: operatorProcedure.input(z99.object({
-        sessionId: z99.number().int(),
-        resolutionNumber: z99.string().optional(),
-        title: z99.string(),
-        description: z99.string().optional(),
-        category: z99.string().optional()
+      createResolution: operatorProcedure.input(z100.object({
+        sessionId: z100.number().int(),
+        resolutionNumber: z100.string().optional(),
+        title: z100.string(),
+        description: z100.string().optional(),
+        category: z100.string().optional()
       })).mutation(async ({ input }) => {
         const [rows] = await rawSql(
           `INSERT INTO agm_resolutions (session_id, resolution_number, title, description, category)
@@ -44250,22 +43641,22 @@ var init_agmIntelligenceRouter = __esm({
         );
         return { success: true, id: rows[0]?.id };
       }),
-      getResolutions: operatorProcedure.input(z99.object({ sessionId: z99.number().int() })).query(async ({ input }) => {
+      getResolutions: operatorProcedure.input(z100.object({ sessionId: z100.number().int() })).query(async ({ input }) => {
         const [rows] = await rawSql(
           `SELECT * FROM agm_resolutions WHERE session_id = $1 ORDER BY resolution_number ASC`,
           [input.sessionId]
         );
         return rows;
       }),
-      updateResolution: operatorProcedure.input(z99.object({
-        resolutionId: z99.number().int(),
-        sentiment: z99.string().optional(),
-        sentimentScore: z99.number().optional(),
-        dissentLevel: z99.string().optional(),
-        votesFor: z99.number().int().optional(),
-        votesAgainst: z99.number().int().optional(),
-        abstentions: z99.number().int().optional(),
-        status: z99.string().optional()
+      updateResolution: operatorProcedure.input(z100.object({
+        resolutionId: z100.number().int(),
+        sentiment: z100.string().optional(),
+        sentimentScore: z100.number().optional(),
+        dissentLevel: z100.string().optional(),
+        votesFor: z100.number().int().optional(),
+        votesAgainst: z100.number().int().optional(),
+        abstentions: z100.number().int().optional(),
+        status: z100.string().optional()
       })).mutation(async ({ input }) => {
         const updates = [];
         const params = [];
@@ -44281,11 +43672,11 @@ var init_agmIntelligenceRouter = __esm({
         await rawSql(`UPDATE agm_resolutions SET ${updates.join(", ")} WHERE id = $${idx}`, params);
         return { success: true };
       }),
-      analyseAgmSegment: operatorProcedure.input(z99.object({
-        sessionId: z99.number().int(),
-        segmentText: z99.string(),
-        speaker: z99.string().optional(),
-        timestamp: z99.string().optional()
+      analyseAgmSegment: operatorProcedure.input(z100.object({
+        sessionId: z100.number().int(),
+        segmentText: z100.string(),
+        speaker: z100.string().optional(),
+        timestamp: z100.string().optional()
       })).mutation(async ({ input }) => {
         const text4 = input.segmentText.toLowerCase();
         const signals = [];
@@ -44319,14 +43710,14 @@ var init_agmIntelligenceRouter = __esm({
         }
         return { signals };
       }),
-      getSignals: operatorProcedure.input(z99.object({ sessionId: z99.number().int() })).query(async ({ input }) => {
+      getSignals: operatorProcedure.input(z100.object({ sessionId: z100.number().int() })).query(async ({ input }) => {
         const [rows] = await rawSql(
           `SELECT * FROM agm_shareholder_signals WHERE session_id = $1 ORDER BY detected_at DESC`,
           [input.sessionId]
         );
         return rows;
       }),
-      getAgmDashboard: operatorProcedure.input(z99.object({ sessionId: z99.number().int() })).query(async ({ input }) => {
+      getAgmDashboard: operatorProcedure.input(z100.object({ sessionId: z100.number().int() })).query(async ({ input }) => {
         const [resolutions] = await rawSql(
           `SELECT * FROM agm_resolutions WHERE session_id = $1 ORDER BY resolution_number`,
           [input.sessionId]
@@ -44343,7 +43734,7 @@ var init_agmIntelligenceRouter = __esm({
           activistSignals: signals.filter((s) => s.signal_type === "activist_language").length
         };
       }),
-      generatePostAgmReport: operatorProcedure.input(z99.object({ sessionId: z99.number().int() })).mutation(async ({ input }) => {
+      generatePostAgmReport: operatorProcedure.input(z100.object({ sessionId: z100.number().int() })).mutation(async ({ input }) => {
         const [resolutions] = await rawSql(
           `SELECT * FROM agm_resolutions WHERE session_id = $1`,
           [input.sessionId]
@@ -44370,8 +43761,8 @@ var init_agmIntelligenceRouter = __esm({
 });
 
 // server/routers/operationsRouter.ts
-import { z as z100 } from "zod";
-import { eq as eq78, asc as asc8 } from "drizzle-orm";
+import { z as z101 } from "zod";
+import { eq as eq76, asc as asc8 } from "drizzle-orm";
 var operationsRouter;
 var init_operationsRouter = __esm({
   "server/routers/operationsRouter.ts"() {
@@ -44380,10 +43771,10 @@ var init_operationsRouter = __esm({
     init_db();
     init_schema();
     operationsRouter = router({
-      initiateHandoff: operatorProcedure.input(z100.object({
-        sessionId: z100.number().int(),
-        toOperatorId: z100.number().int().optional(),
-        reason: z100.string().optional()
+      initiateHandoff: operatorProcedure.input(z101.object({
+        sessionId: z101.number().int(),
+        toOperatorId: z101.number().int().optional(),
+        reason: z101.string().optional()
       })).mutation(async ({ input, ctx }) => {
         const [rows] = await rawSql(
           `INSERT INTO session_handoffs (session_id, from_operator_id, to_operator_id, reason)
@@ -44392,14 +43783,14 @@ var init_operationsRouter = __esm({
         );
         return { success: true, id: rows[0]?.id };
       }),
-      acceptHandoff: operatorProcedure.input(z100.object({ handoffId: z100.number().int() })).mutation(async ({ input }) => {
+      acceptHandoff: operatorProcedure.input(z101.object({ handoffId: z101.number().int() })).mutation(async ({ input }) => {
         await rawSql(
           `UPDATE session_handoffs SET status = 'accepted', accepted_at = NOW() WHERE id = $1`,
           [input.handoffId]
         );
         return { success: true };
       }),
-      joinSessionAsOperator: operatorProcedure.input(z100.object({ sessionId: z100.number().int(), role: z100.string().optional() })).mutation(async ({ input, ctx }) => {
+      joinSessionAsOperator: operatorProcedure.input(z101.object({ sessionId: z101.number().int(), role: z101.string().optional() })).mutation(async ({ input, ctx }) => {
         await rawSql(
           `INSERT INTO session_operators (session_id, operator_id, role) VALUES ($1, $2, $3)
          ON CONFLICT DO NOTHING`,
@@ -44407,25 +43798,25 @@ var init_operationsRouter = __esm({
         );
         return { success: true };
       }),
-      leaveSession: operatorProcedure.input(z100.object({ sessionId: z100.number().int() })).mutation(async ({ input, ctx }) => {
+      leaveSession: operatorProcedure.input(z101.object({ sessionId: z101.number().int() })).mutation(async ({ input, ctx }) => {
         await rawSql(
           `UPDATE session_operators SET left_at = NOW() WHERE session_id = $1 AND operator_id = $2 AND left_at IS NULL`,
           [input.sessionId, ctx.user?.id || 0]
         );
         return { success: true };
       }),
-      getSessionOperators: operatorProcedure.input(z100.object({ sessionId: z100.number().int() })).query(async ({ input }) => {
+      getSessionOperators: operatorProcedure.input(z101.object({ sessionId: z101.number().int() })).query(async ({ input }) => {
         const [rows] = await rawSql(
           `SELECT so.*, u.name, u.email FROM session_operators so LEFT JOIN users u ON so.operator_id = u.id WHERE so.session_id = $1 AND so.left_at IS NULL`,
           [input.sessionId]
         );
         return rows;
       }),
-      submitFeedback: publicProcedure.input(z100.object({
-        sessionId: z100.number().int(),
-        token: z100.string().optional(),
-        rating: z100.number().int().min(1).max(5),
-        comment: z100.string().optional()
+      submitFeedback: publicProcedure.input(z101.object({
+        sessionId: z101.number().int(),
+        token: z101.string().optional(),
+        rating: z101.number().int().min(1).max(5),
+        comment: z101.string().optional()
       })).mutation(async ({ input }) => {
         await rawSql(
           `INSERT INTO client_report_feedback (session_id, token, rating, comment) VALUES ($1, $2, $3, $4)`,
@@ -44433,10 +43824,10 @@ var init_operationsRouter = __esm({
         );
         return { success: true };
       }),
-      logClientView: publicProcedure.input(z100.object({
-        token: z100.string(),
-        tabViewed: z100.string().optional(),
-        timeSpentSecs: z100.number().int().optional()
+      logClientView: publicProcedure.input(z101.object({
+        token: z101.string(),
+        tabViewed: z101.string().optional(),
+        timeSpentSecs: z101.number().int().optional()
       })).mutation(async ({ input }) => {
         await rawSql(
           `INSERT INTO client_report_view_log (token, tab_viewed, time_spent_secs) VALUES ($1, $2, $3)`,
@@ -44444,7 +43835,7 @@ var init_operationsRouter = __esm({
         );
         return { success: true };
       }),
-      getClientViewLog: operatorProcedure.input(z100.object({ sessionId: z100.number().int().optional(), token: z100.string().optional() })).query(async ({ input }) => {
+      getClientViewLog: operatorProcedure.input(z101.object({ sessionId: z101.number().int().optional(), token: z101.string().optional() })).query(async ({ input }) => {
         if (input.token) {
           const [rows] = await rawSql(
             `SELECT * FROM client_report_view_log WHERE token = $1 ORDER BY viewed_at DESC`,
@@ -44463,7 +43854,7 @@ var init_operationsRouter = __esm({
         }
         return [];
       }),
-      resendReportLink: operatorProcedure.input(z100.object({ sessionId: z100.number().int(), recipientEmail: z100.string().email() })).mutation(async ({ input }) => {
+      resendReportLink: operatorProcedure.input(z101.object({ sessionId: z101.number().int(), recipientEmail: z101.string().email() })).mutation(async ({ input }) => {
         const [tokens] = await rawSql(
           `SELECT token FROM client_tokens WHERE session_id = $1 AND recipient_email = $2 AND access_type = 'report'
          ORDER BY created_at DESC LIMIT 1`,
@@ -44472,12 +43863,12 @@ var init_operationsRouter = __esm({
         if (tokens.length === 0) return { success: false, error: "No report token found" };
         return { success: true, message: `Report link resent to ${input.recipientEmail}` };
       }),
-      importHistoricalCommitments: operatorProcedure.input(z100.object({
-        company: z100.string(),
-        commitments: z100.array(z100.object({
-          commitment: z100.string(),
-          madeAt: z100.string().optional(),
-          deadline: z100.string().optional()
+      importHistoricalCommitments: operatorProcedure.input(z101.object({
+        company: z101.string(),
+        commitments: z101.array(z101.object({
+          commitment: z101.string(),
+          madeAt: z101.string().optional(),
+          deadline: z101.string().optional()
         }))
       })).mutation(async ({ input }) => {
         for (const c of input.commitments) {
@@ -44489,13 +43880,13 @@ var init_operationsRouter = __esm({
         }
         return { success: true, count: input.commitments.length };
       }),
-      upsertBoardMember: operatorProcedure.input(z100.object({
-        company: z100.string(),
-        name: z100.string(),
-        role: z100.string().optional(),
-        committee: z100.string().optional(),
-        bio: z100.string().optional(),
-        linkedinUrl: z100.string().optional()
+      upsertBoardMember: operatorProcedure.input(z101.object({
+        company: z101.string(),
+        name: z101.string(),
+        role: z101.string().optional(),
+        committee: z101.string().optional(),
+        bio: z101.string().optional(),
+        linkedinUrl: z101.string().optional()
       })).mutation(async ({ input }) => {
         const [rows] = await rawSql(
           `INSERT INTO board_members (company, name, role, committee, bio, linkedin_url)
@@ -44504,14 +43895,14 @@ var init_operationsRouter = __esm({
         );
         return { success: true, id: rows[0]?.id };
       }),
-      getBoardMembers: operatorProcedure.input(z100.object({ company: z100.string() })).query(async ({ input }) => {
+      getBoardMembers: operatorProcedure.input(z101.object({ company: z101.string() })).query(async ({ input }) => {
         const [rows] = await rawSql(
           `SELECT * FROM board_members WHERE company = $1 AND active = true ORDER BY name`,
           [input.company]
         );
         return rows;
       }),
-      detectJurisdiction: publicProcedure.input(z100.object({ exchangeCode: z100.string().optional(), company: z100.string().optional() })).query(({ input }) => {
+      detectJurisdiction: publicProcedure.input(z101.object({ exchangeCode: z101.string().optional(), company: z101.string().optional() })).query(({ input }) => {
         const map = {
           JSE: "JSE",
           NYSE: "SEC",
@@ -44524,13 +43915,13 @@ var init_operationsRouter = __esm({
         const jurisdiction = input.exchangeCode ? map[input.exchangeCode.toUpperCase()] || "other" : "other";
         return { jurisdiction };
       }),
-      flagTranscriptSegment: operatorProcedure.input(z100.object({
-        sessionId: z100.number().int(),
-        segmentText: z100.string(),
-        flagType: z100.enum(["notable", "compliance", "forward-guidance", "tone-shift", "action-required"]).default("notable"),
-        operatorNote: z100.string().optional(),
-        speaker: z100.string().optional(),
-        eventTimestamp: z100.number().int().optional()
+      flagTranscriptSegment: operatorProcedure.input(z101.object({
+        sessionId: z101.number().int(),
+        segmentText: z101.string(),
+        flagType: z101.enum(["notable", "compliance", "forward-guidance", "tone-shift", "action-required"]).default("notable"),
+        operatorNote: z101.string().optional(),
+        speaker: z101.string().optional(),
+        eventTimestamp: z101.number().int().optional()
       })).mutation(async ({ input, ctx }) => {
         const db2 = await getDb();
         if (!db2) throw new Error("Database not available");
@@ -44545,30 +43936,30 @@ var init_operationsRouter = __esm({
         }).returning();
         return marker;
       }),
-      getSessionMarkers: operatorProcedure.input(z100.object({ sessionId: z100.number().int() })).query(async ({ input }) => {
+      getSessionMarkers: operatorProcedure.input(z101.object({ sessionId: z101.number().int() })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return [];
-        return db2.select().from(sessionMarkers).where(eq78(sessionMarkers.sessionId, input.sessionId)).orderBy(asc8(sessionMarkers.createdAt));
+        return db2.select().from(sessionMarkers).where(eq76(sessionMarkers.sessionId, input.sessionId)).orderBy(asc8(sessionMarkers.createdAt));
       })
     });
   }
 });
 
 // server/routers/qaAnalyticsRouter.ts
-import { z as z101 } from "zod";
-import Ably2 from "ably";
+import { z as z102 } from "zod";
+import Ably3 from "ably";
 var ably, COORDINATION_THRESHOLD, COORDINATION_WINDOW_MINS, qaAnalyticsRouter;
 var init_qaAnalyticsRouter = __esm({
   "server/routers/qaAnalyticsRouter.ts"() {
     "use strict";
     init_trpc();
     init_db();
-    ably = process.env.ABLY_API_KEY ? new Ably2.Rest(process.env.ABLY_API_KEY) : null;
+    ably = process.env.ABLY_API_KEY ? new Ably3.Rest(process.env.ABLY_API_KEY) : null;
     COORDINATION_THRESHOLD = 3;
     COORDINATION_WINDOW_MINS = 10;
     qaAnalyticsRouter = router({
-      getLiveQAPatterns: operatorProcedure.input(z101.object({
-        sessionId: z101.number().int()
+      getLiveQAPatterns: operatorProcedure.input(z102.object({
+        sessionId: z102.number().int()
       })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return { firms: [], timeline: [], alerts: [], totalQuestions: 0 };
@@ -44637,9 +44028,9 @@ var init_qaAnalyticsRouter = __esm({
         }
         return { firms, timeline, alerts, totalQuestions };
       }),
-      checkCoordinatedQuestioning: operatorProcedure.input(z101.object({
-        sessionId: z101.number().int(),
-        askerFirm: z101.string().optional()
+      checkCoordinatedQuestioning: operatorProcedure.input(z102.object({
+        sessionId: z102.number().int(),
+        askerFirm: z102.string().optional()
       })).mutation(async ({ input }) => {
         if (!input.askerFirm) return { coordinated: false };
         const db2 = await getDb();
@@ -44680,7 +44071,7 @@ var init_qaAnalyticsRouter = __esm({
         }
         return { coordinated, count: count3, firm: input.askerFirm };
       }),
-      getQAIntelligenceSummary: operatorProcedure.input(z101.object({ sessionId: z101.number().int() })).query(async ({ input }) => {
+      getQAIntelligenceSummary: operatorProcedure.input(z102.object({ sessionId: z102.number().int() })).query(async ({ input }) => {
         const db2 = await getDb();
         if (!db2) return null;
         const [rows] = await rawSql(
@@ -45499,7 +44890,7 @@ var init_seedDemoData = __esm({
 });
 
 // server/routers/unifiedIntelligenceRouter.ts
-import { z as z102 } from "zod";
+import { z as z103 } from "zod";
 var unifiedIntelligenceRouter;
 var init_unifiedIntelligenceRouter = __esm({
   "server/routers/unifiedIntelligenceRouter.ts"() {
@@ -45508,7 +44899,7 @@ var init_unifiedIntelligenceRouter = __esm({
     init_UnifiedIntelligenceService();
     init_seedDemoData();
     unifiedIntelligenceRouter = router({
-      getSessionIntelligence: operatorProcedure.input(z102.object({ sessionId: z102.number() })).query(async ({ input }) => {
+      getSessionIntelligence: operatorProcedure.input(z103.object({ sessionId: z103.number() })).query(async ({ input }) => {
         try {
           return await getSessionIntelligence(input.sessionId);
         } catch (e) {
@@ -45516,7 +44907,7 @@ var init_unifiedIntelligenceRouter = __esm({
           throw e;
         }
       }),
-      getOrgIntelligence: operatorProcedure.input(z102.object({ organisationId: z102.string() })).query(async ({ input }) => {
+      getOrgIntelligence: operatorProcedure.input(z103.object({ organisationId: z103.string() })).query(async ({ input }) => {
         try {
           return await getOrgIntelligence(input.organisationId);
         } catch (e) {
@@ -45532,7 +44923,7 @@ var init_unifiedIntelligenceRouter = __esm({
 });
 
 // server/routers/operatorDashboardRouter.ts
-import { z as z103 } from "zod";
+import { z as z104 } from "zod";
 function buildReportApprovalEmail(opts) {
   return `<!DOCTYPE html><html><body style="font-family:Inter,system-ui,sans-serif;background:#f8fafc;padding:40px 0;">
   <div style="max-width:600px;margin:0 auto;background:#1e293b;border-radius:12px;overflow:hidden;">
@@ -45691,7 +45082,7 @@ var init_operatorDashboardRouter = __esm({
         }
         return items;
       }),
-      getAllSessions: operatorProcedure.input(z103.object({ page: z103.number().int().min(1).default(1) })).query(async ({ input }) => {
+      getAllSessions: operatorProcedure.input(z104.object({ page: z104.number().int().min(1).default(1) })).query(async ({ input }) => {
         const limit = 20;
         const offset = (input.page - 1) * limit;
         const [countRows] = await rawSql(`SELECT COUNT(*)::int AS cnt FROM shadow_sessions`);
@@ -45727,7 +45118,7 @@ var init_operatorDashboardRouter = __esm({
           totalPages: Math.ceil(total / limit)
         };
       }),
-      getCustomersByStage: operatorProcedure.input(z103.object({ stage: z103.enum(["active", "demo", "pilot"]) })).query(async ({ input }) => {
+      getCustomersByStage: operatorProcedure.input(z104.object({ stage: z104.enum(["active", "demo", "pilot"]) })).query(async ({ input }) => {
         const [rows] = await rawSql(
           `SELECT o.*,
                 (SELECT COUNT(*)::int FROM shadow_sessions s WHERE s.org_id = o.id) AS events_run,
@@ -45787,7 +45178,7 @@ var init_operatorDashboardRouter = __esm({
           };
         });
       }),
-      getReportsSent: operatorProcedure.input(z103.object({ page: z103.number().int().min(1).default(1) })).query(async ({ input }) => {
+      getReportsSent: operatorProcedure.input(z104.object({ page: z104.number().int().min(1).default(1) })).query(async ({ input }) => {
         const limit = 20;
         const offset = (input.page - 1) * limit;
         const [countRows] = await rawSql(
@@ -45816,7 +45207,7 @@ var init_operatorDashboardRouter = __esm({
           totalPages: Math.ceil(total / limit)
         };
       }),
-      approveAndSendReport: operatorProcedure.input(z103.object({ eventId: z103.number().int().positive() })).mutation(async ({ input }) => {
+      approveAndSendReport: operatorProcedure.input(z104.object({ eventId: z104.number().int().positive() })).mutation(async ({ input }) => {
         const [eventRows] = await rawSql(
           `SELECT ae.id, ae.status, ae.client_name, ae.event_name, ae.ai_report, ae.org_id,
                 ct.token AS report_token
@@ -45955,8 +45346,8 @@ __export(routers_eager_exports, {
   appRouter: () => appRouter,
   createCallerFactory: () => createCallerFactory
 });
-import { eq as eq79, and as and46 } from "drizzle-orm";
-import { z as z104 } from "zod";
+import { eq as eq77, and as and45 } from "drizzle-orm";
+import { z as z105 } from "zod";
 async function createAblyTokenRequest(clientId) {
   const apiKey = process.env.ABLY_API_KEY;
   if (!apiKey) return null;
@@ -46022,6 +45413,7 @@ var init_routers_eager = __esm({
     init_autonomousInterventionRouter();
     init_taggedMetricsRouter();
     init_shadowModeRouter();
+    init_customerDashboardRouter();
     init_archiveUploadRouter();
     init_benchmarksRouter();
     init_marketReactionRouter();
@@ -46156,6 +45548,7 @@ var init_routers_eager = __esm({
       autonomousIntervention: autonomousInterventionRouter,
       taggedMetrics: taggedMetricsRouter,
       shadowMode: shadowModeRouter,
+      customerDashboard: customerDashboardRouter,
       archiveUpload: archiveUploadRouter,
       benchmarks: benchmarksRouter,
       marketReaction: marketReactionRouter,
@@ -46235,9 +45628,9 @@ var init_routers_eager = __esm({
             loginMethod: u.loginMethod
           }));
         }),
-        updateUserRole: adminProcedure.input(z104.object({
-          userId: z104.number().int().positive(),
-          role: z104.enum(["user", "admin", "operator"])
+        updateUserRole: adminProcedure.input(z105.object({
+          userId: z105.number().int().positive(),
+          role: z105.enum(["user", "admin", "operator"])
         })).mutation(async ({ input, ctx }) => {
           if (ctx.user.id === input.userId && input.role !== "admin") {
             throw new Error("You cannot change your own role.");
@@ -46248,7 +45641,7 @@ var init_routers_eager = __esm({
       }),
       // ─── Self-service operator access request ──────────────────────────────────
       team: router({
-        requestOperatorAccess: publicProcedure.input(z104.object({ reason: z104.string().max(500).optional() })).mutation(async ({ input, ctx }) => {
+        requestOperatorAccess: publicProcedure.input(z105.object({ reason: z105.string().max(500).optional() })).mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Login required");
           if (ctx.user.role === "operator" || ctx.user.role === "admin") {
             return { success: true, alreadyOperator: true };
@@ -46270,8 +45663,6 @@ var init_routers_eager = __esm({
       auth: router({
         me: publicProcedure.query(({ ctx }) => {
           if (ctx.user) return ctx.user;
-          const isDev = process.env.NODE_ENV !== "production" && (process.env.AUTH_BYPASS === "true" || process.env.NODE_ENV === "development");
-          if (isDev) return { id: 0, name: "Dev Operator", email: "dev@curalive.local", role: "operator" };
           return null;
         }),
         logout: publicProcedure.mutation(({ ctx }) => {
@@ -46300,23 +45691,23 @@ var init_routers_eager = __esm({
             timezone: user.timezone
           };
         }),
-        update: publicProcedure.input(z104.object({
-          name: z104.string().min(1).max(255).optional(),
-          jobTitle: z104.string().max(255).nullable().optional(),
-          organisation: z104.string().max(255).nullable().optional(),
-          bio: z104.string().max(1e3).nullable().optional(),
-          phone: z104.string().max(64).nullable().optional(),
-          linkedinUrl: z104.string().url().max(512).nullable().optional().or(z104.literal("")).transform((v) => v === "" ? null : v),
-          timezone: z104.string().max(64).nullable().optional()
+        update: publicProcedure.input(z105.object({
+          name: z105.string().min(1).max(255).optional(),
+          jobTitle: z105.string().max(255).nullable().optional(),
+          organisation: z105.string().max(255).nullable().optional(),
+          bio: z105.string().max(1e3).nullable().optional(),
+          phone: z105.string().max(64).nullable().optional(),
+          linkedinUrl: z105.string().url().max(512).nullable().optional().or(z105.literal("")).transform((v) => v === "" ? null : v),
+          timezone: z105.string().max(64).nullable().optional()
         })).mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Login required");
           await updateUserProfile(ctx.user.id, input);
           return { success: true };
         }),
-        uploadAvatar: publicProcedure.input(z104.object({
-          base64: z104.string().max(5 * 1024 * 1024),
+        uploadAvatar: publicProcedure.input(z105.object({
+          base64: z105.string().max(5 * 1024 * 1024),
           // 5 MB limit
-          mimeType: z104.enum(["image/jpeg", "image/png", "image/webp", "image/gif"])
+          mimeType: z105.enum(["image/jpeg", "image/png", "image/webp", "image/gif"])
         })).mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Login required");
           const buffer = Buffer.from(input.base64, "base64");
@@ -46331,10 +45722,10 @@ var init_routers_eager = __esm({
          * Returns the profile of the operator who created the event, or falls back to
          * the event's hostName / hostOrganization fields.
          */
-        getEventHost: publicProcedure.input(z104.object({ slug: z104.string() })).query(async ({ input }) => {
+        getEventHost: publicProcedure.input(z105.object({ slug: z105.string() })).query(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return null;
-          const [event] = await db2.select().from(webcastEvents).where(eq79(webcastEvents.slug, input.slug)).limit(1);
+          const [event] = await db2.select().from(webcastEvents).where(eq77(webcastEvents.slug, input.slug)).limit(1);
           if (!event) return null;
           return {
             name: event.hostName ?? null,
@@ -46348,9 +45739,9 @@ var init_routers_eager = __esm({
       }),
       // ─── Ably real-time token endpoint ───────────────────────────────────────────
       ably: router({
-        tokenRequest: publicProcedure.input(z104.object({
-          clientId: z104.string().optional().default("anonymous"),
-          channelPrefix: z104.string().optional().default("curalive-event")
+        tokenRequest: publicProcedure.input(z105.object({
+          clientId: z105.string().optional().default("anonymous"),
+          channelPrefix: z105.string().optional().default("curalive-event")
         })).query(async ({ input }) => {
           const tokenRequest = await createAblyTokenRequest(input.clientId);
           return { tokenRequest, mode: tokenRequest ? "ably" : "demo" };
@@ -46359,13 +45750,13 @@ var init_routers_eager = __esm({
       // ─── Event management ────────────────────────────────────────────────────────
       events: router({
         // Verify access code for password-protected events
-        verifyAccess: publicProcedure.input(z104.object({
-          eventId: z104.string(),
-          accessCode: z104.string().optional()
+        verifyAccess: publicProcedure.input(z105.object({
+          eventId: z105.string(),
+          accessCode: z105.string().optional()
         })).query(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { allowed: true, requiresCode: false };
-          const [event] = await db2.select().from(events).where(eq79(events.eventId, input.eventId)).limit(1);
+          const [event] = await db2.select().from(events).where(eq77(events.eventId, input.eventId)).limit(1);
           if (!event) return { allowed: true, requiresCode: false };
           if (!event.accessCode) return { allowed: true, requiresCode: false };
           if (!input.accessCode) return { allowed: false, requiresCode: true };
@@ -46373,10 +45764,10 @@ var init_routers_eager = __esm({
           return { allowed: match, requiresCode: true };
         }),
         // Get event details (including whether it's password-protected)
-        getEvent: publicProcedure.input(z104.object({ eventId: z104.string() })).query(async ({ input }) => {
+        getEvent: publicProcedure.input(z105.object({ eventId: z105.string() })).query(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return null;
-          const [event] = await db2.select().from(events).where(eq79(events.eventId, input.eventId)).limit(1);
+          const [event] = await db2.select().from(events).where(eq77(events.eventId, input.eventId)).limit(1);
           if (!event) return null;
           return {
             ...event,
@@ -46386,13 +45777,13 @@ var init_routers_eager = __esm({
           };
         }),
         // Upsert event (called by operator to create/update event with optional access code)
-        upsertEvent: publicProcedure.input(z104.object({
-          eventId: z104.string(),
-          title: z104.string(),
-          company: z104.string(),
-          platform: z104.string(),
-          status: z104.enum(["upcoming", "live", "completed"]).optional().default("upcoming"),
-          accessCode: z104.string().optional()
+        upsertEvent: publicProcedure.input(z105.object({
+          eventId: z105.string(),
+          title: z105.string(),
+          company: z105.string(),
+          platform: z105.string(),
+          status: z105.enum(["upcoming", "live", "completed"]).optional().default("upcoming"),
+          accessCode: z105.string().optional()
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false, error: "Database unavailable" };
@@ -46406,9 +45797,9 @@ var init_routers_eager = __esm({
           }).onConflictDoNothing();
           return { success: true };
         }),
-        setAccessCode: publicProcedure.input(z104.object({
-          eventId: z104.string(),
-          accessCode: z104.string().nullable()
+        setAccessCode: publicProcedure.input(z105.object({
+          eventId: z105.string(),
+          accessCode: z105.string().nullable()
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false, error: "Database unavailable" };
@@ -46426,17 +45817,17 @@ var init_routers_eager = __esm({
           };
         }),
         // AI-powered event summary
-        generateSummary: publicProcedure.input(z104.object({
-          eventTitle: z104.string(),
-          transcript: z104.array(z104.object({
-            speaker: z104.string(),
-            text: z104.string(),
-            timeLabel: z104.string()
+        generateSummary: publicProcedure.input(z105.object({
+          eventTitle: z105.string(),
+          transcript: z105.array(z105.object({
+            speaker: z105.string(),
+            text: z105.string(),
+            timeLabel: z105.string()
           })),
-          qaItems: z104.array(z104.object({
-            question: z104.string(),
-            author: z104.string(),
-            status: z104.string()
+          qaItems: z105.array(z105.object({
+            question: z105.string(),
+            author: z105.string(),
+            status: z105.string()
           })).optional().default([])
         })).mutation(async ({ input }) => {
           const transcriptText = input.transcript.map((s) => `[${s.timeLabel}] ${s.speaker}: ${s.text}`).join("\n");
@@ -46522,20 +45913,20 @@ Overall tone was confident and forward-looking, with management expressing stron
       }),
       // ─── Press Release Generator ─────────────────────────────────────────────────
       pressRelease: router({
-        generate: publicProcedure.input(z104.object({
-          eventTitle: z104.string(),
-          companyName: z104.string().optional().default("the Company"),
-          transcript: z104.array(z104.object({
-            speaker: z104.string(),
-            text: z104.string(),
-            timeLabel: z104.string()
+        generate: publicProcedure.input(z105.object({
+          eventTitle: z105.string(),
+          companyName: z105.string().optional().default("the Company"),
+          transcript: z105.array(z105.object({
+            speaker: z105.string(),
+            text: z105.string(),
+            timeLabel: z105.string()
           })),
-          aiSummary: z104.object({
-            headline: z104.string().optional(),
-            keyPoints: z104.array(z104.string()).optional(),
-            financialHighlights: z104.array(z104.string()).optional(),
-            executiveSummary: z104.string().optional(),
-            forwardLookingStatements: z104.array(z104.string()).optional()
+          aiSummary: z105.object({
+            headline: z105.string().optional(),
+            keyPoints: z105.array(z105.string()).optional(),
+            financialHighlights: z105.array(z105.string()).optional(),
+            executiveSummary: z105.string().optional(),
+            forwardLookingStatements: z105.array(z105.string()).optional()
           }).optional()
         })).mutation(async ({ input }) => {
           const transcriptText = input.transcript.slice(0, 40).map((s) => `[${s.timeLabel}] ${s.speaker}: ${s.text}`).join("\n");
@@ -46595,27 +45986,27 @@ ENDS`
       // ─── Attendee Registrations ───────────────────────────────────────────────────
       registrations: router({
         // Register an attendee for an event
-        register: publicProcedure.input(z104.object({
-          eventId: z104.string(),
-          name: z104.string().min(1),
-          email: z104.string().email(),
-          company: z104.string().optional(),
-          jobTitle: z104.string().optional(),
-          language: z104.string().optional().default("English"),
-          dialIn: z104.boolean().optional().default(false),
-          accessCode: z104.string().optional()
+        register: publicProcedure.input(z105.object({
+          eventId: z105.string(),
+          name: z105.string().min(1),
+          email: z105.string().email(),
+          company: z105.string().optional(),
+          jobTitle: z105.string().optional(),
+          language: z105.string().optional().default("English"),
+          dialIn: z105.boolean().optional().default(false),
+          accessCode: z105.string().optional()
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false, error: "Database unavailable" };
-          const [event] = await db2.select().from(events).where(eq79(events.eventId, input.eventId)).limit(1);
+          const [event] = await db2.select().from(events).where(eq77(events.eventId, input.eventId)).limit(1);
           if (event?.accessCode) {
             if (!input.accessCode || input.accessCode.trim() !== event.accessCode.trim()) {
               return { success: false, error: "Invalid access code" };
             }
           }
-          const [existing] = await db2.select().from(attendeeRegistrations).where(and46(
-            eq79(attendeeRegistrations.eventId, input.eventId),
-            eq79(attendeeRegistrations.email, input.email)
+          const [existing] = await db2.select().from(attendeeRegistrations).where(and45(
+            eq77(attendeeRegistrations.eventId, input.eventId),
+            eq77(attendeeRegistrations.email, input.email)
           )).limit(1);
           if (existing) {
             return { success: true, alreadyRegistered: true, registrationId: existing.id };
@@ -46664,10 +46055,10 @@ ENDS`
           return { success: true, alreadyRegistered: false, registrationId: result?.id };
         }),
         // Get all attendees for an event (for Operator Console)
-        listByEvent: publicProcedure.input(z104.object({ eventId: z104.string() })).query(async ({ input }) => {
+        listByEvent: publicProcedure.input(z105.object({ eventId: z105.string() })).query(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return [];
-          return db2.select().from(attendeeRegistrations).where(eq79(attendeeRegistrations.eventId, input.eventId)).orderBy(attendeeRegistrations.createdAt);
+          return db2.select().from(attendeeRegistrations).where(eq77(attendeeRegistrations.eventId, input.eventId)).orderBy(attendeeRegistrations.createdAt);
         }),
         // Get all registrations for the currently logged-in user (by email)
         getMyRegistrations: protectedProcedure.query(async ({ ctx }) => {
@@ -46675,10 +46066,10 @@ ENDS`
           if (!db2) return [];
           const userEmail = ctx.user.email;
           if (!userEmail) return [];
-          const regs = await db2.select().from(attendeeRegistrations).where(eq79(attendeeRegistrations.email, userEmail)).orderBy(attendeeRegistrations.createdAt);
+          const regs = await db2.select().from(attendeeRegistrations).where(eq77(attendeeRegistrations.email, userEmail)).orderBy(attendeeRegistrations.createdAt);
           const enriched = await Promise.all(
             regs.map(async (reg) => {
-              const [event] = await db2.select().from(events).where(eq79(events.eventId, reg.eventId)).limit(1);
+              const [event] = await db2.select().from(events).where(eq77(events.eventId, reg.eventId)).limit(1);
               return {
                 ...reg,
                 eventTitle: event?.title ?? reg.eventId,
@@ -46691,12 +46082,12 @@ ENDS`
           return enriched;
         }),
         // Mark attendee as joined (called when they enter the Event Room)
-        markJoined: publicProcedure.input(z104.object({ eventId: z104.string(), email: z104.string() })).mutation(async ({ input }) => {
+        markJoined: publicProcedure.input(z105.object({ eventId: z105.string(), email: z105.string() })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false };
-          await db2.update(attendeeRegistrations).set({ joinedAt: /* @__PURE__ */ new Date() }).where(and46(
-            eq79(attendeeRegistrations.eventId, input.eventId),
-            eq79(attendeeRegistrations.email, input.email)
+          await db2.update(attendeeRegistrations).set({ joinedAt: /* @__PURE__ */ new Date() }).where(and45(
+            eq77(attendeeRegistrations.eventId, input.eventId),
+            eq77(attendeeRegistrations.email, input.email)
           ));
           return { success: true };
         })
@@ -46706,21 +46097,21 @@ ENDS`
         list: publicProcedure.query(async () => {
           const db2 = await getDb();
           if (!db2) return [];
-          return db2.select().from(irContacts).where(eq79(irContacts.active, true)).orderBy(irContacts.name);
+          return db2.select().from(irContacts).where(eq77(irContacts.active, true)).orderBy(irContacts.name);
         }),
         // Returns active IR contacts that have a phone number — for the Multi-Dial queue
         getForDial: publicProcedure.query(async () => {
           const db2 = await getDb();
           if (!db2) return [];
-          const contacts = await db2.select().from(irContacts).where(eq79(irContacts.active, true)).orderBy(irContacts.name);
+          const contacts = await db2.select().from(irContacts).where(eq77(irContacts.active, true)).orderBy(irContacts.name);
           return contacts.filter((c) => c.phoneNumber && c.phoneNumber.trim().length > 0);
         }),
-        add: publicProcedure.input(z104.object({
-          name: z104.string().min(1),
-          email: z104.string().email(),
-          company: z104.string().optional(),
-          role: z104.string().optional(),
-          phoneNumber: z104.string().optional()
+        add: publicProcedure.input(z105.object({
+          name: z105.string().min(1),
+          email: z105.string().email(),
+          company: z105.string().optional(),
+          role: z105.string().optional(),
+          phoneNumber: z105.string().optional()
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false };
@@ -46733,13 +46124,13 @@ ENDS`
           }).onConflictDoNothing();
           return { success: true };
         }),
-        update: publicProcedure.input(z104.object({
-          id: z104.number(),
-          name: z104.string().min(1),
-          email: z104.string().email(),
-          company: z104.string().optional(),
-          role: z104.string().optional(),
-          phoneNumber: z104.string().optional()
+        update: publicProcedure.input(z105.object({
+          id: z105.number(),
+          name: z105.string().min(1),
+          email: z105.string().email(),
+          company: z105.string().optional(),
+          role: z105.string().optional(),
+          phoneNumber: z105.string().optional()
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false };
@@ -46749,33 +46140,33 @@ ENDS`
             company: input.company || null,
             role: input.role || null,
             phoneNumber: input.phoneNumber || null
-          }).where(eq79(irContacts.id, input.id));
+          }).where(eq77(irContacts.id, input.id));
           return { success: true };
         }),
-        remove: publicProcedure.input(z104.object({ id: z104.number() })).mutation(async ({ input }) => {
+        remove: publicProcedure.input(z105.object({ id: z105.number() })).mutation(async ({ input }) => {
           const db2 = await getDb();
           if (!db2) return { success: false };
-          await db2.update(irContacts).set({ active: false }).where(eq79(irContacts.id, input.id));
+          await db2.update(irContacts).set({ active: false }).where(eq77(irContacts.id, input.id));
           return { success: true };
         }),
         // Send AI summary to all active IR contacts
-        sendSummary: publicProcedure.input(z104.object({
-          eventTitle: z104.string(),
-          summary: z104.object({
-            headline: z104.string(),
-            keyPoints: z104.array(z104.string()),
-            financialHighlights: z104.array(z104.string()),
-            sentiment: z104.string(),
-            actionItems: z104.array(z104.string()),
-            executiveSummary: z104.string(),
-            forwardLookingStatements: z104.array(z104.string()).optional().default([]),
-            regulatoryHighlights: z104.array(z104.string()).optional().default([]),
-            riskFactors: z104.array(z104.string()).optional().default([])
+        sendSummary: publicProcedure.input(z105.object({
+          eventTitle: z105.string(),
+          summary: z105.object({
+            headline: z105.string(),
+            keyPoints: z105.array(z105.string()),
+            financialHighlights: z105.array(z105.string()),
+            sentiment: z105.string(),
+            actionItems: z105.array(z105.string()),
+            executiveSummary: z105.string(),
+            forwardLookingStatements: z105.array(z105.string()).optional().default([]),
+            regulatoryHighlights: z105.array(z105.string()).optional().default([]),
+            riskFactors: z105.array(z105.string()).optional().default([])
           }),
-          additionalEmails: z104.array(z104.string().email()).optional().default([])
+          additionalEmails: z105.array(z105.string().email()).optional().default([])
         })).mutation(async ({ input }) => {
           const db2 = await getDb();
-          const contacts = db2 ? await db2.select().from(irContacts).where(eq79(irContacts.active, true)) : [];
+          const contacts = db2 ? await db2.select().from(irContacts).where(eq77(irContacts.active, true)) : [];
           const allEmails = [
             ...contacts.map((c) => c.email),
             ...input.additionalEmails
@@ -46851,15 +46242,15 @@ Recipients: ${allEmails.join(", ")}
       }),
       // ─── Book Demo ───────────────────────────────────────────────────────────────
       bookDemo: router({
-        submit: publicProcedure.input(z104.object({
-          name: z104.string().min(2).max(100),
-          company: z104.string().min(2).max(150),
-          role: z104.string().min(2).max(100),
-          email: z104.string().email(),
-          phone: z104.string().optional(),
-          serviceInterest: z104.enum(["capital_raising", "earnings_call", "research", "hybrid_conference", "all"]).default("all"),
-          preferredDate: z104.string().optional(),
-          message: z104.string().max(1e3).optional()
+        submit: publicProcedure.input(z105.object({
+          name: z105.string().min(2).max(100),
+          company: z105.string().min(2).max(150),
+          role: z105.string().min(2).max(100),
+          email: z105.string().email(),
+          phone: z105.string().optional(),
+          serviceInterest: z105.enum(["capital_raising", "earnings_call", "research", "hybrid_conference", "all"]).default("all"),
+          preferredDate: z105.string().optional(),
+          message: z105.string().max(1e3).optional()
         })).mutation(async ({ input }) => {
           const notified = await notifyOwner({
             title: `New Demo Request: ${input.name} @ ${input.company}`,
@@ -46909,7 +46300,7 @@ Recipients: ${allEmails.join(", ")}
 async function createContext(opts) {
   let user = null;
   try {
-    user = await sdk.authenticateRequest(opts.req);
+    user = await getCurrentUser(opts.req);
   } catch (error) {
     user = null;
   }
@@ -46922,7 +46313,7 @@ async function createContext(opts) {
 var init_context = __esm({
   "server/_core/context.ts"() {
     "use strict";
-    init_sdk();
+    init_auth();
   }
 });
 
@@ -47104,7 +46495,7 @@ function registerSlideDeckUploadRoute(app) {
     "/api/upload-slide-deck",
     async (req, res, next) => {
       try {
-        const user = await sdk.authenticateRequest(req);
+        const user = await requireAuth(req);
         if (!user) {
           res.status(401).json({ error: "Unauthorized" });
           return;
@@ -47144,7 +46535,7 @@ var init_slideDeckUpload = __esm({
   "server/slideDeckUpload.ts"() {
     "use strict";
     init_storage();
-    init_sdk();
+    init_auth();
     upload = multer({
       storage: multer.memoryStorage(),
       limits: { fileSize: 50 * 1024 * 1024 },
@@ -47204,14 +46595,10 @@ async function getDurationSeconds(inputPath) {
   }
 }
 async function extractChunkMp3(inputPath, outputPath, startSec, durationSec) {
-  await execFileAsync("ffmpeg", [
+  const args = [
     "-y",
-    "-ss",
-    String(startSec),
     "-i",
     inputPath,
-    "-t",
-    String(durationSec),
     "-vn",
     "-ar",
     "16000",
@@ -47222,7 +46609,9 @@ async function extractChunkMp3(inputPath, outputPath, startSec, durationSec) {
     "-codec:a",
     "libmp3lame",
     outputPath
-  ]);
+  ];
+  if (startSec > 0) args.splice(2, 0, "-ss", String(startSec), "-t", String(durationSec));
+  await execFileAsync("ffmpeg", args);
 }
 async function callGeminiTranscribe(buffer, filename) {
   const geminiBaseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
@@ -47302,31 +46691,27 @@ async function callWhisperTranscribe(buffer, filename) {
   const ext = (filename.split(".").pop() ?? "mp3").toLowerCase();
   const safeExt = ["mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4"].includes(ext) ? ext : "mp3";
   const mimeType = safeExt === "mp4" ? "video/mp4" : `audio/${safeExt}`;
-  const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
-  const formData = new FormData();
-  formData.append("file", blob, `audio.${safeExt}`);
-  formData.append("model", "whisper-1");
-  formData.append("response_format", "verbose_json");
-  formData.append("prompt", "Transcribe this investor event recording accurately, including speaker names and financial terminology.");
-  const url = `${baseUrl}/v1/audio/transcriptions`;
-  console.log(`[AudioTranscribe] Sending ${(buffer.length / 1024 / 1024).toFixed(1)}MB to Whisper API at ${baseUrl} (key: ${apiKey.slice(0, 8)}...)`);
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Accept-Encoding": "identity"
-    },
-    body: formData
-  });
-  if (!response.ok) {
-    const errText = await response.text().catch(() => response.statusText);
-    const isQuota = response.status === 429 || response.status === 402 || errText.includes("insufficient_quota") || errText.includes("exceeded your current quota") || errText.includes("QUOTA_EXCEEDED") || errText.includes("billing");
+  const { default: OpenAI, toFile } = await import("openai");
+  const client = new OpenAI({ apiKey, baseURL: `${baseUrl}/v1` });
+  console.log(`[AudioTranscribe] Sending ${(buffer.length / 1024 / 1024).toFixed(1)}MB to Whisper API at ${baseUrl} (key: ${apiKey.slice(0, 8)}...) via SDK toFile`);
+  const file = await toFile(buffer, `audio.${safeExt}`, { type: mimeType });
+  let result;
+  try {
+    result = await client.audio.transcriptions.create({
+      file,
+      model: "whisper-1",
+      response_format: "verbose_json",
+      prompt: "Transcribe this investor event recording accurately, including speaker names and financial terminology."
+    });
+  } catch (err) {
+    const status = err?.status ?? err?.statusCode ?? 0;
+    const errText = err?.message ?? String(err);
+    const isQuota = status === 429 || status === 402 || errText.includes("insufficient_quota") || errText.includes("exceeded your current quota") || errText.includes("QUOTA_EXCEEDED") || errText.includes("billing");
     if (isQuota) {
       throw new Error(`QUOTA_EXCEEDED: The AI transcription service has reached its usage limit. The recording has been saved and you can retry transcription later.`);
     }
-    throw new Error(`Whisper API failed (${response.status}): ${errText}`);
+    throw new Error(`Whisper API failed (${status}): ${errText}`);
   }
-  const result = await response.json();
   return (result.text ?? "").trim();
 }
 async function callTranscribeApi(buffer, filename) {
@@ -47351,6 +46736,7 @@ function registerAudioTranscribeRoute(app) {
   router2.post(
     "/api/transcribe-audio",
     (req, res, next) => {
+      console.log(`[AudioTranscribe] Incoming request \u2014 content-type: ${req.headers["content-type"]?.slice(0, 80)}`);
       upload2.single("file")(req, res, (err) => {
         if (err instanceof multer2.MulterError && err.code === "LIMIT_FILE_SIZE") {
           res.status(413).json({ error: `File exceeds the ${MAX_UPLOAD_MB}MB upload limit.` });
@@ -47371,20 +46757,22 @@ function registerAudioTranscribeRoute(app) {
           res.status(400).json({ error: "No audio file provided" });
           return;
         }
-        const { buffer, originalname, size } = req.file;
+        const { buffer, originalname, size, mimetype } = req.file;
         const sizeMB = size / 1024 / 1024;
         const isVideo = VIDEO_EXTENSIONS.test(originalname);
         const isAudio = AUDIO_EXTENSIONS.test(originalname);
-        console.log(`[AudioTranscribe] Received ${originalname} (${sizeMB.toFixed(1)}MB, video=${isVideo})`);
+        const hexHeader = buffer.slice(0, 16).toString("hex").match(/.{2}/g)?.join(" ") ?? "";
+        console.log(`[AudioTranscribe] Received ${originalname} (${sizeMB.toFixed(1)}MB, video=${isVideo}, mimetype=${mimetype})`);
+        console.log(`[AudioTranscribe] File header bytes: ${hexHeader}`);
         try {
           const path5 = await import("path");
           const fs4 = await import("fs");
-          const crypto6 = await import("crypto");
+          const crypto8 = await import("crypto");
           const RECORDINGS_DIR2 = path5.resolve(process.cwd(), "uploads", "recordings");
           if (!fs4.existsSync(RECORDINGS_DIR2)) fs4.mkdirSync(RECORDINGS_DIR2, { recursive: true });
           const rawExt = (path5.extname(originalname) || ".mp3").toLowerCase();
           const safeExt = /^\.(mp3|mp4|wav|m4a|webm|ogg|flac|aac)$/.test(rawExt) ? rawExt : ".mp3";
-          const uniqueName = `${Date.now()}_${crypto6.randomBytes(6).toString("hex")}${safeExt}`;
+          const uniqueName = `${Date.now()}_${crypto8.randomBytes(6).toString("hex")}${safeExt}`;
           const destPath = path5.join(RECORDINGS_DIR2, uniqueName);
           await writeFile(destPath, buffer);
           savedRecordingPath = uniqueName;
@@ -47395,8 +46783,20 @@ function registerAudioTranscribeRoute(app) {
         let transcript;
         const ffmpegAvailable = await checkFfmpegAvailable();
         if (sizeMB <= DIRECT_MAX_MB) {
-          console.log(`[AudioTranscribe] Small file (${sizeMB.toFixed(1)}MB), sending directly to Whisper API...`);
-          transcript = await callTranscribeApi(buffer, originalname);
+          const isWebM = originalname.toLowerCase().endsWith(".webm") || mimetype === "audio/webm" || mimetype === "video/webm";
+          if (isWebM && ffmpegAvailable) {
+            console.log(`[AudioTranscribe] Small WebM file \u2014 converting to MP3 via ffmpeg before Whisper...`);
+            tmpDir = await mkdtemp(join2(tmpdir(), "curalive-audio-"));
+            const inputPath = join2(tmpDir, "input.webm");
+            const outputPath = join2(tmpDir, "converted.mp3");
+            await writeFile(inputPath, buffer);
+            await extractChunkMp3(inputPath, outputPath, 0, 9999);
+            const convertedBuffer = await readFile(outputPath);
+            transcript = await callTranscribeApi(convertedBuffer, "converted.mp3");
+          } else {
+            console.log(`[AudioTranscribe] Small file (${sizeMB.toFixed(1)}MB), sending directly to Whisper API...`);
+            transcript = await callTranscribeApi(buffer, originalname);
+          }
         } else if (!ffmpegAvailable) {
           console.warn(`[AudioTranscribe] ffmpeg not available \u2014 sending file directly to Whisper API (${sizeMB.toFixed(1)}MB)`);
           if (sizeMB > 24) {
@@ -47493,9 +46893,581 @@ var init_audioTranscribe = __esm({
   }
 });
 
-// server/recallWebhook.ts
+// server/services/SignalDiscipline.ts
+function runCleanup() {
+  const now = Date.now();
+  let removed = 0;
+  for (const [sessionId, state] of Array.from(sessionStore.entries())) {
+    if (now - state.lastSeen > SESSION_TTL_MS) {
+      sessionStore.delete(sessionId);
+      removed++;
+    }
+  }
+  if (removed > 0) {
+    console.log(`[SignalDiscipline] TTL cleanup: removed ${removed} expired session(s). Active sessions: ${sessionStore.size}`);
+  }
+}
+function normalizeSignalText(text4) {
+  return text4.toLowerCase().trim().replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim();
+}
+function buildDedupKey(title, body) {
+  return normalizeSignalText(`${title} ${body}`);
+}
+function evaluateSignalDiscipline(params) {
+  const { sessionId, title, body, confidenceScore } = params;
+  if (confidenceScore === null || confidenceScore === void 0) {
+    console.log(`[SignalDiscipline] confidence_filter_skipped \u2014 sessionId=${sessionId} title=${title}`);
+  } else if (confidenceScore < CONFIDENCE_THRESHOLD) {
+    console.log(`[SignalDiscipline] suppressed_low_confidence \u2014 sessionId=${sessionId} confidence=${confidenceScore} title=${title}`);
+    return { shouldSurface: false, reason: "suppressed_low_confidence" };
+  }
+  const normalizedKey = buildDedupKey(title, body);
+  const now = Date.now();
+  let state = sessionStore.get(sessionId);
+  if (!state) {
+    state = { keys: /* @__PURE__ */ new Set(), lastSeen: now };
+    sessionStore.set(sessionId, state);
+  }
+  state.lastSeen = now;
+  if (state.keys.has(normalizedKey)) {
+    console.log(`[SignalDiscipline] suppressed_duplicate \u2014 sessionId=${sessionId} key=${normalizedKey}`);
+    return { shouldSurface: false, reason: "suppressed_duplicate", normalizedKey };
+  }
+  state.keys.add(normalizedKey);
+  const reason = confidenceScore === null || confidenceScore === void 0 ? "confidence_filter_skipped" : "surfaced";
+  console.log(`[SignalDiscipline] ${reason} \u2014 sessionId=${sessionId} confidence=${confidenceScore ?? "n/a"} key=${normalizedKey}`);
+  return { shouldSurface: true, reason, normalizedKey };
+}
+var CONFIDENCE_THRESHOLD, SESSION_TTL_MS, CLEANUP_INTERVAL_MS, sessionStore, cleanupTimer;
+var init_SignalDiscipline = __esm({
+  "server/services/SignalDiscipline.ts"() {
+    "use strict";
+    CONFIDENCE_THRESHOLD = 0.8;
+    SESSION_TTL_MS = 4 * 60 * 60 * 1e3;
+    CLEANUP_INTERVAL_MS = 30 * 60 * 1e3;
+    sessionStore = /* @__PURE__ */ new Map();
+    cleanupTimer = setInterval(runCleanup, CLEANUP_INTERVAL_MS);
+    if (cleanupTimer.unref) cleanupTimer.unref();
+  }
+});
+
+// server/services/IntelligenceFeedPublisher.ts
+async function publishFeedItem(params) {
+  try {
+    const [rows] = await rawSql(
+      `SELECT ably_channel FROM shadow_sessions WHERE id = $1 LIMIT 1`,
+      [params.sessionId]
+    );
+    const session = rows?.[0];
+    const ablyChannel = session?.ably_channel;
+    if (!ablyChannel) {
+      console.warn(
+        `[FeedPublisher] No ably_channel found for sessionId=${params.sessionId}, feedItemId=${params.feedItemId} \u2014 skipping publish`
+      );
+      return;
+    }
+    await AblyRealtimeService.publishToEvent(ablyChannel, "intelligence_feed", {
+      id: params.feedItemId,
+      feed_type: params.feedType,
+      severity: params.severity,
+      title: params.title,
+      body: params.body,
+      pipeline: params.pipeline,
+      decision: params.decision,
+      created_at: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    console.log(
+      `[FeedPublisher] Published feedItemId=${params.feedItemId} to channel=${ablyChannel} decision=${params.decision}`
+    );
+  } catch (err) {
+    console.error(
+      `[FeedPublisher] FAILED \u2014 sessionId=${params.sessionId} feedItemId=${params.feedItemId} error=${err?.message}`
+    );
+  }
+}
+var init_IntelligenceFeedPublisher = __esm({
+  "server/services/IntelligenceFeedPublisher.ts"() {
+    "use strict";
+    init_db();
+    init_AblyRealtimeService();
+  }
+});
+
+// server/services/DeterministicGovernanceGateway.ts
 import crypto5 from "crypto";
-import { eq as eq80 } from "drizzle-orm";
+async function computeStabilityScore(pipeline, sessionId) {
+  try {
+    const [rows] = await rawSql(
+      `SELECT confidence_score, governance_status, created_at
+       FROM intelligence_feed
+       WHERE session_id = $1
+       AND pipeline = $2
+       AND created_at > NOW() - INTERVAL '30 minutes'
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [`shadow-${sessionId}`, pipeline]
+    );
+    if (!rows || rows.length === 0) {
+      return { stabilityScore: 0.5, observationCount: 0, failureRate: 0 };
+    }
+    const observationCount = rows.length;
+    const avgConfidence = rows.reduce((sum2, r) => sum2 + (r.confidence_score ?? 0.5), 0) / observationCount;
+    const decayedEvidence = rows.reduce((sum2, r, i) => {
+      const weight = Math.pow(0.9, i);
+      return sum2 + (r.confidence_score ?? 0.5) * weight;
+    }, 0) / rows.length;
+    const withheldCount = rows.filter((r) => r.governance_status === "withheld").length;
+    const failureRate = withheldCount / observationCount;
+    const consistencyRate = avgConfidence > 0.6 ? 1 : avgConfidence / 0.6;
+    const stabilityScore = decayedEvidence * 0.5 + consistencyRate * 0.3 + (1 - failureRate) * 0.2;
+    return {
+      stabilityScore: Math.min(1, Math.max(0, stabilityScore)),
+      observationCount,
+      failureRate
+    };
+  } catch {
+    return { stabilityScore: 0.5, observationCount: 0, failureRate: 0 };
+  }
+}
+function evaluateCriteria(pipeline, confidenceScore, stabilityScore, observationCount, failureRate) {
+  const config = GATEWAY_CONFIG[pipeline] ?? GATEWAY_CONFIG.default;
+  if (confidenceScore < config.minConfidence) {
+    return {
+      decision: "withheld",
+      stabilityScore,
+      observationCount,
+      failureRate,
+      reasonCode: "LOW_CONFIDENCE"
+    };
+  }
+  if (observationCount < config.minObservations) {
+    return {
+      decision: "pending_review",
+      stabilityScore,
+      observationCount,
+      failureRate,
+      reasonCode: "INSUFFICIENT_OBSERVATIONS"
+    };
+  }
+  if (failureRate > config.maxFailureRate) {
+    return {
+      decision: "withheld",
+      stabilityScore,
+      observationCount,
+      failureRate,
+      reasonCode: "HIGH_FAILURE_RATE"
+    };
+  }
+  if (stabilityScore < config.minStabilityScore) {
+    return {
+      decision: "pending_review",
+      stabilityScore,
+      observationCount,
+      failureRate,
+      reasonCode: "LOW_STABILITY"
+    };
+  }
+  if (config.isComplianceCritical && observationCount < 1) {
+    return {
+      decision: "pending_review",
+      stabilityScore,
+      observationCount,
+      failureRate,
+      reasonCode: "COMPLIANCE_CRITICAL_PENDING"
+    };
+  }
+  return {
+    decision: "authorised",
+    stabilityScore,
+    observationCount,
+    failureRate,
+    reasonCode: null
+  };
+}
+async function recordGatewayDecision(intelligenceFeedId, sessionId, pipeline, gatewayDecision, inputSnapshot) {
+  try {
+    const [lastRow] = await rawSql(
+      `SELECT chain_hash FROM governance_decisions
+       WHERE session_id = $1
+       ORDER BY decided_at DESC LIMIT 1`,
+      [sessionId]
+    );
+    const previousHash = lastRow?.[0]?.chain_hash ?? "genesis";
+    const chainInput = `${previousHash}-${intelligenceFeedId}-${gatewayDecision.decision}-${Date.now()}`;
+    const chainHash = crypto5.createHash("sha256").update(chainInput).digest("hex");
+    await rawSql(
+      `INSERT INTO governance_decisions
+        (session_id, decision_type, input_snapshot, decision, confidence_score,
+         reasoning, intelligence_feed_id, pipeline_id, stability_score,
+         observation_count, failure_rate, reason_code, previous_hash, chain_hash, decided_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())`,
+      [
+        sessionId,
+        "pipeline_output",
+        JSON.stringify(inputSnapshot),
+        gatewayDecision.decision,
+        gatewayDecision.stabilityScore,
+        gatewayDecision.reasonCode ?? "PASSED",
+        intelligenceFeedId,
+        pipeline,
+        gatewayDecision.stabilityScore,
+        gatewayDecision.observationCount,
+        gatewayDecision.failureRate,
+        gatewayDecision.reasonCode,
+        previousHash,
+        chainHash
+      ]
+    );
+  } catch (err) {
+    console.warn(`[Gateway] Failed to record decision:`, err?.message);
+  }
+}
+async function evaluateOutput(params) {
+  try {
+    const { stabilityScore, observationCount, failureRate } = await computeStabilityScore(params.pipeline, params.sessionId);
+    const gatewayDecision = evaluateCriteria(
+      params.pipeline,
+      params.confidenceScore,
+      stabilityScore,
+      observationCount,
+      failureRate
+    );
+    await rawSql(
+      `UPDATE intelligence_feed SET governance_status = $1 WHERE id = $2`,
+      [gatewayDecision.decision, params.intelligenceFeedId]
+    );
+    await recordGatewayDecision(
+      params.intelligenceFeedId,
+      params.sessionId,
+      params.pipeline,
+      gatewayDecision,
+      {
+        feedType: params.feedType,
+        title: params.title,
+        confidenceScore: params.confidenceScore,
+        pipeline: params.pipeline
+      }
+    );
+    console.log(`[Gateway] Session ${params.sessionId} \u2014 ${params.pipeline} \u2192 ${gatewayDecision.decision}${gatewayDecision.reasonCode ? ` (${gatewayDecision.reasonCode})` : ""}`);
+    void publishFeedItem({
+      sessionId: params.sessionId,
+      feedItemId: params.intelligenceFeedId,
+      feedType: params.feedType,
+      severity: "medium",
+      title: params.title,
+      body: params.body,
+      pipeline: params.pipeline,
+      decision: gatewayDecision.decision
+    }).catch((err) => console.error("[FeedPublisher] publish failed:", err?.message));
+    return gatewayDecision.decision;
+  } catch (err) {
+    console.warn(`[Gateway] Evaluation failed:`, err?.message);
+    return "pending_review";
+  }
+}
+var GATEWAY_CONFIG;
+var init_DeterministicGovernanceGateway = __esm({
+  "server/services/DeterministicGovernanceGateway.ts"() {
+    "use strict";
+    init_db();
+    init_IntelligenceFeedPublisher();
+    GATEWAY_CONFIG = {
+      compliance: {
+        minConfidence: 0.8,
+        minObservations: 1,
+        maxFailureRate: 0.2,
+        minStabilityScore: 0.7,
+        isComplianceCritical: true
+      },
+      sentiment: {
+        minConfidence: 0.7,
+        minObservations: 1,
+        maxFailureRate: 0.3,
+        minStabilityScore: 0.6,
+        isComplianceCritical: false
+      },
+      correlation: {
+        minConfidence: 0.85,
+        minObservations: 1,
+        maxFailureRate: 0.2,
+        minStabilityScore: 0.75,
+        isComplianceCritical: true
+      },
+      evasiveness: {
+        minConfidence: 0.75,
+        minObservations: 2,
+        maxFailureRate: 0.25,
+        minStabilityScore: 0.65,
+        isComplianceCritical: false
+      },
+      default: {
+        minConfidence: 0.7,
+        minObservations: 1,
+        maxFailureRate: 0.3,
+        minStabilityScore: 0.6,
+        isComplianceCritical: false
+      }
+    };
+  }
+});
+
+// server/services/SegmentOrchestrator.ts
+import crypto6 from "crypto";
+function getOrCreateBuffer(sessionId) {
+  if (!sessionBuffers.has(sessionId)) {
+    sessionBuffers.set(sessionId, {
+      segments: [],
+      activeLlmCalls: 0,
+      lastSentimentAt: 0,
+      lastSummaryAt: 0,
+      lastDynamicsAt: 0
+    });
+  }
+  return sessionBuffers.get(sessionId);
+}
+async function writeToIntelligenceFeed(params) {
+  try {
+    const idempotencyKey = params.idempotencyKey ?? crypto6.createHash("sha256").update(`${params.sessionId}-${params.pipeline}-${params.canonicalSegmentId}-${params.feedType}`).digest("hex").substring(0, 64);
+    console.log(`[Orchestrator] Attempting intelligence_feed write for session ${params.sessionId}, pipeline ${params.pipeline}`);
+    const disciplineResult = evaluateSignalDiscipline({
+      sessionId: params.sessionId,
+      title: params.title,
+      body: params.body,
+      confidenceScore: params.confidenceScore ?? null
+    });
+    if (!disciplineResult.shouldSurface) {
+      console.log(
+        `[Orchestrator] Signal suppressed by discipline \u2014 sessionId=${params.sessionId} reason=${disciplineResult.reason}`
+      );
+      return;
+    }
+    await rawSql(
+      `INSERT INTO intelligence_feed 
+        (session_id, feed_type, severity, title, body, pipeline, speaker, 
+         canonical_segment_id, governance_status, confidence_score, metadata, idempotency_key, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, NOW())
+`,
+      [
+        `shadow-${params.sessionId}`,
+        params.feedType,
+        params.severity,
+        params.title,
+        params.body,
+        params.pipeline,
+        params.speaker,
+        params.canonicalSegmentId,
+        params.confidenceScore,
+        params.metadata ? JSON.stringify(params.metadata) : null,
+        idempotencyKey
+      ]
+    );
+    const [inserted] = await rawSql(
+      `SELECT id FROM intelligence_feed WHERE session_id = $1 AND pipeline = $2 ORDER BY created_at DESC LIMIT 1`,
+      [`shadow-${params.sessionId}`, params.pipeline]
+    );
+    const feedId = inserted?.[0]?.id;
+    if (feedId) {
+      void evaluateOutput({
+        intelligenceFeedId: feedId,
+        sessionId: params.sessionId,
+        pipeline: params.pipeline,
+        confidenceScore: params.confidenceScore,
+        feedType: params.feedType,
+        title: params.title,
+        body: params.body
+      }).catch((err) => console.warn("[Gateway] Evaluation failed:", err?.message));
+    }
+  } catch (err) {
+    console.error(`[Orchestrator] FAILED to write to intelligence_feed:`, err?.message, err?.code, JSON.stringify(err));
+  }
+}
+async function runCompliancePipeline(sessionId, canonicalSegmentId, text4, speaker) {
+  try {
+    const complianceKeywords = [
+      "material information",
+      "inside information",
+      "not yet public",
+      "haven't announced",
+      "between us",
+      "off the record",
+      "selective disclosure",
+      "mnpi",
+      "non-public"
+    ];
+    const lowerText = text4.toLowerCase();
+    const matches = complianceKeywords.filter((k) => lowerText.includes(k));
+    if (matches.length > 0) {
+      await writeToIntelligenceFeed({
+        sessionId,
+        canonicalSegmentId,
+        feedType: "compliance",
+        severity: "high",
+        title: "Compliance Signal Detected",
+        body: `Potential compliance-sensitive language: "${matches.join(", ")}"`,
+        pipeline: "compliance",
+        speaker,
+        confidenceScore: 0.85,
+        metadata: { matches, text: text4 }
+      });
+      console.log(`[Orchestrator] Compliance signal detected for session ${sessionId}`);
+    }
+  } catch (err) {
+    console.warn(`[Orchestrator] Compliance pipeline error:`, err?.message);
+  }
+}
+async function runSentimentPipeline(sessionId, canonicalSegmentId, recentText, speaker, buffer) {
+  if (buffer.activeLlmCalls >= MAX_CONCURRENT_LLM_CALLS || globalActiveLlmCalls >= MAX_GLOBAL_LLM_CALLS) {
+    console.log(`[Orchestrator] Pipeline sentiment dropped for session ${sessionId} \u2014 load shedding`);
+    void writeToIntelligenceFeed({
+      sessionId,
+      canonicalSegmentId,
+      feedType: "system",
+      severity: "info",
+      title: "Analysis Delayed",
+      body: "Sentiment analysis skipped \u2014 maximum concurrent AI calls reached. Will resume on next segment.",
+      pipeline: "sentiment",
+      speaker,
+      confidenceScore: 1
+    }).catch((err) => console.warn("[Orchestrator] Overload signal write failed:", err?.message));
+    return;
+  }
+  globalActiveLlmCalls++;
+  buffer.activeLlmCalls++;
+  try {
+    const sentiment = await scoreSentiment(recentText);
+    buffer.lastSentimentAt = buffer.segments.length;
+    await writeToIntelligenceFeed({
+      sessionId,
+      canonicalSegmentId,
+      feedType: "sentiment",
+      severity: sentiment.score < 30 ? "warning" : "info",
+      title: `Sentiment: ${sentiment.label}`,
+      body: `Score: ${sentiment.score}/100. Keywords: ${sentiment.keywords?.join(", ") ?? "none"}`,
+      pipeline: "sentiment",
+      speaker,
+      confidenceScore: 0.8,
+      metadata: sentiment
+    });
+    console.log(`[Orchestrator] Sentiment scored for session ${sessionId}: ${sentiment.label} (${sentiment.score})`);
+  } catch (err) {
+    console.warn(`[Orchestrator] Sentiment pipeline error:`, err?.message);
+  } finally {
+    globalActiveLlmCalls--;
+    buffer.activeLlmCalls--;
+  }
+}
+async function runCorrelationEngine(sessionId, canonicalSegmentId, buffer) {
+  try {
+    const recentSegments = buffer.segments.slice(-5);
+    if (recentSegments.length < 2) return;
+    const [recentSignals] = await rawSql(
+      `SELECT feed_type, pipeline, confidence_score, body, created_at
+       FROM intelligence_feed
+       WHERE session_id = $1
+       AND created_at > NOW() - INTERVAL '2 minutes'
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [`shadow-${sessionId}`]
+    );
+    if (!recentSignals || recentSignals.length < 2) return;
+    const hasCompliance = recentSignals.some((s) => s.pipeline === "compliance");
+    const sentimentSignals = recentSignals.filter((s) => s.pipeline === "sentiment");
+    const latestSentiment = sentimentSignals[0];
+    const sentimentScore = latestSentiment?.body?.match(/Score: (\d+)/)?.[1];
+    const sentimentValue = sentimentScore ? parseInt(sentimentScore) : null;
+    if (hasCompliance && sentimentValue !== null && sentimentValue < 40) {
+      await writeToIntelligenceFeed({
+        sessionId,
+        canonicalSegmentId,
+        feedType: "composite",
+        severity: "critical",
+        title: "\u26A1 Composite Risk: Compliance + Negative Sentiment",
+        body: `Compliance signal detected alongside negative sentiment (${sentimentValue}/100). Elevated concern \u2014 review recent statements.`,
+        pipeline: "correlation",
+        speaker: recentSegments[recentSegments.length - 1]?.speaker ?? "",
+        confidenceScore: 0.92,
+        metadata: { patterns: ["compliance", "negative_sentiment"], sentimentValue }
+      });
+      console.log(`[Correlation] Composite risk detected for session ${sessionId}: compliance + negative sentiment`);
+    }
+    if (sentimentSignals.length >= 2) {
+      const scores = sentimentSignals.map((s) => parseInt(s.body?.match(/Score: (\d+)/)?.[1] ?? "0")).filter((s) => s > 0);
+      if (scores.length >= 2) {
+        const drop = scores[scores.length - 1] - scores[0];
+        if (drop < -20) {
+          await writeToIntelligenceFeed({
+            sessionId,
+            canonicalSegmentId,
+            feedType: "composite",
+            severity: "high",
+            title: "\u26A1 Sentiment Deterioration Pattern",
+            body: `Sentiment dropped ${Math.abs(drop)} points across recent segments. Communication stress pattern detected.`,
+            pipeline: "correlation",
+            speaker: recentSegments[recentSegments.length - 1]?.speaker ?? "",
+            confidenceScore: 0.85,
+            metadata: { patterns: ["sentiment_drop"], drop, scores }
+          });
+          console.log(`[Correlation] Sentiment deterioration detected for session ${sessionId}: ${drop} point drop`);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(`[Correlation] Engine error:`, err?.message);
+  }
+}
+async function processSegment(params) {
+  const { sessionId, canonicalSegmentId, speaker, text: text4, segmentIndex } = params;
+  const buffer = getOrCreateBuffer(sessionId);
+  buffer.segments.push({ speaker, text: text4, segmentIndex });
+  const totalSegments = buffer.segments.length;
+  console.log(`[Orchestrator] Session ${sessionId} \u2014 segment ${segmentIndex} received (buffer: ${totalSegments})`);
+  void runCompliancePipeline(sessionId, canonicalSegmentId, text4, speaker).catch(
+    (err) => console.warn(`[Orchestrator] Compliance pipeline failed:`, err?.message)
+  );
+  if (totalSegments % SENTIMENT_INTERVAL === 0 && totalSegments > buffer.lastSentimentAt) {
+    const recentText = buffer.segments.slice(-SENTIMENT_INTERVAL).map((s) => s.text).join(" ");
+    void runSentimentPipeline(sessionId, canonicalSegmentId, recentText, speaker, buffer).catch(
+      (err) => console.warn(`[Orchestrator] Sentiment pipeline failed:`, err?.message)
+    );
+  }
+  if (globalActiveLlmCalls < MAX_GLOBAL_LLM_CALLS && buffer.activeLlmCalls < MAX_CONCURRENT_LLM_CALLS) {
+    void runCorrelationEngine(sessionId, canonicalSegmentId, buffer).catch(
+      (err) => console.warn("[Correlation] Failed:", err?.message)
+    );
+  } else {
+    console.log(`[Orchestrator] Pipeline correlation dropped for session ${sessionId} \u2014 load shedding`);
+    void writeToIntelligenceFeed({
+      sessionId,
+      canonicalSegmentId,
+      feedType: "system",
+      severity: "info",
+      title: "Analysis Delayed",
+      body: "Correlation analysis skipped \u2014 maximum concurrent AI calls reached. Will resume on next segment.",
+      pipeline: "correlation",
+      speaker,
+      confidenceScore: 1
+    }).catch((err) => console.warn("[Orchestrator] Overload signal write failed:", err?.message));
+  }
+}
+var MAX_CONCURRENT_LLM_CALLS, MAX_GLOBAL_LLM_CALLS, globalActiveLlmCalls, SENTIMENT_INTERVAL, sessionBuffers;
+var init_SegmentOrchestrator = __esm({
+  "server/services/SegmentOrchestrator.ts"() {
+    "use strict";
+    init_db();
+    init_aiAnalysis();
+    init_SignalDiscipline();
+    init_DeterministicGovernanceGateway();
+    MAX_CONCURRENT_LLM_CALLS = 3;
+    MAX_GLOBAL_LLM_CALLS = 20;
+    globalActiveLlmCalls = 0;
+    SENTIMENT_INTERVAL = 1;
+    sessionBuffers = /* @__PURE__ */ new Map();
+  }
+});
+
+// server/recallWebhook.ts
+import crypto7 from "crypto";
+import { eq as eq78 } from "drizzle-orm";
 async function ablyPublish4(channel, name, data) {
   if (!ABLY_API_KEY) return;
   const url = `${ABLY_REST_URL3}/channels/${encodeURIComponent(channel)}/messages`;
@@ -47518,22 +47490,29 @@ async function ablyPublish4(channel, name, data) {
     console.warn("[Ably] Publish error:", err);
   }
 }
-function verifyRecallSignature(rawBody, signature) {
+function verifyRecallSignature(rawBody, signature, msgId, msgTimestamp) {
   const isProd = process.env.NODE_ENV === "production";
   if (!RECALL_WEBHOOK_SECRET) {
-    if (isProd) {
-      console.error("[Recall] RECALL_AI_WEBHOOK_SECRET not set \u2014 rejecting unsigned webhook in production");
-      return false;
-    }
+    console.warn("[Recall] RECALL_AI_WEBHOOK_SECRET not set \u2014 accepting webhook without signature verification");
     return true;
   }
   if (!signature) return false;
   try {
-    const expected = crypto5.createHmac("sha256", RECALL_WEBHOOK_SECRET).update(rawBody).digest("hex");
-    return crypto5.timingSafeEqual(
-      Buffer.from(`sha256=${expected}`),
-      Buffer.from(signature)
-    );
+    const parts = signature.split(" ");
+    for (const part of parts) {
+      const [version, sig] = part.split(",");
+      if (version === "v1") {
+        const prefix = "whsec_";
+        const base64Part = RECALL_WEBHOOK_SECRET.startsWith(prefix) ? RECALL_WEBHOOK_SECRET.slice(prefix.length) : RECALL_WEBHOOK_SECRET;
+        const key = Buffer.from(base64Part, "base64");
+        const toSign = `${msgId}.${msgTimestamp}.${rawBody}`;
+        const expected = crypto7.createHmac("sha256", key).update(toSign).digest("base64");
+        if (crypto7.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) {
+          return true;
+        }
+      }
+    }
+    return false;
   } catch {
     return false;
   }
@@ -47549,9 +47528,20 @@ async function handleBotStatusChange(payload) {
   }
   if (status === "done" || status === "call_ended" || status === "fatal") {
     updates.leftAt = Date.now();
+    const shadowSessionId = payload.data.bot.metadata?.shadowSessionId;
+    if (shadowSessionId) {
+      const sessionId = parseInt(shadowSessionId, 10);
+      if (!isNaN(sessionId)) {
+        const degraded = status === "fatal";
+        console.log(`[Recall] Bot ${recallBotId} ${status} \u2014 firing pipeline for session ${sessionId}${degraded ? " (degraded)" : ""}`);
+        runSessionClosePipeline(sessionId, { degraded }).catch(
+          (err) => console.error(`[Recall] SessionClosePipeline failed for session ${sessionId}:`, err)
+        );
+      }
+    }
   }
-  await db2.update(recallBots).set(updates).where(eq80(recallBots.recallBotId, recallBotId));
-  const [bot] = await db2.select({ ablyChannel: recallBots.ablyChannel, eventId: recallBots.eventId }).from(recallBots).where(eq80(recallBots.recallBotId, recallBotId)).limit(1);
+  await db2.update(recallBots).set(updates).where(eq78(recallBots.recallBotId, recallBotId));
+  const [bot] = await db2.select({ ablyChannel: recallBots.ablyChannel, eventId: recallBots.eventId }).from(recallBots).where(eq78(recallBots.recallBotId, recallBotId)).limit(1);
   if (bot?.ablyChannel) {
     await ablyPublish4(bot.ablyChannel, "curalive", JSON.stringify({
       type: "bot.status",
@@ -47567,8 +47557,12 @@ async function handleTranscriptData(payload) {
   if (!words || words.length === 0) return;
   const db2 = await getDb();
   if (!db2) return;
-  const [bot] = await db2.select().from(recallBots).where(eq80(recallBots.recallBotId, recallBotId)).limit(1);
-  if (!bot) return;
+  const [bot] = await db2.select().from(recallBots).where(eq78(recallBots.recallBotId, recallBotId)).limit(1);
+  console.log(`[Recall] Looking up bot: ${recallBotId}`);
+  if (!bot) {
+    console.log(`[Recall] Bot not found in DB for recallBotId: ${recallBotId} \u2014 transcript not saved`);
+    return;
+  }
   const text4 = words.map((w) => w.text).join(" ").trim();
   if (!text4) return;
   const startTime = words[0]?.start_timestamp?.relative ?? 0;
@@ -47583,18 +47577,73 @@ async function handleTranscriptData(payload) {
   };
   const existing = bot.transcriptJson ? JSON.parse(bot.transcriptJson) : [];
   existing.push(transcriptSegment);
-  await db2.update(recallBots).set({ transcriptJson: JSON.stringify(existing) }).where(eq80(recallBots.recallBotId, recallBotId));
+  await db2.update(recallBots).set({ transcriptJson: JSON.stringify(existing) }).where(eq78(recallBots.recallBotId, recallBotId));
+  const [shadowRows] = await rawSql(
+    `SELECT id FROM shadow_sessions WHERE recall_bot_id = $1 LIMIT 1`,
+    [recallBotId]
+  );
+  const shadowSession = shadowRows?.[0] ?? null;
+  if (shadowSession?.id) {
+    const warningTimer = global[`watchdog-warning:${shadowSession.id}`];
+    if (warningTimer) {
+      clearTimeout(warningTimer);
+      delete global[`watchdog-warning:${shadowSession.id}`];
+    }
+    const failoverTimer = global[`watchdog-failover:${shadowSession.id}`];
+    if (failoverTimer) {
+      clearTimeout(failoverTimer);
+      delete global[`watchdog-failover:${shadowSession.id}`];
+    }
+    console.log(`[Watchdog] Cleared for session ${shadowSession.id} \u2014 transcript received`);
+  }
+  try {
+    const sessionRecord = shadowSession ?? await (async () => {
+      const [rows] = await rawSql(
+        `SELECT id FROM shadow_sessions WHERE recall_bot_id = $1 LIMIT 1`,
+        [recallBotId]
+      );
+      return rows?.[0] ?? null;
+    })();
+    if (sessionRecord?.id) {
+      const segmentIdempotencyKey = crypto7.createHash("sha256").update(`${sessionRecord.id}-${speaker}-${Math.round(startTime * 1e3)}-${text4.substring(0, 20)}`).digest("hex").substring(0, 64);
+      const [insertedCanonical] = await db2.insert(canonicalEventSegments).values({
+        sessionId: sessionRecord.id,
+        sourceType: "recall",
+        speakerName: speaker,
+        text: text4,
+        startTimestamp: words[0]?.start_timestamp?.absolute ? new Date(words[0].start_timestamp.absolute).getTime() : Math.round(startTime * 1e3),
+        endTimestamp: words[words.length - 1]?.end_timestamp?.absolute ? new Date(words[words.length - 1].end_timestamp.absolute).getTime() : Math.round((words[words.length - 1]?.end_timestamp?.relative ?? startTime) * 1e3),
+        alignedTimestamp: words[0]?.start_timestamp?.absolute ? new Date(words[0].start_timestamp.absolute).getTime() : Date.now(),
+        wordCount: words.length,
+        segmentIndex: existing.length + 1,
+        confidenceScore: 1,
+        governanceStatus: "pending",
+        idempotencyKey: segmentIdempotencyKey
+      }).returning({ id: canonicalEventSegments.id });
+      const canonicalSegmentId = insertedCanonical?.id ?? 0;
+      void processSegment({
+        sessionId: sessionRecord.id,
+        canonicalSegmentId,
+        speaker,
+        text: text4,
+        segmentIndex: existing.length,
+        ablyChannel: bot.ablyChannel ?? void 0
+      }).catch((err) => console.warn("[Orchestrator] processSegment failed:", err?.message));
+    }
+  } catch (err) {
+    console.warn("[Canonical] Failed to write canonical segment:", err?.message ?? err);
+  }
   if (bot.ablyChannel) {
     await ablyPublish4(bot.ablyChannel, "curalive", JSON.stringify({
       type: "transcript.segment",
       data: transcriptSegment
     }));
   }
-  const SENTIMENT_INTERVAL = 5;
-  if (existing.length > 0 && existing.length % SENTIMENT_INTERVAL === 0) {
+  const SENTIMENT_INTERVAL2 = 5;
+  if (existing.length > 0 && existing.length % SENTIMENT_INTERVAL2 === 0) {
     void (async () => {
       try {
-        const recentText = existing.slice(-SENTIMENT_INTERVAL).map((s) => s.text).join(" ");
+        const recentText = existing.slice(-SENTIMENT_INTERVAL2).map((s) => s.text).join(" ");
         const sentiment = await scoreSentiment(recentText);
         if (bot.ablyChannel) {
           await ablyPublish4(bot.ablyChannel, "curalive", JSON.stringify({
@@ -47622,12 +47671,12 @@ async function handleTranscriptData(payload) {
   }
 }
 async function handleRecordingDone(payload) {
-  const { id: recallBotId } = payload.bot;
-  const recordingUrl = payload.data.recording_url;
+  const { id: recallBotId } = payload.data.bot;
+  const recordingUrl = payload.data.data.recording_url;
   if (!recordingUrl) return;
   const db2 = await getDb();
   if (!db2) return;
-  await db2.update(recallBots).set({ recordingUrl }).where(eq80(recallBots.recallBotId, recallBotId));
+  await db2.update(recallBots).set({ recordingUrl }).where(eq78(recallBots.recallBotId, recallBotId));
   console.log(`[Recall] Recording available for bot ${recallBotId}: ${recordingUrl}`);
 }
 function formatTime(seconds) {
@@ -47651,9 +47700,11 @@ function registerRecallWebhookRoute(app) {
       });
     },
     async (req, res) => {
-      const signature = req.headers["x-recall-signature"];
+      const signature = req.headers["webhook-signature"];
       const rawBody = req.rawBody ?? "";
-      if (!verifyRecallSignature(rawBody, signature)) {
+      const msgId = req.headers["webhook-id"] ?? "";
+      const msgTimestamp = req.headers["webhook-timestamp"] ?? "";
+      if (!verifyRecallSignature(rawBody, signature, msgId, msgTimestamp)) {
         console.warn("[Recall] Invalid webhook signature \u2014 rejecting");
         res.status(401).json({ error: "Invalid signature" });
         return;
@@ -47661,6 +47712,7 @@ function registerRecallWebhookRoute(app) {
       let event;
       try {
         event = JSON.parse(rawBody);
+        console.log(`[Recall] Incoming event: ${JSON.stringify(event).slice(0, 500)}`);
       } catch {
         res.status(400).json({ error: "Invalid JSON" });
         return;
@@ -47668,7 +47720,13 @@ function registerRecallWebhookRoute(app) {
       res.status(200).json({ received: true });
       try {
         switch (event.event) {
-          case "bot.status_change":
+          case "bot.joining_call":
+          case "bot.in_waiting_room":
+          case "bot.in_call_not_recording":
+          case "bot.in_call_recording":
+          case "bot.call_ended":
+          case "bot.done":
+          case "bot.fatal":
             await handleBotStatusChange(event);
             break;
           case "transcript.data":
@@ -47694,6 +47752,8 @@ var init_recallWebhook = __esm({
     init_db();
     init_schema();
     init_aiAnalysis();
+    init_SessionClosePipeline();
+    init_SegmentOrchestrator();
     RECALL_WEBHOOK_SECRET = process.env.RECALL_AI_WEBHOOK_SECRET ?? "";
     ABLY_API_KEY = process.env.ABLY_API_KEY ?? "";
     ABLY_REST_URL3 = "https://rest.ably.io";
@@ -47704,7 +47764,7 @@ var init_recallWebhook = __esm({
 import multer3 from "multer";
 import { join as join3 } from "path";
 import { mkdirSync as mkdirSync2, existsSync as existsSync2 } from "fs";
-import { eq as eq81 } from "drizzle-orm";
+import { eq as eq79 } from "drizzle-orm";
 function sanitizeExtension(originalname) {
   if (!originalname || !originalname.includes(".")) return "webm";
   const raw = originalname.split(".").pop() || "webm";
@@ -47724,7 +47784,7 @@ function registerRecordingUploadRoute(app) {
       const db2 = await getDb();
       const relativePath = `uploads/recordings/${req.file.filename}`;
       const fullPath = join3(RECORDINGS_DIR, req.file.filename);
-      await db2.update(shadowSessions).set({ localRecordingPath: relativePath }).where(eq81(shadowSessions.id, sessionId));
+      await db2.update(shadowSessions).set({ localRecordingPath: relativePath }).where(eq79(shadowSessions.id, sessionId));
       const sizeMB = (req.file.size / 1024 / 1024).toFixed(1);
       console.log(`[Shadow] Recording saved locally for session ${sessionId}: ${relativePath} (${sizeMB} MB)`);
       persistToObjectStorage(fullPath, `recordings/${req.file.filename}`, req.file.mimetype).then((result) => {
@@ -47752,7 +47812,7 @@ function registerRecordingUploadRoute(app) {
         return res.status(400).json({ error: "Invalid session ID" });
       }
       const db2 = await getDb();
-      const [session] = await db2.select().from(shadowSessions).where(eq81(shadowSessions.id, sessionId)).limit(1);
+      const [session] = await db2.select().from(shadowSessions).where(eq79(shadowSessions.id, sessionId)).limit(1);
       if (!session || !session.localRecordingPath) {
         return res.status(404).json({ error: "No recording found for this session" });
       }
@@ -47806,7 +47866,7 @@ var init_recordingUpload = __esm({
 });
 
 // server/reminderScheduler.ts
-import { eq as eq82, isNull as isNull3, and as and47, isNotNull as isNotNull2 } from "drizzle-orm";
+import { eq as eq80, isNull as isNull3, and as and46, isNotNull as isNotNull2 } from "drizzle-orm";
 function formatEventDate(ms) {
   return new Date(ms).toLocaleDateString("en-GB", {
     weekday: "long",
@@ -47840,7 +47900,7 @@ async function runReminderPass(origin) {
   let sent1h = 0;
   let errors = 0;
   const upcomingEvents = await db2.select().from(webcastEvents).where(
-    and47(
+    and46(
       isNotNull2(webcastEvents.startTime)
       // Only consider events that are scheduled or live (not ended/cancelled)
       // We use a broad filter here; the window check below narrows it further
@@ -47852,8 +47912,8 @@ async function runReminderPass(origin) {
     const msUntilStart = event.startTime - now;
     if (msUntilStart >= WINDOW_24H.minMs && msUntilStart <= WINDOW_24H.maxMs) {
       const pending = await db2.select().from(webcastRegistrations).where(
-        and47(
-          eq82(webcastRegistrations.eventId, event.id),
+        and46(
+          eq80(webcastRegistrations.eventId, event.id),
           isNull3(webcastRegistrations.reminder24SentAt)
         )
       );
@@ -47875,7 +47935,7 @@ async function runReminderPass(origin) {
             html
           });
           if (result.success) {
-            await db2.update(webcastRegistrations).set({ reminder24SentAt: Date.now() }).where(eq82(webcastRegistrations.id, reg.id));
+            await db2.update(webcastRegistrations).set({ reminder24SentAt: Date.now() }).where(eq80(webcastRegistrations.id, reg.id));
             sent24h++;
             console.log(`[ReminderScheduler] 24h reminder sent \u2192 ${reg.email} (event: ${event.slug})`);
           } else {
@@ -47890,8 +47950,8 @@ async function runReminderPass(origin) {
     }
     if (msUntilStart >= WINDOW_1H.minMs && msUntilStart <= WINDOW_1H.maxMs) {
       const pending = await db2.select().from(webcastRegistrations).where(
-        and47(
-          eq82(webcastRegistrations.eventId, event.id),
+        and46(
+          eq80(webcastRegistrations.eventId, event.id),
           isNull3(webcastRegistrations.reminder1SentAt)
         )
       );
@@ -47913,7 +47973,7 @@ async function runReminderPass(origin) {
             html
           });
           if (result.success) {
-            await db2.update(webcastRegistrations).set({ reminder1SentAt: Date.now() }).where(eq82(webcastRegistrations.id, reg.id));
+            await db2.update(webcastRegistrations).set({ reminder1SentAt: Date.now() }).where(eq80(webcastRegistrations.id, reg.id));
             sent1h++;
             console.log(`[ReminderScheduler] 1h reminder sent \u2192 ${reg.email} (event: ${event.slug})`);
           } else {
@@ -48511,7 +48571,7 @@ var init_billingPdf = __esm({
 // server/webhooks/bridgeWebhooks.ts
 import express2 from "express";
 import twilio5 from "twilio";
-import { eq as eq83, and as and48, sql as sql24 } from "drizzle-orm";
+import { eq as eq81, and as and47, sql as sql22 } from "drizzle-orm";
 function resolveBaseUrl2() {
   if (process.env.REPLIT_DEPLOYMENT_URL) return `https://${process.env.REPLIT_DEPLOYMENT_URL}`;
   if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`;
@@ -48537,17 +48597,17 @@ async function publishToBridge(conferenceId, eventType, data) {
 }
 async function findBridgeEventByAccessCode(accessCode) {
   const db2 = await getDb();
-  const [event] = await db2.select().from(bridgeEvents).where(and48(
-    eq83(bridgeEvents.accessCode, accessCode),
-    sql24`${bridgeEvents.status} NOT IN ('completed', 'cancelled')`
+  const [event] = await db2.select().from(bridgeEvents).where(and47(
+    eq81(bridgeEvents.accessCode, accessCode),
+    sql22`${bridgeEvents.status} NOT IN ('completed', 'cancelled')`
   ));
   return event ?? null;
 }
 async function findMainConference(bridgeEventId) {
   const db2 = await getDb();
-  const [conf] = await db2.select().from(bridgeConferences).where(and48(
-    eq83(bridgeConferences.bridgeEventId, bridgeEventId),
-    eq83(bridgeConferences.type, "main")
+  const [conf] = await db2.select().from(bridgeConferences).where(and47(
+    eq81(bridgeConferences.bridgeEventId, bridgeEventId),
+    eq81(bridgeConferences.type, "main")
   ));
   return conf ?? null;
 }
@@ -48726,8 +48786,8 @@ function registerBridgeWebhooks(app) {
     if (transcriptionText && recordingUrl) {
       try {
         const db2 = await getDb();
-        await db2.update(bridgeGreeterQueue).set({ transcribedName: transcriptionText.trim() }).where(eq83(bridgeGreeterQueue.voiceNameUrl, recordingUrl));
-        const [greeter] = await db2.select().from(bridgeGreeterQueue).where(eq83(bridgeGreeterQueue.voiceNameUrl, recordingUrl));
+        await db2.update(bridgeGreeterQueue).set({ transcribedName: transcriptionText.trim() }).where(eq81(bridgeGreeterQueue.voiceNameUrl, recordingUrl));
+        const [greeter] = await db2.select().from(bridgeGreeterQueue).where(eq81(bridgeGreeterQueue.voiceNameUrl, recordingUrl));
         if (greeter?.conferenceId) {
           await publishToBridge(greeter.conferenceId, "greeter:transcribed", {
             greeterId: greeter.id,
@@ -48748,8 +48808,8 @@ function registerBridgeWebhooks(app) {
     if (transcriptionText && recordingUrl) {
       try {
         const db2 = await getDb();
-        await db2.update(bridgeGreeterQueue).set({ transcribedOrg: transcriptionText.trim() }).where(eq83(bridgeGreeterQueue.voiceOrgUrl, recordingUrl));
-        const [greeter] = await db2.select().from(bridgeGreeterQueue).where(eq83(bridgeGreeterQueue.voiceOrgUrl, recordingUrl));
+        await db2.update(bridgeGreeterQueue).set({ transcribedOrg: transcriptionText.trim() }).where(eq81(bridgeGreeterQueue.voiceOrgUrl, recordingUrl));
+        const [greeter] = await db2.select().from(bridgeGreeterQueue).where(eq81(bridgeGreeterQueue.voiceOrgUrl, recordingUrl));
         if (greeter?.conferenceId) {
           await publishToBridge(greeter.conferenceId, "greeter:transcribed", {
             greeterId: greeter.id,
@@ -48771,12 +48831,12 @@ function registerBridgeWebhooks(app) {
     if (digits === "*2" || digits === "**") {
       try {
         const db2 = await getDb();
-        const [participant] = await db2.select().from(bridgeParticipants).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+        const [participant] = await db2.select().from(bridgeParticipants).where(eq81(bridgeParticipants.twilioCallSid, callSid));
         if (participant && participant.conferenceId) {
-          await db2.update(bridgeParticipants).set({ handRaised: true, handRaisedAt: /* @__PURE__ */ new Date() }).where(eq83(bridgeParticipants.id, participant.id));
+          await db2.update(bridgeParticipants).set({ handRaised: true, handRaisedAt: /* @__PURE__ */ new Date() }).where(eq81(bridgeParticipants.id, participant.id));
           const maxPos = await db2.select({
-            max: sql24`COALESCE(MAX(${bridgeQaQuestions.queuePosition}), 0)`
-          }).from(bridgeQaQuestions).where(eq83(bridgeQaQuestions.conferenceId, participant.conferenceId));
+            max: sql22`COALESCE(MAX(${bridgeQaQuestions.queuePosition}), 0)`
+          }).from(bridgeQaQuestions).where(eq81(bridgeQaQuestions.conferenceId, participant.conferenceId));
           const nextPos = (maxPos[0]?.max ?? 0) + 1;
           const [question] = await db2.insert(bridgeQaQuestions).values({
             conferenceId: participant.conferenceId,
@@ -48808,12 +48868,12 @@ function registerBridgeWebhooks(app) {
     try {
       const db2 = await getDb();
       if (statusEvent === "conference-start") {
-        await db2.update(bridgeConferences).set({ twilioConfSid: conferenceSid }).where(eq83(bridgeConferences.twilioConfName, friendlyName));
+        await db2.update(bridgeConferences).set({ twilioConfSid: conferenceSid }).where(eq81(bridgeConferences.twilioConfName, friendlyName));
       }
       if (statusEvent === "participant-join" && callSid) {
-        const [participant] = await db2.select().from(bridgeParticipants).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+        const [participant] = await db2.select().from(bridgeParticipants).where(eq81(bridgeParticipants.twilioCallSid, callSid));
         if (participant) {
-          await db2.update(bridgeParticipants).set({ status: muted ? "muted" : "live", joinTime: /* @__PURE__ */ new Date() }).where(eq83(bridgeParticipants.id, participant.id));
+          await db2.update(bridgeParticipants).set({ status: muted ? "muted" : "live", joinTime: /* @__PURE__ */ new Date() }).where(eq81(bridgeParticipants.id, participant.id));
           if (participant.conferenceId) {
             await publishToBridge(participant.conferenceId, "participant:joined", {
               participantId: participant.id,
@@ -48823,11 +48883,11 @@ function registerBridgeWebhooks(app) {
         }
       }
       if (statusEvent === "participant-leave" && callSid) {
-        const [participant] = await db2.select().from(bridgeParticipants).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+        const [participant] = await db2.select().from(bridgeParticipants).where(eq81(bridgeParticipants.twilioCallSid, callSid));
         if (participant) {
           const joinTime = participant.joinTime?.getTime() ?? Date.now();
           const durationSeconds = Math.round((Date.now() - joinTime) / 1e3);
-          await db2.update(bridgeParticipants).set({ status: "left", leaveTime: /* @__PURE__ */ new Date(), durationSeconds }).where(eq83(bridgeParticipants.id, participant.id));
+          await db2.update(bridgeParticipants).set({ status: "left", leaveTime: /* @__PURE__ */ new Date(), durationSeconds }).where(eq81(bridgeParticipants.id, participant.id));
           if (participant.conferenceId) {
             await publishToBridge(participant.conferenceId, "participant:left", {
               participantId: participant.id,
@@ -48838,27 +48898,27 @@ function registerBridgeWebhooks(app) {
         }
       }
       if (statusEvent === "conference-end") {
-        await db2.update(bridgeConferences).set({ phase: "ended", endedAt: /* @__PURE__ */ new Date() }).where(eq83(bridgeConferences.twilioConfName, friendlyName));
+        await db2.update(bridgeConferences).set({ phase: "ended", endedAt: /* @__PURE__ */ new Date() }).where(eq81(bridgeConferences.twilioConfName, friendlyName));
       }
       if (statusEvent === "participant-mute" && callSid) {
-        await db2.update(bridgeParticipants).set({ isMuted: muted }).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+        await db2.update(bridgeParticipants).set({ isMuted: muted }).where(eq81(bridgeParticipants.twilioCallSid, callSid));
       }
       if (statusEvent === "participant-hold" && callSid) {
-        await db2.update(bridgeParticipants).set({ isOnHold: hold }).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+        await db2.update(bridgeParticipants).set({ isOnHold: hold }).where(eq81(bridgeParticipants.twilioCallSid, callSid));
       }
       if ((statusEvent === "recording-started" || statusEvent === "recording-completed") && conferenceSid) {
         const recordingSid = req.body?.RecordingSid ?? "";
         const recordingUrl = req.body?.RecordingUrl ?? "";
         const recordingDuration = parseInt(req.body?.RecordingDuration ?? "0", 10);
         if (statusEvent === "recording-started") {
-          const [conf] = await db2.select().from(bridgeConferences).where(eq83(bridgeConferences.twilioConfSid, conferenceSid));
+          const [conf] = await db2.select().from(bridgeConferences).where(eq81(bridgeConferences.twilioConfSid, conferenceSid));
           if (conf) {
             await db2.insert(bridgeCallRecordings).values({
               conferenceId: conf.id,
               twilioRecSid: recordingSid,
               status: "recording"
             });
-            await db2.update(bridgeConferences).set({ isRecording: true, recordingSid }).where(eq83(bridgeConferences.id, conf.id));
+            await db2.update(bridgeConferences).set({ isRecording: true, recordingSid }).where(eq81(bridgeConferences.id, conf.id));
           }
         }
         if (statusEvent === "recording-completed") {
@@ -48866,10 +48926,10 @@ function registerBridgeWebhooks(app) {
             status: "completed",
             storageUrl: recordingUrl ? `${recordingUrl}.mp3` : null,
             durationSec: recordingDuration
-          }).where(eq83(bridgeCallRecordings.twilioRecSid, recordingSid));
-          const [conf] = await db2.select().from(bridgeConferences).where(eq83(bridgeConferences.twilioConfSid, conferenceSid));
+          }).where(eq81(bridgeCallRecordings.twilioRecSid, recordingSid));
+          const [conf] = await db2.select().from(bridgeConferences).where(eq81(bridgeConferences.twilioConfSid, conferenceSid));
           if (conf) {
-            await db2.update(bridgeConferences).set({ isRecording: false, recordingUrl: recordingUrl ? `${recordingUrl}.mp3` : null }).where(eq83(bridgeConferences.id, conf.id));
+            await db2.update(bridgeConferences).set({ isRecording: false, recordingUrl: recordingUrl ? `${recordingUrl}.mp3` : null }).where(eq81(bridgeConferences.id, conf.id));
           }
         }
       }
@@ -48885,7 +48945,7 @@ function registerBridgeWebhooks(app) {
     console.log(`[Bridge Call] callSid=${callSid} status=${callStatus} duration=${callDuration}s`);
     try {
       const db2 = await getDb();
-      const [participant] = await db2.select().from(bridgeParticipants).where(eq83(bridgeParticipants.twilioCallSid, callSid));
+      const [participant] = await db2.select().from(bridgeParticipants).where(eq81(bridgeParticipants.twilioCallSid, callSid));
       if (participant) {
         const statusMap = {
           "ringing": "dialing",
@@ -48902,7 +48962,7 @@ function registerBridgeWebhooks(app) {
           updates.leaveTime = /* @__PURE__ */ new Date();
           updates.durationSeconds = callDuration;
         }
-        await db2.update(bridgeParticipants).set(updates).where(eq83(bridgeParticipants.id, participant.id));
+        await db2.update(bridgeParticipants).set(updates).where(eq81(bridgeParticipants.id, participant.id));
         if (participant.conferenceId) {
           await publishToBridge(participant.conferenceId, "participant:status", {
             participantId: participant.id,
@@ -48940,16 +49000,16 @@ function registerBridgeWebhooks(app) {
 }
 async function addToGreeterQueue(bridgeEventId, conferenceId, callSid, from, voiceNameUrl, voiceOrgUrl) {
   const db2 = await getDb();
-  const existing = await db2.select().from(bridgeGreeterQueue).where(and48(
-    eq83(bridgeGreeterQueue.twilioCallSid, callSid),
-    eq83(bridgeGreeterQueue.bridgeEventId, bridgeEventId)
+  const existing = await db2.select().from(bridgeGreeterQueue).where(and47(
+    eq81(bridgeGreeterQueue.twilioCallSid, callSid),
+    eq81(bridgeGreeterQueue.bridgeEventId, bridgeEventId)
   ));
   if (existing.length > 0) {
     const updates = {};
     if (voiceNameUrl) updates.voiceNameUrl = voiceNameUrl;
     if (voiceOrgUrl) updates.voiceOrgUrl = voiceOrgUrl;
     if (Object.keys(updates).length > 0) {
-      await db2.update(bridgeGreeterQueue).set(updates).where(eq83(bridgeGreeterQueue.id, existing[0].id));
+      await db2.update(bridgeGreeterQueue).set(updates).where(eq81(bridgeGreeterQueue.id, existing[0].id));
     }
     return existing[0];
   }
@@ -49280,6 +49340,242 @@ async function ensureLiveQaP1Columns() {
     console.warn("[Migration] P1 Q&A columns check skipped:", err?.message);
   }
 }
+async function ensureShadowSessionsColumns() {
+  try {
+    const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+    await rawSql2(`CREATE TABLE IF NOT EXISTS shadow_sessions (
+      id SERIAL PRIMARY KEY,
+      client_name VARCHAR(255) NOT NULL DEFAULT '',
+      event_name VARCHAR(255) NOT NULL DEFAULT '',
+      event_type VARCHAR(64) NOT NULL DEFAULT '',
+      platform VARCHAR(64) NOT NULL DEFAULT 'zoom',
+      meeting_url VARCHAR(1000) NOT NULL DEFAULT '',
+      status VARCHAR(64) NOT NULL DEFAULT 'pending',
+      recall_bot_id VARCHAR(255),
+      ably_channel VARCHAR(255),
+      local_transcript_json TEXT,
+      local_recording_path VARCHAR(1000),
+      transcript_segments INTEGER DEFAULT 0,
+      sentiment_avg REAL,
+      compliance_flags INTEGER DEFAULT 0,
+      tagged_metrics_generated INTEGER DEFAULT 0,
+      notes TEXT,
+      started_at BIGINT,
+      ended_at BIGINT,
+      org_id INTEGER,
+      company VARCHAR(255),
+      ai_core_results TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS client_name VARCHAR(255)`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS event_name VARCHAR(255)`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS event_type VARCHAR(64)`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS platform VARCHAR(64) DEFAULT 'zoom'`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS meeting_url VARCHAR(1000)`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS recall_bot_id VARCHAR(255)`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS ably_channel VARCHAR(255)`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS local_transcript_json TEXT`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS local_recording_path VARCHAR(1000)`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS transcript_segments INTEGER DEFAULT 0`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS sentiment_avg REAL`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS compliance_flags INTEGER DEFAULT 0`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS tagged_metrics_generated INTEGER DEFAULT 0`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS notes TEXT`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS started_at BIGINT`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS ended_at BIGINT`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS org_id INTEGER`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS company VARCHAR(255)`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS ai_core_results TEXT`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS status VARCHAR(64) NOT NULL DEFAULT 'pending'`);
+    await rawSql2(`ALTER TABLE shadow_sessions ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW()`);
+    await rawSql2(`ALTER TABLE shadow_sessions ALTER COLUMN session_id DROP NOT NULL`);
+    await rawSql2(`ALTER TABLE shadow_sessions ALTER COLUMN operator_id DROP NOT NULL`);
+    console.log("[Migration] \u2713 shadow_sessions columns ensured");
+  } catch (err) {
+    console.warn("[Migration] shadow_sessions column check skipped:", err?.message);
+  }
+}
+async function ensureOrganisationsTable() {
+  try {
+    const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+    await rawSql2(`CREATE TABLE IF NOT EXISTS organisations (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'demo',
+      billing_type VARCHAR(20) NOT NULL DEFAULT 'demo',
+      subscription_amount INTEGER,
+      per_event_price INTEGER,
+      billing_contact_email VARCHAR(255),
+      ir_contact_email VARCHAR(255),
+      pilot_events_total INTEGER DEFAULT 3,
+      pilot_events_used INTEGER DEFAULT 0,
+      pilot_notes TEXT,
+      followup_date DATE,
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+      updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )`);
+    const [existing] = await rawSql2(`SELECT COUNT(*)::int AS cnt FROM organisations`);
+    if ((existing[0]?.cnt ?? 0) === 0) {
+      await rawSql2(`INSERT INTO organisations (name, status, billing_type, subscription_amount, ir_contact_email, billing_contact_email) VALUES
+        ('Meridian Resources', 'active', 'subscription', 25000, 'ir@meridianresources.co.za', 'finance@meridianresources.co.za'),
+        ('Acacia Capital', 'pilot', 'adhoc', NULL, 'investor.relations@acaciacapital.co.za', NULL),
+        ('Stellarway Holdings', 'demo', 'demo', NULL, NULL, NULL)`);
+      console.log("[Migration] \u2713 organisations seeded with 3 demo records");
+    }
+    console.log("[Migration] \u2713 organisations table ensured");
+  } catch (err) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] organisations table check skipped:", err?.message);
+  }
+}
+async function ensureScheduledSessionsTable() {
+  try {
+    const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+    await rawSql2(`CREATE TABLE IF NOT EXISTS scheduled_sessions (
+      id SERIAL PRIMARY KEY,
+      org_id INTEGER,
+      event_name VARCHAR(255) NOT NULL,
+      company VARCHAR(255),
+      event_type VARCHAR(64) DEFAULT 'earnings_call',
+      platform VARCHAR(64) DEFAULT 'zoom',
+      meeting_url TEXT,
+      scheduled_at TIMESTAMP NOT NULL,
+      tier VARCHAR(32) DEFAULT 'essential',
+      partner_id INTEGER,
+      recipients JSON DEFAULT '[]',
+      pre_brief_sent_at TIMESTAMP,
+      session_created_id INTEGER,
+      created_by INTEGER,
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
+    await rawSql2(`ALTER TABLE scheduled_sessions ADD COLUMN IF NOT EXISTS org_id INTEGER`);
+    await rawSql2(`ALTER TABLE scheduled_sessions ADD COLUMN IF NOT EXISTS notes TEXT`);
+    await rawSql2(`ALTER TABLE scheduled_sessions ADD COLUMN IF NOT EXISTS platform VARCHAR(64) DEFAULT 'zoom'`);
+    console.log("[Migration] \u2713 scheduled_sessions table ensured");
+  } catch (err) {
+    console.warn("[Migration] scheduled_sessions table check skipped:", err?.message);
+  }
+}
+async function ensureBillingInvoicesTable() {
+  try {
+    const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+    await rawSql2(`CREATE TABLE IF NOT EXISTS billing_invoices (
+      id SERIAL PRIMARY KEY,
+      invoice_number VARCHAR(32) NOT NULL UNIQUE,
+      client_id INTEGER NOT NULL,
+      quote_id INTEGER,
+      title VARCHAR(255) NOT NULL,
+      subtotal_cents BIGINT NOT NULL DEFAULT 0,
+      discount_cents BIGINT NOT NULL DEFAULT 0,
+      tax_percent INTEGER NOT NULL DEFAULT 15,
+      tax_cents BIGINT NOT NULL DEFAULT 0,
+      total_cents BIGINT NOT NULL DEFAULT 0,
+      paid_cents BIGINT NOT NULL DEFAULT 0,
+      currency VARCHAR(8) NOT NULL DEFAULT 'ZAR',
+      status VARCHAR(64) NOT NULL DEFAULT 'draft',
+      issued_at TIMESTAMP,
+      due_at TIMESTAMP,
+      paid_at TIMESTAMP,
+      access_token VARCHAR(64) UNIQUE,
+      payment_terms TEXT,
+      internal_notes TEXT,
+      client_notes TEXT,
+      bank_details TEXT,
+      created_by_user_id INTEGER,
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+      updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )`);
+    console.log("[Migration] \u2713 billing_invoices table ensured");
+  } catch (err) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] billing_invoices table check skipped:", err?.message);
+  }
+}
+async function ensureIntelligenceFeedTable() {
+  try {
+    const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+    await rawSql2(`CREATE TABLE IF NOT EXISTS intelligence_feed (
+      id SERIAL PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      feed_type TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'info',
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      metadata JSONB,
+      pipeline TEXT NOT NULL,
+      speaker TEXT NOT NULL,
+      timestamp_in_event INTEGER,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
+    await rawSql2(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS canonical_segment_id INTEGER`);
+    await rawSql2(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS governance_status VARCHAR(50) DEFAULT 'pending'`);
+    await rawSql2(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS confidence_score REAL`);
+    await rawSql2(`ALTER TABLE intelligence_feed ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(64)`);
+    await rawSql2(`CREATE UNIQUE INDEX IF NOT EXISTS idx_intelligence_feed_idempotency ON intelligence_feed(idempotency_key) WHERE idempotency_key IS NOT NULL`);
+    console.log("[Migration] \u2713 intelligence_feed columns ensured (canonical_segment_id, governance_status, confidence_score, idempotency_key)");
+  } catch (err) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] intelligence_feed table check skipped:", err?.message);
+  }
+}
+async function ensureCanonicalEventSegmentsTable() {
+  try {
+    const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+    await rawSql2(`CREATE TABLE IF NOT EXISTS canonical_event_segments (
+      id SERIAL PRIMARY KEY,
+      session_id INTEGER NOT NULL,
+      source_type VARCHAR(50) NOT NULL DEFAULT 'recall',
+      speaker_id VARCHAR(255),
+      speaker_name VARCHAR(255),
+      speaker_role VARCHAR(50),
+      text TEXT NOT NULL,
+      start_timestamp BIGINT,
+      end_timestamp BIGINT,
+      aligned_timestamp BIGINT,
+      word_count INTEGER,
+      segment_index INTEGER,
+      confidence_score REAL,
+      governance_status VARCHAR(50) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL
+    )`);
+    await rawSql2(`ALTER TABLE canonical_event_segments ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(64)`);
+    await rawSql2(`CREATE UNIQUE INDEX IF NOT EXISTS idx_canonical_segments_idempotency ON canonical_event_segments(idempotency_key) WHERE idempotency_key IS NOT NULL`);
+    console.log("[Migration] \u2713 canonical_event_segments table ensured");
+  } catch (err) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] canonical_event_segments table check skipped:", err?.message);
+  }
+}
+async function ensureGovernanceDecisionsTable() {
+  try {
+    const { rawSql: rawSql2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+    await rawSql2(`
+      CREATE TABLE IF NOT EXISTS governance_decisions (
+        id SERIAL PRIMARY KEY,
+        intelligence_feed_id INTEGER,
+        pipeline_id VARCHAR(50),
+        decision VARCHAR(20) NOT NULL DEFAULT 'pending',
+        stability_score REAL,
+        observation_count INTEGER,
+        failure_rate REAL,
+        reason_code VARCHAR(50),
+        chain_hash VARCHAR(255),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await rawSql2(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS intelligence_feed_id INTEGER`);
+    await rawSql2(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS pipeline_id VARCHAR(50)`);
+    await rawSql2(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS stability_score REAL`);
+    await rawSql2(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS observation_count INTEGER`);
+    await rawSql2(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS failure_rate REAL`);
+    await rawSql2(`ALTER TABLE governance_decisions ADD COLUMN IF NOT EXISTS reason_code VARCHAR(50)`);
+    console.log("[Migration] \u2713 governance_decisions table and columns ensured");
+  } catch (err) {
+    if (err?.message?.includes("already exists")) return;
+    console.warn("[Migration] governance_decisions table migration failed:", err?.message);
+  }
+}
 async function startServer() {
   const app = express3();
   const server = http.createServer(app);
@@ -49304,6 +49600,24 @@ async function startServer() {
       dirname: import.meta.dirname,
       nodeEnv: process.env.NODE_ENV
     });
+  });
+  app.get("/download/curalive_db_backup.sql", async (_req, res) => {
+    const fsM = await import("fs");
+    const pathM = await import("path");
+    const filePath = pathM.resolve(process.cwd(), "curalive_db_backup.sql");
+    if (!fsM.existsSync(filePath)) return res.status(404).send("Backup file not found");
+    res.setHeader("Content-Disposition", "attachment; filename=curalive_db_backup.sql");
+    res.setHeader("Content-Type", "application/sql");
+    fsM.createReadStream(filePath).pipe(res);
+  });
+  app.get("/download/curalive_replit.dump", async (_req, res) => {
+    const fsM = await import("fs");
+    const pathM = await import("path");
+    const filePath = pathM.resolve(process.cwd(), "curalive_replit.dump");
+    if (!fsM.existsSync(filePath)) return res.status(404).send("Dump file not found");
+    res.setHeader("Content-Disposition", "attachment; filename=curalive_replit.dump");
+    res.setHeader("Content-Type", "application/octet-stream");
+    fsM.createReadStream(filePath).pipe(res);
   });
   app.get("/health", async (_req, res) => {
     const { validateEnv: validateEnv2 } = await Promise.resolve().then(() => (init_env2(), env_exports));
@@ -49334,6 +49648,27 @@ async function startServer() {
   );
   ensureLiveQaP1Columns().catch(
     (err) => console.warn("[Migration] P1 Q&A columns migration failed:", err?.message)
+  );
+  ensureShadowSessionsColumns().catch(
+    (err) => console.warn("[Migration] shadow_sessions column migration failed:", err?.message)
+  );
+  ensureOrganisationsTable().catch(
+    (err) => console.warn("[Migration] organisations table migration failed:", err?.message)
+  );
+  ensureScheduledSessionsTable().catch(
+    (err) => console.warn("[Migration] scheduled_sessions table migration failed:", err?.message)
+  );
+  ensureBillingInvoicesTable().catch(
+    (err) => console.warn("[Migration] billing_invoices table migration failed:", err?.message)
+  );
+  ensureIntelligenceFeedTable().catch(
+    (err) => console.warn("[Migration] intelligence_feed table migration failed:", err?.message)
+  );
+  ensureCanonicalEventSegmentsTable().catch(
+    (err) => console.warn("[Migration] canonical_event_segments table migration failed:", err?.message)
+  );
+  ensureGovernanceDecisionsTable().catch(
+    (err) => console.warn("[Migration] governance_decisions table migration failed:", err?.message)
   );
   if (!isProd) {
     app.use("/__mockup", (req, res) => {
@@ -49448,8 +49783,8 @@ async function startServer() {
       const db2 = await getDb2();
       if (db2) {
         const { occOperatorSessions: occOperatorSessions2 } = await Promise.resolve().then(() => (init_schema(), schema_exports));
-        const { eq: eq84 } = await import("drizzle-orm");
-        const available = await db2.select().from(occOperatorSessions2).where(eq84(occOperatorSessions2.state, "present")).limit(5);
+        const { eq: eq82 } = await import("drizzle-orm");
+        const available = await db2.select().from(occOperatorSessions2).where(eq82(occOperatorSessions2.state, "present")).limit(5);
         if (available.length > 0) {
           available.sort((a, b) => {
             const aTime = a.lastHeartbeat?.getTime() ?? 0;
@@ -49511,12 +49846,12 @@ async function startServer() {
         const db2 = await getDb2();
         if (db2) {
           const { webphoneSessions: webphoneSessions2 } = await Promise.resolve().then(() => (init_schema(), schema_exports));
-          const { eq: eq84 } = await import("drizzle-orm");
+          const { eq: eq82 } = await import("drizzle-orm");
           await db2.update(webphoneSessions2).set({
             recordingSid,
             recordingUrl: recordingUrl ? `${recordingUrl}.mp3` : null,
             recordingStatus: recordingStatus === "completed" ? "completed" : "failed"
-          }).where(eq84(webphoneSessions2.callSid, callSid));
+          }).where(eq82(webphoneSessions2.callSid, callSid));
           console.log(`[Recording Callback] Updated session for callSid=${callSid}`);
         }
       } catch (err) {
@@ -49605,7 +49940,7 @@ async function startServer() {
             prompt: "Transcribe this voicemail message"
           });
           if ("text" in transcriptionResult && transcriptionResult.text) {
-            const { eq: eq84 } = await import("drizzle-orm");
+            const { eq: eq82 } = await import("drizzle-orm");
             const dbForTranscript = await getDb2();
             if (dbForTranscript) {
               const { webphoneSessions: ws } = await Promise.resolve().then(() => (init_schema(), schema_exports));
@@ -49613,7 +49948,7 @@ async function startServer() {
                 transcription: transcriptionResult.text,
                 transcriptionLanguage: transcriptionResult.language ?? "en",
                 transcriptionStatus: "completed"
-              }).where(eq84(ws.callSid, callSid));
+              }).where(eq82(ws.callSid, callSid));
               console.log(`[Voicemail] Auto-transcribed: "${transcriptionResult.text.substring(0, 80)}..."`);
             }
           }
@@ -50054,8 +50389,8 @@ ${"=".repeat(40)}
     }
     try {
       const clientId = req.query.clientId || "occ-operator";
-      const Ably3 = await import("ably");
-      const client = new Ably3.Rest(apiKey);
+      const Ably4 = await import("ably");
+      const client = new Ably4.Rest(apiKey);
       const tokenRequest = await client.auth.createTokenRequest({
         clientId,
         capability: {
@@ -50068,6 +50403,29 @@ ${"=".repeat(40)}
       res.json(tokenRequest);
     } catch (e) {
       console.error("[Ably token]", e);
+      res.status(500).json({ error: "Token generation failed" });
+    }
+  });
+  app.get("/api/ably-token-string", async (req, res) => {
+    const apiKey = process.env.ABLY_API_KEY;
+    if (!apiKey) {
+      res.status(503).json({ error: "Ably not configured" });
+      return;
+    }
+    try {
+      const clientId = req.query.clientId || "customer-user";
+      const Ably4 = await import("ably");
+      const client = new Ably4.Rest(apiKey);
+      const token = await client.auth.requestToken({
+        clientId,
+        capability: {
+          "curalive-event-*": ["subscribe", "publish", "presence", "history"]
+        },
+        ttl: 36e5
+      });
+      res.json({ token: token.token });
+    } catch (e) {
+      console.error("[Ably token-string]", e);
       res.status(500).json({ error: "Token generation failed" });
     }
   });
@@ -50088,6 +50446,12 @@ ${"=".repeat(40)}
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
+  app.use((err, req, res, _next) => {
+    console.error(`[Express] Unhandled error on ${req.method} ${req.url}:`, err?.message || err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: err?.message || "Internal server error" });
+    }
+  });
   server.listen(port, "0.0.0.0", () => {
     console.log(`[CuraLive v2025.04.10-B] Server running on http://0.0.0.0:${port}/`);
     const origin = process.env.APP_ORIGIN ?? `http://localhost:${port}`;
