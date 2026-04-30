@@ -52,8 +52,8 @@ export async function writeUserSessionMemory(params: {
        AND NOT EXISTS (
          SELECT 1 FROM customer_actions ca
          WHERE ca.target_id = f.id
-         AND ca.session_id = $3
-         AND ca.user_id = $4
+         AND ca.session_id = $2
+         AND ca.user_id = $3
        )`,
       [feedSessionId, sessionId, userId]
     );
