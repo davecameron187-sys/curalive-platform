@@ -638,3 +638,25 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: 7510dbd
 ### Next: Stage 1B — Signal collapsing for repeated deterioration patterns
+
+## Session: April 30 2026 (Stage 1B)
+### Objective: Stage 1B — Signal Collapsing for Repeated Deterioration Patterns
+
+### Completed
+- Added surfacedSignals Set to SessionDeltaState
+- Duplicate check added to scorePriority before P1 correlation block
+- Signal key: topicKey + pipeline + pattern_type
+- First occurrence surfaces, all subsequent suppress as SUPPRESSED_DUPLICATE_PATTERN
+
+### Validation Confirmed
+- 6 items processed
+- 1 surfaced — feedItemId 317, P1 correlation deterioration
+- 3 suppressed as SUPPRESSED_DUPLICATE_PATTERN (feedItemId 320, 327, 372)
+- 2 suppressed as baseline sentiment
+- Customer dashboard would show exactly 1 delta instead of 4
+
+### Replit Auto-Commits Detected
+- R10 violation — Replit committed autonomously
+
+### Last Known Good Commit: to confirm after push
+### Next: Stage 2 — Shadow panel on customer dashboard
