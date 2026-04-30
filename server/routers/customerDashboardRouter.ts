@@ -196,6 +196,47 @@ export const customerDashboardRouter = router({
         return [];
       }
     }),
+  getAuditRecord: customerProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      try {
+        const orgId = ctx.user?.orgId ?? 1;
+        const [feedRows] = await rawSql(
+          `SELECT f.id, f.session_id, f.feed_type, f.severity, f.title, f.body, f.pipeline, f.confidence_score, f.created_at
+           FROM intelligence_feed f
+           JOIN shadow_sessions s ON s.id = CAST(replace(f.session_id, 'shadow-', '') AS integer)
+           WHERE f.session_id = $1 AND s.org_id = $2
+           ORDER BY f.created_at ASC`,
+          [input.sessionId, orgId]
+        );
+        const [govRows] = await rawSql(
+          `SELECT g.id, g.intelligence_feed_id, g.decision_type, g.decision, g.reasoning, g.chain_hash, g.previous_hash, g.decided_at
+           FROM governance_decisions g
+           WHERE g.session_id = $1
+           ORDER BY g.decided_at ASC`,
+          [input.sessionId]
+        );
+        const sessionNumeric = parseInt(input.sessionId.replace('shadow-', ''), 10);
+        const [actionRows] = await rawSql(
+          `SELECT ca.id, ca.user_id, ca.action_type, ca.target_type, ca.target_id, ca.created_at
+           FROM customer_actions ca
+           WHERE ca.session_id = $1 AND ca.org_id = $2
+           ORDER BY ca.created_at ASC`,
+          [sessionNumeric, orgId]
+        );
+        const govDecisions = (govRows ?? []) as any[];
+        let chainIntact = true;
+        for (let i = 1; i < govDecisions.length; i++) {
+          if (govDecisions[i].previous_hash !== govDecisions[i - 1].chain_hash) {
+            chainIntact = false;
+            break;
+          }
+        }
+        return { sessionId: input.sessionId, signals: (feedRows ?? []) as any[], decisions: govDecisions, actions: (actionRows ?? []) as any[], chainIntact, generatedAt: new Date().toISOString() };
+      } catch (err) {
+        return { sessionId: input.sessionId, signals: [], decisions: [], actions: [], chainIntact: false, generatedAt: new Date().toISOString() };
+      }
+    }),
   getNarrativeDeltas: customerProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
