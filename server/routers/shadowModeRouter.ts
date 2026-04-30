@@ -639,6 +639,45 @@ export const shadowModeRouter = router({
       return { success: true, transcriptSegments: 0, taggedMetricsGenerated: 0, message: "Session closed." };
     }),
 
+  getAuditRecord: operatorProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const [feedRows] = await rawSql(
+          `SELECT f.id, f.session_id, f.feed_type, f.severity, f.title, f.body, f.pipeline, f.confidence_score, f.created_at
+           FROM intelligence_feed f
+           WHERE f.session_id = $1
+           ORDER BY f.created_at ASC`,
+          [input.sessionId]
+        );
+        const sessionNumeric = parseInt(input.sessionId.replace('shadow-', ''), 10);
+        const [govRows] = await rawSql(
+          `SELECT g.id, g.intelligence_feed_id, g.decision_type, g.decision, g.reasoning, g.chain_hash, g.previous_hash, g.decided_at
+           FROM governance_decisions g
+           WHERE g.session_id = $1
+           ORDER BY g.decided_at ASC`,
+          [sessionNumeric]
+        );
+        const [actionRows] = await rawSql(
+          `SELECT ca.id, ca.user_id, ca.action_type, ca.target_type, ca.target_id, ca.created_at
+           FROM customer_actions ca
+           WHERE ca.session_id = $1
+           ORDER BY ca.created_at ASC`,
+          [sessionNumeric]
+        );
+        const govDecisions = (govRows ?? []) as any[];
+        let chainIntact = true;
+        for (let i = 1; i < govDecisions.length; i++) {
+          if (govDecisions[i].previous_hash !== govDecisions[i - 1].chain_hash) {
+            chainIntact = false;
+            break;
+          }
+        }
+        return { sessionId: input.sessionId, signals: (feedRows ?? []) as any[], decisions: govDecisions, actions: (actionRows ?? []) as any[], chainIntact, generatedAt: new Date().toISOString() };
+      } catch {
+        return { sessionId: input.sessionId, signals: [], decisions: [], actions: [], chainIntact: false, generatedAt: new Date().toISOString() };
+      }
+    }),
   listSessions: operatorProcedure.query(async () => {
     try {
       const [rows] = await rawSql(

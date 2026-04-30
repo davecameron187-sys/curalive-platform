@@ -79,7 +79,7 @@ const detectPlatformFromUrl = (url: string): string | null => {
 
 
 function AuditRecordPanel({ sessionId }: { sessionId: string | null }) {
-  const auditQuery = trpc.customerDashboard.getAuditRecord.useQuery(
+  const auditQuery = trpc.shadowMode.getAuditRecord.useQuery(
     { sessionId: sessionId ?? "" },
     { enabled: !!sessionId }
   );
@@ -674,7 +674,7 @@ const formatSessionTime = (ts: string | null) => {
 
         {activeTab === "audit" && (
           <div style={{ flex: 1, overflowY: "auto", padding: "0 4px" }}>
-            <AuditRecordPanel sessionId={selectedSession?.session_id ? `shadow-${selectedSession.session_id}` : null} />
+            <AuditRecordPanel sessionId={selectedSession?.id ? `shadow-${selectedSession.id}` : null} />
           </div>
         )}
       {/* CuraLive Assistant */}
