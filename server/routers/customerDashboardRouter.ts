@@ -142,7 +142,7 @@ export const customerDashboardRouter = router({
             COUNT(*) FILTER (WHERE gd.decision = 'authorised') AS total_surfaced
            FROM governance_decisions gd
            JOIN intelligence_feed f ON f.id = gd.intelligence_feed_id
-           JOIN shadow_sessions s ON s.id = replace(f.session_id, 'shadow-', '')::integer
+           JOIN shadow_sessions s ON s.id = CAST(replace(f.session_id, 'shadow-', '') AS integer)
            WHERE f.session_id = $1
            AND s.org_id = $2`,
           [input.sessionId, orgId]
@@ -163,7 +163,7 @@ export const customerDashboardRouter = router({
         const [rows] = await rawSql(
           `SELECT f.id, f.session_id, f.feed_type, f.severity, f.title, f.body, f.pipeline, f.created_at
            FROM intelligence_feed f
-           JOIN shadow_sessions s ON s.id = replace(f.session_id, 'shadow-', '')::integer
+           JOIN shadow_sessions s ON s.id = CAST(replace(f.session_id, 'shadow-', '') AS integer)
            WHERE f.session_id = $1
            AND s.org_id = $2
            ORDER BY f.created_at ASC
@@ -183,7 +183,7 @@ export const customerDashboardRouter = router({
         const [rows] = await rawSql(
           `SELECT g.id, g.session_id, g.decision_type, g.decision, g.confidence_score, g.reasoning, g.decided_at
            FROM governance_decisions g
-           JOIN shadow_sessions s ON s.id = g.session_id
+           JOIN shadow_sessions s ON s.id = CAST(g.session_id AS integer)
            WHERE g.session_id = $1
            AND s.org_id = $2
            ORDER BY g.decided_at ASC
