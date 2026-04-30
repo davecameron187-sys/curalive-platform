@@ -5,7 +5,7 @@ import LiveQaDashboard from "@/components/LiveQaDashboard";
 import Ably from "ably";
 
 
-type Tab = "console" | "qa" | "participants" | "pre-event" | "history";
+type Tab = "console" | "qa" | "participants" | "pre-event" | "history" | "audit";
 
 type FeedItem = {
   id: number;
@@ -76,6 +76,73 @@ const detectPlatformFromUrl = (url: string): string | null => {
   if (url.includes("choruscall.com")) return "choruscall";
   return null;
 };
+
+
+function AuditRecordPanel({ sessionId }: { sessionId: string | null }) {
+  const auditQuery = trpc.customerDashboard.getAuditRecord.useQuery(
+    { sessionId: sessionId ?? "" },
+    { enabled: !!sessionId }
+  );
+
+  if (!sessionId) {
+    return <div style={{ color: "#475569", fontSize: "13px" }}>Select a session to view the audit record.</div>;
+  }
+  if (auditQuery.isLoading) {
+    return <div style={{ color: "#475569", fontSize: "13px" }}>Loading audit record...</div>;
+  }
+
+  const data = auditQuery.data;
+  if (!data) return null;
+
+  return (
+    <div style={{ fontFamily: "monospace", fontSize: "12px" }}>
+      <div style={{ marginBottom: "16px", padding: "10px 14px", background: data.chainIntact ? "#052e16" : "#450a0a", border: `1px solid ${data.chainIntact ? "#166534" : "#7f1d1d"}`, borderRadius: "4px" }}>
+        <span style={{ color: data.chainIntact ? "#4ade80" : "#f87171", fontWeight: "bold", letterSpacing: "1px" }}>
+          {data.chainIntact ? "CHAIN INTACT — Tamper-evidence verified" : "CHAIN BROKEN — Record integrity compromised"}
+        </span>
+        <div style={{ color: "#475569", fontSize: "10px", marginTop: "4px" }}>Generated: {data.generatedAt ? new Date(data.generatedAt).toLocaleString() : ""}</div>
+      </div>
+
+      <div style={{ marginBottom: "12px", color: "#94a3b8", letterSpacing: "1px", fontSize: "10px" }}>SIGNALS DETECTED — {data.signals.length}</div>
+      {data.signals.map((s: any) => (
+        <div key={s.id} style={{ marginBottom: "6px", padding: "8px 12px", background: "#0f172a", border: "1px solid #1e293b", borderRadius: "4px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+            <span style={{ color: s.severity === "high" || s.severity === "critical" ? "#f87171" : "#60a5fa", fontWeight: "bold" }}>{s.severity?.toUpperCase()}</span>
+            <span style={{ color: "#475569" }}>{s.created_at ? new Date(s.created_at).toLocaleTimeString() : ""}</span>
+          </div>
+          <div style={{ color: "#e2e8f0" }}>{s.title}</div>
+          <div style={{ color: "#475569", fontSize: "10px", marginTop: "2px" }}>{s.pipeline} · {s.feed_type}</div>
+        </div>
+      ))}
+
+      <div style={{ margin: "16px 0 12px", color: "#94a3b8", letterSpacing: "1px", fontSize: "10px" }}>GOVERNANCE DECISIONS — {data.decisions.length}</div>
+      {data.decisions.map((g: any) => (
+        <div key={g.id} style={{ marginBottom: "6px", padding: "8px 12px", background: "#0f172a", border: "1px solid #1e293b", borderRadius: "4px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+            <span style={{ color: g.decision === "authorised" ? "#4ade80" : "#f87171", fontWeight: "bold" }}>{g.decision?.toUpperCase()}</span>
+            <span style={{ color: "#475569" }}>{g.decided_at ? new Date(g.decided_at).toLocaleTimeString() : ""}</span>
+          </div>
+          <div style={{ color: "#94a3b8", fontSize: "10px" }}>{g.reasoning}</div>
+          <div style={{ color: "#334155", fontSize: "9px", marginTop: "4px", wordBreak: "break-all" }}>HASH: {g.chain_hash}</div>
+        </div>
+      ))}
+
+      <div style={{ margin: "16px 0 12px", color: "#94a3b8", letterSpacing: "1px", fontSize: "10px" }}>CLIENT ACTIONS — {data.actions.length}</div>
+      {data.actions.length === 0 && (
+        <div style={{ color: "#334155", fontSize: "12px" }}>No client actions recorded for this session.</div>
+      )}
+      {data.actions.map((a: any) => (
+        <div key={a.id} style={{ marginBottom: "6px", padding: "8px 12px", background: "#0f172a", border: "1px solid #1e293b", borderRadius: "4px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "#fbbf24", fontWeight: "bold" }}>{a.action_type?.toUpperCase()}</span>
+            <span style={{ color: "#475569" }}>{a.created_at ? new Date(a.created_at).toLocaleTimeString() : ""}</span>
+          </div>
+          <div style={{ color: "#475569", fontSize: "10px", marginTop: "2px" }}>Target: {a.target_type} #{a.target_id}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function ShadowMode() {
   const [activeTab, setActiveTab] = useState<Tab>("console");
@@ -257,6 +324,7 @@ const formatSessionTime = (ts: string | null) => {
     { id: "participants", label: "Participants" },
     { id: "pre-event", label: "Pre-Event" },
     { id: "history", label: "History" },
+    { id: "audit", label: "Audit Record" },
   ];
 
   const mergedFeed = [...(intelligenceFeedQuery.data ?? []), ...feedItems]
@@ -603,6 +671,12 @@ const formatSessionTime = (ts: string | null) => {
         )}
       </div>
 
+
+        {activeTab === "audit" && (
+          <div style={{ flex: 1, overflowY: "auto", padding: "0 4px" }}>
+            <AuditRecordPanel sessionId={selectedSession?.session_id ? `shadow-${selectedSession.session_id}` : null} />
+          </div>
+        )}
       {/* CuraLive Assistant */}
       <div style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 999 }}>
         {assistantOpen && (
