@@ -685,3 +685,34 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: to confirm after push
 ### Next: Stage 3 — Replace feed with delta panel (on user evidence only)
+
+## Session: April 30 2026 (Phase 3 Gate Close)
+### Objective: Regulatory Reconstruction Query — Phase 3 Gate Close
+
+### Completed
+- getAuditRecord procedure added to shadowModeRouter.ts (operatorProcedure)
+- Audit Record tab added to ShadowMode.tsx operator console
+- listSessions fixed — rawSql replaces Drizzle ORM to bypass schema mismatch
+- History tab sessions made clickable — setSelectedSessionId on click
+- Operator Clerk user created and mapped (user_3D5DtZxrxrAcRykBshO0HGLrrRR, id=3)
+- Session ID mapping corrected — numeric id used not UUID session_id
+
+### Validation Confirmed
+- Session 181 (Cell C Interim Results) selected from History tab
+- Audit Record tab loaded successfully
+- Chain intact confirmed: CHAIN INTACT — Tamper-evidence verified
+- 123 signals detected — complete and chronological
+- 123 governance decisions — all AUTHORISED with unique chain hashes
+- 6 client actions — ACKNOWLEDGE and FOLLOW_UP with timestamps and targets
+- Output is regulator-readable without system knowledge
+
+### Phase 3 Gate Status
+CONFIRMED CLOSED
+All gate conditions met:
+- Real-time Ably: done
+- Customer role enforcement: done
+- Profile foundation: done
+- Regulatory Reconstruction Query: done
+
+### Last Known Good Commit: to confirm after push
+### Next: Phase 4 — Personal Intelligence Profiles
