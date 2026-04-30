@@ -46,9 +46,14 @@ export async function runBackfillOnce(): Promise<void> {
       `SELECT s.id as session_id, s.org_id, s.started_at, s.ended_at
        FROM shadow_sessions s
        WHERE s.status = 'completed'
-       AND NOT EXISTS (
-         SELECT 1 FROM user_session_memory m
-         WHERE m.session_id = s.id
+       AND EXISTS (
+         SELECT 1 FROM users u
+         WHERE u.role = 'customer'
+         AND NOT EXISTS (
+           SELECT 1 FROM user_session_memory m
+           WHERE m.session_id = s.id
+           AND m.user_id = u.id
+         )
        )
        ORDER BY s.created_at ASC
        LIMIT 20`,
