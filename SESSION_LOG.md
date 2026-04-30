@@ -580,3 +580,61 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: 78aba04
 ### Next: Phase 3.5 Stage 1A — Deterministic Delta Prototype
+
+## Session: April 30 2026
+### Objective: Stage 1A — Deterministic Delta Prototype
+
+### Completed
+- NarrativeDeltaService.ts created — pure TypeScript, no DB writes, no pipeline injection
+- Priority hierarchy implemented: P0 compliance, P1 correlation deterioration, P2 material novelty, P3 sustained pressure, P4 internal only
+- P4 never surfaced — logged as STATE_RESOLUTION only
+- Materiality gate: pipeline-driven not keyword-driven
+- Validation script created: scripts/validate-delta-181.ts
+- Fixture created: fixtures/session-181-feed.json (6 representative items from session 181)
+- tsconfig.scripts.json created for standalone script execution
+
+### Validation Confirmed
+- 6 items processed
+- 4 surfaced — all P1 correlation deterioration signals
+- 2 suppressed — baseline sentiment correctly filtered
+- Delta text confirmed clean: no scores, no numeric language, no advice
+- Example: "Sentiment has weakened across recent responses relative to session opening."
+
+### Finding for Stage 1B
+- 4 repeated P1 deterioration signals need collapsing into one for customer dashboard
+- Maximum three rule requires deduplication of repeated same-pattern signals
+- Deferred to Stage 1B
+
+### Replit Auto-Commits Detected
+- R10 violation — Replit committed 3 times autonomously during session
+
+### Last Known Good Commit: 7510dbd
+### Next: Stage 1B — Signal collapsing for repeated deterioration patterns
+
+## Session: April 30 2026
+### Objective: Stage 1A — Deterministic Delta Prototype
+
+### Completed
+- NarrativeDeltaService.ts created — pure TypeScript, no DB writes, no pipeline injection
+- Priority hierarchy: P0 compliance, P1 correlation deterioration, P2 material novelty, P3 sustained pressure, P4 internal only
+- P4 never surfaced — logged as STATE_RESOLUTION only
+- Materiality gate: pipeline-driven not keyword-driven
+- Validation script: scripts/validate-delta-181.ts
+- Fixture: fixtures/session-181-feed.json
+- tsconfig.scripts.json created for standalone script execution
+
+### Validation Confirmed
+- 6 items processed, 4 surfaced, 2 suppressed
+- All 4 surfaced: P1 correlation deterioration signals
+- Delta text clean: no scores, no numeric language, no advice
+- Example output: Sentiment has weakened across recent responses relative to session opening.
+
+### Finding for Stage 1B
+- 4 repeated P1 deterioration signals need collapsing into one
+- Deferred to Stage 1B
+
+### Replit Auto-Commits Detected
+- R10 violation — Replit committed 3 times autonomously
+
+### Last Known Good Commit: 7510dbd
+### Next: Stage 1B — Signal collapsing for repeated deterioration patterns
