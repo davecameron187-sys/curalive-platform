@@ -660,3 +660,28 @@ Customer dashboard = proves the system
 
 ### Last Known Good Commit: to confirm after push
 ### Next: Stage 2 — Shadow panel on customer dashboard
+
+## Session: April 30 2026 (Stage 2)
+### Objective: Stage 2 — Narrative Delta Panel on customer dashboard
+
+### Completed
+- getNarrativeDeltas tRPC procedure added to customerDashboardRouter.ts
+- NarrativeDeltaService imported server-side
+- Narrative Intelligence panel added to CustomerDashboard.tsx above Intelligence Feed
+- Panel shows: priority badge, delta text, suppression counter, active silence state
+- Fixed: surfacedSignals.add missing — duplicate suppression was not registering
+- Fixed: session state persisting between requests — clearSession called at start of evaluateSessionDeltas
+- Fixed: governance JOIN regression patched again
+
+### Validation Confirmed
+- 123 assessed, 1 surfaced
+- P1 delta: Sentiment has weakened across recent responses relative to session opening.
+- Duplicate collapsing working correctly — 4 correlation signals collapsed to 1
+- Existing Intelligence Feed unchanged
+- Active silence state ready for sessions with no material deviations
+
+### Replit Auto-Commits Detected
+- R10 violation — multiple autonomous commits during session
+
+### Last Known Good Commit: to confirm after push
+### Next: Stage 3 — Replace feed with delta panel (on user evidence only)
