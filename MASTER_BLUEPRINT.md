@@ -228,7 +228,7 @@ LanguageDubber, PodcastConverterService, VirtualStudioService, SustainabilityOpt
 | Active fix | Fix 4 — webhook consolidation |
 | Last confirmed commit | 5923e0e |
 | Success condition | One fresh Render session with ai_core_results populated ✅ MET |
-| Next customer milestone | Phase 3 complete — AGM Intelligence ready for Bastion/Lumi |
+| Next customer milestone | Lead user says: I would feel uncomfortable running my next event without this |
 | Do not touch | Webcast, Video, Dashboard, 60+ dormant services |
 
 ---
