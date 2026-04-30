@@ -138,8 +138,9 @@ Every Shadow Mode session uses a meeting URL. Recall bot joins automatically. Pl
 | Phase 1 | Runtime chain end to end | ✅ COMPLETE — ai_core_results populating |
 | Phase 2 | Live operator experience | Operator can run session without manual steps |
 | Phase 3 | AGM Intelligence — Bastion/Lumi | Compliance officer can act on output |
-| Phase 4 | Full AI portfolio activated | No orphaned services |
-| Phase 5 | Intelligence moat — acquisition ready | Platform compounds over time |
+| Phase 3.5 | Output layer correction — Delta engine | Lead user says: I would feel uncomfortable running my next event without this |
+| Phase 4 | Personal Intelligence Profiles | Role-aware memory active per user |
+| Phase 5 | Predictive Communication Intelligence | System predicts communication risk before it surfaces |
 
 ### Phase 2 Priority Order
 1. Fix 4 — webhook consolidation
@@ -224,9 +225,9 @@ LanguageDubber, PodcastConverterService, VirtualStudioService, SustainabilityOpt
 
 | Question | Answer |
 |----------|--------|
-| Active phase | Phase 2 — Live operator experience |
-| Active fix | Fix 4 — webhook consolidation |
-| Last confirmed commit | 5923e0e |
+| Active phase | Phase 3.5 — Output layer correction |
+| Bug fixed this session | rawSql type mismatch on shadow_sessions JOINs |
+| Last confirmed commit | eabc669 |
 | Success condition | One fresh Render session with ai_core_results populated ✅ MET |
 | Next customer milestone | Lead user says: I would feel uncomfortable running my next event without this |
 | Do not touch | Webcast, Video, Dashboard, 60+ dormant services |
