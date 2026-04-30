@@ -1,3 +1,6 @@
+import { startSessionMemoryBackfill } from "./services/SessionMemoryBackfillService";
+startSessionMemoryBackfill();
+
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
