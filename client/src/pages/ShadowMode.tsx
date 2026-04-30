@@ -662,7 +662,7 @@ const formatSessionTime = (ts: string | null) => {
             {sessions
               .filter((s) => s.status === "ended" || s.status === "archived" || s.status === "completed")
               .map((s) => (
-                <div key={s.id} style={{ padding: "10px 12px", marginBottom: "6px", background: "#111", border: "1px solid #1e293b", borderRadius: "4px", fontSize: "12px" }}>
+                <div key={s.id} onClick={() => setSelectedSessionId(s.id)} style={{ padding: "10px 12px", marginBottom: "6px", background: selectedSessionId === s.id ? "#1e293b" : "#111", border: `1px solid ${selectedSessionId === s.id ? "#3b82f6" : "#1e293b"}`, borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}>
                   <div style={{ color: "#e2e8f0" }}>{s.eventName}</div>
                   <div style={{ color: "#475569", fontSize: "10px", marginTop: "4px" }}>{formatSessionTime(s.startedAt)}</div>
                 </div>
