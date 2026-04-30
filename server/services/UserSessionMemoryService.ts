@@ -29,8 +29,8 @@ export async function writeUserSessionMemory(params: {
     const [surfacedRows] = await rawSql(
       `SELECT COUNT(*) as total
        FROM intelligence_feed
-       WHERE session_id = $1 AND org_id = $2`,
-      [feedSessionId, orgId]
+       WHERE session_id = $1`,
+      [feedSessionId]
     );
     const surfaced = parseInt(surfacedRows?.[0]?.total ?? '0', 10);
 
@@ -48,7 +48,6 @@ export async function writeUserSessionMemory(params: {
       `SELECT COUNT(*) as total
        FROM intelligence_feed f
        WHERE f.session_id = $1
-       AND f.org_id = $2
        AND f.severity IN ('high', 'critical')
        AND NOT EXISTS (
          SELECT 1 FROM customer_actions ca
@@ -56,14 +55,14 @@ export async function writeUserSessionMemory(params: {
          AND ca.session_id = $3
          AND ca.user_id = $4
        )`,
-      [feedSessionId, orgId, sessionId, userId]
+      [feedSessionId, sessionId, userId]
     );
     const ignored = parseInt(ignoredRows?.[0]?.total ?? '0', 10);
 
     // 4. Get highest severity seen in this session
     const [severityRows] = await rawSql(
       `SELECT severity FROM intelligence_feed
-       WHERE session_id = $1 AND org_id = $2
+       WHERE session_id = $1
        ORDER BY CASE severity
          WHEN 'critical' THEN 0
          WHEN 'high' THEN 1
@@ -72,7 +71,7 @@ export async function writeUserSessionMemory(params: {
          ELSE 4
        END ASC
        LIMIT 1`,
-      [feedSessionId, orgId]
+      [feedSessionId]
     );
     const highestSeverity = severityRows?.[0]?.severity ?? null;
 
