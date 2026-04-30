@@ -716,3 +716,25 @@ All gate conditions met:
 
 ### Last Known Good Commit: to confirm after push
 ### Next: Phase 4 — Personal Intelligence Profiles
+
+## Session: April 30 2026 (Phase 4 Foundation)
+### Objective: Phase 4 — Session Memory Foundation
+
+### Completed
+- user_session_memory table created in production database
+- 11 columns: id, user_id, org_id, session_id, signals_surfaced, signals_actioned, signals_ignored, highest_severity_seen, session_duration_ms, session_closed_at, created_at
+- UNIQUE constraint on (user_id, session_id) — write-once enforced
+- UserSessionMemoryService.ts created — derives all values from existing tables
+- org_id filter removed from intelligence_feed queries — org_id is NULL on feed items
+- Manual validation against session 181, user 4 confirmed:
+  signals_surfaced=123, signals_actioned=3, signals_ignored=1, highest_severity=high
+- First memory record written to production successfully
+
+### Constraints Locked
+- Derived not authoritative — summary of existing data only
+- Write-once per session — ON CONFLICT DO NOTHING
+- No business logic in table — all logic in service layer
+- No UI yet — storage foundation only
+
+### Last Known Good Commit: to confirm after push
+### Next: Wire UserSessionMemoryService into session close pipeline
