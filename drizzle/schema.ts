@@ -1,4 +1,4 @@
-import { boolean, integer, real, smallint, json, text, timestamp, varchar, bigint, serial, pgTable, pgEnum } from "drizzle-orm/pg-core";
+import { boolean, integer, real, smallint, json, text, timestamp, varchar, bigint, serial, pgTable, pgEnum, unique } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["user", "admin", "operator"]);
 export const statusEnum = pgEnum("status", ["upcoming", "live", "completed"]);
@@ -3841,6 +3841,22 @@ export const complianceDetectionStats = pgTable("compliance_detection_stats", {
   falsePositiveRate: real("false_positive_rate"),
   recordedAt: timestamp("recorded_at").defaultNow().notNull(),
 });
+
+export const userSessionMemory = pgTable("user_session_memory", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  orgId: integer("org_id").notNull(),
+  sessionId: integer("session_id").notNull(),
+  signalsSurfaced: integer("signals_surfaced").default(0).notNull(),
+  signalsActioned: integer("signals_actioned").default(0).notNull(),
+  signalsIgnored: integer("signals_ignored").default(0).notNull(),
+  highestSeveritySeen: varchar("highest_severity_seen", { length: 20 }),
+  sessionDurationMs: integer("session_duration_ms"),
+  sessionClosedAt: timestamp("session_closed_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  userSessionUniq: unique("user_session_memory_user_session_uniq").on(t.userId, t.sessionId),
+}));
 
 export * from "./gaps.schema";
 export * from "./partners.schema";
