@@ -191,6 +191,7 @@ function scorePriority(item: FeedItem, state: SessionDeltaState, topicKey: strin
         console.log(`[NarrativeDelta] SUPPRESSED_DUPLICATE_PATTERN feedItemId=${item.id} key=${signalKey}`);
         return { priority: 'SUPPRESSED', suppressionReason: 'duplicate_pattern' };
       }
+      state.surfacedSignals.add(signalKey);
       state.riskSignalsActive.add(topicKey);
       return { priority: 'P1', suppressionReason: null };
     }
