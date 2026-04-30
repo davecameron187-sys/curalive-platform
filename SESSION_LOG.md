@@ -738,3 +738,22 @@ All gate conditions met:
 
 ### Last Known Good Commit: to confirm after push
 ### Next: Wire UserSessionMemoryService into session close pipeline
+
+## Session: April 30 2026 (Phase 4 Auto-Start)
+### Objective: Wire SessionMemoryBackfillService into automatic startup
+
+### Completed
+- SessionMemoryBackfillService.ts wired into server/routers.eager.ts
+- startSessionMemoryBackfill() called at server boot
+- Duplicate interval guard confirmed active
+- Deployed to Render — 327 memory records in production confirming service is running
+- Per-user differentiation validated: user 4 shows actioned=3 ignored=1, others show actioned=0 ignored=4
+- Idempotency confirmed — second run produces no duplicate writes
+
+### Validation Confirmed
+- npx tsx direct call confirms: [SessionMemoryBackfill] Starting polling worker
+- 327 user_session_memory records in production
+- Service running automatically on every server boot
+
+### Last Known Good Commit: to confirm after push
+### Next: Phase 4 UI — surface session memory on customer profile
