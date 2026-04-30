@@ -10,7 +10,6 @@ console.log("[Validation] Starting Stage 1A validation against session 181");
 console.log("[Validation] Items loaded:", items.length);
 
 const results = evaluateSessionDeltas(items);
-
 const surfaced = results.filter(r => !r.suppressed);
 const suppressed = results.filter(r => r.suppressed);
 
@@ -20,5 +19,5 @@ console.log("Surfaced:", surfaced.length);
 console.log("Suppressed:", suppressed.length);
 console.log("\nSurfaced deltas:");
 surfaced.forEach(d => {
-  console.log(" ["+d.priority+"] feedItemId="+d.feedItemId+" — "+d.deltaText);
+  console.log(" [" + d.priority + "] feedItemId=" + d.feedItemId + " — " + d.deltaText);
 });
