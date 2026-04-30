@@ -641,8 +641,14 @@ export const shadowModeRouter = router({
 
   listSessions: operatorProcedure.query(async () => {
     try {
-      const db = await getDb();
-      return db.select().from(shadowSessions).orderBy(desc(shadowSessions.createdAt)).limit(50);
+      const [rows] = await rawSql(
+        `SELECT id, session_id, client_name, event_name, event_type, status, started_at, ended_at, created_at, ably_channel, recall_bot_id
+         FROM shadow_sessions
+         ORDER BY created_at DESC
+         LIMIT 50`,
+        []
+      );
+      return rows ?? [];
     } catch { return []; }
   }),
 
