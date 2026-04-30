@@ -94,6 +94,10 @@ function runCleanup(): void {
 const cleanupTimer = setInterval(runCleanup, CLEANUP_INTERVAL_MS);
 if (cleanupTimer.unref) cleanupTimer.unref();
 
+function clearSession(sessionId: string): void {
+  sessionStore.delete(sessionId);
+}
+
 function getOrCreateSession(sessionId: string): SessionDeltaState {
   let state = sessionStore.get(sessionId);
   if (!state) {
@@ -266,6 +270,10 @@ export function evaluateNarrativeDelta(item: FeedItem): NarrativeDelta {
 }
 
 export function evaluateSessionDeltas(items: FeedItem[]): NarrativeDelta[] {
+  // Clear session state before processing to ensure fresh evaluation
+  if (items.length > 0) {
+    clearSession(items[0].session_id);
+  }
   const sorted = [...items].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   const results: NarrativeDelta[] = sorted.map(evaluateNarrativeDelta);
   const surfaced = results.filter(r => !r.suppressed);
