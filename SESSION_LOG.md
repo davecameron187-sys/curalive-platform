@@ -757,3 +757,32 @@ All gate conditions met:
 
 ### Last Known Good Commit: to confirm after push
 ### Next: Phase 4 UI — surface session memory on customer profile
+
+## Session: May 01 2026
+### Objective: Phase 4 UI — Surface session memory on customer profile
+
+### Completed
+- getSessionMemory procedure added to customerDashboardRouter.ts
+- Queries user_session_memory JOIN shadow_sessions for event_name
+- Filters by user_id and org_id — tenant isolated
+- CustomerProfile.tsx updated — Session History table added below profile info
+- Columns: Session, Surfaced, Actioned, Ignored, Highest Severity, Date
+- Severity badge colour-coded: critical=red, high=orange, medium=yellow
+- Fixed trpc import path — ../lib/trpc not ../_core/trpc
+
+### Validation Confirmed
+- app.curalive.cc/customer/profile loads correctly
+- Email, role, orgId confirmed
+- Session History table visible with real production data
+- 16+ sessions displayed with correct signal counts and severity
+- Data sourced from user_session_memory — 327 records in production
+
+### Known Issues
+- Last row truncated — null highest_severity_seen and session_closed_at on some rows
+- session_duration_ms still NULL across all rows — not displayed in UI
+
+### R10 Violations
+- Replit auto-committed both changes autonomously during session
+
+### Last Known Good Commit: 188fde2
+### Next: Phase 4 — surface session memory insights, or next architect decision
