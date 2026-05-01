@@ -230,30 +230,6 @@ LanguageDubber, PodcastConverterService, VirtualStudioService, SustainabilityOpt
 | Last confirmed commit | eabc669 |
 | Success condition | One fresh Render session with ai_core_results populated ✅ MET |
 | Next customer milestone | Lead user says: I would feel uncomfortable running my next event without this |
-
----
-## 13. CRITICAL — Markdown Corruption Rule (Non-Negotiable)
-
-This chat interface automatically converts dotted identifiers into hyperlinks
-before they reach the shell. This has caused hours of lost work.
-
-Corrupted examples:
-- s.id becomes [s.id](http://s.id)
-- m.org_id becomes [m.org](http://m.org)_id
-- f.id, ca.target_id, and any dotted SQL identifier are affected
-
-The rule — never pass SQL containing dotted identifiers through the chat
-interface as a shell command. It will always arrive corrupted.
-
-The only safe approach for SQL fixes:
-Write a Node.js or Python script file. Present it for download. User saves
-it to Replit. User runs it. The script constructs corrupted strings
-programmatically using concatenation so no chat interface can corrupt them.
-
-Example safe construction:
-'ON s' + '.id =' instead of 'ON s.id ='
-
-This rule applies to every SQL fix for the rest of this project.
 | Do not touch | Webcast, Video, Dashboard, 60+ dormant services |
 
 ---
@@ -278,6 +254,30 @@ At end of every session:
 2. Take to ChatGPT: "Push these files to branch `shadow-mode-relaunch` on `davecameron187-sys/curalive-platform`"
 3. ChatGPT commits via GitHub API
 4. Next session reads fresh context from GitHub raw URLs
+
+---
+## 13. CRITICAL — Markdown Corruption Rule (Non-Negotiable)
+
+This chat interface automatically converts dotted identifiers into hyperlinks
+before they reach the shell. This has caused hours of lost work.
+
+Corrupted examples:
+- s.id becomes [s.id](http://s.id)
+- m.org_id becomes [m.org](http://m.org)_id
+- f.id, ca.target_id, and any dotted SQL identifier are affected
+
+The rule — never pass SQL containing dotted identifiers through the chat
+interface as a shell command. It will always arrive corrupted.
+
+The only safe approach for SQL fixes:
+Write a Node.js or Python script file. Present it for download. User saves
+it to Replit. User runs it. The script constructs corrupted strings
+programmatically using concatenation so no chat interface can corrupt them.
+
+Example safe construction:
+'ON s' + '.id =' instead of 'ON s.id ='
+
+This rule applies to every SQL fix for the rest of this project.
 
 **Raw URLs:**
 - Master Blueprint: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/MASTER_BLUEPRINT.md`
