@@ -717,6 +717,32 @@ All gate conditions met:
 ### Last Known Good Commit: to confirm after push
 ### Next: Phase 4 — Personal Intelligence Profiles
 
+## Session: May 01 2026 (Session 6 — Isolation Validation)
+### Objective: Seed real customer org and validate end-to-end tenant isolation
+
+### Completed
+- Seeded Cell C as first real customer org (org_id = 6)
+- Updated customer@curalive.cc to org_id = 6
+- Added Cell C to Shadow Mode org dropdown
+- Ran real session (id=182, Isolation Test) against Cell C
+- Confirmed session written with org_id = 6 in DB
+- Confirmed customer dashboard shows only Cell C sessions
+- Confirmed CuraLive Internal sessions not visible to Cell C customer
+
+### Validation Confirmed
+- DB: session 182 org_id = 6
+- DB: session 181 org_id = 4 — not visible to Cell C
+- Customer dashboard: only Isolation Test visible
+- Tenant isolation proven end to end in production
+
+### Phase Status
+- Tenant isolation: CONFIRMED
+- Phase 4: UNBLOCKED
+- Next: Phase 4 — Personal Intelligence Profiles
+
+### Last Known Good Commit: to confirm after push
+### Next: Phase 4 — Personal Intelligence Profiles
+
 ## Session: April 30 2026 (Phase 4 Foundation)
 ### Objective: Phase 4 — Session Memory Foundation
 
@@ -918,3 +944,29 @@ python, or node workarounds — all suffer same corruption.
 
 ### Last Known Good Commit: to confirm after push
 ### Next: Seed first real customer org and run end-to-end isolation validation
+
+## Session: May 01 2026 (Session 6 — Isolation Validation)
+### Objective: Seed real customer org and validate end-to-end tenant isolation
+
+### Completed
+- Seeded Cell C as first real customer org (org_id = 6)
+- Updated customer@curalive.cc to org_id = 6
+- Added Cell C to Shadow Mode org dropdown
+- Ran real session (id=182, Isolation Test) against Cell C
+- Confirmed session written with org_id = 6 in DB
+- Confirmed customer dashboard shows only Cell C sessions
+- Confirmed CuraLive Internal sessions not visible to Cell C customer
+
+### Validation Confirmed
+- DB: session 182 org_id = 6 ✅
+- DB: session 181 org_id = 4 — not visible to Cell C ✅
+- Customer dashboard: only Isolation Test visible ✅
+- Tenant isolation proven end to end in production ✅
+
+### Phase Status
+- Tenant isolation: CONFIRMED
+- Phase 4: UNBLOCKED
+- Next: Phase 4 build — Personal Intelligence Profiles
+
+### Last Known Good Commit: to confirm after push
+### Next: Phase 4 — Personal Intelligence Profiles
