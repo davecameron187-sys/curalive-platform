@@ -252,10 +252,15 @@ export const shadowModeRouter = router({
       meetingUrl: z.string().url(),
       webhookBaseUrl: z.string().url().optional(),
       notes: z.string().optional(),
+      orgId: z.number().int().positive(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       const userId = ctx.user?.id ?? null;
+
+      if (!input.orgId) {
+        throw new Error("Organisation must be selected");
+      }
 
       const RECALL_SUPPORTED = new Set(["zoom", "teams", "meet", "webex"]);
       const isRecallSupported = RECALL_SUPPORTED.has(input.platform);
@@ -266,7 +271,7 @@ export const shadowModeRouter = router({
           `INSERT INTO shadow_sessions (session_id, client_name, event_name, event_type, platform, meeting_url, status, notes, org_id)
            VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, 'pending', $6, $7)
            RETURNING *`,
-          [input.clientName, input.eventName, input.eventType, input.platform, input.meetingUrl, input.notes ?? null, ctx.user?.orgId ?? 1]
+          [input.clientName, input.eventName, input.eventType, input.platform, input.meetingUrl, input.notes ?? null, input.orgId]
         );
         inserted = insertRows[0];
       } catch (insertErr: any) {

@@ -163,6 +163,7 @@ export default function ShadowMode() {
     platform: "zoom" as const,
     meetingUrl: "",
     notes: "",
+    orgId: "",
   });
 
   const sessionsQuery = trpc.shadowMode.listSessions.useQuery(undefined, {
@@ -172,7 +173,7 @@ export default function ShadowMode() {
   const startSession = trpc.shadowMode.startSession.useMutation({
     onSuccess: () => {
       setShowForm(false);
-      setForm({ clientName: "", eventName: "", eventType: "earnings_call", platform: "zoom", meetingUrl: "", notes: "" });
+      setForm({ clientName: "", eventName: "", eventType: "earnings_call", platform: "zoom", meetingUrl: "", notes: "", orgId: "" });
       sessionsQuery.refetch();
     },
     onError: (e: any) => console.error(e.message),
@@ -436,11 +437,23 @@ const formatSessionTime = (ts: string | null) => {
                       {Object.entries(EVENT_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
                   </div>
-                  <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
+                  <div>
+  <div style={{ color: "#475569", fontSize: "10px", marginBottom: "4px" }}>ORGANISATION *</div>
+  <select
+    value={form.orgId}
+    onChange={e => setForm(f => ({ ...f, orgId: Number(e.target.value) }))}
+    style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "monospace", outline: "none", boxSizing: "border-box" }}
+  >
+    <option value="">Select organisation</option>
+    <option value="4">CuraLive Internal</option>
+  </select>
+</div>
+
+<div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
                     <button
-                      onClick={() => startSession.mutate({ ...form, platform: "zoom", webhookBaseUrl: window.location.origin })}
-                      disabled={startSession.isPending || !form.clientName || !form.eventName || !form.meetingUrl}
-                      style={{ background: form.clientName && form.eventName && form.meetingUrl ? "#166534" : "#1e293b", border: "none", color: form.clientName && form.eventName && form.meetingUrl ? "white" : "#475569", padding: "6px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}
+                      onClick={() => startSession.mutate({ ...form, orgId: Number(form.orgId), platform: "zoom", webhookBaseUrl: window.location.origin })}
+                      disabled={startSession.isPending || !form.clientName || !form.eventName || !form.meetingUrl || !form.orgId}
+                      style={{ background: form.clientName && form.eventName && form.meetingUrl && form.orgId ? "#166534" : "#1e293b", border: "none", color: form.clientName && form.eventName && form.meetingUrl && form.orgId ? "white" : "#475569", padding: "6px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px" }}
                     >
                       {startSession.isPending ? "STARTING..." : "START SESSION"}
                     </button>
