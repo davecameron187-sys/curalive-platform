@@ -786,3 +786,29 @@ All gate conditions met:
 
 ### Last Known Good Commit: 188fde2
 ### Next: Phase 4 — surface session memory insights, or next architect decision
+
+## Session: May 01 2026 (Session 2)
+### Objective: Phase 4 — Clean session memory output
+
+### Completed
+- Behavioural filter applied to getSessionMemory query
+- Filter: signals_actioned > 0 OR signals_ignored > 0
+- Eliminates backfill artefacts and zero-interaction sessions
+- Profile now shows only sessions with real user interaction
+
+### Key Decision
+- Name-based filtering rejected — brittle and wrong
+- One real session (Interim Results) is correct and accurate
+- Test sessions remain visible as historical record — not hidden
+
+### Deferred
+- session_duration_ms population — separate follow-up fix
+- Behavioural insight layer — requires 3-5 real production sessions minimum
+- Upstream fix — mark test/demo sessions at creation before memory write
+
+### Validation
+- app.curalive.cc/customer/profile shows filtered session list
+- Behavioural filter confirmed working in production
+
+### Last Known Good Commit: 2ea97c1
+### Next: Accumulate real sessions. Then build behavioural insight layer.
