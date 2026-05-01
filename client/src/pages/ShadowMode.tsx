@@ -446,6 +446,7 @@ const formatSessionTime = (ts: string | null) => {
   >
     <option value="">Select organisation</option>
     <option value="4">CuraLive Internal</option>
+    <option value="6">Cell C</option>
   </select>
 </div>
 
