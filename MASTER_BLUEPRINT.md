@@ -255,6 +255,11 @@ At end of every session:
 3. ChatGPT commits via GitHub API
 4. Next session reads fresh context from GitHub raw URLs
 
+**Raw URLs:**
+- Master Blueprint: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/MASTER_BLUEPRINT.md`
+- Architecture: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/SHADOW_MODE_ARCHITECTURE.md`
+- Brief: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/CURALIVE_BRIEF.md`
+
 ---
 ## 13. CRITICAL — Markdown Corruption Rule (Non-Negotiable)
 
@@ -275,11 +280,6 @@ it to Replit. User runs it. The script constructs corrupted strings
 programmatically using concatenation so no chat interface can corrupt them.
 
 Example safe construction:
-'ON s' + '.id =' instead of 'ON s.id ='
+'ON s' + '.id ='
 
 This rule applies to every SQL fix for the rest of this project.
-
-**Raw URLs:**
-- Master Blueprint: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/MASTER_BLUEPRINT.md`
-- Architecture: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/SHADOW_MODE_ARCHITECTURE.md`
-- Brief: `https://raw.githubusercontent.com/davecameron187-sys/curalive-platform/shadow-mode-relaunch/CURALIVE_BRIEF.md`
