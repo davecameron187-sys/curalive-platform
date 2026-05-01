@@ -1,14 +1,12 @@
 import { rawSql } from "../db";
-import { writeUserSessionMemory } from "./UserSessionMemoryService";
 
 /**
  * SessionMemoryBackfillService.ts
  * Phase 4 — Automatic Session Memory Writer
  *
  * Polls every 60 seconds for completed sessions missing memory records.
- * Writes memory using UserSessionMemoryService.
+ * Writes memory using org-scoped customer users only.
  * Idempotent — safe to run repeatedly.
- * Additive — no locked files touched.
  */
 
 let isRunning = false;
@@ -49,6 +47,7 @@ export async function runBackfillOnce(): Promise<void> {
        AND EXISTS (
          SELECT 1 FROM users u
          WHERE u.role = 'customer'
+         AND u.org_id = s.org_id
          AND NOT EXISTS (
            SELECT 1 FROM user_session_memory m
            WHERE m.session_id = s.id
@@ -71,8 +70,11 @@ export async function runBackfillOnce(): Promise<void> {
     for (const session of sessions) {
       try {
         const [userRows] = await rawSql(
-          `SELECT id as user_id FROM users WHERE role = 'customer'`,
-          []
+          `SELECT id as user_id
+           FROM users
+           WHERE role = 'customer'
+           AND org_id = $1`,
+          [session.org_id]
         );
         const users = (userRows ?? []) as any[];
 
@@ -86,13 +88,13 @@ export async function runBackfillOnce(): Promise<void> {
           : null;
 
         for (const user of users) {
-          await writeUserSessionMemory({
-            userId: user.user_id,
-            orgId: 1,
-            sessionId: session.session_id,
-            sessionDurationMs: durationMs ?? undefined,
-            sessionClosedAt: new Date(),
-          });
+          await rawSql(
+            `INSERT INTO user_session_memory
+               (user_id, org_id, session_id, signals_surfaced, signals_actioned, signals_ignored, highest_severity_seen, session_duration_ms, session_closed_at)
+             VALUES ($1, $2, $3, 0, 0, 0, NULL, $4, NOW())
+             ON CONFLICT (user_id, session_id) DO NOTHING`,
+            [user.user_id, session.org_id, session.session_id, durationMs]
+          );
         }
       } catch (err: any) {
         console.error(`[SessionMemoryBackfill] Failed for session ${session.session_id}:`, err?.message ?? err);
