@@ -274,8 +274,8 @@ export const customerDashboardRouter = router({
            FROM user_session_memory m
            LEFT JOIN shadow_sessions s ON s.id = m.session_id
            WHERE m.user_id = $1 AND m.org_id = $2
-           ORDER BY m.session_closed_at DESC
-           LIMIT 20`,
+           AND (m.signals_actioned > 0 OR m.signals_ignored > 0)
+           ORDER BY m.session_closed_at DESC`,
           [userId, orgId]
         );
         return (rows ?? []) as any[];
