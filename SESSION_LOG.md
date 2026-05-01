@@ -837,3 +837,51 @@ All gate conditions met:
 3. Map real state vs intended state before writing any code
 
 ### Last Known Good Commit: 434f304
+
+## Session: May 01 2026 (Session 4 — Multi-Tenancy Foundation)
+### Objective: Audit + correct multi-tenancy model and session ownership
+
+### No application code written this session.
+
+### Discoveries
+- organisations table already existed in production (Replit-era seed data)
+- Three fake orgs: Meridian Resources, Acacia Capital, Stellarway Holdings
+- All 164 historical sessions attributed to Meridian Resources (org_id = 1)
+- created_by_user_id column was missing from shadow_sessions
+- status values included 'pilot' and 'demo' — not part of approved model
+
+### Corrections Applied (DB only)
+- Created CuraLive Internal as permanent internal org (id = 4)
+- Reclassified all 164 historical sessions to org_id = 4
+- Froze legacy orgs 1, 2, 3 as inactive
+- Added organisations_status_check constraint (active | inactive only)
+- Added shadow_sessions_org_id_fkey FK constraint
+- Added created_by_user_id nullable audit column to shadow_sessions
+
+### Verified State
+- 1 active org: CuraLive Internal (id = 4)
+- 3 inactive orgs: legacy frozen, not deleted
+- All 164 sessions: org_id = 4
+- Constraint enforced: status IN ('active', 'inactive')
+
+### Design Decisions Locked
+- CuraLive Internal = permanent internal org, never customer-facing
+- Real customers = org_id 5+ from this point forward
+- Operator sits above all orgs — no org membership
+- Session ownership set explicitly at creation — no defaults
+- No hardcoded org IDs in application code
+- Org creation: founder-controlled via DB seed (Render Shell)
+- Partners tab: deferred
+
+### Remaining Before Phase 4 Resumes
+- Audit codebase for hardcoded org_id = 1 references
+- Add org selector to Shadow Mode session creation (hard gate)
+- Seed first real customer org (id = 5+)
+- Run one real session against that org
+- Validate customer dashboard isolation end to end
+
+### Phase Status
+- Phase 4: ON HOLD — do not resume until Shadow Mode org selector is built and validated
+
+### Last Known Good Commit: e31f988
+### Next: Codebase audit for org_id = 1 hardcoding, then Shadow Mode org selector
