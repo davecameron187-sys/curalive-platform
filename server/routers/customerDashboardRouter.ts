@@ -262,6 +262,27 @@ export const customerDashboardRouter = router({
         return { surfaced: [], totalAssessed: 0, totalSurfaced: 0 };
       }
     }),
+  getSessionMemory: customerProcedure
+    .query(async ({ ctx }) => {
+      try {
+        const userId = ctx.user?.id ?? 0;
+        const orgId = ctx.user?.orgId ?? 1;
+        const [rows] = await rawSql(
+          `SELECT m.session_id, m.signals_surfaced, m.signals_actioned, m.signals_ignored,
+                  m.highest_severity_seen, m.session_closed_at,
+                  s.event_name, s.client_name
+           FROM user_session_memory m
+           LEFT JOIN shadow_sessions s ON s.id = m.session_id
+           WHERE m.user_id = $1 AND m.org_id = $2
+           ORDER BY m.session_closed_at DESC
+           LIMIT 20`,
+          [userId, orgId]
+        );
+        return (rows ?? []) as any[];
+      } catch {
+        return [];
+      }
+    }),
   recordAction: customerProcedure
     .input(z.object({
       sessionId: z.number(),
