@@ -885,3 +885,36 @@ All gate conditions met:
 
 ### Last Known Good Commit: e31f988
 ### Next: Codebase audit for org_id = 1 hardcoding, then Shadow Mode org selector
+
+## Session: May 01 2026 (Session 5 — Org Selector + Session Ownership Fix)
+### Objective: Fix hardcoded org_id references + add Shadow Mode org selector
+
+### Completed
+- Audited codebase for hardcoded org_id = 1 references
+- Found 3 critical locations: SessionMemoryBackfillService.ts, shadowModeRouter.ts, customerDashboardRouter.ts
+- SessionMemoryBackfillService.ts — HTTP artifact corruption resolved via ChatGPT
+- shadowModeRouter.ts — removed ctx.user?.orgId ?? 1 fallback, now requires input.orgId
+- ShadowMode.tsx — org selector added, START SESSION disabled until org selected
+- Hard gate confirmed: no org selected = session cannot launch
+
+### Operational Note — Markdown Link Corruption
+When Claude outputs dot-notation code (s.id, u.org_id, session.org_id),
+the Claude chat interface converts them to markdown hyperlinks before
+reaching the shell. This corrupts file write commands.
+Resolution protocol: if file write fails twice due to this — hand to ChatGPT,
+return to Claude for verification and commit. Do not attempt heredoc,
+python, or node workarounds — all suffer same corruption.
+
+### Remaining
+- customerDashboardRouter.ts — 9 instances of ?? 1 fallback still present (low risk, authenticated users always have orgId)
+- Org selector currently hardcoded with CuraLive Internal only — needs dynamic query when real customer orgs exist
+- Seed first real customer org (org_id = 5+)
+- Run one real session against that org
+- Validate customer dashboard isolation end to end
+
+### Phase Status
+- Phase 4: ON HOLD — shadow mode org selector now enforced
+- Next: seed real customer org, run real session, validate isolation
+
+### Last Known Good Commit: to confirm after push
+### Next: Seed first real customer org and run end-to-end isolation validation
