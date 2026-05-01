@@ -812,3 +812,28 @@ All gate conditions met:
 
 ### Last Known Good Commit: 2ea97c1
 ### Next: Accumulate real sessions. Then build behavioural insight layer.
+
+## Session: May 01 2026 (Session 3 — Extended)
+### Objective: Discovery and triage
+
+### No code written this session.
+
+### Discoveries
+- Archive sessions in operator console show no data — NaN timestamps, no signals
+- All sessions visible on customer dashboard regardless of ownership — no isolation
+- session_duration_ms still NULL — not being populated
+- Only 1 real production session exists (Session 181 — Interim Results)
+- 327 memory records are mostly backfill artefacts
+
+### Decisions Locked
+- No behavioural insight layer until 3-5 real sessions accumulate
+- No name-based session filtering — rejected as brittle
+- Archive sessions are the path to generating real memory data
+- Full system audit required before any new Phase 4 build
+
+### Next Session Objectives
+1. Audit operator console — why archive sessions show no data
+2. Audit customer dashboard — why all sessions are visible regardless of ownership
+3. Map real state vs intended state before writing any code
+
+### Last Known Good Commit: 434f304
