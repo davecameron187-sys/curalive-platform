@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { useAuth } from "../_core/hooks/useAuth";
-import { trpc } from "../_core/trpc";
+import { trpc } from "../lib/trpc";
 
 export default function CustomerProfile() {
   const [, navigate] = useLocation();
