@@ -1,14 +1,5 @@
 import { rawSql } from "../db";
 
-/**
- * SessionMemoryBackfillService.ts
- * Phase 4 — Automatic Session Memory Writer
- *
- * Polls every 60 seconds for completed sessions missing memory records.
- * Writes memory using org-scoped customer users only.
- * Idempotent — safe to run repeatedly.
- */
-
 let isRunning = false;
 let intervalHandle: NodeJS.Timeout | null = null;
 
@@ -58,35 +49,23 @@ export async function runBackfillOnce(): Promise<void> {
        LIMIT 20`,
       []
     );
-
     const sessions = (sessionRows ?? []) as any[];
-
-    if (sessions.length === 0) {
-      return;
-    }
-
+    if (sessions.length === 0) return;
     console.log(`[SessionMemoryBackfill] Found ${sessions.length} session(s) missing memory`);
-
     for (const session of sessions) {
       try {
         const [userRows] = await rawSql(
-          `SELECT id as user_id
-           FROM users
-           WHERE role = 'customer'
-           AND org_id = $1`,
+          `SELECT id as user_id FROM users WHERE role = 'customer' AND org_id = $1`,
           [session.org_id]
         );
         const users = (userRows ?? []) as any[];
-
         if (users.length === 0) {
-          console.log(`[SessionMemoryBackfill] No customer users found — skipping session ${session.session_id}`);
+          console.log(`[SessionMemoryBackfill] No customer users for org ${session.org_id} — skipping`);
           continue;
         }
-
         const durationMs = session.ended_at && session.started_at
           ? Number(session.ended_at) - Number(session.started_at)
           : null;
-
         for (const user of users) {
           await rawSql(
             `INSERT INTO user_session_memory
