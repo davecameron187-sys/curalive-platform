@@ -248,7 +248,8 @@ export const customerDashboardRouter = router({
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
       try {
-        const orgId = ctx.user?.orgId ?? 1;
+        const orgId = ctx.user?.orgId;
+        if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
         const [rows] = await rawSql(
           `SELECT f.id, f.session_id, f.feed_type, f.severity, f.title, f.body, f.pipeline, f.created_at
            FROM intelligence_feed f
@@ -273,7 +274,8 @@ export const customerDashboardRouter = router({
     .query(async ({ ctx }) => {
       try {
         const userId = ctx.user?.id ?? 0;
-        const orgId = ctx.user?.orgId ?? 1;
+        const orgId = ctx.user?.orgId;
+        if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
         const [rows] = await rawSql(
           `SELECT m.session_id, m.signals_surfaced, m.signals_actioned, m.signals_ignored,
                   m.highest_severity_seen, m.session_closed_at,
@@ -299,7 +301,8 @@ export const customerDashboardRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       try {
-        const orgId = ctx.user?.orgId ?? 1;
+        const orgId = ctx.user?.orgId;
+        if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
         const userId = ctx.user?.id ?? 0;
         await rawSql(
           `INSERT INTO customer_actions (org_id, user_id, session_id, action_type, target_type, target_id)
