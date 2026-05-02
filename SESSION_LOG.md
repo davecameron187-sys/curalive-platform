@@ -1000,3 +1000,33 @@ python, or node workarounds — all suffer same corruption.
 ### Last Known Good Commit (legacy): d432df7
 ### curalive-core commit: ef3c24c
 ### Next: Clean legacy imports in curalive-core, then TypeScript compile check
+
+## Session: May 02 2026 (Session 1 - curalive-core Extraction)
+### Objective: Create clean patent-aligned repository
+
+### Completed
+- Full dependency audit completed before any file was moved
+- Identified 5 blockers and resolved all
+- Classification completed: active core, patent-relevant future modules, legacy discard
+- New private GitHub repo created: https://github.com/davecameron187-sys/curalive-core
+- 53 files extracted and pushed to curalive-core
+- Stub files created for SessionClosePipeline locked dependencies
+- Patent-relevant modules archived: aggregateIntelligence, archiveUploadRouter
+- Docs created: README, architecture, patent-alignment, deployment, validation-checklist
+- Legacy repo reset after R10 violation
+
+### Not Yet Done
+- Remove legacy imports from shadowModeRouter.ts in curalive-core
+- Remove LiveQaDashboard import from ShadowMode.tsx in curalive-core
+- Run npx tsc --noEmit in curalive-core
+- Deploy curalive-core to separate Render services
+- Full validation checklist
+
+### Rules
+- Legacy repo: untouched and clean at d432df7
+- Production Render: still pointing at legacy repo
+- No production switch until curalive-core passes full validation
+
+### Last Known Good Commit (legacy): d432df7
+### curalive-core commit: ef3c24c
+### Next: Clean legacy imports in curalive-core, then TypeScript compile check
