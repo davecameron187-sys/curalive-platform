@@ -1098,3 +1098,17 @@ python, or node workarounds — all suffer same corruption.
 
 ### Last Known Good Commit (legacy): 13bb757
 ### curalive-core commit: f45f840
+
+## Session: May 02 2026 (Session 5 — History Fix + Audit)
+### Completed
+- Reverted ShadowMode to 60233c7 clean state
+- Added isLive guard — timer and CAPTURING only show for live sessions
+- Added historySessionId state — history clicks no longer activate live console
+- Audit Record now works for history sessions via historySessionId
+- Fixed NaN timestamps in history list
+- Fixed Unix ms timestamp in session elapsed timer
+### Remaining for next session
+- Audit Tab UI refinement — reconstruct Detected/Governed/Surfaced/Acted story
+- Customer dashboard session history rehydration
+### Last Known Good Commit (legacy): see git log
+### curalive-core: f45f840 unchanged
