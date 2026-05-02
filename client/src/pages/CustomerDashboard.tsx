@@ -362,7 +362,7 @@ export default function CustomerDashboard() {
                   key={s.id}
                   onClick={() => { setSelectedSessionId(`shadow-${s.id}`); setSelectedSession(s); }}
                   className={`px-4 py-3 cursor-pointer border-b border-gray-900 hover:bg-gray-900 transition-colors ${
-                    selectedSessionId === s.session_id ? "bg-gray-900 border-l-2 border-l-blue-500" : ""
+                    selectedSessionId === `shadow-${s.id}` ? "bg-gray-900 border-l-2 border-l-blue-500" : ""
                   }`}
                 >
                   <div className="text-xs font-medium text-white truncate">{s.event_name}</div>
