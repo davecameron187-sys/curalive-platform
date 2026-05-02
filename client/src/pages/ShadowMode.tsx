@@ -305,10 +305,11 @@ const formatSessionTime = (ts: string | null) => {
     }
   }, [intelligenceFeedQuery.data]);
 
+  const isLive = selectedSession?.status === "live" || selectedSession?.status === "bot_joining";
   // Session duration timer
   const [elapsed, setElapsed] = useState("00:00:00");
   useEffect(() => {
-    if (!selectedSession?.startedAt) return;
+    if (!isLive || !selectedSession?.startedAt) return;
     const start = isNaN(Number(selectedSession.startedAt)) ? new Date(selectedSession.startedAt).getTime() : Number(selectedSession.startedAt);
     const tick = setInterval(() => {
       const diff = Math.floor((Date.now() - start) / 1000);
@@ -342,8 +343,10 @@ const formatSessionTime = (ts: string | null) => {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           {selectedSession && (
+            <span style={{ color: "#94a3b8", fontSize: "11px" }}>{selectedSession.eventName}</span>
+          )}
+          {isLive && (
             <>
-              <span style={{ color: "#94a3b8", fontSize: "11px" }}>{selectedSession.eventName}</span>
               <span style={{ color: "#4ade80", fontSize: "11px" }}>{elapsed}</span>
               <span style={{ display: "flex", alignItems: "center", gap: "5px", color: "#4ade80", fontSize: "11px", letterSpacing: "1px" }}>
                 <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", animation: "pulse 2s infinite" }}></span>
