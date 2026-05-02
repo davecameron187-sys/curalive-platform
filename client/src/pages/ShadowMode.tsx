@@ -308,7 +308,7 @@ const formatSessionTime = (ts: string | null) => {
   const [elapsed, setElapsed] = useState("00:00:00");
   useEffect(() => {
     if (!selectedSession?.startedAt) return;
-    const start = new Date(selectedSession.startedAt).getTime();
+    const start = isNaN(Number(selectedSession.startedAt)) ? new Date(selectedSession.startedAt).getTime() : Number(selectedSession.startedAt);
     const tick = setInterval(() => {
       const diff = Math.floor((Date.now() - start) / 1000);
       const h = String(Math.floor(diff / 3600)).padStart(2, "0");
