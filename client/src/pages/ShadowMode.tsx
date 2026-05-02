@@ -217,7 +217,8 @@ export default function ShadowMode() {
 
 const formatSessionTime = (ts: string | null) => {
   if (!ts) return "—";
-  return new Date(ts).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const d = isNaN(Number(ts)) ? new Date(ts) : new Date(Number(ts));
+  return d.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 };
 
   const liveSessions = sessions.filter((s) => s.status === "live" || s.status === "bot_joining");
