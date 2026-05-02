@@ -24,14 +24,11 @@ const WebcastingHub = lazy(() => import("./WebcastingHub"));
 const EventCalendar = lazy(() => import("./EventCalendar"));
 const MailingListManager = lazy(() => import("./MailingListManager"));
 
-type DashboardTab = "overview" | "shadow-mode" | "events" | "partners" | "billing" | "settings";
+type DashboardTab = "shadow-mode" | "billing" | "settings";
 
 const TAB_CONFIG: { id: DashboardTab; label: string; icon: React.ElementType; color: string; activeColor: string }[] = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard, color: "text-slate-500 hover:text-slate-300", activeColor: "border-violet-400 text-violet-300" },
   { id: "shadow-mode", label: "Shadow Mode", icon: Radio, color: "text-slate-500 hover:text-slate-300", activeColor: "border-emerald-400 text-emerald-300" },
 
-  { id: "events", label: "Events", icon: CalendarDays, color: "text-slate-500 hover:text-slate-300", activeColor: "border-orange-400 text-orange-300" },
-  { id: "partners", label: "Partners", icon: Handshake, color: "text-slate-500 hover:text-slate-300", activeColor: "border-amber-400 text-amber-300" },
   { id: "billing", label: "Billing", icon: Receipt, color: "text-slate-500 hover:text-slate-300", activeColor: "border-green-400 text-green-300" },
   { id: "settings", label: "Settings", icon: Settings, color: "text-slate-500 hover:text-slate-300", activeColor: "border-slate-400 text-slate-300" },
 ];
@@ -517,7 +514,7 @@ export default function Dashboard() {
   const partnerFromUrl = params.get("partner") as "bastion" | "lumi" | null;
   const subFromUrl = params.get("sub") as EventsSubTab | null;
   const [activeTab, setActiveTab] = useState<DashboardTab>(
-    tabFromUrl && TAB_CONFIG.some(t => t.id === tabFromUrl) ? tabFromUrl : "overview"
+    tabFromUrl && TAB_CONFIG.some(t => t.id === tabFromUrl) ? tabFromUrl : "shadow-mode"
   );
 
   useEffect(() => {
@@ -535,7 +532,7 @@ export default function Dashboard() {
   }, [tabFromUrl]);
 
   useEffect(() => {
-    const newUrl = activeTab === "overview" ? "/" : `/?tab=${activeTab}`;
+    const newUrl = `/?tab=${activeTab}`;
     if (window.location.pathname + window.location.search !== newUrl) {
       window.history.replaceState(null, "", newUrl);
     }
@@ -611,11 +608,8 @@ export default function Dashboard() {
       </div>
 
       <div>
-        {activeTab === "overview" && <OverviewTab />}
         {activeTab === "shadow-mode" && <ShadowMode embedded />}
 
-        {activeTab === "events" && <EventsTab defaultSub={subFromUrl || undefined} />}
-        {activeTab === "partners" && <PartnersTab defaultPartner={partnerFromUrl || undefined} />}
         {activeTab === "billing" && <AdminBilling />}
         {activeTab === "settings" && <SettingsTab />}
       </div>
