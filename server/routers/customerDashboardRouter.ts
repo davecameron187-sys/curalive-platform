@@ -19,7 +19,8 @@ export const customerDashboardRouter = router({
   getSessions: customerProcedure
     .query(async ({ ctx }) => {
       try {
-        const orgId = ctx.user?.orgId ?? 1;
+        const orgId = ctx.user?.orgId;
+        if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
         const [rows] = await rawSql(
           `SELECT id, session_id, client_name, event_name, event_type, status, created_at, ably_channel
            FROM shadow_sessions
@@ -37,7 +38,8 @@ export const customerDashboardRouter = router({
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
       try {
-        const orgId = ctx.user?.orgId ?? 1;
+        const orgId = ctx.user?.orgId;
+        if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
         const [rows] = await rawSql(
           `SELECT
             COUNT(*) FILTER (WHERE f.severity IN ('high', 'critical')) AS required_attention,
@@ -65,7 +67,8 @@ export const customerDashboardRouter = router({
   getDailyConfidence: customerProcedure
     .query(async ({ ctx }) => {
       try {
-        const orgId = ctx.user?.orgId ?? 1;
+        const orgId = ctx.user?.orgId;
+        if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
 
         const [sessionRows] = await rawSql(
           `SELECT id, session_id, event_name, client_name, created_at
@@ -136,7 +139,8 @@ export const customerDashboardRouter = router({
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
       try {
-        const orgId = ctx.user?.orgId ?? 1;
+        const orgId = ctx.user?.orgId;
+        if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
         const [rows] = await rawSql(
           `SELECT
             COUNT(*) AS total_assessed,
@@ -160,7 +164,8 @@ export const customerDashboardRouter = router({
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
       try {
-        const orgId = ctx.user?.orgId ?? 1;
+        const orgId = ctx.user?.orgId;
+        if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
         const [rows] = await rawSql(
           `SELECT f.id, f.session_id, f.feed_type, f.severity, f.title, f.body, f.pipeline, f.created_at
            FROM intelligence_feed f
@@ -180,7 +185,8 @@ export const customerDashboardRouter = router({
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
       try {
-        const orgId = ctx.user?.orgId ?? 1;
+        const orgId = ctx.user?.orgId;
+        if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
         const [rows] = await rawSql(
           `SELECT g.id, g.session_id, g.decision_type, g.decision, g.confidence_score, g.reasoning, g.decided_at
            FROM governance_decisions g
@@ -200,7 +206,8 @@ export const customerDashboardRouter = router({
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input, ctx }) => {
       try {
-        const orgId = ctx.user?.orgId ?? 1;
+        const orgId = ctx.user?.orgId;
+        if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
         const [feedRows] = await rawSql(
           `SELECT f.id, f.session_id, f.feed_type, f.severity, f.title, f.body, f.pipeline, f.confidence_score, f.created_at
            FROM intelligence_feed f
