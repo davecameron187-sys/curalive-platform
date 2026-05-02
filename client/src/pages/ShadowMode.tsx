@@ -146,7 +146,7 @@ function AuditRecordPanel({ sessionId }: { sessionId: string | null }) {
 export default function ShadowMode() {
   const [activeTab, setActiveTab] = useState<Tab>("console");
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [reviewSessionId, setReviewSessionId] = useState<string | null>(null);
+  const [historySessionId, setHistorySessionId] = useState<string | null>(null);
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [psil, setPsil] = useState<string>("clear");
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -184,9 +184,9 @@ export default function ShadowMode() {
   });
 
   const intelligenceFeedQuery = trpc.shadowMode.getIntelligenceFeed.useQuery(
-    { sessionId: reviewSessionId ?? selectedSessionId ?? "" },
+    { sessionId: selectedSessionId ?? "" },
     {
-      enabled: !!(reviewSessionId ?? selectedSessionId),
+      enabled: !!selectedSessionId,
       refetchInterval: 3000,
       select: (data: any[]) => data.map((r: any) => ({
         id: r.id,
@@ -478,7 +478,7 @@ const formatSessionTime = (ts: string | null) => {
                 {liveSessions.map((s) => (
                   <div
                     key={s.id}
-                    onClick={() => setReviewSessionId(s.id)}
+                    onClick={() => setSelectedSessionId(s.id)}
                     style={{ padding: "12px 14px", background: selectedSessionId === s.id ? "#1e293b" : "#111", border: `1px solid ${selectedSessionId === s.id ? "#3b82f6" : "#1e293b"}`, borderRadius: "6px", cursor: "pointer", transition: "all 0.15s" }}
                   >
                     <div style={{ color: "#94a3b8", fontSize: "10px", letterSpacing: "1px", marginBottom: "2px" }}>{s.clientName?.toUpperCase() ?? "—"}</div>
@@ -665,7 +665,7 @@ const formatSessionTime = (ts: string | null) => {
             {sessions
               .filter((s) => s.status === "ended" || s.status === "archived" || s.status === "completed")
               .map((s) => (
-                <div key={s.id} onClick={() => setReviewSessionId(s.id)} style={{ padding: "10px 12px", marginBottom: "6px", background: reviewSessionId === s.id ? "#1e293b" : "#111", border: `1px solid ${reviewSessionId === s.id ? "#3b82f6" : "#1e293b"}`, borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}>
+                <div key={s.id} onClick={() => setHistorySessionId(String(s.id))} style={{ padding: "10px 12px", marginBottom: "6px", background: historySessionId === String(s.id) ? "#1e293b" : "#111", border: `1px solid ${historySessionId === String(s.id) ? "#3b82f6" : "#1e293b"}`, borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}>
                   <div style={{ color: "#e2e8f0" }}>{s.eventName}</div>
                   <div style={{ color: "#475569", fontSize: "10px", marginTop: "4px" }}>{formatSessionTime(s.startedAt)}</div>
                 </div>
@@ -677,7 +677,7 @@ const formatSessionTime = (ts: string | null) => {
 
         {activeTab === "audit" && (
           <div style={{ flex: 1, overflowY: "auto", padding: "0 4px" }}>
-            <AuditRecordPanel sessionId={selectedSession?.id ? `shadow-${selectedSession.id}` : null} />
+            <AuditRecordPanel sessionId={historySessionId ? `shadow-${historySessionId}` : (selectedSession?.id ? `shadow-${selectedSession.id}` : null)} />
           </div>
         )}
       {/* CuraLive Assistant */}
