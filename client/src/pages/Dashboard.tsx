@@ -589,11 +589,6 @@ export default function Dashboard() {
                   {label}
                 </button>
               );
-              if (id === "shadow-mode") {
-                return [
-                  btn,
-                  <a
-              }
               return btn;
             })}
           </div>
