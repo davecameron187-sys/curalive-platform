@@ -1063,3 +1063,13 @@ python, or node workarounds — all suffer same corruption.
 ### Last Known Good Commit (legacy): d432df7
 ### curalive-core commit: fcb2960
 ### Next: Remove LiveQaDashboard import from ShadowMode.tsx in curalive-core
+
+## Session: May 02 2026 (Session 3 — Production Recovery)
+### Completed
+- R10 violation: Replit stripped legacy App.tsx — reverted
+- Fixed SessionMemoryBackfillService orgId column name
+- Production live at app.curalive.cc
+- curalive-core TypeScript clean at fcb2960
+### Legacy commit: db41e13
+### curalive-core: fcb2960
+### Next: LiveQaDashboard removal in curalive-core
