@@ -1,11 +1,10 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import LiveQaDashboard from "@/components/LiveQaDashboard";
 import Ably from "ably";
 
 
-type Tab = "console" | "qa" | "participants" | "pre-event" | "history" | "audit";
+type Tab = "console" | "pre-event" | "history" | "audit";
 
 type FeedItem = {
   id: number;
@@ -321,8 +320,6 @@ const formatSessionTime = (ts: string | null) => {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "console", label: "Live Console" },
-    { id: "qa", label: "Live Q&A" },
-    { id: "participants", label: "Participants" },
     { id: "pre-event", label: "Pre-Event" },
     { id: "history", label: "History" },
     { id: "audit", label: "Audit Record" },
@@ -648,20 +645,7 @@ const formatSessionTime = (ts: string | null) => {
           </>
         )}
 
-        {activeTab === "qa" && (
-          <div style={{ flex: 1 }}>
-            <div style={{ color: "#475569", fontSize: "11px", letterSpacing: "1px", marginBottom: "16px" }}>LIVE Q&A</div>
-            {selectedSessionId ? (
-              <LiveQaDashboard sessionId={selectedSessionId} />
-            ) : (
-              <div style={{ color: "#334155", fontSize: "12px" }}>Select a session to view Q&A</div>
-            )}
-          </div>
-        )}
 
-        {activeTab === "participants" && (
-          <div style={{ color: "#475569", fontSize: "13px" }}>Participants — coming next build phase</div>
-        )}
 
         {activeTab === "pre-event" && (
           <div style={{ color: "#475569", fontSize: "13px" }}>Pre-Event — coming next build phase</div>
