@@ -5,9 +5,6 @@ import {getDb, rawSql } from "../db";
 import { shadowSessions, taggedMetrics, recallBots, agmIntelligenceSessions, operatorActions } from "../../drizzle/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
-import { writeAnonymizedRecord } from "../lib/aggregateIntelligence";
-import { generateFullAiReport } from "./archiveUploadRouter";
-import type { AiReport } from "./archiveUploadRouter";
 import { runSessionClosePipeline } from "../services/SessionClosePipeline";
 
 async function logOperatorAction(opts: {
@@ -50,15 +47,6 @@ async function autoGenerateAiReport(
     }
 
     console.log(`[Shadow] Auto-generating AI report for session ${sessionId} (${fullText.length} chars)...`);
-
-    const aiReport = await generateFullAiReport(
-      fullText,
-      clientName,
-      eventName,
-      eventType,
-      sentimentAvg ?? 50,
-      complianceFlags
-    );
 
     const db = await getDb();
     const eventId = `shadow-${sessionId}`;
@@ -533,16 +521,6 @@ export const shadowModeRouter = router({
         const complianceKeywords = ["forward-looking", "guidance", "forecast", "predict", "expect", "material", "non-public", "insider"];
         const liveComplianceFlags = complianceKeywords.filter(k => fullText.toLowerCase().includes(k)).length;
 
-        await writeAnonymizedRecord({
-          eventType: session.eventType ?? "other",
-          sentimentScore: session.sentimentAvg ?? null,
-          segmentCount: transcript.length,
-          complianceFlags: liveComplianceFlags,
-          wordCount: fullText.split(/\s+/).filter(Boolean).length,
-          eventDate: null,
-          sourceType: "live_session",
-        });
-
         (async () => {
           const POLL_INTERVAL_MS = 5_000;
           const MAX_POLLS = 12; // 60s total
@@ -610,16 +588,6 @@ export const shadowModeRouter = router({
         const fullText = localTranscript.map(s => s.text).join(" ");
         const complianceKeywords = ["forward-looking", "guidance", "forecast", "predict", "expect", "material", "non-public", "insider"];
         const liveComplianceFlags = complianceKeywords.filter(k => fullText.toLowerCase().includes(k)).length;
-
-        await writeAnonymizedRecord({
-          eventType: session.eventType ?? "other",
-          sentimentScore: session.sentimentAvg ?? null,
-          segmentCount: localTranscript.length,
-          complianceFlags: liveComplianceFlags,
-          wordCount: fullText.split(/\s+/).filter(Boolean).length,
-          eventDate: null,
-          sourceType: "live_session",
-        });
 
         runSessionClosePipeline(input.sessionId).catch(console.error);
 
