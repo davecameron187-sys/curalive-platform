@@ -1073,3 +1073,28 @@ python, or node workarounds — all suffer same corruption.
 ### Legacy commit: db41e13
 ### curalive-core: fcb2960
 ### Next: LiveQaDashboard removal in curalive-core
+
+## Session: May 02 2026 (Session 4 — UI Cleanup)
+### Objective: Clean operator console UI to match curalive-core spec
+
+### Completed
+- Removed Live QA and Participants tabs from Shadow Mode
+- Fixed NaN timestamps in history tab — Unix ms timestamps now handled correctly
+- Removed Overview, Events, Partners tabs from Dashboard
+- Default tab changed from Overview to Shadow Mode
+- Removed legacy Dashboard nav link
+- Fixed broken JSX after nav removal — build restored
+- Production confirmed: Shadow Mode, Billing, Settings only
+- App opens directly in Shadow Mode
+
+### Production Status
+- Live at app.curalive.cc
+- Last commit: 13bb757
+- curalive-core: f45f840 (unchanged)
+
+### Next
+- Customer dashboard session history fix
+- curalive-core Render deployment planning
+
+### Last Known Good Commit (legacy): 13bb757
+### curalive-core commit: f45f840
