@@ -593,13 +593,6 @@ export default function Dashboard() {
                 return [
                   btn,
                   <a
-                    key="op-dashboard"
-                    href="/operator/dashboard"
-                    className="flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 border-transparent text-blue-400 hover:text-blue-300 transition-colors whitespace-nowrap">
-                    <LayoutDashboard className="w-4 h-4" />
-                    Dashboard
-                  </a>,
-                ];
               }
               return btn;
             })}
