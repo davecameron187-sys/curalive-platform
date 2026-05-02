@@ -1030,3 +1030,36 @@ python, or node workarounds — all suffer same corruption.
 ### Last Known Good Commit (legacy): d432df7
 ### curalive-core commit: ef3c24c
 ### Next: Clean legacy imports in curalive-core, then TypeScript compile check
+
+## Session: May 02 2026 (Session 2 — curalive-core Build Stabilisation)
+### Objective: Resolve all TypeScript errors in curalive-core
+
+### Completed
+- Moved stubs to correct server/services/ location
+- Created AIReportPipeline stub
+- Created notification.ts stub
+- Created drizzle/gaps.schema.ts and partners.schema.ts stubs
+- Fixed App.tsx — removed 100+ legacy imports, clean minimal router
+- Fixed main.tsx — removed invalid Clerk props
+- Added auth router with me and logout procedures
+- Installed @clerk/clerk-react
+- Excluded locked files from tsconfig (recallWebhook.ts, SegmentOrchestrator.ts)
+- Archived AI modules: AiEvolutionService, OrganizationalKnowledgeGraphService, PredictiveEventIntelligenceService, AIReportPipeline to patent-modules
+- Archived experimental: AeosQuoteToCash, AeosSemanticApi, AeosSovereignData, IpoMandA
+- Archived strategic-legacy: PersonalizationEngine, UnifiedIntelligenceService, AICoreClient, AICorePayloadMapper
+- TypeScript compiles clean: 0 errors
+- Backup file removed from git
+
+### curalive-core Status
+- TypeScript: CLEAN
+- GitHub: fcb2960
+- Archive: complete — all AI work preserved and classified
+- Next: ShadowMode.tsx LiveQaDashboard import removal, then session close
+
+### Legacy Repo
+- Untouched at d432df7
+- Production Render: still on legacy repo
+
+### Last Known Good Commit (legacy): d432df7
+### curalive-core commit: fcb2960
+### Next: Remove LiveQaDashboard import from ShadowMode.tsx in curalive-core
