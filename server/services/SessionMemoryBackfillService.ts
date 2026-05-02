@@ -38,7 +38,7 @@ export async function runBackfillOnce(): Promise<void> {
        AND EXISTS (
          SELECT 1 FROM users u
          WHERE u.role = 'customer'
-         AND u.org_id = s.org_id
+         AND u."orgId" = s.org_id
          AND NOT EXISTS (
            SELECT 1 FROM user_session_memory m
            WHERE m.session_id = s.id
@@ -55,7 +55,7 @@ export async function runBackfillOnce(): Promise<void> {
     for (const session of sessions) {
       try {
         const [userRows] = await rawSql(
-          `SELECT id as user_id FROM users WHERE role = 'customer' AND org_id = $1`,
+          `SELECT id as user_id FROM users WHERE role = 'customer' AND "orgId" = $1`,
           [session.org_id]
         );
         const users = (userRows ?? []) as any[];
