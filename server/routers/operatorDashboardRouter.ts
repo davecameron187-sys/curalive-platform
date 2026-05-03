@@ -130,6 +130,83 @@ export const operatorDashboardRouter = router({
     };
   }),
 
+  getLiveSessions: operatorProcedure.query(async () => {
+    const now = new Date();
+    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
+
+    const [rows] = await rawSql(
+      `SELECT
+         s.id,
+         s.event_name,
+         s.client_name,
+         s.started_at,
+         s.recall_bot_id,
+         o.name AS org_name,
+         rb.status AS bot_status,
+         COALESCE(feed.total_count, 0)::int AS feed_count,
+         feed.last_feed_at,
+         COALESCE(feed.alert_count, 0)::int AS alert_count
+       FROM shadow_sessions s
+       LEFT JOIN organisations o ON o.id = s.org_id
+       LEFT JOIN recall_bots rb ON rb.recall_bot_id = s.recall_bot_id
+       LEFT JOIN LATERAL (
+         SELECT
+           COUNT(*)::int AS total_count,
+           MAX(created_at) AS last_feed_at,
+           COUNT(*) FILTER (
+             WHERE severity IN ('high', 'critical')
+               AND created_at >= $1
+           )::int AS alert_count
+         FROM intelligence_feed
+         WHERE session_id = 'shadow-' || s.id::text
+       ) feed ON true
+       WHERE s.status = 'live'
+       ORDER BY s.started_at DESC`,
+      [tenMinutesAgo]
+    );
+
+    return rows.map((r: any) => {
+      const lastFeedAt: Date | null = r.last_feed_at ? new Date(r.last_feed_at) : null;
+      const startedAt: Date = new Date(r.started_at);
+      const secondsSinceStart = (now.getTime() - startedAt.getTime()) / 1000;
+      const secondsSinceFeed = lastFeedAt
+        ? (now.getTime() - lastFeedAt.getTime()) / 1000
+        : null;
+
+      let healthState: string;
+      if (!r.recall_bot_id) {
+        healthState = "BOT_MISSING";
+      } else if (r.bot_status === "failed") {
+        healthState = "CRITICAL";
+      } else if (r.bot_status === "done") {
+        healthState = "CRITICAL";
+      } else if (r.feed_count === 0 && secondsSinceStart > 60) {
+        healthState = "NO_DATA";
+      } else if (secondsSinceFeed !== null && secondsSinceFeed < 60) {
+        healthState = "HEALTHY";
+      } else if (secondsSinceFeed !== null && secondsSinceFeed < 120) {
+        healthState = "WATCH";
+      } else if (secondsSinceFeed !== null && secondsSinceFeed < 240) {
+        healthState = "DEGRADED";
+      } else {
+        healthState = "CRITICAL";
+      }
+
+      return {
+        id: r.id as number,
+        orgName: (r.org_name ?? "Unassigned") as string,
+        eventName: (r.event_name ?? "") as string,
+        clientName: (r.client_name ?? "") as string,
+        startedAt: r.started_at as string,
+        botStatus: (r.bot_status ?? null) as string | null,
+        lastFeedAt: lastFeedAt?.toISOString() ?? null,
+        feedCount: r.feed_count as number,
+        alertCount: r.alert_count as number,
+        healthState,
+      };
+    });
+  }),
+
   getUpcomingSessions: operatorProcedure.query(async () => {
     const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const [rows] = await rawSql(
