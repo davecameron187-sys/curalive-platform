@@ -1112,3 +1112,29 @@ python, or node workarounds — all suffer same corruption.
 - Customer dashboard session history rehydration
 ### Last Known Good Commit (legacy): see git log
 ### curalive-core: f45f840 unchanged
+
+## Session: May 03 2026 (Session 1 — Audit PDF Export)
+### Objective: Build tamper-evident audit PDF export from Shadow Mode
+
+### Completed
+- Added generateAuditPdf procedure to shadowModeRouter.ts
+- Added attachment support to sendEmail in email.ts
+- Added EXPORT PDF button to AuditRecordPanel in ShadowMode.tsx
+- PDF generates server-side from DB data — not browser state
+- PDF includes: summary, material signals, client actions, chain verification
+- Optional recipient email field for sending to client compliance officer
+- PDF downloads in browser and emails to operator
+- Cleaned PDF layout — single page, linear flow, no coordinate overlap
+
+### Known
+- PDF layout can be refined further
+- Material signals shows high/critical only — correct for audit summary
+
+### Production Status
+- Live at app.curalive.cc
+- Legacy commit: see git log
+- curalive-core: f45f840 unchanged
+
+### Next
+- Customer dashboard session history rehydration
+- Further UI refinements if needed
