@@ -265,10 +265,10 @@ function SessionsPanel() {
               Close session
             </button>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{primaryLiveSession.orgName}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{primaryLiveSession.eventName}</p>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{live.data!.company}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{live.data!.eventName}</p>
           <div className="grid grid-cols-4 gap-3 mt-3">
-            <div><p className="text-xs text-gray-400">Elapsed</p><p className="text-sm font-semibold dark:text-white">{elapsedStr(primaryLiveSession.startedAt)}</p></div>
+            <div><p className="text-xs text-gray-400">Elapsed</p><p className="text-sm font-semibold dark:text-white">{elapsedStr(live.data!.startedAt)}</p></div>
             <div><p className="text-xs text-gray-400">Segments</p><p className="text-sm font-semibold dark:text-white">{live.data.segmentCount}</p></div>
             <div><p className="text-xs text-gray-400">Commitments</p><p className="text-sm font-semibold dark:text-white">{live.data.commitmentCount}</p></div>
             <div><p className="text-xs text-gray-400">Flags</p><p className="text-sm font-semibold dark:text-white">{live.data.complianceFlagCount}</p></div>
