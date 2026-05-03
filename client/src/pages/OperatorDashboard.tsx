@@ -110,6 +110,7 @@ function elapsedStr(startedAt: any): string {
 function CommandPanel() {
   const summary = trpc.operatorDashboard.getDashboardSummary.useQuery(undefined, { refetchInterval: 60000 });
   const live = trpc.operatorDashboard.getLiveSession.useQuery(undefined, { refetchInterval: 60000 });
+  const liveSessions = trpc.operatorDashboard.getLiveSessions.useQuery(undefined, { refetchInterval: 30000 });
   const upcoming = trpc.operatorDashboard.getUpcomingSessions.useQuery(undefined, { refetchInterval: 60000 });
   const attention = trpc.operatorDashboard.getAttentionItems.useQuery(undefined, { refetchInterval: 60000 });
 
