@@ -128,7 +128,7 @@ function CommandPanel() {
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{getGreeting()}, Dave</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {dateStr} · {s?.liveCount ?? 0} live · {s?.pendingReportCount ?? 0} reports pending
+          {dateStr} · {liveSessions.data?.length ?? 0} live · {s?.pendingReportCount ?? 0} reports pending
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
           Last updated {lastUpdated.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
@@ -136,7 +136,7 @@ function CommandPanel() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Live right now" value={s?.liveCount ?? 0} icon={Activity} />
+        <KpiCard label="Live right now" value={liveSessions.data?.length ?? 0} icon={Activity} />
         <KpiCard label="Active customers" value={s?.customers?.active ?? 0} sub={`${s?.customers?.pilot ?? 0} pilot · ${s?.customers?.demo ?? 0} demo`} icon={Users} />
         <KpiCard label="Reports to send" value={s?.pendingReportCount ?? 0} icon={FileText} />
         <KpiCard label="Revenue this month" value={s ? formatCurrency(s.revenueThisMonth) : "—"} sub={s ? `Last month: ${formatCurrency(s.revenueLastMonth)}` : ""} icon={TrendingUp} />
