@@ -119,6 +119,8 @@ function CommandPanel() {
     if (summary.dataUpdatedAt) setLastUpdated(new Date(summary.dataUpdatedAt));
   }, [summary.dataUpdatedAt]);
 
+  const liveSessionList = liveSessions.data ?? [];
+  const primaryLiveSession = liveSessionList[0];
   const s = summary.data;
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -142,30 +144,30 @@ function CommandPanel() {
         <KpiCard label="Revenue this month" value={s ? formatCurrency(s.revenueThisMonth) : "—"} sub={s ? `Last month: ${formatCurrency(s.revenueLastMonth)}` : ""} icon={TrendingUp} />
       </div>
 
-      {live.data && (
+      {primaryLiveSession && (
         <div className="bg-white dark:bg-gray-900 border-l-4 border-green-500 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-3">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             <span className="font-semibold text-green-700 dark:text-green-400 text-sm">LIVE SESSION</span>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{live.data.company}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{live.data.eventName}</p>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{primaryLiveSession.orgName}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{primaryLiveSession.eventName}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
             <div>
               <p className="text-xs text-gray-400">Elapsed</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{elapsedStr(live.data.startedAt)}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{elapsedStr(primaryLiveSession.startedAt)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400">Segments</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{live.data.segmentCount} captured</p>
+              <p className="text-xs text-gray-400">Feed items</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{primaryLiveSession.feedCount} captured</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400">Commitments</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{live.data.commitmentCount}</p>
+              <p className="text-xs text-gray-400">Health</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{primaryLiveSession.healthState}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400">Compliance flags</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{live.data.complianceFlagCount}</p>
+              <p className="text-xs text-gray-400">Recent alerts</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{primaryLiveSession.alertCount}</p>
             </div>
           </div>
         </div>
@@ -263,10 +265,10 @@ function SessionsPanel() {
               Close session
             </button>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{live.data.company}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{live.data.eventName}</p>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{primaryLiveSession.orgName}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{primaryLiveSession.eventName}</p>
           <div className="grid grid-cols-4 gap-3 mt-3">
-            <div><p className="text-xs text-gray-400">Elapsed</p><p className="text-sm font-semibold dark:text-white">{elapsedStr(live.data.startedAt)}</p></div>
+            <div><p className="text-xs text-gray-400">Elapsed</p><p className="text-sm font-semibold dark:text-white">{elapsedStr(primaryLiveSession.startedAt)}</p></div>
             <div><p className="text-xs text-gray-400">Segments</p><p className="text-sm font-semibold dark:text-white">{live.data.segmentCount}</p></div>
             <div><p className="text-xs text-gray-400">Commitments</p><p className="text-sm font-semibold dark:text-white">{live.data.commitmentCount}</p></div>
             <div><p className="text-xs text-gray-400">Flags</p><p className="text-sm font-semibold dark:text-white">{live.data.complianceFlagCount}</p></div>
