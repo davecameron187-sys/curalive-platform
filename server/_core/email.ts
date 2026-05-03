@@ -24,6 +24,7 @@ export interface SendEmailOptions {
   subject: string;
   html: string;
   replyTo?: string;
+  attachments?: { filename: string; content: string; type: string; disposition: string }[];
 }
 
 export async function sendEmail(opts: SendEmailOptions): Promise<{ success: boolean; id?: string; error?: string }> {
@@ -44,6 +45,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ success: bool
       subject: opts.subject,
       html: opts.html,
       replyTo: opts.replyTo,
+      attachments: opts.attachments?.map(a => ({ filename: a.filename, content: Buffer.from(a.content, "base64"), type: a.type })),
     });
 
     if (error) {

@@ -1543,4 +1543,135 @@ export const shadowModeRouter = router({
       return null;
     }),
 
+
+  generateAuditPdf: operatorProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      recipientEmail: z.string().email().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { sendEmail } = await import("../_core/email");
+        const PDFDocument = (await import("pdfkit")).default;
+
+        const [feedRows] = await rawSql(
+          `SELECT f.id, f.session_id, f.feed_type, f.severity, f.title, f.body, f.pipeline, f.confidence_score, f.created_at
+           FROM intelligence_feed f
+           WHERE f.session_id = $1
+           ORDER BY f.created_at ASC`,
+          [input.sessionId]
+        );
+        const sessionNumeric = parseInt(input.sessionId.replace("shadow-", ""), 10);
+        const [govRows] = await rawSql(
+          `SELECT g.id, g.intelligence_feed_id, g.decision_type, g.decision, g.reasoning, g.chain_hash, g.previous_hash, g.decided_at
+           FROM governance_decisions g
+           WHERE g.session_id = $1
+           ORDER BY g.decided_at ASC`,
+          [sessionNumeric]
+        );
+        const [actionRows] = await rawSql(
+          `SELECT ca.id, ca.user_id, ca.action_type, ca.target_type, ca.target_id, ca.created_at
+           FROM customer_actions ca
+           WHERE ca.session_id = $1
+           ORDER BY ca.created_at ASC`,
+          [sessionNumeric]
+        );
+        const [sessionRows] = await rawSql(
+          `SELECT event_name, client_name, created_at FROM shadow_sessions WHERE id = $1`,
+          [sessionNumeric]
+        );
+
+        const signals = (feedRows ?? []) as any[];
+        const decisions = (govRows ?? []) as any[];
+        const actions = (actionRows ?? []) as any[];
+        const session = (sessionRows ?? [])[0] as any;
+
+        let chainIntact = true;
+        for (let i = 1; i < decisions.length; i++) {
+          if (decisions[i].previous_hash !== decisions[i - 1].chain_hash) {
+            chainIntact = false;
+            break;
+          }
+        }
+
+        const chunks: Buffer[] = [];
+        const doc = new PDFDocument({ margin: 50, size: "A4" });
+        doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+
+        await new Promise<void>((resolve) => {
+          doc.on("end", resolve);
+
+          doc.fontSize(18).font("Helvetica-Bold").text("CuraLive Audit Record", { align: "center" });
+          doc.moveDown(0.5);
+          doc.fontSize(10).font("Helvetica").text(`Session: ${session?.event_name ?? input.sessionId}`, { align: "center" });
+          doc.text(`Client: ${session?.client_name ?? "—"}`, { align: "center" });
+          doc.text(`Generated: ${new Date().toLocaleString()}`, { align: "center" });
+          doc.moveDown();
+
+          doc.fontSize(12).font("Helvetica-Bold")
+            .fillColor(chainIntact ? "#16a34a" : "#dc2626")
+            .text(chainIntact ? "CHAIN INTACT — Tamper-evidence verified" : "CHAIN BROKEN — Record integrity compromised");
+          doc.fillColor("#000000").moveDown();
+
+          doc.fontSize(11).font("Helvetica-Bold").text("SUMMARY");
+          doc.fontSize(10).font("Helvetica");
+          doc.text(`Signals Detected: ${signals.length}`);
+          doc.text(`Governance Decisions: ${decisions.length}`);
+          doc.text(`Client Actions: ${actions.length}`);
+          doc.moveDown();
+
+          doc.fontSize(11).font("Helvetica-Bold").text("SIGNAL LOG");
+          doc.moveDown(0.3);
+          signals.forEach((s: any) => {
+            const gov = decisions.find((g: any) => g.intelligence_feed_id === s.id);
+            doc.fontSize(9).font("Helvetica-Bold").fillColor("#000000").text(`[${(s.severity ?? "info").toUpperCase()}] ${s.title}`);
+            doc.fontSize(8).font("Helvetica").fillColor("#666666")
+              .text(`${new Date(s.created_at).toLocaleTimeString()} · ${s.pipeline} · ${s.feed_type}`);
+            if (gov) {
+              doc.fillColor(gov.decision === "authorised" ? "#16a34a" : "#dc2626")
+                .text(`Governance: ${(gov.decision ?? "").toUpperCase()}`);
+              if (gov.reasoning) doc.fillColor("#333333").text(`Reasoning: ${gov.reasoning}`);
+              doc.fillColor("#999999").fontSize(7).text(`Hash: ${(gov.chain_hash ?? "").substring(0, 16)}...`);
+            }
+            doc.fillColor("#000000").moveDown(0.3);
+          });
+
+          doc.addPage();
+          doc.fontSize(11).font("Helvetica-Bold").text("CLIENT ACTIONS");
+          doc.moveDown(0.3);
+          if (actions.length === 0) {
+            doc.fontSize(10).font("Helvetica").text("No client actions recorded.");
+          } else {
+            actions.forEach((a: any) => {
+              doc.fontSize(9).font("Helvetica-Bold").fillColor("#000000").text(`${(a.action_type ?? "").toUpperCase()}`);
+              doc.fontSize(8).font("Helvetica").fillColor("#666666")
+                .text(`${new Date(a.created_at).toLocaleTimeString()} · Target: ${a.target_type} #${a.target_id}`);
+              doc.fillColor("#000000").moveDown(0.3);
+            });
+          }
+
+          doc.end();
+        });
+
+        const pdfBuffer = Buffer.concat(chunks);
+        const pdfBase64 = pdfBuffer.toString("base64");
+
+        const operatorEmail = ctx.user?.email;
+        const recipients = [operatorEmail, input.recipientEmail].filter(Boolean) as string[];
+
+        if (recipients.length > 0) {
+          await sendEmail({
+            to: recipients[0],
+            subject: `CuraLive Audit Record — ${session?.event_name ?? input.sessionId}`,
+            html: `<p>Please find attached the CuraLive Audit Record for <strong>${session?.event_name ?? input.sessionId}</strong>.</p><p>Chain integrity: <strong>${chainIntact ? "VERIFIED" : "COMPROMISED"}</strong></p><p>This record was generated directly from the CuraLive governance chain database.</p>`,
+            attachments: [{ filename: `curalive-audit-${input.sessionId}.pdf`, content: pdfBase64, type: "application/pdf", disposition: "attachment" }],
+          });
+        }
+
+        return { success: true, pdfBase64, chainIntact, signalCount: signals.length };
+      } catch (err: any) {
+        console.error("[AuditPdf] Failed:", err?.message ?? err);
+        return { success: false, pdfBase64: null, chainIntact: false, signalCount: 0 };
+      }
+    }),
 });

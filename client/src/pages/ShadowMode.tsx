@@ -82,6 +82,24 @@ function AuditRecordPanel({ sessionId }: { sessionId: string | null }) {
     { sessionId: sessionId ?? "" },
     { enabled: !!sessionId }
   );
+  const [exportEmail, setExportEmail] = useState("");
+  const [exportStatus, setExportStatus] = useState<"idle"|"loading"|"sent"|"error">("idle");
+  const exportPdf = trpc.shadowMode.generateAuditPdf.useMutation({
+    onSuccess: (data) => {
+      if (data?.success) {
+        setExportStatus("sent");
+        if (data.pdfBase64) {
+          const link = document.createElement("a");
+          link.href = "data:application/pdf;base64," + data.pdfBase64;
+          link.download = "curalive-audit-" + sessionId + ".pdf";
+          link.click();
+        }
+      } else {
+        setExportStatus("error");
+      }
+    },
+    onError: () => setExportStatus("error"),
+  });
 
   if (!sessionId) {
     return <div style={{ color: "#475569", fontSize: "13px" }}>Select a session to view the audit record.</div>;
@@ -100,6 +118,22 @@ function AuditRecordPanel({ sessionId }: { sessionId: string | null }) {
           {data.chainIntact ? "CHAIN INTACT — Tamper-evidence verified" : "CHAIN BROKEN — Record integrity compromised"}
         </span>
         <div style={{ color: "#475569", fontSize: "10px", marginTop: "4px" }}>Generated: {data.generatedAt ? new Date(data.generatedAt).toLocaleString() : ""}</div>
+      </div>
+      <div style={{ marginBottom: "12px", display: "flex", gap: "8px", alignItems: "center" }}>
+        <input
+          type="email"
+          placeholder="Optional: recipient email"
+          value={exportEmail}
+          onChange={e => setExportEmail(e.target.value)}
+          style={{ flex: 1, background: "#0a0a0a", border: "1px solid #1e293b", borderRadius: "3px", padding: "5px 8px", color: "#e2e8f0", fontSize: "10px", fontFamily: "monospace" }}
+        />
+        <button
+          onClick={() => { setExportStatus("loading"); exportPdf.mutate({ sessionId: sessionId!, recipientEmail: exportEmail || undefined }); }}
+          disabled={exportStatus === "loading"}
+          style={{ background: "#1e3a5f", border: "1px solid #2563eb", color: "#60a5fa", padding: "5px 12px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", letterSpacing: "1px", whiteSpace: "nowrap" }}
+        >
+          {exportStatus === "loading" ? "GENERATING..." : exportStatus === "sent" ? "PDF SENT ✓" : exportStatus === "error" ? "FAILED — RETRY" : "EXPORT PDF"}
+        </button>
       </div>
 
       <div style={{ marginBottom: "12px", color: "#94a3b8", letterSpacing: "1px", fontSize: "10px" }}>SIGNALS DETECTED — {data.signals.length}</div>
