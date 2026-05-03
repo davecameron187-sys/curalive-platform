@@ -1138,3 +1138,50 @@ python, or node workarounds — all suffer same corruption.
 ### Next
 - Customer dashboard session history rehydration
 - Further UI refinements if needed
+
+## Session: May 03 2026 (Phase 3.6 — Operator Command Centre)
+### Objective: Multi-event live monitoring on Operator Dashboard
+
+### Completed
+- Full workflow audit across 8 scope areas — documented what exists, what works, what is missing
+- Designed Operator Command Centre blueprint — health model, priority model, dashboard structure
+- Added getLiveSessions procedure to operatorDashboardRouter.ts — queries all live sessions with health state derived from bot status and feed activity
+- Wired getLiveSessions into OperatorDashboard.tsx frontend
+- Dashboard KPI and header now use live session count from getLiveSessions
+- Replaced single-session primary panel with multi-session data model
+- Fixed broken primaryLiveSession references in SessionsPanel — replaced with live.data
+- Added live sessions grid to CommandPanel — shows all live sessions with org name, event name, health state, alert count, elapsed time
+
+### Commits
+- ae53dcb feat: add multi-event live sessions query
+- e9c06c2 feat: wire live sessions query into operator dashboard
+- 7e1b0f7 feat: use liveSessions count in operator dashboard
+- a4f90a6 feat: switch live session panel to multi-session data model
+- bb5d361 fix: replace broken primaryLiveSession refs in SessionsPanel with live.data
+- b308a3d feat: add live sessions grid to operator dashboard command panel
+
+### Health model implemented
+- HEALTHY: bot in_call, last feed < 60s
+- WATCH: last feed 60-120s
+- DEGRADED: last feed 120-240s
+- CRITICAL: last feed > 240s, bot done while live, bot failed
+- BOT_MISSING: no recall_bot_id
+- NO_DATA: no feed items and session started > 60s ago
+
+### Known issues
+- Markdown dot-notation corruption active in this chat interface
+- File writes must use Python heredoc via shell, not inline scripts or copy-paste
+
+### Outstanding next session
+- Step 2: Fix getUpcomingSessions to read shadow_sessions WHERE status IN pending, booked
+- Step 3: Extend getAttentionItems with session health items
+- Customer dashboard feed rehydration (deferred)
+- Booking to session automated workflow (deferred)
+- curalive-core deployment (deferred)
+
+### Production Status
+- Live at app.curalive.cc
+- Legacy commit: b308a3d
+- curalive-core: f45f840 unchanged
+
+### Last Known Good Commit: b308a3d
