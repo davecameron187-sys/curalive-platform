@@ -143,33 +143,29 @@ function CommandPanel() {
         <KpiCard label="Reports to send" value={s?.pendingReportCount ?? 0} icon={FileText} />
         <KpiCard label="Revenue this month" value={s ? formatCurrency(s.revenueThisMonth) : "—"} sub={s ? `Last month: ${formatCurrency(s.revenueLastMonth)}` : ""} icon={TrendingUp} />
       </div>
-
-      {primaryLiveSession && (
-        <div className="bg-white dark:bg-gray-900 border-l-4 border-green-500 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 mb-3">
+      {liveSessionList.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="font-semibold text-green-700 dark:text-green-400 text-sm">LIVE SESSION</span>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Live sessions</h3>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{primaryLiveSession.orgName}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{primaryLiveSession.eventName}</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-            <div>
-              <p className="text-xs text-gray-400">Elapsed</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{elapsedStr(primaryLiveSession.startedAt)}</p>
+          {liveSessionList.map((session: any) => (
+            <div key={session.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{session.orgName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{session.eventName}</p>
+                </div>
+                <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{session.healthState}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 mt-3">
+                <div><p className="text-xs text-gray-400">Elapsed</p><p className="text-xs font-semibold text-gray-900 dark:text-white">{elapsedStr(session.startedAt)}</p></div>
+                <div><p className="text-xs text-gray-400">Feed</p><p className="text-xs font-semibold text-gray-900 dark:text-white">{session.feedCount}</p></div>
+                <div><p className="text-xs text-gray-400">Health</p><p className="text-xs font-semibold text-gray-900 dark:text-white">{session.healthState}</p></div>
+                <div><p className="text-xs text-gray-400">Alerts</p><p className="text-xs font-semibold text-gray-900 dark:text-white">{session.alertCount}</p></div>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-gray-400">Feed items</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{primaryLiveSession.feedCount} captured</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">Health</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{primaryLiveSession.healthState}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">Recent alerts</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{primaryLiveSession.alertCount}</p>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
