@@ -1601,113 +1601,93 @@ export const shadowModeRouter = router({
         await new Promise<void>((resolve) => {
           doc.on("end", resolve);
 
-          // ── PAGE 1: EXECUTIVE SUMMARY ──
-          doc.fontSize(20).font("Helvetica-Bold").fillColor("#000000")
-            .text("CuraLive Audit Record", { align: "center" });
-          doc.moveDown(0.3);
-          doc.fontSize(11).font("Helvetica").fillColor("#444444")
-            .text(`${session?.event_name ?? input.sessionId}  ·  ${session?.client_name ?? "—"}`, { align: "center" });
-          doc.fontSize(9).fillColor("#888888")
-            .text(`Generated: ${new Date().toLocaleString()}`, { align: "center" });
-          doc.moveDown(1.5);
-
-          // Chain status box
-          const chainColor = chainIntact ? "#16a34a" : "#dc2626";
-          doc.rect(50, doc.y, 495, 40).fillAndStroke(chainIntact ? "#f0fdf4" : "#fef2f2", chainIntact ? "#bbf7d0" : "#fecaca");
-          doc.fontSize(12).font("Helvetica-Bold").fillColor(chainColor)
-            .text(chainIntact ? "✓  CHAIN INTACT — Tamper-evidence verified" : "✗  CHAIN BROKEN — Record integrity compromised",
-              60, doc.y - 28, { width: 475, align: "center" });
-          doc.moveDown(1.5);
-
-          // Summary counts
-          doc.fontSize(11).font("Helvetica-Bold").fillColor("#000000").text("SESSION SUMMARY");
-          doc.moveDown(0.3);
           const critical = signals.filter((s: any) => s.severity === "critical").length;
           const high = signals.filter((s: any) => s.severity === "high").length;
           const medium = signals.filter((s: any) => s.severity === "medium").length;
           const info = signals.filter((s: any) => s.severity === "info").length;
           const authorised = decisions.filter((g: any) => g.decision === "authorised").length;
-          const withheld = decisions.filter((g: any) => g.decision === "withheld" || g.decision === "rejected").length;
-
-          doc.fontSize(10).font("Helvetica").fillColor("#333333");
-          doc.text(`Total Signals Assessed:        ${signals.length}`);
-          doc.text(`  — Critical:                  ${critical}`);
-          doc.text(`  — High:                      ${high}`);
-          doc.text(`  — Medium:                    ${medium}`);
-          doc.text(`  — Info:                      ${info}`);
-          doc.moveDown(0.3);
-          doc.text(`Governance Decisions:          ${decisions.length}`);
-          doc.text(`  — Authorised:                ${authorised}`);
-          doc.text(`  — Withheld / Rejected:       ${withheld}`);
-          doc.moveDown(0.3);
-          doc.text(`Client Actions Recorded:       ${actions.length}`);
-          doc.moveDown(1);
-
-          // Risk level
+          const withheld = decisions.filter((g: any) => g.decision !== "authorised").length;
           const riskLevel = critical > 0 ? "CRITICAL" : high > 0 ? "ELEVATED" : "NORMAL";
-          const riskColor = critical > 0 ? "#dc2626" : high > 0 ? "#ea580c" : "#16a34a";
-          doc.fontSize(11).font("Helvetica-Bold").fillColor("#000000").text("RISK LEVEL");
-          doc.fontSize(14).font("Helvetica-Bold").fillColor(riskColor).text(riskLevel);
-          doc.fillColor("#000000");
 
-          // ── PAGE 2: MATERIAL SIGNALS ──
-          doc.addPage();
-          doc.fontSize(16).font("Helvetica-Bold").fillColor("#000000").text("Material Signals");
-          doc.fontSize(9).font("Helvetica").fillColor("#888888")
-            .text("High and critical severity signals only. Info and medium signals are summarised in the executive summary.");
+          // HEADER
+          doc.fontSize(18).font("Helvetica-Bold").text("CuraLive — Audit Record", { align: "center" });
+          doc.moveDown(0.2);
+          doc.fontSize(10).font("Helvetica").fillColor("#555555")
+            .text(`${session?.event_name ?? input.sessionId}  |  ${session?.client_name ?? "—"}  |  ${new Date().toLocaleDateString()}`, { align: "center" });
+          doc.moveDown(0.2);
+          doc.fontSize(10).fillColor(chainIntact ? "#16a34a" : "#dc2626")
+            .text(chainIntact ? "CHAIN INTACT — Tamper-evidence verified" : "CHAIN BROKEN", { align: "center" });
           doc.moveDown(0.8);
+          doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke("#cccccc");
+          doc.moveDown(0.5);
 
+          // SUMMARY
+          doc.fontSize(11).font("Helvetica-Bold").fillColor("#000000").text("SUMMARY");
+          doc.moveDown(0.2);
+          doc.fontSize(10).font("Helvetica").fillColor("#333333");
+          doc.text(`Risk Level: ${riskLevel}`);
+          doc.text(`Signals Assessed: ${signals.length}  (Critical: ${critical}  High: ${high}  Medium: ${medium}  Info: ${info})`);
+          doc.text(`Governance: ${decisions.length} decisions  (Authorised: ${authorised}  Withheld: ${withheld})`);
+          doc.text(`Client Actions: ${actions.length}`);
+          doc.moveDown(0.5);
+          doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke("#cccccc");
+          doc.moveDown(0.5);
+
+          // MATERIAL SIGNALS
+          doc.fontSize(11).font("Helvetica-Bold").fillColor("#000000").text("MATERIAL SIGNALS (High & Critical Only)");
+          doc.moveDown(0.2);
           const materialSignals = signals.filter((s: any) => s.severity === "critical" || s.severity === "high");
           if (materialSignals.length === 0) {
-            doc.fontSize(10).font("Helvetica").fillColor("#444444").text("No high or critical signals detected in this session.");
+            doc.fontSize(10).font("Helvetica").fillColor("#555555").text("No high or critical signals detected.");
           } else {
             materialSignals.forEach((s: any) => {
               const gov = decisions.find((g: any) => g.intelligence_feed_id === s.id);
               const sevColor = s.severity === "critical" ? "#dc2626" : "#ea580c";
-              doc.fontSize(10).font("Helvetica-Bold").fillColor(sevColor)
-                .text(`[${(s.severity ?? "").toUpperCase()}]  ${s.title}`, { continued: false });
-              doc.fontSize(8).font("Helvetica").fillColor("#666666")
-                .text(`${new Date(s.created_at).toLocaleTimeString()}  ·  ${s.pipeline}  ·  ${s.feed_type}`);
+              doc.fontSize(9).font("Helvetica-Bold").fillColor(sevColor)
+                .text(`[${(s.severity ?? "").toUpperCase()}]  ${s.title}`, { continued: true });
+              doc.font("Helvetica").fillColor("#888888")
+                .text(`   ${new Date(s.created_at).toLocaleTimeString()}  ·  ${s.pipeline}`);
               if (gov) {
-                const govColor = gov.decision === "authorised" ? "#16a34a" : "#dc2626";
-                doc.fillColor(govColor).text(`Governance: ${(gov.decision ?? "").toUpperCase()}`);
-                if (gov.reasoning) doc.fillColor("#444444").text(`Reasoning: ${gov.reasoning}`);
+                doc.fillColor(gov.decision === "authorised" ? "#16a34a" : "#dc2626")
+                  .text(`  Governance: ${(gov.decision ?? "").toUpperCase()}`, { continued: false });
               }
-              doc.fillColor("#000000").moveDown(0.5);
+              doc.fillColor("#000000").moveDown(0.2);
             });
           }
-
-          // ── PAGE 3: CLIENT ACTIONS ──
-          doc.addPage();
-          doc.fontSize(16).font("Helvetica-Bold").fillColor("#000000").text("Client Actions");
+          doc.moveDown(0.3);
+          doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke("#cccccc");
           doc.moveDown(0.5);
 
+          // CLIENT ACTIONS
+          doc.fontSize(11).font("Helvetica-Bold").fillColor("#000000").text("CLIENT ACTIONS");
+          doc.moveDown(0.2);
           if (actions.length === 0) {
-            doc.fontSize(10).font("Helvetica").fillColor("#444444").text("No client actions recorded for this session.");
+            doc.fontSize(10).font("Helvetica").fillColor("#555555").text("No client actions recorded.");
           } else {
             actions.forEach((a: any) => {
-              doc.fontSize(10).font("Helvetica-Bold").fillColor("#000000")
-                .text(`${(a.action_type ?? "").toUpperCase()}`);
-              doc.fontSize(8).font("Helvetica").fillColor("#666666")
-                .text(`${new Date(a.created_at).toLocaleTimeString()}  ·  Signal #${a.target_id}`);
-              doc.fillColor("#000000").moveDown(0.5);
+              doc.fontSize(9).font("Helvetica-Bold").fillColor("#000000")
+                .text(`${(a.action_type ?? "").toUpperCase()}`, { continued: true });
+              doc.font("Helvetica").fillColor("#888888")
+                .text(`   ${new Date(a.created_at).toLocaleTimeString()}  ·  Signal #${a.target_id}`);
+              doc.fillColor("#000000").moveDown(0.2);
             });
           }
-
-          // ── PAGE 4: CHAIN VERIFICATION ──
-          doc.addPage();
-          doc.fontSize(16).font("Helvetica-Bold").fillColor("#000000").text("Chain Verification");
+          doc.moveDown(0.3);
+          doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke("#cccccc");
           doc.moveDown(0.5);
-          doc.fontSize(10).font("Helvetica").fillColor("#333333");
-          doc.text(`Chain Integrity:    ${chainIntact ? "VERIFIED" : "COMPROMISED"}`);
-          doc.text(`Total Decisions:    ${decisions.length}`);
+
+          // CHAIN VERIFICATION
+          doc.fontSize(11).font("Helvetica-Bold").fillColor("#000000").text("CHAIN VERIFICATION");
+          doc.moveDown(0.2);
+          doc.fontSize(9).font("Helvetica").fillColor("#555555");
+          doc.text(`Total governance decisions in chain: ${decisions.length}`);
           if (decisions.length > 0) {
-            doc.text(`First Hash:         ${(decisions[0].chain_hash ?? "").substring(0, 32)}...`);
-            doc.text(`Last Hash:          ${(decisions[decisions.length-1].chain_hash ?? "").substring(0, 32)}...`);
+            doc.text(`First hash: ${(decisions[0].chain_hash ?? "").substring(0, 32)}...`);
+            doc.text(`Last hash:  ${(decisions[decisions.length-1].chain_hash ?? "").substring(0, 32)}...`);
           }
-          doc.moveDown(1);
-          doc.fontSize(9).fillColor("#888888")
-            .text("This audit record was generated directly from the CuraLive governance chain database. The chain hashes above provide tamper-evidence — any alteration of the underlying data will invalidate the hash sequence.", { width: 495 });
+          doc.moveDown(0.3);
+          doc.fontSize(8).fillColor("#aaaaaa")
+            .text("This record was generated from the CuraLive governance chain database. Hash sequence provides tamper-evidence.", { width: 495 });
 
           doc.end();
         });
