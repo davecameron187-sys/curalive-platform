@@ -56,9 +56,8 @@ export const operatorDashboardRouter = router({
     const revenueThisMonth = Number(revenueRows[0]?.this_month ?? 0);
     const revenueLastMonth = Number(revenueRows[0]?.last_month ?? 0);
 
-    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const [upcomingRows] = await rawSql(
-      `SELECT COUNT(*)::int AS cnt FROM scheduled_sessions WHERE scheduled_at >= NOW() AND scheduled_at <= $1`,
+      `SELECT COUNT(*)::int AS cnt FROM shadow_sessions WHERE status IN ('pending', 'booked')`,
 
     );
     const upcomingCount = upcomingRows[0]?.cnt ?? 0;
