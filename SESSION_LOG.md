@@ -1251,3 +1251,43 @@ python, or node workarounds — all suffer same corruption.
 - Next: Phase 4 — Personal Intelligence Profiles behavioural layer
 
 ### Last Known Good Commit: 9bfe88d
+
+## Session: May 04 2026 (Session 2 — Extended Validation)
+### Objective: Complete evidence base — run sessions 4 and 5, confirm findings
+
+### Completed
+- Ran 2 additional validated sessions under Cell C (org_id = 6)
+- Confirmed all 5 sessions in evidence base
+
+### Sessions Confirmed
+| Session | Event | Signals | Actions | Status |
+|---------|-------|---------|---------|--------|
+| 188 | Lloyds Test | 100 | 3 | Confirmed |
+| 189 | Lesaka Test | 61 | 3 | Confirmed |
+
+### Evidence Base Final State
+- 5 confirmed validated sessions under Cell C (org_id = 6)
+- 292 total signals processed
+- 13 customer actions written to customer_actions
+- Phase 4 evidence base: COMPLETE
+
+### Confirmed Bugs — Pre-Demo Blockers
+- Raw scoring language appearing in customer Intelligence Feed cards
+- Example: "Sentiment dropped 35 points. Communication stress pattern detected."
+- Source: sentiment pipeline writing raw output directly to intelligence_feed
+- Customer dashboard rendering feed items without sanitisation
+- Must be fixed before any external customer demo
+
+### Phase 4 Design Requirements Identified
+1. Narrative Delta must be session-count aware — suppress or modify P1 output for first-time sessions
+2. Keyword extraction showing topic words not sentiment drivers — needs sentiment-weighted keyword ranking
+3. Narrative Delta producing identical P1 output across all sessions — needs session-specific pattern differentiation
+4. New customer first session should be flagged as calibration — not produce deterioration signals
+
+### Phase Status
+- Evidence base: COMPLETE — 5 validated sessions
+- Pre-demo blocker: raw scoring language in customer feed — fix before Phase 4 UI work
+- Phase 4: UNBLOCKED but fix raw scoring language first
+- Next: Fix sentiment pipeline output sanitisation, then Phase 4 behavioural layer
+
+### Last Known Good Commit: e56ac03
