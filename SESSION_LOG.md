@@ -1222,3 +1222,32 @@ python, or node workarounds — all suffer same corruption.
 - curalive-core: f45f840 unchanged
 
 ### Last Known Good Commit: bc2e556
+
+## Session: May 04 2026 (Real Session Validation — Evidence Base)
+### Objective: Run real session volume through CuraLive to unblock Phase 4
+
+### Completed
+- Added Command Centre tab to operator console (Dashboard.tsx)
+- Fixed nav — Command Centre now accessible via tab at app.curalive.cc
+- Recreated customer user — davecameron187@gmail.com mapped to org_id = 6
+- Ran 3 validated real sessions under Cell C (org_id = 6)
+
+### Sessions Confirmed
+| Session | Event | Signals | Actions | Status |
+|---------|-------|---------|---------|--------|
+| 185 | Airtel | 16 | 3 | Confirmed |
+| 186 | MCB | 52 | 2 | Confirmed |
+| 187 | Telkom Test 14.14 | 63 | 2 | Confirmed |
+
+### Findings
+- Telkom session 1 ran under wrong org (CuraLive Internal) — operator must verify Cell C selected before starting
+- Customer actions must be clicked during session not after
+- Narrative Delta producing identical P1 output across all sessions — refinement needed in Phase 4
+- Keyword extraction showing topic words not sentiment drivers — flag for Phase 4
+
+### Phase Status
+- Evidence base: CONFIRMED — 3 validated sessions, 131 signals, 7 customer actions
+- Phase 4: UNBLOCKED
+- Next: Phase 4 — Personal Intelligence Profiles behavioural layer
+
+### Last Known Good Commit: 9bfe88d
