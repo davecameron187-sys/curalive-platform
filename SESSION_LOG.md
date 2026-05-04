@@ -1185,3 +1185,40 @@ python, or node workarounds — all suffer same corruption.
 - curalive-core: f45f840 unchanged
 
 ### Last Known Good Commit: b308a3d
+
+## Session: May 04 2026 (Phase 3.6 Completion + Phase 4 Audit)
+### Objective: Complete Phase 3.6 outstanding steps + audit Phase 4 readiness
+
+### Completed
+- Extended getAttentionItems with session health items — bot_missing, bot_failed, degraded
+- Fixed getUpcomingSessions to read shadow_sessions WHERE status IN pending, booked
+- Fixed getDashboardSummary upcoming count to read shadow_sessions
+- Removed orphaned nextWeek variables from both procedures
+- Audited customer dashboard feed rehydration — confirmed working, 29 signals visible
+- Audited auth wall — confirmed working via incognito test, no regression
+- Confirmed Phase 4 brief assumptions were incorrect — system is more complete than believed
+
+### Commits
+- 7ae4172 feat: extend getAttentionItems with session health — bot missing, bot failed, degraded
+- faf7cc2 fix: getUpcomingSessions now reads shadow_sessions pending and booked
+- bc2e556 fix: getDashboardSummary upcoming count now reads shadow_sessions pending and booked
+
+### System State
+- Operator Command Centre: complete and stable
+- Customer dashboard: persistent, auth-gated, feed rehydrating correctly
+- Audit trail + PDF: working
+- Tenant isolation: confirmed
+- Auth wall: confirmed working via incognito
+
+### Outstanding
+- Real session volume needed — only 1 real customer session (182) exists
+- Run 3-5 real Cell C sessions before Phase 4 behavioural layer
+- curalive-core deployment: deferred
+- Booking automation: deferred
+
+### Production Status
+- Live at app.curalive.cc
+- Last commit: bc2e556
+- curalive-core: f45f840 unchanged
+
+### Last Known Good Commit: bc2e556
