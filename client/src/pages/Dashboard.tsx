@@ -21,14 +21,16 @@ import AdminBilling from "./AdminBilling";
 import { lazy, Suspense } from "react";
 
 const WebcastingHub = lazy(() => import("./WebcastingHub"));
+const OperatorDashboard = lazy(() => import("./OperatorDashboard"));
 const EventCalendar = lazy(() => import("./EventCalendar"));
 const MailingListManager = lazy(() => import("./MailingListManager"));
 
-type DashboardTab = "shadow-mode" | "billing" | "settings";
+type DashboardTab = "shadow-mode" | "operator-dashboard" | "billing" | "settings";
 
 const TAB_CONFIG: { id: DashboardTab; label: string; icon: React.ElementType; color: string; activeColor: string }[] = [
   { id: "shadow-mode", label: "Shadow Mode", icon: Radio, color: "text-slate-500 hover:text-slate-300", activeColor: "border-emerald-400 text-emerald-300" },
 
+  { id: "operator-dashboard", label: "Command Centre", icon: LayoutDashboard, color: "text-slate-500 hover:text-slate-300", activeColor: "border-blue-400 text-blue-300" },
   { id: "billing", label: "Billing", icon: Receipt, color: "text-slate-500 hover:text-slate-300", activeColor: "border-green-400 text-green-300" },
   { id: "settings", label: "Settings", icon: Settings, color: "text-slate-500 hover:text-slate-300", activeColor: "border-slate-400 text-slate-300" },
 ];
@@ -598,6 +600,7 @@ export default function Dashboard() {
       <div>
         {activeTab === "shadow-mode" && <ShadowMode embedded />}
 
+        {activeTab === "operator-dashboard" && <Suspense fallback={<div className="text-slate-400 p-8">Loading...</div>}><OperatorDashboard /></Suspense>}
         {activeTab === "billing" && <AdminBilling />}
         {activeTab === "settings" && <SettingsTab />}
       </div>
