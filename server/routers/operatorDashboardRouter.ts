@@ -248,6 +248,7 @@ export const operatorDashboardRouter = router({
         createdAt: r.created_at?.toISOString?.() ?? String(r.created_at),
       });
     }
+    // HEALTH_ITEMS_INSERTION_POINT
 
     const [botMissingRows] = await rawSql(
       `SELECT s.id, s.event_name, s.client_name, s.started_at,
