@@ -1291,3 +1291,22 @@ python, or node workarounds — all suffer same corruption.
 - Next: Fix sentiment pipeline output sanitisation, then Phase 4 behavioural layer
 
 ### Last Known Good Commit: e56ac03
+
+## Session — 2026-05-04
+
+### Objective
+Phase A: ODR write path implementation and validation.
+
+### Completed
+- Full pipeline audit conducted — 6 root causes of generic output identified
+- Intelligence Model Master Brief confirmed as governing document
+- ODR migration run in Render Shell — table confirmed with all 11 columns
+- AnchorLookupService.ts created — extractDisclosureFeatures + writeDisclosureRecord
+- SegmentOrchestrator.ts patched — processSegmentForODR fire-and-forget on every segment
+- Phase A validated against Session 194 — 5 clean ODR records confirmed
+
+### Last Known Good Commit
+46815c0
+
+### Next Session
+Phase B — anchor lookup + first anchored delta generation
