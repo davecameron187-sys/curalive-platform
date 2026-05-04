@@ -142,3 +142,50 @@ export async function processSegmentForODR(
     console.error("[AnchorLookup] Unexpected error — session=" + input.sessionId + ":", err?.message);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Anchor Lookup — Phase B Step 1 (Read Path Only)
+// ---------------------------------------------------------------------------
+
+export interface AnchorLookupInput {
+  orgId: number;
+  topic: string;
+  speaker?: string;
+  currentTimestamp: Date;
+}
+
+export type AnchorLookupResult =
+  | { anchor_found: true; topic: string; statement: string; commitment_level: string; speaker: string; disclosed_at: string }
+  | { anchor_found: false; reason: "no_prior_disclosure" };
+
+export async function lookupAnchor(input: AnchorLookupInput): Promise<AnchorLookupResult> {
+  const { orgId, topic, speaker, currentTimestamp } = input;
+  const [rows] = await rawSql(
+    `SELECT topic, statement, commitment_level, speaker_id, source_date
+     FROM organisation_disclosure_record
+     WHERE org_id = $1
+       AND LOWER(TRIM(topic)) = LOWER(TRIM($2))
+       AND source_date < $3
+     ORDER BY
+       CASE WHEN speaker_id = $4 THEN 0 ELSE 1 END ASC,
+       source_date DESC
+     LIMIT 1`,
+    [orgId, topic, currentTimestamp.toISOString(), speaker ?? ""]
+  );
+
+  if (!rows || rows.length === 0) {
+    console.log(`[AnchorLookup] NO_ANCHOR_FOUND\n  topic=${topic}\n  reason=no_prior_disclosure`);
+    return { anchor_found: false, reason: "no_prior_disclosure" };
+  }
+
+  const r = rows[0];
+  console.log(`[AnchorLookup] ANCHOR_FOUND\n  topic=${r.topic}\n  speaker=${r.speaker_id}\n  disclosed_at=${r.source_date}`);
+  return {
+    anchor_found: true,
+    topic: r.topic,
+    statement: r.statement,
+    commitment_level: r.commitment_level,
+    speaker: r.speaker_id,
+    disclosed_at: r.source_date,
+  };
+}
