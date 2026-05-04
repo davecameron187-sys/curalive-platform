@@ -133,7 +133,7 @@ export async function processSegmentForODR(
   input: DisclosureWriteInput
 ): Promise<void> {
   try {
-    const rows = await rawSql("SELECT org_id FROM shadow_sessions WHERE id = $1", [input.sessionId]);
+    const [rows] = await rawSql("SELECT org_id FROM shadow_sessions WHERE id = $1", [input.sessionId]);
     const resolvedOrgId = rows[0]?.org_id ?? input.orgId;
     const resolvedInput = { ...input, orgId: resolvedOrgId };
     const features = await extractDisclosureFeatures(segmentText);
