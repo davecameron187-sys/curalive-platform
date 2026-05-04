@@ -10,6 +10,7 @@ import { scoreSentiment } from "../aiAnalysis";
 import crypto from "crypto";
 import { evaluateSignalDiscipline } from "./SignalDiscipline";
 import { evaluateOutput } from "./DeterministicGovernanceGateway";
+import { processSegmentForODR } from "./AnchorLookupService";
 
 // Maximum concurrent LLM calls per session
 const MAX_CONCURRENT_LLM_CALLS = 3;
@@ -356,4 +357,15 @@ export async function processSegment(params: {
       confidenceScore: 1.0,
     }).catch(err => console.warn("[Orchestrator] Overload signal write failed:", err?.message));
   }
+
+  // ODR — Phase A write path. Fire-and-forget. Never blocks.
+  void processSegmentForODR(text, {
+    orgId: 1,
+    sessionId,
+    speakerId: speaker ?? null,
+    segmentRef: canonicalSegmentId,
+    sourceEvent: `Session ${sessionId}`,
+    sourceDate: new Date().toISOString().split("T")[0],
+  }).catch(err => console.warn("[ODR] Failed:", err?.message));
 }
+
