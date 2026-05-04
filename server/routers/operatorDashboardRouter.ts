@@ -59,7 +59,7 @@ export const operatorDashboardRouter = router({
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const [upcomingRows] = await rawSql(
       `SELECT COUNT(*)::int AS cnt FROM scheduled_sessions WHERE scheduled_at >= NOW() AND scheduled_at <= $1`,
-      [nextWeek]
+
     );
     const upcomingCount = upcomingRows[0]?.cnt ?? 0;
 
@@ -208,16 +208,16 @@ export const operatorDashboardRouter = router({
   }),
 
   getUpcomingSessions: operatorProcedure.query(async () => {
-    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const [rows] = await rawSql(
-      `SELECT ss.id, ss.event_name, ss.scheduled_at, ss.event_type,
+      `SELECT s.id, s.event_name, s.event_type,
+              COALESCE(s.started_at, s.created_at) AS scheduled_at,
               o.name AS org_name
-       FROM scheduled_sessions ss
-       LEFT JOIN organisations o ON o.id = ss.org_id
-       WHERE ss.scheduled_at >= NOW() AND ss.scheduled_at <= $1
-       ORDER BY ss.scheduled_at ASC
+       FROM shadow_sessions s
+       LEFT JOIN organisations o ON o.id = s.org_id
+       WHERE s.status IN ('pending', 'booked')
+       ORDER BY COALESCE(s.started_at, s.created_at) ASC
        LIMIT 10`,
-      [nextWeek]
+
     );
     return rows.map((r: any) => ({
       id: r.id,
