@@ -1310,3 +1310,26 @@ Phase A: ODR write path implementation and validation.
 
 ### Next Session
 Phase B — anchor lookup + first anchored delta generation
+
+## Session: May 04 2026 (Phase B Step 1 — Anchor Lookup)
+### Objective: Implement and validate anchor lookup read path
+
+### Completed
+- Fixed org_id bug — ODR was writing org_id=1 due to hardcoded value in SegmentOrchestrator
+- Fixed rawSql tuple destructuring — rows were not being read correctly
+- lookupAnchor function added to AnchorLookupService.ts
+- Read path validated against real Cell C data in production
+
+### Validation Confirmed
+- ODR records writing with correct org_id=6 ✅
+- Anchor lookup returns correct prior disclosure ✅
+- Timestamp filter enforced ✅
+- Org isolation enforced ✅
+
+### Replit Notes
+- Shell only — no editor
+- Keep prompts short and step by step
+- Always prefix SQL commands with psql $DATABASE_URL
+
+### Last Known Good Commit: f82632f
+### Next: Phase B Step 2 — Anchored Delta Generation
