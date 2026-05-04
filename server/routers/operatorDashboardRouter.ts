@@ -249,6 +249,65 @@ export const operatorDashboardRouter = router({
       });
     }
 
+    const [botMissingRows] = await rawSql(
+      `SELECT s.id, s.event_name, s.client_name, s.started_at,
+              o.name AS org_name
+       FROM shadow_sessions s
+       LEFT JOIN organisations o ON o.id = s.org_id
+       WHERE s.status = 'live' AND s.recall_bot_id IS NULL
+       ORDER BY s.started_at DESC`
+    );
+    for (const r of botMissingRows) {
+      items.push({
+        type: "bot_missing",
+        id: r.id,
+        title: `No bot: ${r.event_name}`,
+        subtitle: r.org_name ?? r.client_name ?? "",
+        severity: "critical",
+        createdAt: r.started_at?.toISOString?.() ?? String(r.started_at),
+      });
+    }
+
+    const [botFailedRows] = await rawSql(
+      `SELECT s.id, s.event_name, s.started_at, rb.status AS bot_status
+       FROM shadow_sessions s
+       JOIN recall_bots rb ON rb.recall_bot_id = s.recall_bot_id
+       WHERE s.status = 'live' AND rb.status IN ('failed', 'done')
+       ORDER BY s.started_at DESC`
+    );
+    for (const r of botFailedRows) {
+      items.push({
+        type: "bot_failed",
+        id: r.id,
+        title: `Bot lost: ${r.event_name}`,
+        subtitle: r.bot_status,
+        severity: "critical",
+        createdAt: r.started_at?.toISOString?.() ?? String(r.started_at),
+      });
+    }
+
+    const [degradedRows] = await rawSql(
+      `SELECT s.id, s.event_name, s.started_at
+       FROM shadow_sessions s
+       JOIN recall_bots rb ON rb.recall_bot_id = s.recall_bot_id
+       WHERE s.status = 'live' AND rb.status = 'in_call'
+         AND (
+           (SELECT MAX(created_at) FROM intelligence_feed WHERE session_id = 'shadow-' || s.id::text) < NOW() - INTERVAL '240 seconds'
+           OR NOT EXISTS (SELECT 1 FROM intelligence_feed WHERE session_id = 'shadow-' || s.id::text)
+         )
+       ORDER BY s.started_at DESC`
+    );
+    for (const r of degradedRows) {
+      items.push({
+        type: "degraded",
+        id: r.id,
+        title: `Degraded: ${r.event_name}`,
+        subtitle: "No feed activity",
+        severity: "high",
+        createdAt: r.started_at?.toISOString?.() ?? String(r.started_at),
+      });
+    }
+
     return items;
   }),
 
