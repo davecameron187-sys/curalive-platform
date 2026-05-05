@@ -109,7 +109,7 @@ Rules:
   const lines = raw
     .split("\n")
     .map((l: string) => l.trim())
-    .filter((l: string) => l.length > 20);
+    .filter((l: string) => l.length > 20 && !l.toLowerCase().includes("unable") && !l.toLowerCase().includes("i cannot") && !l.toLowerCase().includes("no specific"));
 
   const narratives: NarrativeStatement[] = lines.slice(0, 3).map((line: string) => ({
     statement: line,
