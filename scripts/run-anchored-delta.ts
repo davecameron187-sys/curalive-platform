@@ -18,12 +18,12 @@ async function main() {
 
   const [rows] = await rawSql(`
     SELECT id, org_id, session_id, speaker_id, topic, commitment_level,
-           statement_verbatim, source_date, source_event
+           statement, source_date, source_event
     FROM organisation_disclosure_record
     WHERE org_id = 6
       AND commitment_level IN ('CONFIRMED', 'INDICATED', 'QUALIFIED')
       AND topic IS NOT NULL
-      AND statement_verbatim IS NOT NULL
+      AND statement IS NOT NULL
     ORDER BY source_date DESC, id DESC
     LIMIT 1
   `);
@@ -40,7 +40,7 @@ async function main() {
   console.log("  speaker_id:       " + record.speaker_id);
   console.log("  commitment_level: " + record.commitment_level);
   console.log("  source_date:      " + record.source_date);
-  console.log("  statement:        " + record.statement_verbatim + "\n");
+  console.log("  statement:        " + record.statement + "\n");
 
   console.log("--- ANCHOR LOOKUP ---");
   const anchor = await lookupAnchor({
@@ -73,7 +73,7 @@ async function main() {
     speaker: record.speaker_id ?? "Unknown",
     priorStatement: anchor.statement,
     priorCommitmentLevel,
-    currentStatement: record.statement_verbatim,
+    currentStatement: record.statement,
     currentCommitmentLevel,
   });
 
