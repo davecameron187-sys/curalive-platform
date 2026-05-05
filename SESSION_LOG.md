@@ -1370,3 +1370,39 @@ Phase B — anchor lookup + first anchored delta generation
 
 ### Last Known Good Commit: 3181727
 ### Next: Phase B Step 3 — wire AnchoredDeltaService into pipeline after gate review
+
+## Session: May 05 2026 (Phase B Step 3A — Anchored Delta Integration Harness)
+### Objective: Build and validate pipeline-adjacent integration harness connecting ODR -> AnchorLookupService -> AnchoredDeltaService
+
+### Completed
+- Created scripts/run-anchored-delta.ts — standalone harness, no pipeline wiring, no locked files touched
+- Fixed column name: statement_verbatim -> statement (actual ODR schema)
+- Fixed rawSql destructuring: const [rows] = await rawSql(...)
+- Fixed AnchorLookupInput field names: currentTimestamp not beforeDate, speaker not speakerId
+- Fixed AnchoredDeltaResult field names: suppress, change_type, why_it_matters, prior_quote, current_quote, ir_framing
+- Added commitment level mapper: CONFIRMED->explicit, INDICATED->implied, QUALIFIED->implied, HEDGED->hedged, AVOIDED->absent
+- Inserted test anchor record (2025-11-15) to prove ANCHOR_FOUND path
+- Proven intelligent suppression: mismatched metrics correctly rejected by LLM
+
+### Validation Confirmed
+- ODR query returns real Cell C production data
+- ANCHOR_FOUND: topic=DEBT_POSITION speaker=David Cameron
+- DELTA_GENERATED: change_type=softened confidence=high
+- Output is quote-based, non-generic, IR-quality
+- Intelligent suppression proven on incomparable metrics
+- No locked files touched
+- No intelligence_feed writes
+- No Ably publish
+
+### Execution Environment Declaration (MANDATORY)
+- Build: Replit Shell
+- Validation: Render Shell
+- Scripts created: scripts/run-anchored-delta.ts
+- Execution command: npx tsx scripts/run-anchored-delta.ts
+- Validation source: organisation_disclosure_record (org_id=6, Cell C)
+- ANCHOR_FOUND: yes
+- DELTA_GENERATED: yes (change_type=softened, confidence=high)
+- DELTA_SUPPRESSED: yes (mismatched metrics — correct behaviour)
+
+### Last Known Good Commit: 5d9230e
+### Next: Phase B Step 3B — decide integration model: replace raw feed OR introduce shadow anchored delta layer
