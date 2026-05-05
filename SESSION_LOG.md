@@ -1333,3 +1333,40 @@ Phase B — anchor lookup + first anchored delta generation
 
 ### Last Known Good Commit: f82632f
 ### Next: Phase B Step 2 — Anchored Delta Generation
+
+## Session: May 05 2026 (Phase B Step 2 — Anchored Delta Generation)
+### Objective: Build and validate AnchoredDeltaService LLM delta generator
+
+### Completed
+- AnchoredDeltaService.ts created — LLM-powered, isolated, no feed writes
+- Three-layer architecture: deterministic pre-check, GPT-4o call, post-parse validation
+- preSuppressionCheck guards against generic, identical, and low-information statements
+- generateAnchoredDelta exposes callable function for validation script and future orchestrator
+- validate-anchored-delta.ts created — runs against real ODR data in Render Shell
+- Validated against real Cell C ODR record: DEBT_POSITION, David Cameron, source_date 2026-05-04
+
+### Validation Confirmed
+- change_type: softened
+- confidence: high
+- summary: specific to actual language shift from precise leverage ratio to general comfort statement
+- both quotes present and verbatim
+- ir_framing non-prescriptive, begins with IR may
+- Phase B Step 2 success condition met
+
+### Operational Notes Added to Brief
+1. Regex Pattern Shell Corruption: regex patterns with pipes, parentheses, slashes corrupt Replit heredoc. Resolution: hand regex blocks to ChatGPT to write via Python append. Return to Claude for next chunk and commit.
+2. Replit OPENAI_API_KEY is invalid/expired. Validation scripts that require LLM calls must be run from Render Shell, not Replit Shell.
+
+### ODR Table Name Correction
+- Table is organisation_disclosure_record not outcome_disclosure_records
+- Column is speaker_id not speaker
+- Column is source_date not disclosed_at
+
+### Constraints Confirmed
+- No intelligence_feed writes
+- No Ably publish
+- No SegmentOrchestrator wiring
+- No dashboard changes
+
+### Last Known Good Commit: 3181727
+### Next: Phase B Step 3 — wire AnchoredDeltaService into pipeline after gate review
