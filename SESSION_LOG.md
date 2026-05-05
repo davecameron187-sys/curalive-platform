@@ -1406,3 +1406,34 @@ Phase B — anchor lookup + first anchored delta generation
 
 ### Last Known Good Commit: 5d9230e
 ### Next: Phase B Step 3B — decide integration model: replace raw feed OR introduce shadow anchored delta layer
+
+## Session: May 05 2026 (Phase B Step 3B — Shadow Anchored Delta Layer)
+### Objective: Introduce shadow anchored delta persistence layer alongside existing system
+
+### Completed
+- Created anchored_deltas table in production DB (Render Shell)
+- org_id integer, session_id integer — corrected from brief's uuid spec
+- rawSql pattern throughout — drizzle/schema.ts untouched
+- Created server/services/AnchoredDeltaShadowService.ts
+- Created scripts/run-anchored-delta-shadow.ts
+
+### Validation Confirmed
+- 8 ODR records processed for org_id=6 (Cell C)
+- 1 delta generated and written to anchored_deltas: DEBT_POSITION softened high
+- 7 correctly suppressed as no_prior_disclosure
+- DB record confirmed via psql query
+- No locked files touched
+- No intelligence_feed modified
+- No Ably publish
+
+### Execution Environment Declaration (MANDATORY)
+- Build: Replit Shell
+- Validation: Render Shell
+- Script: scripts/run-anchored-delta-shadow.ts
+- Table: anchored_deltas
+- Records inserted: 1
+- Suppressed: 0
+- No anchor: 7
+
+### Last Known Good Commit: see git log
+### Next: Phase B Step 3C — compare anchored_deltas against intelligence_feed for same session, then decide replace vs hybrid
