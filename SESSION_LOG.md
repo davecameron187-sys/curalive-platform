@@ -1511,3 +1511,36 @@ Phase B — anchor lookup + first anchored delta generation
 
 ### Last Known Good Commit: 0834bb7
 ### Next: Accumulate real sessions, then wire NarrativeOutputService to customer dashboard
+
+## Session: May 05 2026 (UI Correction — Remove Raw Intelligence Feed)
+### Objective: Remove raw Intelligence Feed cluster from customer dashboard
+
+### Completed
+- Removed Intelligence Feed cluster render from CustomerDashboard.tsx
+- collapseIntoClusters and FeedCard functions retained — used in Post-Event summary
+- feedItems data fetching retained — used for KPI strip and Post-Event calculations
+- Raw signals retained in DB for audit trail
+
+### Validation Confirmed
+- app.curalive.cc/customer/dashboard confirmed clean
+- No raw signal cluster visible
+- Narrative Intelligence panel intact
+- KPI strip intact
+- No console errors reported
+
+### Execution Environment Declaration (MANDATORY)
+- Build: Replit Shell
+- Validation: browser (app.curalive.cc)
+- File changed: client/src/pages/CustomerDashboard.tsx
+- Locked files touched: NONE
+- Backend touched: NONE
+- UI-only change: YES
+- Reversible: YES
+
+### Product Decision Locked
+- Customer dashboard shows narrative intelligence only
+- Raw signals visible to operator only (via audit trail and DB)
+- This is product correctness, not UI polish
+
+### Last Known Good Commit: see git log
+### Next: Decide whether operator dashboard raw feed should be replaced with diagnostics panel
