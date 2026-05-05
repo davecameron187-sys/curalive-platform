@@ -94,6 +94,8 @@ Rules:
 - Never use bullet points or lists — write in full sentences only
 - Maximum 3 statements. Minimum 1.
 - If evidence is thin, write fewer statements. Never pad.
+- Never use the words: segment, pattern, deterioration, stress, communication challenges, potential, noticeable
+- If you cannot make a specific grounded statement, output nothing rather than a generic observation
 - Output ONLY the narrative statements, one per line, nothing else.`;
 
   const response = await invokeLLM({
