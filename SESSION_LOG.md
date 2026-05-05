@@ -1468,3 +1468,46 @@ Phase B — anchor lookup + first anchored delta generation
 
 ### Last Known Good Commit: see git log
 ### Next: Accumulate real Cell C sessions, re-run comparison, then decide replace vs hybrid
+
+## Session: May 05 2026 (Narrative Output Layer + Signal Discipline)
+### Objective: Fix raw feed pollution and build narrative intelligence layer
+
+### Completed
+- Extended SignalDiscipline.ts — materiality gate for low-information sentiment signals
+- Extended SignalDiscipline.ts — expanded stopwords list for single-word keywords
+- Correlation duplicate suppression confirmed working in live session logs
+- Created server/services/NarrativeOutputService.ts — IR narrative generation
+- Created scripts/validate-narrative-output.ts — validation runner
+- Fixed invokeLLM response field: choices[0].message.content
+- Fixed LLM refusal phrase filter
+- Validated against sessions 186 and 197
+
+### Validation Confirmed
+- Duplicate correlation signals suppressed within session via SignalDiscipline
+- NarrativeOutputService generates 1 narrative from 2-3 input signals
+- LLM refusal phrases correctly filtered
+- Architecture correct — quality gated on anchor data accumulation
+
+### Key Finding
+- NarrativeOutputService produces generic output when no anchored deltas exist
+- Root cause: correlation boilerplate has no specific evidence to ground narratives
+- Fix: accumulate real sessions with ODR anchor history — not a code problem
+- Decision: do NOT wire to customer dashboard until anchored deltas produce specific output
+
+### Execution Environment Declaration (MANDATORY)
+- Build: Replit Shell
+- Validation: Render Shell
+- Scripts: validate-narrative-output.ts
+- Session tested: 186, 197
+- Input signals: 2-3
+- Narratives generated: 1 (generic — insufficient anchor history)
+- Decision: NOT wired to dashboard — evidence accumulation required first
+
+### Next Actions (Not Code)
+- Run 3-5 real Cell C sessions minimum 30-45 minutes each
+- Cover same financial topics across sessions to build anchor history
+- Re-run validate-narrative-output.ts when anchored deltas exist
+- Wire NarrativeOutputService to customer dashboard only when output is specific and grounded
+
+### Last Known Good Commit: 0834bb7
+### Next: Accumulate real sessions, then wire NarrativeOutputService to customer dashboard
