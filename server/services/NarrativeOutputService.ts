@@ -103,7 +103,7 @@ Rules:
     ],
   });
 
-  const raw = response?.content?.[0]?.text ?? "";
+  const raw = response?.choices?.[0]?.message?.content ?? "";
   const lines = raw
     .split("\n")
     .map((l: string) => l.trim())
