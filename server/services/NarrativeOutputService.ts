@@ -3,7 +3,7 @@ import { invokeLLM } from "../_core/llm";
 
 export interface NarrativeStatement {
   statement: string;
-  source: "anchored_delta" | "narrative_delta";
+  source: "anchored_delta" | "intra_session_shift";
   topic?: string;
   confidence?: string;
 }
@@ -16,104 +16,155 @@ export interface NarrativeOutput {
   generatedAt: string;
 }
 
+const GENERIC_PHRASES = [
+  "sentiment has",
+  "sentiment became",
+  "recent segments",
+  "communication dynamic",
+  "pattern emerging",
+  "pattern detected",
+  "signals indicate",
+  "overall sentiment",
+  "sentiment deteriorat",
+  "stress pattern",
+  "communication challenges",
+  "mood shifted",
+];
+
+function isGeneric(text: string): boolean {
+  const lower = text.toLowerCase();
+  return GENERIC_PHRASES.some(phrase => lower.includes(phrase));
+}
+
+function isSpecific(text: string): boolean {
+  const lower = text.toLowerCase();
+  const hasSpeaker = /\b(ceo|cfo|coo|chairman|director|management|speaker|he|she|they)\b/.test(lower);
+  const hasChangeLanguage = /\b(shifted|moved|changed|softened|strengthened|revised|qualified|withdrew|confirmed|indicated|previously|prior|earlier|now|current|from|to)\b/.test(lower);
+  const hasTopic = /\b(debt|leverage|margin|revenue|guidance|dividend|capital|cost|headcount|strategy|acquisition|cash|liquidity|regulatory|esg|outlook|target|ratio|growth|earnings)\b/.test(lower);
+  return hasSpeaker && hasChangeLanguage && hasTopic;
+}
+
 export async function generateNarrativeOutput(
   sessionId: number,
   orgId: number
 ): Promise<NarrativeOutput> {
   console.log("[NarrativeOutput] Starting for session=" + sessionId + " org=" + orgId);
 
+  const empty: NarrativeOutput = {
+    sessionId,
+    orgId,
+    narratives: [],
+    inputSignals: 0,
+    generatedAt: new Date().toISOString(),
+  };
+
+  // PRIMARY: anchored deltas — cross-session commitment shifts with verbatim quotes
   const [anchoredRows] = await rawSql(`
-    SELECT topic, change_type, confidence, summary, why_it_matters, prior_quote, current_quote, ir_framing
+    SELECT topic, change_type, confidence, summary, why_it_matters,
+           prior_quote, current_quote, ir_framing, anchor_source_date
     FROM anchored_deltas
     WHERE session_id = $1 AND org_id = $2
+      AND prior_quote IS NOT NULL
+      AND current_quote IS NOT NULL
+      AND confidence IN ('high', 'medium')
     ORDER BY created_at ASC
   `, [sessionId, orgId]);
 
-  const shadowId = "shadow-" + sessionId;
-  const [deltaRows] = await rawSql(`
-    SELECT title, body, severity, pipeline
-    FROM intelligence_feed
-    WHERE session_id = $1
-      AND pipeline IN ('correlation', 'compliance')
-      AND severity IN ('high', 'critical')
-    ORDER BY created_at ASC
-    LIMIT 5
-  `, [shadowId]);
-
   const anchoredDeltas = anchoredRows ?? [];
-  const narrativeDeltas = deltaRows ?? [];
-  const totalInputs = anchoredDeltas.length + narrativeDeltas.length;
 
-  console.log("[NarrativeOutput] Inputs — anchored_deltas=" + anchoredDeltas.length + " narrative_deltas=" + narrativeDeltas.length);
-
-  if (totalInputs === 0) {
-    console.log("[NarrativeOutput] No inputs — no narrative generated");
-    return {
-      sessionId,
-      orgId,
-      narratives: [],
-      inputSignals: 0,
-      generatedAt: new Date().toISOString(),
-    };
+  // FALLBACK: intra-session ODR shifts — real language from same session
+  // Only used if no anchored deltas exist
+  // Must have actual statement language — no boilerplate
+  let intraSessionShifts: any[] = [];
+  if (anchoredDeltas.length === 0) {
+    const [odrRows] = await rawSql(`
+      SELECT topic, commitment_level, statement, speaker_id, source_date
+      FROM organisation_disclosure_record
+      WHERE session_id = $1 AND org_id = $2
+        AND commitment_level IN ('CONFIRMED', 'INDICATED')
+        AND LENGTH(statement) > 30
+      ORDER BY id ASC
+    `, [sessionId, orgId]);
+    intraSessionShifts = odrRows ?? [];
   }
+
+  const totalInputs = anchoredDeltas.length + intraSessionShifts.length;
+
+  // HARD EVIDENCE GATE — no evidence, no output
+  if (totalInputs === 0) {
+    console.log("[NarrativeOutput] GATED — no anchored deltas or ODR statements available");
+    return empty;
+  }
+
+  console.log("[NarrativeOutput] Inputs — anchored_deltas=" + anchoredDeltas.length + " intra_session_odr=" + intraSessionShifts.length);
 
   const inputBlocks: string[] = [];
 
   if (anchoredDeltas.length > 0) {
-    inputBlocks.push("ANCHORED DELTAS (primary — cross-session commitment shifts):");
+    inputBlocks.push("CROSS-SESSION COMMITMENT SHIFTS (primary evidence):");
     for (const d of anchoredDeltas) {
       inputBlocks.push(
         "Topic: " + d.topic + "\n" +
-        "Change: " + d.change_type + " (" + d.confidence + " confidence)\n" +
-        "Summary: " + d.summary + "\n" +
-        "Why it matters: " + d.why_it_matters + "\n" +
-        "Prior: \"" + d.prior_quote + "\"\n" +
-        "Current: \"" + d.current_quote + "\""
+        "Change type: " + d.change_type + " (" + d.confidence + " confidence)\n" +
+        "Prior statement: \"" + d.prior_quote + "\"\n" +
+        "Current statement: \"" + d.current_quote + "\"\n" +
+        "Why it matters: " + d.why_it_matters
       );
     }
   }
 
-  if (narrativeDeltas.length > 0) {
-    inputBlocks.push("\nMATERIAL SIGNALS (secondary — within-session patterns):");
-    for (const d of narrativeDeltas) {
-      inputBlocks.push("[" + d.pipeline + "] " + d.title + ": " + d.body);
+  if (intraSessionShifts.length > 0) {
+    inputBlocks.push("INTRA-SESSION DISCLOSURES (use only if speaker and topic are clear):");
+    for (const s of intraSessionShifts) {
+      inputBlocks.push(
+        "Speaker: " + (s.speaker_id || "Unknown") + "\n" +
+        "Topic: " + s.topic + "\n" +
+        "Commitment: " + s.commitment_level + "\n" +
+        "Statement: \"" + s.statement + "\""
+      );
     }
   }
 
-  const prompt = inputBlocks.join("\n");
+  const prompt = inputBlocks.join("\n\n");
 
-  const system = `You are a senior IR strategist writing a real-time intelligence briefing for a communications team during a live earnings call or investor event.
+  const system = `You are a senior IR strategist writing a real-time intelligence briefing.
 
-Your job is to convert analytical signals into 1-3 clear, complete narrative statements that a communications professional can act on immediately.
-
-Rules:
-- Write in calm, precise, professional IR language
-- Each statement must be a complete thought — not a fragment, not a label
-- Ground every statement in the evidence provided — do not manufacture insight
-- Never use: "sentiment score", "dropped X points", "pattern detected", "signal", "pipeline"
-- Never use bullet points or lists — write in full sentences only
-- Maximum 3 statements. Minimum 1.
-- If evidence is thin, write fewer statements. Never pad.
-- Never use the words: segment, pattern, deterioration, stress, communication challenges, potential, noticeable
-- If you cannot make a specific grounded statement, output nothing rather than a generic observation
-- Output ONLY the narrative statements, one per line, nothing else.`;
+STRICT RULES — every rule is mandatory:
+1. Every statement MUST name a specific actor (CEO, CFO, management, speaker name)
+2. Every statement MUST name a specific topic (debt, margins, guidance, leverage, revenue)
+3. Every statement MUST describe a specific change (what shifted, from what, to what)
+4. Use verbatim quote fragments where provided — do not paraphrase if you have the actual words
+5. Time anchor every statement — use "previously", "earlier", "in prior sessions", "now", "in this session"
+6. Maximum 2 statements. Only include statements you can fully ground in the evidence above.
+7. If you cannot write a statement that satisfies rules 1-5, write nothing.
+8. NEVER write: "sentiment", "pattern", "segment", "signal", "stress", "deterioration", "noticeable", "potential"
+9. Output ONLY the statements, one per line. No preamble. No labels. No explanation.`;
 
   const response = await invokeLLM({
     messages: [
       { role: "system", content: system },
-      { role: "user", content: "Generate the narrative briefing from these inputs:\n\n" + prompt },
+      { role: "user", content: "Write the briefing from this evidence:\n\n" + prompt },
     ],
   });
 
   const raw = response?.choices?.[0]?.message?.content ?? "";
+
   const lines = raw
     .split("\n")
     .map((l: string) => l.trim())
-    .filter((l: string) => l.length > 20 && !l.toLowerCase().includes("unable") && !l.toLowerCase().includes("i cannot") && !l.toLowerCase().includes("no specific"));
+    .filter((l: string) => l.length > 30)
+    .filter((l: string) => !isGeneric(l))
+    .filter((l: string) => {
+      if (!isSpecific(l)) {
+        console.log("[NarrativeOutput] REJECTED — not specific enough: " + l);
+        return false;
+      }
+      return true;
+    });
 
-  const narratives: NarrativeStatement[] = lines.slice(0, 3).map((line: string) => ({
+  const narratives: NarrativeStatement[] = lines.slice(0, 2).map((line: string) => ({
     statement: line,
-    source: anchoredDeltas.length > 0 ? "anchored_delta" : "narrative_delta",
+    source: anchoredDeltas.length > 0 ? "anchored_delta" : "intra_session_shift",
   }));
 
   console.log("[NarrativeOutput] Generated " + narratives.length + " narrative(s)");
