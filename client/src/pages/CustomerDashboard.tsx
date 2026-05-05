@@ -375,7 +375,7 @@ export default function CustomerDashboard() {
               ))}
             </div>
 
-            {/* CENTRE — Intelligence Feed */}
+            {/* CENTRE — Intelligence Feed (removed from customer view — raw signals not customer-facing) */}
             <div className="flex-1 overflow-y-auto p-6 bg-gray-950">
               <LiveEventsBanner session={selectedSession} />
               <div className={`text-xs px-3 py-1 rounded mb-4 ${
@@ -440,74 +440,8 @@ export default function CustomerDashboard() {
                   ))}
                 </div>
               )}
-              {/* Feed */}
-              <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-3">
-                Intelligence Feed
-              </div>
-              {!selectedSessionId && (
-                <div className="text-gray-600 text-sm">Select a session to view intelligence.</div>
-              )}
-              {feedQuery.isLoading && (
-                <div className="text-gray-600 text-sm">Loading intelligence...</div>
-              )}
-              {feedItems.length === 0 && selectedSessionId && !feedQuery.isLoading && (
-                <div className="text-gray-600 text-sm">No intelligence signals for this session.</div>
-              )}
-              {collapseIntoClusters(feedItems).map((cluster) => {
-                const isExpanded = expandedClusters.has(cluster.key);
-                const toggleCluster = () => setExpandedClusters(prev => {
-                  const next = new Set(prev);
-                  if (next.has(cluster.key)) next.delete(cluster.key);
-                  else next.add(cluster.key);
-                  return next;
-                });
-                if (cluster.count === 1) {
-                  return (
-                    <FeedCard
-                      key={cluster.items[0].id}
-                      item={cluster.items[0]}
-                      sessionId={selectedSessionId}
-                      onAction={handleAction}
-                      actionStates={actionStates}
-                    />
-                  );
-                }
-                return (
-                  <div key={cluster.key} className="mb-3 border border-blue-900/40 rounded-lg bg-gray-900/60">
-                    <button
-                      onClick={toggleCluster}
-                      className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-800/40 transition-colors rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-blue-400" />
-                        <span className="text-sm font-semibold text-white">{cluster.title} Cluster</span>
-                        <span className="text-xs bg-blue-900/50 text-blue-300 border border-blue-700 px-2 py-0.5 rounded-full">
-                          {cluster.count} signals
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-500">
-                          {cluster.latestTimestamp ? new Date(cluster.latestTimestamp).toLocaleTimeString() : ""}
-                        </span>
-                        <span className="text-xs text-blue-400">{isExpanded ? "▲ collapse" : "▼ expand"}</span>
-                      </div>
-                    </button>
-                    {isExpanded && (
-                      <div className="px-3 pb-3 pt-1 border-t border-blue-900/30">
-                        {cluster.items.map((item: any) => (
-                          <FeedCard
-                            key={item.id}
-                            item={item}
-                            sessionId={selectedSessionId}
-                            onAction={handleAction}
-                            actionStates={actionStates}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {/* Intelligence Feed removed from customer view — raw signals not customer-facing */}
+              {/* Raw signals retained in DB for audit trail and operator visibility */}
             </div>
 
             {/* RIGHT — Governance + Sessions */}
