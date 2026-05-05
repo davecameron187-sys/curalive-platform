@@ -63,6 +63,55 @@ function buildDedupKey(title: string, body: string): string {
   return normalizeSignalText(`${title} ${body}`);
 }
 
+
+const SENTIMENT_NEUTRAL_SCORE_PATTERN = /Score:\s*(\d+)\/100/i;
+const SENTIMENT_KEYWORDS_PATTERN = /Keywords:\s*(.+)$/im;
+const SENTIMENT_STOPWORDS = new Set([
+  'the','a','an','and','or','but','in','on','at','to','for','of','with',
+  'that','this','it','is','was','are','be','been','being','have','has',
+  'had','do','does','did','will','would','could','should','may','might',
+  'i','we','you','he','she','they','them','their','our','your',
+  'going','to','take','next','but','that','analyze','engage'
+]);
+
+function isSentimentTitle(title: string): boolean {
+  return /^Sentiment:/i.test(title.trim());
+}
+
+function extractSentimentScore(body: string): number | null {
+  const match = body.match(SENTIMENT_NEUTRAL_SCORE_PATTERN);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+function extractKeywords(body: string): string[] {
+  const match = body.match(SENTIMENT_KEYWORDS_PATTERN);
+  if (!match) return [];
+  return match[1].split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+}
+
+function isLowInformationKeywords(keywords: string[]): boolean {
+  if (keywords.length === 0) return true;
+  const meaningful = keywords.filter(k => k.length > 2 && !SENTIMENT_STOPWORDS.has(k));
+  return meaningful.length === 0;
+}
+
+function isMaterialitySuppressed(title: string, body: string): { suppressed: boolean; reason: string } {
+  if (!isSentimentTitle(title)) {
+    return { suppressed: false, reason: '' };
+  }
+  const score = extractSentimentScore(body);
+  const keywords = extractKeywords(body);
+  const lowInfo = isLowInformationKeywords(keywords);
+
+  if (score !== null && score >= 45 && score <= 55 && lowInfo) {
+    return { suppressed: true, reason: 'suppressed_low_materiality_sentiment' };
+  }
+  if (lowInfo && keywords.length <= 1) {
+    return { suppressed: true, reason: 'suppressed_single_keyword_sentiment' };
+  }
+  return { suppressed: false, reason: '' };
+}
+
 export function evaluateSignalDiscipline(params: {
   sessionId: number;
   title: string;
@@ -75,6 +124,12 @@ export function evaluateSignalDiscipline(params: {
     console.log(`[SignalDiscipline] confidence_filter_skipped — sessionId=${sessionId} title=${title}`);
   } else if (confidenceScore < CONFIDENCE_THRESHOLD) {
     console.log(`[SignalDiscipline] suppressed_low_confidence — sessionId=${sessionId} confidence=${confidenceScore} title=${title}`);
+    return { shouldSurface: false, reason: 'suppressed_low_confidence' };
+  }
+
+  const materialityCheck = isMaterialitySuppressed(title, body);
+  if (materialityCheck.suppressed) {
+    console.log(`[SignalDiscipline] ${materialityCheck.reason} — sessionId=${sessionId} title=${title}`);
     return { shouldSurface: false, reason: 'suppressed_low_confidence' };
   }
 
