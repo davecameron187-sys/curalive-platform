@@ -71,7 +71,7 @@ const SENTIMENT_STOPWORDS = new Set([
   'that','this','it','is','was','are','be','been','being','have','has',
   'had','do','does','did','will','would','could','should','may','might',
   'i','we','you','he','she','they','them','their','our','your',
-  'going','to','take','next','but','that','analyze','engage'
+  'going','to','take','next','but','that','analyze','engage','happening','small','life','here','shops','puzzle','traders','logo','this','is','was'
 ]);
 
 function isSentimentTitle(title: string): boolean {
