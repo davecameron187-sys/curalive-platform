@@ -1437,3 +1437,34 @@ Phase B — anchor lookup + first anchored delta generation
 
 ### Last Known Good Commit: see git log
 ### Next: Phase B Step 3C — compare anchored_deltas against intelligence_feed for same session, then decide replace vs hybrid
+
+## Session: May 05 2026 (Phase B Step 3C — Evidence-Based Comparison)
+### Objective: Compare anchored_deltas vs intelligence_feed for same session
+
+### Completed
+- Created scripts/compare-anchored-vs-raw.ts
+- Executed against session 186 (Cell C, MCB, 52 raw signals)
+
+### Validation Confirmed
+- Script runs cleanly in Render Shell
+- Raw signals: 52 (38 identical Sentiment: Neutral, 6 Positive, 6 Cautious, 2 Deterioration Pattern)
+- Anchored deltas: 0 (no prior anchors exist for session 186 period)
+- Raw feed duplication confirmed: 73% of signals are identical noise
+
+### Key Observation
+- Raw feed repeats identical sentiment signals with no compression
+- Anchored deltas require prior disclosure history to produce output
+- Current evidence base insufficient for replace vs hybrid decision
+- Must accumulate real sessions before decision can be made
+
+### Execution Environment Declaration (MANDATORY)
+- Build: Replit Shell
+- Validation: Render Shell
+- Script: scripts/compare-anchored-vs-raw.ts
+- Session ID: 186
+- Raw signals: 52
+- Anchored deltas: 0
+- Decision: NOT MADE — evidence collection only
+
+### Last Known Good Commit: see git log
+### Next: Accumulate real Cell C sessions, re-run comparison, then decide replace vs hybrid
