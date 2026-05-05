@@ -38,7 +38,7 @@ function isGeneric(text: string): boolean {
 
 function isSpecific(text: string): boolean {
   const lower = text.toLowerCase();
-  const hasSpeaker = /\b(ceo|cfo|coo|chairman|director|management|speaker|he|she|they)\b/.test(lower);
+  const hasSpeaker = /\b(ceo|cfo|coo|chairman|director|management|speaker|he|she|they)\b/.test(lower) || /[A-Z][a-z]+ [A-Z][a-z]+/.test(text);
   const hasChangeLanguage = /\b(shifted|moved|changed|softened|strengthened|revised|qualified|withdrew|confirmed|indicated|previously|prior|earlier|now|current|from|to)\b/.test(lower);
   const hasTopic = /\b(debt|leverage|margin|revenue|guidance|dividend|capital|cost|headcount|strategy|acquisition|cash|liquidity|regulatory|esg|outlook|target|ratio|growth|earnings)\b/.test(lower);
   return hasSpeaker && hasChangeLanguage && hasTopic;
