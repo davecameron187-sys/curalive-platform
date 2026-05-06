@@ -6,9 +6,6 @@ import { rawSql } from "../db";
 import { evaluateSessionDeltas, FeedItem } from "../services/NarrativeDeltaService";
 import { generateNarrativeOutput } from "../services/NarrativeOutputService";
 
-const narrativeCache = new Map<string, { result: any; cachedAt: number }>();
-const NARRATIVE_CACHE_TTL_MS = 5 * 60 * 1000;
-
 const customerProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== "customer") {
     throw new TRPCError({
@@ -256,11 +253,6 @@ export const customerDashboardRouter = router({
         if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
         const numericSessionId = parseInt(input.sessionId.replace("shadow-", ""), 10);
         if (isNaN(numericSessionId)) return { surfaced: [], totalAssessed: 0, totalSurfaced: 0 };
-        const cacheKey = `narrative-${numericSessionId}-${orgId}`;
-        const cached = narrativeCache.get(cacheKey);
-        if (cached && Date.now() - cached.cachedAt < NARRATIVE_CACHE_TTL_MS) {
-          return cached.result;
-        }
         const result = await generateNarrativeOutput(numericSessionId, orgId);
         const surfaced = result.narratives.map((n: any) => ({
           deltaText: n.statement,
@@ -268,13 +260,11 @@ export const customerDashboardRouter = router({
           suppressed: false,
           source: n.source,
         }));
-        const output = {
+        return {
           surfaced,
           totalAssessed: result.inputSignals,
           totalSurfaced: surfaced.length,
         };
-        narrativeCache.set(cacheKey, { result: output, cachedAt: Date.now() });
-        return output;
       } catch {
         return { surfaced: [], totalAssessed: 0, totalSurfaced: 0 };
       }

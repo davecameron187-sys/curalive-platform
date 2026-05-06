@@ -1,4 +1,29 @@
 import { rawSql } from "../db";
+
+async function getCachedNarrative(sessionId: number, orgId: number): Promise<NarrativeOutput | null> {
+  const [rows] = await rawSql(
+    `SELECT narratives, input_signals, created_at FROM session_narrative_cache WHERE session_id = $1 AND org_id = $2`,
+    [sessionId, orgId]
+  );
+  if (!rows || rows.length === 0) return null;
+  const row = rows[0];
+  return {
+    sessionId,
+    orgId,
+    narratives: row.narratives,
+    inputSignals: row.input_signals,
+    generatedAt: row.created_at,
+  };
+}
+
+async function setCachedNarrative(output: NarrativeOutput): Promise<void> {
+  await rawSql(
+    `INSERT INTO session_narrative_cache (session_id, org_id, narratives, input_signals)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (session_id) DO UPDATE SET narratives = $3, input_signals = $4, created_at = now()`,
+    [output.sessionId, output.orgId, JSON.stringify(output.narratives), output.inputSignals]
+  ).catch(() => {});
+}
 import { invokeLLM } from "../_core/llm";
 
 export interface NarrativeStatement {
@@ -49,6 +74,12 @@ export async function generateNarrativeOutput(
   orgId: number
 ): Promise<NarrativeOutput> {
   console.log("[NarrativeOutput] Starting for session=" + sessionId + " org=" + orgId);
+
+  const cached = await getCachedNarrative(sessionId, orgId);
+  if (cached) {
+    console.log("[NarrativeOutput] Cache hit for session=" + sessionId);
+    return cached;
+  }
 
   const empty: NarrativeOutput = {
     sessionId,
@@ -172,11 +203,13 @@ STRICT RULES — every rule is mandatory:
     console.log("[NarrativeOutput] — " + n.statement);
   }
 
-  return {
+  const output: NarrativeOutput = {
     sessionId,
     orgId,
     narratives,
     inputSignals: totalInputs,
     generatedAt: new Date().toISOString(),
   };
+  await setCachedNarrative(output);
+  return output;
 }
