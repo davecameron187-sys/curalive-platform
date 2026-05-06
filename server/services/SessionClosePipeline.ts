@@ -248,7 +248,7 @@ export async function runSessionClosePipeline(sessionId: number, opts?: { degrad
   scoreBriefingAccuracy(sessionId).catch(e =>
     ERR('Briefing accuracy scoring failed', e)
   );
-  runAnchoredDeltaShadow(sessionId).catch(e =>
+  runAnchoredDeltaShadow(session.org_id, sessionId).catch(e =>
     ERR('Anchored delta generation failed', e)
   );
 
