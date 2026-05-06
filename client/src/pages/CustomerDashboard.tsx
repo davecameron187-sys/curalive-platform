@@ -397,16 +397,33 @@ export default function CustomerDashboard() {
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
                     <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Risk Level</div>
-                    <div className={`text-lg font-bold ${riskLevel === "Elevated" ? "text-red-400" : "text-green-400"}`}>{riskLevel}</div>
+                    <div className={`text-lg font-bold ${deltasData.surfaced.length > 0 ? "text-orange-400" : "text-green-400"}`}>
+                      {deltasData.surfaced.length > 0 ? "Watch" : "Stable"}
+                    </div>
                   </div>
                   <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
                     <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Open Actions</div>
                     <div className="text-lg font-bold text-yellow-400">{openActions}</div>
                   </div>
                   <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-                    <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Signals</div>
-                    <div className="text-lg font-bold text-blue-400">{feedItems.length}</div>
+                    <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Material Insights</div>
+                    <div className="text-lg font-bold text-blue-400">{deltasData.totalSurfaced}</div>
                   </div>
+                </div>
+              )}
+              {/* Open Action Items */}
+              {selectedSessionId && openActions > 0 && (
+                <div className="mb-6 border border-yellow-900/40 rounded-lg bg-gray-950 p-4">
+                  <div className="text-xs uppercase tracking-widest text-yellow-500 font-semibold mb-3">Action Required</div>
+                  {feedItems.filter((i: any) => i.severity === "high" || i.severity === "critical").map((item: any) => (
+                    <FeedCard
+                      key={item.id}
+                      item={item}
+                      sessionId={selectedSessionId}
+                      onAction={handleAction}
+                      actionStates={actionStates}
+                    />
+                  ))}
                 </div>
               )}
 
