@@ -152,6 +152,7 @@ export interface AnchorLookupInput {
   topic: string;
   speaker?: string;
   currentTimestamp: Date;
+  currentSessionId?: number;
 }
 
 export type AnchorLookupResult =
@@ -159,18 +160,22 @@ export type AnchorLookupResult =
   | { anchor_found: false; reason: "no_prior_disclosure" };
 
 export async function lookupAnchor(input: AnchorLookupInput): Promise<AnchorLookupResult> {
-  const { orgId, topic, speaker, currentTimestamp } = input;
+  const { orgId, topic, speaker, currentTimestamp, currentSessionId } = input;
   const [rows] = await rawSql(
     `SELECT topic, statement, commitment_level, speaker_id, source_date
      FROM organisation_disclosure_record
      WHERE org_id = $1
        AND LOWER(TRIM(topic)) = LOWER(TRIM($2))
-       AND source_date < $3
+       AND (
+         source_date < $3
+         OR (source_date = $3 AND ($5::integer IS NULL OR session_id < $5))
+       )
      ORDER BY
        CASE WHEN speaker_id = $4 THEN 0 ELSE 1 END ASC,
-       source_date DESC
+       source_date DESC,
+       session_id DESC
      LIMIT 1`,
-    [orgId, topic, currentTimestamp.toISOString(), speaker ?? ""]
+    [orgId, topic, currentTimestamp.toISOString().split('T')[0], speaker ?? "", currentSessionId ?? null]
   );
 
   if (!rows || rows.length === 0) {

@@ -35,6 +35,7 @@ export async function runAnchoredDeltaShadow(orgId: number, sessionId?: number):
       topic: record.topic,
       speaker: record.speaker_id ?? undefined,
       currentTimestamp: new Date(record.source_date),
+      currentSessionId: Number(record.session_id),
     });
 
     if (!anchor.anchor_found) {
