@@ -301,7 +301,7 @@ export default function CustomerDashboard() {
 
   const riskLevel = feedItems.some((i: any) => i.severity === "high" || i.severity === "critical") ? "Elevated" : "Normal";
   const sentimentItems = feedItems.filter((i: any) => i.feed_type === "sentiment");
-  const openActions = feedItems.filter((i: any) => i.severity === "high").length;
+  const openActions = feedItems.filter((i: any) => (i.severity === "high" || i.severity === "critical") && i.pipeline !== "correlation" && i.pipeline !== "sentiment").length;
 
   const authorised = decisions.filter((d: any) => d.decision === "authorised").length;
   const pending = decisions.filter((d: any) => d.decision === "pending_review").length;
@@ -415,7 +415,7 @@ export default function CustomerDashboard() {
               {selectedSessionId && openActions > 0 && (
                 <div className="mb-6 border border-yellow-900/40 rounded-lg bg-gray-950 p-4">
                   <div className="text-xs uppercase tracking-widest text-yellow-500 font-semibold mb-3">Action Required</div>
-                  {feedItems.filter((i: any) => i.severity === "high" || i.severity === "critical").map((item: any) => (
+                  {feedItems.filter((i: any) => (i.severity === "high" || i.severity === "critical") && i.pipeline !== "correlation" && i.pipeline !== "sentiment").map((item: any) => (
                     <FeedCard
                       key={item.id}
                       item={item}
