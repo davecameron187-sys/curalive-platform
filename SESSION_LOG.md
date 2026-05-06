@@ -1617,3 +1617,39 @@ Phase B — anchor lookup + first anchored delta generation
 
 ### Last Known Good Commit: see git log
 ### Next: Automate shadow runner on session close — then seed more historical data for Cell C
+
+## Session: May 06 2026 (Auto-trigger anchored delta on session close)
+### Objective: Automate shadow runner on session close — no manual intervention required
+
+### Completed
+- Added runAnchoredDeltaShadow call to SessionClosePipeline.ts (locked file exception approved)
+- Fixed org_id bug — was passing sessionId as orgId, now passes session.org_id
+- Fixed AnchorLookupService — supports same-date sessions via session_id tiebreaker
+- Added currentSessionId to AnchorLookupInput interface
+- Wired NarrativeOutputService to customer dashboard via customerDashboardRouter.ts
+
+### Validation Confirmed
+- Session 205 (Lesaka Test 06.05 12.45) — auto-trigger confirmed
+- 5 anchored deltas written automatically: CAPITAL_ALLOCATION, CASH_FLOW, DEBT_POSITION, OPERATIONAL_PERFORMANCE, STRATEGIC_DIRECTION
+- No manual script required
+- Customer dashboard narrative: specific, speaker-named, verbatim quote
+- Example: "David Cameron earlier indicated on MARGIN_OUTLOOK that our operating margin will trend towards 30"
+
+### Execution Environment Declaration (MANDATORY)
+- Build: Replit Shell
+- Validation: Render Shell + browser
+- Files changed: SessionClosePipeline.ts (locked — approved exception), AnchorLookupService.ts, AnchoredDeltaShadowService.ts, customerDashboardRouter.ts
+- Locked file touched: SessionClosePipeline.ts — limited scope, fire-and-forget only
+- Schema changes: NONE
+
+### Product Loop Now Complete
+- Session runs → closes → anchored deltas auto-generate → narrative panel reads → customer sees IR intelligence
+- No manual intervention required at any stage
+
+### Known Issues (next session)
+- NarrativeOutputService called on every poll — should cache output not regenerate
+- Narrative panel UI needs formatting — timestamp, separator, cleaner card per statement
+- NarrativeOutput being called mid-session from somewhere — investigate source
+
+### Last Known Good Commit: 749eb33
+### Next: Cache narrative output to avoid LLM calls on every poll, then format narrative panel UI
