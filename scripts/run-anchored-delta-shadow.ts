@@ -2,7 +2,8 @@ import { runAnchoredDeltaShadow } from "../server/services/AnchoredDeltaShadowSe
 
 async function main() {
   console.log("=== Phase B Step 3B — Shadow Anchored Delta Runner ===\n");
-  await runAnchoredDeltaShadow(6);
+  const sessionId = process.argv[2] ? parseInt(process.argv[2]) : undefined;
+  await runAnchoredDeltaShadow(6, sessionId);
   console.log("\n=== Done ===");
 }
 

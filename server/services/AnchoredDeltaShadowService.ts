@@ -2,7 +2,7 @@ import { rawSql } from "../db";
 import { lookupAnchor } from "./AnchorLookupService";
 import { generateAnchoredDelta } from "./AnchoredDeltaService";
 
-export async function runAnchoredDeltaShadow(orgId: number): Promise<void> {
+export async function runAnchoredDeltaShadow(orgId: number, sessionId?: number): Promise<void> {
   console.log("[AnchoredDeltaShadow] Starting shadow run for org_id=" + orgId);
 
   const [records] = await rawSql(`
@@ -14,6 +14,7 @@ export async function runAnchoredDeltaShadow(orgId: number): Promise<void> {
       AND commitment_level IN ('CONFIRMED', 'INDICATED', 'QUALIFIED')
       AND topic IS NOT NULL
       AND statement IS NOT NULL
+      ${sessionId ? 'AND session_id = ' + sessionId : ''}
     ORDER BY topic, speaker_id, source_date DESC
   `, [orgId]);
 
@@ -70,7 +71,7 @@ export async function runAnchoredDeltaShadow(orgId: number): Promise<void> {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     `, [
       orgId,
-      record.session_id,
+      sessionId ?? record.session_id,
       record.topic,
       delta.change_type,
       delta.confidence,
