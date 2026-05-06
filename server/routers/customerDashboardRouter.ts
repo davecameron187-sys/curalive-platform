@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../_core/trpc";
 import { rawSql } from "../db";
 import { evaluateSessionDeltas, FeedItem } from "../services/NarrativeDeltaService";
+import { generateNarrativeOutput } from "../services/NarrativeOutputService";
 
 const customerProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== "customer") {
@@ -250,22 +251,20 @@ export const customerDashboardRouter = router({
       try {
         const orgId = ctx.user?.orgId;
         if (!orgId) throw new Error("Unauthorised: no organisation assigned to user");
-        const [rows] = await rawSql(
-          `SELECT f.id, f.session_id, f.feed_type, f.severity, f.title, f.body, f.pipeline, f.created_at
-           FROM intelligence_feed f
-           JOIN shadow_sessions s ON s.id = CAST(replace(f.session_id, 'shadow-', '') AS integer)
-           WHERE f.session_id = $1
-           AND s.org_id = $2
-           ORDER BY f.created_at ASC
-           LIMIT 200`,
-          [input.sessionId, orgId]
-        );
-        const items = (rows ?? []) as FeedItem[];
-        const deltas = evaluateSessionDeltas(items);
-        const surfaced = deltas.filter(d => !d.suppressed).slice(0, 3);
-        const totalAssessed = deltas.length;
-        const totalSurfaced = surfaced.length;
-        return { surfaced, totalAssessed, totalSurfaced };
+        const numericSessionId = parseInt(input.sessionId.replace("shadow-", ""), 10);
+        if (isNaN(numericSessionId)) return { surfaced: [], totalAssessed: 0, totalSurfaced: 0 };
+        const result = await generateNarrativeOutput(numericSessionId, orgId);
+        const surfaced = result.narratives.map((n: any) => ({
+          deltaText: n.statement,
+          priority: "P1",
+          suppressed: false,
+          source: n.source,
+        }));
+        return {
+          surfaced,
+          totalAssessed: result.inputSignals,
+          totalSurfaced: surfaced.length,
+        };
       } catch {
         return { surfaced: [], totalAssessed: 0, totalSurfaced: 0 };
       }
