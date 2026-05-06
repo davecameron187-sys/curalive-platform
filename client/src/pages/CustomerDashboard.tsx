@@ -428,14 +428,19 @@ export default function CustomerDashboard() {
                     </div>
                   )}
                   {deltasData.surfaced.map((delta: any, i: number) => (
-                    <div key={i} className={"mb-2 last:mb-0 flex items-start gap-3 p-3 rounded-lg bg-gray-900 border border-gray-800"}>
-                      <div className={"text-xs font-bold px-2 py-0.5 rounded shrink-0 " + (
-                        delta.priority === "P0" ? "bg-red-900/50 text-red-400 border border-red-700" :
-                        delta.priority === "P1" ? "bg-orange-900/50 text-orange-400 border border-orange-700" :
-                        delta.priority === "P2" ? "bg-yellow-900/50 text-yellow-400 border border-yellow-700" :
-                        "bg-gray-800 text-gray-400 border border-gray-700"
-                      )}>{delta.priority}</div>
-                      <div className="text-sm text-gray-200 leading-relaxed">{delta.deltaText}</div>
+                    <div key={i} className="mb-3 last:mb-0 rounded-lg bg-gray-900 border border-gray-800 overflow-hidden">
+                      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800">
+                        <div className={"text-xs font-bold px-2 py-0.5 rounded " + (
+                          delta.priority === "P0" ? "bg-red-900/50 text-red-400 border border-red-700" :
+                          delta.priority === "P1" ? "bg-orange-900/50 text-orange-400 border border-orange-700" :
+                          delta.priority === "P2" ? "bg-yellow-900/50 text-yellow-400 border border-yellow-700" :
+                          "bg-gray-800 text-gray-400 border border-gray-700"
+                        )}>{delta.priority}</div>
+                        <div className="text-xs text-gray-600 uppercase tracking-widest">
+                          {delta.source === "anchored_delta" ? "Cross-session shift" : "Session disclosure"}
+                        </div>
+                      </div>
+                      <div className="px-3 py-3 text-sm text-gray-200 leading-relaxed">{delta.deltaText}</div>
                     </div>
                   ))}
                 </div>
