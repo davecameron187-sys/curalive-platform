@@ -174,7 +174,7 @@ export default function CustomerDashboard() {
   const customerSuppression = customerSuppressionQuery.data ?? { totalAssessed: 0, totalSurfaced: 0, totalSuppressed: 0 };
   const deltasQuery = trpc.customerDashboard.getNarrativeDeltas.useQuery(
     { sessionId: selectedSessionId ?? "" },
-    { enabled: !!selectedSessionId, refetchInterval: 15000 }
+    { enabled: !!selectedSessionId, refetchInterval: 60000 }
   );
   const deltasData = deltasQuery.data ?? { surfaced: [], totalAssessed: 0, totalSurfaced: 0 };
   const actionResolutionQuery = trpc.customerDashboard.getActionResolution.useQuery(
