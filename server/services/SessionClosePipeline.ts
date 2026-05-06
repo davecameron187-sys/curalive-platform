@@ -1,4 +1,5 @@
 import { getDb, rawSql } from "../db";
+import { runAnchoredDeltaShadow } from "./AnchoredDeltaShadowService";
 import { sendComplianceCloseEmail } from "./ComplianceDeadlineService";
 import { sendReportLinks }          from "./ClientDeliveryService";
 import { runBoardIntelligenceUpdate } from "./BoardIntelligenceService";
@@ -246,6 +247,9 @@ export async function runSessionClosePipeline(sessionId: number, opts?: { degrad
 
   scoreBriefingAccuracy(sessionId).catch(e =>
     ERR('Briefing accuracy scoring failed', e)
+  );
+  runAnchoredDeltaShadow(sessionId).catch(e =>
+    ERR('Anchored delta generation failed', e)
   );
 
   const errorCount = steps.filter(s => s.status === "error" || s.status === "timeout").length;
