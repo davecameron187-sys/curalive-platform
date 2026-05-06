@@ -1581,3 +1581,39 @@ Phase B — anchor lookup + first anchored delta generation
 
 ### Last Known Good Commit: 07ae6e8
 ### Next: Automate shadow runner on session close, then wire NarrativeOutputService to customer dashboard
+
+## Session: May 06 2026 (Wire NarrativeOutputService to Customer Dashboard)
+### Objective: Replace NarrativeDeltaService output with NarrativeOutputService on customer dashboard
+
+### Completed
+- Replaced getNarrativeDeltas procedure in customerDashboardRouter.ts
+- Now calls generateNarrativeOutput(numericSessionId, orgId) directly
+- Parses numeric session ID from shadow string format
+- Returns narratives in same shape as before — no frontend changes required
+- Added import for generateNarrativeOutput
+
+### Validation Confirmed
+- app.curalive.cc/customer/dashboard session 199 shows:
+- 41 assessed, 2 surfaced
+- P1: David Cameron confirmed group revenue grew to 332 billion rands year to date
+- P1: Mobile service revenues expanded by 76% year to date
+- Output: specific, speaker-named, figure-grounded
+- No generic language
+- No sentiment boilerplate
+- One voice on customer dashboard
+
+### Execution Environment Declaration (MANDATORY)
+- Build: Replit Shell
+- Validation: browser (app.curalive.cc)
+- File changed: server/routers/customerDashboardRouter.ts
+- Locked files touched: NONE
+- Schema changes: NONE
+- UI changes: NONE
+
+### Product Decision Locked
+- Customer dashboard speaks through NarrativeOutputService only
+- NarrativeDeltaService retained server-side for signal compression
+- Customer never sees internal compression layer
+
+### Last Known Good Commit: see git log
+### Next: Automate shadow runner on session close — then seed more historical data for Cell C
