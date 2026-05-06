@@ -1544,3 +1544,40 @@ Phase B — anchor lookup + first anchored delta generation
 
 ### Last Known Good Commit: see git log
 ### Next: Decide whether operator dashboard raw feed should be replaced with diagnostics panel
+
+## Session: May 05 2026 (Seeded Anchor Ingestion — Cold Start Solution)
+### Objective: Enable anchored deltas from Day 1 via seeded historical transcript ingestion
+
+### Completed
+- Added source_type column to organisation_disclosure_record (captured/seeded)
+- Created scripts/seed-transcript-odr.ts — seeded anchor ingestion script
+- Seeded 3 ODR records for Cell C Q3 2025 Results (2025-11-15)
+- Fixed shadow runner — accepts session_id parameter to target specific session
+- Fixed AnchoredDeltaShadowService — filters by session_id, writes deltas to correct session
+- Generated 4 anchored deltas for session 199
+- Validated NarrativeOutputService produces anchored delta narrative
+
+### Validation Confirmed
+- Seeded records in DB: DIVIDEND_POLICY, CAPITAL_ALLOCATION, H1_GUIDANCE (source_type=seeded)
+- Shadow runner: 4 deltas written for session 199
+- Narrative output: 1 anchored delta narrative generated
+- Source confirmed: anchored_delta (not intra_session_shift)
+- Example output: CFO capital allocation softened — moving from explicit funding expectations to broader deployment framing
+- No locked files touched
+- No schema changes beyond source_type column
+
+### Execution Environment Declaration (MANDATORY)
+- Build: Replit Shell
+- Validation: Render Shell
+- Scripts: seed-transcript-odr.ts, run-anchored-delta-shadow.ts, validate-narrative-output.ts
+- DB change: ALTER TABLE organisation_disclosure_record ADD COLUMN source_type
+- Anchored deltas written: 4 (session 199)
+- Narratives generated: 1 (anchored_delta source)
+
+### Known Issues
+- Truncated ODR statements producing partial quotes in narrative output
+- Source: ODR statement capture cuts short on some segments — pipeline issue, not urgent
+- Shadow runner must be run manually after each session — not yet automated
+
+### Last Known Good Commit: 07ae6e8
+### Next: Automate shadow runner on session close, then wire NarrativeOutputService to customer dashboard
