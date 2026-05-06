@@ -1653,3 +1653,35 @@ Phase B — anchor lookup + first anchored delta generation
 
 ### Last Known Good Commit: 749eb33
 ### Next: Cache narrative output to avoid LLM calls on every poll, then format narrative panel UI
+
+## Session: May 06 2026 (KPI Alignment + Narrative Cache)
+### Objective: Fix customer dashboard KPIs to align with narrative-first model
+
+### Completed
+- Created session_narrative_cache table in production DB
+- Wired getCachedNarrative / setCachedNarrative into NarrativeOutputService
+- Removed in-memory cache from router — DB cache works across server instances
+- Replaced Signals KPI with Material Insights (narrative count)
+- Risk Level now derived from narrative output not raw signals
+- Added Action Required panel — shows only compliance/governance signals
+- Filtered correlation and sentiment boilerplate from Action Required
+- openActions count aligned with same filter
+- Narrative panel card format improved
+
+### Validation Confirmed
+- Risk Level: Watch (narrative-derived)
+- Open Actions: 0 (correctly filtered)
+- Material Insights: 2 (matches narrative count)
+- Two P1 cross-session shifts confirmed specific and quote-based
+- No raw signal language visible anywhere on customer dashboard
+- Narrative stable — DB cache prevents flickering across server instances
+
+### Execution Environment Declaration (MANDATORY)
+- Build: Replit Shell
+- Validation: browser (app.curalive.cc)
+- Files changed: NarrativeOutputService.ts, customerDashboardRouter.ts, CustomerDashboard.tsx
+- Schema change: CREATE TABLE session_narrative_cache (Render Shell)
+- Locked files touched: NONE
+
+### Last Known Good Commit: see git log
+### Next: Seed more historical data for Cell C, run real sessions, validate full product loop
