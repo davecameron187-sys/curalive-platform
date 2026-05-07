@@ -331,23 +331,42 @@ async function handleTranscriptData(payload: {
 
 async function handleRecordingDone(payload: {
   data: {
-    bot: { id: string };
-    data: { recording_url?: string };
+    bot: { id: string; metadata?: { shadowSessionId?: string } };
+    recording?: { id: string };
   };
 }) {
-  const { id: recallBotId } = payload.data.bot;
-  const recordingUrl = payload.data.data.recording_url;
-  if (!recordingUrl) return;
-
-  const db = await getDb();
-  if (!db) return;
-
-  await db
-    .update(recallBots)
-    .set({ recordingUrl })
-    .where(eq(recallBots.recallBotId, recallBotId));
-
-  console.log(`[Recall] Recording available for bot ${recallBotId}: ${recordingUrl}`);
+  const recallBotId = payload.data.bot.id;
+  const recordingId = payload.data.recording?.id;
+  const shadowSessionId = payload.data.bot.metadata?.shadowSessionId;
+  console.log(`[Recall] recording.done — bot: ${recallBotId}, recording: ${recordingId}, session: ${shadowSessionId}`);
+  if (!recordingId) {
+    console.warn(`[Recall] recording.done — no recording.id in payload`);
+    return;
+  }
+  const RECALL_API_KEY = process.env.RECALL_AI_API_KEY ?? "";
+  const RECALL_BASE_URL = process.env.RECALL_AI_BASE_URL ?? "https://eu-central-1.recall.ai/api/v1";
+  const audioRes = await fetch(`${RECALL_BASE_URL}/audio_mixed/?recording_id=${recordingId}`, {
+    headers: { Authorization: `Token ${RECALL_API_KEY}` },
+  });
+  if (!audioRes.ok) {
+    console.error(`[Recall] audio_mixed fetch failed: ${audioRes.status}`);
+    return;
+  }
+  const audioData = await audioRes.json() as { results?: Array<{ data?: { download_url?: string } }> };
+  console.log(`[Recall] audio_mixed response: ${JSON.stringify(audioData)}`);
+  const downloadUrl = audioData.results?.[0]?.data?.download_url;
+  if (!downloadUrl) {
+    console.warn(`[Recall] No download_url in audio_mixed response`);
+    return;
+  }
+  console.log(`[Recall] MP3 download URL: ${downloadUrl}`);
+  if (shadowSessionId) {
+    await rawSql(
+      `UPDATE shadow_sessions SET audio_mixed_url = $1 WHERE id = $2`,
+      [downloadUrl, parseInt(shadowSessionId)]
+    );
+    console.log(`[Recall] audio_mixed_url persisted for session ${shadowSessionId}`);
+  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
