@@ -364,6 +364,7 @@ export const shadowModeRouter = router({
                   url: webhookUrl,
                   events: ["transcript.data"],
                 }],
+                audio_mixed_mp3: {},
               },
               webhook_url: webhookUrl,
               metadata: { ablyChannel, shadowSessionId: String(sessionId) },
